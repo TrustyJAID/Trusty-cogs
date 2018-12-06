@@ -76,7 +76,6 @@ class ReTrigger(getattr(commands, "Cog", object)):
         self.config = Config.get_conf(self, 964565433247)
         default_guild = {"trigger_list":{}, "allow_multiple":False}
         self.config.register_guild(**default_guild)
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
     async def local_perms(self, message):
         """Check the user is/isn't locally whitelisted/blacklisted.
@@ -153,10 +152,11 @@ class ReTrigger(getattr(commands, "Cog", object)):
         cur_images = await self.config.guild(guild).images()
         file_path = str(cog_data_path(self)) + f"/{guild.id}/{filename}"
         await self.make_guild_folder(directory)
-        async with self.session.get(image_url) as resp:
-            test = await resp.read()
-            with open(file_path, "wb") as f:
-                f.write(test)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as resp:
+                test = await resp.read()
+                with open(file_path, "wb") as f:
+                    f.write(test)
         return filename
 
     async def wait_for_image(self, ctx):
@@ -297,6 +297,19 @@ class ReTrigger(getattr(commands, "Cog", object)):
                                 return False
                             else:
                                 return True
+
+    async def check_is_command(self, message):
+        """Checks if the message is a bot command"""
+        prefix_list = await self.bot.command_prefix(self.bot, message)
+        msg = message.content
+        for prefix in prefix_list:
+            if msg.startswith(prefix):
+                # Don't run a trigger if it's the name of a command
+                command_text = msg.split(" ")[0].replace(prefix, "")
+                command = self.bot.get_command(command_text)
+                if command is not None:
+                    return True
+        return False
     
     async def on_message(self, message):
         if message.guild is None:
@@ -312,11 +325,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         msg = message.content
         guild = message.guild
         channel = message.channel
-        prefix_list = await self.bot.command_prefix(self.bot, message)
-        for prefix in prefix_list:
-            if msg.startswith(prefix):
-                # Don't run a trigger if it's the name of a command
-                return
+        is_command = await self.check_is_command(message)
         trigger_list = await self.config.guild(guild).trigger_list()
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
@@ -325,6 +334,8 @@ class ReTrigger(getattr(commands, "Cog", object)):
             search = re.findall(trigger.regex, message.content)
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
+                    return
+                if trigger.response_type != "delete" and is_command:
                     return
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
@@ -649,6 +660,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send("Trigger `{}` set.".format(name))
 
     @retrigger.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def image(self, ctx, name:str, regex:str, image_url:str=None):
         """
             Add an image/file response trigger
@@ -689,6 +701,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send("Trigger `{}` set.".format(name))
 
     @retrigger.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def imagetext(self, ctx, name:str, regex:str, text:str, image_url:str=None):
         """
             Add an image/file response with text trigger
@@ -730,6 +743,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send("Trigger `{}` set.".format(name))
 
     @retrigger.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def resize(self, ctx, name:str, regex:str, image_url:str=None):
         """
             Add an image to resize in response to a trigger
@@ -772,6 +786,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
     @retrigger.command()
     @checks.mod_or_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     async def ban(self, ctx, name:str, regex:str):
         """
             Add a trigger to ban users for saying specific things found with regex
@@ -802,6 +817,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
     @retrigger.command()
     @checks.mod_or_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
     async def kick(self, ctx, name:str, regex:str):
         """
             Add a trigger to kick users for saying specific things found with regex
@@ -831,6 +847,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send("Trigger `{}` set.".format(name))
 
     @retrigger.command()
+    @commands.bot_has_permissions(add_reactions=True)
     async def react(self, ctx, name:str, regex:str, *, emojis:str):
         """
             Add a reaction trigger
@@ -904,6 +921,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send("Trigger `{}` set.".format(name))
 
     @retrigger.command(aliases=["deletemsg"])
+    @commands.bot_has_permissions(manage_messages=True)
     async def filter(self, ctx, name:str, regex:str):
         """
             Add a trigger to delete a message
@@ -994,6 +1012,3 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await self.config.guild(guild).trigger_list.set(trigger_list)
         await ctx.send("Trigger `{}` set.".format(name))
 
-
-    def __unload(self):
-        self.bot.loop.create_task(self.session.close())
