@@ -133,26 +133,6 @@ class TrustyBot(getattr(commands, "Cog", object)):
         msg = "<a:bm1_1:394355466022551552><a:bm1_2:394355486625103872><a:bm1_3:394355526496026624><a:bm1_4:394355551859113985><a:bm1_5:394355549581606912><a:bm1_6:394355542849617943><a:bm1_7:394355537925373952><a:bm1_8:394355511912300554>\n<a:bm2_1:394355541616361475><a:bm2_2:394355559719239690><a:bm2_3:394355587409772545><a:bm2_4:394355593567272960><a:bm2_5:394355578337624064><a:bm2_6:394355586067726336><a:bm2_7:394355558104432661><a:bm2_8:394355539716472832>\n<a:bm3_1:394355552626409473><a:bm3_2:394355572381843459><a:bm3_3:394355594955456532><a:bm3_4:394355578253737984><a:bm3_5:394355579096793098><a:bm3_6:394355586411528192><a:bm3_7:394355565788397568><a:bm3_8:394355551556861993>\n<a:bm4_1:394355538181488640><a:bm4_2:394355548944072705><a:bm4_3:394355568669884426><a:bm4_4:394355564504809485><a:bm4_5:394355567843606528><a:bm4_6:394355577758679040><a:bm4_7:394355552655900672><a:bm4_8:394355527867564032>"
         em = discord.Embed(title="The Entire Bee Movie", description=msg)
         await ctx.send(embed=em)
-    
-    @commands.command()
-    async def neat(self, ctx, number:int=None):
-        """Neat"""
-        files = str(cog_data_path(self)) + "/bundled_data/neat{}.gif"
-        if number is None:
-            image = discord.File(files.format(str(choice(range(1, 6)))))
-            await ctx.send(file=image)
-        elif(int(number) > 0 or int(number) < 8):
-            image = discord.File(files.format(number))
-            await ctx.send(file=image)
-
-    @commands.command()
-    async def reviewbrah(self, ctx):
-        """Reviewbrah"""
-        files = ["/bundled_data/revi.png", "/bundled_data/ew.png", "/bundled_data/brah.png"]
-        print(cog_data_path(self))
-        for file in files:
-            data = discord.File(str(cog_data_path(self))+file)
-            await ctx.send(file=data)
 
     @commands.command()
     async def donate(self, ctx):
