@@ -23,11 +23,12 @@ class TarotReading(getattr(commands, "Cog", object)):
         colour =''.join([choice('0123456789ABCDEF')for x in range(6)])
         return int(colour, 16)
 
-    @commands.group(pass_context=True)
+    @commands.group()
     async def tarot(self, ctx):
+        """Receive a tarot reading"""
         pass
     
-    @tarot.command(name="life", pass_context=True)
+    @tarot.command(name="life", )
     async def _life(self, ctx, user: discord.Member=None):
         """Unique reading based on your discord user ID. Doesn't change."""
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
@@ -51,7 +52,7 @@ class TarotReading(getattr(commands, "Cog", object)):
             number += 1
         await ctx.send(embed=embed)
     
-    @tarot.command(name="reading", pass_context=True)
+    @tarot.command(name="reading")
     async def _reading(self, ctx, user: discord.Member=None):
         """Unique reading as of this very moment."""
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
@@ -74,7 +75,7 @@ class TarotReading(getattr(commands, "Cog", object)):
         await ctx.send(embed=embed)
 
 
-    @tarot.command(name="card", pass_context=True)
+    @tarot.command(name="card")
     async def _card(self, ctx, *, msg=None):
         """Random card or choose a card based on number or name."""
         user = ctx.message.author

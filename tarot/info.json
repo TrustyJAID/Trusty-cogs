@@ -3,7 +3,7 @@
         "TrustyJAID"
     ],
     "description":"Get your Tarot reading done!",
-    "install_msg":"Usage: `[p]tarots life` `[p]tarots reading` `[p]tarots card`",
+    "install_msg":"Usage: `[p]tarot life` `[p]tarot reading` `[p]tarot card`",
     "min_python_version":[
         3,
         6,
