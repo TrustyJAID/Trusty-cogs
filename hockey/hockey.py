@@ -3,7 +3,7 @@ import aiohttp
 import asyncio
 import json
 import yaml
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from redbot.core import commands, checks, Config
 from redbot.core.data_manager import cog_data_path
@@ -1043,20 +1043,20 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockeyset_commands.command(hidden=True)
     @checks.is_owner()
-    async def check_pickem_winner(self, ctx):
+    async def check_pickem_winner(self, ctx, days:int=1):
         """
             Manually check all pickems objects for winners
+
+            `days` number of days to look back
         """
-        for guild_id in await self.config.all_guilds():
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                await self.config._clear_scope(Config.GUILD, str(guild_id))
-                continue
-            pickems = [Pickems.from_json(p) for p in await self.config.guild(guild).pickems()]
-            for p in pickems:
-                game = await Game.get_games(p.home_team, p.game_start)
-                if game[0].game_state == "Final":
-                    await Pickems.set_guild_pickem_winner(self.bot, game[0])
+        days = days + 1
+        now = datetime.now()
+        for i in range(1, days):
+            delta = timedelta(days=-i)
+            check_day = now + delta
+            games = await Game.get_games(None, check_day, check_day)
+            for game in games:
+                await Pickems.set_guild_pickem_winner(self.bot, game)
         await ctx.send(_("Pickems winners set."))
 
 
