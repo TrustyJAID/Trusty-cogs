@@ -1041,6 +1041,21 @@ class Hockey(getattr(commands, "Cog", object)):
         await Pickems.tally_leaderboard(self.bot)
         await ctx.send(_("Leaderboard tallying complete."))
 
+    @hockeyset_commands.command(hidden=True)
+    @checks.is_owner()
+    async def check_pickem_winner(self, ctx):
+        """
+            Manually check all pickems objects for winners
+        """
+        for guild_id in await self.config.all_guilds():
+            guild = self.bot.get_guild(guild_id)
+            pickems = [await Pickems.from_json(p) for p in await self.config.guild(guild).pickems()]
+            for p in pickems:
+                game = await Game.get_games(p.home_team, p.game_start, p.game_start)
+                if game.game_state == "Final":
+                    await Pickems.set_guild_pickem_winner(self.bot, game)
+        await ctx.send(_("Pickems winners set."))
+
 
     @gdc.command(hidden=True, name="test")
     @checks.is_owner()
