@@ -1,0 +1,22 @@
+{
+    "author":[
+        "Airen",
+        "JennJenn",
+        "TrustyJAID"
+    ],
+    "description":"Insult people in a creative way",
+    "install_msg":"Usage: `[p]insult <user>`",
+    "min_python_version":[
+        3,
+        6,
+        2
+    ],
+    "name":"Insult",
+    "permissions":[],
+    "requirements":[],
+    "short":"Insult people in a creative way",
+    "tags":[
+        "insults",
+        "fun"
+    ]
+}

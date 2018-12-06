@@ -1,0 +1,25 @@
+{
+    "author":[
+        "TrustyJAID"
+    ],
+    "description":"Trigger events based on regular expressions",
+    "install_msg":"Add trigger responses to regex, see <https://regexr.com/> for help building regex expressions.",
+    "min_python_version":[
+        3,
+        6,
+        2
+    ],
+    "name":"ReTrigger",
+    "permissions":[
+        "embed_links"
+    ],
+    "requirements":[
+        "pillow"
+    ],
+    "short":"ReTrigger",
+    "tags":[
+        "general",
+        "utility",
+        "fun"
+    ]
+}

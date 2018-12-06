@@ -1,0 +1,2 @@
+class TwitchError(Exception):
+    pass
