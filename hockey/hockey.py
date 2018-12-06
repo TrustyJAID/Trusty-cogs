@@ -1052,7 +1052,7 @@ class Hockey(getattr(commands, "Cog", object)):
             pickems = [Pickems.from_json(p) for p in await self.config.guild(guild).pickems()]
             for p in pickems:
                 game = await Game.get_games(p.home_team, p.game_start, p.game_start)
-                if game.game_state == "Final":
+                if game[0].game_state == "Final":
                     await Pickems.set_guild_pickem_winner(self.bot, game)
         await ctx.send(_("Pickems winners set."))
 
