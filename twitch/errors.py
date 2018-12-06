@@ -1,2 +1,0 @@
-class TwitchError(Exception):
-    pass

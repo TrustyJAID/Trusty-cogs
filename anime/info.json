@@ -1,0 +1,22 @@
+{
+    "author":[
+        "TrustyJAID"
+    ],
+    "description":"Set a channel to show which anime is currently airing!",
+    "install_msg":"Type [p]anime channel to setup a channel for latest anime episodes airing",
+    "min_python_version":[
+        3,
+        6,
+        2
+    ],
+    "name":"Anime",
+    "permissions":[
+        "embed_links"
+    ],
+    "requirements":[],
+    "short":"Anime episode updates",
+    "tags":[
+        "general",
+        "anime"
+    ]
+}
