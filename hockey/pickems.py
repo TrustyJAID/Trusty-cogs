@@ -3,6 +3,7 @@ from datetime import datetime
 from .constants import TEAMS
 from .helper import *
 from redbot.core.i18n import Translator
+from redbot.core import Config
 
 _ = Translator("Hockey", __file__)
 
@@ -74,7 +75,7 @@ class Pickems:
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(int(guild_id))
             if guild is None:
-                await self.config._clear_scope(Config.GUILD, str(guild_id))
+                await config._clear_scope(Config.GUILD, str(guild_id))
                 continue
             pickems = await config.guild(guild).pickems()
             if pickems is None:
