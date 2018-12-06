@@ -3,6 +3,7 @@ from datetime import datetime
 import discord
 from .helper import *
 from redbot.core.i18n import Translator
+from redbot.core import Config
 try:
     from .oilers import Oilers
 except:
@@ -100,6 +101,8 @@ class Goal:
             role = None
             channel = bot.get_channel(id=channels)
             if channel is None:
+                await self.config._clear_scope(Config.CHANNEL, str(channels))
+                print("{} channel was removed because it no longer exists".format(channels))
                 continue
             should_post = await check_to_post(channel, post_state)
             if should_post:

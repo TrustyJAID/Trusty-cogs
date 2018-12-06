@@ -362,6 +362,8 @@ class Game:
         for channels in await self.config.all_channels():
             channel = bot.get_channel(id=channels)
             if channel is None:
+                await self.config._clear_scope(Config.CHANNEL, str(channels))
+                print("{} channel was removed because it no longer exists".format(channels))
                 continue
             guild = channel.guild
             should_post = await check_to_post(channel, post_state)
@@ -496,6 +498,8 @@ class Game:
         for channels in await self.config.all_channels():
             channel = bot.get_channel(id=channels)
             if channel is None:
+                await self.config._clear_scope(Config.CHANNEL, str(channels))
+                print("{} channel was removed because it no longer exists".format(channels))
                 continue
 
             should_post = await check_to_post(channel, post_state)
