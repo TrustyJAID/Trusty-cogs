@@ -73,6 +73,9 @@ class Pickems:
         return_pickems = []
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(int(guild_id))
+            if guild is None:
+                await self.config._clear_scope(Config.GUILD, str(guild_id))
+                continue
             pickems = await config.guild(guild).pickems()
             if pickems is None:
                 pickems = []
