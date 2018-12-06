@@ -175,8 +175,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
         return msg
             
     def resize_image(self, size, image):
-        length, width = (32, 32) # Start with the smallest size we want to upload
+        length, width = (16, 16) # Start with the smallest size we want to upload
         im = Image.open(image)
+        if size <= 0:
+            size = 1
         im.thumbnail((length*size, width*size), Image.ANTIALIAS)
         byte_array = BytesIO()
         im.save(byte_array, format="PNG")
