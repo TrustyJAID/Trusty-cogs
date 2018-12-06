@@ -22,8 +22,7 @@
         "pillow",
         "lxml",
         "git+https://github.com/Kareeeeem/jpglitch",
-        "wand",
-        "git+https://github.com/rickyhan/macintoshplus"
+        "wand"
     ],
     "short":"Some working commands from NotSoBot",
     "tags":[
