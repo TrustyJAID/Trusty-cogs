@@ -1049,7 +1049,7 @@ class Hockey(getattr(commands, "Cog", object)):
         """
         for guild_id in await self.config.all_guilds():
             guild = self.bot.get_guild(guild_id)
-            pickems = [await Pickems.from_json(p) for p in await self.config.guild(guild).pickems()]
+            pickems = [Pickems.from_json(p) for p in await self.config.guild(guild).pickems()]
             for p in pickems:
                 game = await Game.get_games(p.home_team, p.game_start, p.game_start)
                 if game.game_state == "Final":
