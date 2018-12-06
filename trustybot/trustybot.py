@@ -138,15 +138,6 @@ class TrustyBot(getattr(commands, "Cog", object)):
     async def donate(self, ctx):
         """Donate to the development of TrustyBot!"""
         await ctx.send("Help support me  and development of TrustyBot by buying my album or donating bitcoin on my website :smile: https://trustyjaid.com/")
-    
-    @commands.command()
-    async def donotdo(self, ctx, number=None):
-        if number is None:
-            await ctx.send(choice(donotdo))
-        elif number.isdigit():
-            await ctx.send(donotdo[int(number)-1])
-        else:
-            await ctx.send(choice(donotdo))
 
     @commands.command(hidden=False)
     async def halp(self,ctx, user=None):
@@ -156,32 +147,3 @@ class TrustyBot(getattr(commands, "Cog", object)):
             await ctx.send(msg.format(""))
         else:
             await ctx.send(msg.format(user))
-
-    @commands.command()
-    async def flipm(self, ctx, *, message):
-        """Flips a message"""
-        msg = ""
-        name = ""
-        for user in message:
-            char = "abcdefghijklmnopqrstuvwxyz - ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            tran = "ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz - ∀qƆpƎℲפHIſʞ˥WNOԀQᴚS┴∩ΛMX⅄Z"
-            table = str.maketrans(char, tran)
-            name += user.translate(table) + " "
-        await ctx.send(msg + "(╯°□°）╯︵ " + name[::-1])
-
-    @commands.command()
-    @checks.is_owner()
-    async def makerole(self, ctx):
-        guild = ctx.guild
-        role = await guild.create_role(
-            name="Muted",
-            reason="A random reason",
-        )
-        await role.edit(
-            position=guild.me.top_role.position - 1,
-            reason=(
-                "Modifying role's position, keep it under my top role so "
-                "I can add it to muted members."
-            ),
-        )
-    
