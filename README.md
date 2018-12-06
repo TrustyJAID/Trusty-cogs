@@ -1,6 +1,6 @@
 # Trusty-cogs V3
 TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
-To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/ V3`
+To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`
 
 ## About Cogs
 
@@ -21,7 +21,6 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Mock | **Release** | <details><summary>Mock the user who last posted!</summary>Note: This requires not having the `--dev` flag enabled, however if you need both install the dev cog in my repo.</details> |
 | Translate | **Release** | Add flag emojis to messages to translate to that language or translate messages by command. (Uses Google Translate and may incur some fees) |
 | AddImage | **Release** | <details><summary>Allows you to add images to be posted on command.</summary> Stores the image in the bot folder then uploads the image directly. Owners may add images globally.</details> |
-| Triggersize | **Release** | <details><summary>Posts various sized images based on specific triggered command lengths.</summary> May be customized manually for different images or by default express ones true rage.</details> |
 | Encoding | **Release** | Allows one to encode or decode in Binary and DNA sequencing (ACGT). As well has hashing strings and caeser cipher text. |
 | Compliment | **Release** | Compliment a user! |
 | ServerStats | **Release** | This cog provides a ton of useful development functions for gathering channel data and user data as well as providing a way to setup a channel to monitor which servers are adding the bot. |
@@ -39,9 +38,8 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 
 | Name | Status | Description (Click to see full status)
 | --- | --- | --- |
-| Anime | **Alpha**| <details><summary>A cog that gets what current anime episodes are airing and posts them on discord when they start airing.</summary> There was an update to the API being used and I need to rewrite for the new API.</details> |
 | Halo | **Work in Progress**| Cogs for accessing information from the Halo video games API systems. |
-| Chatterbot | **Alpha** | Teach your bot how to talk by watching conversations on servers and reply. Uses chatterbot library. NOTE: This cog is not recommended to be used at this time. After a month of usage it caused the whole bot to slow down while it searched for responses. I recommend looking at cleverbot for the time being. |
+| Chatter | **Alpha** | Teach your bot how to talk by watching conversations on servers and reply. Uses chatterbot library. NOTE: This cog is not recommended to be used at this time. After a month of usage it caused the whole bot to slow down while it searched for responses. I recommend looking at cleverbot for the time being. |
 
 
 ## Rewritten Cogs Originally Made by others 
