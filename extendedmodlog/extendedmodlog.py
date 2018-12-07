@@ -382,7 +382,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if type(before) == discord.TextChannel:
             text_updates = {"name":_("Name:"), 
                             "topic":_("Topic:"), 
-                            "position":_("Position:"), 
                             "category":_("Category:"), 
                             "slowmode_delay":_("Slowmode delay:"),
                             }
@@ -408,6 +407,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             if p_msg != "":
                 msg += _("Permissions Changed: ") + p_msg
                 embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+            if len(embed.fields) == 0:
+                return
             if embed_links:
                 await channel.send(embed=embed)
             else:
@@ -429,7 +430,13 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                     msg += (_("Before ") + f"{name} {before_attr}\n")
                     msg += (_("After ") + f"{name} {after_attr}\n")
                     embed.add_field(name=_("Before ") + name, value=str(before_attr))
-                    embed.add_field(name=_("After ") + name, value=str(after_attr))  
+                    embed.add_field(name=_("After ") + name, value=str(after_attr))
+            p_msg = await self.get_permission_change(before, after, embed_links)
+            if p_msg != "":
+                msg += _("Permissions Changed: ") + p_msg
+                embed.add_field(name=_("Permissions"), value=p_msg[:1024])  
+            if len(embed.fields) == 0:
+                return
             if channel.permissions_for(guild.me).embed_links:
                 await channel.send(embed=embed)
             else:
