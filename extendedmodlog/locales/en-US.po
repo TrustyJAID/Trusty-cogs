@@ -1,0 +1,433 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-07 10:48-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: extendedmodlog.py:23
+#, docstring
+msgid ""
+"\n"
+"        Extended modlogs\n"
+"        Works with core modlogset channel\n"
+"    "
+msgstr ""
+
+#: extendedmodlog.py:37
+#, docstring
+msgid ""
+"\n"
+"            Toggle various extended modlog notifications\n"
+"\n"
+"            Requires the channel to be setup with `[p]modlogset modlog #channel` first\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:49
+msgid "You need to setup a channel with `[p]modlogset modlog #channel` first."
+msgstr ""
+
+#: extendedmodlog.py:51
+msgid "Message edits"
+msgstr ""
+
+#: extendedmodlog.py:52
+msgid "Message delete"
+msgstr ""
+
+#: extendedmodlog.py:53
+msgid "Member changes"
+msgstr ""
+
+#: extendedmodlog.py:54
+msgid "Voice changes"
+msgstr ""
+
+#: extendedmodlog.py:55
+msgid "User join"
+msgstr ""
+
+#: extendedmodlog.py:56
+msgid "Member left"
+msgstr ""
+
+#: extendedmodlog.py:57
+msgid "Channel changes"
+msgstr ""
+
+#: extendedmodlog.py:58
+msgid "Guild changes"
+msgstr ""
+
+#: extendedmodlog.py:59
+msgid "Emoji changes"
+msgstr ""
+
+#: extendedmodlog.py:61
+msgid "Setting for "
+msgstr ""
+
+#: extendedmodlog.py:63
+msgid "ModLogs channel set to "
+msgstr ""
+
+#: extendedmodlog.py:72 extendedmodlog.py:74
+msgid "None  "
+msgstr ""
+
+#: extendedmodlog.py:75
+msgid "Enabled"
+msgstr ""
+
+#: extendedmodlog.py:76
+msgid "Disabled"
+msgstr ""
+
+#: extendedmodlog.py:85
+#, docstring
+msgid ""
+"\n"
+"            Toggle message edit notifications\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:89
+msgid "Edit messages "
+msgstr ""
+
+#: extendedmodlog.py:92 extendedmodlog.py:107 extendedmodlog.py:124
+#: extendedmodlog.py:141 extendedmodlog.py:156 extendedmodlog.py:171
+#: extendedmodlog.py:188 extendedmodlog.py:205 extendedmodlog.py:220
+msgid "enabled"
+msgstr ""
+
+#: extendedmodlog.py:95 extendedmodlog.py:110 extendedmodlog.py:127
+#: extendedmodlog.py:144 extendedmodlog.py:159 extendedmodlog.py:174
+#: extendedmodlog.py:191 extendedmodlog.py:208 extendedmodlog.py:223
+msgid "disabled"
+msgstr ""
+
+#: extendedmodlog.py:100
+#, docstring
+msgid ""
+"\n"
+"            Toggle member join notifications\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:104
+msgid "Join message logs "
+msgstr ""
+
+#: extendedmodlog.py:115
+#, docstring
+msgid ""
+"\n"
+"            Toggle guild change notifications\n"
+"\n"
+"            Shows changes to name, region, afk timeout, and afk channel\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:121
+msgid "Guild logs "
+msgstr ""
+
+#: extendedmodlog.py:132
+#, docstring
+msgid ""
+"\n"
+"            Toggle channel edit notifications\n"
+"\n"
+"            Shows changes to name, topic, slowmode, and NSFW\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:138
+msgid "Channel logs "
+msgstr ""
+
+#: extendedmodlog.py:149
+#, docstring
+msgid ""
+"\n"
+"            Toggle member leave notifications\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:153
+msgid "Leave logs "
+msgstr ""
+
+#: extendedmodlog.py:164
+#, docstring
+msgid ""
+"\n"
+"            Toggle message delete notifications\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:168
+msgid "Message delete logs "
+msgstr ""
+
+#: extendedmodlog.py:179
+#, docstring
+msgid ""
+"\n"
+"            Toggle member change notifications\n"
+"\n"
+"            Shows changes to roles and nicknames\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:185
+msgid "Profile logs "
+msgstr ""
+
+#: extendedmodlog.py:196
+#, docstring
+msgid ""
+"\n"
+"            Toggle voice state notifications\n"
+"\n"
+"            Shows changes to mute, deafen, self mute, self deafen, afk, and channel\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:202
+msgid "Voice logs "
+msgstr ""
+
+#: extendedmodlog.py:213
+#, docstring
+msgid ""
+"\n"
+"            Toggle emoji change notifications\n"
+"        "
+msgstr ""
+
+#: extendedmodlog.py:217
+msgid "Emoji logs "
+msgstr ""
+
+#: extendedmodlog.py:252 extendedmodlog.py:461
+msgid "A message by "
+msgstr ""
+
+#: extendedmodlog.py:254
+msgid ", was deleted in "
+msgstr ""
+
+#: extendedmodlog.py:257
+msgid "Message:"
+msgstr ""
+
+#: extendedmodlog.py:258 extendedmodlog.py:289 extendedmodlog.py:317
+#: extendedmodlog.py:468
+msgid "User ID: "
+msgstr ""
+
+#: extendedmodlog.py:260
+msgid " - Deleted Message"
+msgstr ""
+
+#: extendedmodlog.py:267 extendedmodlog.py:476
+msgid "Channel"
+msgstr ""
+
+#: extendedmodlog.py:269
+msgid "message has been deleted. Content: "
+msgstr ""
+
+#: extendedmodlog.py:288 extendedmodlog.py:316
+msgid "Total Users:"
+msgstr ""
+
+#: extendedmodlog.py:290
+msgid " has joined the guild"
+msgstr ""
+
+#: extendedmodlog.py:296
+msgid "joined the guild. Total users: "
+msgstr ""
+
+#: extendedmodlog.py:318
+msgid " has left the guild"
+msgstr ""
+
+#: extendedmodlog.py:324
+msgid "has left the guild or was kicked. Total users: "
+msgstr ""
+
+#: extendedmodlog.py:380 extendedmodlog.py:381
+msgid "Updated channel "
+msgstr ""
+
+#: extendedmodlog.py:383 extendedmodlog.py:413 extendedmodlog.py:499
+msgid "Name:"
+msgstr ""
+
+#: extendedmodlog.py:384
+msgid "Topic:"
+msgstr ""
+
+#: extendedmodlog.py:385 extendedmodlog.py:414
+msgid "Position:"
+msgstr ""
+
+#: extendedmodlog.py:386 extendedmodlog.py:415
+msgid "Category:"
+msgstr ""
+
+#: extendedmodlog.py:387
+msgid "Slowmode delay:"
+msgstr ""
+
+#: extendedmodlog.py:394 extendedmodlog.py:396 extendedmodlog.py:399
+#: extendedmodlog.py:401 extendedmodlog.py:425 extendedmodlog.py:427
+#: extendedmodlog.py:508 extendedmodlog.py:510 extendedmodlog.py:575
+#: extendedmodlog.py:577 extendedmodlog.py:625 extendedmodlog.py:627
+msgid "Before "
+msgstr ""
+
+#: extendedmodlog.py:395 extendedmodlog.py:397 extendedmodlog.py:400
+#: extendedmodlog.py:402 extendedmodlog.py:426 extendedmodlog.py:428
+#: extendedmodlog.py:509 extendedmodlog.py:511 extendedmodlog.py:576
+#: extendedmodlog.py:578 extendedmodlog.py:626 extendedmodlog.py:628
+msgid "After "
+msgstr ""
+
+#: extendedmodlog.py:405
+msgid "Permissions Changed: "
+msgstr ""
+
+#: extendedmodlog.py:406
+msgid "Permissions"
+msgstr ""
+
+#: extendedmodlog.py:416
+msgid "Bitrate:"
+msgstr ""
+
+#: extendedmodlog.py:417
+msgid "User limit:"
+msgstr ""
+
+#: extendedmodlog.py:462
+msgid ", was edited in "
+msgstr ""
+
+#: extendedmodlog.py:466
+msgid "Before Message:"
+msgstr ""
+
+#: extendedmodlog.py:467
+msgid "After Message:"
+msgstr ""
+
+#: extendedmodlog.py:469
+msgid " - Edited Message"
+msgstr ""
+
+#: extendedmodlog.py:478
+msgid ""
+"message has been edited.\n"
+"Before: "
+msgstr ""
+
+#: extendedmodlog.py:479
+msgid ""
+"\n"
+"After: "
+msgstr ""
+
+#: extendedmodlog.py:496 extendedmodlog.py:498
+msgid "Updated Guild "
+msgstr ""
+
+#: extendedmodlog.py:500
+msgid "Region:"
+msgstr ""
+
+#: extendedmodlog.py:501
+msgid "AFK Timeout:"
+msgstr ""
+
+#: extendedmodlog.py:502
+msgid "AFK Channel:"
+msgstr ""
+
+#: extendedmodlog.py:529 extendedmodlog.py:530
+msgid "Updated Server Emojis"
+msgstr ""
+
+#: extendedmodlog.py:533
+msgid ""
+" Removed from the guild\n"
+msgstr ""
+
+#: extendedmodlog.py:538
+msgid ""
+" Added to the guild\n"
+msgstr ""
+
+#: extendedmodlog.py:562
+msgid "Updated Voice State"
+msgstr ""
+
+#: extendedmodlog.py:564
+msgid "Deaf:"
+msgstr ""
+
+#: extendedmodlog.py:565
+msgid "Mute:"
+msgstr ""
+
+#: extendedmodlog.py:566
+msgid "Self Deaf:"
+msgstr ""
+
+#: extendedmodlog.py:567
+msgid "Self Mute:"
+msgstr ""
+
+#: extendedmodlog.py:568
+msgid "AFK:"
+msgstr ""
+
+#: extendedmodlog.py:569
+msgid "Channel:"
+msgstr ""
+
+#: extendedmodlog.py:599
+msgid "Updated"
+msgstr ""
+
+#: extendedmodlog.py:602
+msgid "Nickname:"
+msgstr ""
+
+#: extendedmodlog.py:603
+msgid "Roles:"
+msgstr ""
+
+#: extendedmodlog.py:612 extendedmodlog.py:614
+msgid " Role Applied."
+msgstr ""
+
+#: extendedmodlog.py:619 extendedmodlog.py:621
+msgid " Role Removed."
+msgstr ""
+
