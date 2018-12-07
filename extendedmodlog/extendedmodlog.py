@@ -8,6 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 inv_settings = {"message_edit": False, 
                 "message_delete": False, 
                 "user_change": False,
+                "role_change": False,
                 "voice_change": False,
                 "user_join": False, 
                 "user_left": False, 
@@ -31,7 +32,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         self.config.register_guild(**inv_settings)
 
     @checks.admin_or_permissions(manage_channels=True)
-    @commands.group(name="modlogtoggles")
+    @commands.group(aliases=["modlogtoggle"])
     @commands.guild_only()
     async def modlogtoggles(self, ctx):
         """
@@ -51,6 +52,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             cur_settings = {"message_edit": _("Message edits"), 
                             "message_delete": _("Message delete"), 
                             "user_change": _("Member changes"),
+                            "role_change": _("Role changes"),
                             "voice_change": _("Voice changes"),
                             "user_join": _("User join"), 
                             "user_left": _("Member left"), 
@@ -127,7 +129,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("disabled")
         await ctx.send(msg+verb)
 
-    @modlogtoggles.command()
+    @modlogtoggles.command(aliases=["channels"])
     async def channel(self, ctx):
         """
             Toggle channel edit notifications
@@ -174,7 +176,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("disabled")
         await ctx.send(msg+verb)
 
-    @modlogtoggles.command()
+    @modlogtoggles.command(aliases=["member"])
     async def user(self, ctx):
         """
             Toggle member change notifications
@@ -188,6 +190,23 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("enabled")
         else:
             await self.config.guild(guild).user_change.set(False)
+            verb = _("disabled")
+        await ctx.send(msg+verb)
+
+    @modlogtoggles.command(aliases=["roles"])
+    async def role(self, ctx):
+        """
+            Toggle role change notifications
+
+            Shows new roles, deleted roles, and permission changes
+        """
+        guild = ctx.message.guild
+        msg = _("Role logs ")
+        if not await self.config.guild(guild).role_change():
+            await self.config.guild(guild).role_change.set(True)
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).role_change.set(False)
             verb = _("disabled")
         await ctx.send(msg+verb)
 
@@ -208,7 +227,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("disabled")
         await ctx.send(msg+verb)
 
-    @modlogtoggles.command()
+    @modlogtoggles.command(aliases=["emojis"])
     async def emoji(self, ctx):
         """
             Toggle emoji change notifications
@@ -440,7 +459,137 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             if channel.permissions_for(guild.me).embed_links:
                 await channel.send(embed=embed)
             else:
-                await channel.send(msg)      
+                await channel.send(msg)
+
+    async def get_role_permission_change(self, before, after):
+        permission_list = ["create_instant_invite",
+                           "kick_members",
+                           "ban_members",
+                           "administrator",
+                           "manage_channels",
+                           "manage_guild",
+                           "add_reactions",
+                           "view_audit_log",
+                           "priority_speaker",
+                           "read_messages",
+                           "send_messages",
+                           "send_tts_messages",
+                           "manage_messages",
+                           "embed_links",
+                           "attach_files",
+                           "read_message_history",
+                           "mention_everyone",
+                           "external_emojis",
+                           "connect",
+                           "speak",
+                           "mute_members",
+                           "deafen_members",
+                           "move_members",
+                           "use_voice_activation",
+                           "change_nickname",
+                           "manage_nicknames",
+                           "manage_roles",
+                           "manage_webhooks",
+                           "manage_emojis"]
+        p_msg = ""
+        for p in permission_list:
+            if getattr(before.permissions, p) != getattr(after.permissions, p):
+                change = getattr(after.permissions, p)
+                p_msg += f"{p} Set to {change}\n"
+        return p_msg
+
+    async def on_guild_role_update(self, before, after):
+        guild = before.guild
+        if not await self.config.guild(guild).role_change():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        if channel is None:
+            return
+        embed_links = channel.permissions_for(guild.me).embed_links
+        time = datetime.datetime.utcnow()
+        embed = discord.Embed(description=after.mention, timestamp=time)
+        embed.colour = await self.get_colour(guild)
+        if after is guild.default_role:
+            embed.set_author(name=_("Updated Everyone role "))
+            msg = _("Updated Everyone role ") + "\n"    
+        else:
+            embed.set_author(name=_("Updated role ") + str(before.id))
+            msg = _("Updated role ") + str(before.id) + "\n"
+        text_updates = {"name":_("Name:"), 
+                        "color":_("Colour:"), 
+                        "mentionable":_("Mentionable:"), 
+                        "hoist":_("Is Hoisted:"),
+                        }
+
+        for attr, name in text_updates.items():
+            before_attr = getattr(before, attr)
+            after_attr = getattr(after, attr)
+            if before_attr != after_attr:
+                if before_attr == "":
+                    before_attr = "None"
+                if after_attr == "":
+                    after_attr = "None"
+                msg += (_("Before ") + f"{name} {before_attr}\n")
+                msg += (_("After ") + f"{name} {after_attr}\n")
+                embed.add_field(name=_("Before ") + name, value=str(before_attr))
+                embed.add_field(name=_("After ") + name, value=str(after_attr))
+        p_msg = await self.get_role_permission_change(before, after)
+        if p_msg != "":
+            msg += _("Permissions Changed: ") + p_msg
+            embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+        if len(embed.fields) == 0:
+            return
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
+
+    async def on_guild_role_create(self, role):
+        guild = role.guild
+        if not await self.config.guild(guild).role_change():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        if channel is None:
+            return
+        embed_links = channel.permissions_for(guild.me).embed_links
+        time = datetime.datetime.utcnow()
+        embed = discord.Embed(description=role.mention, timestamp=time)
+        embed.colour = await self.get_colour(guild)
+        embed.set_author(name=_("Role created ") + str(role.id))
+        msg = _("Role created ") + str(role.id) + "\n"
+        msg += role.name
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
+
+    async def on_guild_role_delete(self, role):
+        guild = role.guild
+        if not await self.config.guild(guild).role_change():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        if channel is None:
+            return
+        embed_links = channel.permissions_for(guild.me).embed_links
+        time = datetime.datetime.utcnow()
+        embed = discord.Embed(description=role.name, timestamp=time)
+        embed.colour = await self.get_colour(guild)
+        embed.set_author(name=_("Role deleted ") + str(role.id))
+        msg = _("Role deleted ") + str(role.id) + "\n"
+        msg += role.name
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
 
     async def on_message_edit(self, before, after):
         guild = before.guild
