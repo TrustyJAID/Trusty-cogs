@@ -308,7 +308,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
             if msg.startswith(prefix):
                 # Don't run a trigger if it's the name of a command
                 command_text = msg.split(" ")[0].replace(prefix, "")
-                command = self.bot.get_command(command_text)
+                try:
+                    command = self.bot.get_command(command_text)
+                except:
+                    return True
                 if command is not None:
                     return True
         return False
