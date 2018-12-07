@@ -21,50 +21,50 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                         "status":discord.Status.online, 
                         "game":["Please Remain Calm", "Mind the Gap"], 
                         "type":self.activities,
-                        "link": "https://i.imgur.com/0aVJqlS.png",
-                        "xmas": "https://i.imgur.com/UGOuOp4.png"
+                        "link": "https://i.imgur.com/9iRBSeI.png",
+                        "xmas": "https://i.imgur.com/lSjMH5u.png"
                         },
                     "happy": {
                         "status":discord.Status.online,
                         "game":["Take it to Make it"],
                         "type":self.activities,
-                        "link": "https://i.imgur.com/bvh93u4.png",
-                        "xmas": "https://i.imgur.com/PqVdPj0.png"
+                        "link": "https://i.imgur.com/P5rUpET.png",
+                        "xmas": "https://i.imgur.com/zlQzAGP.png"
                         },
                     "are you kidding me": {
                         "status":discord.Status.idle, 
                         "game":["Obey Posted Limits"], 
                         "type":self.activities,
-                        "link": "https://i.imgur.com/Pwz7rzs.png",
-                        "xmas": "https://i.imgur.com/khUrr4x.png"
+                        "link": "https://i.imgur.com/Wr3i9CG.png",
+                        "xmas": "https://i.imgur.com/Hp7XRjO.png"
                         },
                     "quizzical": {
                         "status": discord.Status.idle, 
                         "game":["Yellow Means Yield"], 
                         "type":self.activities,
-                        "link": "https://i.imgur.com/VXIUHMb.png",
-                        "xmas": "https://i.imgur.com/1Bm9t68.png"
+                        "link": "https://i.imgur.com/qvBCgvU.png",
+                        "xmas": "https://i.imgur.com/1jCdG3x.png"
                         },
                     "sad": {
                         "status": discord.Status.dnd, 
                         "game":["No Public Access"], 
                         "type":self.activities,
-                        "link": "https://i.imgur.com/5BzptFg.png",
-                        "xmas": "https://i.imgur.com/SkNB8Pr.png"
+                        "link": "https://i.imgur.com/WwrZCTY.png",
+                        "xmas": "https://i.imgur.com/tb1FZjP.png"
                         },
                     "angry": {
                         "status":discord.Status.dnd, 
                         "game":["Hitchhickers May Be Escaping Inmates"], 
                         "type":self.activities,
-                        "link": "https://i.imgur.com/b4Qpz6V.png",
-                        "xmas": "https://i.imgur.com/gRUfLKI.png"
+                        "link": "https://i.imgur.com/0JkYNGZ.png",
+                        "xmas": "https://i.imgur.com/hODosRi.png"
                         },
                     "watching": {
                         "status":discord.Status.dnd, 
                         "game":[" "], 
                         "type":[discord.ActivityType.watching],
-                        "link": "https://i.imgur.com/nJXLjip.png",
-                        "xmas": "https://i.imgur.com/J98wFhk.png"
+                        "link": "https://i.imgur.com/Xs4Mwyd.png",
+                        "xmas": "https://i.imgur.com/xSLto00.png"
                         },
                    }
 
