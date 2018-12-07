@@ -3,18 +3,20 @@
         "RePulsR",
         "TrustyJAID"
     ],
-    "description":"Modlogs, log message deletes, edits, user activity, bans and much more",
-    "install_msg":"Thanks for adding my repo! hope you find any of my cogs cool",
+    "description":"Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
+    "install_msg":"Please ensure that the modlog cog is loaded for this cog to work. The channel is set via `[p]modlogset modlog #channel`.",
     "min_python_version":[
         3,
         6,
         2
     ],
-    "name":"Modlogs",
+    "name":"ExtendedModLog",
     "permissions":[
         "embed_links"
     ],
     "requirements":[],
-    "short":"Modlogs, log message deletes, edits, user activity, bans and much more",
-    "tags":[]
+    "short":"ExtendedModLog, track changes made in the server.",
+    "tags":[
+        "modlogs"
+    ]
 }
