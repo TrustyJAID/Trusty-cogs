@@ -733,8 +733,8 @@ class NotSoBot(getattr(commands, "Cog", object)):
             path = str(bundled_data_path(self))+"/"+self.random(True)
             path2 = path[:-3]+'gif'
             await self.download(avatar, path)
-            t_path = await self.bytes_download("https://i.imgur.com/zDAY2yo.jpg")
-            print(t_path)
+            t_path = str(bundled_data_path(self)) + "/zDAY2yo.jpg"
+            await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
             await self.run_process(['convert',
                 'canvas:none',
                 '-size', '512x680!',
