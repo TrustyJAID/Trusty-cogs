@@ -260,6 +260,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             channel = await modlog.get_modlog_channel(guild)
         except:
             return
+        if message.content == "":
+            return
         time = message.created_at
         cleanmsg = message.content
         for i in message.mentions:
@@ -269,24 +271,26 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             name = message.author
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             infomessage = (_("A message by ")+
-                           message.author.mention+
+                           f"{message.author.name}#{message.author.discriminator}"+
                            _(", was deleted in ")+
-                            message.channel.mention)
-            delmessage = discord.Embed(description=infomessage, colour=await self.get_colour(guild), timestamp=time)
-            delmessage.add_field(name=_("Message:"), value=cleanmsg)
+                            message.channel.name)
+            delmessage = discord.Embed(title=infomessage,
+                                       description=message.content,
+                                       colour=await self.get_colour(guild), 
+                                       timestamp=time)
+
+            delmessage.add_field(name=_("Channel"), value=message.channel.mention)
             delmessage.set_footer(text=_("User ID: ")+ str(message.author.id), 
                                   icon_url=message.author.avatar_url)
             delmessage.set_author(name=name + _(" - Deleted Message"), 
-                                  url="http://i.imgur.com/fJpAFgN.png", 
                                   icon_url=message.author.avatar_url)
-            delmessage.set_thumbnail(url="http://i.imgur.com/fJpAFgN.png")
             await channel.send(embed=delmessage)
         else:
             msg = (":pencil: `"+time.strftime(fmt)+"` **"+
                    _("Channel") + "**" +message.channel.mention+
                    " **"+message.author+"'s** "+
                     _("message has been deleted. Content: ")+
-                   cleanmsg)
+                   cleanmsg[:1800])
             await channel.send(msg)
 
     async def on_member_join(self, member):
@@ -618,18 +622,20 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             name = before.author
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             
-            infomessage = (_("A message by ")+before.author.mention+
-                           _(", was edited in ")+ before.channel.mention)
-            delmessage = discord.Embed(description=infomessage, 
+            infomessage = (_("A message by ")+
+                           f"{before.author.name}#{before.author.discriminator}"+
+                           _(" was edited in ")+ before.channel.name)
+            delmessage = discord.Embed(description=before.content, 
+                                       title=infomessage,
                                        colour=await self.get_colour(guild), 
                                        timestamp=before.created_at)
-            delmessage.add_field(name=_("Before Message:"), value=cleanbefore, inline=False)
-            delmessage.add_field(name=_("After Message:"), value=cleanafter)
-            delmessage.set_footer(text=_("User ID: ")+str(before.author.id), icon_url=before.author.avatar_url)
-            delmessage.set_author(name=name + _(" - Edited Message"), 
-                                  url="http://i.imgur.com/Q8SzUdG.png", 
+            jump_url = f"[Click to see new message]({after.jump_url})"
+            delmessage.add_field(name=_("After Message:"), value=jump_url)
+            delmessage.add_field(name=_("Channel:"), value=before.channel.mention)
+            delmessage.set_footer(text=_("User ID: ")+str(before.author.id), 
                                   icon_url=before.author.avatar_url)
-            delmessage.set_thumbnail(url="http://i.imgur.com/Q8SzUdG.png")
+            delmessage.set_author(name=name + _(" - Edited Message"), 
+                                  icon_url=before.author.avatar_url)
             await channel.send( embed=delmessage)
         else:
             msg = (f":pencil: `{time.strftime(fmt)}` **"+
