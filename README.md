@@ -30,6 +30,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Notsobot | **Beta**| Working cog for many of NotSoBot's commands. Has lots of requirements, view the cog README.md for details. |
 | Spoiler | **Beta**| Post spoiler messages in chat and react to the message to view the spoilers. |
 | ReTrigger | **Release** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images similar to triggersize cog.</details> |
+| ExtendedModLog | **Release**| An in depth extension of RedBot's built in modlog handling message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more |
 
 
 
@@ -50,7 +51,6 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Autorole | **Release**| Automatically apply roles when a user joins the server. |
 | Stickyroles | **Release**| Keep user roles when they leave the server and re-join. Useful for muted roles. |
 | Welcome | **Beta**| Welcomes users to the server. |
-| Modlogs | **Beta**| A more in-depth modlog cog for more information about users joining/leaving and messages edited/deleted. |
 | Cleverbot | **Release**| <details><summary>Have your bot respond with cleverbot responses.</summary>Cleverbot.com requires a paid API key, cleverbot.io is supported </details> |
 | Insult | **Release**| Insult a user! |
 
@@ -64,7 +64,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Dev | **Release** | A copy of the developer commands in redbot with `sudo` replacing `mock` like V2. NOTE:This bypasses the `--dev` flag and is not recommended unless you know what you're doing. |
 | Hue | **Release** | A cog to control Philips Hue lights through discord. Not tested with bots outside the home network. |
 
-Any questions you can find me and TrustyBot over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk)
+Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).
 
 ## Credits
 
