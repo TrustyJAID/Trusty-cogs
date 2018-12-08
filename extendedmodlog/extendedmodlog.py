@@ -375,35 +375,41 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             cleanmsg = cleanmsg.replace(i.mention, str(i))
         fmt = "%H:%M:%S"
         if channel.permissions_for(guild.me).embed_links:
-            name = message.author
-            name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
-            infomessage = (_("A message by ")+
-                           f"{message.author.name}#{message.author.discriminator}"+
-                           _(" was deleted in ")+
-                            message.channel.name)
-            delmessage = discord.Embed(title=infomessage,
+            perp = None
+            if channel.permissions_for(guild.me).view_audit_log:
+                action = discord.AuditLogAction.message_delete
+                async for log in guild.audit_logs(limit=5, action=action):
+                    if log.target.id == message.author.id:
+                        perp = log.user
+                        break
+            author = message.author
+            if perp is None:
+                infomessage = (_("A message by ") + str(author) +
+                               _(" was deleted in ")+
+                               message.channel.name)
+            else:
+                infomessage = (str(perp) + _(" Deleted a message ")  +
+                               _(" in ") + message.channel.name)
+            embed = discord.Embed(title=infomessage,
                                        description=message.content,
                                        colour=await self.get_colour(guild), 
                                        timestamp=time)
 
-            delmessage.add_field(name=_("Channel"), value=message.channel.mention)
+            embed.add_field(name=_("Channel"), value=message.channel.mention)
+            if perp:
+                embed.add_field(name=_("Deleter"), value=perp.mention)
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 if len(message.attachments) > 1:
                     files = files[:-2]
-                delmessage.add_field(name=_("Attachments"), value=files)
-            delmessage.set_footer(text=_("User ID: ")+ str(message.author.id), 
-                                  icon_url=message.author.avatar_url)
-            delmessage.set_author(name=name + _(" - Deleted Message"), 
-                                  icon_url=message.author.avatar_url)
-            await channel.send(embed=delmessage)
+                embed.add_field(name=_("Attachments"), value=files)
+            embed.set_footer(text=_("User ID: ")+ str(message.author.id), 
+                             icon_url=message.author.avatar_url)
+            embed.set_author(name=str(author) + _(" - Deleted Message"), 
+                             icon_url=message.author.avatar_url)
+            await channel.send(embed=embed)
         else:
-            msg = (":pencil: `"+time.strftime(fmt)+"` **"+
-                   _("Channel") + "**" +message.channel.mention+
-                   " **"+message.author+"'s** "+
-                    _("message has been deleted. Content: ")+
-                   cleanmsg[:1800])
-            await channel.send(msg)
+            await channel.send(infomessage)
 
     async def on_member_join(self, member):
         guild = member.guild
@@ -418,14 +424,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         users = len(guild.members)
         if channel.permissions_for(guild.me).embed_links:
             name = member
-            joinmsg = discord.Embed(description=member.mention, colour=await self.get_colour(guild), 
+            embed = discord.Embed(description=member.mention, colour=await self.get_colour(guild), 
                                     timestamp=member.joined_at)
-            joinmsg.add_field(name=_("Total Users:"), value=str(users), inline=True)
-            joinmsg.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
-            joinmsg.set_author(name=name.display_name + _(" has joined the guild"),
+            embed.add_field(name=_("Total Users:"), value=str(users), inline=True)
+            embed.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
+            embed.set_author(name=name.display_name + _(" has joined the guild"),
                                url=member.avatar_url, icon_url=member.avatar_url)
-            joinmsg.set_thumbnail(url=member.avatar_url)
-            await channel.send(embed=joinmsg)
+            embed.set_thumbnail(url=member.avatar_url)
+            await channel.send(embed=embed)
         else:
             msg = (f":white_check_mark: **{member.name}#{member.discriminator}** "+
                    _("joined the guild. Total users: ") + str(users))
@@ -444,19 +450,34 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
-        users = len([e.name for e in guild.members])
         if channel.permissions_for(guild.me).embed_links:
-            name = member
-            joinmsg = discord.Embed(description=member.mention, colour=await self.get_colour(guild), timestamp=time)
-            joinmsg.add_field(name=_("Total Users:"), value=str(users), inline=True)
-            joinmsg.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
-            joinmsg.set_author(name=name.display_name + _(" has left the guild"),
+            perp = None
+            if channel.permissions_for(guild.me).view_audit_log:
+                action = discord.AuditLogAction.kick
+                async for log in guild.audit_logs(limit=5, action=action):
+                    if log.target.id == member.id:
+                        perp = log.user
+                        break
+            author = member
+            embed = discord.Embed(description=member.mention, 
+                                    colour=await self.get_colour(guild), 
+                                    timestamp=time)
+            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            if perp:
+                embed.add_field(name=_("Kicked"), value=perp.mention)
+            embed.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
+            embed.set_author(name=str(author) + _(" has left the guild"),
                                url=member.avatar_url, icon_url=member.avatar_url)
-            joinmsg.set_thumbnail(url=member.avatar_url)
-            await channel.send( embed=joinmsg)
+            embed.set_thumbnail(url=member.avatar_url)
+            await channel.send(embed=embed)
         else:
-            msg = (f":x:**{member.name}#{member.discriminator}** "+
-                   _("has left the guild or was kicked. Total users: ") + str(users))
+            msg = (f":x:**{author}** "+
+                   _("has left the guild. Total users: ") + str(len(guild.members)))
+            if perp:
+                msg = (f":x:**{author}** "+
+                       _("was kicked by ")+ str(perp)+
+                       _(". Total users: ") + 
+                       str(len(guild.members)))
             await channel.send(msg)
 
     async def get_permission_change(self, before, after, embed_links):
@@ -514,6 +535,13 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed.colour = await self.get_colour(guild)
         embed.set_author(name=_("Updated channel ") + str(before.id))
         msg = _("Updated channel ") + str(before.id) + "\n"
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.channel_update
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == before.id:
+                    perp = log.user
+                    break
         if type(before) == discord.TextChannel:
             text_updates = {"name":_("Name:"), 
                             "topic":_("Topic:"), 
@@ -531,8 +559,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                         after_attr = "None"
                     msg += (_("Before ") + f"{name} {before_attr}\n")
                     msg += (_("After ") + f"{name} {after_attr}\n")
-                    embed.add_field(name=_("Before ") + name, value=str(before_attr))
-                    embed.add_field(name=_("After ") + name, value=str(after_attr))
+                    embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
+                    embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024])
             if before.is_nsfw() != after.is_nsfw():
                 msg += (_("Before ") + f"NSFW {before.is_nsfw()}\n")
                 msg += (_("After ") + f"NSFW {after.is_nsfw()}\n")
@@ -542,6 +570,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             if p_msg != "":
                 msg += _("Permissions Changed: ") + p_msg
                 embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+            if perp:
+                msg += _("Updated by ") + str(perp)
+                embed.add_field(name=_("Updated by "), value=perp.mention)
             if len(embed.fields) == 0:
                 return
             if embed_links:
@@ -556,8 +587,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                             "bitrate":_("Bitrate:"),
                             "user_limit":_("User limit:")
                             }
-
-            
             for attr, name in voice_updates.items():
                 before_attr = getattr(before, attr)
                 after_attr = getattr(after, attr)
@@ -569,7 +598,10 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             p_msg = await self.get_permission_change(before, after, embed_links)
             if p_msg != "":
                 msg += _("Permissions Changed: ") + p_msg
-                embed.add_field(name=_("Permissions"), value=p_msg[:1024])  
+                embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+            if perp:
+                msg += _("Updated by ") + str(perp)
+                embed.add_field(name=_("Updated by "), value=perp.mention)
             if len(embed.fields) == 0:
                 return
             if channel.permissions_for(guild.me).embed_links:
@@ -624,16 +656,28 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.role_update
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == before.id:
+                    perp = log.user
+                    break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=after.mention, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=after.mention, 
+                              colour=await self.get_colour(guild),
+                              timestamp=time)
+        
         if after is guild.default_role:
             embed.set_author(name=_("Updated Everyone role "))
             msg = _("Updated Everyone role ") + "\n"    
         else:
             embed.set_author(name=_("Updated role ") + str(before.id))
             msg = _("Updated role ") + str(before.id) + "\n"
+        if perp:
+            msg += (_("Updated by ") + f"{perp}\n")
+            embed.add_field(name=_("Updated by"), value=perp.mention)
         text_updates = {"name":_("Name:"), 
                         "color":_("Colour:"), 
                         "mentionable":_("Mentionable:"), 
@@ -673,13 +717,24 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.role_create
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == role.id:
+                    perp = log.user
+                    break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=role.mention, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=role.mention,
+                              colour=await self.get_colour(guild) ,
+                              timestamp=time)
         embed.set_author(name=_("Role created ") + str(role.id))
         msg = _("Role created ") + str(role.id) + "\n"
         msg += role.name
+        if perp:
+            embed.add_field(name=_("Created by"), value=perp.mention)
+            msg += _("By ") + str(perp) + "\n"        
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -695,6 +750,13 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.role_delete
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == role.id:
+                    perp = log.user
+                    break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description=role.name, timestamp=time)
@@ -702,6 +764,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed.set_author(name=_("Role deleted ") + str(role.id))
         msg = _("Role deleted ") + str(role.id) + "\n"
         msg += role.name
+        if perp:
+            embed.add_field(name=_("Deleted by"), value=perp.mention)
+            msg += _("By ") + str(perp) + "\n"   
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -738,18 +803,18 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             infomessage = (_("A message by ")+
                            f"{before.author.name}#{before.author.discriminator}"+
                            _(" was edited in ")+ before.channel.name)
-            delmessage = discord.Embed(description=before.content, 
+            embed = discord.Embed(description=before.content, 
                                        title=infomessage,
                                        colour=await self.get_colour(guild), 
                                        timestamp=before.created_at)
             jump_url = f"[Click to see new message]({after.jump_url})"
-            delmessage.add_field(name=_("After Message:"), value=jump_url)
-            delmessage.add_field(name=_("Channel:"), value=before.channel.mention)
-            delmessage.set_footer(text=_("User ID: ")+str(before.author.id), 
+            embed.add_field(name=_("After Message:"), value=jump_url)
+            embed.add_field(name=_("Channel:"), value=before.channel.mention)
+            embed.set_footer(text=_("User ID: ")+str(before.author.id), 
                                   icon_url=before.author.avatar_url)
-            delmessage.set_author(name=name + _(" - Edited Message"), 
+            embed.set_author(name=name + _(" - Edited Message"), 
                                   icon_url=before.author.avatar_url)
-            await channel.send( embed=delmessage)
+            await channel.send( embed=embed)
         else:
             msg = (f":pencil: `{time.strftime(fmt)}` **"+
                    _("Channel") + f"**{before.channel.mention}"+
@@ -769,6 +834,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        
         time = datetime.datetime.utcnow()
         embed = discord.Embed(timestamp=time)
         embed.colour = await self.get_colour(guild)
@@ -788,6 +854,16 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                 msg += (_("After ") + f"{name} {after_attr}\n")
                 embed.add_field(name=_("Before ") + name, value=str(before_attr))
                 embed.add_field(name=_("After ") + name, value=str(after_attr))
+        perp = []
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.guild_update
+            async for log in guild.audit_logs(limit=int(len(embed.fields)/2), action=action):
+                perp.append(log.user)
+        if perp:
+            perps = ", ".join(str(p) for p in perp)
+            msg += (_("Update by ") + f"{perps}\n")
+            perps = ", ".join(p.mention for p in perp)
+            embed.add_field(name=_("Updated by"), value=perps)
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
@@ -802,21 +878,44 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        perp = None
+        
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description= "", timestamp=time)
         embed.colour = await self.get_colour(guild)
         embed.set_author(name=_("Updated Server Emojis"), icon_url=guild.icon_url)
         msg = _("Updated Server Emojis") + "\n"
-        for emoji in before:
-            if emoji not in after:
-                new_msg = str(emoji) + _(" Removed from the guild\n")
-                msg += new_msg
-                embed.description += new_msg
-        for emoji in after:
-            if emoji not in before:
-                new_msg = str(emoji) + _(" Added to the guild\n")
-                msg += new_msg
-                embed.description += new_msg
+        b = set(before)
+        a = set(after)
+        added_emoji = [list(a-b)][0]
+        removed_emoji = [list(b-a)][0]
+        changed_emoji = [list(set([e.name for e in after]) - set([e.name for e in before]))][0]
+        for emoji in removed_emoji:
+            new_msg = f"`{emoji}`" + _(" Removed from the guild\n")
+            msg += new_msg
+            embed.description += new_msg
+            action = discord.AuditLogAction.emoji_delete
+        for emoji in added_emoji:
+            new_msg = f"{emoji} `{emoji}`" + _(" Added to the guild\n")
+            msg += new_msg
+            embed.description += new_msg
+            action = discord.AuditLogAction.emoji_create
+        for emoji in changed_emoji:
+            for emojis in after:
+                if emojis.name == emoji:
+                    e = emojis
+            new_msg = f"{e} `{e}`" + _(" Emoji changed\n")
+            msg += new_msg
+            embed.description += new_msg
+            action = discord.AuditLogAction.emoji_update
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            async for log in guild.audit_logs(limit=1, action=action):
+                perp = log.user
+                break
+        if perp:
+            embed.add_field(name=_("Updated by "), value=perp.mention)
+            msg += _("Updated by ") + str(perp)
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
@@ -871,6 +970,13 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.member_update
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == before.id:
+                    perp = log.user
+                    break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(timestamp=time)
@@ -888,16 +994,16 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                 if attr == "roles":
                     for role in before.roles:
                         if role not in after.roles:
-                            msg += role.name + _(" Role Applied.")
+                            msg += role.name + _(" Role Removed.")
                             if embed_links:
-                                embed.description = role.mention + _(" Role Applied.")
+                                embed.description = role.mention + _(" Role Removed.")
                             else:
                                 embed.description = msg
                     for role in after.roles:
                         if role not in before.roles:
-                            msg += role.name + _(" Role Removed.")
+                            msg += role.name + _(" Role Applied.")
                             if embed_links:
-                                embed.description = role.mention + _(" Role Removed.")
+                                embed.description = role.mention + _(" Role Applied.")
                             else:
                                 embed.description = msg
                 else:
@@ -907,6 +1013,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                     embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024])
         if len(msg) == org_len:
             return
+        if perp:
+            msg += (_("Updated by ") + f"{perp}\n")
+            embed.add_field(name=_("Updated by "), value=perp.mention)
         if embed_links:
             await channel.send(embed=embed)
         else:
