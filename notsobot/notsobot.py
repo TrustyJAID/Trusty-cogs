@@ -256,11 +256,12 @@ class NotSoBot(getattr(commands, "Cog", object)):
             int_scale = None
             if gif is False:
                 for user in mentions:
-                    if user.avatar:
-                        urls.append(user.avatar_url_as(static_format="png"))
-                    else:
-                        urls.append(user.default_avatar_url)
+                    urls.append(user.avatar_url_as(static_format="png"))
                     limit += 1
+            elif gif:
+                for user in mentions:
+                    if user.is_avatar_animated():
+                        urls.append(user.avatar_url_as(format="gif"))
             for attachment in attachments:
                 urls.append(attachment.url)
             if scale:
@@ -595,7 +596,8 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True)
     @commands.cooldown(1, 20, commands.BucketType.guild)
-    async def gmagik(self, ctx, url:str=None, framerate:str=None):
+    async def gmagik(self, ctx, url:str=None, framerate:int=None):
+        """Attempt to do magik on a gif"""
         try:
             url = await self.get_images(ctx, urls=url, gif=True, limit=2)
             if url:
@@ -632,7 +634,13 @@ class NotSoBot(getattr(commands, "Cog", object)):
                 await ctx.send(result)
                 return
             try:
-                if framerate != None:
+                if framerate:
+                    if framerate > 60:
+                        framerate = str(60)
+                    elif framerate < 0:
+                        framerate = str(20)
+                    else:
+                        framerate = str(framerate)
                     args = ['ffmpeg', '-y', '-nostats', '-loglevel', '0', '-i', gif_dir+'%d_{0}.png'.format(rand), '-r', framerate, gifout]
                 else:
                     args = ['ffmpeg', '-y', '-nostats', '-loglevel', '0', '-i', gif_dir+'%d_{0}.png'.format(rand), gifout]
@@ -766,56 +774,6 @@ class NotSoBot(getattr(commands, "Cog", object)):
             except:
                 pass
 
-    async def do_triggered(self, ctx, user, url, t_path):
-        try:
-            if user is None:
-                user = ctx.message.author
-            elif len(ctx.message.mentions):
-                user = ctx.message.mentions[0]
-            else:
-                url = user
-            if type(user) == discord.User or type(user) == discord.Member:
-                if user.avatar:
-                    avatar = user.avatar_url_as(static_format="png")
-                else:
-                    avatar = user.default_avatar_url
-            if url:
-                get_images = await self.get_images(ctx, urls=url, limit=1)
-                if not get_images:
-                    return
-                avatar = get_images[0]
-            path = str(bundled_data_path(self))+"/"+self.random(True)
-            await self.download(avatar, path)
-            await self.run_process(['convert',
-                '(',
-                    path,
-                    '-resize', '256', 
-                ')',
-                t_path,
-                '-append', path
-            ])
-            return path
-        except Exception as e:
-            print(e)
-            return False
-
-    @commands.command(pass_context=True)
-    @commands.cooldown(1, 5)
-    async def triggered2(self, ctx, user:str=None, url:str=None):
-        """Generate a Triggered Image for a User or Image"""
-        t_path = await self.bytes_download("https://i.imgur.com/zDAY2yo.jpg")
-        path = await self.do_triggered(ctx, user, url, t_path)
-        if path is False:
-            await ctx.send(':warning: **Command Failed.**')
-            try:
-                os.remove(path)
-            except:
-                pass
-            return
-        file = discord.File(path, filename='triggered3.png')
-        await ctx.send(file=file)
-        os.remove(path)
-
     @commands.command(pass_context=True, aliases=['aes'])
     async def aesthetics(self, ctx, *, text:str):
         """Returns inputed text in aesthetics"""
@@ -891,6 +849,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def iascii(self, ctx, url:str=None):
+        """Generate an ascii art image of last image in chat or from URL"""
         if not AALIB_INSTALLED:
             await ctx.send("aalib couldn't be found on this machine!")
             return
@@ -991,6 +950,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True)
     async def rip(self, ctx, name:str=None, *, text:str=None):
+        """Generate tombstone image with name and optional text"""
         if name is None:
             name = ctx.message.author.name
         if len(ctx.message.mentions) >= 1:
@@ -1125,6 +1085,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True, aliases=['cancerify', 'em'])
     async def emojify(self, ctx, *, txt:str):
+        """Replace characters in text with emojis"""
         txt = txt.lower()
         msg = ""
         for s in txt:
@@ -1161,6 +1122,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True, aliases=['text2img', 'texttoimage', 'text2image'])
     async def tti(self, ctx, *, txt:str):
+        """Generate an image of text"""
         api = 'http://api.img4me.com/?font=arial&fcolor=FFFFFF&size=35&type=png&text={0}'.format(quote(txt))
         r = await self.get_text(api)
         b = await self.bytes_download(r)
@@ -1169,6 +1131,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True, aliases=['comicsans'])
     async def sans(self, ctx, *, txt:str):
+        """Generate an image of text with comicsans"""
         api = 'http://api.img4me.com/?font=sans&fcolor=000000&size=35&type=png&text={0}'.format(quote(txt))
         r = await self.get_text(api)
         b = await self.bytes_download(r)
@@ -1212,7 +1175,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True, aliases=['vaporwave', 'vape', 'vapewave'])
     @commands.cooldown(2, 5)
     async def vw(self, ctx, url:str, *, txt:str=None):
-        """Vaporwave an image!"""
+        """Add vaporwave flavours to an image"""
         get_images = await self.get_images(ctx, urls=url, limit=1)
         if not get_images:
             return
@@ -1244,6 +1207,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True, aliases=['wm'])
     async def watermark(self, ctx, url:str, mark:str=None):
+        """Add a watermark to an image"""
         try:
             check = await self.isimage(url)
             if check == False:
@@ -1304,7 +1268,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(aliases=['jpglitch'], pass_context=True)
     @commands.cooldown(2, 5)
     async def glitch(self, ctx, url:str=None, iterations:int=None, amount:int=None, seed:int=None):
-        """Glitch a gif or image"""
+        """Glitch a gif or png"""
         try:
             if iterations is None:
                 iterations = random.randint(1, 30)
@@ -1341,7 +1305,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True)
     async def glitch2(self, ctx, *urls:str):
-
+        """Glitch a jpegs"""
         try:
             get_images = await self.get_images(ctx, urls=urls)
             if not get_images:
@@ -1364,6 +1328,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=['pixel'], pass_context=True)
     async def pixelate(self, ctx, *urls):
+        """Picelate an image"""
         try:
             get_images = await self.get_images(ctx, urls=urls, limit=6, scale=3000)
             if not get_images:
@@ -1442,6 +1407,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     async def retro(self, ctx, *, text:str):
+        """Create a retro looking image"""
         retro_result = await self.do_retro(text, '5')
         if retro_result is False:
             await ctx.send(':warning: This text contains unsupported characters')
@@ -1451,6 +1417,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     async def retro2(self, ctx, *, text:str):
+        """Create a retro looking image"""
         retro_result = await self.do_retro(text, '2')
         if retro_result is False:
             await ctx.send(':warning: This text contains unsupported characters')
@@ -1460,6 +1427,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     async def retro3(self, ctx, *, text:str):
+        """Create a retro looking image"""
         retro_result = await self.do_retro(text, '4')
         if retro_result is False:
             await ctx.send(':warning: This text contains unsupported characters')
@@ -1495,6 +1463,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True, aliases=['magik3', 'mirror'])
     @commands.cooldown(2, 5, commands.BucketType.user)
     async def waaw(self, ctx, *urls:str):
+        """Mirror an image vertically right to left"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1535,6 +1504,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True, aliases=['magik4', 'mirror2'])
     @commands.cooldown(2, 5, commands.BucketType.user)
     async def haah(self, ctx, *urls:str):
+        """Mirror an image vertically left to right"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1576,6 +1546,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True, aliases=['magik5', 'mirror3'])
     @commands.cooldown(2, 5, commands.BucketType.user)
     async def woow(self, ctx, *urls:str):
+        """Mirror an image horizontally top to bottom"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1617,6 +1588,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     @commands.command(pass_context=True, aliases=['magik6', 'mirror4'])
     @commands.cooldown(2, 5, commands.BucketType.user)
     async def hooh(self, ctx, *urls:str):
+        """Mirror an image horizontally bottom to top"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1633,6 +1605,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True)
     async def flipimg(self, ctx, *urls:str):
+        """Rotate an image 180 degrees"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1648,6 +1621,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command(pass_context=True)
     async def flop(self, ctx, *urls:str):
+        """Flip an image"""
         get_images = await self.get_images(ctx, urls=urls, limit=5)
         if not get_images:
             return
@@ -1662,7 +1636,8 @@ class NotSoBot(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command(pass_context=True, aliases=['inverse', 'negate'])
-    async def invert(self, ctx, url:str="None"):
+    async def invert(self, ctx, *url:str):
+        """Invert the colours of an image"""
         get_images = await self.get_images(ctx, urls=url, limit=3)
         if not get_images:
             return
@@ -1677,17 +1652,17 @@ class NotSoBot(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command(pass_context=True)
-    async def rotate(self, ctx, *urls:str):
+    async def rotate(self, ctx, degrees:int=90, *urls:str):
         """Rotate image X degrees"""
         get_images = await self.get_images(ctx, urls=urls, limit=3, scale=360)
         if not get_images:
             return
         img_urls = get_images[0]
-        scale = get_images[1] if get_images[1] else random.choice([90, 180, 50, 45, 270, 120, 80])
+        # scale = get_images[1] if get_images[1] else random.choice([90, 180, 50, 45, 270, 120, 80])
         for url in img_urls:
             b = await self.bytes_download(url)
             img = PIL.Image.open(b).convert('RGBA')
-            img = img.rotate(int(scale))
+            img = img.rotate(int(degrees))
             final = BytesIO()
             img.save(final, 'png')
             final.seek(0)
