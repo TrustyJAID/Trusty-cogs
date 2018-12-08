@@ -14,7 +14,8 @@ inv_settings = {"message_edit": False,
                 "user_left": False, 
                 "channel_change": False,
                 "guild_change": False,
-                "emoji_change": False}
+                "emoji_change": False,
+                "commands_used":False}
 
 _ = Translator("ExtendedModLog", __file__)
 
@@ -58,7 +59,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                             "user_left": _("Member left"), 
                             "channel_change": _("Channel changes"),
                             "guild_change": _("Guild changes"),
-                            "emoji_change": _("Emoji changes")}
+                            "emoji_change": _("Emoji changes"),
+                            "commands_used": _("Mod/Admin Commands")}
             try:
                 e = discord.Embed(title=_("Setting for ") + guild.name)
                 e.colour = await self.get_colour(ctx.guild)
@@ -242,11 +244,116 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("disabled")
         await ctx.send(msg+verb)
 
+    @modlogtoggles.command(aliases=["commands"])
+    async def command(self, ctx):
+        """
+            Toggle mod/admin command usage
+        """
+        guild = ctx.message.guild
+        msg = _("Command logs ")
+        if not await self.config.guild(guild).commands_used():
+            await self.config.guild(guild).commands_used.set(True)
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).commands_used.set(False)
+            verb = _("disabled")
+        await ctx.send(msg+verb)
+
     async def get_colour(self, guild):
         if await self.bot.db.guild(guild).use_bot_color():
             return guild.me.colour
         else:
             return await self.bot.db.color()
+
+    async def member_can_run(self, ctx):
+        """Check if a user can run a command.
+        This will take the current context into account, such as the
+        server and text channel.
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/permissions/permissions.py
+        """
+
+        
+        command = ctx.message.content.replace(ctx.prefix, "")
+
+        com = ctx.bot.get_command(command)
+        if com is None:
+            return False
+        else:
+            try:
+                testcontext = await ctx.bot.get_context(ctx.message, cls=commands.Context)
+                to_check = [*reversed(com.parents)] + [com]
+                can = False
+                for cmd in to_check:
+                    can = await cmd.can_run(testcontext)
+                    if can is False:
+                        break
+            except commands.CheckFailure:
+                can = False
+        return can
+
+    async def on_command(self, ctx:commands.Context):
+        guild = ctx.guild
+        if guild is None:
+            return
+        if not await self.config.guild(guild).commands_used():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        time = ctx.message.created_at
+        cleanmsg = ctx.message.content
+        message = ctx.message
+        can_run = await self.member_can_run(ctx)
+        command = ctx.message.content.replace(ctx.prefix, "")
+        com = command.split(" ")[0]
+        try:
+            privs = self.bot.get_command(command).requires.privilege_level.name
+        except:
+            return
+        if privs not in ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]:
+            return
+        if privs == "MOD":
+            mod_role_id = await ctx.bot.db.guild(guild).mod_role()
+            if mod_role_id is not None:
+                role = guild.get_role(mod_role_id).mention + f"\n{privs}"
+            else:
+                role = _("Not Set\nMOD")
+        if privs == "ADMIN":
+            admin_role_id = await ctx.bot.db.guild(guild).admin_role()
+            if admin_role_id != None:
+                role = guild.get_role(admin_role_id).mention + f"\n{privs}"
+            else:
+                role = _("Not Set\nADMIN")
+        if privs == "BOT_OWNER":
+            role = guild.get_member(ctx.bot.owner_id).mention + f"\n{privs}"
+        if privs == "GUILD_OWNER":
+            role = guild.owner.mention + f"\n{privs}"
+        
+        for i in ctx.message.mentions:
+            cleanmsg = cleanmsg.replace(i.mention, str(i))
+        infomessage = (f"{message.author.name}#{message.author.discriminator}"+
+                       _(" used ") + com + " in "+
+                            message.channel.name)
+        if channel.permissions_for(guild.me).embed_links:
+            name = f"{message.author.name}#{message.author.discriminator}"
+            
+            embed = discord.Embed(title=infomessage,
+                                  description=f"`{message.content}`",
+                                  colour=await self.get_colour(guild),
+                                  timestamp=time)
+            embed.add_field(name=_("Channel"), value=message.channel.mention)
+            embed.add_field(name=_("Can Run"), value=str(can_run))
+            embed.add_field(name=_("Required Role"), value=role)
+            embed.set_footer(text=_("User ID: ")+ str(message.author.id), 
+                             icon_url=message.author.avatar_url)
+            author_title = name + _(" - Used a MOD/ADMIN Command")
+            embed.set_author(name=author_title, 
+                             icon_url=message.author.avatar_url)
+            await channel.send(embed=embed)
+        else:
+            clean_msg = (f"{infomessage}\n`{cleanmsg}`")
+            await channel.send(clean_msg)
 
     async def on_message_delete(self, message):
         guild = message.guild
@@ -260,8 +367,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             channel = await modlog.get_modlog_channel(guild)
         except:
             return
-        if message.content == "":
-            return
+        # if message.content == "":
+            # return
         time = message.created_at
         cleanmsg = message.content
         for i in message.mentions:
@@ -272,7 +379,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             infomessage = (_("A message by ")+
                            f"{message.author.name}#{message.author.discriminator}"+
-                           _(", was deleted in ")+
+                           _(" was deleted in ")+
                             message.channel.name)
             delmessage = discord.Embed(title=infomessage,
                                        description=message.content,
@@ -280,6 +387,11 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                                        timestamp=time)
 
             delmessage.add_field(name=_("Channel"), value=message.channel.mention)
+            if message.attachments:
+                files = ", ".join(a.filename for a in message.attachments)
+                if len(message.attachments) > 1:
+                    files = files[:-2]
+                delmessage.add_field(name=_("Attachments"), value=files)
             delmessage.set_footer(text=_("User ID: ")+ str(message.author.id), 
                                   icon_url=message.author.avatar_url)
             delmessage.set_author(name=name + _(" - Deleted Message"), 
@@ -597,7 +709,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
 
     async def on_message_edit(self, before, after):
         guild = before.guild
-        
+        if guild is None:
+            return
         if before.author.bot:
             return
         if not await self.config.guild(guild).message_edit():
@@ -639,7 +752,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             await channel.send( embed=delmessage)
         else:
             msg = (f":pencil: `{time.strftime(fmt)}` **"+
-                   _("Channel") + f"**{message.channel.mention}"+
+                   _("Channel") + f"**{before.channel.mention}"+
                    f" **{before.author.name}#{before.author.discriminator}'s** "+
                    _("message has been edited.\nBefore: ")+cleanbefore+
                    _("\nAfter: ")+cleanafter)
