@@ -367,8 +367,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             channel = await modlog.get_modlog_channel(guild)
         except:
             return
-        # if message.content == "":
-            # return
+        if message.content == "":
+            return
         time = message.created_at
         cleanmsg = message.content
         for i in message.mentions:
@@ -518,6 +518,86 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                     p_msg += f"{entity_obj.mention} Overwrites added.\n"
                 continue
         return p_msg
+
+    async def on_guild_channel_create(self, new_channel):
+        guild = new_channel.guild
+        if not await self.config.guild(guild).channel_change():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        if channel is None:
+            return
+        embed_links = channel.permissions_for(guild.me).embed_links
+        time = datetime.datetime.utcnow()
+        embed = discord.Embed(description=channel.mention, timestamp=time)
+        embed.colour = await self.get_colour(guild)
+        embed.set_author(name=_("Channel Created ") + str(new_channel.id))
+        msg = _("Channel Created ") + str(new_channel.id) + "\n"
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.channel_create
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == new_channel.id:
+                    perp = log.user
+                    break
+        if type(new_channel) == discord.TextChannel:
+            msg += _("Text Channel Created")
+            embed.add_field(name=_("Type"), value=_("Text"))
+        if type(new_channel) == discord.CategoryChannel:
+            msg += _("Category Channel Created")
+            embed.add_field(name=_("Type"), value=_("Text"))
+        if type(new_channel) == discord.VoiceChannel:
+            msg += _("Voice Channel Created")
+            embed.add_field(name=_("Type"), value=_("Voice"))
+        if perp:
+            msg +=_("Created by ") + str(perp)
+            embed.add_field(name=_("Created by "), value=perp.mention)
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
+
+    async def on_guild_channel_delete(self, old_channel):
+        guild = old_channel.guild
+        if not await self.config.guild(guild).channel_change():
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except:
+            return
+        if channel is None:
+            return
+        embed_links = channel.permissions_for(guild.me).embed_links
+        time = datetime.datetime.utcnow()
+        embed = discord.Embed(description=channel.mention, timestamp=time)
+        embed.colour = await self.get_colour(guild)
+        embed.set_author(name=_("Channel Deleted ") + str(old_channel.id))
+        msg = _("Channel Deleted ") + str(old_channel.id) + "\n"
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.channel_delete
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == old_channel.id:
+                    perp = log.user
+                    break
+        if type(old_channel) == discord.TextChannel:
+            msg += _("Text Channel Deleted")
+            embed.add_field(name=_("Type"), value=_("Text"))
+        if type(old_channel) == discord.CategoryChannel:
+            msg += _("Category Channel Deleted")
+            embed.add_field(name=_("Type"), value=_("Text"))
+        if type(old_channel) == discord.VoiceChannel:
+            msg += _("Voice Channel Deleted")
+            embed.add_field(name=_("Type"), value=_("Voice"))
+        if perp:
+            msg +=_("Deleted by ") + str(perp)
+            embed.add_field(name=_("Deleted by "), value=perp.mention)
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
 
     async def on_guild_channel_update(self, before, after):
         guild = before.guild
