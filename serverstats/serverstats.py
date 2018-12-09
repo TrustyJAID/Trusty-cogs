@@ -10,6 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, box
 from typing import Union
 
+
 _ = Translator("ServerStats", __file__)
 
 numbs = {
@@ -113,33 +114,41 @@ class ServerStats(getattr(commands, "Cog", object)):
         await channel.send(embed=em)
 
     @commands.command()
-    async def emoji(self, ctx, emoji:str):
+    async def emoji(self, ctx, emoji:Union[discord.Emoji, str]):
         """
-            Post a large size server emoji in chat
+            Post a large size emojis in chat
         """
-        if emoji is discord.Emoji:
+        if type(emoji) is discord.Emoji:
             await ctx.channel.trigger_typing()
             emoji_name = emoji.name
             ext = emoji.url.split(".")[-1]
             async with self.session.get(emoji.url) as resp:
                 data = await resp.read()
-            file = discord.File(io.BytesIO(data),filename="{}.{}".format(emoji.name, ext))
+            file = discord.File(BytesIO(data),filename="{}.{}".format(emoji.name, ext))
             await ctx.send(file=file)
-            # await self.bot.say(emoji.url)
         else:
             emoji_id = emoji.split(":")[-1].replace(">", "")
-            if not emoji_id.isdigit():
-                return
             await ctx.channel.trigger_typing()
-            # print(emoji_id)
             if emoji.startswith("<a"):
                 async with self.session.get("https://cdn.discordapp.com/emojis/{}.gif?v=1".format(emoji_id)) as resp:
                     data = await resp.read()
                 file = discord.File(BytesIO(data),filename="{}.gif".format(emoji_id))
-            else:
+            elif emoji.startswith("<:"):
                 async with self.session.get("https://cdn.discordapp.com/emojis/{}.png?v=1".format(emoji_id)) as resp:
                     data = await resp.read()
                 file = discord.File(BytesIO(data),filename="{}.png".format(emoji_id))
+            else:
+                """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
+                cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
+                try:
+                    url = cdn_fmt.format(codepoint=ord(emoji))
+                    print(url)
+                    async with self.session.get(url) as resp:
+                        data = await resp.read()
+                    file = discord.File(BytesIO(data), filename="emoji.png")
+                except:
+                    await ctx.send("That doesn't appear to be a valid emoji")
+                    return
             await ctx.send(file=file)
 
     async def ask_for_invite(self, ctx):
