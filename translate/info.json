@@ -4,7 +4,7 @@
         "TrustyJAID"
     ],
     "description":"Set a server to post translated messages when a flag emoji has been reacted to the message or translate any text!",
-    "install_msg":"You must get an API key from google to set this up https://cloud.google.com/translate/?utm_source=google&utm_medium=cpc&utm_campaign=na-US-all-en-dr-bkws-all-all-trial-e-dr-1003905&utm_content=text-ad-none-any-DEV_c-CRE_164195398490-ADGP_Hybrid%20%7C%20AW%20SEM%20%7C%20BKWS%20%7C%20Multi%20~%20Translate%20API-KWID_43700006524936780-kwd-14329410560&utm_term=KW_google%20translate%20api-ST_google%20translate%20api&gclid=EAIaIQobChMIqYX17-DY2AIVDMZkCh0VuAJPEAAYASAAEgLD9vD_BwE&dclid=CJLr_PDg2NgCFc_YwAodD3QAMA",
+    "install_msg":"1. Go to Google Developers Console and log in with your Google account. (https://console.developers.google.com/)\n2. You should be prompted to create a new project (name does not matter).\n3. Click on Enable APIs and Services at the top.\n4. In the list of APIs choose or search for Cloud Translate API and click on it. Choose Enable.\n5. Click on Credentials on the left navigation bar.\n6. Click on Create Credential at the top.\n7. At the top click the link for \"API key\".\n8. No application restrictions are needed. Click Create at the bottom.\n9. You now have a key to add to `[p]translateset`",
     "min_python_version":[
         3,
         6,

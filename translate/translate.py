@@ -93,7 +93,7 @@ class Translate(getattr(commands, "Cog", object)):
             translated_text = data["data"]["translations"][0]["translatedText"]
             return translated_text
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
     async def translatereact(self, ctx):
@@ -156,13 +156,21 @@ class Translate(getattr(commands, "Cog", object)):
         else:
             msg = f"{from_lang} to {to_lang} Requested by {user_name}\n{translated_text}"
 
-    @commands.command(pass_context=True)
+    @commands.command()
     @checks.is_owner()
     async def translateset(self, ctx, api_key):
         """
             You must get an API key from google to set this up
 
-            https://console.cloud.google.com/apis/library/translate.googleapis.com/
+            1. Go to Google Developers Console and log in with your Google account. (https://console.developers.google.com/)
+            2. You should be prompted to create a new project (name does not matter).
+            3. Click on Enable APIs and Services at the top.
+            4. In the list of APIs choose or search for Cloud Translate API and click on it. Choose Enable.
+            5. Click on Credentials on the left navigation bar.
+            6. Click on Create Credential at the top.
+            7. At the top click the link for \"API key\".
+            8. No application restrictions are needed. Click Create at the bottom.
+            9. You now have a key to add to `[p]translateset`
         """
         await self.config.api_key.set(api_key)
         await ctx.send("API key set.")
