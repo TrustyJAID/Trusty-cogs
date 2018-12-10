@@ -374,22 +374,22 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         for i in message.mentions:
             cleanmsg = cleanmsg.replace(i.mention, str(i))
         fmt = "%H:%M:%S"
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.message_delete
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == message.author.id:
+                    perp = log.user
+                    break
+        author = message.author
+        if perp is None:
+            infomessage = (_("A message by ") + str(author) +
+                           _(" was deleted in ")+
+                           message.channel.name)
+        else:
+            infomessage = (str(perp) + _(" Deleted a message ")  +
+                           _(" in ") + message.channel.name)
         if channel.permissions_for(guild.me).embed_links:
-            perp = None
-            if channel.permissions_for(guild.me).view_audit_log:
-                action = discord.AuditLogAction.message_delete
-                async for log in guild.audit_logs(limit=5, action=action):
-                    if log.target.id == message.author.id:
-                        perp = log.user
-                        break
-            author = message.author
-            if perp is None:
-                infomessage = (_("A message by ") + str(author) +
-                               _(" was deleted in ")+
-                               message.channel.name)
-            else:
-                infomessage = (str(perp) + _(" Deleted a message ")  +
-                               _(" in ") + message.channel.name)
             embed = discord.Embed(title=infomessage,
                                        description=message.content,
                                        colour=await self.get_colour(guild), 
