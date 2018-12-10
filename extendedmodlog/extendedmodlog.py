@@ -361,23 +361,21 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if not await self.config.guild(guild).message_delete():
             return
-        if message.author is message.author.bot:
-            pass
         try:
             channel = await modlog.get_modlog_channel(guild)
         except:
             return
-        if message.content == "":
+        if message.content == "" and message.attachments == []:
             return
         time = message.created_at
         cleanmsg = message.content
         for i in message.mentions:
             cleanmsg = cleanmsg.replace(i.mention, str(i))
-        fmt = "%H:%M:%S"
+        fmt = "%H:%M"
         perp = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.message_delete
-            async for log in guild.audit_logs(limit=5, action=action):
+            async for log in guild.audit_logs(limit=2, action=action):
                 if log.target.id == message.author.id:
                     perp = log.user
                     break
@@ -422,12 +420,22 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         time = datetime.datetime.utcnow()
         users = len(guild.members)
+        # https://github.com/Cog-Creators/Red-DiscordBot/blob/develop/cogs/general.py
+        since_created = (time - member.created_at).days
+        user_created = member.created_at.strftime("%d %b %Y %H:%M")
+        member_number = sorted(guild.members,
+                               key=lambda m: m.joined_at).index(member) + 1
+
+        created_on = "{}\n({} days ago)".format(user_created, since_created)
         if channel.permissions_for(guild.me).embed_links:
             name = member
-            embed = discord.Embed(description=member.mention, colour=await self.get_colour(guild), 
-                                    timestamp=member.joined_at)
-            embed.add_field(name=_("Total Users:"), value=str(users), inline=True)
-            embed.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
+            embed = discord.Embed(description=member.mention, 
+                                  colour=await self.get_colour(guild), 
+                                  timestamp=member.created_at)
+            embed.add_field(name=_("Total Users:"), value=str(users))
+            embed.add_field(name=_("Account created on:"), value=created_on)
+            embed.set_footer(text=_("User ID: ") + str(member.id) + _(" Created on"), 
+                             icon_url=member.avatar_url)
             embed.set_author(name=name.display_name + _(" has joined the guild"),
                                url=member.avatar_url, icon_url=member.avatar_url)
             embed.set_thumbnail(url=member.avatar_url)
@@ -1050,13 +1058,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if channel is None:
             return
-        perp = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.member_update
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == before.id:
-                    perp = log.user
-                    break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(timestamp=time)
@@ -1072,21 +1073,33 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             after_attr = getattr(after, attr)
             if before_attr != after_attr:
                 if attr == "roles":
-                    for role in before.roles:
-                        if role not in after.roles:
+                    b = set(before.roles)
+                    a = set(after.roles)
+                    before_roles = [list(b-a)][0]
+                    after_roles = [list(a-b)][0]
+                    if before_roles:
+                        for role in before_roles:
                             msg += role.name + _(" Role Removed.")
-                            if embed_links:
-                                embed.description = role.mention + _(" Role Removed.")
-                            else:
-                                embed.description = msg
-                    for role in after.roles:
-                        if role not in before.roles:
+                            embed.description = role.mention + _(" Role Removed.")
+                    if after_roles:
+                        for role in after_roles:
                             msg += role.name + _(" Role Applied.")
-                            if embed_links:
-                                embed.description = role.mention + _(" Role Applied.")
-                            else:
-                                embed.description = msg
+                            embed.description = role.mention + _(" Role Applied.")
+                    perp = None
+                    if channel.permissions_for(guild.me).view_audit_log:
+                        action = discord.AuditLogAction.member_role_update
+                        async for log in guild.audit_logs(limit=5, action=action):
+                            if log.target.id == before.id:
+                                perp = log.user
+                                break
                 else:
+                    perp = None
+                    if channel.permissions_for(guild.me).view_audit_log:
+                        action = discord.AuditLogAction.member_update
+                        async for log in guild.audit_logs(limit=5, action=action):
+                            if log.target.id == before.id:
+                                perp = log.user
+                                break
                     msg += (_("Before ") + f"{name} {before_attr}\n")
                     msg += (_("After ") + f"{name} {after_attr}\n")
                     embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
