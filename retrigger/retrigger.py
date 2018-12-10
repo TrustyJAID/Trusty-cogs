@@ -321,12 +321,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             return
         if message.author.bot:
             return
-        if not await self.local_perms(message):
-            return
-        if not await self.global_perms(message):
-            return
-        if not await self.check_ignored_channel(message):
-            return
+        local_perms = not await self.local_perms(message)
+        global_perms =  not await self.global_perms(message)
+        ignored_channel = not await self.check_ignored_channel(message)
         msg = message.content
         guild = message.guild
         channel = message.channel
@@ -340,8 +337,16 @@ class ReTrigger(getattr(commands, "Cog", object)):
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
-                if trigger.response_type != "delete" and is_command:
-                    return
+                if trigger.response_type == "delete":
+                    if channel.permissions_for(message.author).manage_messages:
+                        print("ReTrigger: Delete is ignored user has manage messages permission")
+                        return
+                else:
+                    if any([local_perms, global_perms, ignored_channel]):
+                        print("ReTrigger: Channel is ignored or user is blacklisted")
+                        return
+                    if is_command:
+                        return
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0]) 
@@ -447,7 +452,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         """
             Setup automatic triggers based on regular expressions
 
-            https://regexr.com/ is a good place to test regex
+            https://regex101.com/ is a good place to test regex
         """
         pass
 
@@ -644,7 +649,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `text` response of the trigger
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -673,7 +678,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `image_url` optional image_url if none is provided the bot will ask to upload an image
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -715,7 +720,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `regex` the regex that will determine when to respond
             `text` the triggered text response
             `image_url` optional image_url if none is provided the bot will ask to upload an image
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -757,7 +762,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `image_url` optional image_url if none is provided the bot will ask to upload an image
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -800,7 +805,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
             `name` name of the trigger
             `regex` the regex that will determine when to respond
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -831,7 +836,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
             `name` name of the trigger
             `regex` the regex that will determine when to respond
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -860,7 +865,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `emojis` the emojis to react with when triggered separated by spaces
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -900,7 +905,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `command` the command that will be triggered, do add [p] prefix
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -933,7 +938,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
             `name` name of the trigger
             `regex` the regex that will determine when to respond
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -962,7 +967,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `role` the role applied when the regex pattern matches
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
@@ -994,7 +999,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             `name` name of the trigger
             `regex` the regex that will determine when to respond
             `role` the role applied when the regex pattern matches
-            See https://regexr.com/ for help building a regex pattern
+            See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
