@@ -142,7 +142,6 @@ class ServerStats(getattr(commands, "Cog", object)):
                 cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
                 try:
                     url = cdn_fmt.format(codepoint=ord(emoji))
-                    print(url)
                     async with self.session.get(url) as resp:
                         data = await resp.read()
                     file = discord.File(BytesIO(data), filename="emoji.png")
