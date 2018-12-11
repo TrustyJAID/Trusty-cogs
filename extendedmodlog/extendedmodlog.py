@@ -270,11 +270,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         This will take the current context into account, such as the
         server and text channel.
         https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/permissions/permissions.py
-        """
-
-        
+        """        
         command = ctx.message.content.replace(ctx.prefix, "")
-
         com = ctx.bot.get_command(command)
         if com is None:
             return False
@@ -389,9 +386,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                            _(" in ") + message.channel.name)
         if channel.permissions_for(guild.me).embed_links:
             embed = discord.Embed(title=infomessage,
-                                       description=message.content,
-                                       colour=await self.get_colour(guild), 
-                                       timestamp=time)
+                                  description=message.content,
+                                  colour=discord.Colour.dark_red(),
+                                  timestamp=time)
 
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             if perp:
@@ -430,7 +427,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if channel.permissions_for(guild.me).embed_links:
             name = member
             embed = discord.Embed(description=member.mention, 
-                                  colour=await self.get_colour(guild), 
+                                  colour=discord.Colour.green(), 
                                   timestamp=member.created_at)
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
@@ -468,14 +465,17 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                         break
             author = member
             embed = discord.Embed(description=member.mention, 
-                                    colour=await self.get_colour(guild), 
+                                    colour=discord.Colour.dark_green(), 
                                     timestamp=time)
-            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            embed.add_field(name=_("Total Users:"), 
+                            value=str(len(guild.members)))
             if perp:
                 embed.add_field(name=_("Kicked"), value=perp.mention)
-            embed.set_footer(text=_("User ID: ") + str(member.id), icon_url=member.avatar_url)
+            embed.set_footer(text=_("User ID: ") + str(member.id), 
+                             icon_url=member.avatar_url)
             embed.set_author(name=str(author) + _(" has left the guild"),
-                               url=member.avatar_url, icon_url=member.avatar_url)
+                             url=member.avatar_url, 
+                             icon_url=member.avatar_url)
             embed.set_thumbnail(url=member.avatar_url)
             await channel.send(embed=embed)
         else:
@@ -539,8 +539,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=channel.mention, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=channel.mention,
+                              timestamp=time,
+                              colour=discord.Colour.teal())
         embed.set_author(name=_("Channel Created ") + str(new_channel.id))
         msg = _("Channel Created ") + str(new_channel.id) + "\n"
         perp = None
@@ -579,8 +580,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=channel.mention, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=channel.mention,
+                              timestamp=time,
+                              colour=discord.Colour.dark_teal())
         embed.set_author(name=_("Channel Deleted ") + str(old_channel.id))
         msg = _("Channel Deleted ") + str(old_channel.id) + "\n"
         perp = None
@@ -619,8 +621,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=after.mention, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=after.mention, 
+                              timestamp=time,
+                              colour=discord.Colour.teal())
         embed.set_author(name=_("Updated channel ") + str(before.id))
         msg = _("Updated channel ") + str(before.id) + "\n"
         perp = None
@@ -754,25 +757,27 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description=after.mention, 
-                              colour=await self.get_colour(guild),
+                              colour=after.colour,
                               timestamp=time)
         
         if after is guild.default_role:
-            embed.set_author(name=_("Updated Everyone role "))
+            embed.set_author(name=_("Updated Everyone role "),
+                             icon_url=guild.icon_url)
             msg = _("Updated Everyone role ") + "\n"    
         else:
-            embed.set_author(name=_("Updated role ") + str(before.id))
+            embed.set_author(name=_("Updated role ") + str(before.id),
+                             icon_url=guild.icon_url)
             msg = _("Updated role ") + str(before.id) + "\n"
         if perp:
             msg += (_("Updated by ") + f"{perp}\n")
             embed.add_field(name=_("Updated by"), value=perp.mention)
-        text_updates = {"name":_("Name:"), 
+        role_updates = {"name":_("Name:"), 
                         "color":_("Colour:"), 
                         "mentionable":_("Mentionable:"), 
                         "hoist":_("Is Hoisted:"),
                         }
 
-        for attr, name in text_updates.items():
+        for attr, name in role_updates.items():
             before_attr = getattr(before, attr)
             after_attr = getattr(after, attr)
             if before_attr != after_attr:
@@ -815,9 +820,10 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description=role.mention,
-                              colour=await self.get_colour(guild) ,
+                              colour=discord.Colour.blue(),
                               timestamp=time)
-        embed.set_author(name=_("Role created ") + str(role.id))
+        embed.set_author(name=_("Role created ") + str(role.id),
+                         icon_url=guild.icon_url)
         msg = _("Role created ") + str(role.id) + "\n"
         msg += role.name
         if perp:
@@ -847,8 +853,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                     break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=role.name, timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(description=role.name,
+                              timestamp=time,
+                              colour=discord.Colour.dark_blue())
         embed.set_author(name=_("Role deleted ") + str(role.id))
         msg = _("Role deleted ") + str(role.id) + "\n"
         msg += role.name
@@ -892,16 +899,16 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                            f"{before.author.name}#{before.author.discriminator}"+
                            _(" was edited in ")+ before.channel.name)
             embed = discord.Embed(description=before.content, 
-                                       title=infomessage,
-                                       colour=await self.get_colour(guild), 
-                                       timestamp=before.created_at)
+                                  title=infomessage,
+                                  colour=discord.Colour.orange(), 
+                                  timestamp=before.created_at)
             jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)
             embed.set_footer(text=_("User ID: ")+str(before.author.id), 
-                                  icon_url=before.author.avatar_url)
+                             icon_url=before.author.avatar_url)
             embed.set_author(name=name + _(" - Edited Message"), 
-                                  icon_url=before.author.avatar_url)
+                             icon_url=before.author.avatar_url)
             await channel.send( embed=embed)
         else:
             msg = (f":pencil: `{time.strftime(fmt)}` **"+
@@ -912,7 +919,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             await channel.send(msg)
 
     async def on_guild_update(self, before, after):
-        guild = before
+        guild = after
         
         if not await self.config.guild(guild).guild_change():
             return
@@ -925,14 +932,19 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         
         time = datetime.datetime.utcnow()
         embed = discord.Embed(timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed.colour = discord.Colour.blurple()
         embed.set_author(name=_("Updated Guild ") + str(before.id),
                          icon_url=guild.icon_url)
+        embed.set_thumbnail(url=guild.icon_url)
         msg = _("Updated Guild ") + str(before.id) + "\n"
         guild_updates = {"name":_("Name:"), 
                         "region":_("Region:"), 
                         "afk_timeout":_("AFK Timeout:"), 
-                        "afk_channel":_("AFK Channel:")
+                        "afk_channel":_("AFK Channel:"),
+                        "icon_url": _("Server Icon:"),
+                        "owner": _("Server Owner:"),
+                        "splash": _("Splash Image:"),
+                        "system_channel": _("Welcome message channel:")
                         }
         for attr, name in guild_updates.items():
             before_attr = getattr(before, attr)
@@ -969,9 +981,11 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         perp = None
         
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description= "", timestamp=time)
-        embed.colour = await self.get_colour(guild)
-        embed.set_author(name=_("Updated Server Emojis"), icon_url=guild.icon_url)
+        embed = discord.Embed(description= "", 
+                              timestamp=time,
+                              colour=discord.Colour.gold())
+        embed.set_author(name=_("Updated Server Emojis"), 
+                         icon_url=guild.icon_url)
         msg = _("Updated Server Emojis") + "\n"
         b = set(before)
         a = set(after)
@@ -1023,9 +1037,11 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if channel is None:
             return
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(timestamp=time, icon_url=guild.icon_url)
-        embed.colour = await self.get_colour(guild)
-        msg = f"{member.name}#{member.discriminator} " + _("Updated Voice State") + "\n"
+        embed = discord.Embed(timestamp=time, 
+                              icon_url=guild.icon_url,
+                              colour=discord.colour.magenta())
+        msg = (f"{member.name}#{member.discriminator} " +
+               _("Updated Voice State") + "\n")
         embed.set_author(name=msg)
         voice_updates = {"deaf":_("Deaf:"), 
                         "mute":_("Mute:"), 
@@ -1060,8 +1076,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(timestamp=time)
-        embed.colour = await self.get_colour(guild)
+        embed = discord.Embed(timestamp=time,
+                              colour=discord.Colour.greyple())
         msg = f"{before.name}#{before.discriminator} " + _("Updated") + "\n"
         org_len = len(msg)
         embed.set_author(name=msg, icon_url=before.avatar_url)
