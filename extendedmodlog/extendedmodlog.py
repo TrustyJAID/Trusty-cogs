@@ -931,8 +931,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(timestamp=time)
-        embed.colour = discord.Colour.blurple()
+        embed = discord.Embed(timestamp=time,
+                              colour=discord.Colour.blurple())
         embed.set_author(name=_("Updated Guild ") + str(before.id),
                          icon_url=guild.icon_url)
         embed.set_thumbnail(url=guild.icon_url)
@@ -1039,7 +1039,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         time = datetime.datetime.utcnow()
         embed = discord.Embed(timestamp=time, 
                               icon_url=guild.icon_url,
-                              colour=discord.colour.magenta())
+                              colour=discord.Colour.magenta())
         msg = (f"{member.name}#{member.discriminator} " +
                _("Updated Voice State") + "\n")
         embed.set_author(name=msg)
