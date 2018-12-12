@@ -404,7 +404,6 @@ class ReTrigger(getattr(commands, "Cog", object)):
             return
         if message.author.bot:
             return
-        print(message.content)
         local_perms = not await self.local_perms(message)
         global_perms =  not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
@@ -417,9 +416,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             trigger = Trigger.from_json(trigger_list[triggers])
             if not await self.channel_perms(trigger, channel):
                 continue
-            print(triggers)
             search = re.findall(trigger.regex, message.content)
-            print(search)
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
