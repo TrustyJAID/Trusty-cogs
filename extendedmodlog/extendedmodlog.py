@@ -5,17 +5,20 @@ import asyncio
 from random import choice, randint
 from redbot.core.i18n import Translator, cog_i18n
 
-inv_settings = {"message_edit": False, 
-                "message_delete": False, 
-                "user_change": False,
-                "role_change": False,
-                "voice_change": False,
-                "user_join": False, 
-                "user_left": False, 
-                "channel_change": False,
-                "guild_change": False,
-                "emoji_change": False,
-                "commands_used":False}
+inv_settings = {
+    "message_edit": False, 
+    "message_delete": False, 
+    "user_change": False,
+    "role_change": False,
+    "voice_change": False,
+    "user_join": False, 
+    "user_left": False, 
+    "channel_change": False,
+    "guild_change": False,
+    "emoji_change": False,
+    "commands_used":False,
+    "ignored_channels":[]
+            }
 
 _ = Translator("ExtendedModLog", __file__)
 
@@ -30,7 +33,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 154457677895)
-        self.config.register_guild(**inv_settings)
+        self.config.register_guild(**inv_settings, force_registration=True)
 
     @checks.admin_or_permissions(manage_channels=True)
     @commands.group(aliases=["modlogtoggle"])
@@ -61,28 +64,39 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                             "guild_change": _("Guild changes"),
                             "emoji_change": _("Emoji changes"),
                             "commands_used": _("Mod/Admin Commands")}
-            try:
-                e = discord.Embed(title=_("Setting for ") + guild.name)
-                e.colour = await self.get_colour(ctx.guild)
-                e.description = _("ModLogs channel set to ") + modlog_channel.mention
-                enabled = ""
-                disabled = ""
-                for setting, name in cur_settings.items():
-                    if await self.config.guild(ctx.guild).get_raw(setting):
-                        enabled += name + ", "
-                    else:
-                        disabled += name + ", "
-                if enabled == "":
-                    enabled = _("None  ")
-                if disabled == "":
-                    disabled = _("None  ")
-                e.add_field(name=_("Enabled"), value=enabled[:-2])
-                e.add_field(name=_("Disabled"), value=disabled[:-2])
-                e.set_thumbnail(url=guild.icon_url)
+            msg = _("Setting for ") + guild.name + "\n"
+            e = discord.Embed(title=_("Setting for ") + guild.name)
+            e.colour = await self.get_colour(ctx.guild)
+            e.description = _("ModLogs channel set to ") + modlog_channel.mention
+            ignored_channels = await self.config.guild(guild).ignored_channels()
+            enabled = ""
+            disabled = ""
+            for setting, name in cur_settings.items():
+                if await self.config.guild(ctx.guild).get_raw(setting):
+                    enabled += name + ", "
+                else:
+                    disabled += name + ", "
+            if enabled == "":
+                enabled = _("None  ")
+            if disabled == "":
+                disabled = _("None  ")
+            msg += _("Enabled") + ": " + enabled + "\n"
+            msg += _("Disabled") + ": " + disabled + "\n"
+            e.add_field(name=_("Enabled"), value=enabled[:-2])
+            e.add_field(name=_("Disabled"), value=disabled[:-2])
+            if ignored_channels:
+                chans = ", ".join(guild.get_channel(c).mention for c in ignored_channels)
+                if len(ignored_channels) > 1:
+                    chans = chans[:-2]
+                msg += _("Ignored Channels") + ": " + chans
+                e.add_field(name=_("Ignored Channels"), value=chans)
+            
+            e.set_thumbnail(url=guild.icon_url)
+            if ctx.channel.permissions_for(ctx.me).embed_links:
                 await ctx.send(embed=e)
-            except Exception as e:
-                print(e)
-                return
+            else:
+                await ctx.send(msg)
+
 
     @modlogtoggles.command()
     async def edit(self, ctx):
@@ -259,6 +273,44 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             verb = _("disabled")
         await ctx.send(msg+verb)
 
+    @modlogtoggles.command()
+    async def ignore(self, ctx, channel:discord.TextChannel=None):
+        """
+            Ignore a channel from message delete/edit events and bot commands
+
+            `channel` the channel to ignore message delete/edit events
+            defaults to current channel
+        """
+        guild = ctx.message.guild
+        if channel is None:
+            channel = ctx.channel
+        cur_ignored = await self.config.guild(guild).ignored_channels()
+        if channel.id not in cur_ignored:
+            cur_ignored.append(channel.id)
+            await self.config.guild(guild).ignored_channels.set(cur_ignored)
+            await ctx.send(_(" Now ignoring messages edited and deleted in ") + channel.mention)
+        else:
+            await ctx.send(channel.mention + _(" is already being ignored."))
+
+    @modlogtoggles.command()
+    async def unignore(self, ctx, channel:discord.TextChannel=None):
+        """
+            Unignore a channel from message delete/edit events and bot commands
+
+            `channel` the channel to unignore message delete/edit events
+            defaults to current channel
+        """
+        guild = ctx.message.guild
+        if channel is None:
+            channel = ctx.channel
+        cur_ignored = await self.config.guild(guild).ignored_channels()
+        if channel.id in cur_ignored:
+            cur_ignored.remove(channel.id)
+            await self.config.guild(guild).ignored_channels.set(cur_ignored)
+            await ctx.send(_(" now tracking edited and deleted messages in ") + channel.mention)
+        else:
+            await ctx.send(channel.mention + _(" is not being ignored."))
+
     async def get_colour(self, guild):
         if await self.bot.db.guild(guild).use_bot_color():
             return guild.me.colour
@@ -293,6 +345,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if guild is None:
             return
         if not await self.config.guild(guild).commands_used():
+            return
+        if ctx.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
             channel = await modlog.get_modlog_channel(guild)
@@ -342,8 +396,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Can Run"), value=str(can_run))
             embed.add_field(name=_("Required Role"), value=role)
-            embed.set_footer(text=_("User ID: ")+ str(message.author.id), 
-                             icon_url=message.author.avatar_url)
+            embed.set_footer(text=_("User ID: ")+ str(message.author.id))
             author_title = name + _(" - Used a MOD/ADMIN Command")
             embed.set_author(name=author_title, 
                              icon_url=message.author.avatar_url)
@@ -357,6 +410,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if guild is None:
             return
         if not await self.config.guild(guild).message_delete():
+            return
+        if message.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
             channel = await modlog.get_modlog_channel(guild)
@@ -372,7 +427,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         perp = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.message_delete
-            async for log in guild.audit_logs(limit=2, action=action):
+            async for log in guild.audit_logs(limit=2, action=action, after=time):
                 if log.target.id == message.author.id:
                     perp = log.user
                     break
@@ -398,8 +453,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                 if len(message.attachments) > 1:
                     files = files[:-2]
                 embed.add_field(name=_("Attachments"), value=files)
-            embed.set_footer(text=_("User ID: ")+ str(message.author.id), 
-                             icon_url=message.author.avatar_url)
+            embed.set_footer(text=_("User ID: ")+ str(message.author.id))
             embed.set_author(name=str(author) + _(" - Deleted Message"), 
                              icon_url=message.author.avatar_url)
             await channel.send(embed=embed)
@@ -431,8 +485,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                                   timestamp=member.created_at)
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
-            embed.set_footer(text=_("User ID: ") + str(member.id) + _(" Created on"), 
-                             icon_url=member.avatar_url)
+            embed.set_footer(text=_("User ID: ") + str(member.id) + _(" Created on"))
             embed.set_author(name=name.display_name + _(" has joined the guild"),
                                url=member.avatar_url, icon_url=member.avatar_url)
             embed.set_thumbnail(url=member.avatar_url)
@@ -457,13 +510,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         fmt = "%H:%M:%S"
         if channel.permissions_for(guild.me).embed_links:
             perp = None
+            reason = None
             if channel.permissions_for(guild.me).view_audit_log:
                 action = discord.AuditLogAction.kick
                 async for log in guild.audit_logs(limit=5, action=action):
                     if log.target.id == member.id:
                         perp = log.user
+                        reason = log.reason
                         break
-            author = member
             embed = discord.Embed(description=member.mention, 
                                     colour=discord.Colour.dark_green(), 
                                     timestamp=time)
@@ -471,18 +525,19 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                             value=str(len(guild.members)))
             if perp:
                 embed.add_field(name=_("Kicked"), value=perp.mention)
-            embed.set_footer(text=_("User ID: ") + str(member.id), 
-                             icon_url=member.avatar_url)
-            embed.set_author(name=str(author) + _(" has left the guild"),
+            if reason:
+                embed.add_field(name=_("Reason"), value=str(reason))
+            embed.set_footer(text=_("User ID: ") + str(member.id))
+            embed.set_author(name=str(member) + _(" has left the guild"),
                              url=member.avatar_url, 
                              icon_url=member.avatar_url)
             embed.set_thumbnail(url=member.avatar_url)
             await channel.send(embed=embed)
         else:
-            msg = (f":x:**{author}** "+
+            msg = (f":x:**{member}** "+
                    _("has left the guild. Total users: ") + str(len(guild.members)))
             if perp:
-                msg = (f":x:**{author}** "+
+                msg = (f":x:**{member}** "+
                        _("was kicked by ")+ str(perp)+
                        _(". Total users: ") + 
                        str(len(guild.members)))
@@ -875,6 +930,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         if not await self.config.guild(guild).message_edit():
             return
+        if before.channel.id in await self.config.guild(guild).ignored_channels():
+            return
         if before.content == after.content:
             return
         cleanbefore = before.content
@@ -905,8 +962,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)
-            embed.set_footer(text=_("User ID: ")+str(before.author.id), 
-                             icon_url=before.author.avatar_url)
+            embed.set_footer(text=_("User ID: ")+str(before.author.id))
             embed.set_author(name=name + _(" - Edited Message"), 
                              icon_url=before.author.avatar_url)
             await channel.send( embed=embed)
