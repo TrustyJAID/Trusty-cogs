@@ -11,7 +11,8 @@ import numpy as np
 import os
 import json
 from copy import copy
-
+from typing import Union
+import textwrap
 
 try:
     import cv2
@@ -34,17 +35,56 @@ class ImageMaker(getattr(commands, "Cog", object)):
             test = await resp.read()
             return BytesIO(test)
 
+
     @commands.command(pass_context=True)
-    async def beautiful(self, ctx, user:discord.Member=None):
+    async def wheeze(self, ctx, *, text:Union[discord.Member, str]=None):
+        """
+            Generate a wheeze image with text or a user avatar
+
+            `text` the text or user avatar who will be placed in the bottom pane
+        """
+        if text is None:
+            text = ctx.message.author
+        async with ctx.channel.typing():
+            wheeze_img = await self.make_wheeze(text)
+            if wheeze_img is None:
+                await ctx.send("sorry something went wrong!")
+                return
+            file = discord.File(wheeze_img)
+            # ext = await self.make_beautiful(user)
+            await ctx.send(file=file)
+
+    @commands.command(pass_context=True)
+    async def gwheeze(self, ctx, member:discord.Member=None):
+        """
+            Generate a gif wheeze image if user has a gif avatar
+
+            `member` the member whos avatar will be pasted on the image
+            defaults to author
+        """
+        if member is None:
+            member = ctx.message.author
+        async with ctx.channel.typing():
+            wheeze_img = await self.make_wheeze(member, True)
+            if wheeze_img is None:
+                await ctx.send("sorry something went wrong!")
+                return
+            file = discord.File(wheeze_img)
+            # ext = await self.make_beautiful(user)
+            await ctx.send(file=file)
+
+    @commands.command(pass_context=True)
+    async def beautiful(self, ctx, user:discord.Member=None, is_gif=False):
         """
             Generate a beautiful image using users avatar
 
             `user` the user whos avatar will be places on the image
+            `is_gif` True/False to create a gif if the user has a gif avatar
         """
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            beautiful_img = await self.make_beautiful(user)
+            beautiful_img = await self.make_beautiful(user, is_gif)
             if beautiful_img is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -53,16 +93,17 @@ class ImageMaker(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command(pass_context=True)
-    async def feels(self, ctx, user:discord.Member=None):
+    async def feels(self, ctx, user:discord.Member=None, is_gif=False):
         """
             Generate a feels image using users avatar and role colour
 
             `user` the user whos avatar will be places on the image
+            `is_gif` True/False to create a gif if the user has a gif avatar
         """
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            feels_img = await self.make_feels(user)
+            feels_img = await self.make_feels(user, is_gif)
             if feels_img is None:
                 await ctx.send("sorry something went wrong!")
                 return
@@ -78,7 +119,10 @@ class ImageMaker(getattr(commands, "Cog", object)):
             `message` will be what is pasted on the gif
         """
         if not TRUMP:
-            await ctx.send("The bot owner needs to run `pip3 install opencv-python` to run this command")
+            msg = ("The bot owner needs to run "
+                   "`pip3 install opencv-python` "
+                   "to run this command")
+            await ctx.send(msg)
             return
         async with ctx.channel.typing():
             task = functools.partial(self.make_trump_gif, text=message)        
@@ -133,7 +177,11 @@ class ImageMaker(getattr(commands, "Cog", object)):
         ctx.bot.dispatch("message", msg)
 
     async def make_colour(self, colour):
-        task = functools.partial(self.colour_convert,colour=colour)
+        template = "https://i.imgur.com/n6r04O8.png"
+        template = Image.open(await self.dl_image(template))
+        task = functools.partial(self.colour_convert, 
+                                 template=template,
+                                 colour=colour)
         task = self.bot.loop.run_in_executor(None, task)
         try:
             image = await asyncio.wait_for(task, timeout=60)
@@ -157,13 +205,102 @@ class ImageMaker(getattr(commands, "Cog", object)):
             image = discord.File(pill_image)
             await ctx.send(file=image)
 
-    def make_beautiful_gif(self, avatar):
+    # Below are all the task handlers so the code is not blocking
+
+    async def make_beautiful(self, user, is_gif):
+        template = "https://i.imgur.com/kzE9XBE.png"
+        template = Image.open(await self.dl_image(template))
+        if user.is_avatar_animated() and is_gif:
+            avatar = Image.open(await self.dl_image(
+                                user.avatar_url_as(format="gif", size=128)))
+            task = functools.partial(self.make_beautiful_gif,
+                                     template=template, 
+                                     avatar=avatar)
+            
+        else:
+            avatar = Image.open(await self.dl_image(
+                                user.avatar_url_as(format="png", size=128)))
+            task = functools.partial(self.make_beautiful_img,
+                                     template=template, 
+                                     avatar=avatar)
+        task = self.bot.loop.run_in_executor(None, task)
+        try:
+            temp = await asyncio.wait_for(task, timeout=60)
+        except asyncio.TimeoutError:
+            return
+        temp.seek(0)
+        return temp
+
+    async def make_feels(self, user, is_gif):
+        template = "https://i.imgur.com/4xr6cdw.png"
+        template = Image.open(await self.dl_image(template))
+        colour = user.colour.to_rgb()
+        if user.is_avatar_animated() and is_gif:
+            avatar = Image.open(await self.dl_image(
+                                user.avatar_url_as(format="gif", size=64)))
+            task = functools.partial(self.make_feels_gif,
+                                     template=template,
+                                     colour=colour, 
+                                     avatar=avatar)
+        else:
+            avatar = Image.open(await self.dl_image(
+                                user.avatar_url_as(format="png", size=64)))
+            task = functools.partial(self.make_feels_img, 
+                                     template=template,
+                                     colour=colour, 
+                                     avatar=avatar)
+        task = self.bot.loop.run_in_executor(None, task)
+        try:
+            temp = await asyncio.wait_for(task, timeout=60)
+        except asyncio.TimeoutError:
+            return
+        temp.seek(0)
+        return temp
+
+    async def make_wheeze(self, text, is_gif=False):
+        template = "https://i.imgur.com/c5uoDcd.jpg"
+        template = Image.open(await self.dl_image(template))
+        if type(text) == discord.Member:
+            user = text
+            if user.is_avatar_animated() and is_gif:
+                avatar = Image.open(await self.dl_image(
+                                    user.avatar_url_as(format="gif", size=64)))
+
+                task = functools.partial(self.make_wheeze_gif,
+                                         template=template,
+                                         avatar=avatar)
+                
+            else:
+                avatar = Image.open(await self.dl_image(
+                                    user.avatar_url_as(format="png", size=64)))
+                task = functools.partial(self.make_wheeze_img,
+                                         template=template,
+                                         avatar=avatar)
+            task = self.bot.loop.run_in_executor(None, task)
+            try:
+                temp = await asyncio.wait_for(task, timeout=60)
+            except asyncio.TimeoutError:
+                return
+        else:
+            task = functools.partial(self.make_wheeze_img,
+                                         template=template,
+                                         avatar=text)
+            task = self.bot.loop.run_in_executor(None, task)
+            try:
+                temp = await asyncio.wait_for(task, timeout=60)
+            except asyncio.TimeoutError:
+                return
+        temp.seek(0)
+        return temp
+
+    # Below are all the blocking code
+
+    def make_beautiful_gif(self, template, avatar):
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
         num = 0
         temp = None
         for frame in gif_list:
-            template = Image.open(str(bundled_data_path(self)) + "/beautiful.png")
             template = template.convert("RGBA")
             frame = frame.convert("RGBA")
             # frame = frame.rotate(-30, expand=True)
@@ -174,14 +311,18 @@ class ImageMaker(getattr(commands, "Cog", object)):
             img_list.append(template)
             num += 1
             temp = BytesIO()
-            template.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+            template.save(temp, 
+                          format="GIF", 
+                          save_all=True, 
+                          append_images=img_list, 
+                          duration=0, 
+                          loop=0)
             temp.name = "beautiful.gif"
             if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
                 break
         return temp
 
-    def make_beautiful_img(self, avatar):
-        template = Image.open(str(bundled_data_path(self)) + "/beautiful.png")
+    def make_beautiful_img(self, template, avatar):
         # print(template.info)
         template = template.convert("RGBA") 
         avatar = avatar.convert("RGBA")       
@@ -192,30 +333,61 @@ class ImageMaker(getattr(commands, "Cog", object)):
         temp.name = "beautiful.png"
         return temp
 
-    async def make_beautiful(self, user):
-
-        if user.is_avatar_animated():
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif", size=128)))
-            task = functools.partial(self.make_beautiful_gif, avatar=avatar)
-            
-        else:
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png", size=128)))
-            task = functools.partial(self.make_beautiful_img, avatar=avatar)
-        task = self.bot.loop.run_in_executor(None, task)
-        try:
-            temp = await asyncio.wait_for(task, timeout=60)
-        except asyncio.TimeoutError:
-            return
-        temp.seek(0)
-        return temp
-
-    def make_feels_gif(self, colour, avatar):
+    def make_wheeze_gif(self, template, avatar):
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
         num = 0
         temp = None
         for frame in gif_list:
-            template = Image.open(str(bundled_data_path(self)) + "/pepetemplate.png")
+            template = template.convert("RGBA")
+            frame = frame.convert("RGBA")
+            template.paste(frame, (60, 470), frame)
+            img_list.append(template)
+            num += 1
+            temp = BytesIO()
+            template.save(temp, 
+                          format="GIF", 
+                          save_all=True, 
+                          append_images=img_list, 
+                          duration=0, 
+                          loop=0)
+            temp.name = "beautiful.gif"
+            if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
+                break
+        return temp
+
+    def make_wheeze_img(self, template, avatar):
+        # print(template.info)
+        template = template.convert("RGBA") 
+        
+        if type(avatar) != str:
+            avatar = avatar.convert("RGBA")
+            template.paste(avatar, (60, 470), avatar)
+        else:
+            font_loc = str(bundled_data_path(self)/"impact.ttf")
+            font1 = ImageFont.truetype(font_loc, 40)
+            draw = ImageDraw.Draw(template)
+            margin = 40
+            offset = 470
+            count = 0
+            for line in textwrap.wrap(avatar, width=10):
+                count += 1
+                if count == 6:
+                    draw.text((margin, offset), f"{line}...", fill=(0,0,0), font=font1)
+                    break
+                draw.text((margin, offset), f"{line}", fill=(0,0,0), font=font1)
+                offset += font1.getsize(line)[1]
+        temp = BytesIO()
+        template.save(temp, format="PNG")
+        temp.name = "wheeze.png"
+        return temp
+
+    def make_feels_gif(self, template, colour, avatar):
+        gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
+        img_list = []
+        num = 0
+        temp = None
+        for frame in gif_list:
             template = template.convert("RGBA")
             transparency = template.split()[-1].getdata()
             data = np.array(template)
@@ -237,8 +409,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
                 break
         return temp
 
-    def make_feels_img(self, colour, avatar):
-        template = Image.open(str(bundled_data_path(self)) + "/pepetemplate.png")
+    def make_feels_img(self, template, colour, avatar):
         # print(template.info)
         template = template.convert("RGBA")
         
@@ -259,27 +430,10 @@ class ImageMaker(getattr(commands, "Cog", object)):
         temp.name = "feels.png"
         return temp
 
-    async def make_feels(self, user):
-        colour = user.colour.to_rgb()
-        if user.is_avatar_animated():
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif", size=64)))
-            task = functools.partial(self.make_feels_gif, colour=colour, avatar=avatar)
-        else:
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png", size=64)))
-            task = functools.partial(self.make_feels_img, colour=colour, avatar=avatar)
-        task = self.bot.loop.run_in_executor(None, task)
-        try:
-            temp = await asyncio.wait_for(task, timeout=60)
-        except asyncio.TimeoutError:
-            return
-        temp.seek(0)
-        return temp
-
-    def colour_convert(self, colour="#FF0000"):
-        im = Image.open(str(bundled_data_path(self)) + "/blackpill.png")
-        im = im.convert('RGBA')
+    def colour_convert(self, template, colour="#FF0000"):
+        template = template.convert('RGBA')
         colour = ImageColor.getrgb(colour)
-        data = np.array(im)
+        data = np.array(template)
         red, green, blue, alpha = data.T
         white_areas = (red == 0) & (blue == 0) & (green == 0) & (alpha == 255)
         data[..., :-1][white_areas.T] = colour
