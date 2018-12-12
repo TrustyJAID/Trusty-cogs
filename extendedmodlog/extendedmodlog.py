@@ -508,9 +508,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
+        perp = None
+        reason = None
         if channel.permissions_for(guild.me).embed_links:
-            perp = None
-            reason = None
             if channel.permissions_for(guild.me).view_audit_log:
                 action = discord.AuditLogAction.kick
                 async for log in guild.audit_logs(limit=5, action=action):
