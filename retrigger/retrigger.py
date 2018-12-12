@@ -114,6 +114,24 @@ class ReTrigger(getattr(commands, "Cog", object)):
             return channel.id in trigger.whitelist
         return channel.id not in trigger.blacklist
 
+    async def is_mod_or_admin(self, member):
+        guild = member.guild
+        if member.id == self.bot.owner_id:
+            return True
+        if member == guild.owner:
+            return True
+        admin_role_id = await self.bot.db.guild(guild).admin_role()
+        if admin_role_id:
+            admin_role = guild.get_role(admin_role_id)
+            if admin_role in member.roles:
+                return True
+        mod_role_id = await self.bot.db.guild(guild).mod_role()
+        if mod_role_id is not None:
+            mod_role = guild.get_role(mod_role_id)
+            if mod_role in member.roles:
+                return True
+        return False
+
     async def check_ignored_channel(self, message):
         """https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273"""
         channel = message.channel
@@ -327,7 +345,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
         msg = message.content
         guild = message.guild
         channel = message.channel
+        channel_perms = channel.permissions_for(message.author)
         is_command = await self.check_is_command(message)
+        is_mod = await self.is_mod_or_admin(message.author)
         trigger_list = await self.config.guild(guild).trigger_list()
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
@@ -338,15 +358,96 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 if await self.check_trigger_cooldown(message, trigger):
                     return
                 if trigger.response_type == "delete":
-                    if channel.permissions_for(message.author).manage_messages:
-                        print("ReTrigger: Delete is ignored user has manage messages permission")
+                    if channel_perms.manage_messages or is_mod:
+                        print_msg = ("ReTrigger: Delete is ignored because "
+                                     "user has manage messages permission")
+                        print(print_msg)
                         return
+                elif trigger.response_type == "kick":
+                    if channel_perms.kick_members or is_mod:
+                        print_msg = ("ReTrigger: Kick is ignored "
+                                     "because the user has kick permissions")
+                        print(print_msg)
+                        return
+                elif trigger.response_type == "ban":
+                    if channel_perms.ban_members or is_mod:
+                        print_msg = ("ReTrigger: Ban is ignored "
+                                     "because the user has ban permissions")
+                        print(print_msg)
+                        return
+                elif trigger.response_type in ["add_role", "remove_role"]:
+                    if channel_perms.manage_roles or is_mod:
+                        print_msg = ("ReTrigger: role change is ignored "
+                                     "because the user has mange roles permissions")
+                        print(print_msg)
                 else:
                     if any([local_perms, global_perms, ignored_channel]):
-                        print("ReTrigger: Channel is ignored or user is blacklisted")
+                        print_msg = ("ReTrigger: Channel is "
+                                     "ignored or user is blacklisted")
+                        print(print_msg)
                         return
                     if is_command:
                         return
+                trigger._add_count(1)
+                trigger_list[triggers] = trigger.to_json()
+                await self.perform_trigger(message, trigger, search[0]) 
+                await self.config.guild(guild).trigger_list.set(trigger_list)
+                if not await self.config.guild(guild).allow_multiple():
+                    return
+
+    async def on_raw_message_edit(self, payload):
+        channel = self.bot.get_channel(int(payload.data["channel_id"]))
+        message = await channel.get_message(int(payload.data["id"]))
+        if message.content == "":
+            return
+        if message.guild is None:
+            return
+        if message.author.bot:
+            return
+        print(message.content)
+        local_perms = not await self.local_perms(message)
+        global_perms =  not await self.global_perms(message)
+        ignored_channel = not await self.check_ignored_channel(message)
+        guild = message.guild
+        channel_perms = channel.permissions_for(message.author)
+        is_command = await self.check_is_command(message)
+        is_mod = await self.is_mod_or_admin(message.author)
+        trigger_list = await self.config.guild(guild).trigger_list()
+        for triggers in trigger_list:
+            trigger = Trigger.from_json(trigger_list[triggers])
+            if not await self.channel_perms(trigger, channel):
+                continue
+            print(triggers)
+            search = re.findall(trigger.regex, message.content)
+            print(search)
+            if search != []:
+                if await self.check_trigger_cooldown(message, trigger):
+                    return
+                if trigger.response_type == "delete":
+                    if channel.permissions_for(message.author).manage_messages:
+                        print_msg = ("ReTrigger: Delete is ignored because "
+                                     "user has manage messages permission")
+                        print(print_msg)
+                        return
+                elif trigger.response_type == "kick":
+                    if channel_perms.kick_members or is_mod:
+                        print_msg = ("ReTrigger: Kick is ignored "
+                                     "because the user has kick permissions")
+                        print(print_msg)
+                        return
+                elif trigger.response_type == "ban":
+                    if channel_perms.ban_members or is_mod:
+                        print_msg = ("ReTrigger: Ban is ignored "
+                                     "because the user has ban permissions")
+                        print(print_msg)
+                        return
+                elif trigger.response_type in ["add_role", "remove_role"]:
+                    if channel_perms.manage_roles or is_mod:
+                        print_msg = ("ReTrigger: role change is ignored "
+                                     "because the user has mange roles permissions")
+                        print(print_msg)
+                else:
+                    return
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0]) 
