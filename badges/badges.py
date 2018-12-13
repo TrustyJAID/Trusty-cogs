@@ -210,7 +210,7 @@ class Badges(getattr(commands, "Cog", object)):
                 to_return = await Badge.from_json(badge)
         return to_return
 
-    @commands.group(aliases=["badge"])
+    @commands.command(aliases=["badge"])
     async def badges(self, ctx, *, badge):
         """
             Creates a fun fake badge based on your discord profile
@@ -224,9 +224,6 @@ class Badges(getattr(commands, "Cog", object)):
             await ctx.invoke(self.listbadges)
             return
         badge = await self.get_badge(badge, guild)
-        if badge is None:
-            await ctx.send_help()
-            return
         async with ctx.channel.typing():
             badge_img = await self.create_badge(user, badge)
             if badge_img is None:
@@ -245,7 +242,12 @@ class Badges(getattr(commands, "Cog", object)):
         global_badges = await self.config.badges()
         guild_badges =  await self.config.guild(guild).badges()
         msg = ", ".join(badge["badge_name"] for badge in global_badges)
+
         em = discord.Embed()
+        if await self.bot.db.guild(guild).use_bot_color():
+            em.colour = guild.me.colour
+        else:
+            em.colour = await self.bot.db.color()
         #for badge in await self.config.badges():
         em.add_field(name="Global Badges", value=msg)
         if guild_badges != []:
