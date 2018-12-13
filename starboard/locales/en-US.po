@@ -1,0 +1,401 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-12 22:51-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: starboard.py:19
+#, docstring
+msgid ""
+"\n"
+"        Create a starboard to *pin* those special comments\n"
+"    "
+msgstr ""
+
+#: starboard.py:35
+#, docstring
+msgid "Commands for managing the starboard"
+msgstr ""
+
+#: starboard.py:40
+msgid "Starboard settings for "
+msgstr ""
+
+#: starboard.py:45
+msgid "Name: "
+msgstr ""
+
+#: starboard.py:46
+msgid "Enabled: "
+msgstr ""
+
+#: starboard.py:47
+msgid "Emoji: "
+msgstr ""
+
+#: starboard.py:48
+msgid "Channel: "
+msgstr ""
+
+#: starboard.py:49
+msgid "Threshold: "
+msgstr ""
+
+#: starboard.py:53
+msgid "Blacklisted Channels: "
+msgstr ""
+
+#: starboard.py:57
+msgid "Whitelisted Channels: "
+msgstr ""
+
+#: starboard.py:64
+msgid "Blacklisted roles: "
+msgstr ""
+
+#: starboard.py:71
+msgid "Whitelisted Roles: "
+msgstr ""
+
+#: starboard.py:72 starboard.py:73 starboard.py:518 starboard.py:524
+#: starboard.py:543 starboard.py:545
+msgid "Starboard "
+msgstr ""
+
+#: starboard.py:87
+#, docstring
+msgid ""
+"\n"
+"            Setup the starboard on this server\n"
+"\n"
+"            `name` is the name for the starboard and will be lowercase only\n"
+"            `channel` is the channel where posts will be made defaults to current channel\n"
+"            `emoji` is the emoji that will be used to add to the starboard defaults to ⭐\n"
+"        "
+msgstr ""
+
+#: starboard.py:100 starboard.py:567
+msgid "That emoji is not on this guild!"
+msgstr ""
+
+#: starboard.py:103 starboard.py:504
+msgid "I don't have permission to post in "
+msgstr ""
+
+#: starboard.py:108 starboard.py:509
+msgid "I don't have permission to embed links in "
+msgstr ""
+
+#: starboard.py:113
+msgid " starboard name is already being used"
+msgstr ""
+
+#: starboard.py:118
+msgid "Starboard set to "
+msgstr ""
+
+#: starboard.py:119
+msgid " with emoji "
+msgstr ""
+
+#: starboard.py:125
+#, docstring
+msgid ""
+"\n"
+"            This is to update all previous starboards\n"
+"            to the new starboard storage method keeping as many \n"
+"            settings as possible\n"
+"            This works for all guilds\n"
+"        "
+msgstr ""
+
+#: starboard.py:155
+msgid "Server "
+msgstr ""
+
+#: starboard.py:156
+msgid " had an error converting "
+msgstr ""
+
+#: starboard.py:159
+msgid ""
+"The following servers had errors\n"
+msgstr ""
+
+#: starboard.py:161
+msgid "Starboards should all be updated."
+msgstr ""
+
+#: starboard.py:165
+#, docstring
+msgid ""
+"\n"
+"            Remove a starboard from the server\n"
+"\n"
+"            `name` is the name for the starboard and will be lowercase only\n"
+"        "
+msgstr ""
+
+#: starboard.py:175
+msgid " Doesn't appear to be a starboard on this server."
+msgstr ""
+
+#: starboard.py:180
+msgid "Deleted starboard "
+msgstr ""
+
+#: starboard.py:185
+#, docstring
+msgid ""
+"\n"
+"            Manually star a message\n"
+"\n"
+"            `name` is the name of the starboard you would like to add the message to\n"
+"            `msg_id` is the message ID you want to star\n"
+"            `channel` is the channel where that message is located\n"
+"        "
+msgstr ""
+
+#: starboard.py:198
+msgid "That message doesn't appear to exist in the specified channel."
+msgstr ""
+
+#: starboard.py:207
+msgid "Starboard"
+msgstr ""
+
+#: starboard.py:207
+msgid " isn't enabled."
+msgstr ""
+
+#: starboard.py:211
+msgid "One of your roles is blacklisted or you don't have the whitelisted role."
+msgstr ""
+
+#: starboard.py:216
+msgid "This channel is either blacklisted or not in the whitelisted channels."
+msgstr ""
+
+#: starboard.py:245
+#, docstring
+msgid "Add.Remove roles to blacklist/whitelist"
+msgstr ""
+
+#: starboard.py:250
+#, docstring
+msgid "Add/Remove roles from the whitelist"
+msgstr ""
+
+#: starboard.py:255
+#, docstring
+msgid "Add/Remove roles from the blacklist"
+msgstr ""
+
+#: starboard.py:260
+#, docstring
+msgid ""
+"\n"
+"            Add a role to the starboard blacklist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `role` is the role you would like to add to the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:271 starboard.py:296 starboard.py:321 starboard.py:346
+#: starboard.py:391 starboard.py:421 starboard.py:452 starboard.py:481
+#: starboard.py:515 starboard.py:540 starboard.py:563 starboard.py:590
+msgid "There is no starboard named "
+msgstr ""
+
+#: starboard.py:274 starboard.py:324 starboard.py:395 starboard.py:455
+msgid " is already blacklisted for starboard "
+msgstr ""
+
+#: starboard.py:280 starboard.py:330 starboard.py:401 starboard.py:461
+msgid " blacklisted on starboard "
+msgstr ""
+
+#: starboard.py:285
+#, docstring
+msgid ""
+"\n"
+"            Remove a role to the starboard blacklist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `role` is the role you would like to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:299 starboard.py:349 starboard.py:425 starboard.py:484
+msgid " is not blacklisted for starboard "
+msgstr ""
+
+#: starboard.py:305 starboard.py:355 starboard.py:432 starboard.py:490
+msgid " removed from blacklist on starboard "
+msgstr ""
+
+#: starboard.py:310
+#, docstring
+msgid ""
+"\n"
+"            Add a role to the starboard whitelist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `role` is the role you would like to add to the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:335
+#, docstring
+msgid ""
+"\n"
+"            Remove a role to the starboard whitelist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `role` is the role you would like to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:361
+#, docstring
+msgid "Add/Remove channels from the blacklist/whitelist"
+msgstr ""
+
+#: starboard.py:366
+#, docstring
+msgid "Add/Remove channels from the whitelist"
+msgstr ""
+
+#: starboard.py:371
+#, docstring
+msgid "Add/Remove channels from the blacklist"
+msgstr ""
+
+#: starboard.py:380
+#, docstring
+msgid ""
+"\n"
+"            Add a channel to the starboard blacklist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `channel` is the channel you would like to add to the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:410
+#, docstring
+msgid ""
+"\n"
+"            Remove a channel to the starboard blacklist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `channel` is the channel you would like to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:441
+#, docstring
+msgid ""
+"\n"
+"            Add a channel to the starboard whitelist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `channel` is the channel you would like to add to the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:470
+#, docstring
+msgid ""
+"\n"
+"            Remove a channel to the starboard whitelist\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `channel` is the channel you would like to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:495
+#, docstring
+msgid ""
+"\n"
+"            Change the channel that the starboard gets posted to\n"
+"\n"
+"            `name` is the name of the starboard to adjust\n"
+"            `channel` is the channel you would like to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: starboard.py:519
+msgid " is already posting in "
+msgstr ""
+
+#: starboard.py:525
+msgid " set to post in "
+msgstr ""
+
+#: starboard.py:530
+#, docstring
+msgid ""
+"\n"
+"            Toggle a starboard on/off\n"
+"\n"
+"            `name` is the name of the starboard to toggle\n"
+"        "
+msgstr ""
+
+#: starboard.py:543
+msgid " disabled."
+msgstr ""
+
+#: starboard.py:545
+msgid " enabled."
+msgstr ""
+
+#: starboard.py:552
+#, docstring
+msgid ""
+"\n"
+"            Set the emoji for the starboard\n"
+"\n"
+"            `name` is the name of the starboard to change the emoji for\n"
+"            `emoji` must be an emoji on the server or a default emoji\n"
+"        "
+msgstr ""
+
+#: starboard.py:571
+msgid " set for starboard "
+msgstr ""
+
+#: starboard.py:576
+#, docstring
+msgid ""
+"\n"
+"            Set the threshold before posting to the starboard\n"
+"\n"
+"            `name` is the name of the starboard to change the threshold for\n"
+"            `threshold` must be a number of reactions before a post gets\n"
+"            moved to the starboard\n"
+"        "
+msgstr ""
+
+#: starboard.py:594
+msgid "Threshold of "
+msgstr ""
+
+#: starboard.py:594
+msgid " reactions set for "
+msgstr ""
+
