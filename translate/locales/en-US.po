@@ -1,0 +1,97 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-13 00:26-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: translate.py:28
+#, docstring
+msgid ""
+"\n"
+"        Translate messages using google translate\n"
+"    "
+msgstr ""
+
+#: translate.py:43
+#, docstring
+msgid ""
+"\n"
+"            Translate messages with google translate\n"
+"\n"
+"            `to_language` is the language you would like to translate\n"
+"            `message` is the message to translate\n"
+"        "
+msgstr ""
+
+#: translate.py:51
+msgid "The bot owner needs to set an api key first!"
+msgstr ""
+
+#: translate.py:59
+msgid " is not an available language!"
+msgstr ""
+
+#: translate.py:74 translate.py:181
+msgid " Said:"
+msgstr ""
+
+#: translate.py:76 translate.py:188
+msgid " to "
+msgstr ""
+
+#: translate.py:77 translate.py:189
+msgid "Requested by "
+msgstr ""
+
+#: translate.py:127
+#, docstring
+msgid ""
+"\n"
+"            Toggle the bot responding to flag emojis\n"
+"            to translate text\n"
+"        "
+msgstr ""
+
+#: translate.py:134
+msgid " has been added to post translated responses!"
+msgstr ""
+
+#: translate.py:139
+msgid " has been removed from translated responses!"
+msgstr ""
+
+#: translate.py:199
+#, docstring
+msgid ""
+"\n"
+"            You must get an API key from google to set this up\n"
+"\n"
+"            1. Go to Google Developers Console and log in with your Google account. \n"
+"            (https://console.developers.google.com/)\n"
+"            2. You should be prompted to create a new project (name does not matter).\n"
+"            3. Click on Enable APIs and Services at the top.\n"
+"            4. In the list of APIs choose or search for Cloud Translate API and click on it. \n"
+"            Choose Enable.\n"
+"            5. Click on Credentials on the left navigation bar.\n"
+"            6. Click on Create Credential at the top.\n"
+"            7. At the top click the link for \"API key\".\n"
+"            8. No application restrictions are needed. Click Create at the bottom.\n"
+"            9. You now have a key to add to `[p]translateset`\n"
+"        "
+msgstr ""
+
+#: translate.py:215
+msgid "API key set."
+msgstr ""
+
