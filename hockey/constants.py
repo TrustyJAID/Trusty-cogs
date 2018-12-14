@@ -57,7 +57,7 @@ TEAMS = {
         "emoji" : "CalgaryFlames:381568940314460171",
         "home" : "#B72B35",
         "id" : 20,
-        "invite" : "https://discord.gg/PAZsyWE",
+        "invite" : "https://discord.gg/dRQqc2h",
         "logo" : "https://nhl.bamcontent.com/images/photos/281720898/256x256/cut.png",
         "team_url" : "http://www.calgaryflames.com",
         "timezone" : "US/Mountain"
