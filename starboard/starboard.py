@@ -85,7 +85,7 @@ class Starboard(getattr(commands, "Cog", object)):
                     emoji:Union[discord.Emoji, str]="⭐"
                 ):
         """
-            Setup the starboard on this server
+            Create a starboard on this server
 
             `name` is the name for the starboard and will be lowercase only
             `channel` is the channel where posts will be made defaults to current channel
