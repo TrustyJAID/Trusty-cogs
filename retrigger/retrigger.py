@@ -419,8 +419,16 @@ class ReTrigger(getattr(commands, "Cog", object)):
             return
         if "bot" in payload.data["author"]:
             return
-        channel = self.bot.get_channel(int(payload.data["channel_id"]))
-        message = await channel.get_message(int(payload.data["id"]))
+        try:
+            channel = self.bot.get_channel(int(payload.data["channel_id"]))
+        except:
+            # If we can't find the channel ignore it
+            pass
+        try:
+            message = await channel.get_message(int(payload.data["id"]))
+        except:
+            # if we can't find the message ignore it
+            pass
         local_perms = not await self.local_perms(message)
         global_perms =  not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
@@ -518,7 +526,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
             self.bot.dispatch("message", msg)
             return
         if trigger.response_type == "delete":
-            await message.delete()
+            try:
+                await message.delete()
+            except:
+                pass
             return
         if trigger.response_type == "add_role":
             role = guild.get_role(trigger.text)
