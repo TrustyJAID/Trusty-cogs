@@ -490,12 +490,23 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 file = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-            return await message.channel.send(file=file)
+            try:
+                await message.channel.send(file=file)
+            except Exception as e:
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+            return
         if trigger.response_type == "text" and own_permissions.send_messages:
-            return await channel.send(trigger.text)
+            try:
+                await channel.send(trigger.text)
+            except Exception as e:
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+            return
         if trigger.response_type == "react" and own_permissions.add_reactions:
             for emoji in trigger.text:
-                await message.add_reaction(emoji)
+                try:
+                    await message.add_reaction(emoji)
+                except Exception as e:
+                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
         if trigger.response_type == "ban" and own_permissions.ban_members:
             reason = _("Trigger response: ") + trigger.name
@@ -504,7 +515,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 # or try to ban the guild owner
                 return
             if guild.me.top_role > author.top_role:
-                await author.ban(reason=reason, delete_message_days=0)
+                try:
+                    await author.ban(reason=reason, delete_message_days=0)
+                except Exception as e:
+                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
         if trigger.response_type == "kick" and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
@@ -513,12 +527,19 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 return
             reason = _("Trigger response: ") + trigger.name
             if guild.me.top_role > author.top_role:
-                await author.kick(reason=reason)
+                try:
+                    await author.kick(reason=reason)
+                except Exception as e:
+                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
         if trigger.response_type == "image" and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             file = discord.File(path)
-            return await channel.send(trigger.text, file=file)
+            try:
+                await channel.send(trigger.text, file=file)
+            except Exception as e:
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+            return
         if trigger.response_type == "command":
             msg = copy(message)
             prefix_list = await self.bot.command_prefix(self.bot, message)
@@ -528,22 +549,22 @@ class ReTrigger(getattr(commands, "Cog", object)):
         if trigger.response_type == "delete":
             try:
                 await message.delete()
-            except:
-                pass
+            except Exception as e:
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
         if trigger.response_type == "add_role":
             role = guild.get_role(trigger.text)
             try:
                 await author.add_roles(role, reason=_("Said the magic words"))
             except Exception as e:
-                print(e)
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
         if trigger.response_type == "remove_role":
             role = guild.get_role(trigger.text)
             try:
                 await author.remove_roles(role, reason=_("Said the magic words"))
             except Exception as e:
-                print(e)
+                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
             return
 
 
