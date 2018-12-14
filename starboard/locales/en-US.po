@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-12 22:51-0700\n"
+"POT-Creation-Date: 2018-12-14 13:28-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,8 +68,8 @@ msgstr ""
 msgid "Whitelisted Roles: "
 msgstr ""
 
-#: starboard.py:72 starboard.py:73 starboard.py:518 starboard.py:524
-#: starboard.py:543 starboard.py:545
+#: starboard.py:72 starboard.py:73 starboard.py:445 starboard.py:451
+#: starboard.py:470 starboard.py:472
 msgid "Starboard "
 msgstr ""
 
@@ -85,15 +85,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:100 starboard.py:567
+#: starboard.py:100 starboard.py:494
 msgid "That emoji is not on this guild!"
 msgstr ""
 
-#: starboard.py:103 starboard.py:504
+#: starboard.py:103 starboard.py:431
 msgid "I don't have permission to post in "
 msgstr ""
 
-#: starboard.py:108 starboard.py:509
+#: starboard.py:108 starboard.py:436
 msgid "I don't have permission to embed links in "
 msgstr ""
 
@@ -189,164 +189,115 @@ msgstr ""
 
 #: starboard.py:245
 #, docstring
-msgid "Add.Remove roles to blacklist/whitelist"
+msgid "Add/Remove channels/roles from the whitelist"
 msgstr ""
 
 #: starboard.py:250
 #, docstring
-msgid "Add/Remove roles from the whitelist"
+msgid "Add/Remove channels/roles from the blacklist"
 msgstr ""
 
-#: starboard.py:255
-#, docstring
-msgid "Add/Remove roles from the blacklist"
-msgstr ""
-
-#: starboard.py:260
-#, docstring
-msgid ""
-"\n"
-"            Add a role to the starboard blacklist\n"
-"\n"
-"            `name` is the name of the starboard to adjust\n"
-"            `role` is the role you would like to add to the blacklist\n"
-"        "
-msgstr ""
-
-#: starboard.py:271 starboard.py:296 starboard.py:321 starboard.py:346
-#: starboard.py:391 starboard.py:421 starboard.py:452 starboard.py:481
-#: starboard.py:515 starboard.py:540 starboard.py:563 starboard.py:590
-msgid "There is no starboard named "
-msgstr ""
-
-#: starboard.py:274 starboard.py:324 starboard.py:395 starboard.py:455
-msgid " is already blacklisted for starboard "
-msgstr ""
-
-#: starboard.py:280 starboard.py:330 starboard.py:401 starboard.py:461
-msgid " blacklisted on starboard "
-msgstr ""
-
-#: starboard.py:285
-#, docstring
-msgid ""
-"\n"
-"            Remove a role to the starboard blacklist\n"
-"\n"
-"            `name` is the name of the starboard to adjust\n"
-"            `role` is the role you would like to remove from the blacklist\n"
-"        "
-msgstr ""
-
-#: starboard.py:299 starboard.py:349 starboard.py:425 starboard.py:484
-msgid " is not blacklisted for starboard "
-msgstr ""
-
-#: starboard.py:305 starboard.py:355 starboard.py:432 starboard.py:490
-msgid " removed from blacklist on starboard "
-msgstr ""
-
-#: starboard.py:310
-#, docstring
-msgid ""
-"\n"
-"            Add a role to the starboard whitelist\n"
-"\n"
-"            `name` is the name of the starboard to adjust\n"
-"            `role` is the role you would like to add to the blacklist\n"
-"        "
-msgstr ""
-
-#: starboard.py:335
-#, docstring
-msgid ""
-"\n"
-"            Remove a role to the starboard whitelist\n"
-"\n"
-"            `name` is the name of the starboard to adjust\n"
-"            `role` is the role you would like to remove from the blacklist\n"
-"        "
-msgstr ""
-
-#: starboard.py:361
-#, docstring
-msgid "Add/Remove channels from the blacklist/whitelist"
-msgstr ""
-
-#: starboard.py:366
-#, docstring
-msgid "Add/Remove channels from the whitelist"
-msgstr ""
-
-#: starboard.py:371
-#, docstring
-msgid "Add/Remove channels from the blacklist"
-msgstr ""
-
-#: starboard.py:380
+#: starboard.py:259
 #, docstring
 msgid ""
 "\n"
 "            Add a channel to the starboard blacklist\n"
 "\n"
 "            `name` is the name of the starboard to adjust\n"
-"            `channel` is the channel you would like to add to the blacklist\n"
+"            `channel_or_role` is the channel or role you would like to add to the blacklist\n"
 "        "
 msgstr ""
 
-#: starboard.py:410
+#: starboard.py:270 starboard.py:311 starboard.py:353 starboard.py:394
+#: starboard.py:442 starboard.py:467 starboard.py:490 starboard.py:517
+msgid "There is no starboard named "
+msgstr ""
+
+#: starboard.py:275 starboard.py:285
+msgid " is already blacklisted for starboard "
+msgstr ""
+
+#: starboard.py:281 starboard.py:291
+msgid " blacklisted on starboard "
+msgstr ""
+
+#: starboard.py:300
 #, docstring
 msgid ""
 "\n"
 "            Remove a channel to the starboard blacklist\n"
 "\n"
 "            `name` is the name of the starboard to adjust\n"
-"            `channel` is the channel you would like to remove from the blacklist\n"
+"            `channel_or_role` is the channel or role you would like to remove from the blacklist\n"
 "        "
 msgstr ""
 
-#: starboard.py:441
+#: starboard.py:316 starboard.py:327
+msgid " is not blacklisted for starboard "
+msgstr ""
+
+#: starboard.py:323 starboard.py:333
+msgid " removed from blacklist on starboard "
+msgstr ""
+
+#: starboard.py:342
 #, docstring
 msgid ""
 "\n"
 "            Add a channel to the starboard whitelist\n"
 "\n"
 "            `name` is the name of the starboard to adjust\n"
-"            `channel` is the channel you would like to add to the blacklist\n"
+"            `channel_or_role` is the channel or role you would like to add to the whitelist\n"
 "        "
 msgstr ""
 
-#: starboard.py:470
+#: starboard.py:358 starboard.py:368
+msgid " is already whitelisted for starboard "
+msgstr ""
+
+#: starboard.py:364 starboard.py:374
+msgid " whitelisted on starboard "
+msgstr ""
+
+#: starboard.py:383
 #, docstring
 msgid ""
 "\n"
 "            Remove a channel to the starboard whitelist\n"
 "\n"
 "            `name` is the name of the starboard to adjust\n"
-"            `channel` is the channel you would like to remove from the blacklist\n"
+"            `channel_or_role` is the channel or role you would like to remove from the whitelist\n"
 "        "
 msgstr ""
 
-#: starboard.py:495
+#: starboard.py:399 starboard.py:410
+msgid " is not whitelisted for starboard "
+msgstr ""
+
+#: starboard.py:406 starboard.py:416
+msgid " removed from whitelist on starboard "
+msgstr ""
+
+#: starboard.py:422
 #, docstring
 msgid ""
 "\n"
 "            Change the channel that the starboard gets posted to\n"
 "\n"
 "            `name` is the name of the starboard to adjust\n"
-"            `channel` is the channel you would like to remove from the blacklist\n"
+"            `channel_or_role` is the channel or role you would like to remove from the blacklist\n"
 "        "
 msgstr ""
 
-#: starboard.py:519
+#: starboard.py:446
 msgid " is already posting in "
 msgstr ""
 
-#: starboard.py:525
+#: starboard.py:452
 msgid " set to post in "
 msgstr ""
 
-#: starboard.py:530
+#: starboard.py:457
 #, docstring
 msgid ""
 "\n"
@@ -356,15 +307,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:543
+#: starboard.py:470
 msgid " disabled."
 msgstr ""
 
-#: starboard.py:545
+#: starboard.py:472
 msgid " enabled."
 msgstr ""
 
-#: starboard.py:552
+#: starboard.py:479
 #, docstring
 msgid ""
 "\n"
@@ -375,11 +326,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:571
+#: starboard.py:498
 msgid " set for starboard "
 msgstr ""
 
-#: starboard.py:576
+#: starboard.py:503
 #, docstring
 msgid ""
 "\n"
@@ -391,11 +342,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:594
+#: starboard.py:521
 msgid "Threshold of "
 msgstr ""
 
-#: starboard.py:594
+#: starboard.py:521
 msgid " reactions set for "
 msgstr ""
 
