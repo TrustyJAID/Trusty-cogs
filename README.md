@@ -1,4 +1,11 @@
 # Trusty-cogs V3
+[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/release/3.0.0)
+[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)
+[![TrustyJAID](https://i.imgur.com/xNvhDFV.png)](https://trustyjaid.com/)
+[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)
+[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)
+
+
 TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
 To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`
 
@@ -29,7 +36,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Gabai | **Beta** | A cog to verify a user is on gab before letting them join the server. |
 | Notsobot | **Beta**| Working cog for many of NotSoBot's commands. Has lots of requirements, view the cog README.md for details. |
 | Spoiler | **Beta**| Post spoiler messages in chat and react to the message to view the spoilers. |
-| ReTrigger | **Release** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images similar to triggersize cog.</details> |
+| ReTrigger | **Release** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | ExtendedModLog | **Release**| An in depth extension of RedBot's built in modlog handling message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more |
 
 
@@ -81,3 +88,5 @@ Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authori
 * Aziz - Translate cog
 * Palmtree5 - Tweets cog
 * irdumb - Welcome cog
+
+Credits wouldn't be complete without a huge shout out to all the people who have inspired me to create many of these cogs. Thank you to everyone who has pushed me to think about new ideas and implement them.
