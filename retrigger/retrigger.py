@@ -413,14 +413,14 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     return
 
     async def on_raw_message_edit(self, payload):
+        if "content" not in payload.data:
+            return
+        if "guild_id" not in payload.data:
+            return
+        if "bot" in payload.data["author"]:
+            return
         channel = self.bot.get_channel(int(payload.data["channel_id"]))
         message = await channel.get_message(int(payload.data["id"]))
-        if message.content == "":
-            return
-        if message.guild is None:
-            return
-        if message.author.bot:
-            return
         local_perms = not await self.local_perms(message)
         global_perms =  not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
