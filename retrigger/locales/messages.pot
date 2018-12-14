@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-14 14:17-0700\n"
+"POT-Creation-Date: 2018-12-14 14:42-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -83,15 +83,21 @@ msgstr ""
 msgid "ReTrigger: Channel is ignored or user is blacklisted"
 msgstr ""
 
-#: retrigger.py:501 retrigger.py:514
+#: retrigger.py:496 retrigger.py:502 retrigger.py:509 retrigger.py:521
+#: retrigger.py:533 retrigger.py:541 retrigger.py:553 retrigger.py:560
+#: retrigger.py:567
+msgid "Retrigger encountered an error in "
+msgstr ""
+
+#: retrigger.py:512 retrigger.py:528
 msgid "Trigger response: "
 msgstr ""
 
-#: retrigger.py:537 retrigger.py:544
+#: retrigger.py:558 retrigger.py:565
 msgid "Said the magic words"
 msgstr ""
 
-#: retrigger.py:578
+#: retrigger.py:599
 #, docstring
 msgid ""
 "\n"
@@ -101,7 +107,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:587
+#: retrigger.py:608
 #, docstring
 msgid ""
 "\n"
@@ -109,15 +115,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:592
+#: retrigger.py:613
 msgid "Multiple responses disabled, only the first trigger will happen."
 msgstr ""
 
-#: retrigger.py:598
+#: retrigger.py:619
 msgid "Multiple responses enabled, all triggers will occur."
 msgstr ""
 
-#: retrigger.py:605
+#: retrigger.py:626
 #, docstring
 msgid ""
 "\n"
@@ -125,7 +131,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:612
+#: retrigger.py:633
 #, docstring
 msgid ""
 "\n"
@@ -133,7 +139,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:619
+#: retrigger.py:640
 #, docstring
 msgid ""
 "\n"
@@ -146,45 +152,45 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:629 retrigger.py:665 retrigger.py:676 retrigger.py:694
-#: retrigger.py:705 retrigger.py:722 retrigger.py:733 retrigger.py:750
-#: retrigger.py:761 retrigger.py:776 retrigger.py:797 retrigger.py:799
-#: retrigger.py:829 retrigger.py:870 retrigger.py:912 retrigger.py:955
-#: retrigger.py:987 retrigger.py:1019 retrigger.py:1061 retrigger.py:1095
-#: retrigger.py:1124 retrigger.py:1157 retrigger.py:1190
+#: retrigger.py:650 retrigger.py:686 retrigger.py:697 retrigger.py:715
+#: retrigger.py:726 retrigger.py:743 retrigger.py:754 retrigger.py:771
+#: retrigger.py:782 retrigger.py:797 retrigger.py:818 retrigger.py:820
+#: retrigger.py:850 retrigger.py:891 retrigger.py:933 retrigger.py:976
+#: retrigger.py:1008 retrigger.py:1040 retrigger.py:1082 retrigger.py:1116
+#: retrigger.py:1145 retrigger.py:1178 retrigger.py:1211
 msgid "Trigger `"
 msgstr ""
 
-#: retrigger.py:629 retrigger.py:665 retrigger.py:694 retrigger.py:722
-#: retrigger.py:750 retrigger.py:776 retrigger.py:799
+#: retrigger.py:650 retrigger.py:686 retrigger.py:715 retrigger.py:743
+#: retrigger.py:771 retrigger.py:797 retrigger.py:820
 msgid "` doesn't exist."
 msgstr ""
 
-#: retrigger.py:632
+#: retrigger.py:653
 msgid "Style must be either `guild`, `server`, `channel`, `user`, or `member`."
 msgstr ""
 
-#: retrigger.py:636
+#: retrigger.py:657
 msgid "Cooldown of "
 msgstr ""
 
-#: retrigger.py:636
+#: retrigger.py:657
 msgid "s per "
 msgstr ""
 
-#: retrigger.py:637
+#: retrigger.py:658
 msgid " set for Trigger "
 msgstr ""
 
-#: retrigger.py:646
+#: retrigger.py:667
 msgid "Cooldown for Trigger `"
 msgstr ""
 
-#: retrigger.py:646
+#: retrigger.py:667
 msgid "` reset."
 msgstr ""
 
-#: retrigger.py:655
+#: retrigger.py:676
 #, docstring
 msgid ""
 "\n"
@@ -195,23 +201,23 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:672 retrigger.py:729
+#: retrigger.py:693 retrigger.py:750
 msgid " added to Trigger `"
 msgstr ""
 
-#: retrigger.py:673 retrigger.py:702
+#: retrigger.py:694 retrigger.py:723
 msgid "`'s whitelist."
 msgstr ""
 
-#: retrigger.py:676 retrigger.py:733
+#: retrigger.py:697 retrigger.py:754
 msgid "` already has "
 msgstr ""
 
-#: retrigger.py:677 retrigger.py:706
+#: retrigger.py:698 retrigger.py:727
 msgid " whitelisted."
 msgstr ""
 
-#: retrigger.py:683
+#: retrigger.py:704
 #, docstring
 msgid ""
 "\n"
@@ -222,15 +228,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:701 retrigger.py:757
+#: retrigger.py:722 retrigger.py:778
 msgid " removed from Trigger `"
 msgstr ""
 
-#: retrigger.py:705 retrigger.py:761
+#: retrigger.py:726 retrigger.py:782
 msgid "` doesn't have "
 msgstr ""
 
-#: retrigger.py:712
+#: retrigger.py:733
 #, docstring
 msgid ""
 "\n"
@@ -241,15 +247,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:730 retrigger.py:758
+#: retrigger.py:751 retrigger.py:779
 msgid "`'s blacklist."
 msgstr ""
 
-#: retrigger.py:734 retrigger.py:762
+#: retrigger.py:755 retrigger.py:783
 msgid " blacklisted."
 msgstr ""
 
-#: retrigger.py:740
+#: retrigger.py:761
 #, docstring
 msgid ""
 "\n"
@@ -260,7 +266,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:768
+#: retrigger.py:789
 #, docstring
 msgid ""
 "\n"
@@ -270,11 +276,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:783
+#: retrigger.py:804
 msgid "There are no triggers setup on this server."
 msgstr ""
 
-#: retrigger.py:791
+#: retrigger.py:812
 #, docstring
 msgid ""
 "\n"
@@ -284,11 +290,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:797
+#: retrigger.py:818
 msgid "` removed."
 msgstr ""
 
-#: retrigger.py:804
+#: retrigger.py:825
 #, docstring
 msgid ""
 "\n"
@@ -303,25 +309,25 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:815 retrigger.py:845 retrigger.py:887 retrigger.py:929
-#: retrigger.py:973 retrigger.py:1005 retrigger.py:1035 retrigger.py:1076
-#: retrigger.py:1110 retrigger.py:1140 retrigger.py:1173
+#: retrigger.py:836 retrigger.py:866 retrigger.py:908 retrigger.py:950
+#: retrigger.py:994 retrigger.py:1026 retrigger.py:1056 retrigger.py:1097
+#: retrigger.py:1131 retrigger.py:1161 retrigger.py:1194
 msgid " is already a trigger name"
 msgstr ""
 
-#: retrigger.py:820 retrigger.py:934 retrigger.py:978 retrigger.py:1010
-#: retrigger.py:1040 retrigger.py:1081 retrigger.py:1115 retrigger.py:1145
-#: retrigger.py:1178
+#: retrigger.py:841 retrigger.py:955 retrigger.py:999 retrigger.py:1031
+#: retrigger.py:1061 retrigger.py:1102 retrigger.py:1136 retrigger.py:1166
+#: retrigger.py:1199
 msgid "There is something wrong with that regex pattern: "
 msgstr ""
 
-#: retrigger.py:829 retrigger.py:870 retrigger.py:912 retrigger.py:955
-#: retrigger.py:987 retrigger.py:1019 retrigger.py:1061 retrigger.py:1095
-#: retrigger.py:1124 retrigger.py:1157 retrigger.py:1190
+#: retrigger.py:850 retrigger.py:891 retrigger.py:933 retrigger.py:976
+#: retrigger.py:1008 retrigger.py:1040 retrigger.py:1082 retrigger.py:1116
+#: retrigger.py:1145 retrigger.py:1178 retrigger.py:1211
 msgid "` set."
 msgstr ""
 
-#: retrigger.py:834
+#: retrigger.py:855
 #, docstring
 msgid ""
 "\n"
@@ -336,7 +342,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:875
+#: retrigger.py:896
 #, docstring
 msgid ""
 "\n"
@@ -352,7 +358,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:917
+#: retrigger.py:938
 #, docstring
 msgid ""
 "\n"
@@ -368,7 +374,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:961
+#: retrigger.py:982
 #, docstring
 msgid ""
 "\n"
@@ -384,7 +390,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:993
+#: retrigger.py:1014
 #, docstring
 msgid ""
 "\n"
@@ -400,7 +406,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1024
+#: retrigger.py:1045
 #, docstring
 msgid ""
 "\n"
@@ -415,7 +421,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1065
+#: retrigger.py:1086
 #, docstring
 msgid ""
 "\n"
@@ -430,7 +436,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1100
+#: retrigger.py:1121
 #, docstring
 msgid ""
 "\n"
@@ -444,7 +450,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1129
+#: retrigger.py:1150
 #, docstring
 msgid ""
 "\n"
@@ -459,7 +465,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1162
+#: retrigger.py:1183
 #, docstring
 msgid ""
 "\n"
