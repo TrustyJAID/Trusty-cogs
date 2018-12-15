@@ -1301,7 +1301,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
                     await ctx.send(file=file)
         except:
             await ctx.send("sorry, can't reglitch an image.")
-            raise
+            return
 
     @commands.command(pass_context=True)
     async def glitch2(self, ctx, *urls:str):
