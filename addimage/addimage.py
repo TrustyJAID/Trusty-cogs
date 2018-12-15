@@ -13,7 +13,7 @@ import string
 from redbot.core.i18n import Translator, cog_i18n
 
 
-_ = Translator("Alias", __file__)
+_ = Translator("AddImage", __file__)
 
 
 @cog_i18n(_)
