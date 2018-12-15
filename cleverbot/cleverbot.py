@@ -82,12 +82,21 @@ class Cleverbot(getattr(commands, "Cog", object)):
     @cleverbot.command(pass_context=True)
     @checks.mod_or_permissions(manage_channels=True)
     async def channel(self, ctx, channel: discord.TextChannel=None):
-        """Toggles channel for automatic replies"""
+        """
+            Toggles channel for automatic replies
+
+            do `[p]cleverbot channel` after a channel is set to disable.
+        """
         guild = ctx.message.guild
-        if channel is None:
-            channel = ctx.message.channel
-        await self.config.guild(guild).channel.set(channel.id)
-        await ctx.send("I will reply in {}".format(channel))
+        cur_auto_channel = await self.config.guild(guild).channel()
+        if not cur_auto_channel:
+            if channel is None:
+                channel = ctx.message.channel
+            await self.config.guild(guild).channel.set(channel.id)
+            await ctx.send("I will reply in {}".format(channel.mention))
+        else:
+            await self.config.guild(guild).channel.set(None)
+            await ctx.send("Automatic replies turned off.")
 
     @cleverbot.command()
     @checks.is_owner()
