@@ -182,17 +182,17 @@ class ReTrigger(getattr(commands, "Cog", object)):
         return filename
 
     async def wait_for_image(self, ctx):
-        await ctx.send("Upload an image for me to use! Type `exit` to cancel.")
+        await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
         msg = None
         while msg is None:
             check = lambda m: m.author == ctx.message.author and m.attachments != []
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
-                await ctx.send("Image adding timed out.")
+                await ctx.send(_("Image adding timed out."))
                 break
             if "exit" in msg.content.lower():
-                await ctx.send("Image adding cancelled.")
+                await ctx.send(_("Image adding cancelled."))
                 break
         return msg
 
@@ -868,7 +868,8 @@ class ReTrigger(getattr(commands, "Cog", object)):
         try:
             search = re.findall(regex, ctx.message.content)
         except Exception as e:
-            await ctx.send("There is something wrong with that regex pattern: {}".format(e))
+            msg = _("There is something wrong with that regex pattern: ")
+            await ctx.send(msg + str(e))
             return
         guild = ctx.guild
         author = ctx.message.author.id
@@ -910,7 +911,8 @@ class ReTrigger(getattr(commands, "Cog", object)):
         try:
             search = re.findall(regex, ctx.message.content)
         except Exception as e:
-            await ctx.send("There is something wrong with that regex pattern: {}".format(e))
+            msg = _("There is something wrong with that regex pattern: ")
+            await ctx.send(msg + str(e))
             return
         guild = ctx.guild
         author = ctx.message.author.id
@@ -1071,7 +1073,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             except Exception as e:
                 print(e)
         if good_emojis == []:
-            await ctx.send("None of the emojis supplied will work!")
+            await ctx.send(_("None of the emojis supplied will work!"))
             return
         guild = ctx.guild
         author = ctx.message.author.id
@@ -1105,7 +1107,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         cmd_list = command.split(" ")
         existing_cmd = self.bot.get_command(cmd_list[0])
         if existing_cmd is None:
-            await ctx.send("{} doesn't seem to be an available command.".format(command))
+            await ctx.send(command + _(" doesn't seem to be an available command."))
             return
         guild = ctx.guild
         author = ctx.message.author.id
@@ -1167,7 +1169,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             await ctx.send(msg + str(e))
             return
         if role >= ctx.me.top_role:
-            await ctx.send("I can't assign roles higher than my own.")
+            await ctx.send(_("I can't assign roles higher than my own."))
             return
         guild = ctx.guild
         author = ctx.message.author.id
@@ -1200,7 +1202,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             await ctx.send(msg + str(e))
             return
         if role >= ctx.me.top_role:
-            await ctx.send("I can't remove roles higher than my own.")
+            await ctx.send(_("I can't remove roles higher than my own."))
             return
         guild = ctx.guild
         author = ctx.message.author.id

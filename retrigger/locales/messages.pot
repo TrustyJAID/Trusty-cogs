@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-14 14:42-0700\n"
+"POT-Creation-Date: 2018-12-14 19:39-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,6 +21,18 @@ msgid ""
 "\n"
 "        Trigger bot events using regular expressions\n"
 "    "
+msgstr ""
+
+#: retrigger.py:185
+msgid "Upload an image for me to use! Type `exit` to cancel."
+msgstr ""
+
+#: retrigger.py:192
+msgid "Image adding timed out."
+msgstr ""
+
+#: retrigger.py:195
+msgid "Image adding cancelled."
 msgstr ""
 
 #: retrigger.py:227
@@ -155,9 +167,9 @@ msgstr ""
 #: retrigger.py:650 retrigger.py:686 retrigger.py:697 retrigger.py:715
 #: retrigger.py:726 retrigger.py:743 retrigger.py:754 retrigger.py:771
 #: retrigger.py:782 retrigger.py:797 retrigger.py:818 retrigger.py:820
-#: retrigger.py:850 retrigger.py:891 retrigger.py:933 retrigger.py:976
-#: retrigger.py:1008 retrigger.py:1040 retrigger.py:1082 retrigger.py:1116
-#: retrigger.py:1145 retrigger.py:1178 retrigger.py:1211
+#: retrigger.py:850 retrigger.py:892 retrigger.py:935 retrigger.py:978
+#: retrigger.py:1010 retrigger.py:1042 retrigger.py:1084 retrigger.py:1118
+#: retrigger.py:1147 retrigger.py:1180 retrigger.py:1213
 msgid "Trigger `"
 msgstr ""
 
@@ -309,21 +321,21 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:836 retrigger.py:866 retrigger.py:908 retrigger.py:950
-#: retrigger.py:994 retrigger.py:1026 retrigger.py:1056 retrigger.py:1097
-#: retrigger.py:1131 retrigger.py:1161 retrigger.py:1194
+#: retrigger.py:836 retrigger.py:866 retrigger.py:909 retrigger.py:952
+#: retrigger.py:996 retrigger.py:1028 retrigger.py:1058 retrigger.py:1099
+#: retrigger.py:1133 retrigger.py:1163 retrigger.py:1196
 msgid " is already a trigger name"
 msgstr ""
 
-#: retrigger.py:841 retrigger.py:955 retrigger.py:999 retrigger.py:1031
-#: retrigger.py:1061 retrigger.py:1102 retrigger.py:1136 retrigger.py:1166
-#: retrigger.py:1199
+#: retrigger.py:841 retrigger.py:871 retrigger.py:914 retrigger.py:957
+#: retrigger.py:1001 retrigger.py:1033 retrigger.py:1063 retrigger.py:1104
+#: retrigger.py:1138 retrigger.py:1168 retrigger.py:1201
 msgid "There is something wrong with that regex pattern: "
 msgstr ""
 
-#: retrigger.py:850 retrigger.py:891 retrigger.py:933 retrigger.py:976
-#: retrigger.py:1008 retrigger.py:1040 retrigger.py:1082 retrigger.py:1116
-#: retrigger.py:1145 retrigger.py:1178 retrigger.py:1211
+#: retrigger.py:850 retrigger.py:892 retrigger.py:935 retrigger.py:978
+#: retrigger.py:1010 retrigger.py:1042 retrigger.py:1084 retrigger.py:1118
+#: retrigger.py:1147 retrigger.py:1180 retrigger.py:1213
 msgid "` set."
 msgstr ""
 
@@ -342,7 +354,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:896
+#: retrigger.py:897
 #, docstring
 msgid ""
 "\n"
@@ -358,7 +370,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:938
+#: retrigger.py:940
 #, docstring
 msgid ""
 "\n"
@@ -374,7 +386,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:982
+#: retrigger.py:984
 #, docstring
 msgid ""
 "\n"
@@ -390,7 +402,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1014
+#: retrigger.py:1016
 #, docstring
 msgid ""
 "\n"
@@ -406,7 +418,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1045
+#: retrigger.py:1047
 #, docstring
 msgid ""
 "\n"
@@ -421,7 +433,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1086
+#: retrigger.py:1076
+msgid "None of the emojis supplied will work!"
+msgstr ""
+
+#: retrigger.py:1088
 #, docstring
 msgid ""
 "\n"
@@ -436,7 +452,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1121
+#: retrigger.py:1110
+msgid " doesn't seem to be an available command."
+msgstr ""
+
+#: retrigger.py:1123
 #, docstring
 msgid ""
 "\n"
@@ -450,7 +470,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1150
+#: retrigger.py:1152
 #, docstring
 msgid ""
 "\n"
@@ -465,7 +485,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1183
+#: retrigger.py:1172
+msgid "I can't assign roles higher than my own."
+msgstr ""
+
+#: retrigger.py:1185
 #, docstring
 msgid ""
 "\n"
@@ -478,5 +502,9 @@ msgid ""
 "            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
 "            For case insensitive searches add `(?i)` at the start of the regex\n"
 "        "
+msgstr ""
+
+#: retrigger.py:1205
+msgid "I can't remove roles higher than my own."
 msgstr ""
 
