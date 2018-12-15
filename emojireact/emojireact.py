@@ -66,7 +66,7 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         """Toggle guild emoji reactions"""
         if await self.config.guild(ctx.guild).guild():
             await self.config.guild(ctx.guild).guild.set(False)
-            msg _("Okay, I will not react to messages "
+            msg = _("Okay, I will not react to messages "
                   "containing server emojis!")
             await ctx.send(msg)
         else:
