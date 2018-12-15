@@ -1,9 +1,13 @@
 import discord
 from redbot.core import commands, Config
+from redbot.core.i18n import Translator, cog_i18n
 import datetime
 import aiohttp
 
+_ = Translator("Weather", __file__)
 
+
+@cog_i18n(_)
 class Weather(getattr(commands, "Cog", object)):
     """Get weather data from https://openweathermap.org"""
 
@@ -20,6 +24,7 @@ class Weather(getattr(commands, "Cog", object)):
             "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": "°K"}}
 
     @commands.command(name="weather", aliases=["we"])
+    @commands.bot_has_permissions(embed_links=True)
     async def weather(self, ctx, *, location):
         """
             Display weather in a given location
@@ -50,11 +55,11 @@ class Weather(getattr(commands, "Cog", object)):
         elif units.lower() in ["k", "kelvin"]:
             new_units = "kelvin"
         else:
-            await ctx.send(f"{units} is not a vaild option!")
+            await ctx.send(units+_(" is not a vaild option!"))
             return
         
         await self.config.guild(guild).units.set(new_units)
-        await ctx.send("Default units set to {} in {}.".format(new_units, guild.name))
+        await ctx.send(_("Server's default units set to ") + units)
 
     @weather_set.command(name="user")
     async def set_user(self, ctx, units):
@@ -72,11 +77,11 @@ class Weather(getattr(commands, "Cog", object)):
         elif units.lower() in ["k", "kelvin"]:
             new_units = "kelvin"
         else:
-            await ctx.send(f"{units} is not a vaild option!")
+            await ctx.send(units+ _(" is not a vaild option!"))
             return
 
         await self.config.user(author).units.set(new_units)
-        await ctx.send("Default units set to {} in {}.".format(new_units, author.name))
+        await ctx.send(author.name + _(" default units set to ") + units)
 
     async def get_weather(self, ctx, location):
         guild = ctx.message.guild
@@ -116,18 +121,21 @@ class Weather(getattr(commands, "Cog", object)):
         sunrise = datetime.datetime.fromtimestamp(data["sys"]["sunrise"]).strftime("%H:%M")
         sunset = datetime.datetime.fromtimestamp(data["sys"]["sunset"]).strftime("%H:%M")
         embed = discord.Embed(colour=discord.Colour.blue())
-        embed.add_field(name="🌍 **Location**", value="{0}, {1}".format(city, country))
-        embed.add_field(name="📏 **Lat,Long**", value="{0}, {1}".format(lat, lon))
-        embed.add_field(name="☁ **Condition**", value=condition)
-        embed.add_field(name="😓 **Humidity**", value=data["main"]["humidity"])
-        embed.add_field(name="💨 **Wind Speed**", value="{0}".format(windspeed))
-        embed.add_field(name="🌡 **Temperature**", value="{0:.2f}{1}"
+        embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
+        embed.add_field(name=_("📏 **Lat,Long**"), value="{0}, {1}".format(lat, lon))
+        embed.add_field(name=_("☁ **Condition**"), value=condition)
+        embed.add_field(name=_("😓 **Humidity**"), value=data["main"]["humidity"])
+        embed.add_field(name=_("💨 **Wind Speed**"), value="{0}".format(windspeed))
+        embed.add_field(name=_("🌡 **Temperature**"), value="{0:.2f}{1}"
                         .format(currenttemp, self.unit[units]["temp"]))
-        embed.add_field(name="🔆 **Min - Max**", value="{0:.2f}{1} to {2:.2f}{3}"
-                        .format(mintemp, self.unit[units]["temp"], maxtemp, self.unit[units]["temp"]))
-        embed.add_field(name="🌄 **Sunrise (UTC)**", value=sunrise)
-        embed.add_field(name="🌇 **Sunset (UTC)**", value=sunset)
-        embed.set_footer(text="Powered by https://openweathermap.org")
+        embed.add_field(name=_("🔆 **Min - Max**"), value="{0:.2f}{1} to {2:.2f}{3}"
+                        .format(mintemp, 
+                                self.unit[units]["temp"], 
+                                maxtemp, 
+                                self.unit[units]["temp"]))
+        embed.add_field(name=_("🌄 **Sunrise (UTC)**"), value=sunrise)
+        embed.add_field(name=_("🌇 **Sunset (UTC)**"), value=sunset)
+        embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
 
     def __unload(self):

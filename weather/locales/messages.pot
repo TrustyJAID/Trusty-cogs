@@ -1,0 +1,111 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 20:39-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: weather.py:12
+#, docstring
+msgid "Get weather data from https://openweathermap.org"
+msgstr ""
+
+#: weather.py:29
+#, docstring
+msgid ""
+"\n"
+"            Display weather in a given location\n"
+"\n"
+"            `location` must take the form of `city, Country Code`\n"
+"            example: `[p]weather New York,US`\n"
+"        "
+msgstr ""
+
+#: weather.py:40
+#, docstring
+msgid "Set user or guild default units"
+msgstr ""
+
+#: weather.py:45
+#, docstring
+msgid ""
+"\n"
+"            Sets the guild default weather units \n"
+"\n"
+"            `units` must be one of imperial, metric, or kelvin\n"
+"        "
+msgstr ""
+
+#: weather.py:58 weather.py:80
+msgid " is not a vaild option!"
+msgstr ""
+
+#: weather.py:62
+msgid "Server's default units set to "
+msgstr ""
+
+#: weather.py:66
+#, docstring
+msgid ""
+"\n"
+"            Sets the user default weather units \n"
+"\n"
+"            `units` must be one of imperial, metric, or kelvin\n"
+"            Note: User settings override guild settings.\n"
+"        "
+msgstr ""
+
+#: weather.py:84
+msgid " default units set to "
+msgstr ""
+
+#: weather.py:124
+msgid "🌍 **Location**"
+msgstr ""
+
+#: weather.py:125
+msgid "📏 **Lat,Long**"
+msgstr ""
+
+#: weather.py:126
+msgid "☁ **Condition**"
+msgstr ""
+
+#: weather.py:127
+msgid "😓 **Humidity**"
+msgstr ""
+
+#: weather.py:128
+msgid "💨 **Wind Speed**"
+msgstr ""
+
+#: weather.py:129
+msgid "🌡 **Temperature**"
+msgstr ""
+
+#: weather.py:131
+msgid "🔆 **Min - Max**"
+msgstr ""
+
+#: weather.py:136
+msgid "🌄 **Sunrise (UTC)**"
+msgstr ""
+
+#: weather.py:137
+msgid "🌇 **Sunset (UTC)**"
+msgstr ""
+
+#: weather.py:138
+msgid "Powered by https://openweathermap.org"
+msgstr ""
+
