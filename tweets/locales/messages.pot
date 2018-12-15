@@ -1,0 +1,297 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 19:33-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: tweets.py:32
+msgid "A tweet stream error has occured! "
+msgstr ""
+
+#: tweets.py:39
+msgid "Twitter has sent a disconnect code"
+msgstr ""
+
+#: tweets.py:45
+msgid "Twitter has sent a disconnection warning"
+msgstr ""
+
+#: tweets.py:122
+msgid ""
+"\n"
+" See here for more information <https://developer.twitter.com/en/docs/basics/response-codes.html>"
+msgstr ""
+
+#: tweets.py:126
+msgid "Maybe you should unload the cog for a while..."
+msgstr ""
+
+#: tweets.py:211 tweets.py:412 tweets.py:523 tweets.py:758
+msgid "Whoops! Something went wrong here. The error code is "
+msgstr ""
+
+#: tweets.py:280
+#, docstring
+msgid "Gets various information from Twitter's API"
+msgstr ""
+
+#: tweets.py:286
+#, docstring
+msgid ""
+"\n"
+"            Allows the owner to send tweets through discord\n"
+"\n"
+"            Upload an image to send an image with it as well.\n"
+"        "
+msgstr ""
+
+#: tweets.py:302
+msgid "An error has occured, check the console for more details."
+msgstr ""
+
+#: tweets.py:304
+msgid "Tweet sent!"
+msgstr ""
+
+#: tweets.py:314
+#, docstring
+msgid ""
+"\n"
+"            Gets twitter trends for a given location\n"
+"\n"
+"            You can provide a location and it will try to get\n"
+"            different trend information from that location\n"
+"            default is `United States`\n"
+"        "
+msgstr ""
+
+#: tweets.py:355
+#, docstring
+msgid "Get info about the specified user"
+msgstr ""
+
+#: tweets.py:389
+#, docstring
+msgid ""
+"\n"
+"            Display a users tweets as a scrollable message\n"
+"\n"
+"            defaults to 10 tweets\n"
+"        "
+msgstr ""
+
+#: tweets.py:419
+msgid "No tweets available to display!"
+msgstr ""
+
+#: tweets.py:425
+#, docstring
+msgid "Command for setting accounts and channels for posting"
+msgstr ""
+
+#: tweets.py:434
+#, docstring
+msgid "Set an error channel for tweet stream error updates"
+msgstr ""
+
+#: tweets.py:443
+#, docstring
+msgid "Searches for unavailable channels and removes posting in those channels"
+msgstr ""
+
+#: tweets.py:460
+#, docstring
+msgid "Restarts the twitter stream if any issues occur."
+msgstr ""
+
+#: tweets.py:463
+msgid "Restarting the twitter stream."
+msgstr ""
+
+#: tweets.py:467
+#, docstring
+msgid ""
+"\n"
+"            Toggle an accounts replies being posted\n"
+"\n"
+"            This is checked on `autotweet` as well as `gettweets`\n"
+"        "
+msgstr ""
+
+#: tweets.py:479
+msgid "I am not tracking "
+msgstr ""
+
+#: tweets.py:487
+msgid "Now posting replies from "
+msgstr ""
+
+#: tweets.py:489
+msgid "No longer posting replies from"
+msgstr ""
+
+#: tweets.py:507
+#, docstring
+msgid ""
+"\n"
+"            Adds a twitter username to the specified channel\n"
+"\n"
+"            `username` needs to be the @handle for the twitter username\n"
+"            `channel` has to be a valid server channel, defaults to the current channel\n"
+"        "
+msgstr ""
+
+#: tweets.py:526
+msgid "That username does not exist."
+msgstr ""
+
+#: tweets.py:529
+msgid "No status was retrieved!"
+msgstr ""
+
+#: tweets.py:535 tweets.py:635
+msgid "I don't have permission to post in "
+msgstr ""
+
+#: tweets.py:538 tweets.py:638
+msgid "I do not have embed links permission in "
+msgstr ""
+
+#: tweets.py:539 tweets.py:639
+msgid "I recommend enabling that for pretty twitter posts!"
+msgstr ""
+
+#: tweets.py:545
+msgid " added to "
+msgstr ""
+
+#: tweets.py:547 tweets.py:655
+msgid "Now do "
+msgstr ""
+
+#: tweets.py:548 tweets.py:656
+msgid " when you've finished adding all accounts!"
+msgstr ""
+
+#: tweets.py:551
+msgid "I am already posting "
+msgstr ""
+
+#: tweets.py:552
+msgid " in "
+msgstr ""
+
+#: tweets.py:558
+#, docstring
+msgid "Lists the autotweet accounts on the guild"
+msgstr ""
+
+#: tweets.py:605
+#, docstring
+msgid ""
+"\n"
+"            Add an entire twitter list to a specified channel.\n"
+"\n"
+"            The list must be public or the bot owner must own it.\n"
+"            `owner` is the owner of the list's @handle\n"
+"            `list_name` is the name of the list\n"
+"            `channel` is the channel where the tweets will be posted\n"
+"        "
+msgstr ""
+
+#: tweets.py:629 tweets.py:692
+msgid "That `owner` and `list_name` don't appear to be available"
+msgstr ""
+
+#: tweets.py:651
+msgid "Added the following accounts to "
+msgstr ""
+
+#: tweets.py:660
+msgid "The following accounts could not be added to "
+msgstr ""
+
+#: tweets.py:671
+#, docstring
+msgid ""
+"\n"
+"            Remove an entire twitter list from a specified channel. \n"
+"\n"
+"            The list must be public or the bot owner must own it.\n"
+"            `owner` is the owner of the list's @handle\n"
+"            `list_name` is the name of the list\n"
+"            `channel` is the channel where the tweets will be posted\n"
+"        "
+msgstr ""
+
+#: tweets.py:708
+msgid "Removed the following accounts from "
+msgstr ""
+
+#: tweets.py:714
+msgid "The following accounts weren't added to "
+msgstr ""
+
+#: tweets.py:715
+msgid " or there was another error: "
+msgstr ""
+
+#: tweets.py:741
+#, docstring
+msgid ""
+"\n"
+"            Removes a twitter username to the specified channel\n"
+"\n"
+"            `username` must be the users @handle\n"
+"            `channel` is the channel where the username is currently being posted\n"
+"        "
+msgstr ""
+
+#: tweets.py:761
+msgid "Something went wrong here! Try again"
+msgstr ""
+
+#: tweets.py:764
+msgid "No status was retrieved! Try again"
+msgstr ""
+
+#: tweets.py:768
+msgid " has been removed from "
+msgstr ""
+
+#: tweets.py:770
+msgid " doesn't seem to be posting in "
+msgstr ""
+
+#: tweets.py:775
+#, docstring
+msgid ""
+"Command for setting required access information for the API.\n"
+"\n"
+"        1. Visit https://apps.twitter.com and apply for a developer account.\n"
+"        2. Once your account is approved setup an application and follout the form\n"
+"        3. Do `[p]tweetset creds consumer_key consumer_secret access_token access_secret`\n"
+"        to the bot in a private channel (DM's preferred).\n"
+"        "
+msgstr ""
+
+#: tweets.py:793
+#, docstring
+msgid "[p]tweetset "
+msgstr ""
+
+#: tweets.py:799
+msgid "Set the access credentials!"
+msgstr ""
+
