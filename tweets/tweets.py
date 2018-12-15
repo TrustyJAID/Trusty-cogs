@@ -539,7 +539,7 @@ class Tweets(getattr(commands, "Cog", object)):
                    _("I recommend enabling that for pretty twitter posts!"))
             await ctx.send(msg)
         in_list = True if str(user_id) in\
-                         [str(x["twitter_id"]) for x in await self.config.usernames()] else False
+                         [str(x["twitter_id"]) for x in await self.config.accounts()] else False
         added = await self.add_username(channel, user_id, screen_name)
         if added:
             await ctx.send(username + _(" added to ") + channel.mention)
