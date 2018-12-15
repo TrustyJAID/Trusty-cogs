@@ -10,11 +10,18 @@ from redbot.core.data_manager import cog_data_path
 from pathlib import Path
 import os
 import string
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
+
 
 _ = Translator("Alias", __file__)
 
+
+@cog_i18n(_)
 class AddImage(getattr(commands, "Cog", object)):
+    """
+        Add images the bot can upload
+    """
+
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
@@ -183,16 +190,15 @@ class AddImage(getattr(commands, "Cog", object)):
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         post = post_list[page]
-        if ctx.channel.permissions_for(ctx.me).embed_links:
-            em = discord.Embed(timestamp=ctx.message.created_at)
-            for image in post:
-                info = "__Author__: <@{}>\n__Count__: **{}**".format(image["author"], image["count"])
-                em.add_field(name=image["command_name"], value=info)
-            em.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-            em.set_footer(text="Page {}/{}".format(page+1, len(post_list)))
-        else:
-            await ctx.send("I need embed_links permission to use this command.")
-            return
+        em = discord.Embed(timestamp=ctx.message.created_at)
+        for image in post:
+            info = (_("__Author__: ")+
+                    "<@{}>\n".format(image["author"]) +
+                    _("__Count__: ") + "**{}**".format(image["count"]))
+
+            em.add_field(name=image["command_name"], value=info)
+        em.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+        em.set_footer(text=_("Page ")+"{}/{}".format(page+1, len(post_list)))
         if len(post_list) == 1:
             # No need to offer multiple pages if they don't exist
             await ctx.send(embed=em)
@@ -206,7 +212,8 @@ class AddImage(getattr(commands, "Cog", object)):
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"] and react.message.id == message.id
+        check = lambda react, user:user == ctx.message.author and react.emoji\
+                                  in ["➡", "⬅", "❌"] and react.message.id == message.id
         try:
             react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
@@ -251,8 +258,11 @@ class AddImage(getattr(commands, "Cog", object)):
         pass
 
     @addimage.command(name="list")
+    @commands.bot_has_permissions(embed_links=True)
     async def listimages(self, ctx, image_loc="guild", server_id:int=None):
-        """List images added to bot"""
+        """
+            List images added to bot
+        """
         msg = ""
         if image_loc in ["global"]:
             image_list = await self.config.images()
@@ -264,64 +274,84 @@ class AddImage(getattr(commands, "Cog", object)):
             image_list = await self.config.guild(guild).images()       
         
         if image_list == []:
-            await ctx.send("{} does not have any images saved!".format(self.bot.user.display_name))
+            await ctx.send(_("I does not have any images saved!"))
             return
         post_list = [image_list[i:i + 25] for i in range(0, len(image_list), 25)]
         await self.image_menu(ctx, post_list)
         
 
     @addimage.command()
-    async def clear_list(self, ctx):
+    @checks.is_owner()
+    async def clear_global(self, ctx):
+        """
+            Clears the full set of images stored globally
+        """
         await self.config.images.set([])
+
+    @addimage.command()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def clear_images(self, ctx):
+        """
+            Clear all the images stored for the current server
+        """
         await self.config.guild(ctx.guild).images.set([])
 
     @addimage.command(name="delete", aliases=["remove", "rem", "del"])
-    async def remimage(self, ctx, cmd):
-        """Remove a selected images"""
+    @checks.mod_or_permissions(manage_channels=True)
+    async def remimage(self, ctx, name:str):
+        """
+            Remove a selected images
+
+            `name` the command name used to post the image
+        """
         author = ctx.message.author
         guild = ctx.message.guild
         channel = ctx.message.channel
-        cmd = cmd.lower()
-        if cmd not in [x["command_name"] for x in await self.config.guild(guild).images()]:
-            await ctx.send("{} is not an image for this guild!".format(cmd))
+        name = name.lower()
+        if name not in [x["command_name"] for x in await self.config.guild(guild).images()]:
+            await ctx.send(name + _(" is not an image for this guild!"))
             return
 
         await channel.trigger_typing()
         all_imgs = await self.config.guild(guild).images()
-        image = await self.get_image(cmd, guild)
+        image = await self.get_image(name, guild)
         all_imgs.remove(image)
         try:
             os.remove(image.file_loc)
         except:
             pass
         await self.config.guild(guild).images.set(all_imgs)
-        await ctx.send("{} has been deleted from this guild!".format(cmd))
+        await ctx.send(name + _(" has been deleted from this guild!"))
        
 
     @checks.is_owner()
     @addimage.command(hidden=True, name="deleteglobal", aliases=["dg", "delglobal"])
-    async def rem_image_global(self, ctx, cmd):
-        """Remove a selected images"""
+    async def rem_image_global(self, ctx, name:str):
+        """
+            Remove a selected images
+
+            `name` the command name used to post the image
+        """
         author = ctx.message.author
         guild = ctx.message.guild
         channel = ctx.message.channel
-        cmd = cmd.lower()
-        if cmd not in [x["command_name"] for x in await self.config.images()]:
-            await ctx.send("{} is not a global image!".format(cmd))
+        name = name.lower()
+        if name not in [x["command_name"] for x in await self.config.images()]:
+            await ctx.send(name + _(" is not a global image!"))
             return
 
         await channel.trigger_typing()
         all_imgs = await self.config.images()
-        image = await self.get_image(cmd)
+        image = await self.get_image(name)
         all_imgs.remove(image)
         try:
             os.remove(image.file_loc)
         except:
             pass
         await self.config.images.set(all_imgs)
-        await ctx.send("{} has been deleted globally!".format(cmd))
+        await ctx.send(name + _(" has been deleted globally!"))
 
-    async def save_image_location(self, msg, cmd, guild=None):
+    async def save_image_location(self, msg, name, guild=None):
         seed = ''.join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = "{}-{}".format(seed, msg.attachments[0].filename)
         if guild is not None:
@@ -331,11 +361,11 @@ class AddImage(getattr(commands, "Cog", object)):
             directory = cog_data_path(self) /"global"
             cur_images = await self.config.images()
         await self.make_guild_folder(directory)
-        cmd = cmd.lower()
+        name = name.lower()
         
         file_path = "{}/{}".format(str(directory), filename)
 
-        new_entry = {"command_name": cmd,
+        new_entry = {"command_name": name,
                     "count": 0,
                     "file_loc": file_path,
                     "author": msg.author.id}
@@ -357,63 +387,77 @@ class AddImage(getattr(commands, "Cog", object)):
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
-                await ctx.send("Image adding timed out.")
+                await ctx.send(_("Image adding timed out."))
                 break
             if msg.content.lower().strip() == "exit":
-                await ctx.send("Image adding cancelled.")
+                await ctx.send(_("Image adding cancelled."))
                 break
         return msg
 
-    @addimage.command(pass_context=True, name="add")
-    async def add_image_guild(self, ctx, cmd):
-        """Add an image to direct upload."""
+    @addimage.command(name="add")
+    @checks.mod_or_permissions(manage_channels=True)
+    @commands.bot_has_permissions(attach_files=True)
+    async def add_image_guild(self, ctx, name:str):
+        """
+            Add an image to direct upload on this server
+
+            `name` the command name used to post the image
+        """
         author = ctx.message.author
         guild = ctx.message.guild
         channel = ctx.message.channel
-        if cmd.lower() == "global":
-            await ctx.send("global is not a valid command name! Try something else.")
-            return
-        if await self.check_command_exists(cmd, guild):
-            await ctx.send("{} is already in the list, try another!".format(cmd))
-            return
+        if name.lower() == "global":
+            msg = _("global is not a valid command name! Try something else.")
+            return await ctx.send(msg)
+        if await self.check_command_exists(name, guild):
+            msg = name + _(" is already in the list, try another!")
+            return await ctx.send(msg)
         else:
-            await ctx.send("{} added as the command!".format(cmd))
+            msg = name + _(" added as the command!")
+            await ctx.send(msg)
         if ctx.message.attachments == []:
-            await ctx.send("Upload an image for me to use! Type `exit` to cancel.")
+            msg = _("Upload an image for me to use! Type `exit` to cancel.")
+            await ctx.send(msg)
             msg = await self.wait_for_image(ctx)
             if msg is None:
                 return
-            await self.save_image_location(msg, cmd, guild)
-            await ctx.send("{} has been added to my files!".format(cmd))
+            await self.save_image_location(msg, name, guild)
+            await ctx.send(name + _(" has been added to my files!"))
         else:
-            await self.save_image_location(ctx.message, cmd, guild)
+            await self.save_image_location(ctx.message, name, guild)
         
 
     @checks.is_owner()
-    @addimage.command(hidden=True, pass_context=True, name="addglobal")
-    async def add_image_global(self, ctx, cmd):
-        """Add an image to direct upload."""
+    @addimage.command(hidden=True, name="addglobal")
+    async def add_image_global(self, ctx, name:str):
+        """
+            Add an image to direct upload globally
+
+            `name` the command name used to post the image
+        """
         author = ctx.message.author
         guild = ctx.message.guild
         channel = ctx.message.channel
         msg = ctx.message
-        if cmd.lower() == "global":
-            await ctx.send("global is not a valid command name! Try something else.")
-            return
-        if await self.check_command_exists(cmd, guild):
-            await ctx.send("{} is already in the list, try another!".format(cmd))
-            return
+        if name.lower() == "global":
+            msg = _("global is not a valid command name! Try something else.")
+            return await ctx.send(msg)
+        if await self.check_command_exists(name, guild):
+            msg = name + _(" is already in the list, try another!")
+            return await ctx.send(msg)
         else:
-            await ctx.send("{} added as the command!".format(cmd))
+            msg = name + _(" added as the command!")
+            await ctx.send(msg)
         if ctx.message.attachments == []:
-            await ctx.send("Upload an image for me to use! Type `exit` to cancel.")
+            msg = _("Upload an image for me to use! Type `exit` to cancel.")
+            await ctx.send(msg)
             msg = await self.wait_for_image(ctx)
             if msg is None:
                 return
-            await self.save_image_location(msg, cmd)
-            await ctx.send("{} has been added to my files!".format(cmd))
+            await self.save_image_location(msg, name)
+            await ctx.send(name + _(" has been added to my files!"))
         else:
-            await self.save_image_location(ctx.message, cmd)
+            await self.save_image_location(ctx.message, name)
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())
