@@ -1,0 +1,88 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 21:05-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: badges.py:23
+#, docstring
+msgid ""
+"\n"
+"        Create fun fake badges based on your discord profile\n"
+"    "
+msgstr ""
+
+#: badges.py:75 badges.py:80
+msgid "GENERAL SUPPORT"
+msgstr ""
+
+#: badges.py:84
+msgid "ACTIVE"
+msgstr ""
+
+#: badges.py:86
+msgid "COMPLETING TASK"
+msgstr ""
+
+#: badges.py:88
+msgid "AWAITING INSTRUCTIONS"
+msgstr ""
+
+#: badges.py:90
+msgid "MIA"
+msgstr ""
+
+#: badges.py:130
+msgid "LEVEL "
+msgstr ""
+
+#: badges.py:229
+#, docstring
+msgid ""
+"\n"
+"            Creates a fun fake badge based on your discord profile\n"
+"\n"
+"            `badge` is the name of the badges\n"
+"            do `[p]listbadges` to see available badges\n"
+"        "
+msgstr ""
+
+#: badges.py:244 badges.py:267
+msgid "Something went wrong sorry!"
+msgstr ""
+
+#: badges.py:251
+#, docstring
+msgid ""
+"\n"
+"            Creates a fun fake gif badge based on your discord profile\n"
+"            this only works if you have a gif avatar\n"
+"\n"
+"            `badge` is the name of the badges\n"
+"            do `[p]listbadges` to see available badges\n"
+"        "
+msgstr ""
+
+#: badges.py:275
+#, docstring
+msgid ""
+"\n"
+"            List the available badges that can be created\n"
+"        "
+msgstr ""
+
+#: badges.py:289 badges.py:292
+msgid "Global Badges"
+msgstr ""
+

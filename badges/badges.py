@@ -1,16 +1,13 @@
 import discord
-from redbot.core import commands
+from redbot.core import commands, Config
+from redbot.core.i18n import Translator, cog_i18n
 import aiohttp
 import os
-from PIL import Image
-from PIL import ImageColor
-from PIL import ImageFont
-from PIL import ImageDraw
+from PIL import Image, ImageColor, ImageFont, ImageDraw
 from PIL import ImageSequence
 from barcode import generate
 from barcode.writer import ImageWriter
 from redbot.core.data_manager import bundled_data_path
-from redbot.core import Config
 from io import BytesIO
 from .templates import blank_template
 from .badge_entry import Badge
@@ -18,6 +15,10 @@ import sys
 import functools
 import asyncio
 
+_ = Translator("Badges", __file__)
+
+
+@cog_i18n(_)
 class Badges(getattr(commands, "Cog", object)):
     """
         Create fun fake badges based on your discord profile
@@ -71,23 +72,27 @@ class Badges(getattr(commands, "Cog", object)):
     def make_template(self, user, badge, template):
         """Build the base template before determining animated or not"""
         if hasattr(user, "roles"):
-            department = "GENERAL SUPPORT" if user.top_role.name == "@everyone" else user.top_role.name.upper()
+            department = _("GENERAL SUPPORT") if user.top_role.name == "@everyone"\
+                                         else user.top_role.name.upper()
             status = user.status
             level = str(len(user.roles))
         else:
-            department = "GENERAL SUPPORT"
+            department = _("GENERAL SUPPORT")
             status = "online"
             level = "1"
         if str(status) == "online":
-            status = "ACTIVE"
+            status = _("ACTIVE")
         if str(status) == "offline":
-            status = "COMPLETING TASK"
+            status = _("COMPLETING TASK")
         if str(status) == "idle":
-            status = "AWAITING INSTRUCTIONS"
+            status = _("AWAITING INSTRUCTIONS")
         if str(status) == "dnd":
-            status = "MIA"
+            status = _("MIA")
         barcode = BytesIO()
-        temp_barcode = generate("code39", str(user.id), writer=ImageWriter(), output=barcode)
+        temp_barcode = generate("code39", 
+                                str(user.id), 
+                                writer=ImageWriter(), 
+                                output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)
         fill = (0, 0, 0) # text colour fill
@@ -122,7 +127,7 @@ class Badges(getattr(commands, "Cog", object)):
         # adds department from top role
         draw.text((250, 235), department, fill=fill, font=font2)
         # adds user level
-        draw.text((420, 475), "LEVEL " + level, fill="red", font=font1)
+        draw.text((420, 475), _("LEVEL ") + level, fill="red", font=font1)
         # adds user level
         if badge.badge_name != "discord" and user is discord.Member:
           draw.text((60, 585), str(user.joined_at), fill=fill, font=font2)
@@ -168,18 +173,24 @@ class Badges(getattr(commands, "Cog", object)):
         temp.name = "temp.gif"
         return temp
 
-    async def create_badge(self, user, badge):
+    async def create_badge(self, user, badge, is_gif:bool):
         """Async create badges handler"""
         template_img = await self.dl_image(badge.file_name)
-        task = functools.partial(self.make_template, user=user, badge=badge, template=template_img)
+        task = functools.partial(self.make_template, 
+                                 user=user, 
+                                 badge=badge, 
+                                 template=template_img)
         task = self.bot.loop.run_in_executor(None, task)
         try:
             template = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return
-        if user.is_avatar_animated():
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif")))
-            task = functools.partial(self.make_animated_gif, template=template, avatar=avatar)
+        if user.is_avatar_animated() and is_gif:
+            url = user.avatar_url_as(format="gif")
+            avatar = Image.open(await self.dl_image(url))
+            task = functools.partial(self.make_animated_gif, 
+                                     template=template, 
+                                     avatar=avatar)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
@@ -187,8 +198,11 @@ class Badges(getattr(commands, "Cog", object)):
                 return
             
         else:
-            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png")))
-            task = functools.partial(self.make_badge, template=template, avatar=avatar)
+            url = user.avatar_url_as(format="png")
+            avatar = Image.open(await self.dl_image(url))
+            task = functools.partial(self.make_badge, 
+                                     template=template, 
+                                     avatar=avatar)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
@@ -225,9 +239,32 @@ class Badges(getattr(commands, "Cog", object)):
             return
         badge = await self.get_badge(badge, guild)
         async with ctx.channel.typing():
-            badge_img = await self.create_badge(user, badge)
+            badge_img = await self.create_badge(user, badge, False)
             if badge_img is None:
-                await ctx.send("Something went wrong sorry!")
+                await ctx.send(_("Something went wrong sorry!"))
+                return
+            image = discord.File(badge_img)
+            await ctx.send(file=image)
+
+    @commands.command(aliases=["gbadge"])
+    async def gbadges(self, ctx, *, badge):
+        """
+            Creates a fun fake gif badge based on your discord profile
+            this only works if you have a gif avatar
+
+            `badge` is the name of the badges
+            do `[p]listbadges` to see available badges
+        """
+        guild = ctx.message.guild
+        user = ctx.message.author
+        if badge.lower() == "list":
+            await ctx.invoke(self.listbadges)
+            return
+        badge = await self.get_badge(badge, guild)
+        async with ctx.channel.typing():
+            badge_img = await self.create_badge(user, badge, True)
+            if badge_img is None:
+                await ctx.send(_("Something went wrong sorry!"))
                 return
             image = discord.File(badge_img)
             await ctx.send(file=image)
@@ -249,9 +286,10 @@ class Badges(getattr(commands, "Cog", object)):
         else:
             em.colour = await self.bot.db.color()
         #for badge in await self.config.badges():
-        em.add_field(name="Global Badges", value=msg)
+        em.add_field(name=_("Global Badges"), value=msg)
         if guild_badges != []:
-            em.add_field(name="Global Badges", value=", ".join(badge["badge_name"] for badge in guild_badges))
+            badges = ", ".join(badge["badge_name"] for badge in guild_badges)
+            em.add_field(name=_("Global Badges"), value=badges)
         await ctx.send(embed=em)
     
     def __unload(self):
