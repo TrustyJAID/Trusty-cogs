@@ -1,0 +1,374 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 20:25-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: rekt.py:9
+msgid "☑ Rekt"
+msgstr ""
+
+#: rekt.py:10
+msgid "☑ Tyrannosaurus Rekt"
+msgstr ""
+
+#: rekt.py:11
+msgid "☑ sudo apt-get Rekt"
+msgstr ""
+
+#: rekt.py:12
+msgid "☑ e=mRekt²"
+msgstr ""
+
+#: rekt.py:13
+msgid "☑ Rekt and Morty"
+msgstr ""
+
+#: rekt.py:14
+msgid "☑ Really Rekt"
+msgstr ""
+
+#: rekt.py:15
+msgid "☑ Cash4Rekt.com"
+msgstr ""
+
+#: rekt.py:16
+msgid "☑ Grapes of Rekt"
+msgstr ""
+
+#: rekt.py:17
+msgid "☑ Ship Rekt"
+msgstr ""
+
+#: rekt.py:18
+msgid "☑ Rektavoir Dogs"
+msgstr ""
+
+#: rekt.py:19
+msgid "☑ Raiders of the Rekt Ark _("
+msgstr ""
+
+#: rekt.py:20
+msgid "☑ Indiana Jones and the Temple of Rekt"
+msgstr ""
+
+#: rekt.py:21
+msgid "☑ Rekt markes the spot"
+msgstr ""
+
+#: rekt.py:22
+msgid "☑ Caught rekt handed"
+msgstr ""
+
+#: rekt.py:23
+msgid "☑ The Rekt Side Story"
+msgstr ""
+
+#: rekt.py:24
+msgid "☑ Singin' In The Rekt"
+msgstr ""
+
+#: rekt.py:25
+msgid "☑ Painting The Roses Rekt"
+msgstr ""
+
+#: rekt.py:26
+msgid "☑ Rekt Van Winkle"
+msgstr ""
+
+#: rekt.py:27
+msgid "☑ Parks and Rekt"
+msgstr ""
+
+#: rekt.py:28
+msgid "☑ Lord of the Rekts: The Reking of the King"
+msgstr ""
+
+#: rekt.py:29
+msgid "☑ Star Trekt"
+msgstr ""
+
+#: rekt.py:30
+msgid "☑ The Rekt Prince of Bel-Air"
+msgstr ""
+
+#: rekt.py:31
+msgid "☑ A Game of Rekt"
+msgstr ""
+
+#: rekt.py:32
+msgid "☑ Rektflix"
+msgstr ""
+
+#: rekt.py:33
+msgid "☑ Rekt it like it's hot"
+msgstr ""
+
+#: rekt.py:34
+msgid "☑ RektBox 360"
+msgstr ""
+
+#: rekt.py:35
+msgid "☑ The Rekt-men"
+msgstr ""
+
+#: rekt.py:36
+msgid "☑ School Of Rekt"
+msgstr ""
+
+#: rekt.py:37
+msgid "☑ I am Fire, I am Rekt"
+msgstr ""
+
+#: rekt.py:38
+msgid "☑ Rekt and Roll"
+msgstr ""
+
+#: rekt.py:39
+msgid "☑ Professor Rekt"
+msgstr ""
+
+#: rekt.py:40
+msgid "☑ Catcher in the Rekt"
+msgstr ""
+
+#: rekt.py:41
+msgid "☑ Rekt-22"
+msgstr ""
+
+#: rekt.py:42
+msgid "☑ Harry Potter: The Half-Rekt Prince"
+msgstr ""
+
+#: rekt.py:43
+msgid "☑ Great Rektspectations"
+msgstr ""
+
+#: rekt.py:44
+msgid "☑ Paper Scissors Rekt"
+msgstr ""
+
+#: rekt.py:45
+msgid "☑ RektCraft"
+msgstr ""
+
+#: rekt.py:46
+msgid "☑ Grand Rekt Auto V"
+msgstr ""
+
+#: rekt.py:47
+msgid "☑ Call of Rekt: Modern Reking 2"
+msgstr ""
+
+#: rekt.py:48
+msgid "☑ Legend Of Zelda: Ocarina of Rekt"
+msgstr ""
+
+#: rekt.py:49
+msgid "☑ Rekt It Ralph"
+msgstr ""
+
+#: rekt.py:50
+msgid "☑ Left 4 Rekt"
+msgstr ""
+
+#: rekt.py:51
+msgid "☑ www.rekkit.com"
+msgstr ""
+
+#: rekt.py:52
+msgid "☑ Pokemon: Fire Rekt"
+msgstr ""
+
+#: rekt.py:53
+msgid "☑ The Shawshank Rektemption"
+msgstr ""
+
+#: rekt.py:54
+msgid "☑ The Rektfather"
+msgstr ""
+
+#: rekt.py:55
+msgid "☑ The Rekt Knight"
+msgstr ""
+
+#: rekt.py:56
+msgid "☑ Fiddler on the Rekt"
+msgstr ""
+
+#: rekt.py:57
+msgid "☑ The Rekt Files"
+msgstr ""
+
+#: rekt.py:58
+msgid "☑ The Good, the Bad, and The Rekt"
+msgstr ""
+
+#: rekt.py:59
+msgid "☑ Forrekt Gump"
+msgstr ""
+
+#: rekt.py:60
+msgid "☑ The Silence of the Rekts"
+msgstr ""
+
+#: rekt.py:61
+msgid "☑ The Green Rekt"
+msgstr ""
+
+#: rekt.py:62
+msgid "☑ Gladirekt"
+msgstr ""
+
+#: rekt.py:63
+msgid "☑ Spirekted Away"
+msgstr ""
+
+#: rekt.py:64
+msgid "☑ Terminator 2: Rektment Day"
+msgstr ""
+
+#: rekt.py:65
+msgid "☑ The Rekt Knight Rises"
+msgstr ""
+
+#: rekt.py:66
+msgid "☑ The Rekt King"
+msgstr ""
+
+#: rekt.py:67
+msgid "☑ REKT-E"
+msgstr ""
+
+#: rekt.py:68
+msgid "☑ Citizen Rekt"
+msgstr ""
+
+#: rekt.py:69
+msgid "☑ Requiem for a Rekt"
+msgstr ""
+
+#: rekt.py:70
+msgid "☑ REKT TO REKT ass to ass"
+msgstr ""
+
+#: rekt.py:71
+msgid "☑ Star Wars: Episode VI - Return of the Rekt"
+msgstr ""
+
+#: rekt.py:72
+msgid "☑ Braverekt"
+msgstr ""
+
+#: rekt.py:73
+msgid "☑ Batrekt Begins"
+msgstr ""
+
+#: rekt.py:74
+msgid "☑ 2001: A Rekt Odyssey"
+msgstr ""
+
+#: rekt.py:75
+msgid "☑ The Wolf of Rekt Street"
+msgstr ""
+
+#: rekt.py:76
+msgid "☑ Rekt's Labyrinth"
+msgstr ""
+
+#: rekt.py:77
+msgid "☑ 12 Years a Rekt"
+msgstr ""
+
+#: rekt.py:78
+msgid "☑ Gravirekt"
+msgstr ""
+
+#: rekt.py:79
+msgid "☑ Finding Rekt"
+msgstr ""
+
+#: rekt.py:80
+msgid "☑ The Arekters"
+msgstr ""
+
+#: rekt.py:81
+msgid "☑ There Will Be Rekt"
+msgstr ""
+
+#: rekt.py:82
+msgid "☑ Christopher Rektellston"
+msgstr ""
+
+#: rekt.py:83
+msgid "☑ Hachi: A Rekt Tale"
+msgstr ""
+
+#: rekt.py:84
+msgid "☑ The Rekt Ultimatum"
+msgstr ""
+
+#: rekt.py:85
+msgid "☑ Shrekt"
+msgstr ""
+
+#: rekt.py:86
+msgid "☑ Rektal Exam"
+msgstr ""
+
+#: rekt.py:87
+msgid "☑ Rektium for a Dream"
+msgstr ""
+
+#: rekt.py:88
+msgid "☑ www.Trekt.tv"
+msgstr ""
+
+#: rekt.py:89
+msgid "☑ Erektile Dysfunction"
+msgstr ""
+
+#: rekt.py:90
+msgid "☑ Jesus, stepping out the grave: 'Get ressurekt'"
+msgstr ""
+
+#: rekt.py:96
+#, docstring
+msgid ""
+"\n"
+"        Post embed with random rekt messages\n"
+"    "
+msgstr ""
+
+#: rekt.py:106
+#, docstring
+msgid "Post embed with random rekt messages"
+msgstr ""
+
+#: rekt.py:110
+msgid "NOT REKT"
+msgstr ""
+
+#: rekt.py:110
+msgid "⬜ Not Rekt"
+msgstr ""
+
+#: rekt.py:113
+msgid "REKT"
+msgstr ""
+
+#: rekt.py:114
+msgid "Are you REKT?"
+msgstr ""
+

@@ -1,94 +1,97 @@
 import discord
-from redbot.core import commands
-from redbot.core import checks
+from redbot.core import commands, checks
+from redbot.core.i18n import Translator, cog_i18n
 from random import choice
 
+_ = Translator("Rekt", __file__)
+
 rektlist = [
-            "☑ Rekt",
-            "☑ Tyrannosaurus Rekt",
-            "☑ sudo apt-get Rekt",
-            "☑ e=mRekt²",
-            "☑ Rekt and Morty",
-            "☑ Really Rekt",
-            "☑ Cash4Rekt.com",
-            "☑ Grapes of Rekt",
-            "☑ Ship Rekt",
-            "☑ Rektavoir Dogs",
-            "☑ Raiders of the Rekt Ark ",
-            "☑ Indiana Jones and the Temple of Rekt",
-            "☑ Rekt markes the spot",
-            "☑ Caught rekt handed",
-            "☑ The Rekt Side Story",
-            "☑ Singin' In The Rekt",
-            "☑ Painting The Roses Rekt",
-            "☑ Rekt Van Winkle",
-            "☑ Parks and Rekt",
-            "☑ Lord of the Rekts: The Reking of the King",
-            "☑ Star Trekt",
-            "☑ The Rekt Prince of Bel-Air",
-            "☑ A Game of Rekt",
-            "☑ Rektflix",
-            "☑ Rekt it like it's hot",
-            "☑ RektBox 360",
-            "☑ The Rekt-men",
-            "☑ School Of Rekt",
-            "☑ I am Fire, I am Rekt",
-            "☑ Rekt and Roll",
-            "☑ Professor Rekt",
-            "☑ Catcher in the Rekt",
-            "☑ Rekt-22",
-            "☑ Harry Potter: The Half-Rekt Prince",
-            "☑ Great Rektspectations",
-            "☑ Paper Scissors Rekt",
-            "☑ RektCraft",
-            "☑ Grand Rekt Auto V",
-            "☑ Call of Rekt: Modern Reking 2",
-            "☑ Legend Of Zelda: Ocarina of Rekt",
-            "☑ Rekt It Ralph",
-            "☑ Left 4 Rekt",
-            "☑ www.rekkit.com",
-            "☑ Pokemon: Fire Rekt",
-            "☑ The Shawshank Rektemption",
-            "☑ The Rektfather",
-            "☑ The Rekt Knight",
-            "☑ Fiddler on the Rekt",
-            "☑ The Rekt Files",
-            "☑ The Good, the Bad, and The Rekt",
-            "☑ Forrekt Gump",
-            "☑ The Silence of the Rekts",
-            "☑ The Green Rekt",
-            "☑ Gladirekt",
-            "☑ Spirekted Away",
-            "☑ Terminator 2: Rektment Day",
-            "☑ The Rekt Knight Rises",
-            "☑ The Rekt King",
-            "☑ REKT-E",
-            "☑ Citizen Rekt",
-            "☑ Requiem for a Rekt",
-            "☑ REKT TO REKT ass to ass",
-            "☑ Star Wars: Episode VI - Return of the Rekt",
-            "☑ Braverekt",
-            "☑ Batrekt Begins",
-            "☑ 2001: A Rekt Odyssey",
-            "☑ The Wolf of Rekt Street",
-            "☑ Rekt's Labyrinth",
-            "☑ 12 Years a Rekt",
-            "☑ Gravirekt",
-            "☑ Finding Rekt",
-            "☑ The Arekters",
-            "☑ There Will Be Rekt",
-            "☑ Christopher Rektellston",
-            "☑ Hachi: A Rekt Tale",
-            "☑ The Rekt Ultimatum",
-            "☑ Shrekt",
-            "☑ Rektal Exam",
-            "☑ Rektium for a Dream",
-            "☑ www.Trekt.tv",
-            "☑ Erektile Dysfunction",
-            "☑ Jesus, stepping out the grave: 'Get ressurekt'"
+            _("☑ Rekt"),
+            _("☑ Tyrannosaurus Rekt"),
+            _("☑ sudo apt-get Rekt"),
+            _("☑ e=mRekt²"),
+            _("☑ Rekt and Morty"),
+            _("☑ Really Rekt"),
+            _("☑ Cash4Rekt.com"),
+            _("☑ Grapes of Rekt"),
+            _("☑ Ship Rekt"),
+            _("☑ Rektavoir Dogs"),
+            _("☑ Raiders of the Rekt Ark _("),
+            _("☑ Indiana Jones and the Temple of Rekt"),
+            _("☑ Rekt markes the spot"),
+            _("☑ Caught rekt handed"),
+            _("☑ The Rekt Side Story"),
+            _("☑ Singin' In The Rekt"),
+            _("☑ Painting The Roses Rekt"),
+            _("☑ Rekt Van Winkle"),
+            _("☑ Parks and Rekt"),
+            _("☑ Lord of the Rekts: The Reking of the King"),
+            _("☑ Star Trekt"),
+            _("☑ The Rekt Prince of Bel-Air"),
+            _("☑ A Game of Rekt"),
+            _("☑ Rektflix"),
+            _("☑ Rekt it like it's hot"),
+            _("☑ RektBox 360"),
+            _("☑ The Rekt-men"),
+            _("☑ School Of Rekt"),
+            _("☑ I am Fire, I am Rekt"),
+            _("☑ Rekt and Roll"),
+            _("☑ Professor Rekt"),
+            _("☑ Catcher in the Rekt"),
+            _("☑ Rekt-22"),
+            _("☑ Harry Potter: The Half-Rekt Prince"),
+            _("☑ Great Rektspectations"),
+            _("☑ Paper Scissors Rekt"),
+            _("☑ RektCraft"),
+            _("☑ Grand Rekt Auto V"),
+            _("☑ Call of Rekt: Modern Reking 2"),
+            _("☑ Legend Of Zelda: Ocarina of Rekt"),
+            _("☑ Rekt It Ralph"),
+            _("☑ Left 4 Rekt"),
+            _("☑ www.rekkit.com"),
+            _("☑ Pokemon: Fire Rekt"),
+            _("☑ The Shawshank Rektemption"),
+            _("☑ The Rektfather"),
+            _("☑ The Rekt Knight"),
+            _("☑ Fiddler on the Rekt"),
+            _("☑ The Rekt Files"),
+            _("☑ The Good, the Bad, and The Rekt"),
+            _("☑ Forrekt Gump"),
+            _("☑ The Silence of the Rekts"),
+            _("☑ The Green Rekt"),
+            _("☑ Gladirekt"),
+            _("☑ Spirekted Away"),
+            _("☑ Terminator 2: Rektment Day"),
+            _("☑ The Rekt Knight Rises"),
+            _("☑ The Rekt King"),
+            _("☑ REKT-E"),
+            _("☑ Citizen Rekt"),
+            _("☑ Requiem for a Rekt"),
+            _("☑ REKT TO REKT ass to ass"),
+            _("☑ Star Wars: Episode VI - Return of the Rekt"),
+            _("☑ Braverekt"),
+            _("☑ Batrekt Begins"),
+            _("☑ 2001: A Rekt Odyssey"),
+            _("☑ The Wolf of Rekt Street"),
+            _("☑ Rekt's Labyrinth"),
+            _("☑ 12 Years a Rekt"),
+            _("☑ Gravirekt"),
+            _("☑ Finding Rekt"),
+            _("☑ The Arekters"),
+            _("☑ There Will Be Rekt"),
+            _("☑ Christopher Rektellston"),
+            _("☑ Hachi: A Rekt Tale"),
+            _("☑ The Rekt Ultimatum"),
+            _("☑ Shrekt"),
+            _("☑ Rektal Exam"),
+            _("☑ Rektium for a Dream"),
+            _("☑ www.Trekt.tv"),
+            _("☑ Erektile Dysfunction"),
+            _("☑ Jesus, stepping out the grave: 'Get ressurekt'")
             ]
 
 
+@cog_i18n(_)
 class Rekt(getattr(commands, "Cog", object)):
     """
         Post embed with random rekt messages
@@ -98,16 +101,17 @@ class Rekt(getattr(commands, "Cog", object)):
 
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.guild)
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def rekt(self, ctx):
         """Post embed with random rekt messages"""
         user = ctx.message.author.id
         rektemoji = ["\u2611", "\U0001F1F7", "\U0001F1EA", "\U0001F1F0", "\U0001F1F9"]
         embed = discord.Embed(colour=discord.Colour.blue())
-        embed.add_field(name="NOT REKT", value="⬜ Not Rekt", inline=True)
+        embed.add_field(name=_("NOT REKT"), value=_("⬜ Not Rekt"), inline=True)
         message = "\n".join(choice(rektlist) for line in range(10))
         if message != "":
-            embed.add_field(name="REKT", value=message, inline=True)
-        embed.set_author(name="Are you REKT?")
+            embed.add_field(name=_("REKT"), value=message, inline=True)
+        embed.set_author(name=_("Are you REKT?"))
         msg = await ctx.send(embed=embed)
         for emoji in rektemoji:
             await msg.add_reaction(emoji=emoji)
