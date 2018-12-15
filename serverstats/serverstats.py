@@ -6,23 +6,19 @@ from redbot.core import checks, bank, Config
 import datetime
 import aiohttp
 from io import BytesIO
-from redbot.core.i18n import Translator
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, box
 from typing import Union
 
 
 _ = Translator("ServerStats", __file__)
 
-numbs = {
-    "next": "➡",
-    "back": "⬅",
-    "exit": "❌"
-}
-
 
 class GuildNotFoundError(Exception):
     pass
 
+
+@cog_i18n(_)
 class ServerStats(getattr(commands, "Cog", object)):
     """
         Gather useful information about servers the bot is in
@@ -49,11 +45,14 @@ class ServerStats(getattr(commands, "Cog", object)):
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("{} has joined a new server!\n That's {} servers now! \nServer created {}. That's over {} days ago!".format(
-                        channel.guild.me.mention,
-                        len(self.bot.guilds),
-                        guild.created_at.strftime("%d %b %Y %H:%M"),
-                        passed))
+        created_at = _("{bot} has joined a new server!\n "
+                       "That's {num} servers now! \n"
+                       "Server created {since}. "
+                       "That's over {passed} days ago!").format(
+                        bot = channel.guild.me.mention,
+                        num = len(self.bot.guilds),
+                        since = guild.created_at.strftime("%d %b %Y %H:%M"),
+                        passed = passed)
 
         colour = guild.roles[-1].colour
 
@@ -61,15 +60,17 @@ class ServerStats(getattr(commands, "Cog", object)):
             description=created_at,
             colour=colour,
             timestamp=guild.created_at)
-        em.add_field(name="Region", value=str(guild.region))
-        em.add_field(name="Users", value="{}/{}".format(online, total_users))
-        em.add_field(name="Text Channels", value=text_channels)
-        em.add_field(name="Voice Channels", value=voice_channels)
-        em.add_field(name="Roles", value=len(guild.roles))
-        em.add_field(name="Owner", value="{} | {}".format(str(guild.owner), guild.owner.mention))
+        em.add_field(name=_("Region"), value=str(guild.region))
+        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
+        em.add_field(name=_("Text Channels"), value=text_channels)
+        em.add_field(name=_("Voice Channels"), value=voice_channels)
+        em.add_field(name=_("Roles"), value=len(guild.roles))
+        em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), 
+                                                             guild.owner.mention))
         if guild.features != []:
-            em.add_field(name="Guild Features", value=", ".join(feature for feature in guild.features))
-        em.set_footer(text="guild ID: {}".format(guild.id))
+            em.add_field(name=_("Guild Features"), 
+                         value=", ".join(feature for feature in guild.features))
+        em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
         em.set_author(name=guild.name, icon_url=guild.icon_url_as(format="png"))
         em.set_thumbnail(url=guild.icon_url_as(format="png"))
         await channel.send(embed=em)
@@ -87,11 +88,14 @@ class ServerStats(getattr(commands, "Cog", object)):
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("{} has left a server!\n That's {} servers now! \nServer created {}. That's over {} days ago!".format(
-                        channel.guild.me.mention,
-                        len(self.bot.guilds),
-                        guild.created_at.strftime("%d %b %Y %H:%M"),
-                        passed))
+        created_at = _("{bot} has left a server!\n "
+                       "That's {num} servers now! \n"
+                       "Server created {since}. "
+                       "That's over {passed} days ago!").format(
+                        bot = channel.guild.me.mention,
+                        num = len(self.bot.guilds),
+                        since = guild.created_at.strftime("%d %b %Y %H:%M"),
+                        passed = passed)
 
         colour = guild.roles[-1].colour
 
@@ -99,15 +103,17 @@ class ServerStats(getattr(commands, "Cog", object)):
             description=created_at,
             colour=colour,
             timestamp=guild.created_at)
-        em.add_field(name="Region", value=str(guild.region))
-        em.add_field(name="Users", value="{}/{}".format(online, total_users))
-        em.add_field(name="Text Channels", value=text_channels)
-        em.add_field(name="Voice Channels", value=voice_channels)
-        em.add_field(name="Roles", value=len(guild.roles))
-        em.add_field(name="Owner", value="{} | {}".format(str(guild.owner), guild.owner.mention))
+        em.add_field(name=_("Region"), value=str(guild.region))
+        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
+        em.add_field(name=_("Text Channels"), value=text_channels)
+        em.add_field(name=_("Voice Channels"), value=voice_channels)
+        em.add_field(name=_("Roles"), value=len(guild.roles))
+        em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), 
+                                                             guild.owner.mention))
         if guild.features != []:
-            em.add_field(name="Guild Features", value=", ".join(feature for feature in guild.features))
-        em.set_footer(text="guild ID: {}".format(guild.id))
+            em.add_field(name=_("Guild Features"), 
+                         value=", ".join(feature for feature in guild.features))
+        em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
         em.set_author(name=guild.name, icon_url=guild.icon_url_as(format="png"))
         em.set_thumbnail(url=guild.icon_url_as(format="png"))
 
@@ -130,11 +136,13 @@ class ServerStats(getattr(commands, "Cog", object)):
             emoji_id = emoji.split(":")[-1].replace(">", "")
             await ctx.channel.trigger_typing()
             if emoji.startswith("<a"):
-                async with self.session.get("https://cdn.discordapp.com/emojis/{}.gif?v=1".format(emoji_id)) as resp:
+                url = "https://cdn.discordapp.com/emojis/{}.gif?v=1".format(emoji_id)
+                async with self.session.get(url) as resp:
                     data = await resp.read()
                 file = discord.File(BytesIO(data),filename="{}.gif".format(emoji_id))
             elif emoji.startswith("<:"):
-                async with self.session.get("https://cdn.discordapp.com/emojis/{}.png?v=1".format(emoji_id)) as resp:
+                url = "https://cdn.discordapp.com/emojis/{}.png?v=1".format(emoji_id)
+                async with self.session.get(url) as resp:
                     data = await resp.read()
                 file = discord.File(BytesIO(data),filename="{}.png".format(emoji_id))
             else:
@@ -146,7 +154,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                         data = await resp.read()
                     file = discord.File(BytesIO(data), filename="emoji.png")
                 except:
-                    await ctx.send("That doesn't appear to be a valid emoji")
+                    await ctx.send(_("That doesn't appear to be a valid emoji"))
                     return
             await ctx.send(file=file)
 
@@ -156,13 +164,13 @@ class ServerStats(getattr(commands, "Cog", object)):
             if reinvite is True
         """
         check = lambda m: m.author == ctx.message.author
-        msg_send = ("Please provide a reinvite link/message.\n"
+        msg_send = _("Please provide a reinvite link/message.\n"
                     "Type `exit` for no invite link/message.")
         invite_check = await ctx.send(msg_send)
         try:
             msg = await ctx.bot.wait_for("message", check=check, timeout=30)
         except asyncio.TimeoutError:
-            await msg.edit(content="I Guess not.")
+            await msg.edit(content=_("I Guess not."))
             return None
         if "exit" in msg.content:
             return None
@@ -185,7 +193,9 @@ class ServerStats(getattr(commands, "Cog", object)):
         now = datetime.datetime.utcnow()
         after = now - datetime.timedelta(days=days)
         if role is not None and role >= ctx.me.top_role:
-            await ctx.send("That role is higher than my role so I can't kick those members.")
+            msg = _("That role is higher than my "
+                    "role so I can't kick those members.")
+            await ctx.send(msg)
             return
         if role is None:
             member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
@@ -202,8 +212,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         for member in member_list:
             if member.id in user_list:
                 member_list.remove(member)
-        send_msg = ("{} estimated users to kick. ".format(len(member_list)) +
-                    "Would you like to kick them?")
+        send_msg = str(len(member_list))+_(" estimated users to kick. "
+                                            "Would you like to kick them?")
         msg = await ctx.send(send_msg)
         if ctx.channel.permissions_for(ctx.me).add_reactions:
             check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
@@ -211,9 +221,11 @@ class ServerStats(getattr(commands, "Cog", object)):
             await msg.add_reaction("❌")
 
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=check, timeout=60)
+                reaction, user = await self.bot.wait_for("reaction_add", 
+                                                         check=check, 
+                                                         timeout=60)
             except asyncio.TimeoutError:
-                await ctx.send("I guess not.")
+                await ctx.send(_("I guess not."))
             if reaction.emoji == "✅":
                 link = await self.ask_for_invite(ctx)
                 no_invite = []
@@ -223,9 +235,11 @@ class ServerStats(getattr(commands, "Cog", object)):
                             await member.send(link)
                         except:
                             no_invite.append(member.id)
-                    await member.kick(reason="Kicked due to inactivity.")
+                    await member.kick(reason=_("Kicked due to inactivity."))
                 if link and len(no_invite) > 0:
-                    await ctx.send("{} users could not be DM'd an invite link".format(len(no_invite)))
+                    msg = (str(len(no_invite)) + 
+                           _(" users could not be DM'd an invite link"))
+                    await ctx.send(msg)
             else:
                 await ctx.send("Not kicking users.")
                 return
@@ -244,7 +258,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         else:
             colour = discord.Embed.Empty
         await ctx.channel.trigger_typing()
-        em = discord.Embed(title="**Avatar**", colour=colour)
+        em = discord.Embed(title=_("**Avatar**"), colour=colour)
         if member.is_avatar_animated():
             url = member.avatar_url_as(format="gif")
         if not member.is_avatar_animated():
@@ -263,7 +277,9 @@ class ServerStats(getattr(commands, "Cog", object)):
         if channel is None:
             channel = ctx.message.channel
         await self.config.join_channel.set(channel.id)
-        await ctx.send("Posting new servers and left servers in {}".format(channel.mention))
+        msg = (_("Posting new servers and left servers in ") + 
+               channel.mention)
+        await ctx.send(msg)
 
     @commands.command()
     @checks.is_owner()
@@ -272,7 +288,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             Stop bots join/leave server messages
         """
         await self.config.join_channel.set(None)
-        await ctx.send("No longer posting joined or left servers.")
+        await ctx.send(_("No longer posting joined or left servers."))
 
     @commands.command(hidden=True)
     @checks.is_owner()
@@ -285,9 +301,12 @@ class ServerStats(getattr(commands, "Cog", object)):
             print(guild.owner.id)
             if guild.owner.id == user_id:
                 is_cheater = True
-                await ctx.send("<@{}> is guild owner of {}".format(user_id, guild.name))
+                msg = (guild.owner.mention + 
+                       _(" is guild owner of ") + 
+                       guild.name)
+                await ctx.send(msg)
         if not is_cheater:
-            await ctx.send("Not a cheater")
+            await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
     @checks.is_owner()
@@ -301,7 +320,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 member = await self.bot.get_user_info(member)
             except discord.errors.NotFound:
-                await ctx.send(f"{member} doesn't seem to be a discord user.")
+                await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
                 return
         guild_list = []
         for guild in self.bot.guilds:
@@ -309,13 +328,14 @@ class ServerStats(getattr(commands, "Cog", object)):
             if member.id in members:
                 guild_list.append(guild)
         if guild_list != []:
-            msg = "{} ({}) is on:\n".format(member.name, member.id)
+            msg = ("{} ({}) ".format(member, member.id) + _("is on:\n"))
             for guild in guild_list:
                 msg += "{} ({})\n".format(guild.name, guild.id)
             for page in pagify(msg, ["\n"]):
                 await ctx.send(page)
         else:
-            msg = f"{member.name}#{member.discriminator} ({member.id}) is not in any shared servers!"
+            msg = (f"{member} ({member.id}) "+
+                   _("is not in any shared servers!"))
             await ctx.send(msg)
 
     @commands.command(hidden=True)
@@ -351,7 +371,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             await ctx.send(page)
 
     @commands.command()
-    @checks.mod_or_permissions(manage_messages=True)
+    @checks.mod_or_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def slowmode(self, ctx, time:int=0, channel:discord.TextChannel=None):
         """
@@ -363,10 +383,12 @@ class ServerStats(getattr(commands, "Cog", object)):
         if channel is None:
             channel = ctx.channel
         if time < 0 or time > 120:
-            await ctx.send("You can only set a number between 0 and 120")
+            await ctx.send(_("You can only set a number between 0 and 120"))
             return
         await channel.edit(slowmode_delay=time)
-        await ctx.send(f"Slowmode set to {time} in {channel.mention}")
+        msg = (_("Slowmode set to")+
+               str(time)+ _("in") + channel.mention)
+        await ctx.send(msg)
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
@@ -382,10 +404,11 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         member_list = sorted(guild.members, key=lambda m: m.joined_at)
-        new_msg = "__**First {} members of {}**__\n".format(number, guild.name)
+        new_msg = ("__**"+_("First ")+str(number)+
+                   _(" members of ")+f"{guild.name}**__\n")
         for member in member_list[:number]:
             new_msg += "{}. {}\n".format((member_list.index(member)+1), member.name)
 
@@ -418,15 +441,23 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         channels = {}
         msg = "__**{}({})**__\n".format(guild.name, guild.id)
         for category in guild.by_category():
             if category[0] is not None:
-                msg += "{} ({}): Position {}\n".format(category[0].mention, category[0].id, category[0].position)
+                word = _("Position")
+                msg += "{0} ({1}): {2} {3}\n".format(category[0].mention, 
+                                                     category[0].id, 
+                                                     word,
+                                                     category[0].position)
             for channel in category[1]:
-                msg += "{} ({}): Position {}\n".format(channel.mention, channel.id, channel.position)
+                word = _("Position")
+                msg += "{0} ({1}): {2} {3}\n".format(channel.mention, 
+                                                     channel.id, 
+                                                     word,
+                                                     channel.position)
         for page in pagify(msg, ["\n"]):
             await ctx.send(page)
 
@@ -444,9 +475,9 @@ class ServerStats(getattr(commands, "Cog", object)):
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (ctx.message.created_at - guild.created_at).days
-        created_at = _("Since {}. That's over {} days ago!"
-                      "".format(guild.created_at.strftime("%d %b %Y %H:%M"),
-                                passed))
+        created_at = _("Since {date}. That's over {num} days ago!").format(
+            date=guild.created_at.strftime("%d %b %Y %H:%M"), num=passed
+        )
 
         colour = ''.join([choice('0123456789ABCDEF') for x in range(6)])
         colour = int(colour, 16)
@@ -456,15 +487,16 @@ class ServerStats(getattr(commands, "Cog", object)):
             description=created_at,
             colour=discord.Colour(value=colour),
             timestamp=guild.created_at)
-        em.add_field(name="Region", value=str(guild.region))
-        em.add_field(name="Users", value="{}/{}".format(online, total_users))
-        em.add_field(name="Text Channels", value=text_channels)
-        em.add_field(name="Voice Channels", value=voice_channels)
-        em.add_field(name="Roles", value=len(guild.roles))
-        em.add_field(name="Owner", value="{} | {}".format(str(guild.owner), guild.owner.mention))
+        em.add_field(name=_("Region"), value=str(guild.region))
+        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
+        em.add_field(name=_("Text Channels"), value=text_channels)
+        em.add_field(name=_("Voice Channels"), value=voice_channels)
+        em.add_field(name=_("Roles"), value=len(guild.roles))
+        em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), guild.owner.mention))
         if guild.features != []:
-            em.add_field(name="Guild Features", value=", ".join(feature for feature in guild.features))
-        em.set_footer(text="guild ID: {}".format(guild.id))
+            em.add_field(name=_("Guild Features"), 
+                         value=", ".join(feature for feature in guild.features))
+        em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
 
         if guild.icon_url:
             em.set_author(name=guild.name, url=invite_link, icon_url=guild.icon_url)
@@ -489,9 +521,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             await message.remove_reaction("➡", ctx.me)
             return None
         else:
-            reacts = {v: k for k, v in numbs.items()}
-            react = reacts[react.emoji]
-            if react == "next":
+            if react.emoji == "➡":
                 next_page = 0
                 if page == len(post_list) - 1:
                     next_page = 0  # Loop around to the first item
@@ -501,7 +531,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                     await message.remove_reaction("➡", ctx.message.author)
                 return await self.guild_menu(ctx, post_list, message=message,
                                              page=next_page, timeout=timeout)
-            elif react == "back":
+            elif react.emoji == "⬅":
                 next_page = 0
                 if page == 0:
                     next_page = len(post_list) - 1  # Loop around to the last item
@@ -530,7 +560,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 guild = await self.get_guild_obj(guild_name)
                 page = guilds.index(guild)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
             
 
@@ -550,7 +580,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
 
         await ctx.send("{} has {} members.".format(guild.name, len(guild.members)))
@@ -568,7 +598,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         msg = ""
         for role in guild.roles:
@@ -590,7 +620,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         msg = ""
         for role in sorted(guild.roles, reverse=True):
@@ -638,7 +668,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         channel = ctx.message.channel
         total_msgs = 0
@@ -664,13 +694,17 @@ class ServerStats(getattr(commands, "Cog", object)):
                         else:
                             total_contribution[author.id] += 1
                     highest, users = await self.check_highest(channel_contribution)
-                    msg += "{}: Total Messages:**{}**   most user posts **{}**\n".format(chn.mention, channel_msgs, highest)
+                    msg += (f"{chn.mention}: "+
+                            ("Total Messages:") + f"**{channel_msgs}** "+
+                            _("most user posts ") + f"**{highest}**\n")
                 except discord.errors.Forbidden:
                     pass
                 except AttributeError:
                     pass
             highest, users = await self.check_highest(total_contribution)
-            new_msg = "__{}__: Total Messages:**{}**  Most user posts **{}**\n{}".format(guild.name, total_msgs, highest, msg)
+            new_msg = (f"__{guild.name}__: "+
+                       _("Total Messages:")+f"**{total_msgs}** "+
+                       _("Most user posts ")+f"**{highest}**\n{msg}")
             await warning_msg.delete()
             for page in pagify(new_msg, ["\n"]):
                 await channel.send(page)
@@ -684,7 +718,8 @@ class ServerStats(getattr(commands, "Cog", object)):
 
         emojis = post_list[page]
         em = discord.Embed(timestamp=ctx.message.created_at)
-        em.set_author(name=guild.name + " Emojis", icon_url=guild.icon_url)
+        em.set_author(name=guild.name + _(" Emojis"), 
+                      icon_url=guild.icon_url)
         regular = []
         msg = ""
         for emoji in emojis:
@@ -700,18 +735,20 @@ class ServerStats(getattr(commands, "Cog", object)):
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"] and react.message.id == message.id
+        check = lambda react, user:user == ctx.message.author and\
+                                     react.emoji in ["➡", "⬅", "❌"] and\
+                                     react.message.id == message.id
         try:
-            react, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+            react, user = await self.bot.wait_for("reaction_add", 
+                                                  check=check, 
+                                                  timeout=timeout)
         except asyncio.TimeoutError:
             await message.remove_reaction("⬅", self.bot.user)
             await message.remove_reaction("❌", self.bot.user)
             await message.remove_reaction("➡", self.bot.user)
             return None
         else:
-            reacts = {v: k for k, v in numbs.items()}
-            react = reacts[react.emoji]
-            if react == "next":
+            if react.emoji == "➡":
                 next_page = 0
                 if page == len(post_list) - 1:
                     next_page = 0  # Loop around to the first item
@@ -723,7 +760,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                     pass
                 return await self.emoji_menu(ctx, post_list, guild, message=message,
                                              page=next_page, timeout=timeout)
-            elif react == "back":
+            elif react.emoji == "⬅":
                 next_page = 0
                 if page == 0:
                     next_page = len(post_list) - 1  # Loop around to the last item
@@ -751,17 +788,14 @@ class ServerStats(getattr(commands, "Cog", object)):
             try:
                 guild = await self.get_guild_obj(guild_name)
             except GuildNotFoundError:
-                await ctx.send("{} guild could not be found.".format(guild_name))
+                await ctx.send(guild_name + _(" guild could not be found."))
                 return
         msg = ""
         embed = discord.Embed(timestamp=ctx.message.created_at)
         embed.set_author(name=guild.name, icon_url=guild.icon_url)
         regular = []
         for emoji in guild.emojis:
-            if emoji.animated:
-                regular.append(f"<a:{emoji.name}:{emoji.id}> = `:{emoji.name}:`\n")
-            else:
-                regular.append(f"<:{emoji.name}:{emoji.id}> = `:{emoji.name}:`\n")
+            regular.append(f"{emoji} = `:{emoji.name}:`\n")
         if regular != "":
             embed.description = regular
         x = [regular[i:i+10] for i in range(0, len(regular), 10)]
