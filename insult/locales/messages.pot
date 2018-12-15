@@ -1,0 +1,771 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 21:50-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: insult.py:10
+msgid "Yo Mama so fat she sued Xbox 360 for guessing her weight."
+msgstr ""
+
+#: insult.py:11
+msgid "You're so fat that when you were diagnosed with a flesh eating bacteria - the doctors gave you 87 years to live."
+msgstr ""
+
+#: insult.py:12
+msgid "You're so fat you've got more chins than a Hong Kong phone book."
+msgstr ""
+
+#: insult.py:13
+msgid "Yo Mama so fat she's on both sides of the family."
+msgstr ""
+
+#: insult.py:14
+msgid "Yo Mama so fat that even Dora couldn't explore her."
+msgstr ""
+
+#: insult.py:15
+msgid "Yo Mama so fat that she doesn't need the internet; she's already world wide."
+msgstr ""
+
+#: insult.py:16
+msgid "You're so fat that when you farted you started global warming."
+msgstr ""
+
+#: insult.py:17
+msgid "You're so fat the back of your neck looks like a pack of hot-dogs."
+msgstr ""
+
+#: insult.py:18
+msgid "You're so fat that when you fell from your bed you fell from both sides."
+msgstr ""
+
+#: insult.py:19
+msgid "You're so fat when you get on the scale it says \"To be continued.\""
+msgstr ""
+
+#: insult.py:20
+msgid "You're so fat when you go swimming the whales start singing \"We Are Family\"."
+msgstr ""
+
+#: insult.py:21
+msgid "You're so fat when you stepped on the scale, Buzz Lightyear popped out and said \"To infinity and beyond!\""
+msgstr ""
+
+#: insult.py:22
+msgid "You're so fat when you turn around, people throw you a welcome back party."
+msgstr ""
+
+#: insult.py:23
+msgid "You're so fat when you were in school you sat by everybody."
+msgstr ""
+
+#: insult.py:24
+msgid "You're so fat when you went to the circus the little girl asked if she could ride the elephant."
+msgstr ""
+
+#: insult.py:25
+msgid "You're so fat when you go on an airplane, you have to pay baggage fees for your ass."
+msgstr ""
+
+#: insult.py:26
+msgid "You're so fat whenever you go to the beach the tide comes in."
+msgstr ""
+
+#: insult.py:27
+msgid "You're so fat I could slap your butt and ride the waves."
+msgstr ""
+
+#: insult.py:28
+msgid "You're so fat I'd have to grease the door frame and hold a Twinkie on the other side just to get you through."
+msgstr ""
+
+#: insult.py:29
+msgid "Yo Mama so dumb I told her Christmas was around the corner and she went looking for it."
+msgstr ""
+
+#: insult.py:30
+msgid "You're so dumb it took you 2 hours to watch 60 minutes."
+msgstr ""
+
+#: insult.py:31
+msgid "Yo Mama so dumb she bought tickets to Xbox Live."
+msgstr ""
+
+#: insult.py:32
+msgid "You're so dumb that you thought The Exorcist was a workout video."
+msgstr ""
+
+#: insult.py:33
+msgid "You're so ugly that you went to the salon and it took 3 hours just to get an estimate."
+msgstr ""
+
+#: insult.py:34
+msgid "You're so ugly that even Scooby Doo couldn't solve that mystery."
+msgstr ""
+
+#: insult.py:35
+msgid "What is the weighted center between Planet X and Planet Y? Oh it's YOU!"
+msgstr ""
+
+#: insult.py:36
+msgid ":eggplant: :eggplant: :eggplant:"
+msgstr ""
+
+#: insult.py:37
+msgid "Your birth certificate is an apology letter from the condom factory."
+msgstr ""
+
+#: insult.py:38
+msgid "I wasn't born with enough middle fingers to let you know how I feel about you."
+msgstr ""
+
+#: insult.py:39
+msgid "You must have been born on a highway because that's where most accidents happen."
+msgstr ""
+
+#: insult.py:40
+msgid "I'm jealous of all the people that haven't met you."
+msgstr ""
+
+#: insult.py:41
+msgid "I bet your brain feels as good as new, seeing that you never use it."
+msgstr ""
+
+#: insult.py:42
+msgid "I'm not saying I hate you, but I would unplug your life support to charge my phone."
+msgstr ""
+
+#: insult.py:43
+msgid "You're so ugly, when your mom dropped you off at school she got a fine for littering."
+msgstr ""
+
+#: insult.py:44
+msgid "You bring everyone a lot of joy, when you leave the room."
+msgstr ""
+
+#: insult.py:45
+msgid "What's the difference between you and eggs? Eggs get laid and you don't."
+msgstr ""
+
+#: insult.py:46
+msgid "You're as bright as a black hole, and twice as dense."
+msgstr ""
+
+#: insult.py:47
+msgid "I tried to see things from your perspective, but I couldn't seem to shove my head that far up my ass."
+msgstr ""
+
+#: insult.py:48
+msgid "Two wrongs don't make a right, take your parents as an example."
+msgstr ""
+
+#: insult.py:49
+msgid "You're the reason the gene pool needs a lifeguard."
+msgstr ""
+
+#: insult.py:50
+msgid "If laughter is the best medicine, your face must be curing the world."
+msgstr ""
+
+#: insult.py:51
+msgid "You're so ugly, when you popped out the doctor said \"Aww what a treasure\" and your mom said \"Yeah, lets bury it.\""
+msgstr ""
+
+#: insult.py:52
+msgid "I have neither the time nor the crayons to explain this to you."
+msgstr ""
+
+#: insult.py:53
+msgid "You have two brains cells, one is lost and the other is out looking for it."
+msgstr ""
+
+#: insult.py:54
+msgid "How many times do I have to flush to get rid of you?"
+msgstr ""
+
+#: insult.py:55
+msgid "I don't exactly hate you, but if you were on fire and I had water, I'd drink it."
+msgstr ""
+
+#: insult.py:56
+msgid "You shouldn't play hide and seek, no one would look for you."
+msgstr ""
+
+#: insult.py:57
+msgid "Some drink from the fountain of knowledge; you only gargled."
+msgstr ""
+
+#: insult.py:58
+msgid "Roses are red violets are blue, God made me pretty, what happened to you?"
+msgstr ""
+
+#: insult.py:59
+msgid "It's better to let someone think you are an Idiot than to open your mouth and prove it."
+msgstr ""
+
+#: insult.py:60
+msgid "Somewhere out there is a tree, tirelessly producing oxygen so you can breathe. I think you owe it an apology."
+msgstr ""
+
+#: insult.py:61
+msgid "The last time I saw a face like yours I fed it a banana."
+msgstr ""
+
+#: insult.py:62
+msgid "The only way you'll ever get laid is if you crawl up a chicken's ass and wait."
+msgstr ""
+
+#: insult.py:63
+msgid "Which sexual position produces the ugliest children? Ask your mother."
+msgstr ""
+
+#: insult.py:64
+msgid "If you really want to know about mistakes, you should ask your parents."
+msgstr ""
+
+#: insult.py:65
+msgid "At least when I do a handstand my stomach doesn't hit me in the face."
+msgstr ""
+
+#: insult.py:66
+msgid "If I gave you a penny for your thoughts, I'd get change."
+msgstr ""
+
+#: insult.py:67
+msgid "If I were to slap you, it would be considered animal abuse."
+msgstr ""
+
+#: insult.py:68
+msgid "Do you know how long it takes for your mother to take a crap? Nine months."
+msgstr ""
+
+#: insult.py:69
+msgid "What are you going to do for a face when the baboon wants his butt back?"
+msgstr ""
+
+#: insult.py:70
+msgid "Well I could agree with you, but then we'd both be wrong."
+msgstr ""
+
+#: insult.py:71
+msgid "You're so fat, you could sell shade."
+msgstr ""
+
+#: insult.py:72
+msgid "It looks like your face caught on fire and someone tried to put it out with a hammer."
+msgstr ""
+
+#: insult.py:73
+msgid "You're not funny, but your life, now that's a joke."
+msgstr ""
+
+#: insult.py:74
+msgid "You're so fat the only letters of the alphabet you know are KFC."
+msgstr ""
+
+#: insult.py:75
+msgid "Oh my God, look at you. Was anyone else hurt in the accident?"
+msgstr ""
+
+#: insult.py:76
+msgid "What are you doing here? Did someone leave your cage open?"
+msgstr ""
+
+#: insult.py:77
+msgid "You're so ugly, the only dates you get are on a calendar."
+msgstr ""
+
+#: insult.py:78
+msgid "I can explain it to you, but I can't understand it for you."
+msgstr ""
+
+#: insult.py:79
+msgid "You are proof that God has a sense of humor."
+msgstr ""
+
+#: insult.py:80
+msgid "If you spoke your mind, you'd be speechless."
+msgstr ""
+
+#: insult.py:81
+msgid "Why don't you check eBay and see if they have a life for sale."
+msgstr ""
+
+#: insult.py:82
+msgid "If I wanted to hear from an asshole, I'd fart."
+msgstr ""
+
+#: insult.py:83
+msgid "You're so fat you need cheat codes to play Wii Fit"
+msgstr ""
+
+#: insult.py:84
+msgid "You're so ugly, when you got robbed, the robbers made you wear their masks."
+msgstr ""
+
+#: insult.py:85
+msgid "Do you still love nature, despite what it did to you?"
+msgstr ""
+
+#: insult.py:86
+msgid "You are proof that evolution CAN go in reverse."
+msgstr ""
+
+#: insult.py:87
+msgid "I'll never forget the first time we met, although I'll keep trying."
+msgstr ""
+
+#: insult.py:88
+msgid "Your parents hated you so much your bath toys were an iron and a toaster"
+msgstr ""
+
+#: insult.py:89
+msgid "Don't feel sad, don't feel blue, Frankenstein was ugly too."
+msgstr ""
+
+#: insult.py:90
+msgid "You're so ugly, you scared the crap out of the toilet."
+msgstr ""
+
+#: insult.py:91
+msgid "It's kinda sad watching you attempt to fit your entire vocabulary into a sentence."
+msgstr ""
+
+#: insult.py:92
+msgid "I fart to make you smell better."
+msgstr ""
+
+#: insult.py:93
+msgid "You're so ugly you make blind kids cry."
+msgstr ""
+
+#: insult.py:94
+msgid "You're a person of rare intelligence. It's rare when you show any."
+msgstr ""
+
+#: insult.py:95
+msgid "You're so fat, when you wear a yellow rain coat people scream ''taxi''."
+msgstr ""
+
+#: insult.py:96
+msgid "I heard you went to a haunted house and they offered you a job."
+msgstr ""
+
+#: insult.py:97
+msgid "You look like a before picture."
+msgstr ""
+
+#: insult.py:98
+msgid "If your brain was made of chocolate, it wouldn't fill an M&M."
+msgstr ""
+
+#: insult.py:99
+msgid "Aww, it's so cute when you try to talk about things you don't understand."
+msgstr ""
+
+#: insult.py:100
+msgid "I heard your parents took you to a dog show and you won."
+msgstr ""
+
+#: insult.py:101
+msgid "You stare at frozen juice cans because they say, \"concentrate\"."
+msgstr ""
+
+#: insult.py:102
+msgid "You're so stupid you tried to wake a sleeping bag."
+msgstr ""
+
+#: insult.py:103
+msgid "Am I getting smart with you? How would you know?"
+msgstr ""
+
+#: insult.py:104
+msgid "We all sprang from apes, but you didn't spring far enough."
+msgstr ""
+
+#: insult.py:105
+msgid "I'm no proctologist, but I know an asshole when I see one."
+msgstr ""
+
+#: insult.py:106
+msgid "When was the last time you could see your whole body in the mirror?"
+msgstr ""
+
+#: insult.py:107
+msgid "You must have a very low opinion of people if you think they are your equals."
+msgstr ""
+
+#: insult.py:108
+msgid "So, a thought crossed your mind? Must have been a long and lonely journey."
+msgstr ""
+
+#: insult.py:109
+msgid "You're the best at all you do - and all you do is make people hate you."
+msgstr ""
+
+#: insult.py:110
+msgid "Looks like you fell off the ugly tree and hit every branch on the way down."
+msgstr ""
+
+#: insult.py:111
+msgid "Looks aren't everything; in your case, they aren't anything."
+msgstr ""
+
+#: insult.py:112
+msgid "You have enough fat to make another human."
+msgstr ""
+
+#: insult.py:113
+msgid "You're so ugly, when you threw a boomerang it didn't come back."
+msgstr ""
+
+#: insult.py:114
+msgid "You're so fat a picture of you would fall off the wall!"
+msgstr ""
+
+#: insult.py:115
+msgid "Your hockey team made you goalie so you'd have to wear a mask."
+msgstr ""
+
+#: insult.py:116
+msgid "Ordinarily people live and learn. You just live."
+msgstr ""
+
+#: insult.py:117
+msgid "Did your parents ever ask you to run away from home?"
+msgstr ""
+
+#: insult.py:118
+msgid "I heard you took an IQ test and they said your results were negative."
+msgstr ""
+
+#: insult.py:119
+msgid "You're so ugly, you had tinted windows on your incubator."
+msgstr ""
+
+#: insult.py:120
+msgid "Don't you need a license to be that ugly?"
+msgstr ""
+
+#: insult.py:121
+msgid "I'm not saying you're fat, but it looks like you were poured into your clothes and someone forgot to say \"when\""
+msgstr ""
+
+#: insult.py:122
+msgid "I've seen people like you, but I had to pay admission!"
+msgstr ""
+
+#: insult.py:123
+msgid "I hear the only place you're ever invited is outside."
+msgstr ""
+
+#: insult.py:124
+msgid "Keep talking, someday you'll say something intelligent!"
+msgstr ""
+
+#: insult.py:125
+msgid "You couldn't pour water out of a boot if the instructions were on the heel."
+msgstr ""
+
+#: insult.py:126
+msgid "Even if you were twice as smart, you'd still be stupid!"
+msgstr ""
+
+#: insult.py:127
+msgid "You're so fat, you have to use a mattress as a maxi-pad."
+msgstr ""
+
+#: insult.py:128
+msgid "I may be fat, but you're ugly, and I can lose weight."
+msgstr ""
+
+#: insult.py:129
+msgid "I was pro life before I met you."
+msgstr ""
+
+#: insult.py:130
+msgid "What's the difference between you and Hitler? Hitler knew when to kill himself."
+msgstr ""
+
+#: insult.py:131
+msgid "You're so fat, your double chin has a double chin."
+msgstr ""
+
+#: insult.py:132
+msgid "If ignorance is bliss, you must be the happiest person on earth."
+msgstr ""
+
+#: insult.py:133
+msgid "You're so stupid, it takes you an hour to cook minute rice."
+msgstr ""
+
+#: insult.py:134
+msgid "Is that your face? Or did your neck just throw up?"
+msgstr ""
+
+#: insult.py:135
+msgid "You're so ugly you have to trick or treat over the phone."
+msgstr ""
+
+#: insult.py:136
+msgid "I'd hit you but we don't hit girls around here."
+msgstr ""
+
+#: insult.py:137
+msgid "Dumbass."
+msgstr ""
+
+#: insult.py:138
+msgid "Bitch."
+msgstr ""
+
+#: insult.py:139
+msgid "I'd give you a nasty look but you've already got one."
+msgstr ""
+
+#: insult.py:140
+msgid "If I wanted a bitch, I'd have bought a dog."
+msgstr ""
+
+#: insult.py:141
+msgid "Scientists say the universe is made up of neutrons, protons and electrons. They forgot to mention morons."
+msgstr ""
+
+#: insult.py:142
+msgid "Why is it acceptable for you to be an idiot but not for me to point it out?"
+msgstr ""
+
+#: insult.py:143
+msgid "Did you know they used to be called \"Jumpolines\" until your mum jumped on one?"
+msgstr ""
+
+#: insult.py:144
+msgid "You're not stupid; you just have bad luck when thinking."
+msgstr ""
+
+#: insult.py:145
+msgid "I thought of you today. It reminded me to take the garbage out."
+msgstr ""
+
+#: insult.py:146
+msgid "I'm sorry I didn't get that - I don't speak idiot."
+msgstr ""
+
+#: insult.py:147
+msgid "Hey, your village called – they want their idiot back."
+msgstr ""
+
+#: insult.py:148
+msgid "I just stepped in something that was smarter than you… and smelled better too."
+msgstr ""
+
+#: insult.py:149
+msgid "You're so fat that at the zoo the elephants started throwing you peanuts."
+msgstr ""
+
+#: insult.py:150
+msgid "You're so fat every time you turn around, it's your birthday."
+msgstr ""
+
+#: insult.py:151
+msgid "You're so fat your idea of dieting is deleting the cookies from your internet cache."
+msgstr ""
+
+#: insult.py:152
+msgid "You're so fat your shadow weighs 35 pounds."
+msgstr ""
+
+#: insult.py:153
+msgid "You're so fat I could tell you to haul ass and you'd have to make two trips."
+msgstr ""
+
+#: insult.py:154
+msgid "You're so fat I took a picture of you at Christmas and it's still printing."
+msgstr ""
+
+#: insult.py:155
+msgid "You're so fat I tried to hang a picture of you on my wall, and my wall fell over."
+msgstr ""
+
+#: insult.py:156
+msgid "You're so fat Mount Everest tried to climb you."
+msgstr ""
+
+#: insult.py:157
+msgid "You're so fat you can't even jump to a conclusion."
+msgstr ""
+
+#: insult.py:158
+msgid "You're so fat you can't fit in any timeline."
+msgstr ""
+
+#: insult.py:159
+msgid "You're so fat you can't fit in this joke."
+msgstr ""
+
+#: insult.py:160
+msgid "You're so fat you don't skinny dip, you chunky dunk."
+msgstr ""
+
+#: insult.py:161
+msgid "You're so fat you fell in love and broke it."
+msgstr ""
+
+#: insult.py:162
+msgid "You're so fat you go to KFC and lick other peoples' fingers."
+msgstr ""
+
+#: insult.py:163
+msgid "You're so fat you got arrested at the airport for ten pounds of crack."
+msgstr ""
+
+#: insult.py:164
+msgid "You're so fat you'd have to go to Sea World to get baptized."
+msgstr ""
+
+#: insult.py:165
+msgid "You're so fat you have your own zip code."
+msgstr ""
+
+#: insult.py:166
+msgid "You're so fat you have more rolls than a bakery."
+msgstr ""
+
+#: insult.py:167
+msgid "You're so fat you don't have got cellulite, you've got celluheavy."
+msgstr ""
+
+#: insult.py:168
+msgid "You're so fat you influence the tides."
+msgstr ""
+
+#: insult.py:169
+msgid "You're so fat you jumped off the Grand Canyon and got stuck."
+msgstr ""
+
+#: insult.py:170
+msgid "You're so fat that you laid on the beach and Greenpeace tried to push you back in the water."
+msgstr ""
+
+#: insult.py:171
+msgid "You're so fat you leave footprints in concrete."
+msgstr ""
+
+#: insult.py:172
+msgid "You're so fat you need GPS to find your asshole."
+msgstr ""
+
+#: insult.py:173
+msgid "You're so fat you pull your pants down and your ass is still in them."
+msgstr ""
+
+#: insult.py:174
+msgid "You're so fat you show up on radar."
+msgstr ""
+
+#: insult.py:175
+msgid "If you were any less intelligent we'd have to water you three times a week.."
+msgstr ""
+
+#: insult.py:176
+msgid "If your IQ was 3 points higher, you'd be a rock."
+msgstr ""
+
+#: insult.py:177
+msgid "I would insult you but nature did a better job."
+msgstr ""
+
+#: insult.py:178
+msgid "Does your ass get jealous of all the shit that comes out of your mouth?"
+msgstr ""
+
+#: insult.py:179
+msgid "If I ate a bowl of alphabet soup, I could shit out a smarter sentence than any of yours."
+msgstr ""
+
+#: insult.py:180
+msgid "You're not pretty enough to be this stupid."
+msgstr ""
+
+#: insult.py:181
+msgid "That little voice in the back of your head, telling you you'll never be good enough? It's right."
+msgstr ""
+
+#: insult.py:182
+msgid "You look like you're going to spend your life having one epiphany after another, always thinking you've finally figured out what's holding you back, and how you can finally be productive and creative and turn your life around. But nothing will ever change. That cycle of mediocrity isn't due to some obstacle. It's who you *are*. The thing standing in the way of your dreams is; that the person having them is *you*."
+msgstr ""
+
+#: insult.py:183
+msgid "May your day and future be as pleasant as you are."
+msgstr ""
+
+#: insult.py:184
+msgid "I would agree with you but then we would both be wrong."
+msgstr ""
+
+#: insult.py:185
+msgid "I bite my thumb at you, sir."
+msgstr ""
+
+#: insult.py:186
+msgid "I'd call you a tool, but that would imply you were useful in at least one way."
+msgstr ""
+
+#: insult.py:187
+msgid "I hope you outlive your children."
+msgstr ""
+
+#: insult.py:188
+msgid "Are you and your dick having a competition to see who can disappoint me the most?"
+msgstr ""
+
+#: insult.py:189
+msgid "Yo mamma is so ugly her portraits hang themselves."
+msgstr ""
+
+#: insult.py:190
+msgid "Your birth certificate is an apology from the abortion clinic."
+msgstr ""
+
+#: insult.py:191
+msgid "If you were anymore inbred you'd be a sandwich."
+msgstr ""
+
+#: insult.py:192
+msgid "Say hello to your wife and my kids for me."
+msgstr ""
+
+#: insult.py:193
+msgid "You are thick-headed bastards with a bloated bureaucracy, designed to compensate for your small and poor self-esteem, cocksuckers. You have the brains to ban the person who has come to support channel your bot, accusing him of violating the ephemeral ephemeral rules, stupid morons. By the way i have one of the biggest server(5.5k  people, ~30 anytime voiceonline members), and i know something about managing, and of these rules - dont be an asshole. You are fucking asshole, maybe it is product of your life alone, or your life with your mom, anyway - you are retard and your soul is a fucking bunch of stupid self-esteems."
+msgstr ""
+
+#: insult.py:206
+#, docstring
+msgid ""
+"\n"
+"            Insult the user\n"
+"            \n"
+"            `user` the user you would like to insult\n"
+"        "
+msgstr ""
+
+#: insult.py:217
+msgid "How original. No one else had thought of trying to get the bot to insult itself. I applaud your creativity. Yawn. Perhaps this is why you don't have friends. You don't add anything new to any conversation. You are more of a bot than me, predictable answers, and absolutely dull to have an actual conversation with."
+msgstr ""
+
+#: insult.py:218
+msgid "What the fuck did you just fucking say about me, you little bitch? I’ll have you know I graduated top of my class in the Navy Seals, and I’ve been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I’m the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You’re fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that’s just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little “clever” comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn’t, you didn’t, and now you’re paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You’re fucking dead, kiddo."
+msgstr ""
+
