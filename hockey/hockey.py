@@ -903,7 +903,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 position += _(" You have ")+f"{wins}/{total} "+_("correct ")+f"({percent:.4}%)."
             elif leaderboard_type == "worst":
                 percent = (losses/total)*100
-                position += _(" You have ")+f"{wins}/{total} "+_("correct ")+f"({percent:.4}%)."
+                position += _(" You have ")+f"{losses}/{total} "+_("correct ")+f"({percent:.4}%)."
             await ctx.send(position)
         await hockey_menu(ctx, leaderboard_type, leaderboard_list)
 
