@@ -429,7 +429,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
         except:
             # if we can't find the message ignore it
             pass
-        local_perms = not await self.local_perms(message)
+        try:
+            local_perms = not await self.local_perms(message)
+        except:
+            return
         global_perms =  not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
         guild = message.guild
