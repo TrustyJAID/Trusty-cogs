@@ -1,0 +1,293 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-14 18:28-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.1\n"
+
+
+#: welcome.py:24
+#, docstring
+msgid ""
+"Welcomes new members to the guild in the default channel rewritten for V3 from\n"
+"     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"
+msgstr ""
+
+#: welcome.py:36
+#, docstring
+msgid "Sets welcome module settings"
+msgstr ""
+
+#: welcome.py:40
+msgid "Random Greeting "
+msgstr ""
+
+#: welcome.py:41
+msgid "On "
+msgstr ""
+
+#: welcome.py:42
+msgid "Channel "
+msgstr ""
+
+#: welcome.py:43
+msgid "Whisper "
+msgstr ""
+
+#: welcome.py:44
+msgid "Bots message "
+msgstr ""
+
+#: welcome.py:45
+msgid "Bots role "
+msgstr ""
+
+#: welcome.py:46
+msgid "Embeds "
+msgstr ""
+
+#: welcome.py:49
+msgid "Welcome settings for "
+msgstr ""
+
+#: welcome.py:76
+#, docstring
+msgid ""
+"\n"
+"            Manage welcome messages\n"
+"        "
+msgstr ""
+
+#: welcome.py:83
+#, docstring
+msgid ""
+"\n"
+"        Adds a welcome message format for the guild to be chosen at random\n"
+"\n"
+"        {0} is user\n"
+"        {1} is guild\n"
+"        Default is set to:\n"
+"            Welcome {0.name} to {1.name}!\n"
+"\n"
+"        Example formats:\n"
+"            {0.mention}.. What are you doing here?\n"
+"            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id}\n"
+"            Someone new joined! Who is it?! D: IS HE HERE TO HURT US?!\n"
+"        "
+msgstr ""
+
+#: welcome.py:100
+msgid "Welcome message added for the guild."
+msgstr ""
+
+#: welcome.py:105
+#, docstring
+msgid ""
+"Removes a welcome message from the random message list\n"
+"        "
+msgstr ""
+
+#: welcome.py:110
+msgid ""
+"Choose a welcome message to delete:\n"
+"\n"
+msgstr ""
+
+#: welcome.py:125
+msgid "That's not a number in the list :/"
+msgstr ""
+
+#: welcome.py:130
+msgid ""
+"**This message was deleted:**\n"
+msgstr ""
+
+#: welcome.py:134
+#, docstring
+msgid ""
+"\n"
+"            Lists the welcome messages of this guild\n"
+"        "
+msgstr ""
+
+#: welcome.py:138
+msgid ""
+"Welcome messages:\n"
+"\n"
+msgstr ""
+
+#: welcome.py:147
+#, docstring
+msgid ""
+"\n"
+"            Turns on/off welcoming new users to the guild\n"
+"        "
+msgstr ""
+
+#: welcome.py:154
+msgid "I will now welcome new users to the guild."
+msgstr ""
+
+#: welcome.py:157
+msgid "I will no longer welcome new users."
+msgstr ""
+
+#: welcome.py:162
+#, docstring
+msgid ""
+"\n"
+"        Sets the channel to send the welcome message\n"
+"\n"
+"        If channel isn\"t specified, the guild\"s default channel will be used\n"
+"        "
+msgstr ""
+
+#: welcome.py:172
+msgid "I do not have permissions to send messages to "
+msgstr ""
+
+#: welcome.py:179
+msgid "I will now send welcome messages to "
+msgstr ""
+
+#: welcome.py:186
+#, docstring
+msgid ""
+"\n"
+"            Special welcome for bots\n"
+"        "
+msgstr ""
+
+#: welcome.py:193
+#, docstring
+msgid ""
+"Set the welcome msg for bots.\n"
+"\n"
+"        Leave blank to reset to regular user welcome"
+msgstr ""
+
+#: welcome.py:201
+msgid "Bot message reset. Bots will now be welcomed as regular users."
+msgstr ""
+
+#: welcome.py:205
+msgid "Bot welcome message set for the guild."
+msgstr ""
+
+#: welcome.py:211
+#, docstring
+msgid ""
+"\n"
+"        Set the role to put bots in when they join.\n"
+"\n"
+"        Leave blank to not give them a role.\n"
+"        "
+msgstr ""
+
+#: welcome.py:220
+msgid "Bots that join this guild will be given "
+msgstr ""
+
+#: welcome.py:225
+#, docstring
+msgid ""
+"Sets whether or not a DM is sent to the new user\n"
+"\n"
+"        Options:\n"
+"            off - turns off DMs to users\n"
+"            only - only send a DM to the user, don\"t send a welcome to the channel\n"
+"            both - send a message to both the user and the channel\n"
+"\n"
+"        If Option isn\"t specified, toggles between \"off\" and \"only\"\n"
+"        DMs will not be sent to bots"
+msgstr ""
+
+#: welcome.py:247
+msgid "I will no longer send DMs to new users"
+msgstr ""
+
+#: welcome.py:249
+msgid "I will now send welcome "
+msgstr ""
+
+#: welcome.py:250
+msgid "messages to "
+msgstr ""
+
+#: welcome.py:251
+msgid " as well as to the new user in a DM"
+msgstr ""
+
+#: welcome.py:254
+msgid "I will now only send welcome messages to the new user as a DM"
+msgstr ""
+
+#: welcome.py:262
+#, docstring
+msgid ""
+"\n"
+"        Turns on/off embed messages\n"
+"        "
+msgstr ""
+
+#: welcome.py:270
+msgid "I will now welcome new users to the guild in embeds."
+msgstr ""
+
+#: welcome.py:313
+msgid "welcome.py: unable to whisper a user. Probably doesn't want to be PM'd"
+msgstr ""
+
+#: welcome.py:319
+msgid "welcome.py: Channel not found. It was most likely deleted. User joined: "
+msgstr ""
+
+#: welcome.py:325
+msgid "Permissions Error. User that joined: "
+msgstr ""
+
+#: welcome.py:327
+msgid "Bot doesn't have permissions to send messages to "
+msgstr ""
+
+#: welcome.py:337
+msgid "welcome.py: unable to add  a role. "
+msgstr ""
+
+#: welcome.py:340
+msgid "welcome.py: added "
+msgstr ""
+
+#: welcome.py:340
+msgid " role to "
+msgstr ""
+
+#: welcome.py:341
+msgid "bot, "
+msgstr ""
+
+#: welcome.py:382
+msgid "I can't find the specified channel. It might have been deleted."
+msgstr ""
+
+#: welcome.py:386
+msgid "`Sending a testing message to "
+msgstr ""
+
+#: welcome.py:404
+msgid "I do not have permissions "
+msgstr ""
+
+#: welcome.py:405
+msgid "to send messages to "
+msgstr ""
+
