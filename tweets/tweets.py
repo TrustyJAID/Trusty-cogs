@@ -546,7 +546,7 @@ class Tweets(getattr(commands, "Cog", object)):
             if not in_list:
                 msg = (_("Now do ") + f"`{ctx.prefix}autotweet restart`"+
                        _(" when you've finished adding all accounts!"))
-            await ctx.send(msg)
+                await ctx.send(msg)
         else:
             msg = (_("I am already posting ") + username + 
                    _(" in ") + channel.mention)
@@ -652,8 +652,8 @@ class Tweets(getattr(commands, "Cog", object)):
                         "{}: {}".format(channel.mention, msg))
             for page in pagify(msg_send, ["\n"]):
                 await ctx.send(page)
-                msg = (_("Now do ") + f"`{ctx.prefix}autotweet restart`"+
-                       _(" when you've finished adding all accounts!"))
+            msg = (_("Now do ") + f"`{ctx.prefix}autotweet restart`"+
+                   _(" when you've finished adding all accounts!"))
             await ctx.send(msg)
         if len(missed_accounts) != 0:
             msg = ", ".join(member for member in missed_accounts)
