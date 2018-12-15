@@ -1,11 +1,15 @@
 import discord
 from redbot.core import Config, checks, commands
+from redbot.core.i18n import Translator, cog_i18n
 
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __author__ = "TrustyJAID"
 
+_ = Translator("Spoiler", __file__)
 
+
+@cog_i18n(_)
 class Spoiler(getattr(commands, "Cog", object)):
     """
         Post spoilers in chat without spoining the text for everyone
@@ -20,19 +24,15 @@ class Spoiler(getattr(commands, "Cog", object)):
 
     @commands.command(name="spoiler", aliases=["spoilers"])
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True, add_reactions=True)
     async def _spoiler(self, ctx, *, spoiler_msg):
         """
             Post spoilers in chat, react to the message to see the spoilers
         """
-        if not ctx.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.send("I don't have `manage_messages` permission.")
-            return
-        if not ctx.channel.permissions_for(ctx.me).add_reactions:
-            await ctx.send("I don't have `add_reactions` permission.")
-            return
         await ctx.message.delete()
         author = ctx.author.name
-        msg_text = "**__SPOILERS__** (React to this message to view {}'s spoiler.)".format(author)
+        msg_text = _("**__SPOILERS__** (React to this message "
+                     "to view {auth}'s spoiler.)").format(auth=author)
         new_msg = await ctx.send(msg_text)
         await new_msg.add_reaction("✅")
         msg_list = await self.config.guild(ctx.guild).messages()
@@ -44,9 +44,12 @@ class Spoiler(getattr(commands, "Cog", object)):
         msg = await channel.get_message(spoiler_obj["message_id"])
         author = await self.bot.get_user_info(spoiler_obj["author"])
         name = f"{author.name}#{author.discriminator} Spoiled"
-        spoiler_text = spoiler_obj["spoiler_text"] + f"\n\n [Click here for context]({msg.jump_url})"
+        spoiler_text = (spoiler_obj["spoiler_text"] + 
+                        _("\n\n [Click here for context]({jump})").format(jump=msg.jump_url))
         em = discord.Embed(description = spoiler_text, timestamp=msg.created_at)
-        em.set_author(name=name, icon_url=getattr(author, "avatar_url", discord.Embed.Empty), url=msg.jump_url)
+        em.set_author(name=name, 
+                      icon_url=getattr(author, "avatar_url", discord.Embed.Empty), 
+                      url=msg.jump_url)
         em.set_footer(text='{} | #{}'.format(channel.guild.name, channel.name))
         return em
 
