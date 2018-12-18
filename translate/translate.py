@@ -177,7 +177,7 @@ class Translate(getattr(commands, "Cog", object)):
                                                     to_translate)
         author = message.author
         em = discord.Embed(colour=author.colour, 
-                           description=translated_text)
+                           description=translated_text[:2048])
         em.set_author(name=author.display_name + _(" Said:"), 
                       icon_url=author.avatar_url)
         from_lang = detected_lang[0][0]["language"].upper()
