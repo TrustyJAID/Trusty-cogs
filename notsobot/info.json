@@ -1,20 +1,22 @@
 {
-    "author":[
+    "author" : [
         "NotSoSuper",
         "TrustyJAID"
     ],
-    "description":"Some working, some not working NotSoBot commands",
-    "install_msg":"Please, read the README.md to understand how to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements.",
-    "min_python_version":[
+    "description" : "Some working, some not working NotSoBot commands",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Please, read the README.md to understand how to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"Modlogs",
-    "permissions":[
+    "name" : "Modlogs",
+    "permissions" : [
         "attach_files"
     ],
-    "requirements":[
+    "requirements" : [
         "python-aalib",
         "imgurpython",
         "pyfiglet",
@@ -24,8 +26,6 @@
         "git+https://github.com/Kareeeeem/jpglitch",
         "wand"
     ],
-    "short":"Some working commands from NotSoBot",
-    "tags":[
-        "Fun"
-    ]
+    "short" : "Some working commands from NotSoBot",
+    "tags" : []
 }

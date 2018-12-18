@@ -1,24 +1,22 @@
 {
-    "author":[
+    "author" : [
         "TrustyJAID"
     ],
-    "description":"Post spoiler messages through the bot.",
-    "install_msg":"Use `[p]spoiler spoiler message` to post a spoiler message, react to be DM'd the spoiler.",
-    "min_python_version":[
+    "description" : "Post spoiler messages through the bot.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Use `[p]spoiler spoiler message` to post a spoiler message, react to be DM'd the spoiler.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"Spoiler",
-    "permissions":[
+    "name" : "Spoiler",
+    "permissions" : [
         "manage_messages",
         "add_reactions"
     ],
-    "requirements":[],
-    "short":"Spoiler messages",
-    "tags":[
-        "general",
-        "utility",
-        "spoiler"
-    ]
+    "requirements" : [],
+    "short" : "Spoiler messages",
+    "tags" : []
 }

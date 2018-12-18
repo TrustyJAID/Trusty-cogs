@@ -1,21 +1,20 @@
 {
-    "author":[
+    "author" : [
         "irdumb",
         "TrustyJAID"
     ],
-    "description":"Welcome new users to the server",
-    "install_msg":"welcome",
-    "min_python_version":[
+    "description" : "Welcome new users to the server",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "welcome",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"welcome",
-    "permissions":[],
-    "requirements":[],
-    "short":"Welcome new users to the server",
-    "tags":[
-        "welcome",
-        "utility"
-    ]
+    "name" : "welcome",
+    "permissions" : [],
+    "requirements" : [],
+    "short" : "Welcome new users to the server",
+    "tags" : []
 }

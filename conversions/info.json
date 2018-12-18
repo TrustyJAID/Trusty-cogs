@@ -1,24 +1,21 @@
 {
-    "author":[
+    "author" : [
         "TrustyJAID"
     ],
-    "description":"Conversions for BTC, currencies, precious metals, and stocks.",
-    "install_msg":"Various commands.",
-    "min_python_version":[
+    "description" : "Conversions for BTC, currencies, precious metals, and stocks.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Various commands.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"Conversions",
-    "permissions":[
+    "name" : "Conversions",
+    "permissions" : [
         "embed_links"
     ],
-    "requirements":[],
-    "short":"Conversions",
-    "tags":[
-        "general",
-        "utility",
-        "bitcoin",
-        "litecoin"
-    ]
+    "requirements" : [],
+    "short" : "Conversions",
+    "tags" : []
 }

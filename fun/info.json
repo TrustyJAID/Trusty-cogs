@@ -1,23 +1,22 @@
 {
-    "author":[
+    "author" : [
         "Appu",
         "TrustyJAID"
     ],
-    "description":"All sorts of commands that users may find fun or useful",
-    "install_msg":"Type `[p]help` to see all the commands.",
-    "min_python_version":[
+    "description" : "All sorts of commands that users may find fun or useful",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Type `[p]help` to see all the commands.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"Fun",
-    "permissions":[
+    "name" : "Fun",
+    "permissions" : [
         "add_reactions"
     ],
-    "requirements":[],
-    "short":"Various fun commands like react, textflip, and regional",
-    "tags":[
-        "general",
-        "fun"
-    ]
+    "requirements" : [],
+    "short" : "Various fun commands like react, textflip, and regional",
+    "tags" : []
 }

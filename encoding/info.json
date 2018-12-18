@@ -1,20 +1,19 @@
 {
-    "author":[
+    "author" : [
         "TrustyJAID"
     ],
-    "description":"DNA and binary encoding/decoding and hashing of messages",
-    "install_msg":"Do `[p]encode`, `[p]decode` or `[p]help hash` to see available commands.",
-    "min_python_version":[
+    "description" : "DNA and binary encoding/decoding and hashing of messages",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Do `[p]encode`, `[p]decode` or `[p]help hash` to see available commands.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"encoding",
-    "permissions":[],
-    "requirements":[],
-    "short":"General commands",
-    "tags":[
-        "general",
-        "fun"
-    ]
+    "name" : "encoding",
+    "permissions" : [],
+    "requirements" : [],
+    "short" : "General commands",
+    "tags" : []
 }

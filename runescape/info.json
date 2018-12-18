@@ -1,23 +1,23 @@
 {
-    "author":[
+    "author" : [
         "TrustyJAID"
     ],
-    "description":"Gathers stats from Runescape API endpoints.",
-    "install_msg":"gathers runescape stats and information.",
-    "min_python_version":[
+    "description" : "Gathers stats from Runescape API endpoints.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "gathers runescape stats and information.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"runescape",
-    "permissions":[
+    "name" : "runescape",
+    "permissions" : [
         "embed_links"
     ],
-    "requirements":[
+    "requirements" : [
         "tabulate"
     ],
-    "short":"Runescape",
-    "tags":[
-        "runescape"
-    ]
+    "short" : "Runescape",
+    "tags" : []
 }

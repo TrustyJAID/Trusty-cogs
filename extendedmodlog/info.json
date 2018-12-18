@@ -1,22 +1,22 @@
 {
-    "author":[
+    "author" : [
         "RePulsR",
         "TrustyJAID"
     ],
-    "description":"Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
-    "install_msg":"Please ensure that the modlog cog is loaded for this cog to work. The channel is set via `[p]modlogset modlog #channel`.",
-    "min_python_version":[
+    "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Please ensure that the modlog cog is loaded for this cog to work. The channel is set via `[p]modlogset modlog #channel`.",
+    "min_python_version" : [
         3,
         6,
         2
     ],
-    "name":"ExtendedModLog",
-    "permissions":[
+    "name" : "ExtendedModLog",
+    "permissions" : [
         "embed_links"
     ],
-    "requirements":[],
-    "short":"ExtendedModLog, track changes made in the server.",
-    "tags":[
-        "modlogs"
-    ]
+    "requirements" : [],
+    "short" : "ExtendedModLog, track changes made in the server.",
+    "tags" : []
 }
