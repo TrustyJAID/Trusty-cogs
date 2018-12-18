@@ -229,7 +229,7 @@ class Hockey(getattr(commands, "Cog", object)):
         """
         try:
             async with self.session.get(attachments[0].url) as infile:
-                data = yaml.load(await infile.read())
+                data = yaml.safe_load(await infile.read())
         except yaml.error.YAMLError as exc:
             raise InvalidFileError("Error Parsing the YAML") from exc
         new_dict = {}
