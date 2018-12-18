@@ -4,7 +4,7 @@
     ],
     "description" : "Have the bot correct the current year to the Juche Calendar",
     "disabled" : false,
-    "hidden" : false,
+    "hidden" : true,
     "install_msg" : "Various commands.",
     "min_python_version" : [
         3,
