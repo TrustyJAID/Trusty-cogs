@@ -118,22 +118,16 @@ class ReTrigger(getattr(commands, "Cog", object)):
             return channel.id in trigger.whitelist
         return channel.id not in trigger.blacklist
 
-    async def is_mod_or_admin(self, member):
+    async def is_mod_or_admin(self, member:discord.Member):
         guild = member.guild
-        if member.id == self.bot.owner_id:
-            return True
         if member == guild.owner:
             return True
-        admin_role_id = await self.bot.db.guild(guild).admin_role()
-        if admin_role_id:
-            admin_role = guild.get_role(admin_role_id)
-            if admin_role in member.roles:
-                return True
-        mod_role_id = await self.bot.db.guild(guild).mod_role()
-        if mod_role_id is not None:
-            mod_role = guild.get_role(mod_role_id)
-            if mod_role in member.roles:
-                return True
+        if await self.bot.is_owner(member):
+            return True
+        if await self.bot.is_admin(member):
+            return True
+        if await self.bot.is_mod(member):
+            return True
         return False
 
     async def check_ignored_channel(self, message):
