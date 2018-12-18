@@ -1,9 +1,8 @@
 {
-    "author" : "TrustyJAID",
-    "install_msg" : "Thanks for checking out my cogs!\nFor issues, bugs, or suggestions contact me in the discord support server here: https://discord.gg/c6HQUb7\nFor more information on my cogs go to my github here: <https://github.com/TrustyJAID/Trusty-cogs/tree/V3>",
+    "author" : ["TrustyJAID"],
+    "install_msg" : "Thanks for checking out my cogs!\nFor issues, bugs, or suggestions contact me in the discord support server here: https://discord.gg/c6HQUb7\nFor more information on my cogs go to my github here: <https://github.com/TrustyJAID/Trusty-cogs>",
     "name" : "Trusty-cogs",
     "short" : "Numerous utility and fun commands",
-    "requirements" : [],
-    "description" : "Contains many cogs for fun like make your own badges and beautiful images, post tweets when they are made, or grab hockey goals and statistics.",
-    "tags" : ["Fun", "Hockey", "Images", "Badges"]
+    "description" : "A plethora of potentially useful commands and functions for your bot. Create a starboard, trigger automatic responses, or even create your own fun badges.",
+    "tags" : ["Fun", "Hockey", "Images", "Badges", "Utility", "Starboard", "Trigger"]
 }
