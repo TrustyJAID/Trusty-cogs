@@ -218,27 +218,31 @@ class ReTrigger(getattr(commands, "Cog", object)):
             for trigger in post:
                 blacklist = ", ".join(x for x in [f"<#{y}>" for y in trigger["blacklist"]])
                 whitelist = ", ".join(x for x in [f"<#{y}>" for y in trigger["whitelist"]])
-                info = (_("__Name__:") + trigger["name"] +
-                        _("__Author__: ") +"<@"+ str(trigger["author"])+ ">\n"+
-                        _("__Count__: ")+ "**" + str(trigger["count"]) +"**\n"+
+                info = (_("__Name__:") +"** "+ trigger["name"] + "**\n" +
+                        _("__Author__: ") +"<@"+ str(trigger["author"])+ ">\n" +
+                        _("__Count__: ")+ "**" + str(trigger["count"]) +"**\n" +
                         _("__Response__: ")+ "**" + trigger["response_type"] + "**\n"
                         )
-                if len(post) > 1:
-                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:200]+ "```\n"
-                else:
-                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:1500]+ "```\n"
-                if blacklist:
-                    info += _("__Blacklist__: ") + blacklist + "\n"
                 if whitelist:
                     info += _("__Whitelist__: ") + whitelist + "\n"
                 if trigger["cooldown"]:
                     time = trigger["cooldown"]["time"]
                     style = trigger["cooldown"]["style"]
                     info += _("__Cooldown__: ")+"**{}s per {}**".format(time, style)
+                length_of_info = len(info)
+                if len(post) > 1:
+                    diff = 1000 - length_of_info
+                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:diff]+ "```\n"
+                else:
+                    diff = 2000 - length_of_info
+                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:diff]+ "```\n"
+                if blacklist:
+                    info += _("__Blacklist__: ") + blacklist + "\n"
+                
                 if len(post) > 1:
                     em.add_field(name=trigger["name"], value=info[:1024])
                 else:
-                    em.description = info[:2000]
+                    em.description = info[:2048]
             em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
             em.set_footer(text=_("Page ")+"{}/{}".format(page+1, len(post_list)))
         else:
