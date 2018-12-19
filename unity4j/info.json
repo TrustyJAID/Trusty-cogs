@@ -1,0 +1,19 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "description" : "Hardcoded custom commands for one server",
+    "disabled" : false,
+    "hidden" : true,
+    "install_msg" : "You probably don't want to use this cog.",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "Unity4J",
+    "permissions" : [],
+    "requirements" : [],
+    "short" : "",
+    "tags" : []
+}

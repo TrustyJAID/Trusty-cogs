@@ -1,0 +1,19 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "description" : "Hardcoded custom commands for TrustyBot",
+    "disabled" : false,
+    "hidden" : true,
+    "install_msg" : "You probably don't want to use this cog.",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "Trustybot",
+    "permissions" : [],
+    "requirements" : [],
+    "short" : "",
+    "tags" : []
+}
