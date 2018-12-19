@@ -21,6 +21,8 @@ numbs = {
     "back": "⬅",
     "exit": "❌"
 }
+
+
 class QPosts(getattr(commands, "Cog", object)):
     """Gather Qanon updates from 8chan"""
 
@@ -87,9 +89,14 @@ class QPosts(getattr(commands, "Cog", object)):
             board_posts[board] = Q_posts
         await self.config.boards.set(board_posts)
 
-    @commands.command(pass_context=True, name="qrole")
+    @commands.command(name="qrole")
     async def qrole(self, ctx):
-        """Set your role to a team role"""
+        """
+            Apply @QPOSTS role to get notified whenever
+            a new Q Post comes int
+            
+            The role must be created by you
+        """
         guild = ctx.message.guild
         try:
             role = [role for role in guild.roles if role.name == "QPOSTS"][0]
@@ -363,8 +370,8 @@ class QPosts(getattr(commands, "Cog", object)):
             else:
                 return await message.delete()
 
-    @commands.command(pass_context=True, aliases=["postq"])
-    async def qpost(self, ctx, board="patriotsfight"):
+    @commands.command(aliases=["postq"])
+    async def qpost(self, ctx, board="qresearch"):
         """Display latest qpost from specified board"""
         if board not in await self.config.boards():
             await ctx.send("{} is not an available board!")
@@ -374,6 +381,7 @@ class QPosts(getattr(commands, "Cog", object)):
         await self.q_menu(ctx, qposts, board)
 
     @commands.command()
+    @checks.is_owner()
     async def qprint(self, ctx):
         """Toggle printing to the console"""
         if await self.config.print():
@@ -408,7 +416,7 @@ class QPosts(getattr(commands, "Cog", object)):
             print(f"Error saving files: {e}")
             pass
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def qchannel(self, ctx, channel:discord.TextChannel=None):
         """Set the channel for live qposts"""
         if channel is None:
@@ -423,7 +431,7 @@ class QPosts(getattr(commands, "Cog", object)):
         await self.config.channels.set(cur_chans)
         await ctx.send("{} set for qposts!".format(channel.mention))
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def remqchannel(self, ctx, channel:discord.TextChannel=None):
         """Remove qpost updates from a channel"""
         if channel is None:
