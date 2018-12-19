@@ -13,7 +13,7 @@ class Faces(getattr(commands, "Cog", object)):
         self.bot = bot
         self.faces = faceslist.faces
     
-    @commands.command(pass_context=True, aliases=["japaneseface"])
+    @commands.command(aliases=["japaneseface"])
     async def face(self, ctx, number=None):
         """Japanese Faces at random courtesy of the CIA"""
         if number is None:

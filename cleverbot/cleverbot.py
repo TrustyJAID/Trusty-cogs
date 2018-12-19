@@ -41,7 +41,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.instances = {}
 
-    @commands.group(no_pm=True, invoke_without_command=True)
+    @commands.group()
     async def cleverbot(self, ctx, *, message):
         """Talk with cleverbot"""
         author = ctx.message.author
@@ -67,7 +67,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
             else:
                 await ctx.send(result)
 
-    @cleverbot.command(pass_context=True)
+    @cleverbot.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def toggle(self, ctx):
         """Toggles reply on mention"""
@@ -79,7 +79,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
             await self.config.guild(guild).toggle.set(False)
             await ctx.send("I won't reply on mention anymore.")
     
-    @cleverbot.command(pass_context=True)
+    @cleverbot.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def channel(self, ctx, channel: discord.TextChannel=None):
         """

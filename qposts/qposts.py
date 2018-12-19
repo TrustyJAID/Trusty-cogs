@@ -176,7 +176,6 @@ class QPosts(getattr(commands, "Cog", object)):
                     reference_post.append(post)
         return reference_post
             
-    # @commands.command(pass_context=True)
     async def postq(self, qpost, board):
         name = qpost["name"] if "name" in qpost else "Anonymous"
         url = "{}/{}/res/{}.html#{}".format(self.url, board, qpost["resto"], qpost["no"])

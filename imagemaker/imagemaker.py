@@ -36,7 +36,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             return BytesIO(test)
 
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def wheeze(self, ctx, *, text:Union[discord.Member, str]=None):
         """
             Generate a wheeze image with text or a user avatar
@@ -54,7 +54,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             # ext = await self.make_beautiful(user)
             await ctx.send(file=file)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def gwheeze(self, ctx, member:discord.Member=None):
         """
             Generate a gif wheeze image if user has a gif avatar
@@ -73,7 +73,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             # ext = await self.make_beautiful(user)
             await ctx.send(file=file)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def beautiful(self, ctx, user:discord.Member=None, is_gif=False):
         """
             Generate a beautiful image using users avatar
@@ -92,7 +92,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             # ext = await self.make_beautiful(user)
             await ctx.send(file=file)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def feels(self, ctx, user:discord.Member=None, is_gif=False):
         """
             Generate a feels image using users avatar and role colour

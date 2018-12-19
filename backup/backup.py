@@ -15,6 +15,7 @@ from typing import Union
 class GuildNotFoundError(Exception):
     pass
 
+
 class Backup(getattr(commands, "Cog", object)):
     """
         Create a set of json backups of a server
@@ -76,12 +77,12 @@ class Backup(getattr(commands, "Cog", object)):
             raise GuildNotFoundError
         return guild
 
-    @commands.command(pass_context=True, aliases=["serverbackup"])
+    @commands.command(aliases=["serverbackup"])
     @checks.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
     async def serverlogs(self, ctx, *, guild_name:Union[int, str]=None):
         """
-            Creat a backup of all server data as json files
+            Creat a backup of all server data as json files This might take a long time
 
             `guild_name` is partial name or ID of the server you want to backup
             defaults to the server the command was run in
@@ -105,7 +106,7 @@ class Backup(getattr(commands, "Cog", object)):
             # await channel.send("backing up {}".format(chn.name))
             message_list = []
             try:
-                async for message in chn.history(limit=10000000):
+                async for message in chn.history(limit=None):
                     data = {"timestamp":message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                             "tts":message.tts,
                             "author":{"name":message.author.name,

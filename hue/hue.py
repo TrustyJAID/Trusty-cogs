@@ -33,7 +33,7 @@ class Hue(getattr(commands, "Cog", object)):
         else:
             return True
 
-    # @commands.command(pass_context=True)
+    # @commands.command()
     async def oilersgoal(self):
         if not await self.get_bridge():
             await ctx.send("No IP has been set.")
@@ -62,7 +62,7 @@ class Hue(getattr(commands, "Cog", object)):
                 light.on = True
             light.xy = [x, y]
 
-    @commands.group(pass_context=True, name="hue")
+    @commands.group(name="hue")
     @checks.is_owner()
     async def _hue(self, ctx):
         """Commands for interacting with Hue lights"""
@@ -76,7 +76,7 @@ class Hue(getattr(commands, "Cog", object)):
             return
         self.bridge.connect()
 
-    @_hue.command(pass_context=True, name="set")
+    @_hue.command(name="set")
     async def hue_setup(self, ctx, ip):
         """
             Set the IP address of the hue bridge
@@ -87,7 +87,7 @@ class Hue(getattr(commands, "Cog", object)):
         self.bridge = Bridge(await self.config.ip())
         self.lights = self.bridge.lights 
 
-    @_hue.command(pass_context=True, name="check")
+    @_hue.command(name="check")
     async def check_api(self, ctx):
         """Gets light data from bridge and prints to terminal"""
         if not await self.get_bridge():
@@ -103,7 +103,7 @@ class Hue(getattr(commands, "Cog", object)):
         else:
             return value
 
-    @_hue.command(pass_context=True, name="brightness")
+    @_hue.command(name="brightness")
     async def brightness_set(self, ctx, brightness:int=254, *, name=None):
         """
             Sets the brightness for lights
@@ -119,7 +119,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.brightness = brightness
 
-    @_hue.command(pass_context=True, name="temp", aliases=["ct", "colourtemp", "temperature"])
+    @_hue.command(name="temp", aliases=["ct", "colourtemp", "temperature"])
     async def colourtemp_set(self, ctx, ct:int=500, *, name=None):
         """
             Sets the colour temperature for lights
@@ -135,7 +135,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.colortemp = ct
 
-    @_hue.command(pass_context=True, name="hue")
+    @_hue.command(name="hue")
     async def hue_set(self, ctx, hue:int=25000, *, name=None):
         """
             Sets the hue for lights
@@ -150,7 +150,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.hue = hue
 
-    @_hue.command(pass_context=True, name="saturation", aliases=["sat"])
+    @_hue.command(name="saturation", aliases=["sat"])
     async def saturation_set(self, ctx, saturation:int=254, *, name=None):
         """
             Sets the saturation for lights
@@ -166,7 +166,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.saturation = saturation
 
-    @_hue.command(pass_context=True, name="random")
+    @_hue.command(name="random")
     async def hue_random_colour(self, ctx, *, name=None):
         """
             Sets the light to a random colour
@@ -181,7 +181,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.xy = colours
 
-    @_hue.command(pass_context=True, name="colourloop", aliases=["cl"])
+    @_hue.command(name="colourloop", aliases=["cl"])
     async def hue_colourloop(self, ctx, *, name=None):
         """
             Toggles the light on colour looping all colours
@@ -200,7 +200,7 @@ class Hue(getattr(commands, "Cog", object)):
                     light.effect = "none"
                     continue
 
-    @_hue.group(pass_context=True, name="colour")
+    @_hue.group(name="colour")
     async def _colour(self, ctx):
         """Sets the colour for lights"""
         if not await self.get_bridge():
@@ -220,7 +220,7 @@ class Hue(getattr(commands, "Cog", object)):
             y = 1.0
         return x, y
 
-    @_colour.command(pass_context=True, name="rgb")
+    @_colour.command(name="rgb")
     async def hue_colour_rgb(self, ctx, red:float, green:float, blue:float, *, name=None):
         """
             Sets the colour using RGB colour coordinates
@@ -238,7 +238,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.xy = [x, y]
 
-    @_colour.command(pass_context=True, name="xy", aliases=["xyz"])
+    @_colour.command(name="xy", aliases=["xyz"])
     async def hue_colour_xy(self, ctx, x:float, y:float, *, name=None):
         """
             Sets the colour using xyz colour values
@@ -259,7 +259,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.xy = [x, y]
 
-    @_colour.command(pass_context=True, name="hex")
+    @_colour.command(name="hex")
     async def hue_colour_hex(self, ctx, hex, *, name=None):
         """
             Attempt to set the colour based on hex values
@@ -279,7 +279,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.xy = [x, y]
 
-    @_hue.command(pass_context=True, name="test")
+    @_hue.command(name="test")
     async def hue_test(self, ctx, cl1:float, cl2:float):
         """Testing function"""
         if not await self.get_bridge():
@@ -288,7 +288,7 @@ class Hue(getattr(commands, "Cog", object)):
         for light in self.lights:
             light.xy = [cl1, cl2]
 
-    @_hue.command(pass_context=True, name="switch")
+    @_hue.command(name="switch")
     async def hue_switch(self, ctx, *, name=None):
         """
             Toggles lights on or off
@@ -307,7 +307,7 @@ class Hue(getattr(commands, "Cog", object)):
                     light.on = True
                     continue
 
-    @_hue.command(pass_context=True, name="off")
+    @_hue.command(name="off")
     async def turn_off(self, ctx, *, name=None):
         """
             Turns off light
@@ -321,7 +321,7 @@ class Hue(getattr(commands, "Cog", object)):
             if name is None or light.name.lower() == name.lower():
                 light.on = False
 
-    @_hue.command(pass_context=True, name="on")
+    @_hue.command(name="on")
     async def turn_on(self, ctx, name=None):
         """
             Turns on Light

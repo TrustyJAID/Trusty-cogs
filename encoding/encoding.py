@@ -49,37 +49,37 @@ class Encoding(getattr(commands, "Cog", object)):
             return False
         return False
 
-    @commands.group(name='hash', invoke_without_command=True)
+    @commands.group(name="hash")
     async def hash_cmd(self, ctx, *, txt:str):
         """
             MD5 Encrypt Text
         """
         md5 = hashlib.md5(txt.encode()).hexdigest()
-        await ctx.send('**MD5**\n'+md5)
+        await ctx.send("**MD5**\n"+md5)
 
-    @hash_cmd.command(name='sha1')
+    @hash_cmd.command(name="sha1")
     async def hash_sha1(self, ctx, *, txt:str):
         """
             SHA1 Encrypt Text
         """
         sha = hashlib.sha1(txt.encode()).hexdigest()
-        await ctx.send('**SHA1**\n'+sha)
+        await ctx.send("**SHA1**\n"+sha)
 
-    @hash_cmd.command(name='sha256')
+    @hash_cmd.command(name="sha256")
     async def hash_sha256(self, ctx, *, txt:str):
         """
             SHA256 Encrypt Text
         """
         sha256 = hashlib.sha256(txt.encode()).hexdigest()
-        await ctx.send('**SHA256**\n'+sha256)
+        await ctx.send("**SHA256**\n"+sha256)
 
-    @hash_cmd.command(name='sha512')
+    @hash_cmd.command(name="sha512")
     async def hash_sha512(self, ctx, *, txt:str):
         """
             SHA512 Encrypt Text
         """
         sha512 = hashlib.sha512(txt.encode()).hexdigest()
-        await ctx.send('**SHA512**\n'+sha512)
+        await ctx.send("**SHA512**\n"+sha512)
 
 
     @commands.group(name="encode")
@@ -97,7 +97,7 @@ class Encoding(getattr(commands, "Cog", object)):
         """
             Encode text into binary sequences of 8
         """
-        ascii_bin = ' '.join(bin(x)[2:].zfill(8) for x in message.encode('UTF-8'))
+        ascii_bin = " ".join(bin(x)[2:].zfill(8) for x in message.encode("UTF-8"))
         await ctx.send(ascii_bin)
 
     @_decode.command(name="binary")
@@ -138,7 +138,7 @@ class Encoding(getattr(commands, "Cog", object)):
         """
         dna = {"00": "A", "01": "T", "10": "G", "11": "C"}
         message = message.strip(" ")
-        binary = ' '.join(bin(x)[2:].zfill(8) for x in message.encode('UTF-8')).replace(" ", "")
+        binary = " ".join(bin(x)[2:].zfill(8) for x in message.encode("UTF-8")).replace(" ", "")
         binlist = [binary[i:i+2] for i in range(0, len(binary), 2)]
         newmsg = ""
         count = 0
@@ -167,7 +167,7 @@ class Encoding(getattr(commands, "Cog", object)):
                 replacement += self.table[character][i]
             try:
                 n = int("0b" + replacement, 2)
-                mapping[i] = n.to_bytes((n.bit_length() + 7) // 8, 'big').decode("utf8", "ignore")
+                mapping[i] = n.to_bytes((n.bit_length() + 7) // 8, "big").decode("utf8", "ignore")
             except TypeError:
                 pass
             replacement = ""

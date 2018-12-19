@@ -29,7 +29,7 @@ class Welcome(getattr(commands, "Cog", object)):
         self.config = Config.get_conf(self, 144465786453)
         self.config.register_guild(**default_settings)
 
-    @commands.group(no_pm=True)
+    @commands.group()
     @checks.admin_or_permissions(manage_channels=True)
     @commands.guild_only()
     async def welcomeset(self, ctx):
@@ -142,7 +142,7 @@ class Welcome(getattr(commands, "Cog", object)):
         for page in pagify(msg, ["\n", " "], shorten_by=20):
             await ctx.send("```\n{}\n```".format(page))
 
-    @welcomeset.command(pass_context=True)
+    @welcomeset.command()
     async def toggle(self, ctx):
         """
             Turns on/off welcoming new users to the guild
@@ -157,7 +157,7 @@ class Welcome(getattr(commands, "Cog", object)):
             await ctx.send(_("I will no longer welcome new users."))
         await self.config.guild(guild).ON.set(guild_settings)
 
-    @welcomeset.command(pass_context=True)
+    @welcomeset.command()
     async def channel(self, ctx, channel : discord.TextChannel=None):
         """
         Sets the channel to send the welcome message
@@ -220,7 +220,7 @@ class Welcome(getattr(commands, "Cog", object)):
         msg = _("Bots that join this guild will be given ") + role.name
         await ctx.send(msg)
 
-    @welcomeset.command(pass_context=True)
+    @welcomeset.command()
     async def whisper(self, ctx, choice: str=None):
         """Sets whether or not a DM is sent to the new user
 
@@ -257,7 +257,7 @@ class Welcome(getattr(commands, "Cog", object)):
             await ctx.send(msg)
         await self.send_testing_msg(ctx)
 
-    @welcomeset.command(pass_context=True)
+    @welcomeset.command()
     async def embed(self, ctx):
         """
         Turns on/off embed messages

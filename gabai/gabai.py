@@ -33,7 +33,7 @@ class Gabai(getattr(commands, "Cog", object)):
         self.rate_limit_remaining = 60
         self.rate_limit_time = 0
 
-    @commands.group(pass_context=True)
+    @commands.group()
     async def gab(self, ctx):
         """
             Add your gab tag to receive the role Anonymous

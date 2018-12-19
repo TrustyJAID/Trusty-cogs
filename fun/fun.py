@@ -167,7 +167,7 @@ class Fun(getattr(commands, "Cog", object)):
                     react_me = react_me.replace(char, Fun.emoji_dict[char][0])
         return react_me
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def vowelreplace(self, ctx, replace, *, msg):
         """Replaces all vowels in a word with a letter"""
         result = ""
@@ -179,7 +179,7 @@ class Fun(getattr(commands, "Cog", object)):
         
         await ctx.send(result)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def textflip(self, ctx, *, msg):
         """Flip given text."""
         result = ""
@@ -190,7 +190,7 @@ class Fun(getattr(commands, "Cog", object)):
                 result += char
         await ctx.send(result[::-1])  # slice reverses the string
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def regional(self, ctx, *, msg):
         """Replace letters with regional indicator emojis"""
         
@@ -199,7 +199,7 @@ class Fun(getattr(commands, "Cog", object)):
         regional_output = '\u200b'.join(regional_list)
         await ctx.send(regional_output)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def space(self, ctx, *, msg):
         """Add n spaces between each letter. Ex: [p]space 2 thicc"""
         
@@ -237,7 +237,7 @@ class Fun(getattr(commands, "Cog", object)):
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
-    @commands.command(pass_context=True, aliases=['r'])
+    @commands.command(, aliases=['r'])
     async def react(self, ctx, msg: str, msg_id:int=None, channel:discord.TextChannel=None):
         """
             Add letter(s) as reaction to previous message.

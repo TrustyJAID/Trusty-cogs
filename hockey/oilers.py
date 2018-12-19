@@ -13,7 +13,6 @@ class Oilers:
         self.cur_lights = {}
         self.cur_lights2 = {}
 
-    # @commands.command(pass_context=True)
     async def goal_lights(self):
         task = functools.partial(self.get_current_lights_setting)
         task = self.bot.loop.run_in_executor(None, task)

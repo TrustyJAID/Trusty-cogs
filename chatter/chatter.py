@@ -31,7 +31,7 @@ class Chatter(getattr(commands, "Cog", object)):
                                           )
         self.chatbot.set_trainer(ListTrainer, show_training_progress=False)
 
-    @commands.group(no_pm=True, invoke_without_command=True, pass_context=True)
+    @commands.group()
     async def chatterbot(self, ctx, *, message):
         """Talk with cleverbot"""
         author = ctx.message.author
@@ -39,7 +39,7 @@ class Chatter(getattr(commands, "Cog", object)):
         response = self.chatbot.get_response(message)
         await ctx.send(response)
 
-    @chatterbot.command(pass_context=True)
+    @chatterbot.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def toggle(self, ctx):
         """Toggles reply on mention"""
@@ -51,7 +51,7 @@ class Chatter(getattr(commands, "Cog", object)):
         else:
             await ctx.send("I will reply on mention.")
     
-    @chatterbot.command(pass_context=True)
+    @chatterbot.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def channel(self, ctx, channel: discord.TextChannel=None):
         """Toggles channel for automatic replies"""

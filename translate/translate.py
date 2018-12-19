@@ -38,7 +38,7 @@ class Translate(getattr(commands, "Cog", object)):
         self.config.register_guild(**default_guild)
         self.config.register_global(**default)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def translate(self, ctx, to_language, *, message):
         """
             Translate messages with google translate

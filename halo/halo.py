@@ -30,20 +30,20 @@ class Halo(getattr(commands, "Cog", object)):
         async with self.session.get(url, params=params, headers=header) as resp:
             return await resp.json()
 
-    @commands.group(pass_context=True, name='halo5')
+    @commands.group(name="halo5")
     @checks.admin_or_permissions(manage_server=True)
     async def _halo5(self, ctx):
         """Get information from Halo 5"""
         pass
 
-    @commands.group(pass_context=True, name='halowars')
+    @commands.group(name="halowars")
     @checks.admin_or_permissions(manage_server=True)
     async def _halowars(self, ctx):
         """Get information from Halo Wars 2"""
         pass
 
     def random_colour(self):
-        return int(''.join([randchoice('0123456789ABCDEF')for x in range(6)]), 16)
+        return int("".join([randchoice("0123456789ABCDEF")for x in range(6)]), 16)
 
     async def halo5_playlist_menu(self, ctx, post_list: list,
                          message: discord.Message=None,
@@ -100,7 +100,7 @@ class Halo(getattr(commands, "Cog", object)):
             else:
                 return await message.delete()
 
-    @_halo5.command(pass_context=True, name="playlist")
+    @_halo5.command(name="playlist")
     async def halo5_playlist(self, ctx, active=True):
         """Gathers data about active Halo 5 playlists"""
         data = await self.request_url("https://www.haloapi.com/metadata/h5/metadata/playlists")
@@ -171,7 +171,7 @@ class Halo(getattr(commands, "Cog", object)):
         image_url = [x["iconImageUrl"] for x in designation[0]["tiers"] if x["id"] == str(tier_id)]
         return designation[0]["name"], image_url
 
-    @_halo5.command(pass_context=True, name="rank")
+    @_halo5.command(name="rank")
     async def Halo5_rank(self, ctx, *, gamertag):
         """Gather playter rank information from Halo 5"""
         colours = {"Unranked": "7f7f7f", "Bronze": "c27c0e", "Silver": "cccccc", "Gold": "xf1c40f", 
@@ -191,7 +191,7 @@ class Halo(getattr(commands, "Cog", object)):
         
 
 
-    @_halowars.command(pass_context=True, name="playlist")
+    @_halowars.command(name="playlist")
     async def halowars_playlist(self, ctx, active=True):
         """Gathers data about active Halo 5 playlists"""
         data = await self.request_url("https://www.haloapi.com/metadata/hw2/playlists")
@@ -202,14 +202,14 @@ class Halo(getattr(commands, "Cog", object)):
                 list_active.append(playlist)
         await self.halowars_playlist_menu(ctx, list_active)
 
-    @commands.group(pass_context=True, name='haloset')
-    @checks.admin_or_permissions(manage_server=True)
+    @commands.group(name="haloset")
+    @checks.is_owner()
     async def _haloset(self, ctx):
         """Command for setting required access information for the API.
         To get this info, visit https://developer.haloapi.com and create a new application."""
         pass
 
-    @_haloset.command(pass_context=True)
+    @_haloset.command()
     async def tokens(self, ctx, subscription_key, language="en"):
         """Set the tokens and language for requests from the API"""
         await self.config.api_token.token.set(subscription_key)

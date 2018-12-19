@@ -650,7 +650,7 @@ class Hockey(getattr(commands, "Cog", object)):
         """
         await ctx.send(_("Hockey version ") + __version__)
 
-    @hockey_commands.command(pass_context=True, name="role")
+    @hockey_commands.command(name="role")
     async def team_role(self, ctx, *, team):
         """Set your role to a team role"""
         guild = ctx.message.guild

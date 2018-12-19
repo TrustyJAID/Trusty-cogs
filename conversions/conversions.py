@@ -17,7 +17,7 @@ class Conversions(getattr(commands, "Cog", object)):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
-    @commands.command(pass_context=True, aliases=["bitcoin", "BTC"])
+    @commands.command(aliases=["bitcoin", "BTC"])
     async def btc(self, ctx, ammount:float=1.0, currency="USD", full=True):
         """
             converts from BTC to a given currency.
@@ -36,7 +36,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True, aliases=["ethereum", "ETH"])
+    @commands.command(aliases=["ethereum", "ETH"])
     async def eth(self, ctx, ammount:float=1.0, currency="USD", full=True):
         """
             converts from ETH to a given currency.
@@ -55,7 +55,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True, aliases=["litecoin", "LTC"])
+    @commands.command(aliases=["litecoin", "LTC"])
     async def ltc(self, ctx, ammount:float=1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
@@ -74,7 +74,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True, aliases=["monero", "XMR"])
+    @commands.command(aliases=["monero", "XMR"])
     async def xmr(self, ctx, ammount:float=1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
@@ -93,7 +93,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True, aliases=["bitcoin-cash", "BCH"])
+    @commands.command(aliases=["bitcoin-cash", "BCH"])
     async def bch(self, ctx, ammount:float=1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
@@ -120,7 +120,7 @@ class Conversions(getattr(commands, "Cog", object)):
                 return data["data"][coin] 
         return None
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def multicoin(self, ctx, *, coins=None):
         """
             Gets the current USD value for a list of coins
@@ -152,7 +152,7 @@ class Conversions(getattr(commands, "Cog", object)):
                     msg += "1 {0} is {1:,.2f} USD\n".format(coin["symbol"], float(coin["quotes"]["USD"]["price"]))
             await ctx.send(msg)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def crypto(self, ctx, coin, ammount:float=1.0, currency="USD", full=True):
         """
             Displays the latest information about a specified crypto currency
@@ -301,7 +301,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True, aliases=["ticker"])
+    @commands.command(aliases=["ticker"])
     async def stock(self, ctx, ticker, currency="USD"):
         """
             Gets current ticker symbol price.
@@ -324,7 +324,7 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command(pass_context=True)
+    @commands.command()
     async def convert(self, ctx, ammount:float=1.0, currency1="USD", currency2="GBP"):
         """
             Converts a value between 2 different currencies

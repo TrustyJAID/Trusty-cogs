@@ -974,7 +974,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         except Exception as e:
             print(e)
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()
     @commands.cooldown(1, 5)
     async def merge(self, ctx, *urls:str):
         """Merge/Combine Two Photos"""

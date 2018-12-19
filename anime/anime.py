@@ -71,7 +71,7 @@ class Anime(getattr(commands, "Cog", object)):
             await asyncio.sleep(60)
             # print("Checking anime")
 
-    @anime.command(pass_context=True)
+    @anime.command()
     async def airing(self, ctx):
         animes=""
         for anime in await self.config.airing():
@@ -223,7 +223,7 @@ class Anime(getattr(commands, "Cog", object)):
 
 
 
-    @anime.command(pass_context=True)
+    @anime.command()
     async def search(self, ctx, *, search):
         header = await self.check_auth()
         async with self.session.get(self.url + "anime/search/{}".format(search), params=header) as resp:
@@ -268,7 +268,7 @@ class Anime(getattr(commands, "Cog", object)):
         await self.config.last_check.set(datetime.utcnow().timestamp())
         # dataIO.save_json("data/anilist/airing.json", self.airing)
 
-    @anime.command(hidden=True, pass_context=True)
+    @anime.command(hidden=True)
     async def test(self, ctx, *, search=None):
         header1 = await self.check_auth()
         header2 = header1
@@ -291,7 +291,7 @@ class Anime(getattr(commands, "Cog", object)):
             data[data.index(anime)]["episodes"] = ani_data
         dataIO.save_json("data/anilist/sample.json", data)
 
-    @commands.group(pass_context=True, name="animeset")
+    @commands.group(name="animeset")
     @checks.admin_or_permissions(manage_channels=True)
     async def animeset(self, ctx):
         """Setup a channel for anime airing announcements"""
@@ -299,7 +299,7 @@ class Anime(getattr(commands, "Cog", object)):
 
     
 
-    @animeset.command(pass_context=True, name="channel")
+    @animeset.command(name="channel")
     async def add_channel(self, ctx, channel:discord.TextChannel=None):
         """Set the channel for anime announcements"""
         if channel is None:
@@ -314,7 +314,7 @@ class Anime(getattr(commands, "Cog", object)):
             await self.config.guild(guild).enabled.set(True)
         await ctx.send("I will post anime episode announcements in {}".format(channel.mention))
 
-    @animeset.command(pass_context=True, name="delete")
+    @animeset.command(name="delete")
     async def del_channel(self, ctx, channel:discord.TextChannel=None):
         """Set the channel for anime announcements"""
         if channel is None:
@@ -328,7 +328,7 @@ class Anime(getattr(commands, "Cog", object)):
             await self.config.guild(guild).enabled.set(False)
         await ctx.send("I will stop posting anime episode announcements in {}".format(channel.mention))
 
-    @commands.group(pass_context=True, name='aniset')
+    @commands.group(name='aniset')
     @checks.is_owner()
     async def _aniset(self, ctx):
         """Command for setting required access information for the API.
