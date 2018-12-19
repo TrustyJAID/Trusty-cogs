@@ -1,5 +1,5 @@
 import discord
-import aiohttp
+import io
 from redbot.core import checks, commands, Config
 
 
@@ -28,18 +28,26 @@ class APNGFilter(getattr(commands, "Cog", object)):
         await ctx.send("APNG Filter " + msg)
 
     async def on_message(self, message):
-        if message.guild is None:
-            return
-        if message.attachments == []:
+        if not (message.attachments and message.guild):
             return
         if not await self.config.guild(message.guild).enabled():
             return
         channel = message.channel
-        channel_perms = channel.permissions_for(channel.guild.me).manage_messages
+        if not channel.permissions_for(channel.guild.me).manage_messages:
+            return
+
+        autoimmune = getattr(self.bot, "is_automod_immune", None)
+        if autoimmune and await autoimmune(message):
+            return
+
         for attachment in message.attachments:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(attachment.url) as infile:
-                    # https://stackoverflow.com/questions/4525152/can-i-programmatically-determine-if-a-png-is-animated
-                    if b"acTL" in await infile.read():
-                        if channel_perms:
-                            await message.delete()
+            if attachment.filename.split(".")[-1] not in ("apng", "png"):
+                continue  # discord attempts to render by file extension, not mime type
+            # keeps requests on the bot's session, prventing a unauthenticated ratelimit for attachments
+            temp = io.BytesIO()
+            await attachment.save(temp)  
+            temp.seek(0)
+            # https://stackoverflow.com/questions/4525152/can-i-programmatically-determine-if-a-png-is-animated                    
+            if b"acTL" in temp.getvalue():
+                await message.delete()
+                break
