@@ -1,6 +1,6 @@
 import discord
 import time
-from redbot.core import commands
+from redbot.core import commands, checks
 
 
 
