@@ -1,0 +1,19 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "description" : "Gatehr Qanon posts from 8chan",
+    "disabled" : false,
+    "hidden" : true,
+    "install_msg" : "Do `[p]qchannel` to setup a channel for new posts.",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "QPosts",
+    "permissions" : [],
+    "requirements" : [],
+    "short" : "",
+    "tags" : []
+}
