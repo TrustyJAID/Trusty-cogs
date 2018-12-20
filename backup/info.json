@@ -5,7 +5,7 @@
     "description" : "Backup all channel messages on a server. Ensure all saved messages are stored on an encrypted drive!",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Warning: Ensure all backups are used for personal use or data gathering. User messages are still owned by the original author. All externally saved data must be stored on an encrypted drive.",
+    "install_msg" : "This cog will create folders to save server backups locally. Warning: Ensure all backups are used for personal use or data gathering. User messages are still owned by the original author. All externally saved data must be stored on an encrypted drive.",
     "min_python_version" : [
         3,
         6,

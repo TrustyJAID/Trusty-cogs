@@ -369,7 +369,7 @@ class Starboard(getattr(commands, "Cog", object)):
                 await ctx.send(msg)
                 return
             else:
-                starboard.whitelist_role.append(role.id)
+                starboard.whitelist_role.append(channel_or_role.id)
                 await self.save_starboard(guild, starboard)
                 msg = (channel_or_role.name + _(" whitelisted on starboard ") + name)
                 await ctx.send(msg)

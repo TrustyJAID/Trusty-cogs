@@ -206,6 +206,10 @@ class Autorole(getattr(commands, "Cog", object)):
         """
         guild = ctx.message.guild
         roles = await self.config.guild(guild).ROLE()
+        if ctx.author.top_role < role:
+            msg = _(" is higher than your highest role. "
+                    "You can't assign autoroles higher than your own")
+            await ctx.send(role.name+ msg)
         if role.id in roles:
             await ctx.send(role.name + _(" is already in the autorole list."))
             return

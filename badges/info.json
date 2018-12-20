@@ -5,7 +5,7 @@
     "description" : "Create your own 3 letter agency badge! Works with gif avatars too.",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Type [p]badges to see what badges are available!",
+    "install_msg" : "This cog comes with a bundled data folder containing fonts. Type [p]badges to see what badges are available!",
     "min_python_version" : [
         3,
         6,

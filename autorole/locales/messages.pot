@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-14 20:10-0700\n"
+"POT-Creation-Date: 2018-12-20 10:32-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,18 +107,22 @@ msgid ""
 msgstr ""
 
 #: autorole.py:210
+msgid " is higher than your highest role. You can't assign autoroles higher than your own"
+msgstr ""
+
+#: autorole.py:214
 msgid " is already in the autorole list."
 msgstr ""
 
-#: autorole.py:213
+#: autorole.py:217
 msgid " is higher than my highest role in the Discord hierarchy."
 msgstr ""
 
-#: autorole.py:219
+#: autorole.py:223
 msgid " role added to the autorole."
 msgstr ""
 
-#: autorole.py:224
+#: autorole.py:228
 #, docstring
 msgid ""
 "\n"
@@ -126,15 +130,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: autorole.py:230
+#: autorole.py:234
 msgid " is not in the autorole list."
 msgstr ""
 
-#: autorole.py:234
+#: autorole.py:238
 msgid " role removed from the autorole."
 msgstr ""
 
-#: autorole.py:240
+#: autorole.py:244
 #, docstring
 msgid ""
 "\n"
@@ -156,7 +160,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: autorole.py:265
+#: autorole.py:269
 #, docstring
 msgid ""
 "\n"
@@ -166,23 +170,23 @@ msgid ""
 "        "
 msgstr ""
 
-#: autorole.py:272 autorole.py:295 autorole.py:324 autorole.py:363
+#: autorole.py:276 autorole.py:299 autorole.py:328 autorole.py:367
 msgid "No roles have been set for autorole."
 msgstr ""
 
-#: autorole.py:275 autorole.py:298 autorole.py:327 autorole.py:366
+#: autorole.py:279 autorole.py:302 autorole.py:331 autorole.py:370
 msgid "Autorole has been disabled, enable it first."
 msgstr ""
 
-#: autorole.py:279 autorole.py:372
+#: autorole.py:283 autorole.py:376
 msgid "Agreement channel cleared"
 msgstr ""
 
-#: autorole.py:282 autorole.py:377
+#: autorole.py:286 autorole.py:381
 msgid "Agreement channel set to "
 msgstr ""
 
-#: autorole.py:287
+#: autorole.py:291
 #, docstring
 msgid ""
 "\n"
@@ -192,15 +196,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: autorole.py:302
+#: autorole.py:306
 msgid "Agreement key cleared"
 msgstr ""
 
-#: autorole.py:305 autorole.py:334
+#: autorole.py:309 autorole.py:338
 msgid "Agreement key set to "
 msgstr ""
 
-#: autorole.py:310
+#: autorole.py:314
 #, docstring
 msgid ""
 "\n"
@@ -217,11 +221,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: autorole.py:331
+#: autorole.py:335
 msgid "Agreement message cleared"
 msgstr ""
 
-#: autorole.py:344
+#: autorole.py:348
 #, docstring
 msgid ""
 "\n"

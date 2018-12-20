@@ -6,7 +6,7 @@
     "description" : "Some working, some not working NotSoBot commands",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Please, read the README.md to understand how to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements.",
+    "install_msg" : "This cog contains a data folder for fonts and will save and delete some files locally. Please, read the README.md (https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot) for instructions on how and what to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements.",
     "min_python_version" : [
         3,
         6,

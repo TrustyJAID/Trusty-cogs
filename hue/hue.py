@@ -9,6 +9,7 @@ import os
 import asyncio
 from phue import Bridge
 
+
 class Hue(getattr(commands, "Cog", object)):
     """
         Control philips hue light on the same network as the bot
@@ -34,7 +35,7 @@ class Hue(getattr(commands, "Cog", object)):
             return True
 
     # @commands.command()
-    async def oilersgoal(self):
+    async def oilersgoal(self, ctx):
         if not await self.get_bridge():
             await ctx.send("No IP has been set.")
             return
@@ -69,7 +70,7 @@ class Hue(getattr(commands, "Cog", object)):
         pass
 
     @_hue.command(name="connect")
-    async def hue_connect(self):
+    async def hue_connect(self, ctx):
         """Setup command if bridge cannot connect"""
         if not await self.get_bridge():
             await ctx.send("No IP has been set.")

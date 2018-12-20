@@ -41,7 +41,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.instances = {}
 
-    @commands.group()
+    @commands.command()
     async def cleverbot(self, ctx, *, message):
         """Talk with cleverbot"""
         author = ctx.message.author
@@ -67,7 +67,14 @@ class Cleverbot(getattr(commands, "Cog", object)):
             else:
                 await ctx.send(result)
 
-    @cleverbot.command()
+    @commands.group()
+    async def cleverbotset(self, ctx):
+        """
+            Settings for cleverbot
+        """
+        pass
+
+    @cleverbotset.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def toggle(self, ctx):
         """Toggles reply on mention"""
@@ -79,7 +86,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
             await self.config.guild(guild).toggle.set(False)
             await ctx.send("I won't reply on mention anymore.")
     
-    @cleverbot.command()
+    @cleverbotset.command()
     @checks.mod_or_permissions(manage_channels=True)
     async def channel(self, ctx, channel: discord.TextChannel=None):
         """
@@ -98,7 +105,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
             await self.config.guild(guild).channel.set(None)
             await ctx.send("Automatic replies turned off.")
 
-    @cleverbot.command()
+    @cleverbotset.command()
     @checks.is_owner()
     async def apikey(self, ctx, key: str=None):
         """Sets token to be used with cleverbot.com
@@ -108,7 +115,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
         await self.config.api.set(key)
         await ctx.send("Credentials set.")
 
-    @cleverbot.command()
+    @cleverbotset.command()
     @checks.is_owner()
     async def ioapikey(self, ctx, io_user: str=None, io_key: str=None):
         """Sets token to be used with cleverbot.io
@@ -211,7 +218,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
                     await channel.send("The owner needs to set the credentials first.\n"
                                                          "See: `[p]cleverbot apikey`")
                 except APIError as e:
-                    await ctx.send("Error contacting the API. Error code: {}".format(e))
+                    await channel.send("Error contacting the API. Error code: {}".format(e))
                 except InvalidCredentials:
                     await channel.send("The token that has been set is not valid.\n"
                                                          "See: `[p]cleverbot apikey`")

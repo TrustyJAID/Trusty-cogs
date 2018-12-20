@@ -8,7 +8,7 @@
     "description" : "Show how you really feel. Make someone beautiful. Make something illegal",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Type `[p]help ImageMaker` to see available commands.",
+    "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. Type `[p]help ImageMaker` to see available commands.",
     "min_python_version" : [
         3,
         6,

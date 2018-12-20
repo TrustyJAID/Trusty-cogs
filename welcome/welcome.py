@@ -5,6 +5,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from copy import deepcopy
 import os
 from random import choice as rand_choice
+import asyncio
 
 
 default_greeting = "Welcome {0.name} to {1.name}!"

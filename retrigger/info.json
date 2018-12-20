@@ -5,7 +5,7 @@
     "description" : "Trigger events based on regular expressions",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Add trigger responses to regex, see <https://regexr.com/> for help building regex expressions.",
+    "install_msg" : "Add trigger responses to regex, see <https://regexr.com/> for help building regex expressions. This will create and save files/images locally for those triggers.",
     "min_python_version" : [
         3,
         6,

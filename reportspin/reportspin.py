@@ -22,6 +22,9 @@ log = logging.getLogger("red.reports")
 
 @cog_i18n(_)
 class Reports(commands.Cog):
+    """
+        Redbot Core's default reports cog with some modifications
+    """
 
     default_guild_settings = {"output_channel": None, "active": False, "next_ticket": 1}
 

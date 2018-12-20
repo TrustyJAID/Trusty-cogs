@@ -16,6 +16,9 @@ numbs = {
     "exit": "❌"
 }
 class Anime(getattr(commands, "Cog", object)):
+    """
+        Display latest airing anime episodes
+    """
 
     def __init__(self, bot):
         self.bot = bot
@@ -37,6 +40,9 @@ class Anime(getattr(commands, "Cog", object)):
     @anime.command()
     @checks.is_owner()
     async def reset(self, ctx):
+        """
+            Reset list of airing titles
+        """
         airing = await self.config.airing()
         new_airing = []
         for anime in airing:
@@ -73,6 +79,9 @@ class Anime(getattr(commands, "Cog", object)):
 
     @anime.command()
     async def airing(self, ctx):
+        """
+            List all episodes currently being checked for airing status
+        """
         animes=""
         for anime in await self.config.airing():
             animes += "{},".format(anime["title_english"])
@@ -225,6 +234,9 @@ class Anime(getattr(commands, "Cog", object)):
 
     @anime.command()
     async def search(self, ctx, *, search):
+        """
+            Search for an anime title
+        """
         header = await self.check_auth()
         async with self.session.get(self.url + "anime/search/{}".format(search), params=header) as resp:
             print(str(resp.url))
@@ -236,6 +248,9 @@ class Anime(getattr(commands, "Cog", object)):
 
     @commands.command(hidden=True)
     async def forceairing(self, ctx):
+        """
+            Update list of airing titles
+        """
         await self.get_currently_airing()
         await ctx.send("Done.")
 

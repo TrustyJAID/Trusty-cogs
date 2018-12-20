@@ -5,7 +5,7 @@
     "description" : "Hardcoded custom avatar and statuses for TrustyBot",
     "disabled" : false,
     "hidden" : true,
-    "install_msg" : "You probably don't want to use this cog.",
+    "install_msg" : "You probably don't want to use this cog. If you do use this and modify it, changing the interval puts your bot at risk of rate limiting.",
     "min_python_version" : [
         3,
         6,

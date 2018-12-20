@@ -136,12 +136,14 @@ class Fun(getattr(commands, "Cog", object)):
         text_flip[alt_char_list[idx]] = char
 
     # used in [p]react, checks if it's possible to react with the duper string or not
+    @staticmethod
     def has_dupe(duper):
         collect_my_duper = list(filter(lambda x: x != '⃣',
                                        duper))  #   ⃣ appears twice in the number unicode thing, so that must be stripped
         return len(set(collect_my_duper)) != len(collect_my_duper)
 
     # used in [p]react, replaces e.g. 'ng' with '🆖'
+    @staticmethod
     def replace_combos(react_me):
         for combo in Fun.emoji_dict['combination']:
             if combo[0] in react_me:
@@ -149,6 +151,7 @@ class Fun(getattr(commands, "Cog", object)):
         return react_me
 
     # used in [p]react, replaces e.g. 'aaaa' with '🇦🅰🍙🔼'
+    @staticmethod
     def replace_letters(react_me):
         for char in "abcdefghijklmnopqrstuvwxyz0123456789!?":
             char_count = react_me.count(char)

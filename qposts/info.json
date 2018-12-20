@@ -5,7 +5,7 @@
     "description" : "Gatehr Qanon posts from 8chan",
     "disabled" : false,
     "hidden" : true,
-    "install_msg" : "Do `[p]qchannel` to setup a channel for new posts.",
+    "install_msg" : "This cog will create a folder and save some files locally. Do `[p]qchannel` to setup a channel for new posts.",
     "min_python_version" : [
         3,
         6,

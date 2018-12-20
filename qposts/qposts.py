@@ -65,11 +65,20 @@ class QPosts(getattr(commands, "Cog", object)):
 
     @commands.command()
     async def reset_qpost(self, ctx):
+        """
+            Reset the last time we checked for new posts
+        """
         await self.config.last_checked.set(0)
         await ctx.send("Done.")
 
     @commands.command()
     async def dlq(self, ctx):
+        """
+            Check for all posts ever created and store them locally on the bot
+            to ensure that future posts aren't re-posted. This only works on the bot
+            side and will not re-post messages on discord and should only be used
+            when setting up the cog brand new.
+        """
         board_posts = await self.config.boards()
         for board in self.boards:
             async with self.session.get("{}/{}/catalog.json".format(self.url, board)) as resp:

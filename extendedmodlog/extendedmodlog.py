@@ -1139,6 +1139,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         member_updates = {"nick":_("Nickname:"), 
                           "roles":_("Roles:"),
                          }
+        perp = None
         for attr, name in member_updates.items():
             before_attr = getattr(before, attr)
             after_attr = getattr(after, attr)
@@ -1156,7 +1157,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                         for role in after_roles:
                             msg += role.name + _(" Role Applied.")
                             embed.description = role.mention + _(" Role Applied.")
-                    perp = None
                     if channel.permissions_for(guild.me).view_audit_log:
                         action = discord.AuditLogAction.member_role_update
                         async for log in guild.audit_logs(limit=5, action=action):
@@ -1164,7 +1164,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                                 perp = log.user
                                 break
                 else:
-                    perp = None
                     if channel.permissions_for(guild.me).view_audit_log:
                         action = discord.AuditLogAction.member_update
                         async for log in guild.audit_logs(limit=5, action=action):
