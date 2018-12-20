@@ -364,6 +364,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         is_command = await self.check_is_command(message)
         is_mod = await self.is_mod_or_admin(message.author)
         trigger_list = await self.config.guild(guild).trigger_list()
+        autoimmune = getattr(self.bot, "is_automod_immune", None)
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
             if not await self.channel_perms(trigger, channel):
@@ -372,6 +373,16 @@ class ReTrigger(getattr(commands, "Cog", object)):
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
+                if trigger.response_type in ["delete", 
+                                             "kick", 
+                                             "ban", 
+                                             "add_role", 
+                                             "remove_role"]:
+                    if await autoimmune(message):
+                        print_msg = _("ReTrigger: Author is immune "
+                                      "from automated actions")
+                        print(print_msg)
+                        return
                 if trigger.response_type == "delete":
                     if channel_perms.manage_messages or is_mod:
                         print_msg = _("ReTrigger: Delete is ignored because "
@@ -446,6 +457,16 @@ class ReTrigger(getattr(commands, "Cog", object)):
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
+                if trigger.response_type in ["delete", 
+                                             "kick", 
+                                             "ban", 
+                                             "add_role", 
+                                             "remove_role"]:
+                    if await autoimmune(message):
+                        print_msg = _("ReTrigger: Author is immune "
+                                      "from automated actions")
+                        print(print_msg)
+                        return
                 if trigger.response_type == "delete":
                     if channel.permissions_for(message.author).manage_messages:
                         print_msg = _("ReTrigger: Delete is ignored because "
@@ -1212,4 +1233,3 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
         await ctx.send(_("Trigger `")+name+_("` set."))
-
