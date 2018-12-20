@@ -237,7 +237,7 @@ class Fun(getattr(commands, "Cog", object)):
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
-    @commands.command(, aliases=['r'])
+    @commands.command(aliases=['r'])
     async def react(self, ctx, msg: str, msg_id:int=None, channel:discord.TextChannel=None):
         """
             Add letter(s) as reaction to previous message.
