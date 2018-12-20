@@ -446,7 +446,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
 
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             if perp:
-                embed.add_field(name=_("Deleter"), value=perp.mention)
+                embed.add_field(name=_("Deleted by"), value=perp.mention)
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 if len(message.attachments) > 1:
