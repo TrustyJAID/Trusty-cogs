@@ -287,6 +287,12 @@ class AddImage(getattr(commands, "Cog", object)):
             Clears the full set of images stored globally
         """
         await self.config.images.set([])
+        directory = cog_data_path(self) /"global"
+        for file in os.listdir(str(directory)):
+            try:
+                os.remove(str(directory/file))
+            except Exception as e:
+                print(e)
 
     @addimage.command()
     @checks.mod_or_permissions(manage_channels=True)
@@ -295,6 +301,12 @@ class AddImage(getattr(commands, "Cog", object)):
             Clear all the images stored for the current server
         """
         await self.config.guild(ctx.guild).images.set([])
+        directory = cog_data_path(self) /str(ctx.guild.id)
+        for file in os.listdir(str(directory)):
+            try:
+                os.remove(str(directory/file))
+            except Exception as e:
+                print(e)
 
     @addimage.command(name="delete", aliases=["remove", "rem", "del"])
     @checks.mod_or_permissions(manage_channels=True)
@@ -371,10 +383,7 @@ class AddImage(getattr(commands, "Cog", object)):
                     "author": msg.author.id}
 
         cur_images.append(new_entry)
-        async with self.session.get(msg.attachments[0].url) as resp:
-            test = await resp.read()
-            with open(file_path, "wb") as f:
-                f.write(test)
+        await msg.attachments[0].save(file_path)
         if guild is not None:
             await self.config.guild(guild).images.set(cur_images)
         else:
