@@ -440,8 +440,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             infomessage = (str(perp) + _(" Deleted a message ")  +
                            _(" in ") + message.channel.name)
         if channel.permissions_for(guild.me).embed_links:
-            embed = discord.Embed(title=infomessage,
-                                  description=message.content,
+            embed = discord.Embed(description=message.content,
                                   colour=discord.Colour.dark_red(),
                                   timestamp=time)
 
