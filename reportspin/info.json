@@ -1,0 +1,27 @@
+{
+    "author" : [
+        "Eslyium",
+        "tekulvw",
+        "mikeshardmind(Sinbad)",
+        "Tobotimus"
+    ],
+    "description" : "Reports cog but pins new reports",
+    "disabled" : false,
+    "hidden" : true,
+    "install_msg" : "Redbot core reports cog but pins new reports",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "ReportsPin",
+    "permissions" : [
+        "manage_messages"
+    ],
+    "requirements" : [
+    ],
+    "short" : "Pin all new reports",
+    "tags" : [
+        "reports"
+    ]
+}
