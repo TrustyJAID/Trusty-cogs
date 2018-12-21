@@ -45,7 +45,6 @@ class APNGFilter(getattr(commands, "Cog", object)):
             return
 
         for attachment in message.attachments:
-            print(attachment)
             if attachment.filename.split(".")[-1] not in ("apng", "png"):
                 continue  # discord attempts to render by file extension, not mime type
             # keeps requests on the bot's session, prventing a unauthenticated ratelimit for attachments
