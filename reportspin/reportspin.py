@@ -195,9 +195,12 @@ class Reports(commands.Cog):
             )
         except (discord.Forbidden, discord.HTTPException):
             return None
-        cur_pins = await channel.pins()
-        if len(cur_pins) == 50:
-            await cur_pins[-1].unpin()
+        cur_pins = reversed(await channel.pins())
+        if len(await channel.pins()) == 50:
+            for pin in cur_pins:
+                if pin.author == guild.me:
+                    await pin.unpin()
+                    break
         try:
             await report_msg[0].pin()
         except (discord.Forbidden, discord.HTTPException):
