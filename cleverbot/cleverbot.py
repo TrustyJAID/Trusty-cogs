@@ -1,9 +1,8 @@
-from redbot.core import commands
-from redbot.core import checks
-from redbot.core import Config
-import os
-import aiohttp
 import discord
+import aiohttp
+import re
+
+from redbot.core import commands, checks, Config
 
 API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
@@ -203,11 +202,12 @@ class Cleverbot(getattr(commands, "Cog", object)):
             return
         author = message.author
         channel = message.channel
-        
+        msg = message.content
+        to_strip = f"(?m)^(<@!?{guild.me.id}>)"
+        is_mention = re.findall(to_strip, msg)
         if message.author.id != self.bot.user.id:
-            to_strip = "@" + guild.me.display_name + " "
             text = message.clean_content
-            if not text.startswith(to_strip) and message.channel.id != await self.config.guild(guild).channel():
+            if not is_mention and message.channel.id != await self.config.guild(guild).channel():
                 return
             if not await self.config.guild(guild).toggle():
                 return
@@ -233,5 +233,4 @@ class Cleverbot(getattr(commands, "Cog", object)):
                     await channel.send(response)
 
     def __unload(self):
-        if self.session:
-            self.bot.loop.create_task(self.session.close())
+        self.bot.loop.create_task(self.session.close())
