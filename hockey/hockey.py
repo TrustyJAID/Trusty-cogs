@@ -5,6 +5,7 @@ import json
 import yaml
 from datetime import datetime, timedelta
 from io import BytesIO
+from urllib.parse import quote
 from redbot.core import commands, checks, Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -649,6 +650,27 @@ class Hockey(getattr(commands, "Cog", object)):
             Display the current version
         """
         await ctx.send(_("Hockey version ") + __version__)
+
+    @commands.command()
+    async def hockeyhub(self, ctx, *, search:str):
+        """
+            Search for hockey related items on https://hockeyhub.github.io/
+
+            lines   team    Team lines on Daily Faceoff
+            stats   [year] team Team stats on nhl.com, year optional
+            schedule    team    Team schedule on nhl.com
+            draft   team oryear Draft history for team or year on Elite Prospects
+            cap team orplayer   Cap information for team or player on CapFriendly
+            player  player  Search for player on Elite Prospects
+            depth   team    Team depth chart on Elite Prospects
+            prospects   team    Team prospects on Elite Prospects
+            trades  team    Team trade history on NHL Trade Tracker
+            jersey  [team] number orname    Find a player by jersey number
+            highlights  [team]  Game Highlights, team optional
+            reddit  team    Team subreddit on Reddit
+        """
+        search = quote(search)
+        await ctx.send("https://hockeyhub.github.io/?search="+search)
 
     @hockey_commands.command(name="role")
     async def team_role(self, ctx, *, team):
