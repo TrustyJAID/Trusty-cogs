@@ -2,7 +2,7 @@ import aiohttp
 import discord
 from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path
-from io import BytesIO, StringIO
+from io import BytesIO
 import sys
 import functools
 import asyncio
@@ -27,7 +27,6 @@ class ImageMaker(getattr(commands, "Cog", object)):
     
     def __init__(self, bot):
         self.bot = bot
-        self.textFont = None
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
     async def dl_image(self, url):
@@ -525,15 +524,16 @@ class ImageMaker(getattr(commands, "Cog", object)):
         maxSize = 50
         minSize = 6
         curSize = maxSize
+        textFont = None
         while curSize >= minSize:
-            self.textFont = ImageFont.truetype(str(bundled_data_path(self))+'/impact.ttf', size=curSize)
-            w, h = drawer.textsize(text, font=self.textFont)
+            textFont = ImageFont.truetype(str(bundled_data_path(self))+'/impact.ttf', size=curSize)
+            w, h = drawer.textsize(text, font=textFont)
             
             if w > maxWidth:
                 curSize -= 4
             else:
-                return self.textFont
-        return self.textFont
+                return textFont
+        return textFont
 
     def generateText(self, text):
         # global impact, textFont
@@ -550,13 +550,12 @@ class ImageMaker(getattr(commands, "Cog", object)):
         draw = ImageDraw.Draw(image)
 
         # Load font for text
-        if self.textFont == None:
-            self.textFont = self.computeAndLoadTextFontForSize(draw, text, imgSize[0])
+        textFont = self.computeAndLoadTextFontForSize(draw, text, imgSize[0])
             
-        w, h = draw.textsize(text, font=self.textFont)
+        w, h = draw.textsize(text, font=textFont)
         xCenter = (imgSize[0] - w) / 2
         yCenter = (50 - h) / 2
-        draw.text((xCenter, 10 + yCenter), text, font=self.textFont, fill=txtColor)
+        draw.text((xCenter, 10 + yCenter), text, font=textFont, fill=txtColor)
         impact = ImageFont.truetype(str(bundled_data_path(self))+'/impact.ttf', 46)
         draw.text((12, 70), "IS NOW", font=impact, fill=txtColor)
         draw.text((10, 130), "ILLEGAL", font=impact, fill=txtColor)
