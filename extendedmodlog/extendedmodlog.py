@@ -427,8 +427,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         perp = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.message_delete
-            async for log in guild.audit_logs(limit=2, action=action, after=time):
-                if log.target.id == message.author.id:
+            async for log in guild.audit_logs(limit=2, action=action):
+                same_chan = log.extra.channel.id == message.channel.id
+                if log.target.id == message.author.id and same_chan:
                     perp = log.user
                     break
         author = message.author
@@ -952,10 +953,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             
             infomessage = (_("A message by ")+
-                           f"{before.author.name}#{before.author.discriminator}"+
+                           f"{before.author}"+
                            _(" was edited in ")+ before.channel.name)
             embed = discord.Embed(description=before.content, 
-                                  title=infomessage,
                                   colour=discord.Colour.orange(), 
                                   timestamp=before.created_at)
             jump_url = f"[Click to see new message]({after.jump_url})"
@@ -1095,28 +1095,62 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed = discord.Embed(timestamp=time, 
                               icon_url=guild.icon_url,
                               colour=discord.Colour.magenta())
-        msg = (f"{member.name}#{member.discriminator} " +
+        msg = (f"{member} " +
                _("Updated Voice State") + "\n")
         embed.set_author(name=msg)
-        voice_updates = {"deaf":_("Deaf:"), 
-                        "mute":_("Mute:"), 
-                        "self_deaf":_("Self Deaf:"), 
-                        "self_mute":_("Self Mute:"),
-                        "afk":_("AFK:"),
-                        "channel":_("Channel:")
-                        }
-        for attr, name in voice_updates.items():
-            before_attr = getattr(before, attr)
-            after_attr = getattr(after, attr)
-            if before_attr != after_attr:
-                msg += (_("Before ") + f"{name} {before_attr}\n")
-                msg += (_("After ") + f"{name} {after_attr}\n")
-                embed.add_field(name=_("Before ") + name, value=str(before_attr))
-                embed.add_field(name=_("After ") + name, value=str(after_attr))
+        change_type = None
+        if before.deaf != after.deaf:
+            change_type = "deaf"
+            if after.deaf:
+                chan_msg = (member.mention + _(" was deafened. "))
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+            else:
+                chan_msg = (member.mention + _(" was undeafened. "))
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+        if before.mute != after.mute:
+            change_type = "mute"
+            if after.mute:
+                chan_msg = (member.mention + _(" was muted. "))
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+            else:
+                chan_msg = (member.mention + _(" was unmuted. "))
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+        if before.channel != after.channel:
+            change_type = "channel"
+            if before.channel is None:
+                chan_msg = (member.mention + _(" has joined ") + 
+                            after.channel.mention)
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+            elif after.channel is None:
+                chan_msg = (member.mention + _(" has left ") + 
+                            before.channel.mention)
+                msg += chan_msg + "\n"
+                embed.description = chan_msg
+            else:
+                chan_msg = (member.mention + _(" has moved from ") + 
+                            before.channel.mention + _(" to ") + 
+                            after.channel.mention)
+                msg += chan_msg
+                embed.description = chan_msg
+        perp = None
+        if channel.permissions_for(guild.me).view_audit_log and change_type:
+            action = discord.AuditLogAction.member_update
+            async for log in guild.audit_logs(limit=5, action=action):
+                is_change = getattr(log.after, change_type, None)
+                if log.target.id == member.id and is_change:
+                    perp = log.user
+                    break
+        if perp:
+            embed.add_field(name=_("Updated by"), value=perp.mention)
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
-            await channel.send(msg)
+            await channel.send(msg.replace(member.mention, str(member)))
 
 
     async def on_member_update(self, before, after):
