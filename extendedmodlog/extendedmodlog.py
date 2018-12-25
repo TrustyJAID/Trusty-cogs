@@ -1137,6 +1137,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                             after.channel.mention)
                 msg += chan_msg
                 embed.description = chan_msg
+        if not change_type:
+            return
         perp = None
         if channel.permissions_for(guild.me).view_audit_log and change_type:
             action = discord.AuditLogAction.member_update
