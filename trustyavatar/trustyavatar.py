@@ -67,15 +67,6 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                         "xmas": "https://i.imgur.com/xSLto00.png"
                         },
                    }
-
-    @commands.command()
-    @checks.is_owner()
-    async def checkstatus(self):
-        image_name = choice(self.status.keys())
-        status = self.status.get(image_name.lower(), None)
-        activity = discord.Activity(name=choice(status["game"]), type=choice(status["type"]))
-        await self.bot.change_presence(status=status["status"], activity=activity)
-
     
     async def change_avatar(self):
         await self.bot.wait_until_ready()
@@ -92,10 +83,9 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                 print(e)
             try:
                 print("changing avatar to {}".format(new_avatar))
+                url = status["link"]
                 if datetime.now().month == 12:
                     url = status["xmas"]
-                else:
-                    url = status["link"]
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as image:
                         data = await image.read()
