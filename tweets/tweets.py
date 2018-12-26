@@ -763,7 +763,7 @@ class Tweets(getattr(commands, "Cog", object)):
         if user_id is None:
             await ctx.send(_("No status was retrieved! Try again"))
             return
-        removed = await self.del_username(channel.id, user_id, screen_name)
+        removed = await self.del_account(channel.id, user_id, screen_name)
         if removed:
             await ctx.send(username + _(" has been removed from ") + channel.mention)
         else:
