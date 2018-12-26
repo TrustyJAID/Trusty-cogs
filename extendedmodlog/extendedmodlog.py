@@ -434,7 +434,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                     break
         author = message.author
         if perp is None:
-            infomessage = (_("A message by ") + str(author) +
+            infomessage = (_("A message from ") + str(author) +
                            _(" was deleted in ")+
                            message.channel.name)
         else:
@@ -600,11 +600,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed.set_author(name=_("Channel Created ") + str(new_channel.id))
         msg = _("Channel Created ") + str(new_channel.id) + "\n"
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.channel_create
-            async for log in guild.audit_logs(limit=5, action=action):
+            async for log in guild.audit_logs(limit=2, action=action):
                 if log.target.id == new_channel.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         if type(new_channel) == discord.TextChannel:
             msg += _("Text Channel Created")
@@ -618,6 +621,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if perp:
             msg +=_("Created by ") + str(perp)
             embed.add_field(name=_("Created by "), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -641,11 +647,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed.set_author(name=_("Channel Deleted ") + str(old_channel.id))
         msg = _("Channel Deleted ") + str(old_channel.id) + "\n"
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.channel_delete
-            async for log in guild.audit_logs(limit=5, action=action):
+            async for log in guild.audit_logs(limit=2, action=action):
                 if log.target.id == old_channel.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         if type(old_channel) == discord.TextChannel:
             msg += _("Text Channel Deleted")
@@ -659,6 +668,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if perp:
             msg +=_("Deleted by ") + str(perp)
             embed.add_field(name=_("Deleted by "), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -682,11 +694,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         embed.set_author(name=_("Updated channel ") + str(before.id))
         msg = _("Updated channel ") + str(before.id) + "\n"
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.channel_update
             async for log in guild.audit_logs(limit=5, action=action):
                 if log.target.id == before.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         if type(before) == discord.TextChannel:
             text_updates = {"name":_("Name:"), 
@@ -716,15 +731,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             if p_msg != "":
                 msg += _("Permissions Changed: ") + p_msg
                 embed.add_field(name=_("Permissions"), value=p_msg[:1024])
-            if perp:
-                msg += _("Updated by ") + str(perp)
-                embed.add_field(name=_("Updated by "), value=perp.mention)
-            if len(embed.fields) == 0:
-                return
-            if embed_links:
-                await channel.send(embed=embed)
-            else:
-                await channel.send(msg)
 
         if type(before) == discord.VoiceChannel:
             voice_updates = {"name":_("Name:"), 
@@ -745,15 +751,19 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             if p_msg != "":
                 msg += _("Permissions Changed: ") + p_msg
                 embed.add_field(name=_("Permissions"), value=p_msg[:1024])
-            if perp:
-                msg += _("Updated by ") + str(perp)
-                embed.add_field(name=_("Updated by "), value=perp.mention)
-            if len(embed.fields) == 0:
-                return
-            if channel.permissions_for(guild.me).embed_links:
-                await channel.send(embed=embed)
-            else:
-                await channel.send(msg)
+
+        if perp:
+            msg += _("Updated by ") + str(perp) + "\n"
+            embed.add_field(name=_("Updated by "), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
+        if len(embed.fields) == 0:
+            return
+        if channel.permissions_for(guild.me).embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
 
     async def get_role_permission_change(self, before, after):
         permission_list = ["create_instant_invite",
@@ -803,11 +813,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if channel is None:
             return
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.role_update
             async for log in guild.audit_logs(limit=5, action=action):
                 if log.target.id == before.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
@@ -824,8 +837,11 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                              icon_url=guild.icon_url)
             msg = _("Updated role ") + str(before.id) + "\n"
         if perp:
-            msg += (_("Updated by ") + f"{perp}\n")
-            embed.add_field(name=_("Updated by"), value=perp.mention)
+            msg += _("Updated by ") + str(perp) + "\n"
+            embed.add_field(name=_("Updated by "), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
         role_updates = {"name":_("Name:"), 
                         "color":_("Colour:"), 
                         "mentionable":_("Mentionable:"), 
@@ -866,11 +882,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if channel is None:
             return
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.role_create
             async for log in guild.audit_logs(limit=5, action=action):
                 if log.target.id == role.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
@@ -883,7 +902,10 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         msg += role.name
         if perp:
             embed.add_field(name=_("Created by"), value=perp.mention)
-            msg += _("By ") + str(perp) + "\n"        
+            msg += _("By ") + str(perp) + "\n"   
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)     
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -900,11 +922,14 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if channel is None:
             return
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.role_delete
             async for log in guild.audit_logs(limit=5, action=action):
                 if log.target.id == role.id:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
@@ -916,7 +941,10 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         msg += role.name
         if perp:
             embed.add_field(name=_("Deleted by"), value=perp.mention)
-            msg += _("By ") + str(perp) + "\n"   
+            msg += _("By ") + str(perp) + "\n" 
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)  
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -1010,15 +1038,22 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                 embed.add_field(name=_("Before ") + name, value=str(before_attr))
                 embed.add_field(name=_("After ") + name, value=str(after_attr))
         perp = []
+        reason = []
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.guild_update
             async for log in guild.audit_logs(limit=int(len(embed.fields)/2), action=action):
                 perp.append(log.user)
+                if log.reason:
+                    reasons.append(log.reason)
         if perp:
             perps = ", ".join(str(p) for p in perp)
             msg += (_("Update by ") + f"{perps}\n")
             perps = ", ".join(p.mention for p in perp)
             embed.add_field(name=_("Updated by"), value=perps)
+        if reason:
+            reasons = ", ".join(str(r) for r in reason)
+            msg += (_("Reasons ") + f"{reasons}\n")
+            embed.add_field(name=_("Reasons "), value=reasons)
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
@@ -1066,13 +1101,19 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             embed.description += new_msg
             action = discord.AuditLogAction.emoji_update
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             async for log in guild.audit_logs(limit=1, action=action):
                 perp = log.user
+                if log.reason:
+                    reason = log.reason
                 break
         if perp:
             embed.add_field(name=_("Updated by "), value=perp.mention)
-            msg += _("Updated by ") + str(perp)
+            msg += _("Updated by ") + str(perp) + "\n"
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason) 
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
@@ -1140,15 +1181,21 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if not change_type:
             return
         perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log and change_type:
             action = discord.AuditLogAction.member_update
             async for log in guild.audit_logs(limit=5, action=action):
                 is_change = getattr(log.after, change_type, None)
                 if log.target.id == member.id and is_change:
                     perp = log.user
+                    if log.reason:
+                        reason = log.reason
                     break
         if perp:
             embed.add_field(name=_("Updated by"), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason) 
         if channel.permissions_for(guild.me).embed_links:
             await channel.send(embed=embed)
         else:
@@ -1176,6 +1223,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                           "roles":_("Roles:"),
                          }
         perp = None
+        reason = None
         for attr, name in member_updates.items():
             before_attr = getattr(before, attr)
             after_attr = getattr(after, attr)
@@ -1198,6 +1246,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                         async for log in guild.audit_logs(limit=5, action=action):
                             if log.target.id == before.id:
                                 perp = log.user
+                                if log.reason:
+                                    reason = log.reason
                                 break
                 else:
                     if channel.permissions_for(guild.me).view_audit_log:
@@ -1205,6 +1255,8 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
                         async for log in guild.audit_logs(limit=5, action=action):
                             if log.target.id == before.id:
                                 perp = log.user
+                                if log.reason:
+                                    reason = log.reason
                                 break
                     msg += (_("Before ") + f"{name} {before_attr}\n")
                     msg += (_("After ") + f"{name} {after_attr}\n")
@@ -1215,6 +1267,9 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         if perp:
             msg += (_("Updated by ") + f"{perp}\n")
             embed.add_field(name=_("Updated by "), value=perp.mention)
+        if reason:
+            msg += (_("Reason: ") + f"{reason}\n")
+            embed.add_field(name=_("Reason"), value=reason)
         if embed_links:
             await channel.send(embed=embed)
         else:
