@@ -237,6 +237,8 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     info += _("__Text__: ") +"**"+ trigger["text"] + "**\n"
                 if trigger["response_type"] == "dm":
                     info += _("__DM__: ") +"**"+ trigger["text"] + "**\n"
+                if trigger["response_type"] == "command":
+                    info += _("__Command__: ") +"**"+ trigger["text"] + "**\n"
                 if trigger["response_type"] == "react":
                     server_emojis = "".join(f"<{e}>" for e in trigger["text"] if len(e) > 5)
                     unicode_emojis = "".join(e for e in trigger["text"] if len(e) < 5)
