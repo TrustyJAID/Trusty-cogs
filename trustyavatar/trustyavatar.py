@@ -84,7 +84,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             try:
                 print("changing avatar to {}".format(new_avatar))
                 url = status["link"]
-                if datetime.now().month == 12:
+                if datetime.now().month == 12 and datetime.now().day <=25:
                     url = status["xmas"]
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as image:
