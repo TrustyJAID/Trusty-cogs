@@ -62,7 +62,10 @@ class Welcome(getattr(commands, "Cog", object)):
                         continue
                     if attr == "BOTS_ROLE":
                         role = guild.get_role(guild_settings["BOTS_ROLE"])
-                        embed.add_field(name=name, value=role.mention)
+                        if role is not None:
+                            embed.add_field(name=name, value=role.mention)
+                        else:
+                            embed.add_field(name=name, value=_("None"))
                         continue
                     else:
                         embed.add_field(name=name, value=guild_settings[attr])
