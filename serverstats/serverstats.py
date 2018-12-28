@@ -560,7 +560,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 guild = await self.get_guild_obj(guild_name)
                 page = guilds.index(guild)
             except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
+                await ctx.send(str(guild_name) + _(" guild could not be found."))
                 return
             
 
