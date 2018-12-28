@@ -55,7 +55,10 @@ class Welcome(getattr(commands, "Cog", object)):
                         continue
                     if attr == "CHANNEL":
                         chan = guild.get_channel(guild_settings["CHANNEL"])
-                        embed.add_field(name=name, value=chan.mention)
+                        if chan is not None:
+                            embed.add_field(name=name, value=chan.mention)
+                        else:
+                            embed.add_field(name=name, value=_("None"))
                         continue
                     if attr == "BOTS_ROLE":
                         role = guild.get_role(guild_settings["BOTS_ROLE"])
