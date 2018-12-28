@@ -1,7 +1,7 @@
 # Trusty-cogs V3
 [![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/release/3.0.0)
 [![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)
-[![TrustyJAID](https://i.imgur.com/xNvhDFV.png)](https://trustyjaid.com/)
+[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)
 [![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)
 [![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)
 
@@ -38,6 +38,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Fun | **Release**| <details><summary>The fun cog from Appu's Selfbot rewritten for redbot V3 including adding reactions and other "fun" commands. </summary></details> |
 | Gabai | **Beta** | <details><summary>A cog to grab information and posts from gab.ai. </summary></details> |
 | Tarot | **Release** | <details><summary>Find your tarot reading, your life reading, or pull a random tarot card!</summary> Search for specific tarot cards. </details> |
+| APNGFilter | **Release** | <details><summary>Automatically filter animated PNG's.</summary>Also works with linked animated PNG's.</details> |
 
 
 
