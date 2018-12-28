@@ -149,9 +149,10 @@ class Autorole(getattr(commands, "Cog", object)):
             roles = await self.config.guild(guild).ROLE()
             msg = await self.config.guild(guild).AGREE_MSG()
             key = await self.config.guild(guild).AGREE_KEY()
-            channel = await self.config.guild(guild).AGREE_CHANNEL()
-            chn_name = guild.get_channel(channel).name if channel is not None else "None"
-            chn_mention = guild.get_channel(channel).mention if channel is not None else "None"
+            ch_id = await self.config.guild(guild).AGREE_CHANNEL()
+            channel = guild.get_channel(ch_id)
+            chn_name = channel.name if channel is not None else "None"
+            chn_mention = channel.mention if channel is not None else "None"
             role_name = []
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 role_name_str = ", ".join(role.mention for role in guild.roles if role.id in roles)
