@@ -169,6 +169,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         """
         if channel is None:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.author).manage_messages:
+            return
         if not channel.permissions_for(ctx.me).manage_channels:
             await ctx.send(_("I require the \"Manage Channels\" permission to execute that command."))
             return
