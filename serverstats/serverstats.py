@@ -8,7 +8,7 @@ import aiohttp
 from io import BytesIO
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, box
-from typing import Union
+from typing import Union, Optional
 
 
 _ = Translator("ServerStats", __file__)
@@ -157,6 +157,23 @@ class ServerStats(getattr(commands, "Cog", object)):
                     await ctx.send(_("That doesn't appear to be a valid emoji"))
                     return
             await ctx.send(file=file)
+
+    @commands.command()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def topic(self, ctx, channel:Optional[discord.TextChannel], *, topic:str=""):
+        """
+            Sets a specified channels topic
+            
+            `channel` is optional and if not supplied will use the current channel
+            Note: The maximum number of characters is 1024
+        """
+        if channel is None:
+            channel = ctx.channel
+        if not channel.permissions_for(ctx.me).manage_channels:
+            await ctx.send(_("I require the \"Manage Channels\" permission to execute that command."))
+            return
+        await channel.edit(topic=topic[:1024])
+        await ctx.tick()
 
     async def ask_for_invite(self, ctx):
         """
