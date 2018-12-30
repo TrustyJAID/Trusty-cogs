@@ -175,7 +175,7 @@ class Welcome(getattr(commands, "Cog", object)):
         guild_settings = await self.config.guild(guild).CHANNEL()
         if channel is None:
             channel = ctx.message.channel
-        if channel.permissions_for(ctx.me).send_messages:
+        if not channel.permissions_for(ctx.me).send_messages:
             msg = (_("I do not have permissions to send messages to ")+
                    "{0.mention}".format(channel))
             await ctx.send(msg)
