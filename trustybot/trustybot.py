@@ -1,6 +1,7 @@
 import discord
 import time
 from redbot.core import commands, checks
+from typing import Optional
 
 
 
@@ -60,17 +61,17 @@ class TrustyBot(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @commands.command(hidden=True, aliases=["hooksay"])
-    async def websay(self, ctx, member:discord.Member, *, msg:str):
+    @commands.bot_has_permissions(manage_webhooks=True)
+    async def websay(self, ctx, member:Optional[discord.Member], *, msg:str):
         """
             Say things as another user
 
             The bot will create a webhook in the channel the command is sent in
             it will use that webhook to make messages that look like the
-            `member` provided
+            `member` if provided otherwise it will default to the bot
         """
-        if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
-            await ctx.send("I don't have manage_webhooks permission.")
-            return
+        if member is None:
+          member = ctx.me
         if ctx.channel.permissions_for(ctx.guild).manage_messages:
             await ctx.message.delete()
         guild = ctx.guild
@@ -160,12 +161,9 @@ class TrustyBot(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @commands.command(hidden=False)
-    async def halp(self,ctx, user=None):
+    async def halp(self,ctx, user:discord.Member=""):
         """How to ask for help!"""
-        msg = ("{} please type `;help` to be PM'd all my commands! "
+        msg = (f"{user} please type `{ctx.prefix}help` to be PM'd all my commands! "
                ":smile: or type `;guildhelp` to get an invite and "
                "I can help you personally.")
-        if user is None:
-            await ctx.send(msg.format(""))
-        else:
-            await ctx.send(msg.format(user))
+        await ctx.send(msg)
