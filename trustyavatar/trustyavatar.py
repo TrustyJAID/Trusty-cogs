@@ -149,7 +149,6 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             except Exception as e:
                 print(e)
             await self.config.last_avatar.set(now)
-            print("changing avatar to {}".format(new_avatar))
         
 
     async def change_activity(self, status:discord.Status, activity:discord.ActivityType):
@@ -209,6 +208,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                 await self.change_activity(status, activity)
             if await self.config.avatar():
                 await self.change_avatar(url)
+                print("changing avatar to {}".format(new_avatar))
             await asyncio.sleep(randint(1000, 1500))
 
     def __unload(self):
