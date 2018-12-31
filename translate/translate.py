@@ -100,6 +100,7 @@ class Translate(getattr(commands, "Cog", object)):
         return data["data"]["detections"]
 
 
+
     async def translate_text(self, from_lang, target, text):
         """
             request to translate the text
@@ -198,6 +199,8 @@ class Translate(getattr(commands, "Cog", object)):
     async def translateset(self, ctx, api_key):
         """
             You must get an API key from google to set this up
+
+            Note: Using this cog costs money, current rates are $20 per 1 million characters.
 
             1. Go to Google Developers Console and log in with your Google account. 
             (https://console.developers.google.com/)
