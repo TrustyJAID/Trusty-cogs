@@ -548,9 +548,11 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
         before_perms = {}
         after_perms = {}
         for o in before.overwrites:
-            before_perms[str(o[0].id)] = [i for i in o[1]]
+            if o[0]:
+                before_perms[str(o[0].id)] = [i for i in o[1]]
         for o in after.overwrites:
-            after_perms[str(o[0].id)] = [i for i in o[1]]
+            if o[0]:
+                after_perms[str(o[0].id)] = [i for i in o[1]]
         for entity in before_perms:
             entity_obj = before.guild.get_role(int(entity))
             if entity_obj is None:
