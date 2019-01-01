@@ -8,6 +8,7 @@ import aiohttp
 from io import BytesIO
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, box
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from typing import Union, Optional
 
 
@@ -38,6 +39,23 @@ class ServerStats(getattr(commands, "Cog", object)):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
+        em = await self.guild_embed(guild)
+        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        created_at = _("{bot} has joined a server!\n "
+                       "That's {num} servers now! \n"
+                       "Server created {since}. "
+                       "That's over {passed} days ago!").format(
+                        bot = channel.guild.me.mention,
+                        num = len(self.bot.guilds),
+                        since = guild.created_at.strftime("%d %b %Y %H:%M"),
+                        passed = passed)
+        em.description = created_at
+        await channel.send(embed=em)
+
+    async def guild_embed(self, guild):
+        """
+            Builds the guild embed information used throughout the cog
+        """
         online = len([m.status for m in guild.members
                       if m.status == discord.Status.online or
                       m.status == discord.Status.idle])
@@ -45,12 +63,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("{bot} has joined a new server!\n "
-                       "That's {num} servers now! \n"
-                       "Server created {since}. "
+        created_at = _("Server created {since}. "
                        "That's over {passed} days ago!").format(
-                        bot = channel.guild.me.mention,
-                        num = len(self.bot.guilds),
                         since = guild.created_at.strftime("%d %b %Y %H:%M"),
                         passed = passed)
 
@@ -67,13 +81,13 @@ class ServerStats(getattr(commands, "Cog", object)):
         em.add_field(name=_("Roles"), value=len(guild.roles))
         em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), 
                                                              guild.owner.mention))
-        if guild.features != []:
+        if guild.features:
             em.add_field(name=_("Guild Features"), 
                          value=", ".join(feature for feature in guild.features))
         em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
         em.set_author(name=guild.name, icon_url=guild.icon_url_as(format="png"))
         em.set_thumbnail(url=guild.icon_url_as(format="png"))
-        await channel.send(embed=em)
+        return em
 
     async def on_guild_remove(self, guild):
         """Build and send a message containing serverinfo when the bot leaves a server"""
@@ -81,12 +95,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        online = len([m.status for m in guild.members
-                      if m.status == discord.Status.online or
-                      m.status == discord.Status.idle])
-        total_users = len(guild.members)
-        text_channels = len([x for x in guild.text_channels])
-        voice_channels = len([x for x in guild.voice_channels])
+        em = await self.guild_embed(guild)
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _("{bot} has left a server!\n "
                        "That's {num} servers now! \n"
@@ -96,26 +105,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                         num = len(self.bot.guilds),
                         since = guild.created_at.strftime("%d %b %Y %H:%M"),
                         passed = passed)
-
-        colour = guild.roles[-1].colour
-
-        em = discord.Embed(
-            description=created_at,
-            colour=colour,
-            timestamp=guild.created_at)
-        em.add_field(name=_("Region"), value=str(guild.region))
-        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
-        em.add_field(name=_("Text Channels"), value=text_channels)
-        em.add_field(name=_("Voice Channels"), value=voice_channels)
-        em.add_field(name=_("Roles"), value=len(guild.roles))
-        em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), 
-                                                             guild.owner.mention))
-        if guild.features != []:
-            em.add_field(name=_("Guild Features"), 
-                         value=", ".join(feature for feature in guild.features))
-        em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
-        em.set_author(name=guild.name, icon_url=guild.icon_url_as(format="png"))
-        em.set_thumbnail(url=guild.icon_url_as(format="png"))
+        em.description = created_at
 
         await channel.send(embed=em)
 
@@ -264,27 +254,44 @@ class ServerStats(getattr(commands, "Cog", object)):
                 return
 
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True)
-    async def avatar(self, ctx, member:discord.Member=None):
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    async def avatar(self, ctx, member:Union[discord.Member, str]=None):
         """
             Display a users avatar in chat
         """
+        member_list = []
+        guild = ctx.message.guild
         if member is None:
             member = ctx.message.author
-        guild = ctx.message.guild
-        if guild is not None:
-            colour = member.top_role.colour
+        if type(member) == str:
+            for m in guild.members:
+                if member.lower() in m.display_name.lower():
+                    member_list.append(m)
+                    continue
+                if member.lower() in m.name.lower():
+                    member_list.append(m)
+                    continue
         else:
-            colour = discord.Embed.Empty
-        await ctx.channel.trigger_typing()
-        em = discord.Embed(title=_("**Avatar**"), colour=colour)
-        if member.is_avatar_animated():
-            url = member.avatar_url_as(format="gif")
-        if not member.is_avatar_animated():
-            url = member.avatar_url_as(static_format="png")
-        em.set_image(url= url)
-        em.set_author(name="{}#{}".format(member.name, member.discriminator), icon_url=url, url=url)
-        await ctx.send(embed=em)
+            member_list.append(member)
+        embed_list = []
+        for member in member_list:
+            em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
+            if member.is_avatar_animated():
+                url = member.avatar_url_as(format="gif")
+            if not member.is_avatar_animated():
+                url = member.avatar_url_as(static_format="png")
+            em.set_image(url= url)
+            em.set_author(name="{}#{}".format(member.name, member.discriminator), 
+                          icon_url=url, 
+                          url=url)
+            embed_list.append(em)
+        if not embed_list:
+            await ctx.send(_("That user does not appear to exist on this server."))
+            return
+        if len(embed_list) > 1:
+            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+        else:
+            await ctx.send(embed=embed_list[0])
 
     @commands.command()
     @checks.is_owner()
@@ -487,41 +494,7 @@ class ServerStats(getattr(commands, "Cog", object)):
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
 
         guild = post_list[page]
-        online = len([m.status for m in guild.members
-                      if m.status == discord.Status.online or
-                      m.status == discord.Status.idle])
-        total_users = len(guild.members)
-        text_channels = len([x for x in guild.text_channels])
-        voice_channels = len([x for x in guild.voice_channels])
-        passed = (ctx.message.created_at - guild.created_at).days
-        created_at = _("Since {date}. That's over {num} days ago!").format(
-            date=guild.created_at.strftime("%d %b %Y %H:%M"), num=passed
-        )
-
-        colour = ''.join([choice('0123456789ABCDEF') for x in range(6)])
-        colour = int(colour, 16)
-        invite_link = "https://discord.gg/"
-
-        em = discord.Embed(
-            description=created_at,
-            colour=discord.Colour(value=colour),
-            timestamp=guild.created_at)
-        em.add_field(name=_("Region"), value=str(guild.region))
-        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
-        em.add_field(name=_("Text Channels"), value=text_channels)
-        em.add_field(name=_("Voice Channels"), value=voice_channels)
-        em.add_field(name=_("Roles"), value=len(guild.roles))
-        em.add_field(name=_("Owner"), value="{} | {}".format(str(guild.owner), guild.owner.mention))
-        if guild.features != []:
-            em.add_field(name=_("Guild Features"), 
-                         value=", ".join(feature for feature in guild.features))
-        em.set_footer(text=_("Guild ID: ")+"{}".format(guild.id))
-
-        if guild.icon_url:
-            em.set_author(name=guild.name, url=invite_link, icon_url=guild.icon_url)
-            em.set_thumbnail(url=guild.icon_url)
-        else:
-            em.set_author(name=guild.name)           
+        em = await self.guild_embed(guild)         
         
         if not message:
             message = await ctx.send(embed=em)
@@ -574,7 +547,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         """
         guilds = [guild for guild in self.bot.guilds]
         page = 0
-        if guild_name is not None:
+        if guild_name:
             try:
                 guild = await self.get_guild_obj(guild_name)
                 page = guilds.index(guild)
@@ -729,71 +702,6 @@ class ServerStats(getattr(commands, "Cog", object)):
                 await channel.send(page)
 
 
-    async def emoji_menu(self, ctx, post_list: list, guild,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
-        """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
-
-        emojis = post_list[page]
-        em = discord.Embed(timestamp=ctx.message.created_at)
-        em.set_author(name=guild.name + _(" Emojis"), 
-                      icon_url=guild.icon_url)
-        regular = []
-        msg = ""
-        for emoji in emojis:
-            msg += emoji
-        em.description = msg
-        em.set_footer(text="Page {} of {}".format(page+1, len(post_list)))
-        
-        if not message:
-            message = await ctx.send(embed=em)
-            await message.add_reaction("⬅")
-            await message.add_reaction("❌")
-            await message.add_reaction("➡")
-        else:
-            # message edits don't return the message object anymore lol
-            await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and\
-                                     react.emoji in ["➡", "⬅", "❌"] and\
-                                     react.message.id == message.id
-        try:
-            react, user = await self.bot.wait_for("reaction_add", 
-                                                  check=check, 
-                                                  timeout=timeout)
-        except asyncio.TimeoutError:
-            await message.remove_reaction("⬅", self.bot.user)
-            await message.remove_reaction("❌", self.bot.user)
-            await message.remove_reaction("➡", self.bot.user)
-            return None
-        else:
-            if react.emoji == "➡":
-                next_page = 0
-                if page == len(post_list) - 1:
-                    next_page = 0  # Loop around to the first item
-                else:
-                    next_page = page + 1
-                try:
-                    await message.remove_reaction("➡", ctx.message.author)
-                except:
-                    pass
-                return await self.emoji_menu(ctx, post_list, guild, message=message,
-                                             page=next_page, timeout=timeout)
-            elif react.emoji == "⬅":
-                next_page = 0
-                if page == 0:
-                    next_page = len(post_list) - 1  # Loop around to the last item
-                else:
-                    next_page = page - 1
-                try:
-                    await message.remove_reaction("⬅", ctx.message.author)
-                except:
-                    pass
-                return await self.emoji_menu(ctx, post_list, guild, message=message,
-                                             page=next_page, timeout=timeout)
-            else:
-                return await message.delete()
-
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
     async def guildemojis(self, ctx, *, guild_name:Union[int, str]=None):
@@ -818,9 +726,22 @@ class ServerStats(getattr(commands, "Cog", object)):
         if regular != "":
             embed.description = regular
         x = [regular[i:i+10] for i in range(0, len(regular), 10)]
-        # if animated != "":
-            # embed.add_field(name="Animated Emojis", value=animated[:1023])
-        await self.emoji_menu(ctx, x, guild)
+        emoji_embeds = []
+        count = 1
+        for page in x:
+            em = discord.Embed(timestamp=ctx.message.created_at)
+            em.set_author(name=guild.name + _(" Emojis"), 
+                          icon_url=guild.icon_url)
+            regular = []
+            msg = ""
+            for emoji in page:
+                msg += emoji
+            em.description = msg
+            em.set_footer(text="Page {} of {}".format(count, len(x)))
+            count += 1
+            emoji_embeds.append(em)
+
+        await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())
