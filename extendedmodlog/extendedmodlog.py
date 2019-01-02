@@ -596,7 +596,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=channel.mention,
+        embed = discord.Embed(description=new_channel.mention,
                               timestamp=time,
                               colour=discord.Colour.teal())
         embed.set_author(name=_("Channel Created ") + str(new_channel.id))
@@ -643,7 +643,7 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=channel.mention,
+        embed = discord.Embed(description=old_channel.mention,
                               timestamp=time,
                               colour=discord.Colour.dark_teal())
         embed.set_author(name=_("Channel Deleted ") + str(old_channel.id))
