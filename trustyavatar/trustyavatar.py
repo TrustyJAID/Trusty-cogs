@@ -145,7 +145,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as image:
                         data = await image.read()
-                # await self.bot.user.edit(avatar=data)
+                await self.bot.user.edit(avatar=data)
             except Exception as e:
                 print(e)
             await self.config.last_avatar.set(now)
