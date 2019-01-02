@@ -206,24 +206,25 @@ class ServerStats(getattr(commands, "Cog", object)):
                     "role so I can't kick those members.")
             await ctx.send(msg)
             return
-        if role is None:
-            member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
-        else:
-            member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
-        # for member in member_list:
-        user_list = []
-        for channel in ctx.guild.text_channels:
-            if not channel.permissions_for(ctx.me).read_message_history:
-                continue
-            async for message in channel.history(limit=None, after=after):
-                if message.author.id not in user_list:
-                    user_list.append(message.author.id)
-        for member in member_list:
-            if member.id in user_list:
-                member_list.remove(member)
-        send_msg = str(len(member_list))+_(" estimated users to kick. "
-                                            "Would you like to kick them?")
-        msg = await ctx.send(send_msg)
+        async with ctx.typing():
+            if role is None:
+                member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
+            else:
+                member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
+            # for member in member_list:
+            user_list = []
+            for channel in ctx.guild.text_channels:
+                if not channel.permissions_for(ctx.me).read_message_history:
+                    continue
+                async for message in channel.history(limit=None, after=after):
+                    if message.author.id not in user_list:
+                        user_list.append(message.author.id)
+            for member in member_list:
+                if member.id in user_list:
+                    member_list.remove(member)
+            send_msg = str(len(member_list))+_(" estimated users to kick. "
+                                                "Would you like to kick them?")
+            msg = await ctx.send(send_msg)
         if ctx.channel.permissions_for(ctx.me).add_reactions:
             check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
             await msg.add_reaction("✅")
@@ -573,8 +574,6 @@ class ServerStats(getattr(commands, "Cog", object)):
             except GuildNotFoundError:
                 await ctx.send(str(guild_name) + _(" guild could not be found."))
                 return
-            
-
         await self.guild_menu(ctx, guilds, None, page)
 
     
