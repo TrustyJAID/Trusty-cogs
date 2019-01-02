@@ -418,11 +418,11 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def topmembers(self, ctx, number:int=10, guild_name:Union[int, str]=None):
+    async def topmembers(self, ctx, number:Optional[int]=10, guild_name:Union[int, str]=None):
         """
             Lists top members on the server by join date
 
-            `number` is the number of users to display default is 10
+            `number` optional[int] number of members to display at a time maximum of 50
             `guild_name` can be either the server ID or partial name
         """
         guild = ctx.guild
@@ -432,14 +432,33 @@ class ServerStats(getattr(commands, "Cog", object)):
             except GuildNotFoundError:
                 await ctx.send(guild_name + _(" guild could not be found."))
                 return
+        if number > 50:
+            number = 50
+        if number < 10:
+            number = 10
         member_list = sorted(guild.members, key=lambda m: m.joined_at)
-        new_msg = ("__**"+_("First ")+str(number)+
-                   _(" members of ")+f"{guild.name}**__\n")
-        for member in member_list[:number]:
-            new_msg += "{}. {}\n".format((member_list.index(member)+1), member.name)
+        is_embed = ctx.channel.permissions_for(ctx.me).embed_links
+        x = [member_list[i:i+number] for i in range(0, len(member_list), number)]
+        msg_list = []
+        for page in x:
+            header_msg = ("__**"+_("First ")+str(number)+
+                          _(" members of ")+f"{guild.name}**__\n")
+            msg = ""
+            for member in page:
+                if is_embed:
+                    msg += f"{member_list.index(member)+1}. {member.mention}\n"
+                    
+                else:
+                    msg += f"{member_list.index(member)+1}. {member.name}\n"
+            if is_embed:
+                embed = discord.Embed(description=msg)
+                embed.set_author(name=guild.name + _(" first members"), 
+                                     icon_url=guild.icon_url)
+                msg_list.append(embed)
 
-        for page in pagify(new_msg, ['\n']):
-            await ctx.send(page)
+            else:
+                msg_list.append(header_msg+msg)
+        await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     async def get_guild_obj(self, guild_name):
         if type(guild_name) == int:
@@ -577,33 +596,11 @@ class ServerStats(getattr(commands, "Cog", object)):
 
         await ctx.send("{} has {} members.".format(guild.name, len(guild.members)))
 
-    @commands.command()
+    @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
     async def getroles(self, ctx, *, guild_name:Union[int, str]=None):
         """
-            Displays all roles and their associated ID in chat
-
-            `guild_name` can be either the server ID or partial name
-        """
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
-        msg = ""
-        for role in guild.roles:
-            msg += ("{} ({})\n".format(role.name, role.id))
-
-        for page in pagify(msg, ["\n"]):
-            await ctx.send(page)
-
-    @commands.command()
-    @checks.mod_or_permissions(manage_messages=True)
-    async def rolestats(self, ctx, *, guild_name:Union[int, str]=None):
-        """
-            Display number of members in each role by role hierarchy
+            Displays all roles their ID and number of members
 
             `guild_name` can be either the server ID or partial name
         """
@@ -616,10 +613,20 @@ class ServerStats(getattr(commands, "Cog", object)):
                 return
         msg = ""
         for role in sorted(guild.roles, reverse=True):
-            msg += "{}: {} \n".format(role.mention, len(role.members))
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                msg += (f"{role.mention} ({role.id}): {len(role.members)}\n")
+            else:
+                msg += (f"{role.name} ({role.id}): {len(role.members)}\n")
+        msg_list = []
         for page in pagify(msg, ["\n"]):
-            em = discord.Embed(description=page)
-            await ctx.send(embed=em)
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                embed = discord.Embed()
+                embed.description = page
+                embed.set_author(name=guild.name + _("Roles"), icon_url=guild.icon_url)
+                msg_list.append(embed)
+            else:
+                msg_list.append(page)
+        await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     async def check_highest(self, data):
         highest = 0
