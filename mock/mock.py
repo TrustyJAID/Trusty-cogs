@@ -1,7 +1,7 @@
 import discord
 import random
 from redbot.core import commands
-from typing import Union
+from typing import Union, Optional
 
 
 class Mock(getattr(commands, "Cog", object)):
@@ -21,18 +21,26 @@ class Mock(getattr(commands, "Cog", object)):
         return result
 
     @commands.command()
-    async def mock(self, ctx, *, msg:Union[int, str]=None):
+    async def mock(self, 
+                   ctx, 
+                   channel:Optional[discord.TextChannel]=None,
+                   *, 
+                   msg:Optional[Union[discord.Member, int, str]]=None
+                ):
         """
             Mock a user with the spongebob meme
-
-            `msg` can be either custom message or message ID
-            if no `msg` is provided the command will use the last message in chat before the command
+            
+            `channel` Optional channel to retrieve messages from and post the mock message
+            `msg` Optional either member, message ID, or string
+            if no `msg` is provided the command will use the last message in channel before the command
+            is `msg` is a member it will look through the past 10 messages in
+            the `channel` and put them all together
         """
-        channel = ctx.message.channel
+        if not channel:
+            channel = ctx.channel
         result = ""
-        user = ctx.message.author
+        mocker = ctx.message.author
         if type(msg) is int:
-
             try:
                 msg = await ctx.channel.get_message(msg)
             except:
@@ -45,6 +53,12 @@ class Mock(getattr(commands, "Cog", object)):
             if result == "" and len(msg.embeds) != 0:
                 if msg.embeds[0].description != discord.Embed.Empty:
                     result = await self.cap_change(msg.embeds[0].description)
+        elif type(msg) is discord.Member:
+            total_msg = ""
+            async for message in channel.history(limit=10, reverse=True):
+                if message.author == msg:
+                    total_msg += message.content + "\n"
+            result = await self.cap_change(total_msg)
         else:
             result = await self.cap_change(msg)
         author = msg.author if hasattr(msg, "author") else ctx.message.author
@@ -59,11 +73,11 @@ class Mock(getattr(commands, "Cog", object)):
         if hasattr(msg, "attachments") and msg.attachments != []:
             embed.set_image(url=msg.attachments[0].url)
         if not channel.permissions_for(ctx.me).embed_links:
-            if author != user:
-                await ctx.send(result + " - " + author.mention)
+            if author != mocker:
+                await channel.send(result + " - " + author.mention)
             else:
-                await ctx.send(result)
+                await channel.send(result)
         else:
-            await ctx.send(embed=embed)
-            if author != user:
-                await ctx.send("- " + author.mention)
+            await channel.send(embed=embed)
+            if author != mocker:
+                await channel.send("- " + author.mention)
