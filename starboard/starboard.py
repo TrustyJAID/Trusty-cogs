@@ -603,7 +603,10 @@ class Starboard(getattr(commands, "Cog", object)):
             if msg.attachments != []:
                 em.set_image(url=msg.attachments[0].url)
         em.timestamp = msg.created_at
-        em.description = em.description + f"\n\n[Click Here to view context]({msg.jump_url})"
+        if em.description:
+            em.description = em.description + f"\n\n[Click Here to view context]({msg.jump_url})"
+        else:
+            em.description = f"\n\n[Click Here to view context]({msg.jump_url})"
         em.set_footer(text='{} | {}'.format(channel.guild.name, channel.name))
         return em
 
