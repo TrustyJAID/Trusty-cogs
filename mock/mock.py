@@ -48,20 +48,23 @@ class Mock(getattr(commands, "Cog", object)):
         elif msg is None:
             async for message in channel.history(limit=2):
                 msg = message
+            author = msg.author
         if type(msg) is discord.Message:
             result = await self.cap_change(msg.content)
             if result == "" and len(msg.embeds) != 0:
                 if msg.embeds[0].description != discord.Embed.Empty:
                     result = await self.cap_change(msg.embeds[0].description)
+            author = msg.author
         elif type(msg) is discord.Member:
             total_msg = ""
             async for message in channel.history(limit=10, reverse=True):
                 if message.author == msg:
                     total_msg += message.content + "\n"
             result = await self.cap_change(total_msg)
+            author = msg
         else:
             result = await self.cap_change(msg)
-        author = msg.author if hasattr(msg, "author") else ctx.message.author
+            author = ctx.message.author
         time = msg.created_at if hasattr(msg, "created_at") else ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
         embed.colour = author.colour if hasattr(author, "colour") else discord.Colour.default()
