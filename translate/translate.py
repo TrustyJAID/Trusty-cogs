@@ -20,7 +20,7 @@ Join the official development guild                https://discord.gg/uekTNPj
 """
 
 BASE_URL = "https://translation.googleapis.com"
-_ = Translator("Starboard", __file__)
+_ = Translator("Translate", __file__)
 
 
 @cog_i18n(_)
@@ -173,9 +173,13 @@ class Translate(getattr(commands, "Cog", object)):
         target = FLAGS[str(payload.emoji)]["code"]
         detected_lang = await self.detect_language(to_translate)
         original_lang = detected_lang[0][0]["language"]
+        if target == original_lang:
+            return
         translated_text = await self.translate_text(original_lang, 
                                                     target, 
                                                     to_translate)
+        if not translated_text:
+            return
         author = message.author
         em = discord.Embed(colour=author.colour, 
                            description=translated_text[:2048])
