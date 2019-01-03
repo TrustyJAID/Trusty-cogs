@@ -15,7 +15,7 @@ async def make_rules_embed(guild, team, rules):
     """
     warning = _("***Any violation of the [Discord TOS](https://discordapp.com/terms) "
                "or [Community Guidelines](https://discordapp.com/guidelines) will "
-               "result in immediate banning and possibly reported to discord.***")
+               "result in immediate banning and possibly be reported to discord.***")
     em = discord.Embed(colour=int(TEAMS[team]["home"].replace("#", ""), 16))
     em.description = rules
     em.title = _("__RULES__")
