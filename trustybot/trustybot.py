@@ -38,7 +38,7 @@ class TrustyBot(getattr(commands, "Cog", object)):
                  "changes may be made without warning to your privliges.\n\n"
                  f"***Any violation of the {terms} or "
                  f"{guidelines} will result "
-                 "in immediate banning and possible report to discord.***\n\n")
+                 "in immediate banning and possibly be reported to discord.***\n\n")
         em = discord.Embed(colour=discord.Colour.gold())
         em.add_field(name="__RULES__", value=rules)
         em.set_image(url="https://i.imgur.com/6FPYjoU.gif")
