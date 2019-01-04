@@ -36,9 +36,9 @@ class TrustyBot(getattr(commands, "Cog", object)):
                  f"{terms} violation.\n\n"
                  "5. Moderator action is at the discretion of a moderator and "
                  "changes may be made without warning to your privliges.\n\n"
-                 f"***Any violation of the {terms} or "
+                 f"***Violating {terms} or "
                  f"{guidelines} will result "
-                 "in immediate banning and possibly be reported to discord.***\n\n")
+                 "in an immediate ban. You may also be reported to Discord.***\n\n")
         em = discord.Embed(colour=discord.Colour.gold())
         em.add_field(name="__RULES__", value=rules)
         em.set_image(url="https://i.imgur.com/6FPYjoU.gif")
