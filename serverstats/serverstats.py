@@ -1,22 +1,100 @@
 from random import choice, randint
 import discord
 import asyncio
-from redbot.core import commands
-from redbot.core import checks, bank, Config
+
 import datetime
 import aiohttp
+import re
+import itertools
 from io import BytesIO
+from redbot.core import commands
+from redbot.core import checks, bank, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, box
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+
+from discord.ext.commands.converter import IDConverter
+from discord.ext.commands.converter import _get_from_guilds
+from discord.ext.commands.errors import BadArgument
 from typing import Union, Optional
 
 
 _ = Translator("ServerStats", __file__)
 
 
-class GuildNotFoundError(Exception):
-    pass
+class FuzzyMember(IDConverter):
+    """
+    This will accept user ID's, mentions, and perform a fuzzy search for 
+    members within the guild and return a list of member objects
+    matching partial names
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    
+    """
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        match = self._get_id_match(argument) or re.match(r'<@!?([0-9]+)>$', argument)
+        guild = ctx.guild
+        result = []
+        if match is None:
+            # Not a mention
+            if guild:
+                for m in guild.members:
+                    if argument.lower() in m.display_name.lower():
+                        # display_name so we can get the nick of the user first
+                        # without being NoneType and then check username if that matches
+                        # what we're expecting
+                        result.append(m)
+                        continue
+                    if argument.lower() in m.name.lower():
+                        result.append(m)
+                        continue
+        else:
+            user_id = int(match.group(1))
+            if guild:
+                result.append(guild.get_member(user_id))
+            else:
+                result.append(_get_from_guilds(bot, 'get_member', user_id))
+
+        if result is None:
+            raise BadArgument('Member "{}" not found'.format(argument))
+
+        return result
+
+
+class GuildConverter(IDConverter):
+    """
+    This is a guild converter for fuzzy guild names which is used throughout
+    this cog to search for guilds by part of their name and will also
+    accept guild ID's
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    
+    """
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        match = self._get_id_match(argument)
+        result = None
+        if match is None:
+            # Not a mention
+            for g in bot.guilds:
+                if argument.lower() in g.name.lower():
+                    # display_name so we can get the nick of the user first
+                    # without being NoneType and then check username if that matches
+                    # what we're expecting
+                    result = g
+        else:
+            guild_id = int(match.group(1))
+            result = bot.get_guild(guild_id)
+
+        if result is None:
+            raise BadArgument('Guild "{}" not found'.format(argument))
+
+        return result
 
 
 @cog_i18n(_)
@@ -31,7 +109,36 @@ class ServerStats(getattr(commands, "Cog", object)):
         default_global = {"join_channel":None}
         self.config = Config.get_conf(self, 54853421465543)
         self.config.register_global(**default_global)
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
+
+    @commands.command()
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    async def avatar(self, ctx, *members:Optional[FuzzyMember]):
+        """
+            Display a users avatar in chat
+        """
+        
+        embed_list = []
+        if not members:
+            members = [[ctx.author]]
+        for member in list(itertools.chain.from_iterable(members)):
+
+            em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
+            if member.is_avatar_animated():
+                url = member.avatar_url_as(format="gif")
+            if not member.is_avatar_animated():
+                url = member.avatar_url_as(static_format="png")
+            em.set_image(url= url)
+            em.set_author(name="{}#{}".format(member.name, member.discriminator), 
+                          icon_url=url, 
+                          url=url)
+            embed_list.append(em)
+        if not embed_list:
+            await ctx.send(_("That user does not appear to exist on this server."))
+            return
+        if len(embed_list) > 1:
+            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+        else:
+            await ctx.send(embed=embed_list[0])
 
     async def on_guild_join(self, guild):
         """Build and send a message containing serverinfo when the bot joins a new server"""
@@ -110,43 +217,29 @@ class ServerStats(getattr(commands, "Cog", object)):
         await channel.send(embed=em)
 
     @commands.command()
-    async def emoji(self, ctx, emoji:Union[discord.Emoji, str]):
+    async def emoji(self, ctx, emoji:Union[discord.Emoji, discord.PartialEmoji, str]):
         """
             Post a large size emojis in chat
         """
-        if type(emoji) is discord.Emoji:
-            await ctx.channel.trigger_typing()
-            emoji_name = emoji.name
-            ext = emoji.url.split(".")[-1]
-            async with self.session.get(emoji.url) as resp:
-                data = await resp.read()
-            file = discord.File(BytesIO(data),filename="{}.{}".format(emoji.name, ext))
-            await ctx.send(file=file)
+        await ctx.channel.trigger_typing()
+        if type(emoji) in [discord.emoji.PartialEmoji, discord.Emoji]:
+            ext = "gif" if emoji.animated else "png"
+            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=emoji.id, ext=ext)
+            filename = "{name}.{ext}".format(name=emoji.name, ext=ext)
         else:
-            emoji_id = emoji.split(":")[-1].replace(">", "")
-            await ctx.channel.trigger_typing()
-            if emoji.startswith("<a"):
-                url = "https://cdn.discordapp.com/emojis/{}.gif?v=1".format(emoji_id)
-                async with self.session.get(url) as resp:
-                    data = await resp.read()
-                file = discord.File(BytesIO(data),filename="{}.gif".format(emoji_id))
-            elif emoji.startswith("<:"):
-                url = "https://cdn.discordapp.com/emojis/{}.png?v=1".format(emoji_id)
-                async with self.session.get(url) as resp:
-                    data = await resp.read()
-                file = discord.File(BytesIO(data),filename="{}.png".format(emoji_id))
-            else:
-                """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
-                cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
-                try:
-                    url = cdn_fmt.format(codepoint=ord(emoji))
-                    async with self.session.get(url) as resp:
-                        data = await resp.read()
-                    file = discord.File(BytesIO(data), filename="emoji.png")
-                except:
-                    await ctx.send(_("That doesn't appear to be a valid emoji"))
-                    return
-            await ctx.send(file=file)
+            """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
+            cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
+            url = cdn_fmt.format(codepoint=ord(emoji))
+            filename = "emoji.png"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    image = BytesIO(await resp.read())
+        except:
+            await ctx.send(_("That doesn't appear to be a valid emoji"))
+            return
+        file = discord.File(image, filename=filename)
+        await ctx.send(file=file)
 
     @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
@@ -254,45 +347,6 @@ class ServerStats(getattr(commands, "Cog", object)):
                 await ctx.send("Not kicking users.")
                 return
 
-    @commands.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def avatar(self, ctx, member:Union[discord.Member, str]=None):
-        """
-            Display a users avatar in chat
-        """
-        member_list = []
-        guild = ctx.message.guild
-        if member is None:
-            member = ctx.message.author
-        if type(member) == str:
-            for m in guild.members:
-                if member.lower() in m.display_name.lower():
-                    member_list.append(m)
-                    continue
-                if member.lower() in m.name.lower():
-                    member_list.append(m)
-                    continue
-        else:
-            member_list.append(member)
-        embed_list = []
-        for member in member_list:
-            em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
-            if member.is_avatar_animated():
-                url = member.avatar_url_as(format="gif")
-            if not member.is_avatar_animated():
-                url = member.avatar_url_as(static_format="png")
-            em.set_image(url= url)
-            em.set_author(name="{}#{}".format(member.name, member.discriminator), 
-                          icon_url=url, 
-                          url=url)
-            embed_list.append(em)
-        if not embed_list:
-            await ctx.send(_("That user does not appear to exist on this server."))
-            return
-        if len(embed_list) > 1:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
-        else:
-            await ctx.send(embed=embed_list[0])
 
     @commands.command()
     @checks.is_owner()
@@ -419,20 +473,16 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def topmembers(self, ctx, number:Optional[int]=10, guild_name:Union[int, str]=None):
+    async def topmembers(self, ctx, number:Optional[int]=10, guild:GuildConverter=None):
         """
             Lists top members on the server by join date
 
             `number` optional[int] number of members to display at a time maximum of 50
-            `guild_name` can be either the server ID or partial name
+            `guild` can be either the server ID or name
         """
         guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
+        if not guild:
+            guild = ctx.guild
         if number > 50:
             number = 50
         if number < 10:
@@ -461,34 +511,19 @@ class ServerStats(getattr(commands, "Cog", object)):
                 msg_list.append(header_msg+msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
-    async def get_guild_obj(self, guild_name):
-        if type(guild_name) == int:
-            page_guild = [g for g in self.bot.guilds if int(guild_name) == g.id]
-        if type(guild_name) == str:
-            page_guild = [g for g in self.bot.guilds if guild_name.lower() in g.name.lower()]
-        try:
-            if guild_name is not None:
-                guilds = [g for g in self.bot.guilds]
-                guild = guilds[guilds.index(page_guild[0])]
-        except IndexError as e:
-            raise GuildNotFoundError
-        return guild
+    
     
     @commands.command()
     @checks.is_owner()
-    async def listchannels(self, ctx, *, guild_name:Union[int, str]=None):
+    async def listchannels(self, ctx, *, guild:GuildConverter=None):
         """
             Lists channels and their position and ID for a server
 
-            `guild_name` can be either the server ID or partial name
+            `guild` can be either the server ID or name
         """
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
+        
+        if not guild:
+            guild = ctx.guild
         channels = {}
         msg = "__**{}({})**__\n".format(guild.name, guild.id)
         for category in guild.by_category():
@@ -559,57 +594,40 @@ class ServerStats(getattr(commands, "Cog", object)):
     @commands.command()
     @checks.is_owner()
     @commands.bot_has_permissions(embed_links=True)
-    async def getguild(self, ctx, *, guild_name:Union[int, str]=None):
+    async def getguild(self, ctx, *, guild:GuildConverter=None):
         """
             Display info about servers the bot is on
 
             `guild_name` can be either the server ID or partial name
         """
-        guilds = [guild for guild in self.bot.guilds]
         page = 0
-        if guild_name:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-                page = guilds.index(guild)
-            except GuildNotFoundError:
-                await ctx.send(str(guild_name) + _(" guild could not be found."))
-                return
-        await self.guild_menu(ctx, guilds, None, page)
+        if guild:
+            page = ctx.bot.guilds.index(guild)
+        await self.guild_menu(ctx, ctx.bot.guilds, None, page)
 
     
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def nummembers(self, ctx, *, guild_name:Union[int, str]=None):
+    async def nummembers(self, ctx, *, guild:GuildConverter=None):
         """
             Display number of users on a server
 
             `guild_name` can be either the server ID or partial name
         """
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
-
+        if not guild:
+            guild = ctx.guild
         await ctx.send("{} has {} members.".format(guild.name, len(guild.members)))
 
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def getroles(self, ctx, *, guild_name:Union[int, str]=None):
+    async def getroles(self, ctx, *, guild:GuildConverter=None):
         """
             Displays all roles their ID and number of members
 
             `guild_name` can be either the server ID or partial name
         """
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
+        if not guild:
+            guild = ctx.guild
         msg = ""
         for role in sorted(guild.roles, reverse=True):
             if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -659,15 +677,10 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=["serverstats"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def server_stats(self, ctx, *, guild_name:Union[int, str]=None):
+    async def server_stats(self, ctx, *, guild:GuildConverter=None):
         """Gets total messages on the server and per-channel basis as well as most single user posts"""
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
+        if not guild:
+            guild = ctx.guild
         channel = ctx.message.channel
         total_msgs = 0
         msg = ""
@@ -678,7 +691,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 channel_msgs = 0
                 channel_contribution = {}
                 try:
-                    async for message in chn.history(limit=10000000):
+                    async for message in chn.history():
                         author = message.author
                         channel_msgs += 1
                         total_msgs += 1
@@ -692,17 +705,21 @@ class ServerStats(getattr(commands, "Cog", object)):
                         else:
                             total_contribution[author.id] += 1
                     highest, users = await self.check_highest(channel_contribution)
+                    user = await self.bot.get_user_info(users)
                     msg += (f"{chn.mention}: "+
                             ("Total Messages:") + f"**{channel_msgs}** "+
-                            _("most user posts ") + f"**{highest}**\n")
+                            _("most posts by ") + f"{user.name} **{highest}**\n")
                 except discord.errors.Forbidden:
                     pass
                 except AttributeError:
                     pass
             highest, users = await self.check_highest(total_contribution)
+            user = await self.bot.get_user_info(users)
+            # User get_user_info incase the top posts is by someone no longer
+            # in the guild
             new_msg = (f"__{guild.name}__: "+
                        _("Total Messages:")+f"**{total_msgs}** "+
-                       _("Most user posts ")+f"**{highest}**\n{msg}")
+                       _("Most posts by ")+f"{user.name} **{highest}**\n{msg}")
             await warning_msg.delete()
             for page in pagify(new_msg, ["\n"]):
                 await channel.send(page)
@@ -710,19 +727,14 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
-    async def guildemojis(self, ctx, *, guild_name:Union[int, str]=None):
+    async def guildemojis(self, ctx, *, guild:GuildConverter=None):
         """
             Display all server emojis in a menu that can be scrolled through
 
             `guild_name` can be either the server ID or partial name
         """
-        guild = ctx.guild
-        if guild_name is not None:
-            try:
-                guild = await self.get_guild_obj(guild_name)
-            except GuildNotFoundError:
-                await ctx.send(guild_name + _(" guild could not be found."))
-                return
+        if not guild:
+            guild = ctx.guild
         msg = ""
         embed = discord.Embed(timestamp=ctx.message.created_at)
         embed.set_author(name=guild.name, icon_url=guild.icon_url)
@@ -748,6 +760,3 @@ class ServerStats(getattr(commands, "Cog", object)):
             emoji_embeds.append(em)
 
         await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
-
-    def __unload(self):
-        self.bot.loop.create_task(self.session.close())
