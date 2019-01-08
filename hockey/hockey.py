@@ -28,7 +28,7 @@ except:
 
 _ = Translator("Hockey", __file__)
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 __author__ = "TrustyJAID"
 
 
@@ -443,7 +443,12 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @gdc.command(name="setup")
-    async def gdc_setup(self, ctx, team, category:discord.CategoryChannel=None, delete_gdc:bool=True):
+    async def gdc_setup(self, 
+                        ctx, 
+                        team:HockeyTeams, 
+                        category:discord.CategoryChannel=None, 
+                        delete_gdc:bool=True
+                    ):
         """
             Setup game day channels for a single team or all teams
             
@@ -463,15 +468,6 @@ class Hockey(getattr(commands, "Cog", object)):
         if not category.permissions_for(guild.me).manage_channels:
             await ctx.send(_("I don't have manage channels permission!"))
             return
-        team_list = await check_valid_team(team)
-        if team_list == [] and team.lower() != "all":
-            await ctx.send(team + _(" is not a valid team!"))
-            return
-        if len(team_list) > 1:
-            team = await pick_team(ctx, team_list)
-        else:
-            team = team_list[0]
-
         await self.config.guild(guild).category.set(category.id)
         await self.config.guild(guild).gdc_team.set(team)
         await self.config.guild(guild).delete_gdc.set(delete_gdc)
@@ -572,7 +568,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockeyset_commands.command(name="add", aliases=["add_goals"])
     @checks.admin_or_permissions(manage_channels=True)
-    async def add_goals(self, ctx, team, channel:discord.TextChannel=None):
+    async def add_goals(self, ctx, team:HockeyTeams, channel:discord.TextChannel=None):
         """
             Adds a hockey team goal updates to a channel do 'all' for all teams
 
@@ -581,14 +577,6 @@ class Hockey(getattr(commands, "Cog", object)):
             `channel` defaults to the current channel
         """
         guild = ctx.message.guild
-        team_name = await check_valid_team(team)
-        if team_name == []:
-            await ctx.send(team + _(" is not an available team!"))
-            return
-        if len(team_name) > 1:
-                team_name = await pick_team(ctx, team_name)
-        else:
-            team_name = team_name[0]
         # team_data = await self.get_team(team)
         if channel is None:
             channel = ctx.message.channel
@@ -597,17 +585,17 @@ class Hockey(getattr(commands, "Cog", object)):
             return
         cur_teams = await self.config.channel(channel).team()
         cur_teams = [] if cur_teams is None else cur_teams
-        if team_name in cur_teams:
-            await self.config.channel(channel).team.set([team_name])
+        if team in cur_teams:
+            await self.config.channel(channel).team.set([team])
         else:
-            cur_teams.append(team_name)
+            cur_teams.append(team)
             await self.config.channel(channel).team.set(cur_teams)
-        await ctx.send(team_name + _(" goals will be posted in ") + channel.mention)
+        await ctx.send(team + _(" goals will be posted in ") + channel.mention)
 
 
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
     @checks.admin_or_permissions(manage_channels=True)
-    async def remove_goals(self, ctx, team=None, channel:discord.TextChannel=None):
+    async def remove_goals(self, ctx, team:HockeyTeams=None, channel:discord.TextChannel=None):
         """
             Removes a teams goal updates from a channel
             defaults to the current channel
@@ -624,22 +612,14 @@ class Hockey(getattr(commands, "Cog", object)):
             return
         if team is not None:
             guild = ctx.message.guild
-            team_name = await check_valid_team(team)
-            if team_name == []:
-                await ctx.send(team + _(" is not an available team!"))
-                return
-            if len(team_name) > 1:
-                    team_name = await pick_team(ctx, team_name)
-            else:
-                team_name = team_name[0]
-            if team_name in cur_teams:
-                cur_teams.remove(team_name)
+            if team in cur_teams:
+                cur_teams.remove(team)
                 if cur_teams == []:
                     await self.config.channel(channel).clear()
                     await ctx.send(_("All goal updates will not be posted in ") + channel.mention)
                 else:
                     await self.config.channel(channel).team.set(cur_teams)
-                    await ctx.send(team_name + _(" goal updates removed from ") + channel.mention)
+                    await ctx.send(team + _(" goal updates removed from ") + channel.mention)
 
     #######################################################################
     # All Basic Hockey Commands
@@ -673,29 +653,21 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send("https://hockeyhub.github.io/?search="+search)
 
     @hockey_commands.command(name="role")
-    async def team_role(self, ctx, *, team):
+    async def team_role(self, ctx, *, team:HockeyTeams):
         """Set your role to a team role"""
         guild = ctx.message.guild
         if not guild.me.guild_permissions.manage_roles:
             return
-        team_search = await check_valid_team(team)
-        if team_search == []:
-            await ctx.message.channel.send(team + _(" Does not appear to be an NHL team!"))
-            return
-        if len(team_search) > 1:
-            team = await pick_team(ctx, team_search)
-        else:
-            team = team_search[0]
         try:
             role = [role for role in guild.roles if (team.lower() in role.name.lower() and "GOAL" not in role.name)]
-            await ctx.message.author.add_roles(role[0])
-            await ctx.message.channel.send(role[0].name + _("role applied."))
+            await ctx.author.add_roles(role[0])
+            await ctx.send(role[0].name + _("role applied."))
         except Exception as e:
             print(e)
-            await ctx.message.channel.send(team + _(" is not an available role!"))
+            await ctx.send(team + _(" is not an available role!"))
 
     @hockey_commands.command(name="goals")
-    async def team_goals(self, ctx, *, team=None):
+    async def team_goals(self, ctx, *, team:HockeyTeams=None):
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
         member = ctx.message.author
@@ -715,14 +687,6 @@ class Hockey(getattr(commands, "Cog", object)):
             else:
                 return
         else:
-            team_search = await check_valid_team(team)
-            if team_search == []:
-                await ctx.message.channel.send(team + _(" Does not appear to be an NHL team!"))
-                return
-            if len(team_search) > 1:
-                team = await pick_team(ctx, team_search)
-            else:
-                team = team_search[0]
             try:
                 role = [role for role in guild.roles if (team.lower() in role.name.lower() and role.name.endswith("GOAL"))]
                 await ctx.message.author.add_roles(role[0])
@@ -732,7 +696,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
-    async def standings(self, ctx, *, search=None):
+    async def standings(self, ctx, *, search:HockeyStandings=None):
         """
             Displays current standings
 
@@ -744,16 +708,7 @@ class Hockey(getattr(commands, "Cog", object)):
             standings, page = await Standings.get_team_standings("division")
             await hockey_menu(ctx, "standings", standings)
             return
-        search_r = await check_valid_team(search, True)
-        if search_r == []:
-            await ctx.message.channel.send(search + _(" Does not appear to be a valid standing type!"))
-            return
-        if len(search_r) > 1:
-            search_r = await pick_team(ctx, search)
-        else:
-            search_r = search_r[0]
-
-        standings, page = await Standings.get_team_standings(search_r.lower())
+        standings, page = await Standings.get_team_standings(search.lower())
         if search != "all":
             await hockey_menu(ctx, "standings", standings, None, page)
         else:
@@ -761,7 +716,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
 
     @hockey_commands.command(aliases=["score"])
-    async def games(self, ctx, *, team=None):
+    async def games(self, ctx, *, team:HockeyTeams=None):
         """
             Gets all NHL games for the current season
 
@@ -771,16 +726,6 @@ class Hockey(getattr(commands, "Cog", object)):
         page_num = 0
         today = datetime.now()
         start_date = datetime.strptime(f"{get_season()[0]}-9-1", "%Y-%m-%d")
-        
-        if team is not None:
-            team_search = await check_valid_team(team)
-            if team_search == []:
-                await ctx.message.channel.send(team + _(" Does not appear to be an NHL team!"))
-                return
-            if len(team_search) > 1:
-                team = await pick_team(ctx, team_search)
-            else:
-                team = team_search[0]
         games_list = await Game.get_games_list(team, start_date)
         for game in games_list:
             game_time = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
@@ -944,41 +889,25 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockey_commands.command(hidden=True)
     @checks.mod_or_permissions(manage_messages=True)
-    async def setrules(self, ctx, team, *, rules):
+    async def setrules(self, ctx, team:HockeyTeams, *, rules):
         """Set the main rules page for the nhl rules command"""
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             await ctx.send(_("I don't have embed links permission!"))
             return
-        team_search = await check_valid_team(team)
-        if team_search == []:
-            await ctx.message.channel.send(team + _(" Does not appear to be an NHL team!"))
-            return
-        if len(team_search) > 1:
-            team = await pick_team(ctx, team_search)
-        else:
-            team = team_search[0]
         await self.config.guild(ctx.guild).rules.set(rules)
         await self.config.guild(ctx.guild).team_rules.set(team)
         em = await make_rules_embed(ctx.guild, team, rules)
         await ctx.send(_("Done, here's how it will look."), embed=em)
 
     @hockey_commands.command(aliases=["link", "invite"])
-    async def otherdiscords(self, ctx, team):
+    async def otherdiscords(self, ctx, team:HockeyTeams):
         """
             Get team specific discord links
 
             choosing all will create a nicely formatted list of 
             all current NHL team discord server links
         """
-        if team not in ["all", "page"]:
-            team_search = await check_valid_team(team)
-            if team_search == []:
-                await ctx.message.channel.send(team + _(" Does not appear to be an NHL team!"))
-                return
-            if len(team_search) > 1:
-                team = await pick_team(ctx, team_search)
-            else:
-                team = team_search[0]
+        if team not in ["all"]:
             await ctx.send(TEAMS[team]["invite"])
         else:
             if not ctx.channel.permissions_for(ctx.message.author).manage_messages:

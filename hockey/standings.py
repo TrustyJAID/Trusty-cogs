@@ -73,7 +73,7 @@ class Standings:
 
             index = 0
             for div in [e, w]:
-                print(div[0].conference)
+                # print(div[0].conference)
                 if div[0].conference.lower() == style and style != "conference":
                     index = [e, w].index(div)
             return [e, w], index
