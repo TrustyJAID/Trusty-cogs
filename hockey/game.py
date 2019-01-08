@@ -126,7 +126,7 @@ class Game:
             url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
         elif start_date is not None and end_date is None:
             # if no end date is provided carry through to the following year
-            end_date_str = str(start_date.year + 1) + datetime.now().strftime("-%m-%d")
+            end_date_str = str(start_date.year + 1) + start_date.strftime("-%m-%d")
             url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
         else:
             url = f"{BASE_URL}/api/v1/schedule?startDate={start_date_str}&endDate={end_date_str}"
