@@ -126,7 +126,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
         return message.author.id not in await self.bot.db.blacklist()
 
-    async def channel_perms(self, trigger, message):
+    async def channel_perms(self, trigger, channel):
         if trigger.whitelist:
             return channel.id in trigger.whitelist
         return channel.id not in trigger.blacklist
@@ -192,7 +192,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
         msg = None
         while msg is None:
-            check = lambda m: m.author == ctx.message.author and m.attachments != []
+            check = lambda m: m.author == ctx.message.author
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
@@ -1059,7 +1059,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if msg is None:
+            if not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
@@ -1112,7 +1112,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if msg is None:
+            if not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
@@ -1165,7 +1165,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if msg is None:
+            if not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
