@@ -7,6 +7,7 @@ from PIL import Image
 from io import BytesIO
 from copy import copy
 from datetime import datetime
+from typing import Union
 import aiohttp
 import functools
 import asyncio
@@ -88,7 +89,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247)
-        default_guild = {"trigger_list":{}, "allow_multiple":False}
+        default_guild = {"trigger_list":{}, 
+                         "allow_multiple":False,
+                         "modlog":"default"}
         self.config.register_guild(**default_guild)
 
     async def local_perms(self, message):
@@ -604,37 +607,47 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 await message.delete()
             except Exception as e:
                 print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
-            try:
-                modlog_channel = await modlog.get_modlog_channel(guild)
-            except:
-                # Return early if no modlog channel exists
-                return
-            infomessage = (_("A message from ") + str(message.author) +
-                           _(" was deleted in ")+
-                           message.channel.name)
-            embed = discord.Embed(description=message.content,
-                                  colour=discord.Colour.dark_red(),
-                                  timestamp=datetime.now())
-            embed.add_field(name=_("Channel"), value=message.channel.mention)
-            embed.add_field(name=_("Trigger Name"), value=trigger.name)
-            finds = re.findall(trigger.regex, message.content)
-            embed.add_field(name=_("Found Triggers"), value=str(finds))
-            if message.attachments:
-                files = ", ".join(a.filename for a in message.attachments)
-                if len(message.attachments) > 1:
-                    files = files[:-2]
-                embed.add_field(name=_("Attachments"), value=files)
-            embed.set_footer(text=_("User ID: ")+ str(message.author.id))
-            embed.set_author(name=str(author) + _(" - Deleted Message"), 
-                             icon_url=message.author.avatar_url)
-            try:
-                if modlog_channel.permissions_for(guild.me).embed_links:
-                    await modlog_channel.send(embed=embed)
+            modlogs = await self.config.guild(guild).modlog()
+            if modlogs:
+                if modlogs == "default":
+                    # We'll get the default modlog channel setup
+                    # with modlogset
+                    try:
+                        modlog_channel = await modlog.get_modlog_channel(guild)
+                    except Exception as e:
+                        print(e)
+                        # Return early if no modlog channel exists
+                        return
                 else:
-                    await modlog_channel.send(infomessage)
-            except:
-                pass
-            return
+                    modlog_channel = guild.get_channel(modlogs)
+                    if modlog_channel is None:
+                        return
+                infomessage = (_("A message from ") + str(message.author) +
+                               _(" was deleted in ")+
+                               message.channel.name)
+                embed = discord.Embed(description=message.content,
+                                      colour=discord.Colour.dark_red(),
+                                      timestamp=datetime.now())
+                embed.add_field(name=_("Channel"), value=message.channel.mention)
+                embed.add_field(name=_("Trigger Name"), value=trigger.name)
+                finds = re.findall(trigger.regex, message.content)
+                embed.add_field(name=_("Found Triggers"), value=str(finds))
+                if message.attachments:
+                    files = ", ".join(a.filename for a in message.attachments)
+                    if len(message.attachments) > 1:
+                        files = files[:-2]
+                    embed.add_field(name=_("Attachments"), value=files)
+                embed.set_footer(text=_("User ID: ")+ str(message.author.id))
+                embed.set_author(name=str(author) + _(" - Deleted Message"), 
+                                 icon_url=message.author.avatar_url)
+                try:
+                    if modlog_channel.permissions_for(guild.me).embed_links:
+                        await modlog_channel.send(embed=embed)
+                    else:
+                        await modlog_channel.send(infomessage)
+                except:
+                    pass
+                return
         if trigger.response_type == "add_role":
             for roles in trigger.text:
                 role = guild.get_role(roles)
@@ -705,6 +718,29 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     "all triggers will occur.")
             await ctx.send(msg)
             return
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog(self, ctx, channel:Union[discord.TextChannel, str]):
+        """
+            Set the modlog channel for filtered words
+
+            `channel` The channel you would like filtered word notifications to go
+            Use `none` or `clear` to not show any modlogs
+            User `default` to use the built in modlog channel
+        """
+        if type(channel) is str:
+            if channel.lower() in ["none", "clear"]:
+                channel = None
+            elif channel.lower() in ["default"]:
+                channel = "default"
+            else:
+                await ctx.send(_("Channel \"{}\" not found.").format(channel))
+                return
+            await self.config.guild(ctx.guild).modlog.set(channel)
+        else:
+            await self.config.guild(ctx.guild).modlog.set(channel.id)
+        await ctx.send(_("Modlog set to {channel}").format(channel=channel))
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
