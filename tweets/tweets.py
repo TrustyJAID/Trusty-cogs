@@ -82,7 +82,13 @@ class Tweets(getattr(commands, "Cog", object)):
                                                   stream_start, 
                                                   chunk_size=1024, 
                                                   timeout=900.0)
-                        self.bot.loop.run_in_executor(self.start_stream_loop(tweet_list))
+                        task = self.bot.loop.run_in_executor(
+                                    None, self.start_stream_loop(tweet_list)
+                                )
+                        try:
+                            await asyncio.wait_for(task, timeout=60)
+                        except asyncio.TimeoutError:
+                            pass
                     except Exception as e:
                         print(e)
             if not getattr(self.mystream, "running", False):
@@ -94,7 +100,13 @@ class Tweets(getattr(commands, "Cog", object)):
                                               stream_start, 
                                               chunk_size=1024, 
                                               timeout=900.0)
-                    self.bot.loop.run_in_executor(self.start_stream_loop(tweet_list))
+                    task = self.bot.loop.run_in_executor(
+                                None, self.start_stream_loop(tweet_list)
+                            )
+                    try:
+                        await asyncio.wait_for(task, timeout=60)
+                    except asyncio.TimeoutError:
+                        pass
                 except Exception as e:
                     print(e)
             await asyncio.sleep(300)
