@@ -3,10 +3,9 @@ import random
 import aiohttp
 import discord
 import asyncio
-from redbot.core import commands
-from redbot.core import checks
-from redbot.core import Config
+from redbot.core import commands, checks, Config
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from pathlib import Path
 import os
 import string
@@ -184,71 +183,6 @@ class AddImage(getattr(commands, "Cog", object)):
         else:
             return False
 
-    async def image_menu(self, ctx:commands.Context, post_list: list,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
-        """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
-        post = post_list[page]
-        em = discord.Embed(timestamp=ctx.message.created_at)
-        for image in post:
-            info = (_("__Author__: ")+
-                    "<@{}>\n".format(image["author"]) +
-                    _("__Count__: ") + "**{}**".format(image["count"]))
-
-            em.add_field(name=image["command_name"], value=info)
-        em.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-        em.set_footer(text=_("Page ")+"{}/{}".format(page+1, len(post_list)))
-        if len(post_list) == 1:
-            # No need to offer multiple pages if they don't exist
-            await ctx.send(embed=em)
-            return
-        
-        if not message:
-            message = await ctx.send(embed=em)
-            await message.add_reaction("⬅")
-            await message.add_reaction("❌")
-            await message.add_reaction("➡")
-        else:
-            # message edits don't return the message object anymore lol
-            await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji\
-                                  in ["➡", "⬅", "❌"] and react.message.id == message.id
-        try:
-            react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
-        except asyncio.TimeoutError:
-            await message.remove_reaction("⬅", ctx.guild.me)
-            await message.remove_reaction("❌", ctx.guild.me)
-            await message.remove_reaction("➡", ctx.guild.me)
-            return None
-        else:
-            if react.emoji == "➡":
-                next_page = 0
-                if page == len(post_list) - 1:
-                    next_page = 0  # Loop around to the first item
-                else:
-                    next_page = page + 1
-                try:
-                    await message.remove_reaction("➡", ctx.message.author)
-                except:
-                    pass
-                return await self.image_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
-            elif react.emoji == "⬅":
-                next_page = 0
-                if page == 0:
-                    next_page = len(post_list) - 1  # Loop around to the last item
-                else:
-                    next_page = page - 1
-                try:
-                    await message.remove_reaction("⬅", ctx.message.author)
-                except:
-                    pass
-                return await self.image_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
-            else:
-                return await message.delete()
-
     @commands.group()
     @commands.guild_only()
     async def addimage(self, ctx):
@@ -259,7 +193,7 @@ class AddImage(getattr(commands, "Cog", object)):
 
     @addimage.command(name="list")
     @commands.bot_has_permissions(embed_links=True)
-    async def listimages(self, ctx, image_loc="guild", server_id:int=None):
+    async def listimages(self, ctx, image_loc="guild", server_id:discord.Guild=None):
         """
             List images added to bot
         """
@@ -277,7 +211,18 @@ class AddImage(getattr(commands, "Cog", object)):
             await ctx.send(_("I does not have any images saved!"))
             return
         post_list = [image_list[i:i + 25] for i in range(0, len(image_list), 25)]
-        await self.image_menu(ctx, post_list)
+        images = []
+        for post in post_list:
+            em = discord.Embed(timestamp=ctx.message.created_at)
+            for image in post:
+                info = (_("__Author__: ")+
+                        "<@{}>\n".format(image["author"]) +
+                        _("__Count__: ") + "**{}**".format(image["count"]))
+                em.add_field(name=image["command_name"], value=info)
+            em.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
+            em.set_footer(text=_("Page ")+"{}/{}".format(post_list.index(post)+1, len(post_list)))
+            images.append(em)
+        await menu(ctx, images, DEFAULT_CONTROLS)
         
 
     @addimage.command()
@@ -392,7 +337,7 @@ class AddImage(getattr(commands, "Cog", object)):
     async def wait_for_image(self, ctx):
         msg = None
         while msg is None:
-            check = lambda m: m.author == ctx.message.author and m.attachments != []
+            check = lambda m: m.author == ctx.message.author
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
@@ -428,7 +373,7 @@ class AddImage(getattr(commands, "Cog", object)):
             msg = _("Upload an image for me to use! Type `exit` to cancel.")
             await ctx.send(msg)
             msg = await self.wait_for_image(ctx)
-            if msg is None:
+            if not msg.attachments:
                 return
             await self.save_image_location(msg, name, guild)
             await ctx.send(name + _(" has been added to my files!"))
@@ -461,7 +406,7 @@ class AddImage(getattr(commands, "Cog", object)):
             msg = _("Upload an image for me to use! Type `exit` to cancel.")
             await ctx.send(msg)
             msg = await self.wait_for_image(ctx)
-            if msg is None:
+            if not msg.attachments:
                 return
             await self.save_image_location(msg, name)
             await ctx.send(name + _(" has been added to my files!"))
