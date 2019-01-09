@@ -126,7 +126,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
         return message.author.id not in await self.bot.db.blacklist()
 
-    async def channel_perms(self, trigger, channel):
+    async def channel_perms(self, trigger, message):
         if trigger.whitelist:
             return channel.id in trigger.whitelist
         return channel.id not in trigger.blacklist

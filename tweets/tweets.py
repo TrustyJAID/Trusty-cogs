@@ -76,21 +76,27 @@ class Tweets(getattr(commands, "Cog", object)):
                 api = await self.authenticate()
                 tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
                 if tweet_list != []:
+                    try:
+                        stream_start = TweetListener(api, self.bot)
+                        self.mystream = tw.Stream(api.auth, 
+                                                  stream_start, 
+                                                  chunk_size=1024, 
+                                                  timeout=900.0)
+                        self.bot.loop.run_in_executor(self.start_stream_loop(tweet_list))
+                    except Exception as e:
+                        print(e)
+            if not getattr(self.mystream, "running", False):
+                api = await self.authenticate()
+                tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
+                try:
                     stream_start = TweetListener(api, self.bot)
                     self.mystream = tw.Stream(api.auth, 
                                               stream_start, 
                                               chunk_size=1024, 
                                               timeout=900.0)
-                    self.start_stream_loop(tweet_list)
-            if not getattr(self.mystream, "running", False):
-                api = await self.authenticate()
-                tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
-                stream_start = TweetListener(api, self.bot)
-                self.mystream = tw.Stream(api.auth, 
-                                          stream_start, 
-                                          chunk_size=1024, 
-                                          timeout=900.0)
-                self.start_stream_loop(tweet_list)
+                    self.bot.loop.run_in_executor(self.start_stream_loop(tweet_list))
+                except Exception as e:
+                    print(e)
             await asyncio.sleep(300)
 
     def start_stream_loop(self, tweet_list):
