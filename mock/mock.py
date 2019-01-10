@@ -65,7 +65,7 @@ class Mock(getattr(commands, "Cog", object)):
         else:
             result = await self.cap_change(msg)
             author = ctx.message.author
-        time = msg.created_at if hasattr(msg, "created_at") else ctx.message.created_at
+        time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
         embed.colour = author.colour if hasattr(author, "colour") else discord.Colour.default()
         embed.set_author(name=author.display_name, icon_url=author.avatar_url)
