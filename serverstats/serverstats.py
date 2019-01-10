@@ -472,7 +472,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             return
         await channel.edit(slowmode_delay=time)
         msg = (_("Slowmode set to")+
-               str(time)+ _("in") + channel.mention)
+               str(time)+ _(" in ") + channel.mention)
         await ctx.send(msg)
 
     @commands.command()
