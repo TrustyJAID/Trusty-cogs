@@ -72,9 +72,19 @@ class Tweets(getattr(commands, "Cog", object)):
     async def start_stream(self):
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Tweets"):
-            if self.mystream is None:
+            if not await self.config.api.consumer_key():
+                # Don't run the loop until tokens are set
+                await asyncio.sleep(300)
+                continue
+            tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
+            try:
                 api = await self.authenticate()
-                tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
+            except:
+                # Just continue on our own until this works
+                # No sense trying to restart the stream if we can't authenticate
+                await asyncio.sleep(300)
+                continue
+            if self.mystream is None:
                 if tweet_list != []:
                     try:
                         stream_start = TweetListener(api, self.bot)
@@ -92,8 +102,6 @@ class Tweets(getattr(commands, "Cog", object)):
                     except Exception as e:
                         print(e)
             if not getattr(self.mystream, "running", False):
-                api = await self.authenticate()
-                tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
                 try:
                     stream_start = TweetListener(api, self.bot)
                     self.mystream = tw.Stream(api.auth, 
@@ -141,7 +149,8 @@ class Tweets(getattr(commands, "Cog", object)):
                          "<https://developer.twitter.com/en/docs/basics/response-codes.html>")
             await channel.send(str(error) + help_msg)
             if "420" in error:
-                await channel.send(_("Maybe you should unload the cog for a while..."))
+                await channel.send(_("You're being rate limited. Maybe you "
+                                     "should unload the cog for a while..."))
         return
 
     async def build_tweet_embed(self, status):
