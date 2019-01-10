@@ -79,6 +79,10 @@ class GuildConverter(IDConverter):
         bot = ctx.bot
         match = self._get_id_match(argument)
         result = None
+        if ctx.author.id != ctx.bot.owner_id:
+            # Don't need to be snooping other guilds unless we're 
+            # the bot owner
+            return
         if match is None:
             # Not a mention
             for g in bot.guilds:
@@ -622,7 +626,8 @@ class ServerStats(getattr(commands, "Cog", object)):
     @checks.mod_or_permissions(manage_messages=True)
     async def getroles(self, ctx, *, guild:GuildConverter=None):
         """
-            Displays all roles their ID and number of members
+            Displays all roles their ID and number of members in order of
+            hierarchy
 
             `guild_name` can be either the server ID or partial name
         """
@@ -630,7 +635,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             guild = ctx.guild
         msg = ""
         for role in sorted(guild.roles, reverse=True):
-            if ctx.channel.permissions_for(ctx.me).embed_links:
+            if ctx.channel.permissions_for(ctx.me).embed_links and guild is ctx.guild:
                 msg += (f"{role.mention} ({role.id}): {len(role.members)}\n")
             else:
                 msg += (f"{role.name} ({role.id}): {len(role.members)}\n")
@@ -677,8 +682,14 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=["serverstats"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def server_stats(self, ctx, *, guild:GuildConverter=None):
-        """Gets total messages on the server and per-channel basis as well as most single user posts"""
+    async def server_stats(self, ctx, limit:int=None, *, guild:GuildConverter=None):
+        """
+            Gets total messages on the server and per-channel 
+            basis as well as most single user posts
+
+            `limit` must be a number of messages to check, defaults to all messages
+            Note: This is a very slow function and may take some time to complete
+        """
         if not guild:
             guild = ctx.guild
         channel = ctx.message.channel
@@ -691,7 +702,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 channel_msgs = 0
                 channel_contribution = {}
                 try:
-                    async for message in chn.history():
+                    async for message in chn.history(limit=limit):
                         author = message.author
                         channel_msgs += 1
                         total_msgs += 1
@@ -705,16 +716,30 @@ class ServerStats(getattr(commands, "Cog", object)):
                         else:
                             total_contribution[author.id] += 1
                     highest, users = await self.check_highest(channel_contribution)
-                    user = await self.bot.get_user_info(users)
+                    try:
+                        user = await self.bot.get_user_info(users)
+                    except discord.errors.NotFound:
+                        user = _("Unknown User")
+                    if type(user) is discord.User:
+                        user_name = user.name
+                    else:
+                        user_name = user
                     msg += (f"{chn.mention}: "+
                             ("Total Messages:") + f"**{channel_msgs}** "+
-                            _("most posts by ") + f"{user.name} **{highest}**\n")
+                            _("most posts by ") + f"{user_name} **{highest}**\n")
                 except discord.errors.Forbidden:
                     pass
                 except AttributeError:
                     pass
             highest, users = await self.check_highest(total_contribution)
-            user = await self.bot.get_user_info(users)
+            try:
+                user = await self.bot.get_user_info(users)
+            except:
+                user = _("Unknown User")
+            if type(user) is discord.User:
+                user_name = user.name
+            else:
+                user_name = user
             # User get_user_info incase the top posts is by someone no longer
             # in the guild
             new_msg = (f"__{guild.name}__: "+
