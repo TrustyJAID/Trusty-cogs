@@ -117,6 +117,8 @@ class Translate(getattr(commands, "Cog", object)):
         """
         if not message.guild:
             return
+        if message.author.bot:
+            return
         channel = message.channel
         guild = message.guild
         if await self.config.api_key() is None:
