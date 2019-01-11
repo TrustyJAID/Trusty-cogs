@@ -1,16 +1,19 @@
-from typing import Generator, Tuple, Any
-from datetime import datetime as dt
 import discord
 import asyncio
+import logging
 from io import BytesIO
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import pagify
 from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
 import tweepy as tw
-
+from typing import Generator, Tuple, Any
+from datetime import datetime
+import functools
 
 _ = Translator("Tweets", __file__)
+
+log = logging.getLogger("red.Tweets")
 
 
 @cog_i18n(_)
@@ -21,7 +24,6 @@ class TweetListener(tw.StreamListener):
         self.bot = bot
 
     def on_status(self, status):
-        # print(status.text)
         self.bot.dispatch("tweet_status", status)
         if self.bot.is_closed():
             return False
@@ -30,20 +32,20 @@ class TweetListener(tw.StreamListener):
 
     def on_error(self, status_code):
         msg = _("A tweet stream error has occured! ") + str(status_code)
-        print(msg)
+        log.error(msg)
         self.bot.dispatch("tweet_error", msg)
         if status_code in [420, 504, 503, 502, 500, 400, 401, 403, 404]:
             return False
 
     def on_disconnect(self, notice):
         msg = _("Twitter has sent a disconnect code")
-        print(msg)
+        log.info(msg)
         self.bot.dispatch("tweet_error", msg)
         return False
 
     def on_warning(self, notice):
         msg = _("Twitter has sent a disconnection warning")
-        print(msg)
+        log.warn(msg)
         self.bot.dispatch("tweet_error", msg)
         return True
 
@@ -92,15 +94,17 @@ class Tweets(getattr(commands, "Cog", object)):
                                                   stream_start, 
                                                   chunk_size=1024, 
                                                   timeout=900.0)
-                        task = self.bot.loop.run_in_executor(
-                                    None, self.start_stream_loop(tweet_list)
-                                )
+                        task = functools.partial(self.mystream.filter,
+                                                 follow=tweet_list,
+                                                 is_async=True
+                                            )
+                        task = self.bot.loop.run_in_executor(None, task)
                         try:
                             await asyncio.wait_for(task, timeout=60)
                         except asyncio.TimeoutError:
                             pass
                     except Exception as e:
-                        print(e)
+                        log.error("Error starting stream", exc_info=True)
             if not getattr(self.mystream, "running", False):
                 try:
                     stream_start = TweetListener(api, self.bot)
@@ -108,19 +112,18 @@ class Tweets(getattr(commands, "Cog", object)):
                                               stream_start, 
                                               chunk_size=1024, 
                                               timeout=900.0)
-                    task = self.bot.loop.run_in_executor(
-                                None, self.start_stream_loop(tweet_list)
-                            )
+                    task = functools.partial(self.mystream.filter,
+                                                 follow=tweet_list,
+                                                 is_async=True
+                                            )
+                    task = self.bot.loop.run_in_executor(None, task)
                     try:
                         await asyncio.wait_for(task, timeout=60)
                     except asyncio.TimeoutError:
                         pass
                 except Exception as e:
-                    print(e)
+                    log.error("Error starting stream", exc_info=True)
             await asyncio.sleep(300)
-
-    def start_stream_loop(self, tweet_list):
-        self.mystream.filter(follow=tweet_list, is_async=True)
 
     async def authenticate(self):
         """Authenticate with Twitter's API"""
@@ -149,8 +152,10 @@ class Tweets(getattr(commands, "Cog", object)):
                          "<https://developer.twitter.com/en/docs/basics/response-codes.html>")
             await channel.send(str(error) + help_msg)
             if "420" in error:
-                await channel.send(_("You're being rate limited. Maybe you "
-                                     "should unload the cog for a while..."))
+                msg = _("You're being rate limited. Maybe you "
+                        "should unload the cog for a while...")
+                log.critical(msg)
+                await channel.send(msg)
         return
 
     async def build_tweet_embed(self, status):
@@ -237,7 +242,7 @@ class Tweets(getattr(commands, "Cog", object)):
         except Exception as e:
             msg = (_("Whoops! Something went wrong here. The error code is ")+
                    f"{e} {username}")
-            print(msg)
+            log.error(msg, exc_info=True)
             if await self.config.error_channel() is not None:
                 error_channel = self.bot.get_channel(await self.config.error_channel())
                 await error_channel.send(str(e) + ": Username" + username)
@@ -325,7 +330,7 @@ class Tweets(getattr(commands, "Cog", object)):
             else:
                 api.update_status(message)
         except Exception as e:
-            print(e)
+            log.error("Error sending tweet {}".format(e), exc_info=True)
             await ctx.send(_("An error has occured, check the console for more details."))
             return
         await ctx.send(_("Tweet sent!"))
@@ -371,7 +376,7 @@ class Tweets(getattr(commands, "Cog", object)):
                                                trend["name"], 
                                                trend["url"])
         em.description = msg[:2000]
-        em.timestamp = dt.utcnow()
+        em.timestamp = datetime.utcnow()
         if ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(embed=em)
         else:
@@ -473,12 +478,12 @@ class Tweets(getattr(commands, "Cog", object)):
             for channel in account["channel"]:
                 chn = self.bot.get_channel(channel)
                 if chn is None:
-                    print("Removing channel {}".format(channel))
+                    log.debug("Removing channel {}".format(channel))
                     account_list.remove(account)
                     account["channel"].remove(channel)
                     account_list.append(account)
             if len(account["channel"]) == 0:
-                print("Removing account {}".format(account["twitter_name"]))
+                log.debug("Removing account {}".format(account["twitter_name"]))
                 account_list.remove(account)
         await self.config.accounts.set(account_list)
 
@@ -549,7 +554,7 @@ class Tweets(getattr(commands, "Cog", object)):
         except tw.TweepError as e:
             msg = (_("Whoops! Something went wrong here. The error code is ")+
                f"{e} {username}")
-            print(msg)
+            log.error(msg, exc_info=True)
             await ctx.send(_("That username does not exist."))
             return
         if user_id is None:
@@ -649,10 +654,9 @@ class Tweets(getattr(commands, "Cog", object)):
                 for member in member_list[0]:
                     list_members.append(member)
                 cursor = member_list[1][-1]
-                print("{} members added".format(len(member_list[0])))
 
         except Exception as e:
-            print(e)
+            log.error("Error adding list", exc_info=True)
             msg = _("That `owner` and `list_name` "
                     "don't appear to be available")
             await ctx.send(msg)
@@ -784,7 +788,7 @@ class Tweets(getattr(commands, "Cog", object)):
         except tw.TweepError as e:
             msg = (_("Whoops! Something went wrong here. The error code is ")+
                    f"{e} {username}")
-            print(msg)
+            log.error(msg, exc_info=True)
             await ctx.send(_("Something went wrong here! Try again"))
             return
         if user_id is None:
