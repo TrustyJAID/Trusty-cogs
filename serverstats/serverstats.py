@@ -799,7 +799,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         # in the guild
         if warning_msg:
             await warning_msg.delete()
-        await channel.send(msg)
+        await ctx.send(msg)
 
 
     @commands.command(aliases=["serveremojis"])
