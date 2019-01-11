@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-26 13:18-0700\n"
+"POT-Creation-Date: 2019-01-11 12:20-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,7 +15,11 @@ msgstr ""
 "Generated-By: redgettext 2.1\n"
 
 
-#: retrigger.py:84
+#: retrigger.py:164
+msgid "{arg} is not a valid channel, user or role."
+msgstr ""
+
+#: retrigger.py:172
 #, docstring
 msgid ""
 "\n"
@@ -23,149 +27,149 @@ msgid ""
 "    "
 msgstr ""
 
-#: retrigger.py:189
+#: retrigger.py:293
 msgid "Upload an image for me to use! Type `exit` to cancel."
 msgstr ""
 
-#: retrigger.py:196
+#: retrigger.py:300
 msgid "Image adding timed out."
 msgstr ""
 
-#: retrigger.py:199
+#: retrigger.py:303
 msgid "Image adding cancelled."
 msgstr ""
 
-#: retrigger.py:231
+#: retrigger.py:337
 msgid "__Name__:"
 msgstr ""
 
-#: retrigger.py:232
+#: retrigger.py:338
 msgid "__Author__: "
 msgstr ""
 
-#: retrigger.py:233
+#: retrigger.py:339
 msgid "__Count__: "
 msgstr ""
 
-#: retrigger.py:234
+#: retrigger.py:340
 msgid "__Response__: "
 msgstr ""
 
-#: retrigger.py:237
+#: retrigger.py:343
 msgid "__Text__: "
 msgstr ""
 
-#: retrigger.py:239
+#: retrigger.py:345
 msgid "__DM__: "
 msgstr ""
 
-#: retrigger.py:241
+#: retrigger.py:347
 msgid "__Command__: "
 msgstr ""
 
-#: retrigger.py:245
+#: retrigger.py:351
 msgid "__Emojis__: "
 msgstr ""
 
-#: retrigger.py:248
+#: retrigger.py:354
 msgid "__Roles Added__: "
 msgstr ""
 
-#: retrigger.py:251
+#: retrigger.py:357
 msgid "__Roles Removed__: "
 msgstr ""
 
-#: retrigger.py:253
+#: retrigger.py:359
 msgid "__Whitelist__: "
 msgstr ""
 
-#: retrigger.py:257
+#: retrigger.py:363
 msgid "__Cooldown__: "
 msgstr ""
 
-#: retrigger.py:261 retrigger.py:264
+#: retrigger.py:367 retrigger.py:370
 msgid "__Regex__: "
 msgstr ""
 
-#: retrigger.py:266
+#: retrigger.py:372
 msgid "__Blacklist__: "
 msgstr ""
 
-#: retrigger.py:273
+#: retrigger.py:379
 msgid "Page "
 msgstr ""
 
-#: retrigger.py:275
+#: retrigger.py:381
 msgid "I need embed_links permission to use this command."
 msgstr ""
 
-#: retrigger.py:408 retrigger.py:492
+#: retrigger.py:514 retrigger.py:598
 msgid "ReTrigger: Author is immune from automated actions"
 msgstr ""
 
-#: retrigger.py:414 retrigger.py:498
+#: retrigger.py:520 retrigger.py:604
 msgid "ReTrigger: Delete is ignored because user has manage messages permission"
 msgstr ""
 
-#: retrigger.py:420 retrigger.py:504
+#: retrigger.py:526 retrigger.py:610
 msgid "ReTrigger: Kick is ignored because the user has kick permissions"
 msgstr ""
 
-#: retrigger.py:426 retrigger.py:510
+#: retrigger.py:532 retrigger.py:616
 msgid "ReTrigger: Ban is ignored because the user has ban permissions"
 msgstr ""
 
-#: retrigger.py:432 retrigger.py:516
+#: retrigger.py:538 retrigger.py:622
 msgid "ReTrigger: role change is ignored because the user has mange roles permissions"
 msgstr ""
 
-#: retrigger.py:437
+#: retrigger.py:543
 msgid "ReTrigger: Channel is ignored or user is blacklisted"
 msgstr ""
 
-#: retrigger.py:533
+#: retrigger.py:639
 msgid "Trigger response: "
 msgstr ""
 
-#: retrigger.py:545 retrigger.py:551 retrigger.py:557 retrigger.py:564
-#: retrigger.py:575 retrigger.py:586 retrigger.py:594 retrigger.py:606
-#: retrigger.py:644 retrigger.py:652
+#: retrigger.py:651 retrigger.py:657 retrigger.py:663 retrigger.py:670
+#: retrigger.py:681 retrigger.py:692 retrigger.py:700 retrigger.py:712
+#: retrigger.py:760 retrigger.py:768
 msgid "Retrigger encountered an error in "
 msgstr ""
 
-#: retrigger.py:612
+#: retrigger.py:728
 msgid "A message from "
 msgstr ""
 
-#: retrigger.py:613
+#: retrigger.py:729
 msgid " was deleted in "
 msgstr ""
 
-#: retrigger.py:618
+#: retrigger.py:734
 msgid "Channel"
 msgstr ""
 
-#: retrigger.py:619
+#: retrigger.py:735
 msgid "Trigger Name"
 msgstr ""
 
-#: retrigger.py:621
+#: retrigger.py:737
 msgid "Found Triggers"
 msgstr ""
 
-#: retrigger.py:626
+#: retrigger.py:742
 msgid "Attachments"
 msgstr ""
 
-#: retrigger.py:627
+#: retrigger.py:743
 msgid "User ID: "
 msgstr ""
 
-#: retrigger.py:628
+#: retrigger.py:744
 msgid " - Deleted Message"
 msgstr ""
 
-#: retrigger.py:683
+#: retrigger.py:799
 #, docstring
 msgid ""
 "\n"
@@ -175,7 +179,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:693
+#: retrigger.py:809
 #, docstring
 msgid ""
 "\n"
@@ -183,15 +187,35 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:698
+#: retrigger.py:814
 msgid "Multiple responses disabled, only the first trigger will happen."
 msgstr ""
 
-#: retrigger.py:704
+#: retrigger.py:820
 msgid "Multiple responses enabled, all triggers will occur."
 msgstr ""
 
-#: retrigger.py:712
+#: retrigger.py:828
+#, docstring
+msgid ""
+"\n"
+"            Set the modlog channel for filtered words\n"
+"\n"
+"            `channel` The channel you would like filtered word notifications to go\n"
+"            Use `none` or `clear` to not show any modlogs\n"
+"            User `default` to use the built in modlog channel\n"
+"        "
+msgstr ""
+
+#: retrigger.py:841
+msgid "Channel \"{channel}\" not found."
+msgstr ""
+
+#: retrigger.py:846
+msgid "Modlog set to {channel}"
+msgstr ""
+
+#: retrigger.py:851
 #, docstring
 msgid ""
 "\n"
@@ -199,7 +223,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:720
+#: retrigger.py:859
 #, docstring
 msgid ""
 "\n"
@@ -207,162 +231,153 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:728
+#: retrigger.py:867
 #, docstring
 msgid ""
 "\n"
 "            Set cooldown options for retrigger\n"
 "\n"
-"            `name` is the name of the trigger\n"
+"            `trigger` is the name of the trigger\n"
 "            `time` is a time in seconds until the trigger will run again\n"
 "            set a time of 0 or less to remove the cooldown\n"
 "            `style` must be either `guild`, `server`, `channel`, `user`, or `member`\n"
 "        "
 msgstr ""
 
-#: retrigger.py:738 retrigger.py:775 retrigger.py:786 retrigger.py:805
-#: retrigger.py:816 retrigger.py:834 retrigger.py:845 retrigger.py:863
-#: retrigger.py:874 retrigger.py:889 retrigger.py:911 retrigger.py:913
-#: retrigger.py:953 retrigger.py:992 retrigger.py:1044 retrigger.py:1097
-#: retrigger.py:1150 retrigger.py:1191 retrigger.py:1232 retrigger.py:1284
-#: retrigger.py:1328 retrigger.py:1367 retrigger.py:1412 retrigger.py:1457
-msgid "Trigger `"
+#: retrigger.py:876 retrigger.py:908 retrigger.py:930 retrigger.py:952
+#: retrigger.py:974 retrigger.py:995
+msgid "Trigger `{name}` doesn't exist."
 msgstr ""
 
-#: retrigger.py:738 retrigger.py:775 retrigger.py:805 retrigger.py:834
-#: retrigger.py:863 retrigger.py:889 retrigger.py:913
-msgid "` doesn't exist."
-msgstr ""
-
-#: retrigger.py:741
+#: retrigger.py:878
 msgid "Style must be either `guild`, `server`, `channel`, `user`, or `member`."
 msgstr ""
 
-#: retrigger.py:745
-msgid "Cooldown of "
+#: retrigger.py:882
+msgid "Cooldown of {time}s per {style} set for Trigger `{name}`."
 msgstr ""
 
-#: retrigger.py:745
-msgid "s per "
-msgstr ""
-
-#: retrigger.py:746
-msgid " set for Trigger "
-msgstr ""
-
-#: retrigger.py:755
+#: retrigger.py:891
 msgid "Cooldown for Trigger `"
 msgstr ""
 
-#: retrigger.py:755
+#: retrigger.py:891
 msgid "` reset."
 msgstr ""
 
-#: retrigger.py:765
+#: retrigger.py:901
 #, docstring
 msgid ""
 "\n"
-"            Add channel to trigger's whitelist\n"
+"            Add channel to triggers whitelist\n"
 "\n"
-"            `name` is the name of the trigger\n"
-"            `channel` is the channel where the trigger will only work defaults to current channel\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to whitelist\n"
 "        "
 msgstr ""
 
-#: retrigger.py:782 retrigger.py:841
-msgid " added to Trigger `"
+#: retrigger.py:914
+msgid "Trigger {name} added `{list_type}` to its whitelist."
 msgstr ""
 
-#: retrigger.py:783 retrigger.py:813
-msgid "`'s whitelist."
+#: retrigger.py:916
+msgid "Trigger `{name}` already has {list_type} whitelisted."
 msgstr ""
 
-#: retrigger.py:786 retrigger.py:845
-msgid "` already has "
-msgstr ""
-
-#: retrigger.py:787 retrigger.py:817
-msgid " whitelisted."
-msgstr ""
-
-#: retrigger.py:794
+#: retrigger.py:923
 #, docstring
 msgid ""
 "\n"
-"            Remove channel from trigger's whitelist\n"
+"            Remove channel from triggers whitelist\n"
 "\n"
-"            `name` is the name of the trigger\n"
-"            `channel` is the channel where the trigger will only work defaults to current channel\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to remove from the whitelist\n"
 "        "
 msgstr ""
 
-#: retrigger.py:812 retrigger.py:870
-msgid " removed from Trigger `"
+#: retrigger.py:936
+msgid "Trigger {name} removed `{list_type}` from its whitelist."
 msgstr ""
 
-#: retrigger.py:816 retrigger.py:874
-msgid "` doesn't have "
+#: retrigger.py:938
+msgid "Trigger `{name}` does not have {list_type} whitelisted."
 msgstr ""
 
-#: retrigger.py:824
+#: retrigger.py:945
 #, docstring
 msgid ""
 "\n"
-"            Add channel to trigger's blacklist\n"
+"            Add channel to triggers blacklist\n"
 "\n"
-"            `name` is the name of the trigger\n"
-"            `channel` is the channel where the trigger will only work defaults to current channel\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to blacklist\n"
 "        "
 msgstr ""
 
-#: retrigger.py:842 retrigger.py:871
-msgid "`'s blacklist."
+#: retrigger.py:958
+msgid "Trigger {name} added `{list_type}` to its blacklist."
 msgstr ""
 
-#: retrigger.py:846 retrigger.py:875
-msgid " blacklisted."
+#: retrigger.py:960
+msgid "Trigger `{name}` already has {list_type} blacklisted."
 msgstr ""
 
-#: retrigger.py:853
+#: retrigger.py:967
 #, docstring
 msgid ""
 "\n"
-"            Remove channel from trigger's blacklist\n"
+"            Remove channel from triggers blacklist\n"
 "\n"
-"            `name` is the name of the trigger\n"
-"            `channel` is the channel where the trigger will only work defaults to current channel\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to remove from the blacklist\n"
 "        "
 msgstr ""
 
-#: retrigger.py:881
+#: retrigger.py:980
+msgid "Trigger {name} removed `{list_type}` from its blacklist."
+msgstr ""
+
+#: retrigger.py:982
+msgid "Trigger `{name}` does not have {list_type} blacklisted."
+msgstr ""
+
+#: retrigger.py:988
 #, docstring
 msgid ""
 "\n"
 "            List information about triggers\n"
 "\n"
-"            `name` if supplied provides information about named trigger\n"
+"            `trigger` if supplied provides information about named trigger\n"
 "        "
 msgstr ""
 
-#: retrigger.py:896
+#: retrigger.py:1001
 msgid "There are no triggers setup on this server."
 msgstr ""
 
-#: retrigger.py:905
+#: retrigger.py:1010
 #, docstring
 msgid ""
 "\n"
 "            Remove a specified trigger\n"
 "\n"
-"            `name` is the name of the trigger\n"
+"            `trigger` is the name of the trigger\n"
 "        "
 msgstr ""
 
-#: retrigger.py:911
+#: retrigger.py:1017 retrigger.py:1019
+msgid "Trigger `"
+msgstr ""
+
+#: retrigger.py:1017
 msgid "` removed."
 msgstr ""
 
-#: retrigger.py:919
+#: retrigger.py:1019
+msgid "` doesn't exist."
+msgstr ""
+
+#: retrigger.py:1025
 #, docstring
 msgid ""
 "\n"
@@ -377,25 +392,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:930 retrigger.py:969 retrigger.py:1009 retrigger.py:1062
-#: retrigger.py:1115 retrigger.py:1168 retrigger.py:1209 retrigger.py:1249
-#: retrigger.py:1300 retrigger.py:1344 retrigger.py:1384 retrigger.py:1429
-msgid " is already a trigger name"
+#: retrigger.py:1036 retrigger.py:1069 retrigger.py:1103 retrigger.py:1150
+#: retrigger.py:1197 retrigger.py:1244 retrigger.py:1279 retrigger.py:1313
+#: retrigger.py:1358 retrigger.py:1396 retrigger.py:1430 retrigger.py:1469
+msgid "{name} is already a trigger name"
 msgstr ""
 
-#: retrigger.py:935 retrigger.py:974 retrigger.py:1014 retrigger.py:1067
-#: retrigger.py:1120 retrigger.py:1173 retrigger.py:1214 retrigger.py:1254
-#: retrigger.py:1305 retrigger.py:1349 retrigger.py:1389 retrigger.py:1434
-msgid "There is something wrong with that regex pattern: "
+#: retrigger.py:1053 retrigger.py:1086 retrigger.py:1132 retrigger.py:1179
+#: retrigger.py:1226 retrigger.py:1261 retrigger.py:1296 retrigger.py:1342
+#: retrigger.py:1380 retrigger.py:1413 retrigger.py:1452 retrigger.py:1491
+msgid "Trigger `{name}` set."
 msgstr ""
 
-#: retrigger.py:953 retrigger.py:992 retrigger.py:1044 retrigger.py:1097
-#: retrigger.py:1150 retrigger.py:1191 retrigger.py:1232 retrigger.py:1284
-#: retrigger.py:1328 retrigger.py:1367 retrigger.py:1412 retrigger.py:1457
-msgid "` set."
-msgstr ""
-
-#: retrigger.py:958
+#: retrigger.py:1058
 #, docstring
 msgid ""
 "\n"
@@ -410,7 +419,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:998
+#: retrigger.py:1092
 #, docstring
 msgid ""
 "\n"
@@ -425,7 +434,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1050
+#: retrigger.py:1138
 #, docstring
 msgid ""
 "\n"
@@ -441,7 +450,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1103
+#: retrigger.py:1185
 #, docstring
 msgid ""
 "\n"
@@ -457,7 +466,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1156
+#: retrigger.py:1232
 #, docstring
 msgid ""
 "\n"
@@ -473,7 +482,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1197
+#: retrigger.py:1267
 #, docstring
 msgid ""
 "\n"
@@ -489,7 +498,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1238
+#: retrigger.py:1302
 #, docstring
 msgid ""
 "\n"
@@ -504,11 +513,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1267
+#: retrigger.py:1325
 msgid "None of the emojis supplied will work!"
 msgstr ""
 
-#: retrigger.py:1289
+#: retrigger.py:1347
 #, docstring
 msgid ""
 "\n"
@@ -523,11 +532,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1311
+#: retrigger.py:1363
 msgid " doesn't seem to be an available command."
 msgstr ""
 
-#: retrigger.py:1334
+#: retrigger.py:1386
 #, docstring
 msgid ""
 "\n"
@@ -541,7 +550,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1373
+#: retrigger.py:1419
 #, docstring
 msgid ""
 "\n"
@@ -556,11 +565,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1394
+#: retrigger.py:1434
 msgid "I can't assign roles higher than my own."
 msgstr ""
 
-#: retrigger.py:1418
+#: retrigger.py:1458
 #, docstring
 msgid ""
 "\n"
@@ -575,7 +584,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: retrigger.py:1439
+#: retrigger.py:1473
 msgid "I can't remove roles higher than my own."
 msgstr ""
 

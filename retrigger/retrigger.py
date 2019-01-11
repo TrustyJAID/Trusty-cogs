@@ -3,6 +3,8 @@ from redbot.core import commands, checks, Config, modlog
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
+from discord.ext.commands.converter import Converter, IDConverter
+from discord.ext.commands.errors import BadArgument
 from PIL import Image
 from io import BytesIO
 from copy import copy
@@ -15,6 +17,10 @@ import random
 import string
 import re
 import os
+import logging
+
+log = logging.getLogger("red.ReTrigger")
+_ = Translator("ReTrigger", __file__)
 
 
 class Trigger:
@@ -77,7 +83,88 @@ class Trigger:
                    data["blacklist"],
                    cooldown)
 
-_ = Translator("ReTrigger", __file__)
+class TriggerExists(Converter):
+
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        guild = ctx.guild
+        config = bot.get_cog("ReTrigger").config
+        trigger_list = await config.guild(guild).trigger_list()
+        result = None
+        if argument in trigger_list:
+            result = Trigger.from_json(trigger_list[argument])
+        else:
+            result = argument
+        return result
+
+
+class ValidRegex(Converter):
+    """
+    This will check to see if the provided regex pattern is valid
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    
+    """
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        try:
+            re.compile(argument)
+            result = argument
+        except Exception as e:
+            log.error("Retrigger conversion error", exc_info=True)
+            err_msg = "`{arg}` is not a valid regex pattern. {e}".format(arg=argument, e=e)
+            raise BadArgument(err_msg)
+        return result
+
+class ChannelUserRole(IDConverter):
+    """
+    This will check to see if the provided argument is a channel, user, or role
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    
+    """
+
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        guild = ctx.guild
+        result = None
+        id_match = self._get_id_match(argument)
+        channel_match = re.match(r'<#([0-9]+)>$', argument)
+        member_match = re.match(r'<@!?([0-9]+)>$', argument)
+        role_match = re.match(r'<@&([0-9]+)>$', argument)
+        for converter in ["channel", "role", "member"]:
+            if converter == "channel":
+                match = id_match or channel_match
+                if match:
+                    channel_id = match.group(1)
+                    result = guild.get_channel(int(channel_id))
+                else:
+                    result = discord.utils.get(guild.text_channels, name=argument)
+            if converter == "member":
+                match = id_match or member_match
+                if match:
+                    member_id = match.group(1)
+                    result = guild.get_member(int(member_id))
+                else:
+                    result = guild.get_member_named(argument)
+            if converter == "role":
+                match = id_match or role_match
+                if match:
+                    role_id = match.group(1)
+                    result = guild.get_role(int(role_id))
+                else:
+                    result = discord.utils.get(guild._roles.values(), name=argument)
+            if result:
+                break
+        if not result:
+            msg = _("{arg} is not a valid channel, user or role.").format(arg=argument)
+            raise BadArgument(msg)
+        return result
+
 
 
 @cog_i18n(_)
@@ -85,6 +172,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
     """
         Trigger bot events using regular expressions
     """
+
+    __author__ = "TrustyJAID"
+    __version__ = "1.9.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -126,10 +216,29 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
         return message.author.id not in await self.bot.db.blacklist()
 
-    async def channel_perms(self, trigger, channel):
+    async def check_bw_list(self, trigger, message):
+        can_run = True
+        if await self.is_mod_or_admin(message.author):
+            return True
         if trigger.whitelist:
-            return channel.id in trigger.whitelist
-        return channel.id not in trigger.blacklist
+            can_run = False
+            if message.channel.id in trigger.whitelist:
+                can_run = True
+            if message.author.id in trigger.whitelist:
+                can_run = True
+            for role in message.author.roles:
+                if role.id in trigger.whitelist:
+                    can_run = True
+            return can_run
+        else:
+            if message.channel.id in trigger.blacklist:
+                can_run = False
+            if message.author.id in trigger.blacklist:
+                can_run = False
+            for role in message.author.roles:
+                if role.id in trigger.blacklist:
+                    can_run = False
+        return can_run
 
     async def is_mod_or_admin(self, member:discord.Member):
         guild = member.guild
@@ -162,15 +271,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
-    async def check_trigger_exists(self, trigger, guild):
-        if trigger in await self.config.guild(guild).trigger_list():
-            return True
-        else:
-            return False
 
     async def make_guild_folder(self, directory):
         if not directory.is_dir():
-            print("Creating guild folder")
+            log.warn("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
     async def save_image_location(self, image_url, guild):
@@ -229,8 +333,10 @@ class ReTrigger(getattr(commands, "Cog", object)):
             em = discord.Embed(timestamp=ctx.message.created_at)
             em.colour = await self.get_colour(ctx.guild)
             for trigger in post:
-                blacklist = ", ".join(x for x in [f"<#{y}>" for y in trigger["blacklist"]])
-                whitelist = ", ".join(x for x in [f"<#{y}>" for y in trigger["whitelist"]])
+                blacklist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["blacklist"]]
+                blacklist = ", ".join(x.mention for x in blacklist)
+                whitelist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["whitelist"]]
+                whitelist = ", ".join(x.mention for x in whitelist)
                 info = (_("__Name__:") +"** "+ trigger["name"] + "**\n" +
                         _("__Author__: ") +"<@"+ str(trigger["author"])+ ">\n" +
                         _("__Count__: ")+ "**" + str(trigger["count"]) +"**\n" +
@@ -396,7 +502,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
-            if not await self.channel_perms(trigger, channel):
+            if not await self.check_bw_list(trigger, message):
                 continue
             search = re.findall(trigger.regex, message.content)
             if search != []:
@@ -410,36 +516,36 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     if await autoimmune(message):
                         print_msg = _("ReTrigger: Author is immune "
                                       "from automated actions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 if trigger.response_type == "delete":
                     if channel_perms.manage_messages or is_mod:
                         print_msg = _("ReTrigger: Delete is ignored because "
                                       "user has manage messages permission")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type == "kick":
                     if channel_perms.kick_members or is_mod:
                         print_msg = _("ReTrigger: Kick is ignored "
                                       "because the user has kick permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type == "ban":
                     if channel_perms.ban_members or is_mod:
                         print_msg = _("ReTrigger: Ban is ignored "
                                       "because the user has ban permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type in ["add_role", "remove_role"]:
                     if channel_perms.manage_roles or is_mod:
                         print_msg = _("ReTrigger: role change is ignored "
                                       "because the user has mange roles permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                 else:
                     if any([local_perms, global_perms, ignored_channel]):
                         print_msg = _("ReTrigger: Channel is "
                                       "ignored or user is blacklisted")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                     if is_command:
                         return
@@ -480,7 +586,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
-            if not await self.channel_perms(trigger, channel):
+            if not await self.check_bw_list(trigger, message):
                 continue
             search = re.findall(trigger.regex, message.content)
             if search != []:
@@ -494,31 +600,31 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     if await autoimmune(message):
                         print_msg = _("ReTrigger: Author is immune "
                                       "from automated actions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 if trigger.response_type == "delete":
                     if channel.permissions_for(message.author).manage_messages:
                         print_msg = _("ReTrigger: Delete is ignored because "
                                       "user has manage messages permission")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type == "kick":
                     if channel_perms.kick_members or is_mod:
                         print_msg = _("ReTrigger: Kick is ignored "
                                       "because the user has kick permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type == "ban":
                     if channel_perms.ban_members or is_mod:
                         print_msg = _("ReTrigger: Ban is ignored "
                                       "because the user has ban permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                         return
                 elif trigger.response_type in ["add_role", "remove_role"]:
                     if channel_perms.manage_roles or is_mod:
                         print_msg = _("ReTrigger: role change is ignored "
                                       "because the user has mange roles permissions")
-                        print(print_msg)
+                        log.warn(print_msg)
                 else:
                     return
                 trigger._add_count(1)
@@ -545,26 +651,26 @@ class ReTrigger(getattr(commands, "Cog", object)):
             try:
                 await message.channel.send(file=file)
             except Exception as e:
-                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "text" and own_permissions.send_messages:
             try:
                 await channel.send(trigger.text)
             except Exception as e:
-                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "dm":
             try:
                 await author.send(trigger.text)
             except Exception as e:
-                print(_("Retrigger encountered an error in ")+ str(author) + " " + str(e))
+                log.error(_("Retrigger encountered an error in ")+ str(author), exc_info=True)
             return
         if trigger.response_type == "react" and own_permissions.add_reactions:
             for emoji in trigger.text:
                 try:
                     await message.add_reaction(emoji)
                 except Exception as e:
-                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "ban" and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
@@ -575,7 +681,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 try:
                     await author.ban(reason=reason, delete_message_days=0)
                 except Exception as e:
-                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "kick" and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
@@ -586,7 +692,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 try:
                     await author.kick(reason=reason)
                 except Exception as e:
-                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "image" and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
@@ -594,7 +700,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             try:
                 await channel.send(trigger.text, file=file)
             except Exception as e:
-                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "command":
             msg = copy(message)
@@ -606,7 +712,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             try:
                 await message.delete()
             except Exception as e:
-                print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             modlogs = await self.config.guild(guild).modlog()
             if modlogs:
                 if modlogs == "default":
@@ -615,7 +721,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     try:
                         modlog_channel = await modlog.get_modlog_channel(guild)
                     except Exception as e:
-                        print(e)
+                        log.error("Error getting modlog channel", exc_info=True)
                         # Return early if no modlog channel exists
                         return
                 else:
@@ -654,7 +760,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 try:
                     await author.add_roles(role, reason=reason)
                 except Exception as e:
-                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
         if trigger.response_type == "remove_role":
             for roles in trigger.text:
@@ -662,7 +768,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 try:
                     await author.remove_roles(role, reason=reason)
                 except Exception as e:
-                    print(_("Retrigger encountered an error in ")+ guild.name + " " + str(e))
+                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
             return
 
 
@@ -676,7 +782,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                     try:
                         os.remove(path)
                     except Exception as e:
-                        print(e)
+                        log.error("Error deleting saved image", exc_info=True)
                 del trigger_list[triggers]
                 await self.config.guild(guild).trigger_list.set(trigger_list)
                 return True
@@ -735,7 +841,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             elif channel.lower() in ["default"]:
                 channel = "default"
             else:
-                await ctx.send(_("Channel \"{}\" not found.").format(channel))
+                await ctx.send(_("Channel \"{channel}\" not found.").format(channel=channel))
                 return
             await self.config.guild(ctx.guild).modlog.set(channel)
         else:
@@ -760,26 +866,23 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def cooldown(self, ctx, name:str, time:int, style="guild"):
+    async def cooldown(self, ctx, trigger:TriggerExists, time:int, style="guild"):
         """
             Set cooldown options for retrigger
 
-            `name` is the name of the trigger
+            `trigger` is the name of the trigger
             `time` is a time in seconds until the trigger will run again
             set a time of 0 or less to remove the cooldown
             `style` must be either `guild`, `server`, `channel`, `user`, or `member`
         """
-        trigger = await self.get_trigger(ctx.guild, name)
-        if trigger is None:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-            return
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if style not in ["guild", "server", "channel", "user", "member"]:
             msg = _("Style must be either `guild`, "
                     "`server`, `channel`, `user`, or `member`.")
             await ctx.send(msg)
             return
-        msg = (_("Cooldown of ") + f"{time}" + _("s per ") +
-               f"{style}" + _(" set for Trigger ") + f"`{name}`.")
+        msg = _("Cooldown of {time}s per {style} set for Trigger `{name}`.")
         if style in ["user", "member"]:
             style = "author"
         if style in ["guild", "server"]:
@@ -793,137 +896,106 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger.cooldown = cooldown
         trigger_list[name] = trigger.to_json()
         await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-        await ctx.send(msg)
+        await ctx.send(msg.format(time=time, style=style, name=trigger.name))
 
     @whitelist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
-    async def whitelist_add(self, ctx, name:str, channel:discord.TextChannel=None):
+    async def whitelist_add(self, ctx, trigger:TriggerExists, channel_user_role:ChannelUserRole):
         """
-            Add channel to trigger's whitelist
+            Add channel to triggers whitelist
 
-            `name` is the name of the trigger
-            `channel` is the channel where the trigger will only work defaults to current channel
+            `trigger` is the name of the trigger
+            `channel_user_role` is the channel, user or role to whitelist
         """
-        if channel is None:
-            channel = ctx.message.channel
-        trigger = await self.get_trigger(ctx.guild, name)
-        if trigger is None:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-            return
-        if channel.id not in trigger.whitelist:
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if channel_user_role.id not in trigger.whitelist:
             trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.whitelist.append(channel.id)
-            trigger_list[name] = trigger.to_json()
+            trigger.whitelist.append(channel_user_role.id)
+            trigger_list[trigger.name] = trigger.to_json()
             await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = (channel.mention + _(" added to Trigger `") + 
-                   name + _("`'s whitelist."))
-            await ctx.send(msg)
+            msg = _("Trigger {name} added `{list_type}` to its whitelist.")
         else:
-            msg = (_("Trigger `") + name + _("` already has ") + 
-                   channel.mention + _(" whitelisted."))
-            await ctx.send(msg)
+            msg = _("Trigger `{name}` already has {list_type} whitelisted.")
+        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
         
 
     @whitelist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def whitelist_remove(self, ctx, name:str, channel:discord.TextChannel=None):
+    async def whitelist_remove(self, ctx, trigger:TriggerExists, channel_user_role:ChannelUserRole):
         """
-            Remove channel from trigger's whitelist
+            Remove channel from triggers whitelist
 
-            `name` is the name of the trigger
-            `channel` is the channel where the trigger will only work defaults to current channel
-        """
-        if channel is None:
-            channel = ctx.message.channel
-        
-        trigger = await self.get_trigger(ctx.guild, name)
-        if trigger is None:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-            return
-        if channel.id in trigger.whitelist:
+            `trigger` is the name of the trigger
+            `channel_user_role` is the channel, user or role to remove from the whitelist
+        """        
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if channel_user_role.id in trigger.whitelist:
             trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.whitelist.remove(channel.id)
-            trigger_list[name] = trigger.to_json()
+            trigger.whitelist.remove(channel_user_role.id)
+            trigger_list[trigger.name] = trigger.to_json()
             await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = (channel.mention + _(" removed from Trigger `") + 
-                   name + _("`'s whitelist."))
-            await ctx.send(msg)
+            msg = _("Trigger {name} removed `{list_type}` from its whitelist.")
         else:
-            msg = (_("Trigger `") + name + _("` doesn't have ") + 
-                   channel.mention + _(" whitelisted."))
-            await ctx.send(msg)
+            msg = _("Trigger `{name}` does not have {list_type} whitelisted.")
+        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
         
 
     @blacklist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
-    async def blacklist_add(self, ctx, name:str, channel:discord.TextChannel=None):
+    async def blacklist_add(self, ctx, trigger:TriggerExists, channel_user_role:ChannelUserRole):
         """
-            Add channel to trigger's blacklist
+            Add channel to triggers blacklist
 
-            `name` is the name of the trigger
-            `channel` is the channel where the trigger will only work defaults to current channel
+            `trigger` is the name of the trigger
+            `channel_user_role` is the channel, user or role to blacklist
         """
-        if channel is None:
-            channel = ctx.message.channel
-        trigger = await self.get_trigger(ctx.guild, name)
-        if trigger is None:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-            return
-        if channel.id not in trigger.blacklist:
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if channel_user_role.id not in trigger.blacklist:
             trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.blacklist.append(channel.id)
-            trigger_list[name] = trigger.to_json()
+            trigger.blacklist.append(channel_user_role.id)
+            trigger_list[trigger.name] = trigger.to_json()
             await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = (channel.mention + _(" added to Trigger `") + 
-                   name + _("`'s blacklist."))
-            await ctx.send(msg)
+            msg = _("Trigger {name} added `{list_type}` to its blacklist.")
         else:
-            msg = (_("Trigger `") + name + _("` already has ") + 
-                   channel.mention + _(" blacklisted."))
-            await ctx.send(msg)
+            msg = _("Trigger `{name}` already has {list_type} blacklisted.")
+        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
 
 
     @blacklist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def blacklist_remove(self, ctx, name:str, channel:discord.TextChannel=None):
+    async def blacklist_remove(self, ctx, trigger:TriggerExists, channel_user_role:ChannelUserRole):
         """
-            Remove channel from trigger's blacklist
+            Remove channel from triggers blacklist
 
-            `name` is the name of the trigger
-            `channel` is the channel where the trigger will only work defaults to current channel
+            `trigger` is the name of the trigger
+            `channel_user_role` is the channel, user or role to remove from the blacklist
         """
-        if channel is None:
-            channel = ctx.message.channel
-        trigger = await self.get_trigger(ctx.guild, name)
-        if trigger is None:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-            return
-        if channel.id in trigger.blacklist:
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if channel_user_role.id in trigger.blacklist:
             trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.blacklist.remove(channel.id)
-            trigger_list[name] = trigger.to_json()
+            trigger.blacklist.remove(channel_user_role.id)
+            trigger_list[trigger.name] = trigger.to_json()
             await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = (channel.mention + _(" removed from Trigger `") + 
-                   name + _("`'s blacklist."))
-            await ctx.send(msg)
+            msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
         else:
-            msg = (_("Trigger `") + name + _("` doesn't have ") + 
-                   channel.mention + _(" blacklisted."))
-            await ctx.send(msg)
+            msg = _("Trigger `{name}` does not have {list_type} blacklisted.")
+        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
 
 
     @retrigger.command()
-    async def list(self, ctx, name:str=None):
+    async def list(self, ctx, trigger:TriggerExists=None):
         """
             List information about triggers
 
-            `name` if supplied provides information about named trigger
+            `trigger` if supplied provides information about named trigger
         """
-        if name:
-            trigger = await self.get_trigger(ctx.guild, name)
-            if trigger is None:
-                await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
-                return
+        if trigger:
+            if type(trigger) is str:
+                return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
             else:
                 return await self.trigger_menu(ctx, [[trigger.to_json()]])
         trigger_dict = await self.config.guild(ctx.guild).trigger_list()
@@ -937,21 +1009,22 @@ class ReTrigger(getattr(commands, "Cog", object)):
 
     @retrigger.command(aliases=["del", "rem", "delete"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def remove(self, ctx, name):
+    async def remove(self, ctx, trigger:TriggerExists):
         """
             Remove a specified trigger
 
-            `name` is the name of the trigger
+            `trigger` is the name of the trigger
         """
-        if await self.remove_trigger(ctx.guild, name):
-            await ctx.send(_("Trigger `")+name+_("` removed."))
+        if type(trigger) is Trigger:
+            await self.remove_trigger(ctx.guild, trigger.name)
+            await ctx.send(_("Trigger `")+trigger.name+_("` removed."))
         else:
-            await ctx.send(_("Trigger `")+name+_("` doesn't exist."))
+            await ctx.send(_("Trigger `")+trigger+_("` doesn't exist."))
 
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def text(self, ctx, name:str, regex:str, *, text:str):
+    async def text(self, ctx, name:TriggerExists, regex:ValidRegex, *, text:str):
         """
             Add a text response trigger
 
@@ -962,15 +1035,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -986,11 +1053,11 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def dm(self, ctx, name:str, regex:str, *, text:str):
+    async def dm(self, ctx, name:TriggerExists, regex:ValidRegex, *, text:str):
         """
             Add a dm response trigger
 
@@ -1001,15 +1068,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -1025,12 +1086,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def image(self, ctx, name:str, regex:str, image_url:str=None):
+    async def image(self, ctx, name:TriggerExists, regex:ValidRegex, image_url:str=None):
         """
             Add an image/file response trigger
 
@@ -1041,15 +1102,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
@@ -1077,12 +1132,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def imagetext(self, ctx, name:str, regex:str, text:str, image_url:str=None):
+    async def imagetext(self, ctx, name:TriggerExists, regex:ValidRegex, text:str, image_url:str=None):
         """
             Add an image/file response with text trigger
 
@@ -1094,15 +1149,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
@@ -1130,12 +1179,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def resize(self, ctx, name:str, regex:str, image_url:str=None):
+    async def resize(self, ctx, name:TriggerExists, regex:ValidRegex, image_url:str=None):
         """
             Add an image to resize in response to a trigger
             this will attempt to resize the image based on length of matching regex
@@ -1147,15 +1196,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
@@ -1183,12 +1226,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, name:str, regex:str):
+    async def ban(self, ctx, name:TriggerExists, regex:str):
         """
             Add a trigger to ban users for saying specific things found with regex
             This respects hierarchy so ensure the bot role is lower in the list
@@ -1200,15 +1243,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -1224,12 +1261,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx, name:str, regex:str):
+    async def kick(self, ctx, name:TriggerExists, regex:str):
         """
             Add a trigger to kick users for saying specific things found with regex
             This respects hierarchy so ensure the bot role is lower in the list
@@ -1241,15 +1278,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -1265,12 +1296,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(add_reactions=True)
-    async def react(self, ctx, name:str, regex:str, *emojis:str):
+    async def react(self, ctx, name:TriggerExists, regex:ValidRegex, *emojis:str):
         """
             Add a reaction trigger
 
@@ -1281,15 +1312,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         good_emojis = []
         for emoji in emojis:
             if "<" in emoji and ">" in emoji:
@@ -1298,7 +1323,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
                 await ctx.message.add_reaction(emoji)
                 good_emojis.append(emoji)
             except Exception as e:
-                print(e)
+                log.error("Could not react with emoji", exc_info=True)
         if good_emojis == []:
             await ctx.send(_("None of the emojis supplied will work!"))
             return
@@ -1317,11 +1342,11 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def command(self, ctx, name:str, regex:str, *, command:str):
+    async def command(self, ctx, name:TriggerExists, regex:ValidRegex, *, command:str):
         """
             Add a command trigger
 
@@ -1332,15 +1357,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         cmd_list = command.split(" ")
         existing_cmd = self.bot.get_command(cmd_list[0])
         if existing_cmd is None:
@@ -1361,12 +1380,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command(aliases=["deletemsg"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def filter(self, ctx, name:str, regex:str):
+    async def filter(self, ctx, name:TriggerExists, regex:str):
         """
             Add a trigger to delete a message
 
@@ -1376,15 +1395,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -1400,12 +1413,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
-    async def addrole(self, ctx, name:str, regex:str, *roles:discord.Role):
+    async def addrole(self, ctx, name:TriggerExists, regex:ValidRegex, *roles:discord.Role):
         """
             Add a trigger to add a role
 
@@ -1416,15 +1429,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         for role in roles:
             if role >= ctx.me.top_role:
                 await ctx.send(_("I can't assign roles higher than my own."))
@@ -1445,12 +1452,12 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
-    async def removerole(self, ctx, name:str, regex:str, *roles:discord.Role):
+    async def removerole(self, ctx, name:TriggerExists, regex:ValidRegex, *roles:discord.Role):
         """
             Add a trigger to remove a role
 
@@ -1461,15 +1468,9 @@ class ReTrigger(getattr(commands, "Cog", object)):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
         """
-        if await self.check_trigger_exists(name, ctx.guild):
-            await ctx.send(name + _(" is already a trigger name"))
-            return
-        try:
-            search = re.findall(regex, ctx.message.content)
-        except Exception as e:
-            msg = _("There is something wrong with that regex pattern: ")
-            await ctx.send(msg + str(e))
-            return
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
         for role in roles:
             if role >= ctx.me.top_role:
                 await ctx.send(_("I can't remove roles higher than my own."))
@@ -1490,4 +1491,4 @@ class ReTrigger(getattr(commands, "Cog", object)):
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
-        await ctx.send(_("Trigger `")+name+_("` set."))
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
