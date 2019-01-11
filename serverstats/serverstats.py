@@ -684,8 +684,8 @@ class ServerStats(getattr(commands, "Cog", object)):
     @checks.mod_or_permissions(manage_messages=True)
     async def server_stats(self, ctx, limit:int=None, *, guild:GuildConverter=None):
         """
-            Gets total messages on the server and per-channel 
-            basis as well as most single user posts
+            Gets total messages on the server and displays each channel 
+            separately as well as the user who has posted the most in each channel
 
             `limit` must be a number of messages to check, defaults to all messages
             Note: This is a very slow function and may take some time to complete
@@ -748,6 +748,58 @@ class ServerStats(getattr(commands, "Cog", object)):
             await warning_msg.delete()
             for page in pagify(new_msg, ["\n"]):
                 await channel.send(page)
+
+    @commands.command(aliases=["channelstats"])
+    @commands.guild_only()
+    async def channel_stats(self, ctx, limit:int=None, channel:discord.TextChannel=None):
+        """
+            Gets total messages in a specific channel as well as the user who
+            has posted the most in that channel
+
+            `limit` must be a number of messages to check, defaults to all messages
+            Note: This can be a very slow function and may take some time to complete
+        """
+        if not channel:
+            channel = ctx.channel
+        total_msgs = 0
+        msg = ""
+        warning_msg = None
+        if limit:
+            if limit > 1000:
+                warning_msg = await ctx.send(_("This might take a while!"))
+        async with ctx.channel.typing():
+            channel_msgs = 0
+            channel_contribution = {}
+            try:
+                async for message in channel.history(limit=limit):
+                    author = message.author
+                    channel_msgs += 1
+                    total_msgs += 1
+                    if author.id not in channel_contribution:
+                        channel_contribution[author.id] = 1
+                    else:
+                        channel_contribution[author.id] += 1
+                highest, users = await self.check_highest(channel_contribution)
+                try:
+                    user = await self.bot.get_user_info(users)
+                except discord.errors.NotFound:
+                    user = _("Unknown User")
+                if type(user) is discord.User:
+                    user_name = user.name
+                else:
+                    user_name = user
+                msg += (f"{channel.mention}: "+
+                        ("Total Messages:") + f"**{channel_msgs}** "+
+                        _("most posts by ") + f"{user_name} **{highest}**\n")
+            except discord.errors.Forbidden:
+                pass
+            except AttributeError:
+                pass
+        # User get_user_info incase the top posts is by someone no longer
+        # in the guild
+        if warning_msg:
+            await warning_msg.delete()
+        await channel.send(msg)
 
 
     @commands.command(aliases=["serveremojis"])
