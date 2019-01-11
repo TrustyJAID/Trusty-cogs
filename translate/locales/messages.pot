@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-14 14:17-0700\n"
+"POT-Creation-Date: 2019-01-11 08:03-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Generated-By: redgettext 2.1\n"
 
 
-#: translate.py:28
+#: translate.py:55
 #, docstring
 msgid ""
 "\n"
@@ -23,7 +23,23 @@ msgid ""
 "    "
 msgstr ""
 
-#: translate.py:43
+#: translate.py:81
+msgid " said:"
+msgstr ""
+
+#: translate.py:83
+msgid " to "
+msgstr ""
+
+#: translate.py:84
+msgid "Requested by "
+msgstr ""
+
+#: translate.py:169
+msgid "said:"
+msgstr ""
+
+#: translate.py:285
 #, docstring
 msgid ""
 "\n"
@@ -34,48 +50,57 @@ msgid ""
 "        "
 msgstr ""
 
-#: translate.py:51
+#: translate.py:293
 msgid "The bot owner needs to set an api key first!"
 msgstr ""
 
-#: translate.py:59
-msgid " is not an available language!"
-msgstr ""
-
-#: translate.py:74 translate.py:181
-msgid " Said:"
-msgstr ""
-
-#: translate.py:76 translate.py:188
-msgid " to "
-msgstr ""
-
-#: translate.py:77 translate.py:189
-msgid "Requested by "
-msgstr ""
-
-#: translate.py:127
+#: translate.py:315
 #, docstring
 msgid ""
 "\n"
-"            Toggle the bot responding to flag emojis\n"
-"            to translate text\n"
+"            Toggle the bot auto translating\n"
 "        "
 msgstr ""
 
-#: translate.py:134
-msgid " has been added to post translated responses!"
+#: translate.py:324
+#, docstring
+msgid ""
+"\n"
+"            Toggle translations to flag emoji reactions\n"
+"        "
 msgstr ""
 
-#: translate.py:139
-msgid " has been removed from translated responses!"
+#: translate.py:330 translate.py:347
+msgid "on"
 msgstr ""
 
-#: translate.py:199
+#: translate.py:332 translate.py:349
+msgid "off"
+msgstr ""
+
+#: translate.py:334
+msgid "Reaction translations have been turned "
+msgstr ""
+
+#: translate.py:341
+#, docstring
+msgid ""
+"\n"
+"            Toggle translations with flag emojis in text\n"
+"        "
+msgstr ""
+
+#: translate.py:351
+msgid "Flag emoji translations have been turned "
+msgstr ""
+
+#: translate.py:357
 #, docstring
 msgid ""
 "\n"
 "            You must get an API key from google to set this up\n"
+"\n"
+"            Note: Using this cog costs money, current rates are $20 per 1 million characters.\n"
 "\n"
 "            1. Go to Google Developers Console and log in with your Google account. \n"
 "            (https://console.developers.google.com/)\n"
@@ -91,7 +116,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: translate.py:215
+#: translate.py:375
 msgid "API key set."
 msgstr ""
 

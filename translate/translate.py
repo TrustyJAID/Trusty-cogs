@@ -121,14 +121,15 @@ class Translate(getattr(commands, "Cog", object)):
             return
         channel = message.channel
         guild = message.guild
+        author = message.author
         if await self.config.api_key() is None:
             return
         # check_emoji = lambda emoji: emoji in FLAGS
         if not await self.config.guild(guild).text():
             return
-        if not await self.local_perms(message):
+        if not await self.local_perms(guild, author):
             return
-        if not await self.global_perms(message):
+        if not await self.global_perms(author):
             return
         if not await self.check_ignored_channel(message):
             return
@@ -153,7 +154,7 @@ class Translate(getattr(commands, "Cog", object)):
                                                     to_translate)
         if not translated_text:
             return
-        author = message.author
+        
         from_lang = detected_lang[0][0]["language"].upper()
         to_lang = target.upper()
         if from_lang == to_lang:
@@ -177,6 +178,7 @@ class Translate(getattr(commands, "Cog", object)):
         try:
             guild = channel.guild
             message = await channel.get_message(id=payload.message_id)
+            user = guild.get_member(payload.user_id)
         except:
             return
         if await self.config.api_key() is None:
@@ -186,9 +188,9 @@ class Translate(getattr(commands, "Cog", object)):
             return
         if str(payload.emoji) not in FLAGS:
             return
-        if not await self.local_perms(message):
+        if not await self.local_perms(guild, user):
             return
-        if not await self.global_perms(message):
+        if not await self.global_perms(user):
             return
         if not await self.check_ignored_channel(message):
             return
@@ -202,7 +204,6 @@ class Translate(getattr(commands, "Cog", object)):
                 num_emojis = reaction.count
         if num_emojis > 1:
             return
-        user = self.bot.get_user(payload.user_id)
         target = FLAGS[str(payload.emoji)]["code"]
         detected_lang = await self.detect_language(to_translate)
         original_lang = detected_lang[0][0]["language"]
@@ -228,37 +229,37 @@ class Translate(getattr(commands, "Cog", object)):
             msg = (detail_string + f"\n{translated_text}")
             await channel.send(msg)
 
-    async def local_perms(self, message):
+    async def local_perms(self, guild, author):
         """Check the user is/isn't locally whitelisted/blacklisted.
             https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
-        if await self.bot.is_owner(message.author):
+        if await self.bot.is_owner(author):
             return True
-        elif message.guild is None:
+        elif guild is None:
             return True
-        guild_settings = self.bot.db.guild(message.guild)
+        guild_settings = self.bot.db.guild(guild)
         local_blacklist = await guild_settings.blacklist()
         local_whitelist = await guild_settings.whitelist()
 
-        _ids = [r.id for r in message.author.roles if not r.is_default()]
-        _ids.append(message.author.id)
+        _ids = [r.id for r in author.roles if not r.is_default()]
+        _ids.append(author.id)
         if local_whitelist:
             return any(i in local_whitelist for i in _ids)
 
         return not any(i in local_blacklist for i in _ids)
 
-    async def global_perms(self, message):
+    async def global_perms(self, author):
         """Check the user is/isn't globally whitelisted/blacklisted.
             https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
-        if await self.bot.is_owner(message.author):
+        if await self.bot.is_owner(author):
             return True
 
         whitelist = await self.bot.db.whitelist()
         if whitelist:
-            return message.author.id in whitelist
+            return author.id in whitelist
 
-        return message.author.id not in await self.bot.db.blacklist()
+        return author.id not in await self.bot.db.blacklist()
 
     async def check_ignored_channel(self, message):
         """https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273"""
