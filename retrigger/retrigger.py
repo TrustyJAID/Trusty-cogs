@@ -192,7 +192,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
         await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
         msg = None
         while msg is None:
-            check = lambda m: m.author == ctx.message.author
+            check = lambda m: m.author == ctx.author and (m.attachments or "exit" in m.content)
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
