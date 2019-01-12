@@ -1114,7 +1114,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if not msg.attachments:
+            if not msg or not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
@@ -1161,7 +1161,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if not msg.attachments:
+            if not msg or not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
@@ -1208,7 +1208,7 @@ class ReTrigger(getattr(commands, "Cog", object)):
             filename = await self.save_image_location(image_url, guild)
         else:
             msg = await self.wait_for_image(ctx)
-            if not msg.attachments:
+            if not msg or not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)

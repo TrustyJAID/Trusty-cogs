@@ -372,10 +372,10 @@ class AddImage(getattr(commands, "Cog", object)):
         if ctx.message.attachments == []:
             msg = _("Upload an image for me to use! Type `exit` to cancel.")
             await ctx.send(msg)
-            msg = await self.wait_for_image(ctx)
-            if not msg.attachments:
+            file_msg = await self.wait_for_image(ctx)
+            if not file_msg or not file_msg.attachments:
                 return
-            await self.save_image_location(msg, name, guild)
+            await self.save_image_location(file_msg, name, guild)
             await ctx.send(name + _(" has been added to my files!"))
         else:
             await self.save_image_location(ctx.message, name, guild)
@@ -405,10 +405,10 @@ class AddImage(getattr(commands, "Cog", object)):
         if ctx.message.attachments == []:
             msg = _("Upload an image for me to use! Type `exit` to cancel.")
             await ctx.send(msg)
-            msg = await self.wait_for_image(ctx)
-            if not msg.attachments:
+            file_msg = await self.wait_for_image(ctx)
+            if not file_msg or not file_msg.attachments:
                 return
-            await self.save_image_location(msg, name)
+            await self.save_image_location(file_msg, name)
             await ctx.send(name + _(" has been added to my files!"))
         else:
             await self.save_image_location(ctx.message, name)
