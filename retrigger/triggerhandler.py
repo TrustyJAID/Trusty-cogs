@@ -352,7 +352,7 @@ class TriggerHandler:
         except Exception as e:
             log.info("Could not find channel or message", exc_info=True)
             # If we can't find the channel ignore it
-            pass
+            return
         await self.check_triggers(message)
 
     async def check_triggers(self, message):
