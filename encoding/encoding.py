@@ -4,6 +4,7 @@ from redbot.core.utils.chat_formatting import pagify, box
 import binascii
 import random
 import hashlib
+from typing import Optional
 from string import ascii_lowercase as lc, ascii_uppercase as uc
 
 
@@ -117,17 +118,21 @@ class Encoding(getattr(commands, "Cog", object)):
         return lambda s: s.translate(lookup)
 
     @_encode.command(name="rot", aliases=["caeser"])
-    async def caeser_encode(self, ctx: commands.Context, rot_key:int, *, message:str):
+    async def caeser_encode(self, ctx: commands.Context, rot_key:Optional[int], *, message:str):
         """
             Encode a caeser cipher message with specified key
         """
+        if not rot_key:
+            rot_key = 13
         await ctx.send(self.rot_encode(rot_key)(message))
 
     @_decode.command(name="rot", aliases=["caeser"])
-    async def caeser_decode(self, ctx: commands.Context, rot_key:int, *, message:str):
+    async def caeser_decode(self, ctx: commands.Context, rot_key:Optional[int], *, message:str):
         """
             Decode a caeser cipher message with specified key
         """
+        if not rot_key:
+            rot_key = 13
         await ctx.send(self.rot_encode(-rot_key)(message))
 
 
