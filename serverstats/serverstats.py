@@ -394,7 +394,6 @@ class ServerStats(getattr(commands, "Cog", object)):
             await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
-    @checks.is_owner()
     async def whois(self, ctx, member:Union[int, discord.User]):
         """
             Display servers a user shares with the bot
@@ -407,21 +406,39 @@ class ServerStats(getattr(commands, "Cog", object)):
             except discord.errors.NotFound:
                 await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
                 return
-        guild_list = []
-        for guild in self.bot.guilds:
-            members = [member.id for member in guild.members]
-            if member.id in members:
-                guild_list.append(guild)
-        if guild_list != []:
-            msg = ("{} ({}) ".format(member, member.id) + _("is on:\n"))
-            for guild in guild_list:
-                msg += "{} ({})\n".format(guild.name, guild.id)
-            for page in pagify(msg, ["\n"]):
-                await ctx.send(page)
+        if await self.bot.is_owner(ctx.author):
+            guild_list = []
+            for guild in self.bot.guilds:
+                members = [member.id for member in guild.members]
+                if member.id in members:
+                    guild_list.append(guild)
+            if guild_list != []:
+                msg = ("{} ({}) ".format(member, member.id) + _("is on:\n"))
+                for guild in guild_list:
+                    msg += "{} ({})\n".format(guild.name, guild.id)
+                for page in pagify(msg, ["\n"]):
+                    await ctx.send(page)
+            else:
+                msg = (f"{member} ({member.id}) "+
+                       _("is not in any shared servers!"))
+                await ctx.send(msg)
         else:
-            msg = (f"{member} ({member.id}) "+
-                   _("is not in any shared servers!"))
-            await ctx.send(msg)
+            guild_list = []
+            for guild in self.bot.guilds:
+                members = [member.id for member in guild.members]
+                if member.id in members and ctx.author.id in members:
+                    guild_list.append(guild)
+            if guild_list != []:
+                msg = ("{} ({}) ".format(member, member.id) + _("is on:\n"))
+                for guild in guild_list:
+                    msg += "{} ({})\n".format(guild.name, guild.id)
+                for page in pagify(msg, ["\n"]):
+                    await ctx.send(page)
+            else:
+                msg = (f"{member} ({member.id}) "+
+                       _("is not in any shared servers!"))
+                await ctx.send(msg)
+
 
     @commands.command(hidden=True)
     @checks.is_owner()
