@@ -349,6 +349,9 @@ class TriggerHandler:
         try:
             channel = self.bot.get_channel(int(payload.data["channel_id"]))
             message = await channel.get_message(int(payload.data["id"]))
+        except discord.errors.Forbidden:
+            log.info("Could not find channel or message")
+            return
         except Exception as e:
             log.info("Could not find channel or message", exc_info=True)
             # If we can't find the channel ignore it
@@ -359,59 +362,64 @@ class TriggerHandler:
         local_perms = not await self.local_perms(message)
         global_perms =  not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
+
         msg = message.content
         guild = message.guild
         channel = message.channel
-        channel_perms = channel.permissions_for(message.author)
+        author = message.author
+
+        channel_perms = channel.permissions_for(author)
         is_command = await self.check_is_command(message)
-        is_mod = await self.is_mod_or_admin(message.author)
+        is_mod = await self.is_mod_or_admin(author)
         trigger_list = await self.config.guild(guild).trigger_list()
         autoimmune = getattr(self.bot, "is_automod_immune", None)
+        auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
+        
         for triggers in trigger_list:
             trigger = Trigger.from_json(trigger_list[triggers])
-            if not await self.check_bw_list(trigger, message):
+            allowed_trigger = await self.check_bw_list(trigger, message)
+            is_auto_mod = trigger.response_type in auto_mod
+            if not allowed_trigger:
+                continue
+            if allowed_trigger and (is_auto_mod and is_mod):
                 continue
             search = re.findall(trigger.regex, message.content)
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
-                if trigger.response_type in ["delete", 
-                                             "kick", 
-                                             "ban", 
-                                             "add_role", 
-                                             "remove_role"]:
+                if trigger.response_type in auto_mod:
                     if await autoimmune(message):
-                        print_msg = _("ReTrigger: Author is immune "
-                                      "from automated actions")
-                        log.info(print_msg)
+                        print_msg = _("ReTrigger: {author} is immune "
+                                      "from automated actions ").format(author=author)
+                        log.info(print_msg + trigger.name)
                         return
                 if trigger.response_type == "delete":
                     if channel_perms.manage_messages or is_mod:
-                        print_msg = _("ReTrigger: Delete is ignored because "
-                                      "user has manage messages permission")
-                        log.info(print_msg+ str(message.author))
+                        print_msg = _("ReTrigger: Delete is ignored because {author} "
+                                      "has manage messages permission ").format(author=author)
+                        log.info(print_msg+ trigger.name)
                         return
                 elif trigger.response_type == "kick":
                     if channel_perms.kick_members or is_mod:
-                        print_msg = _("ReTrigger: Kick is ignored "
-                                      "because the user has kick permissions")
+                        print_msg = _("ReTrigger: Kick is ignored because "
+                                      "{author} has kick permissions ").format(author=author)
                         log.info(print_msg+ str(message.author))
                         return
                 elif trigger.response_type == "ban":
                     if channel_perms.ban_members or is_mod:
-                        print_msg = _("ReTrigger: Ban is ignored "
-                                      "because the user has ban permissions")
+                        print_msg = _("ReTrigger: Ban is ignored because {author} "
+                                      "has ban permissions ").format(author=author)
                         log.info(print_msg+ str(message.author))
                         return
                 elif trigger.response_type in ["add_role", "remove_role"]:
                     if channel_perms.manage_roles or is_mod:
-                        print_msg = _("ReTrigger: role change is ignored "
-                                      "because the user has mange roles permissions")
+                        print_msg = _("ReTrigger: role change is ignored because {author} "
+                                      "has mange roles permissions ").format(author=author)
                         log.info(print_msg+ str(message.author))
                 else:
                     if any([local_perms, global_perms, ignored_channel]):
-                        print_msg = _("ReTrigger: Channel is "
-                                      "ignored or user is blacklisted")
+                        print_msg = _("ReTrigger: Channel is ignored or"
+                                      "{author} is blacklisted ").format(author=author)
                         log.info(print_msg+ str(message.author))
                         return
                     if is_command:

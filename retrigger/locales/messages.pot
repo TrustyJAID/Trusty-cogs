@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2019-01-12 13:58-0700\n"
+"POT-Creation-Date: 2019-01-13 17:38-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -529,71 +529,71 @@ msgstr ""
 msgid "I need embed_links permission to use this command."
 msgstr ""
 
-#: retrigger/triggerhandler.py:384
-msgid "ReTrigger: Author is immune from automated actions"
+#: retrigger/triggerhandler.py:392
+msgid "ReTrigger: {author} is immune from automated actions "
 msgstr ""
 
-#: retrigger/triggerhandler.py:390
-msgid "ReTrigger: Delete is ignored because user has manage messages permission"
+#: retrigger/triggerhandler.py:398
+msgid "ReTrigger: Delete is ignored because {author} has manage messages permission "
 msgstr ""
 
-#: retrigger/triggerhandler.py:396
-msgid "ReTrigger: Kick is ignored because the user has kick permissions"
+#: retrigger/triggerhandler.py:404
+msgid "ReTrigger: Kick is ignored because {author} has kick permissions "
 msgstr ""
 
-#: retrigger/triggerhandler.py:402
-msgid "ReTrigger: Ban is ignored because the user has ban permissions"
+#: retrigger/triggerhandler.py:410
+msgid "ReTrigger: Ban is ignored because {author} has ban permissions "
 msgstr ""
 
-#: retrigger/triggerhandler.py:408
-msgid "ReTrigger: role change is ignored because the user has mange roles permissions"
+#: retrigger/triggerhandler.py:416
+msgid "ReTrigger: role change is ignored because {author} has mange roles permissions "
 msgstr ""
 
-#: retrigger/triggerhandler.py:413
-msgid "ReTrigger: Channel is ignored or user is blacklisted"
+#: retrigger/triggerhandler.py:421
+msgid "ReTrigger: Channel is ignored or{author} is blacklisted "
 msgstr ""
 
-#: retrigger/triggerhandler.py:431
+#: retrigger/triggerhandler.py:439
 msgid "Trigger response: "
 msgstr ""
 
-#: retrigger/triggerhandler.py:443 retrigger/triggerhandler.py:449
-#: retrigger/triggerhandler.py:455 retrigger/triggerhandler.py:462
-#: retrigger/triggerhandler.py:473 retrigger/triggerhandler.py:484
-#: retrigger/triggerhandler.py:492 retrigger/triggerhandler.py:504
-#: retrigger/triggerhandler.py:552 retrigger/triggerhandler.py:560
+#: retrigger/triggerhandler.py:451 retrigger/triggerhandler.py:457
+#: retrigger/triggerhandler.py:463 retrigger/triggerhandler.py:470
+#: retrigger/triggerhandler.py:481 retrigger/triggerhandler.py:492
+#: retrigger/triggerhandler.py:500 retrigger/triggerhandler.py:512
+#: retrigger/triggerhandler.py:560 retrigger/triggerhandler.py:568
 msgid "Retrigger encountered an error in "
 msgstr ""
 
-#: retrigger/triggerhandler.py:520
+#: retrigger/triggerhandler.py:528
 msgid "A message from "
 msgstr ""
 
-#: retrigger/triggerhandler.py:521
+#: retrigger/triggerhandler.py:529
 msgid " was deleted in "
 msgstr ""
 
-#: retrigger/triggerhandler.py:526
+#: retrigger/triggerhandler.py:534
 msgid "Channel"
 msgstr ""
 
-#: retrigger/triggerhandler.py:527
+#: retrigger/triggerhandler.py:535
 msgid "Trigger Name"
 msgstr ""
 
-#: retrigger/triggerhandler.py:529
+#: retrigger/triggerhandler.py:537
 msgid "Found Triggers"
 msgstr ""
 
-#: retrigger/triggerhandler.py:534
+#: retrigger/triggerhandler.py:542
 msgid "Attachments"
 msgstr ""
 
-#: retrigger/triggerhandler.py:535
+#: retrigger/triggerhandler.py:543
 msgid "User ID: "
 msgstr ""
 
-#: retrigger/triggerhandler.py:536
+#: retrigger/triggerhandler.py:544
 msgid " - Deleted Message"
 msgstr ""
 
