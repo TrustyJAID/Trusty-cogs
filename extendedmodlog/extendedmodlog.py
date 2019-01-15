@@ -86,8 +86,6 @@ class ExtendedModLog(getattr(commands, "Cog", object)):
             e.add_field(name=_("Disabled"), value=disabled[:-2])
             if ignored_channels:
                 chans = ", ".join(guild.get_channel(c).mention for c in ignored_channels)
-                if len(ignored_channels) > 1:
-                    chans = chans[:-2]
                 msg += _("Ignored Channels") + ": " + chans
                 e.add_field(name=_("Ignored Channels"), value=chans)
             
