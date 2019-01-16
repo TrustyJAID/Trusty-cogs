@@ -1,12 +1,17 @@
 import discord
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify, box
 import binascii
 import random
 import hashlib
+import codecs
+import re
+import base64
+
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import pagify
+
 from typing import Optional
 from string import ascii_lowercase as lc, ascii_uppercase as uc
-import re
+
 from .braille import *
 
 
@@ -100,17 +105,61 @@ class Encoding(getattr(commands, "Cog", object)):
         """
             Encode text into binary sequences of 8
         """
-        ascii_bin = " ".join(bin(x)[2:].zfill(8) for x in message.encode("UTF-8"))
+        ascii_bin = " ".join(bin(x)[2:].zfill(8) for x in message.encode("utf-8"))
         await ctx.send(ascii_bin)
 
     @_decode.command(name="binary")
     async def decode_binary(self, ctx: commands.Context, *, message: str):
         """
-            Decide binary sequences of 8
+            Decode binary sequences of 8
         """
         msg = message.replace(" ", "")
         bin_ascii = "".join([chr(int(msg[i:i+8],2)) for i in range(0,len(msg),8)])
         await ctx.send(bin_ascii)
+
+    @_encode.command(name="hex")
+    async def encode_hex(self, ctx: commands.Context, *, message: str):
+        """
+            Encode text into hexadecimal
+        """
+        ascii_bin = " ".join(hex(x)[2:] for x in message.encode("utf-8"))
+        await ctx.send(ascii_bin)
+
+    @_decode.command(name="hex")
+    async def decode_hex(self, ctx: commands.Context, *, message: str):
+        """
+            Decode a hexadecimal sequence to text
+        """
+        ascii_bin = "".join(chr(int("0x"+x, 16)) for x in re.split(r"[\s]+", message))
+        await ctx.send(ascii_bin)
+
+    @_encode.command(name="b64", aliases=["base64"])
+    async def encode_b64(self, ctx: commands.Context, *, message: str):
+        """
+            Encode text into base 64
+        """
+        await ctx.send(base64.b64encode(bytes(message, "utf-8")).decode("utf-8"))
+
+    @_decode.command(name="b64", aliases=["base64"])
+    async def decode_b64(self, ctx: commands.Context, *, message: str):
+        """
+            Decode a base 64 text
+        """
+        await ctx.send(base64.b64decode(bytes(message, "utf-8")).decode("utf-8"))
+
+    @_encode.command(name="chr", aliases=["character"])
+    async def encode_char(self, ctx: commands.Context, *, message: str):
+        """
+            Encode message into character numbers
+        """
+        await ctx.send(" ".join(str(ord(x)) for x in message))
+
+    @_decode.command(name="chr", aliases=["character"])
+    async def decode_char(self, ctx: commands.Context, *, message: str):
+        """
+            Decode character numbers to a message
+        """
+        await ctx.send(" ".join(str(chr(int(x))) for x in re.split(r"[\s]+", message)))
 
     @_encode.command(name="braille")
     async def encode_braille(self, ctx: commands.Context, *, message: str):
@@ -196,7 +245,7 @@ class Encoding(getattr(commands, "Cog", object)):
         """
         dna = {"00": "A", "01": "T", "10": "G", "11": "C"}
         message = message.strip(" ")
-        binary = " ".join(bin(x)[2:].zfill(8) for x in message.encode("UTF-8")).replace(" ", "")
+        binary = " ".join(bin(x)[2:].zfill(8) for x in message.encode("utf-8")).replace(" ", "")
         binlist = [binary[i:i+2] for i in range(0, len(binary), 2)]
         newmsg = ""
         count = 0
