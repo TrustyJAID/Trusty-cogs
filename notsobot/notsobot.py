@@ -1384,7 +1384,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         list_im = [f2, f]
         imgs = [PIL.ImageOps.mirror(PIL.Image.open(i).convert("RGBA")) for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-        imgs_comb = np.hstack((np.asarray(i.resize(min_shape)) for i in imgs))
+        imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
         imgs_comb = PIL.Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
@@ -1426,7 +1426,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         list_im = [f2, f]
         imgs = [PIL.ImageOps.mirror(PIL.Image.open(i).convert("RGBA")) for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-        imgs_comb = np.hstack((np.asarray(i.resize(min_shape)) for i in imgs))
+        imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
         imgs_comb = PIL.Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
@@ -1468,7 +1468,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         list_im = [f, f2]
         imgs = [PIL.Image.open(i).convert("RGBA") for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-        imgs_comb = np.vstack((np.asarray(i.resize(min_shape)) for i in imgs))
+        imgs_comb = np.vstack([np.asarray(i.resize(min_shape)) for i in imgs])
         imgs_comb = PIL.Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
@@ -1510,7 +1510,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         list_im = [f, f2]
         imgs = [PIL.Image.open(i).convert("RGBA") for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-        imgs_comb = np.vstack((np.asarray(i.resize(min_shape)) for i in imgs))
+        imgs_comb = np.vstack([np.asarray(i.resize(min_shape)) for i in imgs])
         imgs_comb = PIL.Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
