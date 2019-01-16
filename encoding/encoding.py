@@ -6,6 +6,8 @@ import random
 import hashlib
 from typing import Optional
 from string import ascii_lowercase as lc, ascii_uppercase as uc
+import re
+from .braille import *
 
 
 
@@ -109,6 +111,57 @@ class Encoding(getattr(commands, "Cog", object)):
         msg = message.replace(" ", "")
         bin_ascii = "".join([chr(int(msg[i:i+8],2)) for i in range(0,len(msg),8)])
         await ctx.send(bin_ascii)
+
+    @_encode.command(name="braille")
+    async def encode_braille(self, ctx: commands.Context, *, message: str):
+        """
+            Encode text into braille unicode characters
+        """
+        for word in re.split(r"[\s]+", message):
+            if word.lower() in contractions:
+                message = message.replace(word, contractions[word.lower()])
+        for letter in message:
+            if letter.isdigit():
+                message = message.replace(letter, chr(10300) + numbers[letter])
+            if letter.isupper():
+                message = message.replace(letter, chr(10272) + letters[letter.lower()])
+            if letter in letters:
+                message = message.replace(letter, letters[letter])
+            if letter in punctuation:
+                message = message.replace(letter, punctuation[letter])
+        await ctx.send(message)
+
+    @_decode.command(name="braille")
+    async def decode_braille(self, ctx: commands.Context, *, message: str):
+        """
+            Decide braille unicode characters to ascii
+        """
+        for word in re.split(r"[\s]+", message):
+            if word in r_contractions:
+                message = message.replace(word, r_contractions[word])
+        replacement = ""
+        for letter in message:
+            if letter == chr(10300):
+                replacement = "number"
+                continue
+            if letter == chr(10272):
+                replacement = "capital"
+                continue
+            if replacement == "number":
+                message = message.replace(chr(10300) + letter, r_numbers[letter])
+                replacement = ""
+                continue
+            if replacement == "capital":
+                message = message.replace(chr(10272) + letter, r_letters[letter].upper())
+                replacement = ""
+                continue
+        for letter in message:
+            if letter in r_punctuation:
+                message = message.replace(letter, r_punctuation[letter])
+            if letter in r_letters:
+                message = message.replace(letter, r_letters[letter])
+
+        await ctx.send(message[:2000])
 
     def rot_encode(self, n):
         """
