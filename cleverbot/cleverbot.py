@@ -53,19 +53,19 @@ class Cleverbot(getattr(commands, "Cog", object)):
                 result = await self.get_response(author, message)
             except NoCredentials:
                 await ctx.send("The owner needs to set the credentials first.\n"
-                                                     "See: `[p]cleverbot apikey` or `[p]cleverbot ioapikey`")
+                               "See: `[p]cleverbotset` or `[p]cleverbotset`")
             except APIError as e:
                 await ctx.send("Error contacting the API. Error code: {}".format(e))
             except InvalidCredentials:
                 await ctx.send("The token that has been set is not valid.\n"
-                                                     "See: `[p]cleverbot apikey`")
+                               "See: `[p]cleverbotset`")
             except OutOfRequests:
                 await ctx.send("You have ran out of requests for this month. "
-                                                     "The free tier has a 5000 requests a month limit.")
+                               "The free tier has a 5000 requests a month limit.")
             except OutdatedCredentials:
                 await ctx.send("You need a valid cleverbot.com api key for this to "
-                                                     "work. The old cleverbot.io service will soon be no "
-                                                     "longer active. See `[p]help cleverbot apikey`")
+                               "work. The old cleverbot.io service will soon be no "
+                               "longer active. See `[p]help cleverbotset`")
             else:
                 await ctx.send(result)
 
@@ -233,19 +233,19 @@ class Cleverbot(getattr(commands, "Cog", object)):
                     response = await self.get_response(author, text)
                 except NoCredentials:
                     await channel.send("The owner needs to set the credentials first.\n"
-                                                         "See: `[p]cleverbot apikey`")
+                                       "See: `[p]cleverbot apikey`")
                 except APIError as e:
                     await channel.send("Error contacting the API. Error code: {}".format(e))
                 except InvalidCredentials:
                     await channel.send("The token that has been set is not valid.\n"
-                                                         "See: `[p]cleverbot apikey`")
+                                       "See: `[p]cleverbotset`")
                 except OutOfRequests:
                     await channel.send("You have ran out of requests for this month. "
-                                                         "The free tier has a 5000 requests a month limit.")
+                                       "The free tier has a 5000 requests a month limit.")
                 except OutdatedCredentials:
                     await channel.send("You need a valid cleverbot.com api key for this to "
-                                                         "work. The old cleverbot.io service will soon be no "
-                                                         "longer active. See `[p]help cleverbot apikey`")
+                                       "work. The old cleverbot.io service will soon be no "
+                                       "longer active. See `[p]help cleverbotset`")
                 else:
                     await channel.send(response)
 
