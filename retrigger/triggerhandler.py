@@ -164,13 +164,13 @@ class TriggerHandler:
             
     def resize_image(self, size, image):
         length, width = (16, 16) # Start with the smallest size we want to upload
-        im = Image.open(image)
-        if size <= 0:
-            size = 1
-        im.thumbnail((length*size, width*size), Image.ANTIALIAS)
-        byte_array = BytesIO()
-        im.save(byte_array, format="PNG")
-        return discord.File(byte_array.getvalue(), filename="resize.png")
+        with Image.open(image) as im:
+            if size <= 0:
+                size = 1
+            im.thumbnail((length*size, width*size), Image.ANTIALIAS)
+            byte_array = BytesIO()
+            im.save(byte_array, format="PNG")
+            return discord.File(byte_array.getvalue(), filename="resize.png")
 
     async def trigger_menu(self, ctx:commands.Context, post_list: list,
                          message: discord.Message=None,
