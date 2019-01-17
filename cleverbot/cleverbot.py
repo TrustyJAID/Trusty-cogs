@@ -1,11 +1,14 @@
 import discord
 import aiohttp
+import logging
 import re
 
 from redbot.core import commands, checks, Config
 
 API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
+
+log = logging.getLogger("red.Cleverbot")
 
 
 class CleverbotError(Exception):
@@ -147,9 +150,17 @@ class Cleverbot(getattr(commands, "Cog", object)):
             if r.status == 200:
                 return
             elif r.status == 400:
+                try:
+                    error_msg = await r.json()
+                except:
+                    error_msg = "Error status 400, credentials seem to be invalid"
+                    pass
+                log.error(error_msg)
                 raise InvalidCredentials()
             else:
-                raise APIError("Error making instance: " + str(r.status))            
+                error_msg = "Error making instance: " + str(r.status)
+                log.error(error_msg)
+                raise APIError(error_msg)            
 
     async def get_cleverbotio_response(self, payload, text):
         payload["text"] = text
@@ -161,7 +172,9 @@ class Cleverbot(getattr(commands, "Cog", object)):
                 await self. make_cleverbotio_instance(payload)
                 return await self.get_cleverbotio_response(payload, text)
             else:
-                raise APIError("Error getting response: " + str(r.status))
+                error_msg = "Error getting response: " + str(r.status)
+                log.error(error_msg)
+                raise APIError(error_msg)
         return data["response"]
 
     async def get_cleverbotcom_response(self, payload, author):
@@ -171,11 +184,15 @@ class Cleverbot(getattr(commands, "Cog", object)):
                 data = await r.json()
                 self.instances[str(author.id)] = data["cs"] # Preserves conversation status
             elif r.status == 401:
+                log.error("Cleverbot.com Invalid Credentials")
                 raise InvalidCredentials()
             elif r.status == 503:
+                log.error("Cleverbot.com Out of Requests")
                 raise OutOfRequests()
             else:
-                raise APIError(str(r.status))
+                error_msg = "Cleverbot.com API Error " + str(r.status)
+                log.error(error_msg)
+                raise APIError(error_msg)
         return data["output"]
 
 
