@@ -15,6 +15,7 @@ import functools
 import asyncio
 import random
 import string
+from multiprocessing import Pool, TimeoutError
 
 from .converters import *
 
@@ -383,7 +384,20 @@ class TriggerHandler:
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
-            search = re.findall(trigger.regex, message.content)
+
+            try:
+                pool = Pool(processes=1)
+                process = pool.apply_async(re.findall, (trigger.regex, message.content))
+                task = functools.partial(process.get, timeout=10)
+                task = self.bot.loop.run_in_executor(None, task)
+                search = await asyncio.wait_for(task, timeout=10)
+            except (TimeoutError, asyncio.TimeoutError) as e:
+                error_msg = ("ReTrigger took too long to find matches "
+                             f"{guild.name} ({guild.id}) "
+                             f"Offending regex {trigger.regex} Name: {trigger.name}")
+                log.error(error_msg, exc_info=True)
+                return # we certainly don't want to be performing multiple triggers if this happens
+
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     return
