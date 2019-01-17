@@ -391,7 +391,9 @@ class TriggerHandler:
                 task = functools.partial(process.get, timeout=10)
                 task = self.bot.loop.run_in_executor(None, task)
                 search = await asyncio.wait_for(task, timeout=10)
+                pool.close()
             except (TimeoutError, asyncio.TimeoutError) as e:
+                pool.close()
                 error_msg = ("ReTrigger took too long to find matches "
                              f"{guild.name} ({guild.id}) "
                              f"Offending regex {trigger.regex} Name: {trigger.name}")
