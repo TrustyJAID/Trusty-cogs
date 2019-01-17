@@ -536,7 +536,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         except Exception as e:
             await ctx.send(e)
 
-    def do_gmagik(self, is_owner, gif, gif_dir, rand):
+    def do_gmagik(self, is_owner, gif, gif_dir, rand, is_gif):
         try:
             try:
                 frame = PIL.Image.open(gif)
@@ -545,33 +545,49 @@ class NotSoBot(getattr(commands, "Cog", object)):
             if frame.size >= (3000, 3000):
                 os.remove(gif)
                 return ":warning: `GIF resolution exceeds maximum >= (3000, 3000).`"
-            nframes = 0
-            while frame:
-                frame.save("{0}/{1}_{2}.png".format(gif_dir, nframes, rand), "GIF")
-                nframes += 1
-                try:
-                    frame.seek(nframes)
-                except EOFError:
-                    break
-            imgs = glob.glob(gif_dir+"*_{0}.png".format(rand))
-            if (len(imgs) > 150) and not is_owner:
+            if is_gif:
+                nframes = 0
+                while frame:
+                    frame.save("{0}/{1}_{2}.png".format(gif_dir, nframes, rand), "GIF")
+                    nframes += 1
+                    try:
+                        frame.seek(nframes)
+                    except EOFError:
+                        break
+                imgs = glob.glob(gif_dir+"*_{0}.png".format(rand))
+                if (len(imgs) > 150) and not is_owner:
+                    for image in imgs:
+                        os.remove(image)
+                    os.remove(gif)
+                    return ":warning: `GIF has too many frames (>= 150 Frames).`"
                 for image in imgs:
-                    os.remove(image)
-                os.remove(gif)
-                return ":warning: `GIF has too many frames (>= 150 Frames).`"
-            for image in imgs:
-                try:
-                    im = wand.image.Image(filename=image)
-                except Exception as e:
-                    print(e)
-                    continue
-                i = im.clone()
-                i.transform(resize="800x800>")
-                i.liquid_rescale(width=int(i.width*0.5), height=int(i.height*0.5), delta_x=1, rigidity=0)
-                i.liquid_rescale(width=int(i.width*1.5), height=int(i.height*1.5), delta_x=2, rigidity=0)
-                i.resize(i.width, i.height)
-                i.save(filename=image)
-            return True
+                    try:
+                        im = wand.image.Image(filename=image)
+                    except Exception as e:
+                        print(e)
+                        continue
+                    i = im.clone()
+                    i.transform(resize="800x800>")
+                    i.liquid_rescale(width=int(i.width*0.5), height=int(i.height*0.5), delta_x=1, rigidity=0)
+                    i.liquid_rescale(width=int(i.width*1.5), height=int(i.height*1.5), delta_x=2, rigidity=0)
+                    i.resize(i.width, i.height)
+                    i.save(filename=image)
+                return True
+            else:
+                frame.save("{0}/{1}_{2}.png".format(gif_dir, 0, rand), "GIF")
+                for x in range(0, 30):
+                    try:
+                        im = wand.image.Image(filename="{0}/{1}_{2}.png".format(gif_dir, x, rand))
+                    except Exception as e:
+                        print(e)
+                        continue
+                    i = im.clone()
+                    i.transform(resize="800x800>")
+                    i.liquid_rescale(width=int(i.width*0.75), height=int(i.height*0.75), delta_x=1, rigidity=0)
+                    i.liquid_rescale(width=int(i.width*1.25), height=int(i.height*1.25), delta_x=2, rigidity=0)
+                    i.resize(i.width, i.height)
+                    i.save(filename="{0}/{1}_{2}.png".format(gif_dir, x+1, rand))
+                return True
         except Exception as e:
             exc_type, exc_obj, tb = sys.exc_info()
             f = tb.tb_frame
@@ -586,7 +602,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
     async def gmagik(self, ctx, url:str=None, framerate:int=None):
         """Attempt to do magik on a gif"""
         try:
-            url = await self.get_images(ctx, urls=url, gif=True, limit=2)
+            url = await self.get_images(ctx, urls=url, limit=2)
             if url:
                 url = url[0]
             else:
@@ -595,10 +611,10 @@ class NotSoBot(getattr(commands, "Cog", object)):
             if not os.path.exists(gif_dir):
                 os.makedirs(gif_dir)
             check = await self.isgif(url)
-            if check is False:
-                await ctx.send("Invalid or Non-GIF!")
-                ctx.command.reset_cooldown(ctx)
-                return
+            # if check is False:
+                # await ctx.send("Invalid or Non-GIF!")
+                # ctx.command.reset_cooldown(ctx)
+                # return
             x = await ctx.message.channel.send( "ok, processing (this might take a while for big gifs)")
             rand = self.random()
             gifin = gif_dir+"1_{0}.gif".format(rand)
@@ -611,7 +627,13 @@ class NotSoBot(getattr(commands, "Cog", object)):
                 os.remove(gifin)
                 return
             try:
-                result = await self.bot.loop.run_in_executor(None, self.do_gmagik, is_owner, gifin, gif_dir, rand)
+                result = await self.bot.loop.run_in_executor(None, 
+                                                             self.do_gmagik, 
+                                                             is_owner, 
+                                                             gifin, 
+                                                             gif_dir, 
+                                                             rand, 
+                                                             check)
             except Exception as e:
                 print("Failing here")
                 print(e)
