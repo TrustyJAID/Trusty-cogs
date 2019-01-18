@@ -321,17 +321,15 @@ class TriggerHandler:
         """Checks if the message is a bot command"""
         prefix_list = await self.bot.command_prefix(self.bot, message)
         msg = message.content
+        is_command = False
         for prefix in prefix_list:
             if msg.startswith(prefix):
                 # Don't run a trigger if it's the name of a command
-                command_text = msg.split(" ")[0].replace(prefix, "")
-                try:
-                    command = self.bot.get_command(command_text)
-                except:
-                    return True
-                if command is not None:
-                    return True
-        return False
+                command_text = msg.replace(prefix, "").split(" ")[0]
+                command = self.bot.get_command(command_text)
+                if command:
+                    is_command = True
+        return is_command
     
     async def on_message(self, message):
         if message.guild is None:
@@ -351,7 +349,7 @@ class TriggerHandler:
             channel = self.bot.get_channel(int(payload.data["channel_id"]))
             message = await channel.get_message(int(payload.data["id"]))
         except discord.errors.Forbidden:
-            log.info("Could not find channel or message")
+            log.info(_("I don't have permission to read channel history"))
             return
         except Exception as e:
             log.info("Could not find channel or message", exc_info=True)
@@ -402,31 +400,31 @@ class TriggerHandler:
 
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
-                    return
+                    continue
                 if trigger.response_type in auto_mod:
                     if await autoimmune(message):
                         print_msg = _("ReTrigger: {author} is immune "
                                       "from automated actions ").format(author=author)
                         log.info(print_msg + trigger.name)
-                        return
+                        continue
                 if trigger.response_type == "delete":
                     if channel_perms.manage_messages or is_mod:
                         print_msg = _("ReTrigger: Delete is ignored because {author} "
                                       "has manage messages permission ").format(author=author)
                         log.info(print_msg+ trigger.name)
-                        return
+                        continue
                 elif trigger.response_type == "kick":
                     if channel_perms.kick_members or is_mod:
                         print_msg = _("ReTrigger: Kick is ignored because "
                                       "{author} has kick permissions ").format(author=author)
                         log.info(print_msg+ str(message.author))
-                        return
+                        continue
                 elif trigger.response_type == "ban":
                     if channel_perms.ban_members or is_mod:
                         print_msg = _("ReTrigger: Ban is ignored because {author} "
                                       "has ban permissions ").format(author=author)
                         log.info(print_msg+ str(message.author))
-                        return
+                        continue
                 elif trigger.response_type in ["add_role", "remove_role"]:
                     if channel_perms.manage_roles or is_mod:
                         print_msg = _("ReTrigger: role change is ignored because {author} "
@@ -437,9 +435,9 @@ class TriggerHandler:
                         print_msg = _("ReTrigger: Channel is ignored or"
                                       "{author} is blacklisted ").format(author=author)
                         log.info(print_msg+ str(message.author))
-                        return
+                        continue
                     if is_command:
-                        return
+                        continue
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0]) 
