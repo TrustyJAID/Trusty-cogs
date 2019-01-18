@@ -625,6 +625,28 @@ class Starboard(getattr(commands, "Cog", object)):
         starboard.messages.append(star_message.to_json())
         starboards[starboard.name] = starboard.to_json()
         await self.config.guild(guild).starboards.set(starboards)
+
+    async def get_count(self, message_entry, emoji):
+        orig_channel = self.bot.get_channel(message_entry.original_channel)
+        new_channel = self.bot.get_channel(message_entry.new_channel)
+        orig_msg = await orig_channel.get_message(message_entry.original_message)
+        orig_reaction = [r for r in orig_msg.reactions if str(r.emoji) == str(emoji)]
+        try:
+            new_msg = orig_msg = await new_channel.get_message(message_entry.new_message)
+            new_reaction = [r for r in orig_msg.reactions if str(r.emoji) == str(emoji)]
+            reactions = orig_reaction + new_reaction
+        except:
+            reactions = orig_reaction
+        unique_users = []
+        for reaction in reactions:
+            async for user in reaction.users():
+                # This makes sure that the user cannot add 
+                # their own count to the starboard threshold
+                if orig_msg.author.id == user.id:
+                    continue
+                if user.id not in unique_users:
+                    unique_users.append(user.id)
+        return len(unique_users)
   
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
@@ -652,30 +674,29 @@ class Starboard(getattr(commands, "Cog", object)):
             return
         if starboard.emoji == str(payload.emoji):
             star_channel = self.bot.get_channel(starboard.channel)
-            try:
-                reaction = [r for r in msg.reactions if str(r.emoji) == str(payload.emoji)][0]
-                count = reaction.count
-            except IndexError:
-                count = 0
-            async for user in reaction.users():
-                # This makes sure that the user cannot add 
-                # their own count to the starboard threshold
-                if msg.author.id == user.id and count != 0:
-                    count -= 1
+            
             for messages in [StarboardMessage.from_json(m) for m in starboard.messages]:
                 same_msg = messages.original_message == msg.id
                 same_channel = messages.original_channel == channel.id
+                starboard_msg = messages.new_message == msg.id
+                starboard_channel = messages.new_channel == channel.id
+
                 if not messages.new_message or not messages.new_channel:
                     continue
                 if (guild.id, msg.id) in self.message_list:
                     # This is to help prevent double posting starboard messages
                     return
-                if same_msg and same_channel:
+                if (same_msg and same_channel) or (starboard_msg and starboard_channel):
+                    count = await self.get_count(messages, payload.emoji)
                     msg_edit = await star_channel.get_message(messages.new_message)
                     count_msg = f"{payload.emoji} **#{count}**"
                     await msg_edit.edit(content=count_msg)
                     return
-
+            try:
+                reaction = [r for r in msg.reactions if str(r.emoji) == str(payload.emoji)][0]
+                count = reaction.count
+            except IndexError:
+                count = 0
             self.message_list.append((guild.id, payload.message_id))
             if count < starboard.threshold:
                 star_message = StarboardMessage(msg.id, 
