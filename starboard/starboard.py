@@ -42,25 +42,27 @@ class Starboard(getattr(commands, "Cog", object)):
                 s_boards = await self.config.guild(guild).starboards()
                 channel_perms = ctx.channel.permissions_for(ctx.guild.me)
                 for s in s_boards:
+                    channel = guild.get_channel(s_boards[s]["channel"])
+                    s_channel = channel.mention if channel else "deleted_channel"
                     msg = _("Name: ") + s_boards[s]["name"] + "\n"
                     msg += _("Enabled: ") + str(s_boards[s]["enabled"]) + "\n"
                     msg += _("Emoji: ") + str(s_boards[s]["emoji"]) + "\n"
-                    msg += _("Channel: ") + guild.get_channel(s_boards[s]["channel"]).mention + "\n"
+                    msg += _("Channel: ") + s_channel + "\n"
                     msg += _("Threshold: ") + str(s_boards[s]["threshold"]) + "\n"
                     if s_boards[s]["blacklist_channel"]:
                         channels = [guild.get_channel(c) for c in s_boards[s]["blacklist_channel"]]
-                        chans = ", ".join(c.mention for c in channels)
+                        chans = ", ".join(c.mention for c in channels if c is not None)
                         msg += _("Blacklisted Channels: ") + chans + "\n"
                     if s_boards[s]["whitelist_channel"]:
                         channles = [guild.get_channel(c) for c in s_boards[s]["whitelist_channel"]]
-                        chans = ", ".join(c.mention for c in channels)
+                        chans = ", ".join(c.mention for c in channels if c is not None)
                         msg += _("Whitelisted Channels: ") + chans + "\n"
                     if s_boards[s]["blacklist_role"]:
                         roles = [guild.get_role(c) for c in s_boards[s]["blacklist_role"]]
                         if channel_perms.embed_links:
-                            chans = ", ".join(r.mention for r in roles)
+                            chans = ", ".join(r.mention for r in roles if r is not None)
                         else:
-                            chans = ", ".join(r.name for r in roles)
+                            chans = ", ".join(r.name for r in roles if r is not None)
                         msg += _("Blacklisted roles: ") + chans + "\n"
                     if s_boards[s]["whitelist_role"]:
                         roles = [guild.get_role(c) for c in s_boards[s]["whitelist_role"]]
@@ -118,6 +120,57 @@ class Starboard(getattr(commands, "Cog", object)):
         msg = (_("Starboard set to ") + channel.mention + 
                _(" with emoji ") + str(emoji))
         await ctx.send(msg)
+
+    @starboard.command(name="cleanup")
+    async def cleanup(self, ctx):
+        """
+            Cleanup stored deleted channels or roles in the blacklist/whitelist
+        """
+        guild = ctx.guild
+        s_boards = await self.config.guild(guild).starboards()
+        if not s_boards:
+            await ctx.send(_("There are no Starboards setup on this server."))
+            return
+        if s_boards:
+            roles = 0
+            channels = 0
+            boards = 0
+            for s in await self.config.guild(guild).starboards():
+                channel = guild.get_channel(s_boards[s]["channel"])
+                if channel is None:
+                    del s_boards[s]
+                    boards +=1
+                    continue
+                if s_boards[s]["blacklist_channel"]:
+                    for c in s_boards[s]["blacklist_channel"]:
+                        channel = guild.get_channel(c)
+                        if channel is None:
+                            s_boards[s]["blacklist_channel"].remove(c)
+                            channels += 1
+                if s_boards[s]["whitelist_channel"]:
+                    for c in s_boards[s]["whitelist_channel"]:
+                        channel = guild.get_channel(c)
+                        if channel is None:
+                            s_boards[s]["whitelist_channel"].remove(c)
+                            channels += 1
+                if s_boards[s]["blacklist_role"]:
+                    for r in s_boards[s]["blacklist_role"]:
+                        role = guild.get_role(r)
+                        if role is None:
+                            s_boards[s]["blacklist_role"].remove(r)
+                            roles += 1
+                if s_boards[s]["whitelist_role"]:
+                    for r in s_boards[s]["whitelist_role"]:
+                        role = guild.get_role(r)
+                        if role is None:
+                            s_boards[s]["whitelist_role"].remove(r)
+                            roles += 1
+            await self.config.guild(guild).starboards.set(s_boards)
+        msg = _("Removed {channels} channels, {roles} roles and {boards} boards "
+                "that no longer exist").format(channels=channels, roles=roles, boards=boards)
+        await ctx.send(msg)
+
+
 
     @starboard.command(name="update")
     @checks.is_owner()

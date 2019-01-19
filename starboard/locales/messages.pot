@@ -5,17 +5,17 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-14 14:18-0700\n"
+"POT-Creation-Date: 2019-01-18 20:49-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: redgettext 2.1\n"
+"Generated-By: redgettext 2.2\n"
 
 
-#: starboard.py:19
+#: starboard/starboard.py:19
 #, docstring
 msgid ""
 "\n"
@@ -23,57 +23,58 @@ msgid ""
 "    "
 msgstr ""
 
-#: starboard.py:35
+#: starboard/starboard.py:35
 #, docstring
 msgid "Commands for managing the starboard"
 msgstr ""
 
-#: starboard.py:40
+#: starboard/starboard.py:40
 msgid "Starboard settings for "
 msgstr ""
 
-#: starboard.py:45
+#: starboard/starboard.py:47
 msgid "Name: "
 msgstr ""
 
-#: starboard.py:46
+#: starboard/starboard.py:48
 msgid "Enabled: "
 msgstr ""
 
-#: starboard.py:47
+#: starboard/starboard.py:49
 msgid "Emoji: "
 msgstr ""
 
-#: starboard.py:48
+#: starboard/starboard.py:50
 msgid "Channel: "
 msgstr ""
 
-#: starboard.py:49
+#: starboard/starboard.py:51
 msgid "Threshold: "
 msgstr ""
 
-#: starboard.py:53
+#: starboard/starboard.py:55
 msgid "Blacklisted Channels: "
 msgstr ""
 
-#: starboard.py:57
+#: starboard/starboard.py:59
 msgid "Whitelisted Channels: "
 msgstr ""
 
-#: starboard.py:64
+#: starboard/starboard.py:66
 msgid "Blacklisted roles: "
 msgstr ""
 
-#: starboard.py:71
+#: starboard/starboard.py:73
 msgid "Whitelisted Roles: "
 msgstr ""
 
-#: starboard.py:72 starboard.py:73 starboard.py:445 starboard.py:451
-#: starboard.py:470 starboard.py:472
+#: starboard/starboard.py:74 starboard/starboard.py:75
+#: starboard/starboard.py:498 starboard/starboard.py:504
+#: starboard/starboard.py:523 starboard/starboard.py:525
 msgid "Starboard "
 msgstr ""
 
-#: starboard.py:87
+#: starboard/starboard.py:89
 #, docstring
 msgid ""
 "\n"
@@ -85,31 +86,47 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:100 starboard.py:494
+#: starboard/starboard.py:102 starboard/starboard.py:547
 msgid "That emoji is not on this guild!"
 msgstr ""
 
-#: starboard.py:103 starboard.py:431
+#: starboard/starboard.py:105 starboard/starboard.py:484
 msgid "I don't have permission to post in "
 msgstr ""
 
-#: starboard.py:108 starboard.py:436
+#: starboard/starboard.py:110 starboard/starboard.py:489
 msgid "I don't have permission to embed links in "
 msgstr ""
 
-#: starboard.py:113
+#: starboard/starboard.py:115
 msgid " starboard name is already being used"
 msgstr ""
 
-#: starboard.py:118
+#: starboard/starboard.py:120
 msgid "Starboard set to "
 msgstr ""
 
-#: starboard.py:119
+#: starboard/starboard.py:121
 msgid " with emoji "
 msgstr ""
 
-#: starboard.py:125
+#: starboard/starboard.py:126
+#, docstring
+msgid ""
+"\n"
+"            Cleanup stored deleted channels or roles in the blacklist/whitelist\n"
+"        "
+msgstr ""
+
+#: starboard/starboard.py:132
+msgid "There are no Starboards setup on this server."
+msgstr ""
+
+#: starboard/starboard.py:169
+msgid "Removed {channels} channels, {roles} roles and {boards} boards that no longer exist"
+msgstr ""
+
+#: starboard/starboard.py:178
 #, docstring
 msgid ""
 "\n"
@@ -120,24 +137,24 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:155
+#: starboard/starboard.py:208
 msgid "Server "
 msgstr ""
 
-#: starboard.py:156
+#: starboard/starboard.py:209
 msgid " had an error converting "
 msgstr ""
 
-#: starboard.py:159
+#: starboard/starboard.py:212
 msgid ""
 "The following servers had errors\n"
 msgstr ""
 
-#: starboard.py:161
+#: starboard/starboard.py:214
 msgid "Starboards should all be updated."
 msgstr ""
 
-#: starboard.py:165
+#: starboard/starboard.py:218
 #, docstring
 msgid ""
 "\n"
@@ -147,15 +164,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:175
+#: starboard/starboard.py:228
 msgid " Doesn't appear to be a starboard on this server."
 msgstr ""
 
-#: starboard.py:180
+#: starboard/starboard.py:233
 msgid "Deleted starboard "
 msgstr ""
 
-#: starboard.py:185
+#: starboard/starboard.py:238
 #, docstring
 msgid ""
 "\n"
@@ -167,37 +184,37 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:198
+#: starboard/starboard.py:251
 msgid "That message doesn't appear to exist in the specified channel."
 msgstr ""
 
-#: starboard.py:207
+#: starboard/starboard.py:260
 msgid "Starboard"
 msgstr ""
 
-#: starboard.py:207
+#: starboard/starboard.py:260
 msgid " isn't enabled."
 msgstr ""
 
-#: starboard.py:211
+#: starboard/starboard.py:264
 msgid "One of your roles is blacklisted or you don't have the whitelisted role."
 msgstr ""
 
-#: starboard.py:216
+#: starboard/starboard.py:269
 msgid "This channel is either blacklisted or not in the whitelisted channels."
 msgstr ""
 
-#: starboard.py:245
+#: starboard/starboard.py:298
 #, docstring
 msgid "Add/Remove channels/roles from the whitelist"
 msgstr ""
 
-#: starboard.py:250
+#: starboard/starboard.py:303
 #, docstring
 msgid "Add/Remove channels/roles from the blacklist"
 msgstr ""
 
-#: starboard.py:259
+#: starboard/starboard.py:312
 #, docstring
 msgid ""
 "\n"
@@ -208,20 +225,22 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:270 starboard.py:311 starboard.py:353 starboard.py:394
-#: starboard.py:442 starboard.py:467 starboard.py:490 starboard.py:517
+#: starboard/starboard.py:323 starboard/starboard.py:364
+#: starboard/starboard.py:406 starboard/starboard.py:447
+#: starboard/starboard.py:495 starboard/starboard.py:520
+#: starboard/starboard.py:543 starboard/starboard.py:570
 msgid "There is no starboard named "
 msgstr ""
 
-#: starboard.py:275 starboard.py:285
+#: starboard/starboard.py:328 starboard/starboard.py:338
 msgid " is already blacklisted for starboard "
 msgstr ""
 
-#: starboard.py:281 starboard.py:291
+#: starboard/starboard.py:334 starboard/starboard.py:344
 msgid " blacklisted on starboard "
 msgstr ""
 
-#: starboard.py:300
+#: starboard/starboard.py:353
 #, docstring
 msgid ""
 "\n"
@@ -232,15 +251,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:316 starboard.py:327
+#: starboard/starboard.py:369 starboard/starboard.py:380
 msgid " is not blacklisted for starboard "
 msgstr ""
 
-#: starboard.py:323 starboard.py:333
+#: starboard/starboard.py:376 starboard/starboard.py:386
 msgid " removed from blacklist on starboard "
 msgstr ""
 
-#: starboard.py:342
+#: starboard/starboard.py:395
 #, docstring
 msgid ""
 "\n"
@@ -251,15 +270,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:358 starboard.py:368
+#: starboard/starboard.py:411 starboard/starboard.py:421
 msgid " is already whitelisted for starboard "
 msgstr ""
 
-#: starboard.py:364 starboard.py:374
+#: starboard/starboard.py:417 starboard/starboard.py:427
 msgid " whitelisted on starboard "
 msgstr ""
 
-#: starboard.py:383
+#: starboard/starboard.py:436
 #, docstring
 msgid ""
 "\n"
@@ -270,15 +289,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:399 starboard.py:410
+#: starboard/starboard.py:452 starboard/starboard.py:463
 msgid " is not whitelisted for starboard "
 msgstr ""
 
-#: starboard.py:406 starboard.py:416
+#: starboard/starboard.py:459 starboard/starboard.py:469
 msgid " removed from whitelist on starboard "
 msgstr ""
 
-#: starboard.py:422
+#: starboard/starboard.py:475
 #, docstring
 msgid ""
 "\n"
@@ -289,15 +308,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:446
+#: starboard/starboard.py:499
 msgid " is already posting in "
 msgstr ""
 
-#: starboard.py:452
+#: starboard/starboard.py:505
 msgid " set to post in "
 msgstr ""
 
-#: starboard.py:457
+#: starboard/starboard.py:510
 #, docstring
 msgid ""
 "\n"
@@ -307,15 +326,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:470
+#: starboard/starboard.py:523
 msgid " disabled."
 msgstr ""
 
-#: starboard.py:472
+#: starboard/starboard.py:525
 msgid " enabled."
 msgstr ""
 
-#: starboard.py:479
+#: starboard/starboard.py:532
 #, docstring
 msgid ""
 "\n"
@@ -326,11 +345,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:498
+#: starboard/starboard.py:551
 msgid " set for starboard "
 msgstr ""
 
-#: starboard.py:503
+#: starboard/starboard.py:556
 #, docstring
 msgid ""
 "\n"
@@ -342,11 +361,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: starboard.py:521
+#: starboard/starboard.py:574
 msgid "Threshold of "
 msgstr ""
 
-#: starboard.py:521
+#: starboard/starboard.py:574
 msgid " reactions set for "
 msgstr ""
 
