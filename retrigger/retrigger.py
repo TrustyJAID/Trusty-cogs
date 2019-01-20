@@ -124,7 +124,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             msg = _("Cooldown for Trigger `") + name + _("` reset.")
         trigger_list = await self.config.guild(ctx.guild).trigger_list()
         trigger.cooldown = cooldown
-        trigger_list[name] = trigger.to_json()
+        trigger_list[trigger.name] = trigger.to_json()
         await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
         await ctx.send(msg.format(time=time, style=style, name=trigger.name))
 
