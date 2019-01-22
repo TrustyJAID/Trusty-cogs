@@ -295,11 +295,8 @@ class ServerStats(getattr(commands, "Cog", object)):
             if not channel.permissions_for(ctx.me).read_message_history:
                 continue
             async for message in channel.history(limit=None, after=after):
-                if message.author.id not in user_list:
-                    user_list.append(message.author.id)
-        for member in member_list:
-            if member.id in user_list:
-                member_list.remove(member)
+                if message.author in member_list:
+                    member_list.remove(message.author)
         return member_list
             
 
