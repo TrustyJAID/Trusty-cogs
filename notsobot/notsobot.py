@@ -205,39 +205,26 @@ class NotSoBot(getattr(commands, "Cog", object)):
                 url = await r.text()
                 await ctx.send("Uploaded to paste, URL: <{0}>".format(url))
 
-    def do_magik(self, scale, *imgs):
+    def do_magik(self, scale, img):
         try:
             list_imgs = []
             exif = {}
             exif_msg = ""
             count = 0
-            for img in imgs:
-                i = wand.image.Image(file=img)
-                i.format = "jpg"
-                i.alpha_channel = True
-                if i.size >= (3000, 3000):
-                    return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None
-                exif.update({count:(k[5:], v) for k, v in i.metadata.items() if k.startswith("exif:")})
-                count += 1
-                i.transform(resize="800x800>")
-                i.liquid_rescale(width=int(i.width * 0.5), height=int(i.height * 0.5), delta_x=int(0.5 * scale) if scale else 1, rigidity=0)
-                i.liquid_rescale(width=int(i.width * 1.5), height=int(i.height * 1.5), delta_x=scale if scale else 2, rigidity=0)
-                magikd = BytesIO()
-                i.save(file=magikd)
-                magikd.seek(0)
-                list_imgs.append(magikd)
-            if len(list_imgs) > 1:
-                imgs = [PIL.Image.open(i).convert("RGBA") for i in list_imgs]
-                min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-                imgs_comb = np.hstack((np.asarray(i.resize(min_shape)) for i in imgs))
-                imgs_comb = PIL.Image.fromarray(imgs_comb)
-                ya = BytesIO()
-                imgs_comb.save(ya, "png")
-                ya.seek(0)
-            elif not len(list_imgs):
-                return ":warning: **Command download function failed...**", None
-            else:
-                ya = list_imgs[0]
+            i = wand.image.Image(file=img)
+            i.format = "jpg"
+            i.alpha_channel = True
+            if i.size >= (3000, 3000):
+                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None
+            exif.update({count:(k[5:], v) for k, v in i.metadata.items() if k.startswith("exif:")})
+            count += 1
+            i.transform(resize="800x800>")
+            i.liquid_rescale(width=int(i.width * 0.5), height=int(i.height * 0.5), delta_x=int(0.5 * scale) if scale else 1, rigidity=0)
+            i.liquid_rescale(width=int(i.width * 1.5), height=int(i.height * 1.5), delta_x=scale if scale else 2, rigidity=0)
+            magikd = BytesIO()
+            i.save(file=magikd)
+            magikd.seek(0)
+            list_imgs.append(magikd)
             for x in exif:
                 if len(exif[x]) >= 2000:
                     continue
@@ -245,7 +232,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
             else:
                 if len(exif_msg) == 0:
                     exif_msg = None
-            return ya, exif_msg
+            return list_imgs[0], exif_msg
         except Exception as e:
             return str(e), None
 
@@ -258,13 +245,8 @@ class NotSoBot(getattr(commands, "Cog", object)):
         try:
             msg = await ctx.message.channel.send( "ok, processing")
             list_imgs = []
-            for url in urls:
-                b = await self.bytes_download(url)
-                list_imgs.append(b)
-                if b is False:
-                    if len(urls) > 1:
-                        break
-            final, content_msg = await self.bot.loop.run_in_executor(None, self.do_magik, scale, *list_imgs)
+            b = await self.bytes_download(urls[0])
+            final, content_msg = await self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
             if type(final) == str:
                 await ctx.send(final)
                 return
