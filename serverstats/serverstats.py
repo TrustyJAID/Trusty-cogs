@@ -283,73 +283,210 @@ class ServerStats(getattr(commands, "Cog", object)):
         else:
             return msg.content
 
-    @commands.command()
-    @checks.mod_or_permissions(kick_members=True)
-    @checks.bot_has_permissions(kick_members=True, add_reactions=True)
-    async def pruneroles(self, ctx,  days:int, role:discord.Role=None, reinvite:bool=True):
-        """
-            Purge users from the server who have been inactive for x days
+    async def get_members_since(self, ctx, days:int, role:discord.Role):
+        now = datetime.datetime.utcnow()
+        after = now - datetime.timedelta(days=days)
+        if role is None:
+            member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
+        else:
+            member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
+        user_list = []
+        for channel in ctx.guild.text_channels:
+            if not channel.permissions_for(ctx.me).read_message_history:
+                continue
+            async for message in channel.history(limit=None, after=after):
+                if message.author.id not in user_list:
+                    user_list.append(message.author.id)
+        for member in member_list:
+            if member.id in user_list:
+                member_list.remove(member)
+        return member_list
             
-            `days` is the number of days since last seen talking in channels
-            `role` is the specified role you would like to kick defaults to everyone
-            `reinvite` True/False whether to try to send the user a message before kicking
+
+    @commands.group()
+    @checks.bot_has_permissions(add_reactions=True)
+    async def pruneroles(self, ctx):
+        """
+            Perform various actions on users who haven't spoken in x days
+
             Note: This will only check if a user has talked in the past x days whereas 
             discords built in Prune checks online status
         """
-        now = datetime.datetime.utcnow()
-        after = now - datetime.timedelta(days=days)
+        pass
+
+    @pruneroles.command()
+    async def list(self, ctx, days:int, role:discord.Role=None):
+        """
+            List the users who have not talked in x days
+        """
+        member_list = await self.get_members_since(ctx, days, role)
+        x = [member_list[i:i+10] for i in range(0, len(member_list), 10)]
+        msg_list = []
+        count = 1
+        for page in x:
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                em = discord.Embed(colour=await ctx.embed_colour())
+                if role:
+                    em.add_field(name=_("Role"), value=role.mention)
+                else:
+                    estimate = await ctx.guild.estimate_pruned_members(days=days)
+                    em.add_field(name=_("Discord Estimate"), value=str(estimate))
+                em.description = "\n".join(m.mention for m in page)
+                em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon_url)
+                em.title = _("Estimated members to be pruned ") + str(len(member_list))
+                em.set_footer(text="Page {} of {}".format(count, len(x)))
+                count += 1
+                msg_list.append(em)
+            else:
+
+                if not role:
+                    estimate = await ctx.guild.estimate_pruned_members(days=days)
+                    role_msg = _("Discord Estimate: {estimate}").format(estimate=estimate)
+                else:
+                    role_msg = _("Role: {role.name}").format(role=role)
+                members = "\n".join(str(m) for m in page)
+                msg = _("Estimated members to be pruned {num_members}\n"
+                        "{role}\n{members}\n").format(num_members=len(member_list),
+                                                      role=role_msg,
+                                                      members=members)
+                
+                msg += "Page {} of {}".format(count, len(x))
+                count += 1
+                msg_list.append(msg)
+        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+
+
+    @pruneroles.command()
+    @checks.mod_or_permissions(kick_members=True)
+    @checks.bot_has_permissions(kick_members=True, add_reactions=True)
+    async def kick(self, ctx, days:int, role:discord.Role=None, reinvite:bool=True):
+        """
+            Kick users from the server who have been inactive for x days
+            
+            `days` is the number of days since last seen talking on the server
+            `role` is the specified role you would like to kick defaults to everyone
+            `reinvite` True/False whether to try to send the user a message before kicking
+        """
         if role is not None and role >= ctx.me.top_role:
             msg = _("That role is higher than my "
-                    "role so I can't kick those members.")
+                    "role so I cannot kick those members.")
             await ctx.send(msg)
             return
-        async with ctx.typing():
-            if role is None:
-                member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
-            else:
-                member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
-            # for member in member_list:
-            user_list = []
-            for channel in ctx.guild.text_channels:
-                if not channel.permissions_for(ctx.me).read_message_history:
-                    continue
-                async for message in channel.history(limit=None, after=after):
-                    if message.author.id not in user_list:
-                        user_list.append(message.author.id)
-            for member in member_list:
-                if member.id in user_list:
-                    member_list.remove(member)
-            send_msg = str(len(member_list))+_(" estimated users to kick. "
+        member_list = await self.get_members_since(ctx, days, role)
+        send_msg = str(len(member_list))+_(" estimated users to kick. "
                                                 "Would you like to kick them?")
-            msg = await ctx.send(send_msg)
-        if ctx.channel.permissions_for(ctx.me).add_reactions:
-            check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
-            await msg.add_reaction("✅")
-            await msg.add_reaction("❌")
+        msg = await ctx.send(send_msg)
+        check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
+        await msg.add_reaction("✅")
+        await msg.add_reaction("❌")
 
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", 
-                                                         check=check, 
-                                                         timeout=60)
-            except asyncio.TimeoutError:
-                await ctx.send(_("I guess not."))
-            if reaction.emoji == "✅":
-                link = await self.ask_for_invite(ctx)
-                no_invite = []
-                for member in member_list:
-                    if link:
-                        try:
-                            await member.send(link)
-                        except:
-                            no_invite.append(member.id)
-                    await member.kick(reason=_("Kicked due to inactivity."))
-                if link and len(no_invite) > 0:
-                    msg = (str(len(no_invite)) + 
-                           _(" users could not be DM'd an invite link"))
-                    await ctx.send(msg)
-            else:
-                await ctx.send("Not kicking users.")
-                return
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", 
+                                                     check=check, 
+                                                     timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        if reaction.emoji == "✅":
+            link = await self.ask_for_invite(ctx)
+            no_invite = []
+            for member in member_list:
+                if link:
+                    try:
+                        await member.send(link)
+                    except:
+                        no_invite.append(member.id)
+                await member.kick(reason=_("Kicked due to inactivity."))
+            if link and len(no_invite) > 0:
+                msg = (str(len(no_invite)) + 
+                       _(" users could not be DM'd an invite link"))
+                await ctx.send(msg)
+        else:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        await ctx.send(_("Done."))
+
+    @pruneroles.command()
+    @checks.mod_or_permissions(manage_roles=True)
+    @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
+    async def add(self, ctx, days:int, *new_roles:discord.Role):
+        """
+            Give roles to users who haven't spoken in x days
+            
+            `days` is the number of days since last seen talking on the server
+            `new_roles` The new roles to apply to a user who is inactive
+        """
+        if any([r >= ctx.me.top_role for r in new_roles]):
+            msg = _("At least one of those roles is higher than my "
+                    "role so I cannot add those roles.")
+            await ctx.send(msg)
+            return
+        member_list = await self.get_members_since(ctx, days, None)
+        send_msg = str(len(member_list))+_(" estimated users to give the role. "
+                                           "Would you like to reassign their roles now?")
+        msg = await ctx.send(send_msg)
+        check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
+        await msg.add_reaction("✅")
+        await msg.add_reaction("❌")
+
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", 
+                                                     check=check, 
+                                                     timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        if reaction.emoji == "✅":
+            for member in member_list:
+                roles = list(set(member.roles+list(new_roles)))
+                await member.edit(roles=roles, reason=_("Given role due to inactivity."))
+        else:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        await ctx.send(_("Done."))
+
+    @pruneroles.command()
+    @checks.mod_or_permissions(manage_roles=True)
+    @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
+    async def remove(self, ctx, days:int, *removed_roles:discord.Role):
+        """
+            Remove roles from users who haven't spoken in x days
+            
+            `days` is the number of days since last seen talking on the server
+            `role` is the specified role you would like to remove roles defaults to everyone
+            `removed_roles` the roles to remove from inactive users
+        """
+        if any([r >= ctx.me.top_role for r in removed_roles]):
+            msg = _("At least one of those roles is higher than my "
+                    "role so I cannot remove those roles.")
+            await ctx.send(msg)
+            return
+        member_list = await self.get_members_since(ctx, days, None)
+        send_msg = str(len(member_list))+_(" estimated users to remove their roles. "
+                                           "Would you like to reassign their roles now?")
+        msg = await ctx.send(send_msg)
+        check = lambda r, u: u == ctx.message.author and r.emoji in ["✅", "❌"]
+        await msg.add_reaction("✅")
+        await msg.add_reaction("❌")
+
+        try:
+            reaction, user = await self.bot.wait_for("reaction_add", 
+                                                     check=check, 
+                                                     timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        if reaction.emoji == "✅":
+            for member in member_list:
+                if member.id != 261320113444225025:
+                    continue
+                roles = list(set(member.roles)-set(removed_roles))
+                await member.edit(roles=roles, reason=_("Roles removed due to inactivity."))
+        else:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        await ctx.send(_("Done."))
+
 
 
     @commands.command()
