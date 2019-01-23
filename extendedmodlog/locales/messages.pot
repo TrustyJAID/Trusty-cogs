@@ -5,17 +5,472 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-12-26 00:36-0700\n"
+"POT-Creation-Date: 2019-01-23 11:05-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: redgettext 2.1\n"
+"Generated-By: redgettext 2.2\n"
 
 
-#: extendedmodlog.py:28
+#: extendedmodlog/eventmixin.py:16
+#, docstring
+msgid ""
+"\n"
+"        Handles all the on_event data\n"
+"    "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:81
+msgid ""
+"Not Set\n"
+"MOD"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:87
+msgid ""
+"Not Set\n"
+"ADMIN"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:96
+msgid " used "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:105 extendedmodlog/eventmixin.py:157
+#: extendedmodlog/eventmixin.py:789
+msgid "Channel"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:106
+msgid "Can Run"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:107
+msgid "Required Role"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:108 extendedmodlog/eventmixin.py:165
+#: extendedmodlog/eventmixin.py:274 extendedmodlog/eventmixin.py:319
+#: extendedmodlog/eventmixin.py:783
+msgid "User ID: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:109
+msgid " - Used a MOD/ADMIN Command"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:146
+msgid "A message from "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:147
+msgid " was deleted in "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:150
+msgid " Deleted a message "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:151
+msgid " in "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:159 extendedmodlog/eventmixin.py:734
+msgid "Deleted by"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:164
+msgid "Attachments"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:166
+msgid " - Deleted Message"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:216 extendedmodlog/eventmixin.py:233
+#: extendedmodlog/eventmixin.py:241
+msgid ""
+"https://discord.gg/{code}\n"
+"Invited by: {inviter}"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:272 extendedmodlog/eventmixin.py:313
+msgid "Total Users:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:273
+msgid "Account created on:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:274
+msgid " Created on"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:275
+msgid " has joined the guild"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:278
+msgid "Invite Link"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:283
+msgid "joined the guild. Total users: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:316
+msgid "Kicked"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:318 extendedmodlog/eventmixin.py:1062
+msgid "Reason"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:320
+msgid " has left the guild"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:327
+msgid "has left the guild. Total users: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:330
+msgid "was kicked by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:331
+msgid ". Total users: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:391 extendedmodlog/eventmixin.py:392
+msgid "Channel Created "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:404
+msgid "Text Channel Created"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:405 extendedmodlog/eventmixin.py:408
+#: extendedmodlog/eventmixin.py:411 extendedmodlog/eventmixin.py:452
+#: extendedmodlog/eventmixin.py:455 extendedmodlog/eventmixin.py:458
+msgid "Type"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:405 extendedmodlog/eventmixin.py:408
+#: extendedmodlog/eventmixin.py:452 extendedmodlog/eventmixin.py:455
+msgid "Text"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:407
+msgid "Category Channel Created"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:410
+msgid "Voice Channel Created"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:411 extendedmodlog/eventmixin.py:458
+msgid "Voice"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:413 extendedmodlog/eventmixin.py:414
+msgid "Created by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:416 extendedmodlog/eventmixin.py:417
+#: extendedmodlog/eventmixin.py:463 extendedmodlog/eventmixin.py:464
+#: extendedmodlog/eventmixin.py:550 extendedmodlog/eventmixin.py:551
+#: extendedmodlog/eventmixin.py:634 extendedmodlog/eventmixin.py:635
+#: extendedmodlog/eventmixin.py:698 extendedmodlog/eventmixin.py:699
+#: extendedmodlog/eventmixin.py:737 extendedmodlog/eventmixin.py:738
+#: extendedmodlog/eventmixin.py:905 extendedmodlog/eventmixin.py:906
+#: extendedmodlog/eventmixin.py:987 extendedmodlog/eventmixin.py:988
+msgid "Reason "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:438 extendedmodlog/eventmixin.py:439
+msgid "Channel Deleted "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:451
+msgid "Text Channel Deleted"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:454
+msgid "Category Channel Deleted"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:457
+msgid "Voice Channel Deleted"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:460 extendedmodlog/eventmixin.py:461
+msgid "Deleted by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:485 extendedmodlog/eventmixin.py:486
+msgid "Updated channel "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:498 extendedmodlog/eventmixin.py:527
+#: extendedmodlog/eventmixin.py:636 extendedmodlog/eventmixin.py:813
+msgid "Name:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:499
+msgid "Topic:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:500 extendedmodlog/eventmixin.py:529
+msgid "Category:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:501
+msgid "Slowmode delay:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:512 extendedmodlog/eventmixin.py:514
+#: extendedmodlog/eventmixin.py:517 extendedmodlog/eventmixin.py:519
+#: extendedmodlog/eventmixin.py:537 extendedmodlog/eventmixin.py:539
+#: extendedmodlog/eventmixin.py:650 extendedmodlog/eventmixin.py:652
+#: extendedmodlog/eventmixin.py:826 extendedmodlog/eventmixin.py:828
+#: extendedmodlog/eventmixin.py:1051 extendedmodlog/eventmixin.py:1053
+msgid "Before "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:513 extendedmodlog/eventmixin.py:515
+#: extendedmodlog/eventmixin.py:518 extendedmodlog/eventmixin.py:520
+#: extendedmodlog/eventmixin.py:538 extendedmodlog/eventmixin.py:540
+#: extendedmodlog/eventmixin.py:651 extendedmodlog/eventmixin.py:653
+#: extendedmodlog/eventmixin.py:827 extendedmodlog/eventmixin.py:829
+#: extendedmodlog/eventmixin.py:1052 extendedmodlog/eventmixin.py:1054
+msgid "After "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:523 extendedmodlog/eventmixin.py:543
+#: extendedmodlog/eventmixin.py:656
+msgid "Permissions Changed: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:524 extendedmodlog/eventmixin.py:544
+#: extendedmodlog/eventmixin.py:657
+msgid "Permissions"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:528
+msgid "Position:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:530
+msgid "Bitrate:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:531
+msgid "User limit:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:547 extendedmodlog/eventmixin.py:548
+#: extendedmodlog/eventmixin.py:631 extendedmodlog/eventmixin.py:632
+#: extendedmodlog/eventmixin.py:902 extendedmodlog/eventmixin.py:903
+#: extendedmodlog/eventmixin.py:1058 extendedmodlog/eventmixin.py:1059
+msgid "Updated by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:623 extendedmodlog/eventmixin.py:625
+msgid "Updated Everyone role "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:627 extendedmodlog/eventmixin.py:629
+msgid "Updated role "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:637
+msgid "Colour:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:638
+msgid "Mentionable:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:639
+msgid "Is Hoisted:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:690 extendedmodlog/eventmixin.py:692
+msgid "Role created "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:695
+msgid "Created by"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:696 extendedmodlog/eventmixin.py:735
+msgid "By "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:730 extendedmodlog/eventmixin.py:731
+msgid "Role deleted "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:774
+msgid "A message by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:776
+msgid " was edited in "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:781
+msgid "After Message:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:782
+msgid "Channel:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:784
+msgid " - Edited Message"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:791
+msgid ""
+"message has been edited.\n"
+"Before: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:792
+msgid ""
+"\n"
+"After: "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:809 extendedmodlog/eventmixin.py:812
+msgid "Updated Guild "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:814
+msgid "Region:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:815
+msgid "AFK Timeout:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:816
+msgid "AFK Channel:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:817
+msgid "Server Icon:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:818
+msgid "Server Owner:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:819
+msgid "Splash Image:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:820
+msgid "Welcome message channel:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:840
+msgid "Update by "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:842 extendedmodlog/eventmixin.py:985
+msgid "Updated by"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:845 extendedmodlog/eventmixin.py:846
+msgid "Reasons "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:867 extendedmodlog/eventmixin.py:869
+msgid "Updated Server Emojis"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:876
+msgid ""
+" Removed from the guild\n"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:881
+msgid ""
+" Added to the guild\n"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:889
+msgid ""
+" Emoji changed\n"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:930
+msgid "Updated Voice State"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:936
+msgid " was deafened. "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:940
+msgid " was undeafened. "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:946
+msgid " was muted. "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:950
+msgid " was unmuted. "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:956
+msgid " has joined "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:961
+msgid " has left "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:966
+msgid " has moved from "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:967
+msgid " to "
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1009
+msgid "Updated"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1012
+msgid "Nickname:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1013
+msgid "Roles:"
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1028 extendedmodlog/eventmixin.py:1029
+msgid " Role Removed."
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1032 extendedmodlog/eventmixin.py:1033
+msgid " Role Applied."
+msgstr ""
+
+#: extendedmodlog/eventmixin.py:1061
+msgid "Reason: "
+msgstr ""
+
+#: extendedmodlog/extendedmodlog.py:31
 #, docstring
 msgid ""
 "\n"
@@ -24,7 +479,7 @@ msgid ""
 "    "
 msgstr ""
 
-#: extendedmodlog.py:42
+#: extendedmodlog/extendedmodlog.py:46
 #, docstring
 msgid ""
 "\n"
@@ -34,79 +489,79 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:54
+#: extendedmodlog/extendedmodlog.py:58
 msgid "You need to setup a channel with `[p]modlogset modlog #channel` first."
 msgstr ""
 
-#: extendedmodlog.py:56
+#: extendedmodlog/extendedmodlog.py:60
 msgid "Message edits"
 msgstr ""
 
-#: extendedmodlog.py:57
+#: extendedmodlog/extendedmodlog.py:61
 msgid "Message delete"
 msgstr ""
 
-#: extendedmodlog.py:58
+#: extendedmodlog/extendedmodlog.py:62
 msgid "Member changes"
 msgstr ""
 
-#: extendedmodlog.py:59
+#: extendedmodlog/extendedmodlog.py:63
 msgid "Role changes"
 msgstr ""
 
-#: extendedmodlog.py:60
+#: extendedmodlog/extendedmodlog.py:64
 msgid "Voice changes"
 msgstr ""
 
-#: extendedmodlog.py:61
+#: extendedmodlog/extendedmodlog.py:65
 msgid "User join"
 msgstr ""
 
-#: extendedmodlog.py:62
+#: extendedmodlog/extendedmodlog.py:66
 msgid "Member left"
 msgstr ""
 
-#: extendedmodlog.py:63
+#: extendedmodlog/extendedmodlog.py:67
 msgid "Channel changes"
 msgstr ""
 
-#: extendedmodlog.py:64
+#: extendedmodlog/extendedmodlog.py:68
 msgid "Guild changes"
 msgstr ""
 
-#: extendedmodlog.py:65
+#: extendedmodlog/extendedmodlog.py:69
 msgid "Emoji changes"
 msgstr ""
 
-#: extendedmodlog.py:66
+#: extendedmodlog/extendedmodlog.py:70
 msgid "Mod/Admin Commands"
 msgstr ""
 
-#: extendedmodlog.py:67 extendedmodlog.py:68
+#: extendedmodlog/extendedmodlog.py:71 extendedmodlog/extendedmodlog.py:72
 msgid "Setting for "
 msgstr ""
 
-#: extendedmodlog.py:70
+#: extendedmodlog/extendedmodlog.py:74
 msgid "ModLogs channel set to "
 msgstr ""
 
-#: extendedmodlog.py:80 extendedmodlog.py:82
+#: extendedmodlog/extendedmodlog.py:84 extendedmodlog/extendedmodlog.py:86
 msgid "None  "
 msgstr ""
 
-#: extendedmodlog.py:83 extendedmodlog.py:85
+#: extendedmodlog/extendedmodlog.py:87 extendedmodlog/extendedmodlog.py:89
 msgid "Enabled"
 msgstr ""
 
-#: extendedmodlog.py:84 extendedmodlog.py:86
+#: extendedmodlog/extendedmodlog.py:88 extendedmodlog/extendedmodlog.py:90
 msgid "Disabled"
 msgstr ""
 
-#: extendedmodlog.py:91 extendedmodlog.py:92
+#: extendedmodlog/extendedmodlog.py:93 extendedmodlog/extendedmodlog.py:94
 msgid "Ignored Channels"
 msgstr ""
 
-#: extendedmodlog.py:103
+#: extendedmodlog/extendedmodlog.py:105
 #, docstring
 msgid ""
 "\n"
@@ -114,25 +569,29 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:107
+#: extendedmodlog/extendedmodlog.py:109
 msgid "Edit messages "
 msgstr ""
 
-#: extendedmodlog.py:110 extendedmodlog.py:125 extendedmodlog.py:142
-#: extendedmodlog.py:159 extendedmodlog.py:174 extendedmodlog.py:189
-#: extendedmodlog.py:206 extendedmodlog.py:223 extendedmodlog.py:240
-#: extendedmodlog.py:255 extendedmodlog.py:270
+#: extendedmodlog/extendedmodlog.py:112 extendedmodlog/extendedmodlog.py:131
+#: extendedmodlog/extendedmodlog.py:148 extendedmodlog/extendedmodlog.py:165
+#: extendedmodlog/extendedmodlog.py:180 extendedmodlog/extendedmodlog.py:195
+#: extendedmodlog/extendedmodlog.py:212 extendedmodlog/extendedmodlog.py:229
+#: extendedmodlog/extendedmodlog.py:246 extendedmodlog/extendedmodlog.py:261
+#: extendedmodlog/extendedmodlog.py:276
 msgid "enabled"
 msgstr ""
 
-#: extendedmodlog.py:113 extendedmodlog.py:128 extendedmodlog.py:145
-#: extendedmodlog.py:162 extendedmodlog.py:177 extendedmodlog.py:192
-#: extendedmodlog.py:209 extendedmodlog.py:226 extendedmodlog.py:243
-#: extendedmodlog.py:258 extendedmodlog.py:273
+#: extendedmodlog/extendedmodlog.py:115 extendedmodlog/extendedmodlog.py:134
+#: extendedmodlog/extendedmodlog.py:151 extendedmodlog/extendedmodlog.py:168
+#: extendedmodlog/extendedmodlog.py:183 extendedmodlog/extendedmodlog.py:198
+#: extendedmodlog/extendedmodlog.py:215 extendedmodlog/extendedmodlog.py:232
+#: extendedmodlog/extendedmodlog.py:249 extendedmodlog/extendedmodlog.py:264
+#: extendedmodlog/extendedmodlog.py:279
 msgid "disabled"
 msgstr ""
 
-#: extendedmodlog.py:118
+#: extendedmodlog/extendedmodlog.py:120
 #, docstring
 msgid ""
 "\n"
@@ -140,11 +599,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:122
+#: extendedmodlog/extendedmodlog.py:124
 msgid "Join message logs "
 msgstr ""
 
-#: extendedmodlog.py:133
+#: extendedmodlog/extendedmodlog.py:129
+msgid "enabled with invite links"
+msgstr ""
+
+#: extendedmodlog/extendedmodlog.py:139
 #, docstring
 msgid ""
 "\n"
@@ -154,11 +617,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:139
+#: extendedmodlog/extendedmodlog.py:145
 msgid "Guild logs "
 msgstr ""
 
-#: extendedmodlog.py:150
+#: extendedmodlog/extendedmodlog.py:156
 #, docstring
 msgid ""
 "\n"
@@ -168,11 +631,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:156
+#: extendedmodlog/extendedmodlog.py:162
 msgid "Channel logs "
 msgstr ""
 
-#: extendedmodlog.py:167
+#: extendedmodlog/extendedmodlog.py:173
 #, docstring
 msgid ""
 "\n"
@@ -180,11 +643,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:171
+#: extendedmodlog/extendedmodlog.py:177
 msgid "Leave logs "
 msgstr ""
 
-#: extendedmodlog.py:182
+#: extendedmodlog/extendedmodlog.py:188
 #, docstring
 msgid ""
 "\n"
@@ -192,11 +655,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:186
+#: extendedmodlog/extendedmodlog.py:192
 msgid "Message delete logs "
 msgstr ""
 
-#: extendedmodlog.py:197
+#: extendedmodlog/extendedmodlog.py:203
 #, docstring
 msgid ""
 "\n"
@@ -206,11 +669,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:203
+#: extendedmodlog/extendedmodlog.py:209
 msgid "Profile logs "
 msgstr ""
 
-#: extendedmodlog.py:214
+#: extendedmodlog/extendedmodlog.py:220
 #, docstring
 msgid ""
 "\n"
@@ -220,11 +683,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:220
+#: extendedmodlog/extendedmodlog.py:226
 msgid "Role logs "
 msgstr ""
 
-#: extendedmodlog.py:231
+#: extendedmodlog/extendedmodlog.py:237
 #, docstring
 msgid ""
 "\n"
@@ -234,11 +697,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:237
+#: extendedmodlog/extendedmodlog.py:243
 msgid "Voice logs "
 msgstr ""
 
-#: extendedmodlog.py:248
+#: extendedmodlog/extendedmodlog.py:254
 #, docstring
 msgid ""
 "\n"
@@ -246,11 +709,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:252
+#: extendedmodlog/extendedmodlog.py:258
 msgid "Emoji logs "
 msgstr ""
 
-#: extendedmodlog.py:263
+#: extendedmodlog/extendedmodlog.py:269
 #, docstring
 msgid ""
 "\n"
@@ -258,11 +721,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:267
+#: extendedmodlog/extendedmodlog.py:273
 msgid "Command logs "
 msgstr ""
 
-#: extendedmodlog.py:278
+#: extendedmodlog/extendedmodlog.py:284
 #, docstring
 msgid ""
 "\n"
@@ -273,15 +736,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:291
+#: extendedmodlog/extendedmodlog.py:297
 msgid " Now ignoring messages edited and deleted in "
 msgstr ""
 
-#: extendedmodlog.py:293
+#: extendedmodlog/extendedmodlog.py:299
 msgid " is already being ignored."
 msgstr ""
 
-#: extendedmodlog.py:297
+#: extendedmodlog/extendedmodlog.py:303
 #, docstring
 msgid ""
 "\n"
@@ -292,435 +755,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: extendedmodlog.py:310
+#: extendedmodlog/extendedmodlog.py:316
 msgid " now tracking edited and deleted messages in "
 msgstr ""
 
-#: extendedmodlog.py:312
+#: extendedmodlog/extendedmodlog.py:318
 msgid " is not being ignored."
-msgstr ""
-
-#: extendedmodlog.py:372
-msgid ""
-"Not Set\n"
-"MOD"
-msgstr ""
-
-#: extendedmodlog.py:378
-msgid ""
-"Not Set\n"
-"ADMIN"
-msgstr ""
-
-#: extendedmodlog.py:387
-msgid " used "
-msgstr ""
-
-#: extendedmodlog.py:396 extendedmodlog.py:448 extendedmodlog.py:998
-msgid "Channel"
-msgstr ""
-
-#: extendedmodlog.py:397
-msgid "Can Run"
-msgstr ""
-
-#: extendedmodlog.py:398
-msgid "Required Role"
-msgstr ""
-
-#: extendedmodlog.py:399 extendedmodlog.py:456 extendedmodlog.py:488
-#: extendedmodlog.py:530 extendedmodlog.py:992
-msgid "User ID: "
-msgstr ""
-
-#: extendedmodlog.py:400
-msgid " - Used a MOD/ADMIN Command"
-msgstr ""
-
-#: extendedmodlog.py:437
-msgid "A message from "
-msgstr ""
-
-#: extendedmodlog.py:438
-msgid " was deleted in "
-msgstr ""
-
-#: extendedmodlog.py:441
-msgid " Deleted a message "
-msgstr ""
-
-#: extendedmodlog.py:442
-msgid " in "
-msgstr ""
-
-#: extendedmodlog.py:450 extendedmodlog.py:943
-msgid "Deleted by"
-msgstr ""
-
-#: extendedmodlog.py:455
-msgid "Attachments"
-msgstr ""
-
-#: extendedmodlog.py:457
-msgid " - Deleted Message"
-msgstr ""
-
-#: extendedmodlog.py:486 extendedmodlog.py:524
-msgid "Total Users:"
-msgstr ""
-
-#: extendedmodlog.py:487
-msgid "Account created on:"
-msgstr ""
-
-#: extendedmodlog.py:488
-msgid " Created on"
-msgstr ""
-
-#: extendedmodlog.py:489
-msgid " has joined the guild"
-msgstr ""
-
-#: extendedmodlog.py:495
-msgid "joined the guild. Total users: "
-msgstr ""
-
-#: extendedmodlog.py:527
-msgid "Kicked"
-msgstr ""
-
-#: extendedmodlog.py:529 extendedmodlog.py:1272
-msgid "Reason"
-msgstr ""
-
-#: extendedmodlog.py:531
-msgid " has left the guild"
-msgstr ""
-
-#: extendedmodlog.py:538
-msgid "has left the guild. Total users: "
-msgstr ""
-
-#: extendedmodlog.py:541
-msgid "was kicked by "
-msgstr ""
-
-#: extendedmodlog.py:542
-msgid ". Total users: "
-msgstr ""
-
-#: extendedmodlog.py:600 extendedmodlog.py:601
-msgid "Channel Created "
-msgstr ""
-
-#: extendedmodlog.py:613
-msgid "Text Channel Created"
-msgstr ""
-
-#: extendedmodlog.py:614 extendedmodlog.py:617 extendedmodlog.py:620
-#: extendedmodlog.py:661 extendedmodlog.py:664 extendedmodlog.py:667
-msgid "Type"
-msgstr ""
-
-#: extendedmodlog.py:614 extendedmodlog.py:617 extendedmodlog.py:661
-#: extendedmodlog.py:664
-msgid "Text"
-msgstr ""
-
-#: extendedmodlog.py:616
-msgid "Category Channel Created"
-msgstr ""
-
-#: extendedmodlog.py:619
-msgid "Voice Channel Created"
-msgstr ""
-
-#: extendedmodlog.py:620 extendedmodlog.py:667
-msgid "Voice"
-msgstr ""
-
-#: extendedmodlog.py:622 extendedmodlog.py:623
-msgid "Created by "
-msgstr ""
-
-#: extendedmodlog.py:625 extendedmodlog.py:626 extendedmodlog.py:672
-#: extendedmodlog.py:673 extendedmodlog.py:759 extendedmodlog.py:760
-#: extendedmodlog.py:843 extendedmodlog.py:844 extendedmodlog.py:907
-#: extendedmodlog.py:908 extendedmodlog.py:946 extendedmodlog.py:947
-#: extendedmodlog.py:1115 extendedmodlog.py:1116 extendedmodlog.py:1197
-#: extendedmodlog.py:1198
-msgid "Reason "
-msgstr ""
-
-#: extendedmodlog.py:647 extendedmodlog.py:648
-msgid "Channel Deleted "
-msgstr ""
-
-#: extendedmodlog.py:660
-msgid "Text Channel Deleted"
-msgstr ""
-
-#: extendedmodlog.py:663
-msgid "Category Channel Deleted"
-msgstr ""
-
-#: extendedmodlog.py:666
-msgid "Voice Channel Deleted"
-msgstr ""
-
-#: extendedmodlog.py:669 extendedmodlog.py:670
-msgid "Deleted by "
-msgstr ""
-
-#: extendedmodlog.py:694 extendedmodlog.py:695
-msgid "Updated channel "
-msgstr ""
-
-#: extendedmodlog.py:707 extendedmodlog.py:736 extendedmodlog.py:845
-#: extendedmodlog.py:1023
-msgid "Name:"
-msgstr ""
-
-#: extendedmodlog.py:708
-msgid "Topic:"
-msgstr ""
-
-#: extendedmodlog.py:709 extendedmodlog.py:738
-msgid "Category:"
-msgstr ""
-
-#: extendedmodlog.py:710
-msgid "Slowmode delay:"
-msgstr ""
-
-#: extendedmodlog.py:721 extendedmodlog.py:723 extendedmodlog.py:726
-#: extendedmodlog.py:728 extendedmodlog.py:746 extendedmodlog.py:748
-#: extendedmodlog.py:859 extendedmodlog.py:861 extendedmodlog.py:1036
-#: extendedmodlog.py:1038 extendedmodlog.py:1261 extendedmodlog.py:1263
-msgid "Before "
-msgstr ""
-
-#: extendedmodlog.py:722 extendedmodlog.py:724 extendedmodlog.py:727
-#: extendedmodlog.py:729 extendedmodlog.py:747 extendedmodlog.py:749
-#: extendedmodlog.py:860 extendedmodlog.py:862 extendedmodlog.py:1037
-#: extendedmodlog.py:1039 extendedmodlog.py:1262 extendedmodlog.py:1264
-msgid "After "
-msgstr ""
-
-#: extendedmodlog.py:732 extendedmodlog.py:752 extendedmodlog.py:865
-msgid "Permissions Changed: "
-msgstr ""
-
-#: extendedmodlog.py:733 extendedmodlog.py:753 extendedmodlog.py:866
-msgid "Permissions"
-msgstr ""
-
-#: extendedmodlog.py:737
-msgid "Position:"
-msgstr ""
-
-#: extendedmodlog.py:739
-msgid "Bitrate:"
-msgstr ""
-
-#: extendedmodlog.py:740
-msgid "User limit:"
-msgstr ""
-
-#: extendedmodlog.py:756 extendedmodlog.py:757 extendedmodlog.py:840
-#: extendedmodlog.py:841 extendedmodlog.py:1112 extendedmodlog.py:1113
-#: extendedmodlog.py:1268 extendedmodlog.py:1269
-msgid "Updated by "
-msgstr ""
-
-#: extendedmodlog.py:832 extendedmodlog.py:834
-msgid "Updated Everyone role "
-msgstr ""
-
-#: extendedmodlog.py:836 extendedmodlog.py:838
-msgid "Updated role "
-msgstr ""
-
-#: extendedmodlog.py:846
-msgid "Colour:"
-msgstr ""
-
-#: extendedmodlog.py:847
-msgid "Mentionable:"
-msgstr ""
-
-#: extendedmodlog.py:848
-msgid "Is Hoisted:"
-msgstr ""
-
-#: extendedmodlog.py:899 extendedmodlog.py:901
-msgid "Role created "
-msgstr ""
-
-#: extendedmodlog.py:904
-msgid "Created by"
-msgstr ""
-
-#: extendedmodlog.py:905 extendedmodlog.py:944
-msgid "By "
-msgstr ""
-
-#: extendedmodlog.py:939 extendedmodlog.py:940
-msgid "Role deleted "
-msgstr ""
-
-#: extendedmodlog.py:983
-msgid "A message by "
-msgstr ""
-
-#: extendedmodlog.py:985
-msgid " was edited in "
-msgstr ""
-
-#: extendedmodlog.py:990
-msgid "After Message:"
-msgstr ""
-
-#: extendedmodlog.py:991
-msgid "Channel:"
-msgstr ""
-
-#: extendedmodlog.py:993
-msgid " - Edited Message"
-msgstr ""
-
-#: extendedmodlog.py:1000
-msgid ""
-"message has been edited.\n"
-"Before: "
-msgstr ""
-
-#: extendedmodlog.py:1001
-msgid ""
-"\n"
-"After: "
-msgstr ""
-
-#: extendedmodlog.py:1019 extendedmodlog.py:1022
-msgid "Updated Guild "
-msgstr ""
-
-#: extendedmodlog.py:1024
-msgid "Region:"
-msgstr ""
-
-#: extendedmodlog.py:1025
-msgid "AFK Timeout:"
-msgstr ""
-
-#: extendedmodlog.py:1026
-msgid "AFK Channel:"
-msgstr ""
-
-#: extendedmodlog.py:1027
-msgid "Server Icon:"
-msgstr ""
-
-#: extendedmodlog.py:1028
-msgid "Server Owner:"
-msgstr ""
-
-#: extendedmodlog.py:1029
-msgid "Splash Image:"
-msgstr ""
-
-#: extendedmodlog.py:1030
-msgid "Welcome message channel:"
-msgstr ""
-
-#: extendedmodlog.py:1050
-msgid "Update by "
-msgstr ""
-
-#: extendedmodlog.py:1052 extendedmodlog.py:1195
-msgid "Updated by"
-msgstr ""
-
-#: extendedmodlog.py:1055 extendedmodlog.py:1056
-msgid "Reasons "
-msgstr ""
-
-#: extendedmodlog.py:1077 extendedmodlog.py:1079
-msgid "Updated Server Emojis"
-msgstr ""
-
-#: extendedmodlog.py:1086
-msgid ""
-" Removed from the guild\n"
-msgstr ""
-
-#: extendedmodlog.py:1091
-msgid ""
-" Added to the guild\n"
-msgstr ""
-
-#: extendedmodlog.py:1099
-msgid ""
-" Emoji changed\n"
-msgstr ""
-
-#: extendedmodlog.py:1140
-msgid "Updated Voice State"
-msgstr ""
-
-#: extendedmodlog.py:1146
-msgid " was deafened. "
-msgstr ""
-
-#: extendedmodlog.py:1150
-msgid " was undeafened. "
-msgstr ""
-
-#: extendedmodlog.py:1156
-msgid " was muted. "
-msgstr ""
-
-#: extendedmodlog.py:1160
-msgid " was unmuted. "
-msgstr ""
-
-#: extendedmodlog.py:1166
-msgid " has joined "
-msgstr ""
-
-#: extendedmodlog.py:1171
-msgid " has left "
-msgstr ""
-
-#: extendedmodlog.py:1176
-msgid " has moved from "
-msgstr ""
-
-#: extendedmodlog.py:1177
-msgid " to "
-msgstr ""
-
-#: extendedmodlog.py:1219
-msgid "Updated"
-msgstr ""
-
-#: extendedmodlog.py:1222
-msgid "Nickname:"
-msgstr ""
-
-#: extendedmodlog.py:1223
-msgid "Roles:"
-msgstr ""
-
-#: extendedmodlog.py:1238 extendedmodlog.py:1239
-msgid " Role Removed."
-msgstr ""
-
-#: extendedmodlog.py:1242 extendedmodlog.py:1243
-msgid " Role Applied."
-msgstr ""
-
-#: extendedmodlog.py:1271
-msgid "Reason: "
 msgstr ""
 
