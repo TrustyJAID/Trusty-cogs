@@ -103,6 +103,60 @@ class ValidRegex(Converter):
             raise BadArgument(err_msg)
         return result
 
+class ValidEmoji(IDConverter):
+    """
+    This is from discord.py rewrite, first we'll match the actual emoji
+    then we'll match the emoji name if we can
+    if all else fails we may suspect that it's a unicode emoji and check that later
+    All lookups are done for the local guild first, if available. If that lookup
+    fails, then it checks the client's global cache.
+    The lookup strategy is as follows (in order):
+    1. Lookup by ID.
+    2. Lookup by extracting ID from the emoji.
+    3. Lookup by name
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py
+    """
+    async def convert(self, ctx, argument):
+        match = self._get_id_match(argument) or re.match(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)', argument)
+        result = None
+        bot = ctx.bot
+        guild = ctx.guild
+        if match is None:
+            # Try to get the emoji by name. Try local guild first.
+            if guild:
+                result = discord.utils.get(guild.emojis, name=argument)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, name=argument)
+        elif match.group(1):
+            emoji_id = int(match.group(1))
+
+            # Try to look up emoji by id.
+            if guild:
+                result = discord.utils.get(guild.emojis, id=emoji_id)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, id=emoji_id)
+        else:
+            emoji_name = str(match.group(2)).replace(":", "")
+
+            if guild:
+                result = discord.utils.get(guild.emojis, name=emoji_name)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, name=emoji_name)
+        if type(result) is discord.Emoji:
+            result = str(result)[1:-1]
+
+        if result is None:
+            try:
+                await ctx.message.add_reaction(argument)
+                result = argument
+            except Exception as e:
+                raise BadArgument("`{}` is not an emoji I can use.".format(argument))
+
+        return result
+
 class ChannelUserRole(IDConverter):
     """
     This will check to see if the provided argument is a channel, user, or role

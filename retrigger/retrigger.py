@@ -531,7 +531,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(add_reactions=True)
-    async def react(self, ctx, name:TriggerExists, regex:ValidRegex, *emojis:str):
+    async def react(self, ctx, name:TriggerExists, regex:ValidRegex, *emojis:ValidEmoji):
         """
             Add a reaction trigger
 
@@ -545,18 +545,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
             return await ctx.send(msg)
-        good_emojis = []
-        for emoji in emojis:
-            if "<" in emoji and ">" in emoji:
-                emoji = emoji[1:-1]
-            try:
-                await ctx.message.add_reaction(emoji)
-                good_emojis.append(emoji)
-            except Exception as e:
-                log.error("Could not react with emoji", exc_info=True)
-        if good_emojis == []:
-            await ctx.send(_("None of the emojis supplied will work!"))
-            return
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(name, 
@@ -565,7 +553,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                               author, 
                               0, 
                               None, 
-                              good_emojis, 
+                              emojis, 
                               [], 
                               [], 
                               {})
