@@ -904,7 +904,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                     if pg_count == 0:
                         em.description = chn_page
                     else:
-                        em.add_field(_("Most posts (continued)"), value=chn_page)
+                        em.add_field(name=_("Most posts (continued)"), value=chn_page)
                     pg_count += 1
                 if guild is ctx.guild:
                     members ="\n".join(f"{k.mention}: {v}" for k, v in page)
