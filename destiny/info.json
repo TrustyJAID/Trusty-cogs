@@ -1,0 +1,21 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "description" : "Show Destiny 2 information from the bungie API",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Use `[p]destiny` to see available commands. Note: This cog will download ~160 MB of data to more efficiently search for item names.",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "Destiny",
+    "permissions" : [
+        "embed_links"
+    ],
+    "requirements" : [],
+    "short" : "Destiny 2 information",
+    "tags" : ["destiny", "gaming", "games"]
+}

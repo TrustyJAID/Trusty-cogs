@@ -35,6 +35,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Compliment | **Release** | <details><summary>Compliment a user! </summary></details> |
 | ServerStats | **Release** | <details><summary>A plethora of potentially useful functions on server info.</summary> Includes a way to track the bot joining new servers, find cheaters on global economies, get user avatars and even larger emojis. </details> |
 | Runescape | **Beta** | <details><summary>a cog to grab Runescape 3 stats and profile information. </summary></details> |
+| Destiny | **Beta** | <details><summary>a cog to grab Destiny 2 stats and profile information. </summary> Note: This cog requires downloading a manifest ~160 MB.</details> |
 | Fun | **Release**| <details><summary>The fun cog from Appu's Selfbot rewritten for redbot V3 including adding reactions and other "fun" commands. </summary></details> |
 | Gabai | **Beta** | <details><summary>A cog to grab information and posts from gab.ai. </summary></details> |
 | Tarot | **Release** | <details><summary>Find your tarot reading, your life reading, or pull a random tarot card!</summary> Search for specific tarot cards. </details> |
