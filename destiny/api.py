@@ -234,7 +234,7 @@ class DestinyAPI:
             data = await self.get_user_profile(ctx.author)
             platform = ""
             if len(data["destinyMemberships"]) > 1:
-                data, platform = await self.pick_account(ctx, data["destinyMemb erships"])
+                data, platform = await self.pick_account(ctx, data["destinyMemberships"])
                 await self.config.user(ctx.author).account.set(data)
             await ctx.send(_("Account set to {name} {platform}").format(name=data["displayName"],
                                                                         platform=platform))
