@@ -35,7 +35,7 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config.register_global(**default_global, force_registration=True)
         self.config.register_user(**default_user, force_registration=True)
         self.throttle:float = 0
-        self.manifest_download_start = bot.loop.create_task(self.get_manifest())
+        # self.manifest_download_start = bot.loop.create_task(self.get_manifest())
 
     @commands.group()
     async def destiny(self, ctx):
@@ -49,15 +49,19 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         pass
 
-    @search.command()
+    @search.command(aliases=["item"])
     @commands.bot_has_permissions(embed_links=True)
     async def items(self, ctx:commands.Context, *, search:str):
         """
             Search for a specific item in Destiny 2
         """
-        items = await self.search_definition("DestinyInventoryItemDefinition", search)
+        try:
+            items = await self.search_definition("DestinyInventoryItemDefinition", search)
+        except Destiny2MissingManifest as e:
+            await ctx.send(e)
+            return
         embeds = []
-        log.info(items[0])
+        log.debug(items[0])
         for item in items:
             if not (item["equippable"]):
                     continue
@@ -82,7 +86,7 @@ class Destiny(DestinyAPI, commands.Cog):
         try:
             chars = await self.get_characters(ctx.author)
         except Destiny2APIError as e:
-            # log.info(e)
+            # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
@@ -110,7 +114,7 @@ class Destiny(DestinyAPI, commands.Cog):
             if "emblemPath" in char:
                 embed.set_thumbnail(url=IMAGE_URL+char["emblemPath"])
             items = chars["characterEquipment"]["data"][char_id]["items"]
-            # log.info(data)
+            # log.debug(data)
             level = char["baseCharacterLevel"]
             light = char["light"]
             level_str = _("Level: **{level}**  \nLight: **{light}**").format(level=level, 
@@ -133,13 +137,13 @@ class Destiny(DestinyAPI, commands.Cog):
         try:
             chars = await self.get_characters(ctx.author)
         except Destiny2APIError as e:
-            # log.info(e)
+            # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
         embeds = []
         for char_id, char in chars["characters"]["data"].items():
-            # log.info(char)
+            # log.debug(char)
             try:
                 xur = await self.get_vendor(ctx.author, char_id, "2190858386")
             except Destiny2APIError:
@@ -176,13 +180,13 @@ class Destiny(DestinyAPI, commands.Cog):
         try:
             chars = await self.get_characters(ctx.author)
         except Destiny2APIError as e:
-            # log.info(e)
+            # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
         embeds = []
         for char_id, char in chars["characters"]["data"].items():
-            log.info(char_id)
+            log.debug(char_id)
             try:
                 eververse = await self.get_vendor(ctx.author, char_id, "3361454721")
             except Destiny2APIError as e:
@@ -219,13 +223,13 @@ class Destiny(DestinyAPI, commands.Cog):
         try:
             chars = await self.get_characters(ctx.author)
         except Destiny2APIError as e:
-            # log.info(e)
+            # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
         embeds = []
         for char_id, char in chars["characters"]["data"].items():
-            # log.info(char)
+            # log.debug(char)
             info = ""
             race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
             gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
@@ -242,7 +246,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     title_name = t["titleInfo"]["titlesByGenderHash"][char["genderHash"]]
                     title_desc = t["displayProperties"]["description"]
                     titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                log.info("User has a title")
+                log.debug("User has a title")
                 pass
             embed = discord.Embed(title=info)
             embed.set_author(name=ctx.author.display_name,
@@ -253,13 +257,13 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed.add_field(name=_("Titles"), value=titles)
             char_items = chars["characterEquipment"]["data"][char_id]["items"]
             item_list = [i["itemHash"] for i in char_items]
-            # log.info(item_list)
+            # log.debug(item_list)
             items = await self.get_definition("DestinyInventoryItemDefinition", item_list)
-            # log.info(items)
+            # log.debug(items)
             for data in items:
-                # log.info(data)
+                # log.debug(data)
                 for item in char_items:
-                    # log.info(item)
+                    # log.debug(item)
                     if data["hash"] == item["itemHash"]:
                         instance_id = item["itemInstanceId"]
                 item_instance = chars["itemComponents"]["instances"]["data"][instance_id]
@@ -286,7 +290,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
                 value = f"**{light}** {item_type}\n{desc}\n{perks}"
                 embed.add_field(name=name, value=value)
-            # log.info(data)
+            # log.debug(data)
             level = char["baseCharacterLevel"]
             light = char["light"]
             level_str = _("Level: **{level}**  \nLight: **{light}**").format(level=level, 
@@ -305,6 +309,8 @@ class Destiny(DestinyAPI, commands.Cog):
             See the current manifest version and optionally re-download it
         """
         version = await self.config.manifest_version()
+        if not version:
+            version = "Not Downloaded"
         await ctx.send(_("Current manifest version is {version}").format(version=version))
         while True:
             msg = await ctx.send(_("Would you like to re-download the manifest?"))
@@ -340,6 +346,7 @@ class Destiny(DestinyAPI, commands.Cog):
         select create a new application
         choose **Confidential** OAuth Client type
         Select the scope you would like the bot to have access to
+        Set the redirect URL to https://localhost/
         NOTE: It is strongly recommended to use this command in DM
         """
         await self.config.api_token.api_key.set(api_key)

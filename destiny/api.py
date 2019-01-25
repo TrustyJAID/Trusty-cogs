@@ -184,7 +184,11 @@ class DestinyAPI:
 
     async def get_definition(self, entity:str, entity_hash:list):
         items = []
-        data = await self.get_entities(entity)
+        try:
+            data = await self.get_entities(entity)
+        except:
+            log.info(_("No manifest found, getting response from API."))
+            return await self.get_definition_from_api(entity, entity_hash)
         for item in entity_hash:
             try:
                 items.append(data[str(item)])
@@ -193,8 +197,24 @@ class DestinyAPI:
         return items
         # return data[entity][entity_hash]
 
+    async def get_definition_from_api(self, entity:str, entity_hash):
+        try:
+            headers = await self.build_headers()
+        except:
+            raise Destiny2APIError
+        items = []
+        for hashes in entity_hash:
+            url = f"{BASE_URL}/Destiny2/Manifest/{entity}/{hashes}/"
+            data = await self.request_url(url, headers=headers)
+            items.append(data)
+        return items
+
     async def search_definition(self, entity:str, entity_hash:str):
-        data = await self.get_entities(entity)
+        try:
+            data = await self.get_entities(entity)
+        except:
+            err_msg = _("This command requires the Manifest to be downloaded to work.")
+            raise Destiny2MissingManifest(err_msg)
         items = []
         for hash_key, data in data.items():
             if str(entity_hash) == hash_key:

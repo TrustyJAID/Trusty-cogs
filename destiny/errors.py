@@ -12,3 +12,6 @@ class Destiny2RefreshTokenError(Destiny2APIError):
 
 class Destiny2MissingAPITokens(Destiny2APIError):
     pass
+
+class Destiny2MissingManifest(Destiny2APIError):
+    pass
