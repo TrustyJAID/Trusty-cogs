@@ -254,9 +254,15 @@ class DestinyAPI:
             data = await self.get_user_profile(ctx.author)
             platform = ""
             if len(data["destinyMemberships"]) > 1:
-                data, platform = await self.pick_account(ctx, data["destinyMemberships"])
-                await self.config.user(ctx.author).account.set(data)
-            await ctx.send(_("Account set to {name} {platform}").format(name=data["displayName"],
+                datas, platform = await self.pick_account(ctx, data["destinyMemberships"])
+                name = datas["displayName"]
+                await self.config.user(ctx.author).account.set(datas)
+            else:
+                bungie_membership_types = {1:"Xbox", 2:"Playstation", 4:"Blizzard"}
+                name = data["destinyMemberships"][0]["displayName"]
+                platform = bungie_membership_types[data["destinyMemberships"][0]["membershipType"]]
+                await self.config.user(ctx.author).account.set(data["destinyMemberships"][0])
+            await ctx.send(_("Account set to {name} {platform}").format(name=name,
                                                                         platform=platform))
         return True
 
