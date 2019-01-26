@@ -143,7 +143,7 @@ class MultiResponse(Converter):
                            "filter","delete",
                            "react",
                            "command"]
-        log.info(match)
+        log.debug(match)
         my_perms = ctx.channel.permissions_for(ctx.me)
         if match[0] not in valid_reactions:
             raise BadArgument(_("`{response}` is not a valid reaction type.").format(response=match[0]))
@@ -184,7 +184,7 @@ class MultiResponse(Converter):
                     good_emojis.append(emoji)
                 except BadArgument:
                     log.error("Emoji `{}` not found.".format(r))
-            log.info(good_emojis)
+            log.debug(good_emojis)
             result = [result[0]] + good_emojis
         return result
 

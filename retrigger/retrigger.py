@@ -679,7 +679,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\" filter`
             Will attempt to DM the user and delete their message simultaneously.
         """
-        log.info(multi_response)
+        log.debug(multi_response)
         # return
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)

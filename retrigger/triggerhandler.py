@@ -178,86 +178,85 @@ class TriggerHandler:
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         post = post_list[page]
-        if ctx.channel.permissions_for(ctx.me).embed_links:
-            em = discord.Embed(timestamp=ctx.message.created_at)
-            em.colour = await self.get_colour(ctx.guild)
-            for trigger in post:
-                blacklist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["blacklist"]]
-                blacklist = ", ".join(x.mention for x in blacklist)
-                whitelist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["whitelist"]]
-                whitelist = ", ".join(x.mention for x in whitelist)
-                responses = ", ".join(r for r in trigger["response_type"])
-                info = (_("__Name__:") +"** "+ trigger["name"] + "**\n" +
-                        _("__Author__: ") +"<@"+ str(trigger["author"])+ ">\n" +
-                        _("__Count__: ")+ "**" + str(trigger["count"]) +"**\n" +
-                        _("__Response__: ")+ "**" + responses + "**\n"
-                        )
-                if "text" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "text")
-                    else:
-                        response = trigger["text"]
-                    info += _("__Text__: ") + "**{response}**\n".format(response=response)
-                if "dm" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "dm")
-                    else:
-                        response = trigger["text"]
-                    info += _("__DM__: ") + "**{response}**\n".format(response=response)
-                if "command" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "command")
-                    else:
-                        response = trigger["text"]
-                    info += _("__Command__: ") + "**{response}**\n".format(response=response)
-                if "react" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "react"]
-                    else:
-                        response = trigger["text"]
-                    server_emojis = "".join(f"<{e}>" for e in response if len(e) > 5)
-                    unicode_emojis = "".join(e for e in response if len(e) < 5)
-                    info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
-                if "add_role" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "add_role"]
-                    else:
-                        response = trigger["text"]
-                    roles = [ctx.guild.get_role(r).mention for r in response]
-                    info += _("__Roles Added__: ") + humanize_list(roles) + "\n"
-                if "remove_role" in trigger["response_type"]:
-                    if trigger["multi_payload"]:
-                        response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "remove_role"]
-                    else:
-                        response = trigger["text"]
-                    roles = [ctx.guild.get_role(r).mention for r in response]
-                    info += _("__Roles Removed__: ") + humanize_list(roles) + "\n"
-                if whitelist:
-                    info += _("__Whitelist__: ") + whitelist + "\n"
-                if trigger["cooldown"]:
-                    time = trigger["cooldown"]["time"]
-                    style = trigger["cooldown"]["style"]
-                    info += _("__Cooldown__: ")+"**{}s per {}**".format(time, style)
-                length_of_info = len(info)
-                if len(post) > 1:
-                    diff = 1000 - length_of_info
-                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:diff]+ "```\n"
-                else:
-                    diff = 2000 - length_of_info
-                    info += _("__Regex__: ")+"```bf\n" + trigger["regex"][:diff]+ "```\n"
-                if blacklist:
-                    info += _("__Blacklist__: ") + blacklist + "\n"
-                
-                if len(post) > 1:
-                    em.add_field(name=trigger["name"], value=info[:1024])
-                else:
-                    em.description = info[:2048]
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
-            em.set_footer(text=_("Page ")+"{}/{}".format(page+1, len(post_list)))
-        else:
+        if not ctx.channel.permissions_for(ctx.me).embed_links:
             msg = _("I need embed_links permission to use this command.")
             await ctx.send(msg)
             return
+        em = discord.Embed(timestamp=ctx.message.created_at)
+        em.colour = await self.get_colour(ctx.guild)
+        for trigger in post:
+            blacklist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["blacklist"]]
+            blacklist = ", ".join(x.mention for x in blacklist)
+            whitelist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["whitelist"]]
+            whitelist = ", ".join(x.mention for x in whitelist)
+            responses = ", ".join(r for r in trigger["response_type"])
+            info = (_("__Name__:") +"** "+ trigger["name"] + "**\n" +
+                    _("__Author__: ") +"<@"+ str(trigger["author"]) + ">\n" +
+                    _("__Count__: ") + "**" + str(trigger["count"]) +"**\n" +
+                    _("__Response__: ") + "**" + responses + "**\n"
+                    )
+            if "text" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "text")
+                else:
+                    response = trigger["text"]
+                info += _("__Text__: ") + "**{response}**\n".format(response=response)
+            if "dm" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "dm")
+                else:
+                    response = trigger["text"]
+                info += _("__DM__: ") + "**{response}**\n".format(response=response)
+            if "command" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "command")
+                else:
+                    response = trigger["text"]
+                info += _("__Command__: ") + "**{response}**\n".format(response=response)
+            if "react" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "react"]
+                else:
+                    response = trigger["text"]
+                server_emojis = "".join(f"<{e}>" for e in response if len(e) > 5)
+                unicode_emojis = "".join(e for e in response if len(e) < 5)
+                info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
+            if "add_role" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "add_role"]
+                else:
+                    response = trigger["text"]
+                roles = [ctx.guild.get_role(r).mention for r in response]
+                info += _("__Roles Added__: ") + humanize_list(roles) + "\n"
+            if "remove_role" in trigger["response_type"]:
+                if trigger["multi_payload"]:
+                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "remove_role"]
+                else:
+                    response = trigger["text"]
+                roles = [ctx.guild.get_role(r).mention for r in response]
+                info += _("__Roles Removed__: ") + humanize_list(roles) + "\n"
+            if whitelist:
+                info += _("__Whitelist__: ") + whitelist + "\n"
+            if trigger["cooldown"]:
+                time = trigger["cooldown"]["time"]
+                style = trigger["cooldown"]["style"]
+                info += _("__Cooldown__: ") +"**{}s per {}**".format(time, style)
+            length_of_info = len(info)
+            if len(post) > 1:
+                diff = 1000 - length_of_info
+                info += _("__Regex__: ") +"```bf\n" + trigger["regex"][:diff] + "```\n"
+            else:
+                diff = 2000 - length_of_info
+                info += _("__Regex__: ") +"```bf\n" + trigger["regex"][:diff] + "```\n"
+            if blacklist:
+                info += _("__Blacklist__: ") + blacklist + "\n"
+            
+            if len(post) > 1:
+                em.add_field(name=trigger["name"], value=info[:1024])
+            else:
+                em.description = info[:2048]
+        em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+        em.set_footer(text=_("Page ") +"{}/{}".format(page+1, len(post_list)))
         if len(post_list) == 1:
             # No need to offer multiple pages if they don't exist
             return await ctx.send(embed=em)
@@ -400,6 +399,7 @@ class TriggerHandler:
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
         
         for triggers in trigger_list:
+            # log.debug(triggers)
             trigger = Trigger.from_json(trigger_list[triggers])
             allowed_trigger = await self.check_bw_list(trigger, message)
             is_auto_mod = trigger.response_type in auto_mod
@@ -487,7 +487,7 @@ class TriggerHandler:
             try:
                 await message.channel.send(file=file)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "text" in trigger.response_type and own_permissions.send_messages:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -497,7 +497,7 @@ class TriggerHandler:
             try:
                 await channel.send(response)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -507,7 +507,7 @@ class TriggerHandler:
             try:
                 await author.send(response)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ")+ str(author), exc_info=True)
+                log.error(_("Retrigger encountered an error in ") + str(author), exc_info=True)
         if "react" in trigger.response_type and own_permissions.add_reactions:
             if trigger.multi_payload:
                 response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"]
@@ -517,7 +517,7 @@ class TriggerHandler:
                 try:
                     await message.add_reaction(emoji)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "ban" in trigger.response_type and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally ban the bot owner 
@@ -527,7 +527,7 @@ class TriggerHandler:
                 try:
                     await author.ban(reason=reason, delete_message_days=0)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally kick the bot owner 
@@ -537,7 +537,7 @@ class TriggerHandler:
                 try:
                     await author.kick(reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             file = discord.File(path)
@@ -547,7 +547,7 @@ class TriggerHandler:
             try:
                 await channel.send(trigger.text, file=file)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "command" in trigger.response_type:
             if trigger.multi_payload:
                 response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
@@ -573,7 +573,7 @@ class TriggerHandler:
                 try:
                     await author.add_roles(role, reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "remove_role" in trigger.response_type:
             if trigger.multi_payload:
                 response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"]
@@ -584,14 +584,14 @@ class TriggerHandler:
                 try:
                     await author.remove_roles(role, reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "delete" in trigger.response_type:
-            log.info("Performing trigger")
+            log.debug("Performing delete trigger")
+            await self.delete_modlog_action(message, trigger)
             try:
-                await self.delete_modlog_action(message, trigger)
                 await message.delete()
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ")+ guild.name, exc_info=True)
+                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
             
         if "mock" in trigger.response_type:
             if trigger.multi_payload:
@@ -692,7 +692,7 @@ class TriggerHandler:
                 if modlog_channel is None:
                     return
             infomessage = (_("A message from ") + str(author) +
-                           _(" was deleted in ")+
+                           _(" was deleted in ") +
                            message.channel.name)
             embed = discord.Embed(description=message.content,
                                   colour=discord.Colour.dark_red(),
@@ -704,7 +704,7 @@ class TriggerHandler:
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=files)
-            embed.set_footer(text=_("User ID: ")+ str(message.author.id))
+            embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(name=str(author) + _(" - Deleted Message"), 
                              icon_url=author.avatar_url)
             try:
