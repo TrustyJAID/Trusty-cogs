@@ -60,6 +60,9 @@ class Destiny(DestinyAPI, commands.Cog):
         except Destiny2MissingManifest as e:
             await ctx.send(e)
             return
+        if not items:
+            await ctx.send(_("`{search}` could not be found.").format(search=search))
+            return
         embeds = []
         log.debug(items[0])
         for item in items:
