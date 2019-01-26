@@ -38,6 +38,20 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
+    @retrigger.command(hidden=True)
+    async def fix(self, ctx):
+        """
+            Force fixup triggers to the new data scheme
+        """
+        for guild_id in await self.config.all_guilds():
+            guild = ctx.bot.get_guild(int(guild_id))
+            triggers = await self.config.guild(guild).trigger_list()
+            for trigger in await self.config.guild(guild).trigger_list():
+                t = Trigger.from_json(triggers[trigger])
+                triggers[t.name] = t.to_json()
+            await self.config.guild(guild).trigger_list.set(triggers)
+        await ctx.tick()
+
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist(self, ctx):
@@ -270,7 +284,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["text"], author, 0, 
+        new_trigger = Trigger(name, regex, "text", author, 0, 
                               None, text, [], [], {}, [])
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
