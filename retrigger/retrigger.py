@@ -46,7 +46,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for guild_id in await self.config.all_guilds():
             guild = ctx.bot.get_guild(int(guild_id))
             if guild is None:
-                await self.config.clear_scope(Config.GUILD, guild_id)
+                await self.config._clear_scope(Config.GUILD, str(guild_id))
                 continue
             triggers = await self.config.guild(guild).trigger_list()
             for trigger in await self.config.guild(guild).trigger_list():
