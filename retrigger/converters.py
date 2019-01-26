@@ -1,10 +1,12 @@
-from discord.ext.commands.converter import Converter, IDConverter
+from discord.ext.commands.converter import (Converter, IDConverter, RoleConverter)
 from discord.ext.commands.errors import BadArgument
+from redbot.core.i18n import Translator, cog_i18n
 import re
 import discord
 import logging
 
 log = logging.getLogger("red.ReTrigger")
+_ = Translator("ReTrigger", __file__)
 
 
 class Trigger:
@@ -15,14 +17,17 @@ class Trigger:
     def __init__(self, 
                  name:str, 
                  regex:str, 
-                 response_type:str, 
+                 response_type:list, 
                  author:int, 
                  count:int, 
                  image:str, 
                  text:str, 
                  whitelist:list, 
                  blacklist:list, 
-                 cooldown:dict):
+                 cooldown:dict,
+                 # is_multi:bool,
+                 multi_payload:list
+            ):
         self.name = name
         self.regex = regex
         self.response_type = response_type
@@ -33,6 +38,8 @@ class Trigger:
         self.whitelist = whitelist
         self.blacklist = blacklist
         self.cooldown = cooldown
+        # self.is_multi = is_multi
+        self.multi_payload = multi_payload
 
     def _add_count(self, number:int):
         self.count += number
@@ -47,7 +54,9 @@ class Trigger:
                 "text":self.text,
                 "whitelist":self.whitelist,
                 "blacklist":self.blacklist,
-                "cooldown":self.cooldown
+                "cooldown":self.cooldown,
+                # "is_multi": self.is_multi,
+                "multi_payload": self.multi_payload
                 }
 
     @classmethod
@@ -56,16 +65,29 @@ class Trigger:
             cooldown = {}
         else:
             cooldown = data["cooldown"]
+        if type(data["response_type"]) is str:
+            response_type = [data["response_type"]]
+        else:
+            response_type = data["response_type"]
+        if "multi_payload" not in data:
+            is_multi = False
+            multi_payload = []
+        else:
+            # is_multi = data["is_multi"]
+            multi_payload = data["multi_payload"]
         return cls(data["name"],
                    data["regex"],
-                   data["response_type"],
+                   response_type,
                    data["author"],
                    data["count"],
                    data["image"],
                    data["text"],
                    data["whitelist"],
                    data["blacklist"],
-                   cooldown)
+                   cooldown,
+                   # is_multi,
+                   multi_payload
+                )
 
 
 class TriggerExists(Converter):
@@ -99,8 +121,71 @@ class ValidRegex(Converter):
             result = argument
         except Exception as e:
             log.error("Retrigger conversion error", exc_info=True)
-            err_msg = "`{arg}` is not a valid regex pattern. {e}".format(arg=argument, e=e)
+            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=argument, e=e)
             raise BadArgument(err_msg)
+        return result
+
+class MultiResponse(Converter):
+    """
+    This will parse my defined multi response pattern and provide usable formats
+    to be used in multiple reponses
+    """
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        result = []
+        match = re.split(r"(;)", argument)
+        valid_reactions = ["dm",
+                           "remove_role",
+                           "add_role",
+                           "ban",
+                           "kick",
+                           "text",
+                           "filter","delete",
+                           "react",
+                           "command"]
+        log.info(match)
+        my_perms = ctx.channel.permissions_for(ctx.me)
+        if match[0] not in valid_reactions:
+            raise BadArgument(_("`{response}` is not a valid reaction type.").format(response=match[0]))
+        for m in match:
+            if m == ";":
+                continue
+            else:
+                result.append(m)
+        if result[0] == "filter":
+            result[0] = "delete"
+        if len(result) < 2 and result[0] not in ["delete", "ban", "kick"]:
+            raise BadArgument(_("The provided multi response pattern is not valid."))
+        if result[0] in ["add_role", "remove_role"] and not my_perms.manage_roles:
+            raise BadArgument(_("I require \"Manage Roles\" permission to use that."))
+        if result[0] == "filter" and not my_perms.manage_messages:
+            raise BadArgument(_("I require \"Manage Messages\" permission to use that."))
+        if result[0] == "ban" and not my_perms.ban_members:
+            raise BadArgument(_("I require \"Ban Members\" permission to use that."))
+        if result[0] == "kick" and not my_perms.kick_members:
+            raise BadArgument(_("I require \"Kick Members\" permission to use that."))
+        if result[0] == "react" and not my_perms.add_reactions:
+            raise BadArgument(_("I require \"Add Reactions\" permission to use that."))
+        if result[0] in ["add_role", "remove_role"]:
+            good_roles = []
+            for r in result[1:]:
+                try:
+                    role = await RoleConverter().convert(ctx, r)
+                    if role < ctx.guild.me.top_role:
+                        good_roles.append(role.id)
+                except BadArgument as e:
+                    log.error("Role `{}` not found.".fomrat(r))
+            result = [result[0]] + good_roles
+        if result[0] == "react":
+            good_emojis = []
+            for r in result[1:]:
+                try:
+                    emoji = await ValidEmoji().convert(ctx, r)
+                    good_emojis.append(emoji)
+                except BadArgument:
+                    log.error("Emoji `{}` not found.".format(r))
+            log.info(good_emojis)
+            result = [result[0]] + good_emojis
         return result
 
 class ValidEmoji(IDConverter):
@@ -153,7 +238,7 @@ class ValidEmoji(IDConverter):
                 await ctx.message.add_reaction(argument)
                 result = argument
             except Exception as e:
-                raise BadArgument("`{}` is not an emoji I can use.".format(argument))
+                raise BadArgument(_("`{}` is not an emoji I can use.").format(argument))
 
         return result
 
