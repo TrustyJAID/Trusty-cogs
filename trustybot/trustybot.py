@@ -2,35 +2,6 @@ import discord
 import time
 from redbot.core import commands, checks
 from typing import Optional
-import re
-import logging
-
-log = logging.getLogger("red.TrustyBot")
-
-
-class APIToken(discord.ext.commands.Converter):
-    """Converts to a `dict` object.
-
-    This will parse the input argument separating the key value pairs into a 
-    format to be used for the core bots API token storage.
-    
-    This will slit the argument by eiher `;` or `,` and return a dict
-    to be stored. Since all API's are different and have different naming convention,
-    this leaves the owness on the cog creator to clearly define how to setup the correct
-    credential names for their cogs.
-    """
-
-    async def convert(self, ctx, argument) -> dict:
-        bot = ctx.bot
-        result = {}
-        match = re.split(r";|,", argument)
-        if len(match) > 1:
-            result[match[0]] = "".join(r for r in match[1:])
-        else:
-            result = {match[0]}
-        if not result:
-            raise BadArgument(_("The provided tokens are not in a valid format."))
-        return result
 
 
 class TrustyBot(getattr(commands, "Cog", object)):
@@ -202,8 +173,3 @@ class TrustyBot(getattr(commands, "Cog", object)):
             "I can help you personally."
         )
         await ctx.send(msg)
-
-    @commands.command()
-    async def setapi(self, ctx):
-        """Set various service API tokens"""
-        await ctx.send_help()
