@@ -8,20 +8,20 @@ from redbot.core.i18n import Translator, cog_i18n
 from .eventmixin import EventMixin
 
 inv_settings = {
-    "message_edit": False, 
-    "message_delete": False, 
+    "message_edit": False,
+    "message_delete": False,
     "user_change": False,
     "role_change": False,
     "voice_change": False,
-    "user_join": False, 
-    "user_left": False, 
+    "user_join": False,
+    "user_left": False,
     "channel_change": False,
     "guild_change": False,
     "emoji_change": False,
-    "commands_used":False,
-    "ignored_channels":[],
-    "invite_links": {}
-            }
+    "commands_used": False,
+    "ignored_channels": [],
+    "invite_links": {},
+}
 
 _ = Translator("ExtendedModLog", __file__)
 
@@ -55,19 +55,23 @@ class ExtendedModLog(EventMixin, commands.Cog):
             try:
                 modlog_channel = await modlog.get_modlog_channel(guild)
             except:
-                await ctx.send(_("You need to setup a channel with `[p]modlogset modlog #channel` first."))
+                await ctx.send(
+                    _("You need to setup a channel with `[p]modlogset modlog #channel` first.")
+                )
                 return
-            cur_settings = {"message_edit": _("Message edits"), 
-                            "message_delete": _("Message delete"), 
-                            "user_change": _("Member changes"),
-                            "role_change": _("Role changes"),
-                            "voice_change": _("Voice changes"),
-                            "user_join": _("User join"), 
-                            "user_left": _("Member left"), 
-                            "channel_change": _("Channel changes"),
-                            "guild_change": _("Guild changes"),
-                            "emoji_change": _("Emoji changes"),
-                            "commands_used": _("Mod/Admin Commands")}
+            cur_settings = {
+                "message_edit": _("Message edits"),
+                "message_delete": _("Message delete"),
+                "user_change": _("Member changes"),
+                "role_change": _("Role changes"),
+                "voice_change": _("Voice changes"),
+                "user_join": _("User join"),
+                "user_left": _("Member left"),
+                "channel_change": _("Channel changes"),
+                "guild_change": _("Guild changes"),
+                "emoji_change": _("Emoji changes"),
+                "commands_used": _("Mod/Admin Commands"),
+            }
             msg = _("Setting for ") + guild.name + "\n"
             e = discord.Embed(title=_("Setting for ") + guild.name)
             e.colour = await ctx.embed_colour()
@@ -92,13 +96,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 chans = ", ".join(guild.get_channel(c).mention for c in ignored_channels)
                 msg += _("Ignored Channels") + ": " + chans
                 e.add_field(name=_("Ignored Channels"), value=chans)
-            
+
             e.set_thumbnail(url=guild.icon_url)
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 await ctx.send(embed=e)
             else:
                 await ctx.send(msg)
-
 
     @modlogtoggles.command()
     async def edit(self, ctx):
@@ -113,7 +116,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_edit.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
     async def join(self, ctx):
@@ -126,13 +129,13 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(guild).user_join.set(True)
             links = await self.save_invite_links(guild)
             if links:
-                verb = _("enabled with invite links")    
+                verb = _("enabled with invite links")
             else:
-                verb = _("enabled")            
+                verb = _("enabled")
         else:
             await self.config.guild(guild).user_join.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
     async def guild(self, ctx):
@@ -149,7 +152,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).guild_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command(aliases=["channels"])
     async def channel(self, ctx):
@@ -166,7 +169,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).channel_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
     async def leave(self, ctx):
@@ -181,7 +184,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).user_left.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
     async def delete(self, ctx):
@@ -196,7 +199,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_delete.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command(aliases=["member"])
     async def user(self, ctx):
@@ -213,7 +216,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).user_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command(aliases=["roles"])
     async def role(self, ctx):
@@ -230,7 +233,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).role_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
     async def voice(self, ctx):
@@ -247,7 +250,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).voice_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command(aliases=["emojis"])
     async def emoji(self, ctx):
@@ -262,7 +265,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).emoji_change.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command(aliases=["commands"])
     async def command(self, ctx):
@@ -277,10 +280,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).commands_used.set(False)
             verb = _("disabled")
-        await ctx.send(msg+verb)
+        await ctx.send(msg + verb)
 
     @modlogtoggles.command()
-    async def ignore(self, ctx, channel:discord.TextChannel=None):
+    async def ignore(self, ctx, channel: discord.TextChannel = None):
         """
             Ignore a channel from message delete/edit events and bot commands
 
@@ -299,7 +302,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await ctx.send(channel.mention + _(" is already being ignored."))
 
     @modlogtoggles.command()
-    async def unignore(self, ctx, channel:discord.TextChannel=None):
+    async def unignore(self, ctx, channel: discord.TextChannel = None):
         """
             Unignore a channel from message delete/edit events and bot commands
 

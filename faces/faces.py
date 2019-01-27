@@ -431,7 +431,7 @@ FACES = [
     "_(͡๏̯͡๏)_",
     "{´◕ ◡ ◕｀}",
     "{ಠ_ಠ}__,,|,",
-    "{◕ ◡ ◕}"
+    "{◕ ◡ ◕}",
 ]
 
 
@@ -442,7 +442,7 @@ class Faces(getattr(commands, "Cog", object)):
 
     def __init__(self, bot):
         self.bot = bot
-    
+
     @commands.command(aliases=["japaneseface"])
     async def face(self, ctx, number=None):
         """Japanese Faces at random courtesy of the CIA"""
@@ -456,11 +456,10 @@ class Faces(getattr(commands, "Cog", object)):
             return
         if number.isdigit():
             if int(number) <= len(FACES):
-                await ctx.send(FACES[int(number)-1])
+                await ctx.send(FACES[int(number) - 1])
                 return
             else:
-                await ctx.send("That number is too large, pick less than {}!"
-                                   .format(len(FACES)))
+                await ctx.send("That number is too large, pick less than {}!".format(len(FACES)))
                 return
         if not number.isdigit() and "<@!" not in number:
             await ctx.send(FACES[len(number)])

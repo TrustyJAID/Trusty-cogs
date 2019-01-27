@@ -18,7 +18,7 @@ class Conversions(getattr(commands, "Cog", object)):
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
     @commands.command(aliases=["bitcoin", "BTC"])
-    async def btc(self, ctx, ammount:float=1.0, currency="USD", full=True):
+    async def btc(self, ctx, ammount: float = 1.0, currency="USD", full=True):
         """
             converts from BTC to a given currency.
 
@@ -37,7 +37,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ethereum", "ETH"])
-    async def eth(self, ctx, ammount:float=1.0, currency="USD", full=True):
+    async def eth(self, ctx, ammount: float = 1.0, currency="USD", full=True):
         """
             converts from ETH to a given currency.
 
@@ -56,7 +56,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["litecoin", "LTC"])
-    async def ltc(self, ctx, ammount:float=1.0, currency="USD", full=True):
+    async def ltc(self, ctx, ammount: float = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -75,7 +75,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["monero", "XMR"])
-    async def xmr(self, ctx, ammount:float=1.0, currency="USD", full=True):
+    async def xmr(self, ctx, ammount: float = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -94,7 +94,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["bitcoin-cash", "BCH"])
-    async def bch(self, ctx, ammount:float=1.0, currency="USD", full=True):
+    async def bch(self, ctx, ammount: float = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -110,14 +110,18 @@ class Conversions(getattr(commands, "Cog", object)):
         if type(embed) is str:
             await ctx.send(embed)
         else:
-            await ctx.send(embed=embed)    
+            await ctx.send(embed=embed)
+
     async def checkcoins(self, base):
         link = "https://api.coinmarketcap.com/v2/ticker/"
         async with self.session.get(link) as resp:
             data = await resp.json()
         for coin in data["data"]:
-            if base.upper() == data["data"][coin]["symbol"].upper() or base.lower() == data["data"][coin]["name"].lower():
-                return data["data"][coin] 
+            if (
+                base.upper() == data["data"][coin]["symbol"].upper()
+                or base.lower() == data["data"][coin]["name"].lower()
+            ):
+                return data["data"][coin]
         return None
 
     @commands.command()
@@ -142,18 +146,22 @@ class Conversions(getattr(commands, "Cog", object)):
         if ctx.channel.permissions_for(ctx.me).embed_links:
             for coin in coin_list[:25]:
                 if coin is not None:
-                    msg = "1 {0} is {1:,.2f} USD".format(coin["symbol"], float(coin["quotes"]["USD"]["price"]))
+                    msg = "1 {0} is {1:,.2f} USD".format(
+                        coin["symbol"], float(coin["quotes"]["USD"]["price"])
+                    )
                     embed.add_field(name=coin["name"], value=msg)
             await ctx.send(embed=embed)
         else:
             msg = ""
             for coin in coin_list[:25]:
                 if coin is not None:
-                    msg += "1 {0} is {1:,.2f} USD\n".format(coin["symbol"], float(coin["quotes"]["USD"]["price"]))
+                    msg += "1 {0} is {1:,.2f} USD\n".format(
+                        coin["symbol"], float(coin["quotes"]["USD"]["price"])
+                    )
             await ctx.send(msg)
 
     @commands.command()
-    async def crypto(self, ctx, coin, ammount:float=1.0, currency="USD", full=True):
+    async def crypto(self, ctx, coin, ammount: float = 1.0, currency="USD", full=True):
         """
             Displays the latest information about a specified crypto currency
             
@@ -178,22 +186,28 @@ class Conversions(getattr(commands, "Cog", object)):
         if coin_data is None:
             await ctx.send("{} is not in my list of currencies!".format(coin))
             return
-        coin_colour = {"Bitcoin": discord.Colour.gold(),
-                       "Bitcoin Cash": discord.Colour.orange(),
-                       "Ethereum": discord.Colour.dark_grey(),
-                       "Litecoin": discord.Colour.dark_grey(),
-                       "Monero": discord.Colour.orange()}
+        coin_colour = {
+            "Bitcoin": discord.Colour.gold(),
+            "Bitcoin Cash": discord.Colour.orange(),
+            "Ethereum": discord.Colour.dark_grey(),
+            "Litecoin": discord.Colour.dark_grey(),
+            "Monero": discord.Colour.orange(),
+        }
         price = float(coin_data["quotes"]["USD"]["price"]) * ammount
         market_cap = float(coin_data["quotes"]["USD"]["market_cap"])
         volume_24h = float(coin_data["quotes"]["USD"]["volume_24h"])
-        coin_image = "https://s2.coinmarketcap.com/static/img/coins/128x128/{}.png".format(coin_data["id"])
+        coin_image = "https://s2.coinmarketcap.com/static/img/coins/128x128/{}.png".format(
+            coin_data["id"]
+        )
         coin_url = "https://coinmarketcap.com/currencies/{}".format(coin_data["id"])
         if currency.upper() != "USD":
             conversionrate = await self.conversionrate("USD", currency.upper())
             price = conversionrate * price
             market_cap = conversionrate * market_cap
             volume_24h = conversionrate * volume_24h
-        msg = "{0} {3} is **{1:,.2f} {2}**".format(ammount, price, currency.upper(), coin_data["symbol"])
+        msg = "{0} {3} is **{1:,.2f} {2}**".format(
+            ammount, price, currency.upper(), coin_data["symbol"]
+        )
         embed = discord.Embed(description=msg, colour=discord.Colour.dark_grey())
         if coin_data["name"] in coin_colour:
             embed.colour = coin_colour[coin_data["name"]]
@@ -208,31 +222,38 @@ class Conversions(getattr(commands, "Cog", object)):
             hour_24_emoji = "🔼" if hour_24 >= 0 else "🔽"
             days_7_emoji = "🔼" if days_7 >= 0 else "🔽"
             available_supply = "{0:,.2f}".format(coin_data["circulating_supply"])
-            max_supply = "{0:,.2f}".format(coin_data["max_supply"]) if "max_supply" in coin_data else None
+            max_supply = (
+                "{0:,.2f}".format(coin_data["max_supply"]) if "max_supply" in coin_data else None
+            )
             total_supply = "{0:,.2f}".format(coin_data["total_supply"])
             embed.set_thumbnail(url=coin_image)
-            embed.add_field(name="Market Cap", value="{0:,.2f} {1}".format(market_cap, currency.upper()))
-            embed.add_field(name="24 Hour Volume", value="{0:,.2f} {1}".format(volume_24h, currency.upper()))
+            embed.add_field(
+                name="Market Cap", value="{0:,.2f} {1}".format(market_cap, currency.upper())
+            )
+            embed.add_field(
+                name="24 Hour Volume", value="{0:,.2f} {1}".format(volume_24h, currency.upper())
+            )
             embed.add_field(name="Available Supply", value=available_supply)
             if max_supply is not None:
                 embed.add_field(name="Max Supply", value=max_supply)
             embed.add_field(name="Total Supply ", value=total_supply)
             embed.add_field(name="Change 1 hour " + hour_1_emoji, value="{}%".format(hour_1))
             embed.add_field(name="Change 24 hours " + hour_24_emoji, value="{}%".format(hour_24))
-            embed.add_field(name="Change 7 days " +days_7_emoji, value="{}%".format(days_7))
+            embed.add_field(name="Change 7 days " + days_7_emoji, value="{}%".format(days_7))
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             if full:
-                return (f"{msg}\nMarket Cap: **{market_cap}**\n"
-                        f"24 Hour Volume: **{volume_24h}**\nAvailable Supply: **{available_supply}**\n"
-                        f"Max Supply: **{max_supply}**\nTotal Supply: **{total_supply}**\n"
-                        f"Change 1 hour{hour_1_emoji}: **{hour_1}%**\n"
-                        f"Change 24 hours{hour_24_emoji}: **{hour_24}%**\n"
-                        f"Change 7 days{days_7_emoji}: **{days_7}%**\n")
+                return (
+                    f"{msg}\nMarket Cap: **{market_cap}**\n"
+                    f"24 Hour Volume: **{volume_24h}**\nAvailable Supply: **{available_supply}**\n"
+                    f"Max Supply: **{max_supply}**\nTotal Supply: **{total_supply}**\n"
+                    f"Change 1 hour{hour_1_emoji}: **{hour_1}%**\n"
+                    f"Change 24 hours{hour_24_emoji}: **{hour_24}%**\n"
+                    f"Change 7 days{days_7_emoji}: **{days_7}%**\n"
+                )
             else:
                 return msg
         else:
             return embed
-
 
     @commands.command()
     async def gold(self, ctx, ammount=1, currency="USD"):
@@ -249,7 +270,9 @@ class Conversions(getattr(commands, "Cog", object)):
         msg = "{0} oz of Gold is {1:,.2f} {2}".format(ammount, price, currency.upper())
         embed = discord.Embed(descirption="Gold", colour=discord.Colour.gold())
         embed.add_field(name="Gold", value=msg)
-        embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/d/d7/Gold-crystals.jpg")
+        embed.set_thumbnail(
+            url="https://upload.wikimedia.org/wikipedia/commons/d/d7/Gold-crystals.jpg"
+        )
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(msg)
         else:
@@ -263,7 +286,9 @@ class Conversions(getattr(commands, "Cog", object)):
             `ammount` must be a number of ounces to convert defaults to 1 ounce
             `currency` must be a valid currency defaults to USD
         """
-        SILVER = "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key=EKvr5W-sJUFVSevcpk4v"
+        SILVER = (
+            "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key=EKvr5W-sJUFVSevcpk4v"
+        )
         async with self.session.get(SILVER) as resp:
             data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
@@ -272,7 +297,9 @@ class Conversions(getattr(commands, "Cog", object)):
         msg = "{0} oz of Silver is {1:,.2f} {2}".format(ammount, price, currency.upper())
         embed = discord.Embed(descirption="Silver", colour=discord.Colour.lighter_grey())
         embed.add_field(name="Silver", value=msg)
-        embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/5/55/Silver_crystal.jpg")
+        embed.set_thumbnail(
+            url="https://upload.wikimedia.org/wikipedia/commons/5/55/Silver_crystal.jpg"
+        )
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(msg)
         else:
@@ -295,7 +322,9 @@ class Conversions(getattr(commands, "Cog", object)):
         msg = "{0} oz of Platinum is {1:,.2f} {2}".format(ammount, price, currency.upper())
         embed = discord.Embed(descirption="Platinum", colour=discord.Colour.dark_grey())
         embed.add_field(name="Platinum", value=msg)
-        embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/6/68/Platinum_crystals.jpg")
+        embed.set_thumbnail(
+            url="https://upload.wikimedia.org/wikipedia/commons/6/68/Platinum_crystals.jpg"
+        )
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(msg)
         else:
@@ -325,7 +354,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def convert(self, ctx, ammount:float=1.0, currency1="USD", currency2="GBP"):
+    async def convert(self, ctx, ammount: float = 1.0, currency1="USD", currency2="GBP"):
         """
             Converts a value between 2 different currencies
 
@@ -333,13 +362,15 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency1` is the currency you have default is USD
             `currency2` is the currency you want to convert to default is GBP
         """
-        conversion = await self.conversionrate(currency1.upper(), currency2.upper()) 
+        conversion = await self.conversionrate(currency1.upper(), currency2.upper())
         conversion = conversion * ammount
         await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
 
     async def conversionrate(self, currency1, currency2):
         """Function to convert different currencies"""
-        CONVERSIONRATES = "https://free.currencyconverterapi.com/api/v6/convert?q={}_{}&compact=ultra".format(currency1.upper(), currency2.upper())
+        CONVERSIONRATES = "https://free.currencyconverterapi.com/api/v6/convert?q={}_{}&compact=ultra".format(
+            currency1.upper(), currency2.upper()
+        )
         try:
             async with self.session.get(CONVERSIONRATES) as resp:
                 data = await resp.json()

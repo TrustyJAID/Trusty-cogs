@@ -3,13 +3,51 @@ from redbot.core import commands
 
 import discord
 
+
 class Profile:
-    def __init__(self, name:str, combatlevel:int, logged_in:bool, rank:int, melee_total:int, magic_total:int, ranged_total: int,
-                 totalskill:int, totalxp:int, questsstarted:int, questscomplete:int, questsnotstarted:int, activities:list,
-                  attack:dict, defence:dict, strength:dict, constitution:dict, ranged:dict, prayer:dict, magic:dict, cooking:dict,
-                  woodcutting:dict, fletching:dict, fishing:dict, firemaking:dict, crafting:dict, smithing:dict, mining:dict,
-                  herblore:dict, agility:dict, thieving:dict, slayer:dict, farming:dict, runecrafting:dict, hunter:dict, construction:dict,
-                  summoning:dict, dungeoneering:dict, divination:dict, invention:dict):
+    def __init__(
+        self,
+        name: str,
+        combatlevel: int,
+        logged_in: bool,
+        rank: int,
+        melee_total: int,
+        magic_total: int,
+        ranged_total: int,
+        totalskill: int,
+        totalxp: int,
+        questsstarted: int,
+        questscomplete: int,
+        questsnotstarted: int,
+        activities: list,
+        attack: dict,
+        defence: dict,
+        strength: dict,
+        constitution: dict,
+        ranged: dict,
+        prayer: dict,
+        magic: dict,
+        cooking: dict,
+        woodcutting: dict,
+        fletching: dict,
+        fishing: dict,
+        firemaking: dict,
+        crafting: dict,
+        smithing: dict,
+        mining: dict,
+        herblore: dict,
+        agility: dict,
+        thieving: dict,
+        slayer: dict,
+        farming: dict,
+        runecrafting: dict,
+        hunter: dict,
+        construction: dict,
+        summoning: dict,
+        dungeoneering: dict,
+        divination: dict,
+        invention: dict,
+    ):
         super().__init__()
         self.name = name
         self.combatlevel = combatlevel
@@ -93,56 +131,88 @@ class Profile:
             "summoning": self.summoning,
             "dungeoneering": self.dungeoneering,
             "divination": self.divination,
-            "invention": self.invention
+            "invention": self.invention,
         }
-
 
     @classmethod
     async def from_json(cls, data: dict):
-      skill_id_conversion = {
-                "0":"Attack",
-                "1":"Defence",
-                "2":"Strength",
-                "3":"Constitution",
-                "4":"Ranged",
-                "5":"Prayer",
-                "6":"Magic",
-                "7":"Cooking",
-                "8":"Woodcutting",
-                "9":"Fletching",
-                "10":"Fishing",
-                "11":"Firemaking",
-                "12":"Crafting",
-                "13":"Smithing",
-                "14":"Mining",
-                "15":"Herblore",
-                "16":"Agility",
-                "17":"Thieving",
-                "18":"Slayer",
-                "19":"Farming",
-                "20":"Runecrafting",
-                "21":"Hunter",
-                "22":"Construction",
-                "23":"Summoning",
-                "24":"Dungeoneering",
-                "25":"Divination",
-                "26":"Invention"
-                }
-      def get_skill(skill_id):
-        for skill in data["skillvalues"]:
-          if skill["id"] == skill_id:
-            skill["name"] = skill_id_conversion[str(skill_id)]
-            return skill
+        skill_id_conversion = {
+            "0": "Attack",
+            "1": "Defence",
+            "2": "Strength",
+            "3": "Constitution",
+            "4": "Ranged",
+            "5": "Prayer",
+            "6": "Magic",
+            "7": "Cooking",
+            "8": "Woodcutting",
+            "9": "Fletching",
+            "10": "Fishing",
+            "11": "Firemaking",
+            "12": "Crafting",
+            "13": "Smithing",
+            "14": "Mining",
+            "15": "Herblore",
+            "16": "Agility",
+            "17": "Thieving",
+            "18": "Slayer",
+            "19": "Farming",
+            "20": "Runecrafting",
+            "21": "Hunter",
+            "22": "Construction",
+            "23": "Summoning",
+            "24": "Dungeoneering",
+            "25": "Divination",
+            "26": "Invention",
+        }
 
-      logged_in = True if data["loggedIn"] == "true" else False
+        def get_skill(skill_id):
+            for skill in data["skillvalues"]:
+                if skill["id"] == skill_id:
+                    skill["name"] = skill_id_conversion[str(skill_id)]
+                    return skill
 
-      return cls(data["name"], data["combatlevel"], logged_in,
-                 data["rank"], data["melee"], data["magic"], data["ranged"],
-                 data["totalskill"], data["totalxp"], data["questsstarted"],
-                 data["questscomplete"], data["questsnotstarted"], data["activities"],
-                 get_skill(0), get_skill(1), get_skill(2), get_skill(3), get_skill(4),
-                 get_skill(5), get_skill(6), get_skill(7), get_skill(8), get_skill(9),
-                 get_skill(10), get_skill(11), get_skill(12), get_skill(13), get_skill(14),
-                 get_skill(15), get_skill(16), get_skill(17), get_skill(18), get_skill(19),
-                 get_skill(20), get_skill(21), get_skill(22), get_skill(23), get_skill(24),
-                 get_skill(25), get_skill(26))
+        logged_in = True if data["loggedIn"] == "true" else False
+
+        return cls(
+            data["name"],
+            data["combatlevel"],
+            logged_in,
+            data["rank"],
+            data["melee"],
+            data["magic"],
+            data["ranged"],
+            data["totalskill"],
+            data["totalxp"],
+            data["questsstarted"],
+            data["questscomplete"],
+            data["questsnotstarted"],
+            data["activities"],
+            get_skill(0),
+            get_skill(1),
+            get_skill(2),
+            get_skill(3),
+            get_skill(4),
+            get_skill(5),
+            get_skill(6),
+            get_skill(7),
+            get_skill(8),
+            get_skill(9),
+            get_skill(10),
+            get_skill(11),
+            get_skill(12),
+            get_skill(13),
+            get_skill(14),
+            get_skill(15),
+            get_skill(16),
+            get_skill(17),
+            get_skill(18),
+            get_skill(19),
+            get_skill(20),
+            get_skill(21),
+            get_skill(22),
+            get_skill(23),
+            get_skill(24),
+            get_skill(25),
+            get_skill(26),
+        )

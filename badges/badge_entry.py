@@ -1,7 +1,16 @@
 import discord
 
+
 class Badge:
-    def __init__(self, badge_name: str, code: str, image: str=None, watermark:str=None, file_name: str=None, is_inverted: bool=False):
+    def __init__(
+        self,
+        badge_name: str,
+        code: str,
+        image: str = None,
+        watermark: str = None,
+        file_name: str = None,
+        is_inverted: bool = False,
+    ):
         super().__init__()
         self.badge_name = badge_name
         self.code = code
@@ -10,7 +19,6 @@ class Badge:
         self.image = image
         self.watermark = watermark
 
-
     def to_json(self) -> dict:
         return {
             "badge_name": self.badge_name,
@@ -18,8 +26,7 @@ class Badge:
             "image": self.image,
             "watermark": self.watermark,
             "file_name": self.file_name,
-            "is_inverted": self.is_inverted
-
+            "is_inverted": self.is_inverted,
         }
 
     @classmethod
@@ -41,5 +48,3 @@ class Badge:
         else:
             watermark = None
         return cls(badge_name, code, image, watermark, file_name, is_inverted)
-
-

@@ -10,11 +10,9 @@ from redbot.core import Config
 from redbot.core.utils.chat_formatting import pagify, box
 from random import choice as randchoice
 
-numbs = {
-    "next": "➡",
-    "back": "⬅",
-    "exit": "❌"
-}
+numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
+
+
 class Anime(getattr(commands, "Cog", object)):
     """
         Display latest airing anime episodes
@@ -25,8 +23,12 @@ class Anime(getattr(commands, "Cog", object)):
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.url = "https://anilist.co/api/"
         self.config = Config.get_conf(self, 15863754656)
-        default_global = {"last_check":0, "airing":[], "api":{'client_id': '', 'client_secret': '', "access_token":{}}}
-        default_guild = {"enabled":False, "channel":None}
+        default_global = {
+            "last_check": 0,
+            "airing": [],
+            "api": {"client_id": "", "client_secret": "", "access_token": {}},
+        }
+        default_guild = {"enabled": False, "channel": None}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         # self.airing = dataIO.load_json("data/anilist/airing.json")
@@ -82,7 +84,7 @@ class Anime(getattr(commands, "Cog", object)):
         """
             List all episodes currently being checked for airing status
         """
-        animes=""
+        animes = ""
         for anime in await self.config.airing():
             animes += "{},".format(anime["title_english"])
         for page in pagify(animes, [","]):
@@ -134,20 +136,28 @@ class Anime(getattr(commands, "Cog", object)):
         em.timestamp = time_start
         for guild in await self.config.all_guilds():
             guild = self.bot.get_guild(id=guild)
-            if not await self.config.guild(guild).enabled() and await self.config.guild(guild).channel() is None:
+            if (
+                not await self.config.guild(guild).enabled()
+                and await self.config.guild(guild).channel() is None
+            ):
                 continue
             channel_id = await self.config.guild(guild).channel()
             channel = self.bot.get_channel(id=channel_id)
             await channel.send(embed=em)
         return
 
-
     async def check_auth(self):
         time_now = datetime.utcnow()
-        params = {"client_id": await self.config.api.client_id(), "client_secret": await self.config.api.client_secret()}
+        params = {
+            "client_id": await self.config.api.client_id(),
+            "client_secret": await self.config.api.client_secret(),
+        }
         params["grant_type"] = "client_credentials"
         print(params)
-        if await self.config.api.access_token() == {} or "error" in await self.config.api.access_token():
+        if (
+            await self.config.api.access_token() == {}
+            or "error" in await self.config.api.access_token()
+        ):
             async with self.session.post(self.url + "auth/access_token", params=params) as resp:
                 data = await resp.json()
             print(data)
@@ -161,20 +171,22 @@ class Anime(getattr(commands, "Cog", object)):
         return header
 
     def random_colour(self):
-        return int(''.join([randchoice('0123456789ABCDEF')for x in range(6)]), 16)
+        return int("".join([randchoice("0123456789ABCDEF") for x in range(6)]), 16)
 
-    async def search_menu(self, ctx, post_list: list,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
+    async def search_menu(
+        self, ctx, post_list: list, message: discord.Message = None, page=0, timeout: int = 30
+    ):
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         s = post_list[page]
         title = "{} | {}".format(s["title_english"], s["title_japanese"])
         url = "https://anilist.co/anime/{}/".format(s["id"])
         created_at = s["start_date"]
-        created_at = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%S+09:00") # "2006-07-03T00:00:00+09:00"
-        
-        em = discord.Embed( colour=discord.Colour(value=self.random_colour()))
+        created_at = datetime.strptime(
+            created_at, "%Y-%m-%dT%H:%M:%S+09:00"
+        )  # "2006-07-03T00:00:00+09:00"
+
+        em = discord.Embed(colour=discord.Colour(value=self.random_colour()))
         if s["description"] is not None:
             desc = s["description"].replace("<br>", "\n")
             desc = desc.replace("<em>", "*")
@@ -192,7 +204,7 @@ class Anime(getattr(commands, "Cog", object)):
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"]
+        check = lambda react, user: user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"]
         try:
             react, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
@@ -213,8 +225,9 @@ class Anime(getattr(commands, "Cog", object)):
                     await message.remove_reaction("➡", ctx.message.author)
                 except:
                     pass
-                return await self.search_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.search_menu(
+                    ctx, post_list, message=message, page=next_page, timeout=timeout
+                )
             elif react == "back":
                 next_page = 0
                 if page == 0:
@@ -225,12 +238,11 @@ class Anime(getattr(commands, "Cog", object)):
                     await message.remove_reaction("⬅", ctx.message.author)
                 except:
                     pass
-                return await self.search_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.search_menu(
+                    ctx, post_list, message=message, page=next_page, timeout=timeout
+                )
             else:
                 return await message.delete()
-
-
 
     @anime.command()
     async def search(self, ctx, *, search):
@@ -238,7 +250,9 @@ class Anime(getattr(commands, "Cog", object)):
             Search for an anime title
         """
         header = await self.check_auth()
-        async with self.session.get(self.url + "anime/search/{}".format(search), params=header) as resp:
+        async with self.session.get(
+            self.url + "anime/search/{}".format(search), params=header
+        ) as resp:
             print(str(resp.url))
             data = await resp.json()
         if "error" not in data:
@@ -268,7 +282,9 @@ class Anime(getattr(commands, "Cog", object)):
             if not anime["adult"]:
                 # print(anime["title_english"])
                 episode_data = {}
-                async with self.session.get(self.url + "anime/{}/airing".format(anime["id"]), params=header1) as resp:
+                async with self.session.get(
+                    self.url + "anime/{}/airing".format(anime["id"]), params=header1
+                ) as resp:
                     ani_data = await resp.json()
                 try:
                     for ep, time in ani_data.items():
@@ -297,7 +313,9 @@ class Anime(getattr(commands, "Cog", object)):
         for anime in data:
             if not anime["adult"]:
                 episode_data = {}
-                async with self.session.get(self.url + "anime/{}/airing".format(anime["id"]), params=header1) as resp:
+                async with self.session.get(
+                    self.url + "anime/{}/airing".format(anime["id"]), params=header1
+                ) as resp:
                     ani_data = await resp.json()
                     # print(anime["title_english"])
                 # anime_list.append(ani_data)
@@ -312,17 +330,17 @@ class Anime(getattr(commands, "Cog", object)):
         """Setup a channel for anime airing announcements"""
         pass
 
-    
-
     @animeset.command(name="channel")
-    async def add_channel(self, ctx, channel:discord.TextChannel=None):
+    async def add_channel(self, ctx, channel: discord.TextChannel = None):
         """Set the channel for anime announcements"""
         if channel is None:
             channel = ctx.message.channel
         guild = channel.guild
 
         if channel.id == await self.config.guild(guild).channel():
-            await ctx.send("I am already posting anime announcement updates in {}".format(channel.mention))
+            await ctx.send(
+                "I am already posting anime announcement updates in {}".format(channel.mention)
+            )
             return
         else:
             await self.config.guild(guild).channel.set(channel.id)
@@ -330,20 +348,24 @@ class Anime(getattr(commands, "Cog", object)):
         await ctx.send("I will post anime episode announcements in {}".format(channel.mention))
 
     @animeset.command(name="delete")
-    async def del_channel(self, ctx, channel:discord.TextChannel=None):
+    async def del_channel(self, ctx, channel: discord.TextChannel = None):
         """Set the channel for anime announcements"""
         if channel is None:
             channel = ctx.message.channel
         guild = channel.guild
         if channel.id != await self.config.guild(guild).channel():
-            await ctx.send("I am not posting anime announcement updates in {}".format(channel.mention))
+            await ctx.send(
+                "I am not posting anime announcement updates in {}".format(channel.mention)
+            )
             return
         else:
             await self.config.guild(guild).channel.set(None)
             await self.config.guild(guild).enabled.set(False)
-        await ctx.send("I will stop posting anime episode announcements in {}".format(channel.mention))
+        await ctx.send(
+            "I will stop posting anime episode announcements in {}".format(channel.mention)
+        )
 
-    @commands.group(name='aniset')
+    @commands.group(name="aniset")
     @checks.is_owner()
     async def _aniset(self, ctx):
         """Command for setting required access information for the API.
@@ -352,16 +374,16 @@ class Anime(getattr(commands, "Cog", object)):
         and client secret with `[p]aniset creds client_id client_secret`"""
         pass
 
-    @_aniset.command(name='creds')
+    @_aniset.command(name="creds")
     @checks.is_owner()
-    async def set_creds(self, ctx, client_id:str, client_secret:str):
+    async def set_creds(self, ctx, client_id: str, client_secret: str):
         """Sets the access credentials. See [p]help aniset for instructions on getting these"""
         # self.settings["api"]["client_id"] = client_id
         # self.settings["api"]["client_secret"] = client_secret
         await self.config.api.client_id.set(client_id)
         await self.config.api.client_secret.set(client_secret)
         # dataIO.save_json("data/anilist/settings.json", self.settings)
-        await ctx.send('Set the access credentials!')
+        await ctx.send("Set the access credentials!")
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())

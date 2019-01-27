@@ -9,13 +9,15 @@ import asyncio
 
 
 default_greeting = "Welcome {0.name} to {1.name}!"
-default_settings = {"GREETING": [default_greeting], 
-                    "ON": False,
-                    "CHANNEL": None, 
-                    "WHISPER": False,
-                    "BOTS_MSG": None, 
-                    "BOTS_ROLE": None, 
-                    "EMBED":False}
+default_settings = {
+    "GREETING": [default_greeting],
+    "ON": False,
+    "CHANNEL": None,
+    "WHISPER": False,
+    "BOTS_MSG": None,
+    "BOTS_ROLE": None,
+    "EMBED": False,
+}
 settings_path = "data/welcome/settings.json"
 _ = Translator("Welcome", __file__)
 
@@ -38,17 +40,20 @@ class Welcome(getattr(commands, "Cog", object)):
         guild = ctx.message.guild
         if ctx.invoked_subcommand is None:
             guild_settings = await self.config.guild(guild).get_raw()
-            setting_names = {"GREETING": _("Random Greeting "), 
-                             "ON": _("On "),
-                             "CHANNEL": _("Channel "), 
-                             "WHISPER": _("Whisper "),
-                             "BOTS_MSG": _("Bots message "), 
-                             "BOTS_ROLE": _("Bots role "), 
-                             "EMBED": _("Embeds ")}
+            setting_names = {
+                "GREETING": _("Random Greeting "),
+                "ON": _("On "),
+                "CHANNEL": _("Channel "),
+                "WHISPER": _("Whisper "),
+                "BOTS_MSG": _("Bots message "),
+                "BOTS_ROLE": _("Bots role "),
+                "EMBED": _("Embeds "),
+            }
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 embed = discord.Embed(colour=await self.get_colour(guild))
-                embed.set_author(name=_("Welcome settings for ") + guild.name,
-                                 icon_url=guild.icon_url)
+                embed.set_author(
+                    name=_("Welcome settings for ") + guild.name, icon_url=guild.icon_url
+                )
                 embed.description = "\n".join(g for g in guild_settings["GREETING"])
                 for attr, name in setting_names.items():
                     if attr == "GREETING":
@@ -74,7 +79,7 @@ class Welcome(getattr(commands, "Cog", object)):
             else:
                 msg = "```\n"
                 for attr, name in setting_names.items():
-                    msg+= name + str(guild_settings[attr]) + "\n"
+                    msg += name + str(guild_settings[attr]) + "\n"
                 msg += "```"
                 await ctx.send(msg)
 
@@ -119,8 +124,10 @@ class Welcome(getattr(commands, "Cog", object)):
             msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ["\n", " "], shorten_by=20):
             await ctx.send("```\n{}\n```".format(page))
-        check = lambda message:message.author == ctx.message.author\
-                               and message.channel == ctx.message.channel
+        check = (
+            lambda message: message.author == ctx.message.author
+            and message.channel == ctx.message.channel
+        )
         try:
             answer = await self.bot.wait_for("message", check=check, timeout=120)
         except asyncio.TimeoutError:
@@ -165,7 +172,7 @@ class Welcome(getattr(commands, "Cog", object)):
         await self.config.guild(guild).ON.set(guild_settings)
 
     @welcomeset.command()
-    async def channel(self, ctx, channel : discord.TextChannel=None):
+    async def channel(self, ctx, channel: discord.TextChannel = None):
         """
         Sets the channel to send the welcome message
 
@@ -176,15 +183,15 @@ class Welcome(getattr(commands, "Cog", object)):
         if channel is None:
             channel = ctx.message.channel
         if not channel.permissions_for(ctx.me).send_messages:
-            msg = (_("I do not have permissions to send messages to ")+
-                   "{0.mention}".format(channel))
+            msg = _("I do not have permissions to send messages to ") + "{0.mention}".format(
+                channel
+            )
             await ctx.send(msg)
             return
         guild_settings = channel.id
         await self.config.guild(guild).CHANNEL.set(guild_settings)
         channel = self.get_welcome_channel(guild, guild_settings)
-        msg = (_("I will now send welcome messages to ")+
-               "{0.mention}".format(channel))
+        msg = _("I will now send welcome messages to ") + "{0.mention}".format(channel)
         await channel.send(msg)
         await self.send_testing_msg(ctx)
 
@@ -205,8 +212,7 @@ class Welcome(getattr(commands, "Cog", object)):
         guild_settings = format_msg
         await self.config.guild(guild).BOTS_MSG.set(guild_settings)
         if format_msg is None:
-            msg = _("Bot message reset. Bots will "
-                   "now be welcomed as regular users.")
+            msg = _("Bot message reset. Bots will " "now be welcomed as regular users.")
             await ctx.send(msg)
         else:
             await ctx.send(_("Bot welcome message set for the guild."))
@@ -214,7 +220,7 @@ class Welcome(getattr(commands, "Cog", object)):
 
     # TODO: Check if have permissions
     @welcomeset_bot.command(name="role")
-    async def welcomeset_bot_role(self, ctx, role: discord.Role=None):
+    async def welcomeset_bot_role(self, ctx, role: discord.Role = None):
         """
         Set the role to put bots in when they join.
 
@@ -228,7 +234,7 @@ class Welcome(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @welcomeset.command()
-    async def whisper(self, ctx, choice: str=None):
+    async def whisper(self, ctx, choice: str = None):
         """Sets whether or not a DM is sent to the new user
 
         Options:
@@ -253,14 +259,15 @@ class Welcome(getattr(commands, "Cog", object)):
         if not guild_settings:
             await ctx.send(_("I will no longer send DMs to new users"))
         elif guild_settings == "BOTH":
-            msg = (_("I will now send welcome ") +
-                   _("messages to ") + "{0.mention}".format(ctx.channel)+
-                   _(" as well as to the new user in a DM"))
+            msg = (
+                _("I will now send welcome ")
+                + _("messages to ")
+                + "{0.mention}".format(ctx.channel)
+                + _(" as well as to the new user in a DM")
+            )
             await ctx.send(msg)
         else:
-            msg = _("I will now only send "
-                   "welcome messages to the new user "
-                   "as a DM")
+            msg = _("I will now only send " "welcome messages to the new user " "as a DM")
             await ctx.send(msg)
         await self.send_testing_msg(ctx)
 
@@ -281,11 +288,11 @@ class Welcome(getattr(commands, "Cog", object)):
             await ctx.send("I will test without embedds.")
             await self.send_testing_msg(ctx)
 
-    async def make_embed(self, member:discord.Member, msg:str):
-        em = discord.Embed(description=msg.format(member, member.guild),
-                           timestamp=member.joined_at)
-        em.set_author(name=member.name+"#"+member.discriminator, 
-                      icon_url=member.avatar_url)
+    async def make_embed(self, member: discord.Member, msg: str):
+        em = discord.Embed(
+            description=msg.format(member, member.guild), timestamp=member.joined_at
+        )
+        em.set_author(name=member.name + "#" + member.discriminator, icon_url=member.avatar_url)
         em.set_thumbnail(url=member.avatar_url_as(format="png"))
         return em
 
@@ -293,7 +300,7 @@ class Welcome(getattr(commands, "Cog", object)):
         if await self.bot.db.guild(guild).use_bot_color():
             return guild.me.colour
         else:
-            return await self.bot.db.color()        
+            return await self.bot.db.color()
 
     async def on_member_join(self, member):
         guild = member.guild
@@ -317,22 +324,27 @@ class Welcome(getattr(commands, "Cog", object)):
                 else:
                     await member.send(msg.format(member, guild))
             except:
-                print(_("welcome.py: unable to whisper a user. Probably "
-                        "doesn't want to be PM'd") + str(member))
+                print(
+                    _("welcome.py: unable to whisper a user. Probably " "doesn't want to be PM'd")
+                    + str(member)
+                )
         # grab the welcome channel
-        #guild_settings = await self.config.guild(guild).guild_settings()
+        # guild_settings = await self.config.guild(guild).guild_settings()
         channel = self.bot.get_channel(await self.config.guild(guild).CHANNEL())
         if channel is None:  # complain even if only whisper
-            print(_("welcome.py: Channel not found. It was most "
-                    "likely deleted. User joined: ") + member.name)
+            print(
+                _("welcome.py: Channel not found. It was most " "likely deleted. User joined: ")
+                + member.name
+            )
             return
         # we can stop here
-        
+
         if not self.speak_permissions(guild, channel.id):
-            print(_("Permissions Error. User that joined: ")+
-                  "{0.name}".format(member))
-            print(_("Bot doesn't have permissions to send messages to ")+
-                  "{0.name}'s #{1.name} channel".format(guild, channel))
+            print(_("Permissions Error. User that joined: ") + "{0.name}".format(member))
+            print(
+                _("Bot doesn't have permissions to send messages to ")
+                + "{0.name}'s #{1.name} channel".format(guild, channel)
+            )
             return
         # try to add role if needed
         if bot_role:
@@ -341,11 +353,11 @@ class Welcome(getattr(commands, "Cog", object)):
                 await member.add_roles(role)
             except Exception as e:
                 print(e)
-                print(_("welcome.py: unable to add  a role. ")+ 
-                      str(bot_role) + str(member))
+                print(_("welcome.py: unable to add  a role. ") + str(bot_role) + str(member))
             else:
-                print(_("welcome.py: added ")+str(role)+_(" role to ")+
-                      _("bot, ")+str(member))
+                print(
+                    _("welcome.py: added ") + str(role) + _(" role to ") + _("bot, ") + str(member)
+                )
 
         if only_whisper and not bot_welcome:
             return
@@ -373,8 +385,7 @@ class Welcome(getattr(commands, "Cog", object)):
         channel = self.get_welcome_channel(guild, guild_settings)
         if channel is None:
             return False
-        return guild.get_member(self.bot.user.id
-                                 ).permissions_in(channel).send_messages
+        return guild.get_member(self.bot.user.id).permissions_in(channel).send_messages
 
     async def send_testing_msg(self, ctx, bot=False, msg=None):
         guild = ctx.message.guild
@@ -386,12 +397,10 @@ class Welcome(getattr(commands, "Cog", object)):
         member = ctx.message.author
         whisper_settings = await self.config.guild(guild).WHISPER()
         if channel is None and whisper_settings not in ["BOTH", True]:
-            msg = _("I can't find the specified channel. "
-                    "It might have been deleted.")
+            msg = _("I can't find the specified channel. " "It might have been deleted.")
             await ctx.send(msg)
             return
-        await ctx.send(_("`Sending a testing message to ")+
-                       "`{0.mention}".format(channel))
+        await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if self.speak_permissions(guild, await self.config.guild(guild).CHANNEL()):
             msg = await self.config.guild(guild).BOTS_MSG() if bot else rand_msg
             print(msg)
@@ -408,7 +417,9 @@ class Welcome(getattr(commands, "Cog", object)):
                 else:
                     await channel.send(msg.format(member, guild))
         else:
-            msg = (_("I do not have permissions ")+
-                   _("to send messages to ")+
-                   "{0.mention}".format(channel))
+            msg = (
+                _("I do not have permissions ")
+                + _("to send messages to ")
+                + "{0.mention}".format(channel)
+            )
             await ctx.send(msg)

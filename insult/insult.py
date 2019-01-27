@@ -8,7 +8,9 @@ _ = Translator("Insult", __file__)
 
 insults = [
     _("Yo Mama so fat she sued Xbox 360 for guessing her weight."),
-    _("You're so fat that when you were diagnosed with a flesh eating bacteria - the doctors gave you 87 years to live."),
+    _(
+        "You're so fat that when you were diagnosed with a flesh eating bacteria - the doctors gave you 87 years to live."
+    ),
     _("You're so fat you've got more chins than a Hong Kong phone book."),
     _("Yo Mama so fat she's on both sides of the family."),
     _("Yo Mama so fat that even Dora couldn't explore her."),
@@ -16,16 +18,22 @@ insults = [
     _("You're so fat that when you farted you started global warming."),
     _("You're so fat the back of your neck looks like a pack of hot-dogs."),
     _("You're so fat that when you fell from your bed you fell from both sides."),
-    _("You're so fat when you get on the scale it says \"To be continued.\""),
-    _("You're so fat when you go swimming the whales start singing \"We Are Family\"."),
-    _("You're so fat when you stepped on the scale, Buzz Lightyear popped out and said \"To infinity and beyond!\""),
+    _('You\'re so fat when you get on the scale it says "To be continued."'),
+    _('You\'re so fat when you go swimming the whales start singing "We Are Family".'),
+    _(
+        'You\'re so fat when you stepped on the scale, Buzz Lightyear popped out and said "To infinity and beyond!"'
+    ),
     _("You're so fat when you turn around, people throw you a welcome back party."),
     _("You're so fat when you were in school you sat by everybody."),
-    _("You're so fat when you went to the circus the little girl asked if she could ride the elephant."),
+    _(
+        "You're so fat when you went to the circus the little girl asked if she could ride the elephant."
+    ),
     _("You're so fat when you go on an airplane, you have to pay baggage fees for your ass."),
     _("You're so fat whenever you go to the beach the tide comes in."),
     _("You're so fat I could slap your butt and ride the waves."),
-    _("You're so fat I'd have to grease the door frame and hold a Twinkie on the other side just to get you through."),
+    _(
+        "You're so fat I'd have to grease the door frame and hold a Twinkie on the other side just to get you through."
+    ),
     _("Yo Mama so dumb I told her Christmas was around the corner and she went looking for it."),
     _("You're so dumb it took you 2 hours to watch 60 minutes."),
     _("Yo Mama so dumb she bought tickets to Xbox Live."),
@@ -44,11 +52,15 @@ insults = [
     _("You bring everyone a lot of joy, when you leave the room."),
     _("What's the difference between you and eggs? Eggs get laid and you don't."),
     _("You're as bright as a black hole, and twice as dense."),
-    _("I tried to see things from your perspective, but I couldn't seem to shove my head that far up my ass."),
+    _(
+        "I tried to see things from your perspective, but I couldn't seem to shove my head that far up my ass."
+    ),
     _("Two wrongs don't make a right, take your parents as an example."),
     _("You're the reason the gene pool needs a lifeguard."),
     _("If laughter is the best medicine, your face must be curing the world."),
-    _("You're so ugly, when you popped out the doctor said \"Aww what a treasure\" and your mom said \"Yeah, lets bury it.\""),
+    _(
+        'You\'re so ugly, when you popped out the doctor said "Aww what a treasure" and your mom said "Yeah, lets bury it."'
+    ),
     _("I have neither the time nor the crayons to explain this to you."),
     _("You have two brains cells, one is lost and the other is out looking for it."),
     _("How many times do I have to flush to get rid of you?"),
@@ -57,7 +69,9 @@ insults = [
     _("Some drink from the fountain of knowledge; you only gargled."),
     _("Roses are red violets are blue, God made me pretty, what happened to you?"),
     _("It's better to let someone think you are an Idiot than to open your mouth and prove it."),
-    _("Somewhere out there is a tree, tirelessly producing oxygen so you can breathe. I think you owe it an apology."),
+    _(
+        "Somewhere out there is a tree, tirelessly producing oxygen so you can breathe. I think you owe it an apology."
+    ),
     _("The last time I saw a face like yours I fed it a banana."),
     _("The only way you'll ever get laid is if you crawl up a chicken's ass and wait."),
     _("Which sexual position produces the ugliest children? Ask your mother."),
@@ -98,7 +112,7 @@ insults = [
     _("If your brain was made of chocolate, it wouldn't fill an M&M."),
     _("Aww, it's so cute when you try to talk about things you don't understand."),
     _("I heard your parents took you to a dog show and you won."),
-    _("You stare at frozen juice cans because they say, \"concentrate\"."),
+    _('You stare at frozen juice cans because they say, "concentrate".'),
     _("You're so stupid you tried to wake a sleeping bag."),
     _("Am I getting smart with you? How would you know?"),
     _("We all sprang from apes, but you didn't spring far enough."),
@@ -118,7 +132,9 @@ insults = [
     _("I heard you took an IQ test and they said your results were negative."),
     _("You're so ugly, you had tinted windows on your incubator."),
     _("Don't you need a license to be that ugly?"),
-    _("I'm not saying you're fat, but it looks like you were poured into your clothes and someone forgot to say \"when\""),
+    _(
+        "I'm not saying you're fat, but it looks like you were poured into your clothes and someone forgot to say \"when\""
+    ),
     _("I've seen people like you, but I had to pay admission!"),
     _("I hear the only place you're ever invited is outside."),
     _("Keep talking, someday you'll say something intelligent!"),
@@ -138,9 +154,11 @@ insults = [
     _("Bitch."),
     _("I'd give you a nasty look but you've already got one."),
     _("If I wanted a bitch, I'd have bought a dog."),
-    _("Scientists say the universe is made up of neutrons, protons and electrons. They forgot to mention morons."),
+    _(
+        "Scientists say the universe is made up of neutrons, protons and electrons. They forgot to mention morons."
+    ),
     _("Why is it acceptable for you to be an idiot but not for me to point it out?"),
-    _("Did you know they used to be called \"Jumpolines\" until your mum jumped on one?"),
+    _('Did you know they used to be called "Jumpolines" until your mum jumped on one?'),
     _("You're not stupid; you just have bad luck when thinking."),
     _("I thought of you today. It reminded me to take the garbage out."),
     _("I'm sorry I didn't get that - I don't speak idiot."),
@@ -167,7 +185,9 @@ insults = [
     _("You're so fat you don't have got cellulite, you've got celluheavy."),
     _("You're so fat you influence the tides."),
     _("You're so fat you jumped off the Grand Canyon and got stuck."),
-    _("You're so fat that you laid on the beach and Greenpeace tried to push you back in the water."),
+    _(
+        "You're so fat that you laid on the beach and Greenpeace tried to push you back in the water."
+    ),
     _("You're so fat you leave footprints in concrete."),
     _("You're so fat you need GPS to find your asshole."),
     _("You're so fat you pull your pants down and your ass is still in them."),
@@ -178,8 +198,12 @@ insults = [
     _("Does your ass get jealous of all the shit that comes out of your mouth?"),
     _("If I ate a bowl of alphabet soup, I could shit out a smarter sentence than any of yours."),
     _("You're not pretty enough to be this stupid."),
-    _("That little voice in the back of your head, telling you you'll never be good enough? It's right."),
-    _("You look like you're going to spend your life having one epiphany after another, always thinking you've finally figured out what's holding you back, and how you can finally be productive and creative and turn your life around. But nothing will ever change. That cycle of mediocrity isn't due to some obstacle. It's who you *are*. The thing standing in the way of your dreams is; that the person having them is *you*."),
+    _(
+        "That little voice in the back of your head, telling you you'll never be good enough? It's right."
+    ),
+    _(
+        "You look like you're going to spend your life having one epiphany after another, always thinking you've finally figured out what's holding you back, and how you can finally be productive and creative and turn your life around. But nothing will ever change. That cycle of mediocrity isn't due to some obstacle. It's who you *are*. The thing standing in the way of your dreams is; that the person having them is *you*."
+    ),
     _("May your day and future be as pleasant as you are."),
     _("I would agree with you but then we would both be wrong."),
     _("I bite my thumb at you, sir."),
@@ -190,7 +214,9 @@ insults = [
     _("Your birth certificate is an apology from the abortion clinic."),
     _("If you were anymore inbred you'd be a sandwich."),
     _("Say hello to your wife and my kids for me."),
-    _("You are thick-headed bastards with a bloated bureaucracy, designed to compensate for your small and poor self-esteem, cocksuckers. You have the brains to ban the person who has come to support channel your bot, accusing him of violating the ephemeral ephemeral rules, stupid morons. By the way i have one of the biggest server(5.5k  people, ~30 anytime voiceonline members), and i know something about managing, and of these rules - dont be an asshole. You are fucking asshole, maybe it is product of your life alone, or your life with your mom, anyway - you are retard and your soul is a fucking bunch of stupid self-esteems.")
+    _(
+        "You are thick-headed bastards with a bloated bureaucracy, designed to compensate for your small and poor self-esteem, cocksuckers. You have the brains to ban the person who has come to support channel your bot, accusing him of violating the ephemeral ephemeral rules, stupid morons. By the way i have one of the biggest server(5.5k  people, ~30 anytime voiceonline members), and i know something about managing, and of these rules - dont be an asshole. You are fucking asshole, maybe it is product of your life alone, or your life with your mom, anyway - you are retard and your soul is a fucking bunch of stupid self-esteems."
+    ),
 ]
 
 
@@ -198,11 +224,12 @@ insults = [
 class Insult(getattr(commands, "Cog", object)):
 
     """Airenkun's Insult Cog"""
+
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command(aliases=["takeitback"])
-    async def insult(self, ctx, user : discord.Member=None):
+    async def insult(self, ctx, user: discord.Member = None):
         """
             Insult the user
             
@@ -214,8 +241,14 @@ class Insult(getattr(commands, "Cog", object)):
 
             if user.id == self.bot.user.id:
                 user = ctx.message.author
-                msg = [_("How original. No one else had thought of trying to get the bot to insult itself. I applaud your creativity. Yawn. Perhaps this is why you don't have friends. You don't add anything new to any conversation. You are more of a bot than me, predictable answers, and absolutely dull to have an actual conversation with."), 
-                       _("What the fuck did you just fucking say about me, you little bitch? I’ll have you know I graduated top of my class in the Navy Seals, and I’ve been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I’m the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You’re fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that’s just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little “clever” comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn’t, you didn’t, and now you’re paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You’re fucking dead, kiddo.")]
+                msg = [
+                    _(
+                        "How original. No one else had thought of trying to get the bot to insult itself. I applaud your creativity. Yawn. Perhaps this is why you don't have friends. You don't add anything new to any conversation. You are more of a bot than me, predictable answers, and absolutely dull to have an actual conversation with."
+                    ),
+                    _(
+                        "What the fuck did you just fucking say about me, you little bitch? I’ll have you know I graduated top of my class in the Navy Seals, and I’ve been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I’m the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You’re fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that’s just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little “clever” comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn’t, you didn’t, and now you’re paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You’re fucking dead, kiddo."
+                    ),
+                ]
                 await ctx.send(user.mention + choice(msg))
 
             else:

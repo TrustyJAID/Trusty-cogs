@@ -1,6 +1,14 @@
 class TeamEntry:
-    def __init__(self, game_state:str, team_name: str, period:int,
-                 channel: list, goal_id: dict, created_channel:list, game_start:str):
+    def __init__(
+        self,
+        game_state: str,
+        team_name: str,
+        period: int,
+        channel: list,
+        goal_id: dict,
+        created_channel: list,
+        game_start: str,
+    ):
         super().__init__()
         self.game_state = game_state
         self.team_name = team_name
@@ -18,10 +26,17 @@ class TeamEntry:
             "period": self.period,
             "created_channel": self.created_channel,
             "game_start": self.game_start,
-            "goal_id": self.goal_id
+            "goal_id": self.goal_id,
         }
 
     @classmethod
     def from_json(cls, data: dict):
-        return cls(data["team_name"], data["game_state"], data["game_start"],
-                  data["channel"], data["period"], data["goal_id"], data["created_channel"])
+        return cls(
+            data["team_name"],
+            data["game_state"],
+            data["game_start"],
+            data["channel"],
+            data["period"],
+            data["goal_id"],
+            data["created_channel"],
+        )

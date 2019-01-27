@@ -11,12 +11,10 @@ class EmojiReactions(getattr(commands, "Cog", object)):
     """
         Automatically react to messages with emojis in them with the emoji
     """
-    
+
     def __init__(self, bot):
         self.bot = bot
-        default_guild = {"unicode": False, 
-                         "guild":False, 
-                         "random":False}
+        default_guild = {"unicode": False, "guild": False, "random": False}
         self.config = Config.get_conf(self, 35677998656)
         self.config.register_guild(**default_guild)
 
@@ -29,10 +27,10 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         if ctx.invoked_subcommand is None:
             guild = ctx.message.guild
             guild_emoji = await self.config.guild(guild).guild()
-            unicode_emoji = await self.config.guild(guild).unicode()          
+            unicode_emoji = await self.config.guild(guild).unicode()
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 em = discord.Embed(colour=discord.Colour.blue())
-                em.title=_("Emojireact settings for ")+ guild.name
+                em.title = _("Emojireact settings for ") + guild.name
                 if guild_emoji:
                     em.add_field(name=_("Server Emojis "), value=str(guild_emoji))
                 if unicode_emoji:
@@ -40,7 +38,7 @@ class EmojiReactions(getattr(commands, "Cog", object)):
                 if len(em.fields) > 0:
                     await ctx.send(embed=em)
             else:
-                msg = _("Emojireact settings for ")+ guild.name + "\n"
+                msg = _("Emojireact settings for ") + guild.name + "\n"
                 if guild_emoji:
                     msg += _("Server Emojis ") + str(guild_emoji) + "\n"
                 if unicode_emoji:
@@ -52,13 +50,11 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         """Toggle unicode emoji reactions"""
         if await self.config.guild(ctx.guild).unicode():
             await self.config.guild(ctx.guild).unicode.set(False)
-            msg = _("Okay, I will not react to messages "
-                   "containing unicode emojis!")
+            msg = _("Okay, I will not react to messages " "containing unicode emojis!")
             await ctx.send(msg)
         else:
             await self.config.guild(ctx.guild).unicode.set(True)
-            msg = _("Okay, I will react to messages "
-                    "containing unicode emojis!")
+            msg = _("Okay, I will react to messages " "containing unicode emojis!")
             await ctx.send(msg)
 
     @emojireact.command(name="guild")
@@ -66,13 +62,11 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         """Toggle guild emoji reactions"""
         if await self.config.guild(ctx.guild).guild():
             await self.config.guild(ctx.guild).guild.set(False)
-            msg = _("Okay, I will not react to messages "
-                  "containing server emojis!")
+            msg = _("Okay, I will not react to messages " "containing server emojis!")
             await ctx.send(msg)
         else:
             await self.config.guild(ctx.guild).guild.set(True)
-            msg = _("Okay, I will react to messages "
-                    "containing server emojis!")
+            msg = _("Okay, I will react to messages " "containing server emojis!")
             await ctx.send(msg)
 
     @emojireact.command(name="all")
@@ -83,14 +77,12 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         if guild_emoji or unicode_emoji:
             await self.config.guild(ctx.guild).guild.set(False)
             await self.config.guild(ctx.guild).unicode.set(False)
-            msg = _("Okay, I will not react to messages "
-                    "containing all emojis!")
+            msg = _("Okay, I will not react to messages " "containing all emojis!")
             await ctx.send(msg)
         else:
             await self.config.guild(ctx.guild).guild.set(True)
             await self.config.guild(ctx.guild).unicode.set(True)
-            msg = _("Okay, I will react to messages "
-                    "containing all emojis!")
+            msg = _("Okay, I will react to messages " "containing all emojis!")
             await ctx.send(msg)
 
     async def on_message(self, message):

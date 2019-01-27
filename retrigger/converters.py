@@ -1,4 +1,4 @@
-from discord.ext.commands.converter import (Converter, IDConverter, RoleConverter)
+from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.i18n import Translator, cog_i18n
 import re
@@ -14,20 +14,21 @@ class Trigger:
         Trigger class to handle trigger objects
     """
 
-    def __init__(self, 
-                 name:str, 
-                 regex:str, 
-                 response_type:list, 
-                 author:int, 
-                 count:int, 
-                 image:str, 
-                 text:str, 
-                 whitelist:list, 
-                 blacklist:list, 
-                 cooldown:dict,
-                 # is_multi:bool,
-                 multi_payload:list
-            ):
+    def __init__(
+        self,
+        name: str,
+        regex: str,
+        response_type: list,
+        author: int,
+        count: int,
+        image: str,
+        text: str,
+        whitelist: list,
+        blacklist: list,
+        cooldown: dict,
+        # is_multi:bool,
+        multi_payload: list,
+    ):
         self.name = name
         self.regex = regex
         self.response_type = response_type
@@ -41,26 +42,27 @@ class Trigger:
         # self.is_multi = is_multi
         self.multi_payload = multi_payload
 
-    def _add_count(self, number:int):
+    def _add_count(self, number: int):
         self.count += number
 
     def to_json(self) -> dict:
-        return {"name":self.name,
-                "regex":self.regex,
-                "response_type":self.response_type,
-                "author": self.author,
-                "count": self.count,
-                "image":self.image,
-                "text":self.text,
-                "whitelist":self.whitelist,
-                "blacklist":self.blacklist,
-                "cooldown":self.cooldown,
-                # "is_multi": self.is_multi,
-                "multi_payload": self.multi_payload
-                }
+        return {
+            "name": self.name,
+            "regex": self.regex,
+            "response_type": self.response_type,
+            "author": self.author,
+            "count": self.count,
+            "image": self.image,
+            "text": self.text,
+            "whitelist": self.whitelist,
+            "blacklist": self.blacklist,
+            "cooldown": self.cooldown,
+            # "is_multi": self.is_multi,
+            "multi_payload": self.multi_payload,
+        }
 
     @classmethod
-    def from_json(cls, data:dict):
+    def from_json(cls, data: dict):
         if "cooldown" not in data:
             cooldown = {}
         else:
@@ -75,23 +77,23 @@ class Trigger:
         else:
             # is_multi = data["is_multi"]
             multi_payload = data["multi_payload"]
-        return cls(data["name"],
-                   data["regex"],
-                   response_type,
-                   data["author"],
-                   data["count"],
-                   data["image"],
-                   data["text"],
-                   data["whitelist"],
-                   data["blacklist"],
-                   cooldown,
-                   # is_multi,
-                   multi_payload
-                )
+        return cls(
+            data["name"],
+            data["regex"],
+            response_type,
+            data["author"],
+            data["count"],
+            data["image"],
+            data["text"],
+            data["whitelist"],
+            data["blacklist"],
+            cooldown,
+            # is_multi,
+            multi_payload,
+        )
 
 
 class TriggerExists(Converter):
-
     async def convert(self, ctx, argument):
         bot = ctx.bot
         guild = ctx.guild
@@ -114,6 +116,7 @@ class ValidRegex(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
         try:
@@ -125,28 +128,35 @@ class ValidRegex(Converter):
             raise BadArgument(err_msg)
         return result
 
+
 class MultiResponse(Converter):
     """
     This will parse my defined multi response pattern and provide usable formats
     to be used in multiple reponses
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
         result = []
         match = re.split(r"(;)", argument)
-        valid_reactions = ["dm",
-                           "remove_role",
-                           "add_role",
-                           "ban",
-                           "kick",
-                           "text",
-                           "filter","delete",
-                           "react",
-                           "command"]
+        valid_reactions = [
+            "dm",
+            "remove_role",
+            "add_role",
+            "ban",
+            "kick",
+            "text",
+            "filter",
+            "delete",
+            "react",
+            "command",
+        ]
         log.debug(match)
         my_perms = ctx.channel.permissions_for(ctx.me)
         if match[0] not in valid_reactions:
-            raise BadArgument(_("`{response}` is not a valid reaction type.").format(response=match[0]))
+            raise BadArgument(
+                _("`{response}` is not a valid reaction type.").format(response=match[0])
+            )
         for m in match:
             if m == ";":
                 continue
@@ -157,15 +167,15 @@ class MultiResponse(Converter):
         if len(result) < 2 and result[0] not in ["delete", "ban", "kick"]:
             raise BadArgument(_("The provided multi response pattern is not valid."))
         if result[0] in ["add_role", "remove_role"] and not my_perms.manage_roles:
-            raise BadArgument(_("I require \"Manage Roles\" permission to use that."))
+            raise BadArgument(_('I require "Manage Roles" permission to use that.'))
         if result[0] == "filter" and not my_perms.manage_messages:
-            raise BadArgument(_("I require \"Manage Messages\" permission to use that."))
+            raise BadArgument(_('I require "Manage Messages" permission to use that.'))
         if result[0] == "ban" and not my_perms.ban_members:
-            raise BadArgument(_("I require \"Ban Members\" permission to use that."))
+            raise BadArgument(_('I require "Ban Members" permission to use that.'))
         if result[0] == "kick" and not my_perms.kick_members:
-            raise BadArgument(_("I require \"Kick Members\" permission to use that."))
+            raise BadArgument(_('I require "Kick Members" permission to use that.'))
         if result[0] == "react" and not my_perms.add_reactions:
-            raise BadArgument(_("I require \"Add Reactions\" permission to use that."))
+            raise BadArgument(_('I require "Add Reactions" permission to use that.'))
         if result[0] in ["add_role", "remove_role"]:
             good_roles = []
             for r in result[1:]:
@@ -188,6 +198,7 @@ class MultiResponse(Converter):
             result = [result[0]] + good_emojis
         return result
 
+
 class ValidEmoji(IDConverter):
     """
     This is from discord.py rewrite, first we'll match the actual emoji
@@ -201,8 +212,11 @@ class ValidEmoji(IDConverter):
     3. Lookup by name
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py
     """
+
     async def convert(self, ctx, argument):
-        match = self._get_id_match(argument) or re.match(r'<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)', argument)
+        match = self._get_id_match(argument) or re.match(
+            r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)", argument
+        )
         result = None
         bot = ctx.bot
         guild = ctx.guild
@@ -242,6 +256,7 @@ class ValidEmoji(IDConverter):
 
         return result
 
+
 class ChannelUserRole(IDConverter):
     """
     This will check to see if the provided argument is a channel, user, or role
@@ -257,9 +272,9 @@ class ChannelUserRole(IDConverter):
         guild = ctx.guild
         result = None
         id_match = self._get_id_match(argument)
-        channel_match = re.match(r'<#([0-9]+)>$', argument)
-        member_match = re.match(r'<@!?([0-9]+)>$', argument)
-        role_match = re.match(r'<@&([0-9]+)>$', argument)
+        channel_match = re.match(r"<#([0-9]+)>$", argument)
+        member_match = re.match(r"<@!?([0-9]+)>$", argument)
+        role_match = re.match(r"<@&([0-9]+)>$", argument)
         for converter in ["channel", "role", "member"]:
             if converter == "channel":
                 match = id_match or channel_match

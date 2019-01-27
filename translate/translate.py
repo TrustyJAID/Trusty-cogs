@@ -34,6 +34,7 @@ class FlagTranslation(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     
     """
+
     async def convert(self, ctx, argument):
         result = []
         if argument in FLAGS:
@@ -59,8 +60,8 @@ class Translate(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 156434873547)
-        default_guild = {"reaction":False, "text":False}
-        default = {"api_key":None}
+        default_guild = {"reaction": False, "text": False}
+        default = {"api_key": None}
         self.config.register_guild(**default_guild)
         self.config.register_global(**default)
 
@@ -68,20 +69,17 @@ class Translate(getattr(commands, "Cog", object)):
         """
             Detect the language from given text
         """
-        params = {"q":text, "key":await self.config.api_key()}
+        params = {"q": text, "key": await self.config.api_key()}
         url = BASE_URL + "/language/translate/v2/detect"
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params) as resp:
-                    data = await resp.json()
+                data = await resp.json()
         return data["data"]["detections"]
 
     async def translation_embed(self, author, translation, requestor=None):
-        em = discord.Embed(colour=author.colour, 
-                           description=translation[0])
-        em.set_author(name=author.display_name + _(" said:"),
-                      icon_url=author.avatar_url)
-        detail_string = (translation[1] + _(" to ") + translation[2] + " | " +
-                         _("Requested by "))
+        em = discord.Embed(colour=author.colour, description=translation[0])
+        em.set_author(name=author.display_name + _(" said:"), icon_url=author.avatar_url)
+        detail_string = translation[1] + _(" to ") + translation[2] + " | " + _("Requested by ")
         if requestor:
             detail_string += str(requestor)
         else:
@@ -94,11 +92,13 @@ class Translate(getattr(commands, "Cog", object)):
             request to translate the text
         """
         formatting = "text"
-        params = {"q":text, 
-                  "target":target,
-                  "key":await self.config.api_key(), 
-                  "format":formatting, 
-                  "source":from_lang}
+        params = {
+            "q": text,
+            "target": target,
+            "key": await self.config.api_key(),
+            "format": formatting,
+            "source": from_lang,
+        }
         url = BASE_URL + "/language/translate/v2"
         try:
             async with aiohttp.ClientSession() as session:
@@ -149,19 +149,17 @@ class Translate(getattr(commands, "Cog", object)):
         target = FLAGS[flag]["code"]
         if target == original_lang:
             return
-        translated_text = await self.translate_text(original_lang, 
-                                                    target, 
-                                                    to_translate)
+        translated_text = await self.translate_text(original_lang, target, to_translate)
         if not translated_text:
             return
-        
+
         from_lang = detected_lang[0][0]["language"].upper()
         to_lang = target.upper()
         if from_lang == to_lang:
             # don't post anything if the detected language is the same
             return
         translation = (translated_text, from_lang, to_lang)
-        
+
         if channel.permissions_for(guild.me).embed_links:
             em = await self.translation_embed(author, translation)
             await channel.send(embed=em)
@@ -209,9 +207,7 @@ class Translate(getattr(commands, "Cog", object)):
         original_lang = detected_lang[0][0]["language"]
         if target == original_lang:
             return
-        translated_text = await self.translate_text(original_lang, 
-                                                    target, 
-                                                    to_translate)
+        translated_text = await self.translate_text(original_lang, target, to_translate)
         if not translated_text:
             return
         author = message.author
@@ -221,12 +217,12 @@ class Translate(getattr(commands, "Cog", object)):
             # don't post anything if the detected language is the same
             return
         translation = (translated_text, from_lang, to_lang)
-        
+
         if channel.permissions_for(guild.me).embed_links:
             em = await self.translation_embed(author, translation, user)
             await channel.send(embed=em)
         else:
-            msg = (detail_string + f"\n{translated_text}")
+            msg = detail_string + f"\n{translated_text}"
             await channel.send(msg)
 
     async def local_perms(self, guild, author):
@@ -281,25 +277,23 @@ class Translate(getattr(commands, "Cog", object)):
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
     @commands.command()
-    async def translate(self, ctx, to_language:FlagTranslation, *, message:str):
+    async def translate(self, ctx, to_language: FlagTranslation, *, message: str):
         """
             Translate messages with google translate
 
             `to_language` is the language you would like to translate
             `message` is the message to translate
         """
-        
+
         if await self.config.api_key() is None:
             msg = _("The bot owner needs to set an api key first!")
             await ctx.send(msg)
-            return        
-        
+            return
+
         detected_lang = await self.detect_language(message)
         from_lang = detected_lang[0][0]["language"].upper()
         original_lang = detected_lang[0][0]["language"]
-        translated_text = await self.translate_text(original_lang, 
-                                                    to_language, 
-                                                    message)
+        translated_text = await self.translate_text(original_lang, to_language, message)
         author = ctx.message.author
         if ctx.channel.permissions_for(ctx.me).embed_links:
             translation = (translated_text, from_lang, to_language)

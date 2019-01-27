@@ -10,7 +10,7 @@ class Mock(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cap_change(self, message:str):
+    async def cap_change(self, message: str):
         result = ""
         for char in message:
             value = random.choice([True, False])
@@ -21,12 +21,13 @@ class Mock(getattr(commands, "Cog", object)):
         return result
 
     @commands.command()
-    async def mock(self, 
-                   ctx, 
-                   channel:Optional[discord.TextChannel]=None,
-                   *, 
-                   msg:Optional[Union[discord.Member, int, str]]=None
-                ):
+    async def mock(
+        self,
+        ctx,
+        channel: Optional[discord.TextChannel] = None,
+        *,
+        msg: Optional[Union[discord.Member, int, str]] = None
+    ):
         """
             Mock a user with the spongebob meme
             
@@ -70,9 +71,10 @@ class Mock(getattr(commands, "Cog", object)):
         embed.colour = author.colour if hasattr(author, "colour") else discord.Colour.default()
         embed.set_author(name=author.display_name, icon_url=author.avatar_url)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
-        embed.set_footer(text="{} mocked {}".format(
-                         ctx.message.author.display_name, author.display_name), 
-                        icon_url=ctx.message.author.avatar_url)
+        embed.set_footer(
+            text="{} mocked {}".format(ctx.message.author.display_name, author.display_name),
+            icon_url=ctx.message.author.avatar_url,
+        )
         if hasattr(msg, "attachments") and msg.attachments != []:
             embed.set_image(url=msg.attachments[0].url)
         if not channel.permissions_for(ctx.me).embed_links:

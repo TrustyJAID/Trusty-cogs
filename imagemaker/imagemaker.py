@@ -16,15 +16,17 @@ import textwrap
 
 try:
     import cv2
+
     TRUMP = True
 except ImportError:
     TRUMP = False
+
 
 class ImageMaker(getattr(commands, "Cog", object)):
     """
         Create various fun images
     """
-    
+
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
@@ -34,9 +36,8 @@ class ImageMaker(getattr(commands, "Cog", object)):
             test = await resp.read()
             return BytesIO(test)
 
-
     @commands.command()
-    async def wheeze(self, ctx, *, text:Union[discord.Member, str]=None):
+    async def wheeze(self, ctx, *, text: Union[discord.Member, str] = None):
         """
             Generate a wheeze image with text or a user avatar
 
@@ -54,7 +55,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command()
-    async def gwheeze(self, ctx, member:discord.Member=None):
+    async def gwheeze(self, ctx, member: discord.Member = None):
         """
             Generate a gif wheeze image if user has a gif avatar
 
@@ -73,7 +74,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command()
-    async def beautiful(self, ctx, user:discord.Member=None, is_gif=False):
+    async def beautiful(self, ctx, user: discord.Member = None, is_gif=False):
         """
             Generate a beautiful image using users avatar
 
@@ -92,7 +93,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command()
-    async def feels(self, ctx, user:discord.Member=None, is_gif=False):
+    async def feels(self, ctx, user: discord.Member = None, is_gif=False):
         """
             Generate a feels image using users avatar and role colour
 
@@ -118,13 +119,13 @@ class ImageMaker(getattr(commands, "Cog", object)):
             `message` will be what is pasted on the gif
         """
         if not TRUMP:
-            msg = ("The bot owner needs to run "
-                   "`pip3 install opencv-python` "
-                   "to run this command")
+            msg = (
+                "The bot owner needs to run " "`pip3 install opencv-python` " "to run this command"
+            )
             await ctx.send(msg)
             return
         async with ctx.channel.typing():
-            task = functools.partial(self.make_trump_gif, text=message)        
+            task = functools.partial(self.make_trump_gif, text=message)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
@@ -178,9 +179,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
     async def make_colour(self, colour):
         template = "https://i.imgur.com/n6r04O8.png"
         template = Image.open(await self.dl_image(template))
-        task = functools.partial(self.colour_convert, 
-                                 template=template,
-                                 colour=colour)
+        task = functools.partial(self.colour_convert, template=template, colour=colour)
         task = self.bot.loop.run_in_executor(None, task)
         try:
             image = await asyncio.wait_for(task, timeout=60)
@@ -199,8 +198,8 @@ class ImageMaker(getattr(commands, "Cog", object)):
         async with ctx.channel.typing():
             pill_image = await self.make_colour(colour)
             if pill_image is None:
-                    await ctx.send("Something went wrong sorry!")
-                    return
+                await ctx.send("Something went wrong sorry!")
+                return
             image = discord.File(pill_image)
             await ctx.send(file=image)
 
@@ -210,18 +209,12 @@ class ImageMaker(getattr(commands, "Cog", object)):
         template = "https://i.imgur.com/kzE9XBE.png"
         template = Image.open(await self.dl_image(template))
         if user.is_avatar_animated() and is_gif:
-            avatar = Image.open(await self.dl_image(
-                                user.avatar_url_as(format="gif", size=128)))
-            task = functools.partial(self.make_beautiful_gif,
-                                     template=template, 
-                                     avatar=avatar)
-            
+            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif", size=128)))
+            task = functools.partial(self.make_beautiful_gif, template=template, avatar=avatar)
+
         else:
-            avatar = Image.open(await self.dl_image(
-                                user.avatar_url_as(format="png", size=128)))
-            task = functools.partial(self.make_beautiful_img,
-                                     template=template, 
-                                     avatar=avatar)
+            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png", size=128)))
+            task = functools.partial(self.make_beautiful_img, template=template, avatar=avatar)
         task = self.bot.loop.run_in_executor(None, task)
         try:
             temp = await asyncio.wait_for(task, timeout=60)
@@ -235,19 +228,15 @@ class ImageMaker(getattr(commands, "Cog", object)):
         template = Image.open(await self.dl_image(template))
         colour = user.colour.to_rgb()
         if user.is_avatar_animated() and is_gif:
-            avatar = Image.open(await self.dl_image(
-                                user.avatar_url_as(format="gif", size=64)))
-            task = functools.partial(self.make_feels_gif,
-                                     template=template,
-                                     colour=colour, 
-                                     avatar=avatar)
+            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif", size=64)))
+            task = functools.partial(
+                self.make_feels_gif, template=template, colour=colour, avatar=avatar
+            )
         else:
-            avatar = Image.open(await self.dl_image(
-                                user.avatar_url_as(format="png", size=64)))
-            task = functools.partial(self.make_feels_img, 
-                                     template=template,
-                                     colour=colour, 
-                                     avatar=avatar)
+            avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png", size=64)))
+            task = functools.partial(
+                self.make_feels_img, template=template, colour=colour, avatar=avatar
+            )
         task = self.bot.loop.run_in_executor(None, task)
         try:
             temp = await asyncio.wait_for(task, timeout=60)
@@ -262,28 +251,20 @@ class ImageMaker(getattr(commands, "Cog", object)):
         if type(text) == discord.Member:
             user = text
             if user.is_avatar_animated() and is_gif:
-                avatar = Image.open(await self.dl_image(
-                                    user.avatar_url_as(format="gif", size=64)))
+                avatar = Image.open(await self.dl_image(user.avatar_url_as(format="gif", size=64)))
 
-                task = functools.partial(self.make_wheeze_gif,
-                                         template=template,
-                                         avatar=avatar)
-                
+                task = functools.partial(self.make_wheeze_gif, template=template, avatar=avatar)
+
             else:
-                avatar = Image.open(await self.dl_image(
-                                    user.avatar_url_as(format="png", size=64)))
-                task = functools.partial(self.make_wheeze_img,
-                                         template=template,
-                                         avatar=avatar)
+                avatar = Image.open(await self.dl_image(user.avatar_url_as(format="png", size=64)))
+                task = functools.partial(self.make_wheeze_img, template=template, avatar=avatar)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
         else:
-            task = functools.partial(self.make_wheeze_img,
-                                         template=template,
-                                         avatar=text)
+            task = functools.partial(self.make_wheeze_img, template=template, avatar=text)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
@@ -310,12 +291,9 @@ class ImageMaker(getattr(commands, "Cog", object)):
             img_list.append(template)
             num += 1
             temp = BytesIO()
-            template.save(temp, 
-                          format="GIF", 
-                          save_all=True, 
-                          append_images=img_list, 
-                          duration=0, 
-                          loop=0)
+            template.save(
+                temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+            )
             temp.name = "beautiful.gif"
             if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
                 break
@@ -323,8 +301,8 @@ class ImageMaker(getattr(commands, "Cog", object)):
 
     def make_beautiful_img(self, template, avatar):
         # print(template.info)
-        template = template.convert("RGBA") 
-        avatar = avatar.convert("RGBA")       
+        template = template.convert("RGBA")
+        avatar = avatar.convert("RGBA")
         template.paste(avatar, (370, 45), avatar)
         template.paste(avatar, (370, 330), avatar)
         temp = BytesIO()
@@ -344,12 +322,9 @@ class ImageMaker(getattr(commands, "Cog", object)):
             img_list.append(template)
             num += 1
             temp = BytesIO()
-            template.save(temp, 
-                          format="GIF", 
-                          save_all=True, 
-                          append_images=img_list, 
-                          duration=0, 
-                          loop=0)
+            template.save(
+                temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+            )
             temp.name = "beautiful.gif"
             if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
                 break
@@ -357,13 +332,13 @@ class ImageMaker(getattr(commands, "Cog", object)):
 
     def make_wheeze_img(self, template, avatar):
         # print(template.info)
-        template = template.convert("RGBA") 
-        
+        template = template.convert("RGBA")
+
         if type(avatar) != str:
             avatar = avatar.convert("RGBA")
             template.paste(avatar, (60, 470), avatar)
         else:
-            font_loc = str(bundled_data_path(self)/"impact.ttf")
+            font_loc = str(bundled_data_path(self) / "impact.ttf")
             font1 = ImageFont.truetype(font_loc, 40)
             draw = ImageDraw.Draw(template)
             margin = 40
@@ -372,9 +347,9 @@ class ImageMaker(getattr(commands, "Cog", object)):
             for line in textwrap.wrap(avatar, width=10):
                 count += 1
                 if count == 6:
-                    draw.text((margin, offset), f"{line}...", fill=(0,0,0), font=font1)
+                    draw.text((margin, offset), f"{line}...", fill=(0, 0, 0), font=font1)
                     break
-                draw.text((margin, offset), f"{line}", fill=(0,0,0), font=font1)
+                draw.text((margin, offset), f"{line}", fill=(0, 0, 0), font=font1)
                 offset += font1.getsize(line)[1]
         temp = BytesIO()
         template.save(temp, format="PNG")
@@ -402,7 +377,15 @@ class ImageMaker(getattr(commands, "Cog", object)):
             img_list.append(temp2)
             num += 1
             temp = BytesIO()
-            temp2.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0, transparency=0)
+            temp2.save(
+                temp,
+                format="GIF",
+                save_all=True,
+                append_images=img_list,
+                duration=0,
+                loop=0,
+                transparency=0,
+            )
             temp.name = "feels.gif"
             if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
                 break
@@ -411,7 +394,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
     def make_feels_img(self, template, colour, avatar):
         # print(template.info)
         template = template.convert("RGBA")
-        
+
         # avatar = Image.open(self.files + "temp." + ext)
         transparency = template.split()[-1].getdata()
         data = np.array(template)
@@ -430,7 +413,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
         return temp
 
     def colour_convert(self, template, colour="#FF0000"):
-        template = template.convert('RGBA')
+        template = template.convert("RGBA")
         colour = ImageColor.getrgb(colour)
         data = np.array(template)
         red, green, blue, alpha = data.T
@@ -443,9 +426,10 @@ class ImageMaker(getattr(commands, "Cog", object)):
         return temp
 
     """Code is from http://isnowillegal.com/ and made to work on redbot"""
+
     def make_trump_gif(self, text):
-        folder = str(bundled_data_path(self))+"/trump_template"
-        jsonPath = os.path.join(folder, 'frames.json')
+        folder = str(bundled_data_path(self)) + "/trump_template"
+        jsonPath = os.path.join(folder, "frames.json")
 
         # Load frames
         frames = json.load(open(jsonPath))
@@ -460,13 +444,13 @@ class ImageMaker(getattr(commands, "Cog", object)):
         # Iterate trough frames
         for frame in frames:
             # Load image
-            name = frame['file']
+            name = frame["file"]
             filePath = os.path.join(folder, name)
             finalFrame = None
 
             # If it has transformations,
             # process with opencv and convert back to pillow
-            if frame['show'] == True:
+            if frame["show"] == True:
                 image = cv2.imread(filePath)
 
                 # Do rotoscope
@@ -480,18 +464,19 @@ class ImageMaker(getattr(commands, "Cog", object)):
 
             frameImages.append(finalFrame)
         temp = BytesIO()
-            # Saving...
-        frameImages[0].save(temp, format="GIF", save_all=True, append_images=frameImages, duration=0, loop=0)
+        # Saving...
+        frameImages[0].save(
+            temp, format="GIF", save_all=True, append_images=frameImages, duration=0, loop=0
+        )
         temp.name = "Trump.gif"
         temp.seek(0)
         return temp
 
-
     def rotoscope(self, dst, warp, properties):
-        if properties['show'] == False:
+        if properties["show"] == False:
             return dst
 
-        corners = properties['corners']
+        corners = properties["corners"]
 
         wRows, wCols, wCh = warp.shape
         rows, cols, ch = dst.shape
@@ -501,7 +486,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
         warp = cv2.filter2D(warp, -1, kernel)
 
         # Prepare points to be matched on Affine Transformation
-        pts1 = np.float32([[0, 0],[wCols, 0],[0, wRows]])
+        pts1 = np.float32([[0, 0], [wCols, 0], [0, wRows]])
         pts2 = np.float32(corners) * 2
 
         # Enlarge image to multisample
@@ -509,13 +494,19 @@ class ImageMaker(getattr(commands, "Cog", object)):
 
         # Transform image with the Matrix
         M = cv2.getAffineTransform(pts1, pts2)
-        cv2.warpAffine(warp, M, (cols * 2, rows * 2), dst, flags=cv2.INTER_AREA, borderMode=cv2.BORDER_TRANSPARENT)
+        cv2.warpAffine(
+            warp,
+            M,
+            (cols * 2, rows * 2),
+            dst,
+            flags=cv2.INTER_AREA,
+            borderMode=cv2.BORDER_TRANSPARENT,
+        )
 
         # Sample back image size
         dst = cv2.resize(dst, (cols, rows))
 
         return dst
-
 
     def computeAndLoadTextFontForSize(self, drawer, text, maxWidth):
         # global textFont
@@ -526,9 +517,11 @@ class ImageMaker(getattr(commands, "Cog", object)):
         curSize = maxSize
         textFont = None
         while curSize >= minSize:
-            textFont = ImageFont.truetype(str(bundled_data_path(self))+'/impact.ttf', size=curSize)
+            textFont = ImageFont.truetype(
+                str(bundled_data_path(self)) + "/impact.ttf", size=curSize
+            )
             w, h = drawer.textsize(text, font=textFont)
-            
+
             if w > maxWidth:
                 curSize -= 4
             else:
@@ -542,7 +535,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
         bgColor = (224, 233, 237)
         # bgColor = (100, 0, 0)
         imgSize = (160, 200)
-        
+
         # Create image
         image = Image.new("RGB", imgSize, bgColor)
 
@@ -551,20 +544,20 @@ class ImageMaker(getattr(commands, "Cog", object)):
 
         # Load font for text
         textFont = self.computeAndLoadTextFontForSize(draw, text, imgSize[0])
-            
+
         w, h = draw.textsize(text, font=textFont)
         xCenter = (imgSize[0] - w) / 2
         yCenter = (50 - h) / 2
         draw.text((xCenter, 10 + yCenter), text, font=textFont, fill=txtColor)
-        impact = ImageFont.truetype(str(bundled_data_path(self))+'/impact.ttf', 46)
+        impact = ImageFont.truetype(str(bundled_data_path(self)) + "/impact.ttf", 46)
         draw.text((12, 70), "IS NOW", font=impact, fill=txtColor)
         draw.text((10, 130), "ILLEGAL", font=impact, fill=txtColor)
-        
+
         # Convert to CV2
         cvImage = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
         # cv2.imshow('text', cvImage)
-        
+
         return cvImage
 
     def cvImageToPillow(self, cvImage):

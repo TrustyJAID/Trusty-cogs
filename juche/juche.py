@@ -10,14 +10,14 @@ class Juche(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 4563465345472)
-        default = {"correct_juche":False}
+        default = {"correct_juche": False}
         self.config.register_guild(**default)
-    
+
     async def check_date(self, message):
         for i in range(1912, 2100):
             if str(i) in message.split(" ") and "http" not in message:
-                message = message.replace(str(i), "Juche " + str(i-1912+1))
-                message = "I think you mean Juche " + str(i-1912+1) + "."
+                message = message.replace(str(i), "Juche " + str(i - 1912 + 1))
+                message = "I think you mean Juche " + str(i - 1912 + 1) + "."
                 return message
 
         return None

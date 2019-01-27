@@ -27,7 +27,7 @@ class Badges(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1545487348434)
-        default_guild = {"badges":[]}
+        default_guild = {"badges": []}
         default_global = {"badges": blank_template}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
@@ -72,8 +72,11 @@ class Badges(getattr(commands, "Cog", object)):
     def make_template(self, user, badge, template):
         """Build the base template before determining animated or not"""
         if hasattr(user, "roles"):
-            department = _("GENERAL SUPPORT") if user.top_role.name == "@everyone"\
-                                         else user.top_role.name.upper()
+            department = (
+                _("GENERAL SUPPORT")
+                if user.top_role.name == "@everyone"
+                else user.top_role.name.upper()
+            )
             status = user.status
             level = str(len(user.roles))
         else:
@@ -89,23 +92,20 @@ class Badges(getattr(commands, "Cog", object)):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
-        temp_barcode = generate("code39", 
-                                str(user.id), 
-                                writer=ImageWriter(), 
-                                output=barcode)
+        temp_barcode = generate("code39", str(user.id), writer=ImageWriter(), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)
-        fill = (0, 0, 0) # text colour fill
+        fill = (0, 0, 0)  # text colour fill
         if badge.is_inverted:
             fill = (255, 255, 255)
             barcode = self.invert_barcode(barcode)
         template = Image.open(template)
-        template = template.convert("RGBA")        
+        template = template.convert("RGBA")
         barcode = barcode.convert("RGBA")
-        barcode = barcode.resize((555,125), Image.ANTIALIAS)
-        template.paste(barcode, (400,520), barcode)
+        barcode = barcode.resize((555, 125), Image.ANTIALIAS)
+        template.paste(barcode, (400, 520), barcode)
         # font for user information
-        font_loc = str(bundled_data_path(self)/"arial.ttf") 
+        font_loc = str(bundled_data_path(self) / "arial.ttf")
         try:
             font1 = ImageFont.truetype(font_loc, 30)
             font2 = ImageFont.truetype(font_loc, 24)
@@ -114,7 +114,7 @@ class Badges(getattr(commands, "Cog", object)):
             font1 = None
             font2 = None
         # font for extra information
-        
+
         draw = ImageDraw.Draw(template)
         # adds username
         draw.text((225, 330), str(user.display_name), fill=fill, font=font1)
@@ -130,9 +130,9 @@ class Badges(getattr(commands, "Cog", object)):
         draw.text((420, 475), _("LEVEL ") + level, fill="red", font=font1)
         # adds user level
         if badge.badge_name != "discord" and user is discord.Member:
-          draw.text((60, 585), str(user.joined_at), fill=fill, font=font2)
+            draw.text((60, 585), str(user.joined_at), fill=fill, font=font2)
         else:
-          draw.text((60, 585), str(user.created_at), fill=fill, font=font2)
+            draw.text((60, 585), str(user.created_at), fill=fill, font=font2)
         return template
 
     def make_animated_gif(self, template, avatar):
@@ -144,17 +144,19 @@ class Badges(getattr(commands, "Cog", object)):
             temp2 = template.copy()
             watermark = frame.copy()
             watermark = watermark.convert("RGBA")
-            watermark = watermark.resize((100,100))
+            watermark = watermark.resize((100, 100))
             watermark.putalpha(128)
             id_image = frame.resize((165, 165))
-            temp2.paste(watermark, (845,45, 945,145), watermark)
-            temp2.paste(id_image, (60,95, 225, 260))
+            temp2.paste(watermark, (845, 45, 945, 145), watermark)
+            temp2.paste(id_image, (60, 95, 225, 260))
             temp2.thumbnail((500, 339), Image.ANTIALIAS)
             img_list.append(temp2)
             num += 1
             temp = BytesIO()
 
-            temp2.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+            temp2.save(
+                temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+            )
             temp.name = "temp.gif"
             if sys.getsizeof(temp) > 7000000 and sys.getsizeof(temp) < 8000000:
                 break
@@ -164,22 +166,19 @@ class Badges(getattr(commands, "Cog", object)):
         """Create basic badge from regular avatar"""
         watermark = avatar.convert("RGBA")
         watermark.putalpha(128)
-        watermark = watermark.resize((100,100))
+        watermark = watermark.resize((100, 100))
         id_image = avatar.resize((165, 165))
-        template.paste(watermark, (845,45, 945,145), watermark)
-        template.paste(id_image, (60,95, 225, 260))
+        template.paste(watermark, (845, 45, 945, 145), watermark)
+        template.paste(id_image, (60, 95, 225, 260))
         temp = BytesIO()
         template.save(temp, format="PNG")
         temp.name = "temp.gif"
         return temp
 
-    async def create_badge(self, user, badge, is_gif:bool):
+    async def create_badge(self, user, badge, is_gif: bool):
         """Async create badges handler"""
         template_img = await self.dl_image(badge.file_name)
-        task = functools.partial(self.make_template, 
-                                 user=user, 
-                                 badge=badge, 
-                                 template=template_img)
+        task = functools.partial(self.make_template, user=user, badge=badge, template=template_img)
         task = self.bot.loop.run_in_executor(None, task)
         try:
             template = await asyncio.wait_for(task, timeout=60)
@@ -188,27 +187,23 @@ class Badges(getattr(commands, "Cog", object)):
         if user.is_avatar_animated() and is_gif:
             url = user.avatar_url_as(format="gif")
             avatar = Image.open(await self.dl_image(url))
-            task = functools.partial(self.make_animated_gif, 
-                                     template=template, 
-                                     avatar=avatar)
+            task = functools.partial(self.make_animated_gif, template=template, avatar=avatar)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-            
+
         else:
             url = user.avatar_url_as(format="png")
             avatar = Image.open(await self.dl_image(url))
-            task = functools.partial(self.make_badge, 
-                                     template=template, 
-                                     avatar=avatar)
+            task = functools.partial(self.make_badge, template=template, avatar=avatar)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-            
+
         temp.seek(0)
         return temp
 
@@ -269,7 +264,6 @@ class Badges(getattr(commands, "Cog", object)):
             image = discord.File(badge_img)
             await ctx.send(file=image)
 
-
     @commands.command()
     async def listbadges(self, ctx):
         """
@@ -277,7 +271,7 @@ class Badges(getattr(commands, "Cog", object)):
         """
         guild = ctx.message.guild
         global_badges = await self.config.badges()
-        guild_badges =  await self.config.guild(guild).badges()
+        guild_badges = await self.config.guild(guild).badges()
         msg = ", ".join(badge["badge_name"] for badge in global_badges)
 
         em = discord.Embed()
@@ -285,12 +279,12 @@ class Badges(getattr(commands, "Cog", object)):
             em.colour = guild.me.colour
         else:
             em.colour = await self.bot.db.color()
-        #for badge in await self.config.badges():
+        # for badge in await self.config.badges():
         em.add_field(name=_("Global Badges"), value=msg)
         if guild_badges != []:
             badges = ", ".join(badge["badge_name"] for badge in guild_badges)
             em.add_field(name=_("Global Badges"), value=badges)
         await ctx.send(embed=em)
-    
+
     def __unload(self):
         self.bot.loop.create_task(self.session.close())

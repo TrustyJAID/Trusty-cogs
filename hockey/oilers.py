@@ -2,14 +2,14 @@ import asyncio
 from phue import Bridge
 import functools
 
-class Oilers:
 
+class Oilers:
     def __init__(self, bot):
         self.bot = bot
         self.bridge = Bridge("192.168.0.35")
-        self.lights = self.bridge.lights 
+        self.lights = self.bridge.lights
         self.bridge2 = Bridge("192.168.0.115")
-        self.lights2 = self.bridge2.lights 
+        self.lights2 = self.bridge2.lights
         self.cur_lights = {}
         self.cur_lights2 = {}
 
@@ -43,7 +43,6 @@ class Oilers:
             temp = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return
-        
 
     def reset_light_setting(self):
         for light in self.lights:
@@ -71,7 +70,7 @@ class Oilers:
             self.cur_lights2[light.name] = [light.on, light.colortemp]
         return
 
-    def oilers_hex_set(self, x:float, y:float):
+    def oilers_hex_set(self, x: float, y: float):
         """Sets the colour for Oilers Goals"""
         if x > 1.0 or x < 0.0:
             x = 1.0

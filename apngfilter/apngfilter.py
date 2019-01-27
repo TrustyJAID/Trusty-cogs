@@ -6,12 +6,13 @@ import aiohttp
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
 
+
 class APNGFilter(getattr(commands, "Cog", object)):
     """Filter those pesky APNG images"""
 
     def __init__(self, bot):
         self.bot = bot
-        default = {"enabled":False}
+        default = {"enabled": False}
         self.config = Config.get_conf(self, 435457347654)
         self.config.register_guild(**default)
 
@@ -49,9 +50,9 @@ class APNGFilter(getattr(commands, "Cog", object)):
                 continue  # discord attempts to render by file extension, not mime type
             # keeps requests on the bot's session, prventing a unauthenticated ratelimit for attachments
             temp = io.BytesIO()
-            await attachment.save(temp)  
+            await attachment.save(temp)
             temp.seek(0)
-            # https://stackoverflow.com/questions/4525152/can-i-programmatically-determine-if-a-png-is-animated                    
+            # https://stackoverflow.com/questions/4525152/can-i-programmatically-determine-if-a-png-is-animated
             if b"acTL" in temp.getvalue():
                 await message.delete()
                 break

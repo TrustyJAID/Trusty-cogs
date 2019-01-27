@@ -18,7 +18,7 @@ class Hue(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1384534876565)
-        default_global = {"ip":None}
+        default_global = {"ip": None}
         self.bridge = None
         self.lights = None
 
@@ -51,8 +51,7 @@ class Hue(getattr(commands, "Cog", object)):
             light.on = old_lights[light.name][0]
             light.colortemp = old_lights[light.name][1]
 
-
-    async def oilers_hex_set(self, x:float, y:float, *, name=None):
+    async def oilers_hex_set(self, x: float, y: float, *, name=None):
         """Sets the colour for Oilers Goals"""
         if x > 1.0 or x < 0.0:
             x = 1.0
@@ -86,7 +85,7 @@ class Hue(getattr(commands, "Cog", object)):
         """
         await self.config.ip.set(ip)
         self.bridge = Bridge(await self.config.ip())
-        self.lights = self.bridge.lights 
+        self.lights = self.bridge.lights
 
     @_hue.command(name="check")
     async def check_api(self, ctx):
@@ -105,7 +104,7 @@ class Hue(getattr(commands, "Cog", object)):
             return value
 
     @_hue.command(name="brightness")
-    async def brightness_set(self, ctx, brightness:int=254, *, name=None):
+    async def brightness_set(self, ctx, brightness: int = 254, *, name=None):
         """
             Sets the brightness for lights
 
@@ -121,7 +120,7 @@ class Hue(getattr(commands, "Cog", object)):
                 light.brightness = brightness
 
     @_hue.command(name="temp", aliases=["ct", "colourtemp", "temperature"])
-    async def colourtemp_set(self, ctx, ct:int=500, *, name=None):
+    async def colourtemp_set(self, ctx, ct: int = 500, *, name=None):
         """
             Sets the colour temperature for lights
 
@@ -137,7 +136,7 @@ class Hue(getattr(commands, "Cog", object)):
                 light.colortemp = ct
 
     @_hue.command(name="hue")
-    async def hue_set(self, ctx, hue:int=25000, *, name=None):
+    async def hue_set(self, ctx, hue: int = 25000, *, name=None):
         """
             Sets the hue for lights
 
@@ -152,7 +151,7 @@ class Hue(getattr(commands, "Cog", object)):
                 light.hue = hue
 
     @_hue.command(name="saturation", aliases=["sat"])
-    async def saturation_set(self, ctx, saturation:int=254, *, name=None):
+    async def saturation_set(self, ctx, saturation: int = 254, *, name=None):
         """
             Sets the saturation for lights
 
@@ -209,10 +208,10 @@ class Hue(getattr(commands, "Cog", object)):
             return
         pass
 
-    async def rgb_to_xy(self, red:float, green:float, blue:float):
-        X = 0.4124*red + 0.3576*green + 0.1805*blue
-        Y = 0.2126*red + 0.7152*green + 0.0722*blue
-        Z = 0.0193*red + 0.1192*green + 0.9505*blue
+    async def rgb_to_xy(self, red: float, green: float, blue: float):
+        X = 0.4124 * red + 0.3576 * green + 0.1805 * blue
+        Y = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        Z = 0.0193 * red + 0.1192 * green + 0.9505 * blue
         try:
             x = X / (X + Y + Z)
             y = Y / (X + Y + Z)
@@ -222,7 +221,7 @@ class Hue(getattr(commands, "Cog", object)):
         return x, y
 
     @_colour.command(name="rgb")
-    async def hue_colour_rgb(self, ctx, red:float, green:float, blue:float, *, name=None):
+    async def hue_colour_rgb(self, ctx, red: float, green: float, blue: float, *, name=None):
         """
             Sets the colour using RGB colour coordinates
 
@@ -240,7 +239,7 @@ class Hue(getattr(commands, "Cog", object)):
                 light.xy = [x, y]
 
     @_colour.command(name="xy", aliases=["xyz"])
-    async def hue_colour_xy(self, ctx, x:float, y:float, *, name=None):
+    async def hue_colour_xy(self, ctx, x: float, y: float, *, name=None):
         """
             Sets the colour using xyz colour values
 
@@ -274,14 +273,14 @@ class Hue(getattr(commands, "Cog", object)):
             return
         if "#" in hex:
             hex.replace("#", "")
-        r, g, b = tuple(int(hex[i:i+2], 16) for i in (0, 2 ,4))
+        r, g, b = tuple(int(hex[i : i + 2], 16) for i in (0, 2, 4))
         x, y = await self.rgb_to_xy(r, g, b)
         for light in self.lights:
             if name is None or light.name.lower() == name.lower() and light.on:
                 light.xy = [x, y]
 
     @_hue.command(name="test")
-    async def hue_test(self, ctx, cl1:float, cl2:float):
+    async def hue_test(self, ctx, cl1: float, cl2: float):
         """Testing function"""
         if not await self.get_bridge():
             await ctx.send("No IP has been set.")

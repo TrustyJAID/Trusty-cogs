@@ -9,14 +9,17 @@ from redbot.core.i18n import Translator
 
 _ = Translator("Hockey", __file__)
 
-numbs = {
-    "next": "➡",
-    "back": "⬅",
-    "exit": "❌"
-}
-async def hockey_menu(ctx:Context, display_type:str, post_list: list,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
+numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
+
+
+async def hockey_menu(
+    ctx: Context,
+    display_type: str,
+    post_list: list,
+    message: discord.Message = None,
+    page=0,
+    timeout: int = 30,
+):
     """menu control logic for this taken from
        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
     if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -46,7 +49,7 @@ async def hockey_menu(ctx:Context, display_type:str, post_list: list,
     else:
         await ctx.send(_("I don't have embed links permission!"))
         return
-    
+
     if not message:
         message = await ctx.send(embed=em)
         await message.add_reaction("⬅")
@@ -55,7 +58,11 @@ async def hockey_menu(ctx:Context, display_type:str, post_list: list,
     else:
         # message edits don't return the message object anymore lol
         await message.edit(embed=em)
-    check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"] and react.message.id == message.id
+    check = (
+        lambda react, user: user == ctx.message.author
+        and react.emoji in ["➡", "⬅", "❌"]
+        and react.message.id == message.id
+    )
     try:
         react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
     except asyncio.TimeoutError:
@@ -74,8 +81,9 @@ async def hockey_menu(ctx:Context, display_type:str, post_list: list,
                 next_page = page + 1
             if ctx.channel.permissions_for(ctx.me).manage_messages:
                 await message.remove_reaction("➡", ctx.message.author)
-            return await hockey_menu(ctx, display_type, post_list, message=message,
-                                         page=next_page, timeout=timeout)
+            return await hockey_menu(
+                ctx, display_type, post_list, message=message, page=next_page, timeout=timeout
+            )
         elif react == "back":
             next_page = 0
             if page == 0:
@@ -84,7 +92,8 @@ async def hockey_menu(ctx:Context, display_type:str, post_list: list,
                 next_page = page - 1
             if ctx.channel.permissions_for(ctx.me).manage_messages:
                 await message.remove_reaction("⬅", ctx.message.author)
-            return await hockey_menu(ctx, display_type, post_list, message=message,
-                                         page=next_page, timeout=timeout)
+            return await hockey_menu(
+                ctx, display_type, post_list, message=message, page=next_page, timeout=timeout
+            )
         else:
             return await message.delete()

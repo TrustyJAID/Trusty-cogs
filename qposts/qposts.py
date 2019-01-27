@@ -10,17 +10,15 @@ from redbot.core import checks
 from redbot.core.data_manager import cog_data_path
 from pathlib import Path
 from bs4 import BeautifulSoup
+
 try:
     import tweepy as tw
+
     twInstalled = True
 except:
     twInstalled = False
 
-numbs = {
-    "next": "➡",
-    "back": "⬅",
-    "exit": "❌"
-}
+numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 
 
 class QPosts(getattr(commands, "Cog", object)):
@@ -28,24 +26,45 @@ class QPosts(getattr(commands, "Cog", object)):
 
     def __init__(self, bot):
         self.bot = bot
-        default_data = {"twitter":{"access_secret" : "",
-        "access_token" : "",
-        "consumer_key" : "",
-        "consumer_secret" : ""}, "boards":{}, "channels":[], "last_checked":0, "print":True}
+        default_data = {
+            "twitter": {
+                "access_secret": "",
+                "access_token": "",
+                "consumer_key": "",
+                "consumer_secret": "",
+            },
+            "boards": {},
+            "channels": [],
+            "last_checked": 0,
+            "print": True,
+        }
         self.config = Config.get_conf(self, 112444567876)
         self.config.register_global(**default_data)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.url = "https://8ch.net"
         self.boards = ["greatawakening", "qresearch", "patriotsfight"]
-        self.trips = ["!UW.yye1fxo", "!ITPb.qbhqo", "!xowAT4Z3VQ", "!4pRcUA0lBE", "!CbboFOtcZs", "!A6yxsPKia.", "!2jsTvXXmX", "!!mG7VJxZNCI"]
+        self.trips = [
+            "!UW.yye1fxo",
+            "!ITPb.qbhqo",
+            "!xowAT4Z3VQ",
+            "!4pRcUA0lBE",
+            "!CbboFOtcZs",
+            "!A6yxsPKia.",
+            "!2jsTvXXmX",
+            "!!mG7VJxZNCI",
+        ]
         self.loop = bot.loop.create_task(self.get_q_posts())
-
 
     async def authenticate(self):
         """Authenticate with Twitter's API"""
         try:
-            auth = tw.OAuthHandler(await self.config.twitter.consumer_key(), await self.config.twitter.consumer_secret())
-            auth.set_access_token(await self.config.twitter.access_token(), await self.config.twitter.access_secret())
+            auth = tw.OAuthHandler(
+                await self.config.twitter.consumer_key(),
+                await self.config.twitter.consumer_secret(),
+            )
+            auth.set_access_token(
+                await self.config.twitter.access_token(), await self.config.twitter.access_secret()
+            )
             return tw.API(auth)
         except:
             return
@@ -84,12 +103,14 @@ class QPosts(getattr(commands, "Cog", object)):
             async with self.session.get("{}/{}/catalog.json".format(self.url, board)) as resp:
                 data = await resp.json()
             Q_posts = []
-            
+
             for page in data:
                 for thread in page["threads"]:
                     if await self.config.print():
                         print(thread["no"])
-                    async with self.session.get("{}/{}/res/{}.json".format(self.url, board,thread["no"])) as resp:
+                    async with self.session.get(
+                        "{}/{}/res/{}.json".format(self.url, board, thread["no"])
+                    ) as resp:
                         posts = await resp.json()
                     for post in posts["posts"]:
                         if "trip" in post:
@@ -120,7 +141,9 @@ class QPosts(getattr(commands, "Cog", object)):
             board_posts = await self.config.boards()
             for board in self.boards:
                 try:
-                    async with self.session.get("{}/{}/catalog.json".format(self.url, board)) as resp:
+                    async with self.session.get(
+                        "{}/{}/catalog.json".format(self.url, board)
+                    ) as resp:
                         data = await resp.json()
                 except Exception as e:
                     print(f"error grabbing board catalog {board}: {e}")
@@ -132,13 +155,21 @@ class QPosts(getattr(commands, "Cog", object)):
                     for thread in page["threads"]:
                         # print(thread["no"])
                         thread_time = datetime.utcfromtimestamp(thread["last_modified"])
-                        last_checked_time = datetime.fromtimestamp(await self.config.last_checked())
+                        last_checked_time = datetime.fromtimestamp(
+                            await self.config.last_checked()
+                        )
                         if thread_time >= last_checked_time:
                             try:
-                                async with self.session.get("{}/{}/res/{}.json".format(self.url, board,thread["no"])) as resp:
+                                async with self.session.get(
+                                    "{}/{}/res/{}.json".format(self.url, board, thread["no"])
+                                ) as resp:
                                     posts = await resp.json()
                             except:
-                                print("error grabbing thread {} in board {}".format(thread["no"], board))
+                                print(
+                                    "error grabbing thread {} in board {}".format(
+                                        thread["no"], board
+                                    )
+                                )
                                 continue
                             for post in posts["posts"]:
                                 if "trip" in post:
@@ -175,7 +206,10 @@ class QPosts(getattr(commands, "Cog", object)):
         for a in soup.find_all("a", href=True):
             # print(a)
             try:
-                url, post_id = a["href"].split("#")[0].replace("html", "json"), int(a["href"].split("#")[1])
+                url, post_id = (
+                    a["href"].split("#")[0].replace("html", "json"),
+                    int(a["href"].split("#")[1]),
+                )
             except:
                 continue
             async with self.session.get(self.url + url) as resp:
@@ -184,18 +218,18 @@ class QPosts(getattr(commands, "Cog", object)):
                 if post["no"] == post_id:
                     reference_post.append(post)
         return reference_post
-            
+
     async def postq(self, qpost, board):
         name = qpost["name"] if "name" in qpost else "Anonymous"
         url = "{}/{}/res/{}.html#{}".format(self.url, board, qpost["resto"], qpost["no"])
-        
+
         html = qpost["com"]
         soup = BeautifulSoup(html, "html.parser")
         ref_text = ""
         text = ""
         img_url = ""
         reference = await self.get_quoted_post(qpost)
-        if qpost["com"] != "<p class=\"body-line empty \"></p>":
+        if qpost["com"] != '<p class="body-line empty "></p>':
             for p in soup.find_all("p"):
                 if p.get_text() is None:
                     text += "."
@@ -245,7 +279,9 @@ class QPosts(getattr(commands, "Cog", object)):
                 if await self.config.print():
                     print("sending tweet with image")
                 tw_msg = "{}\n#QAnon\n{}".format(url, text)
-                await self.send_tweet(tw_msg[:280], "data/qposts/files/{}{}".format(file_id, file_ext))
+                await self.send_tweet(
+                    tw_msg[:280], "data/qposts/files/{}{}".format(file_id, file_ext)
+                )
             except Exception as e:
                 print(f"Error sending tweet with image: {e}")
                 pass
@@ -259,8 +295,7 @@ class QPosts(getattr(commands, "Cog", object)):
                 print(f"Error sending tweet: {e}")
                 pass
         em.set_footer(text=board)
-        
-        
+
         for channel_id in await self.config.channels():
             try:
                 channel = self.bot.get_channel(id=channel_id)
@@ -271,7 +306,7 @@ class QPosts(getattr(commands, "Cog", object)):
                 continue
             guild = channel.guild
             if not channel.permissions_for(guild.me).send_messages:
-                    continue
+                continue
             if not channel.permissions_for(guild.me).embed_links:
                 await channel.send(text[:1900])
             try:
@@ -282,12 +317,16 @@ class QPosts(getattr(commands, "Cog", object)):
                     await channel.send("<{}>".format(url), embed=em)
             except Exception as e:
                 print(f"Error posting Qpost in {channel_id}: {e}")
-                
 
-
-    async def q_menu(self, ctx, post_list: list, board,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
+    async def q_menu(
+        self,
+        ctx,
+        post_list: list,
+        board,
+        message: discord.Message = None,
+        page=0,
+        timeout: int = 30,
+    ):
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
 
@@ -340,7 +379,7 @@ class QPosts(getattr(commands, "Cog", object)):
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"]
+        check = lambda react, user: user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"]
         try:
             react, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
@@ -361,8 +400,9 @@ class QPosts(getattr(commands, "Cog", object)):
                     await message.remove_reaction("➡", ctx.message.author)
                 except:
                     pass
-                return await self.q_menu(ctx, post_list, board, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.q_menu(
+                    ctx, post_list, board, message=message, page=next_page, timeout=timeout
+                )
             elif react == "back":
                 next_page = 0
                 if page == 0:
@@ -373,8 +413,9 @@ class QPosts(getattr(commands, "Cog", object)):
                     await message.remove_reaction("⬅", ctx.message.author)
                 except:
                     pass
-                return await self.q_menu(ctx, post_list, board, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.q_menu(
+                    ctx, post_list, board, message=message, page=next_page, timeout=timeout
+                )
             else:
                 return await message.delete()
 
@@ -403,8 +444,8 @@ class QPosts(getattr(commands, "Cog", object)):
         try:
             file_id = post["tim"]
             file_ext = post["ext"]
-        
-            file_path =  cog_data_path(self) /"files"
+
+            file_path = cog_data_path(self) / "files"
             file_path.mkdir(exist_ok=True, parents=True)
             url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
             async with self.session.get(url) as resp:
@@ -425,7 +466,7 @@ class QPosts(getattr(commands, "Cog", object)):
             pass
 
     @commands.command()
-    async def qchannel(self, ctx, channel:discord.TextChannel=None):
+    async def qchannel(self, ctx, channel: discord.TextChannel = None):
         """Set the channel for live qposts"""
         if channel is None:
             channel = ctx.message.channel
@@ -440,7 +481,7 @@ class QPosts(getattr(commands, "Cog", object)):
         await ctx.send("{} set for qposts!".format(channel.mention))
 
     @commands.command()
-    async def remqchannel(self, ctx, channel:discord.TextChannel=None):
+    async def remqchannel(self, ctx, channel: discord.TextChannel = None):
         """Remove qpost updates from a channel"""
         if channel is None:
             channel = ctx.message.channel
@@ -454,14 +495,20 @@ class QPosts(getattr(commands, "Cog", object)):
         await self.config.channels.set(cur_chans)
         await ctx.send("{} set for qposts!".format(channel.mention))
 
-    @commands.command(name='qtwitterset')
+    @commands.command(name="qtwitterset")
     @checks.is_owner()
-    async def set_creds(self, ctx, consumer_key: str, consumer_secret: str, access_token: str, access_secret: str):
+    async def set_creds(
+        self, ctx, consumer_key: str, consumer_secret: str, access_token: str, access_secret: str
+    ):
         """Set automatic twitter updates alongside discord"""
-        api = {'consumer_key': consumer_key, 'consumer_secret': consumer_secret,
-            'access_token': access_token, 'access_secret': access_secret}
+        api = {
+            "consumer_key": consumer_key,
+            "consumer_secret": consumer_secret,
+            "access_token": access_token,
+            "access_secret": access_secret,
+        }
         await self.config.twitter.set(api)
-        await ctx.send('Set the access credentials!')
+        await ctx.send("Set the access credentials!")
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())

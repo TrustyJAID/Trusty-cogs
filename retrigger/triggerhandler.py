@@ -89,7 +89,7 @@ class TriggerHandler:
                     can_run = False
         return can_run
 
-    async def is_mod_or_admin(self, member:discord.Member):
+    async def is_mod_or_admin(self, member: discord.Member):
         guild = member.guild
         if member == guild.owner:
             return True
@@ -120,17 +120,16 @@ class TriggerHandler:
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
-
     async def make_guild_folder(self, directory):
         if not directory.is_dir():
             log.info("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
     async def save_image_location(self, image_url, guild):
-        seed = ''.join(random.sample(string.ascii_uppercase + string.digits, k=5))
+        seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = image_url.split("/")[-1]
         filename = "{}-{}".format(seed, filename)
-        directory = cog_data_path(self) /str(guild.id)
+        directory = cog_data_path(self) / str(guild.id)
         cur_images = await self.config.guild(guild).images()
         file_path = str(cog_data_path(self)) + f"/{guild.id}/{filename}"
         await self.make_guild_folder(directory)
@@ -161,20 +160,25 @@ class TriggerHandler:
             return guild.me.colour
         else:
             return await self.bot.db.color()
-            
+
     def resize_image(self, size, image):
-        length, width = (16, 16) # Start with the smallest size we want to upload
+        length, width = (16, 16)  # Start with the smallest size we want to upload
         with Image.open(image) as im:
             if size <= 0:
                 size = 1
-            im.thumbnail((length*size, width*size), Image.ANTIALIAS)
+            im.thumbnail((length * size, width * size), Image.ANTIALIAS)
             byte_array = BytesIO()
             im.save(byte_array, format="PNG")
             return discord.File(byte_array.getvalue(), filename="resize.png")
 
-    async def trigger_menu(self, ctx:commands.Context, post_list: list,
-                         message: discord.Message=None,
-                         page=0, timeout: int=30):
+    async def trigger_menu(
+        self,
+        ctx: commands.Context,
+        post_list: list,
+        message: discord.Message = None,
+        page=0,
+        timeout: int = 30,
+    ):
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         post = post_list[page]
@@ -185,16 +189,33 @@ class TriggerHandler:
         em = discord.Embed(timestamp=ctx.message.created_at)
         em.colour = await self.get_colour(ctx.guild)
         for trigger in post:
-            blacklist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["blacklist"]]
+            blacklist = [
+                await ChannelUserRole().convert(ctx, str(y)) for y in trigger["blacklist"]
+            ]
             blacklist = ", ".join(x.mention for x in blacklist)
-            whitelist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger["whitelist"]]
+            whitelist = [
+                await ChannelUserRole().convert(ctx, str(y)) for y in trigger["whitelist"]
+            ]
             whitelist = ", ".join(x.mention for x in whitelist)
             responses = ", ".join(r for r in trigger["response_type"])
-            info = (_("__Name__:") +"** "+ trigger["name"] + "**\n" +
-                    _("__Author__: ") +"<@"+ str(trigger["author"]) + ">\n" +
-                    _("__Count__: ") + "**" + str(trigger["count"]) +"**\n" +
-                    _("__Response__: ") + "**" + responses + "**\n"
-                    )
+            info = (
+                _("__Name__:")
+                + "** "
+                + trigger["name"]
+                + "**\n"
+                + _("__Author__: ")
+                + "<@"
+                + str(trigger["author"])
+                + ">\n"
+                + _("__Count__: ")
+                + "**"
+                + str(trigger["count"])
+                + "**\n"
+                + _("__Response__: ")
+                + "**"
+                + responses
+                + "**\n"
+            )
             if "text" in trigger["response_type"]:
                 if trigger["multi_payload"]:
                     response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "text")
@@ -209,13 +230,17 @@ class TriggerHandler:
                 info += _("__DM__: ") + "**{response}**\n".format(response=response)
             if "command" in trigger["response_type"]:
                 if trigger["multi_payload"]:
-                    response = "\n".join(t[1] for t in trigger["multi_payload"] if t[0] == "command")
+                    response = "\n".join(
+                        t[1] for t in trigger["multi_payload"] if t[0] == "command"
+                    )
                 else:
                     response = trigger["text"]
                 info += _("__Command__: ") + "**{response}**\n".format(response=response)
             if "react" in trigger["response_type"]:
                 if trigger["multi_payload"]:
-                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "react"]
+                    response = [
+                        r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "react"
+                    ]
                 else:
                     response = trigger["text"]
                 server_emojis = "".join(f"<{e}>" for e in response if len(e) > 5)
@@ -223,14 +248,18 @@ class TriggerHandler:
                 info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
             if "add_role" in trigger["response_type"]:
                 if trigger["multi_payload"]:
-                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "add_role"]
+                    response = [
+                        r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "add_role"
+                    ]
                 else:
                     response = trigger["text"]
                 roles = [ctx.guild.get_role(r).mention for r in response]
                 info += _("__Roles Added__: ") + humanize_list(roles) + "\n"
             if "remove_role" in trigger["response_type"]:
                 if trigger["multi_payload"]:
-                    response = [r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "remove_role"]
+                    response = [
+                        r for t in trigger["multi_payload"] for r in t[1:] if t[0] == "remove_role"
+                    ]
                 else:
                     response = trigger["text"]
                 roles = [ctx.guild.get_role(r).mention for r in response]
@@ -240,27 +269,27 @@ class TriggerHandler:
             if trigger["cooldown"]:
                 time = trigger["cooldown"]["time"]
                 style = trigger["cooldown"]["style"]
-                info += _("__Cooldown__: ") +"**{}s per {}**".format(time, style)
+                info += _("__Cooldown__: ") + "**{}s per {}**".format(time, style)
             length_of_info = len(info)
             if len(post) > 1:
                 diff = 1000 - length_of_info
-                info += _("__Regex__: ") +"```bf\n" + trigger["regex"][:diff] + "```\n"
+                info += _("__Regex__: ") + "```bf\n" + trigger["regex"][:diff] + "```\n"
             else:
                 diff = 2000 - length_of_info
-                info += _("__Regex__: ") +"```bf\n" + trigger["regex"][:diff] + "```\n"
+                info += _("__Regex__: ") + "```bf\n" + trigger["regex"][:diff] + "```\n"
             if blacklist:
                 info += _("__Blacklist__: ") + blacklist + "\n"
-            
+
             if len(post) > 1:
                 em.add_field(name=trigger["name"], value=info[:1024])
             else:
                 em.description = info[:2048]
         em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
-        em.set_footer(text=_("Page ") +"{}/{}".format(page+1, len(post_list)))
+        em.set_footer(text=_("Page ") + "{}/{}".format(page + 1, len(post_list)))
         if len(post_list) == 1:
             # No need to offer multiple pages if they don't exist
             return await ctx.send(embed=em)
-        
+
         if not message:
             message = await ctx.send(embed=em)
             await message.add_reaction("⬅")
@@ -269,7 +298,11 @@ class TriggerHandler:
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"] and react.message.id == message.id
+        check = (
+            lambda react, user: user == ctx.message.author
+            and react.emoji in ["➡", "⬅", "❌"]
+            and react.message.id == message.id
+        )
         try:
             react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
@@ -286,8 +319,9 @@ class TriggerHandler:
                     next_page = page + 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
                     await message.remove_reaction("➡", ctx.message.author)
-                return await self.trigger_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.trigger_menu(
+                    ctx, post_list, message=message, page=next_page, timeout=timeout
+                )
             elif react.emoji == "⬅":
                 next_page = 0
                 if page == 0:
@@ -296,8 +330,9 @@ class TriggerHandler:
                     next_page = page - 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
                     await message.remove_reaction("⬅", ctx.message.author)
-                return await self.trigger_menu(ctx, post_list, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.trigger_menu(
+                    ctx, post_list, message=message, page=next_page, timeout=timeout
+                )
             else:
                 return await message.delete()
 
@@ -322,7 +357,7 @@ class TriggerHandler:
                 style = trigger.cooldown["style"]
                 snowflake = getattr(message, style)
                 if snowflake.id not in [x["id"] for x in trigger.cooldown["last"]]:
-                    trigger.cooldown["last"].append({"id":snowflake.id, "last":now})
+                    trigger.cooldown["last"].append({"id": snowflake.id, "last": now})
                     trigger_list[trigger.name] = trigger.to_json()
                     await self.config.guild(guild).trigger_list.set(trigger_list)
                     return False
@@ -333,8 +368,8 @@ class TriggerHandler:
                             last = entity["last"]
                             time = trigger.cooldown["time"]
                             if (now - last) > time:
-                                trigger.cooldown["last"].remove({"id":snowflake.id, "last":last})
-                                trigger.cooldown["last"].append({"id":snowflake.id, "last":now})
+                                trigger.cooldown["last"].remove({"id": snowflake.id, "last": last})
+                                trigger.cooldown["last"].append({"id": snowflake.id, "last": now})
                                 trigger_list[trigger.name] = trigger.to_json()
                                 await self.config.guild(guild).trigger_list.set(trigger_list)
                                 return False
@@ -354,7 +389,7 @@ class TriggerHandler:
                 if command:
                     is_command = True
         return is_command
-    
+
     async def on_message(self, message):
         if message.guild is None:
             return
@@ -383,7 +418,7 @@ class TriggerHandler:
 
     async def check_triggers(self, message):
         local_perms = not await self.local_perms(message)
-        global_perms =  not await self.global_perms(message)
+        global_perms = not await self.global_perms(message)
         ignored_channel = not await self.check_ignored_channel(message)
 
         msg = message.content
@@ -397,7 +432,7 @@ class TriggerHandler:
         trigger_list = await self.config.guild(guild).trigger_list()
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
-        
+
         for triggers in trigger_list:
             # log.debug(triggers)
             trigger = Trigger.from_json(trigger_list[triggers])
@@ -417,55 +452,65 @@ class TriggerHandler:
                 pool.close()
             except (TimeoutError, asyncio.TimeoutError) as e:
                 pool.close()
-                error_msg = ("ReTrigger took too long to find matches "
-                             f"{guild.name} ({guild.id}) "
-                             f"Offending regex {trigger.regex} Name: {trigger.name}")
+                error_msg = (
+                    "ReTrigger took too long to find matches "
+                    f"{guild.name} ({guild.id}) "
+                    f"Offending regex {trigger.regex} Name: {trigger.name}"
+                )
                 log.error(error_msg, exc_info=True)
-                return # we certainly don't want to be performing multiple triggers if this happens
+                return  # we certainly don't want to be performing multiple triggers if this happens
 
             if search != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     continue
                 if any(t for t in trigger.response_type if t in auto_mod):
                     if await autoimmune(message):
-                        print_msg = _("ReTrigger: {author} is immune "
-                                      "from automated actions ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: {author} is immune " "from automated actions "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                         continue
                 if "delete" in trigger.response_type:
                     if channel_perms.manage_messages or is_mod:
-                        print_msg = _("ReTrigger: Delete is ignored because {author} "
-                                      "has manage messages permission ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: Delete is ignored because {author} "
+                            "has manage messages permission "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                         continue
                 elif "kick" in trigger.response_type:
                     if channel_perms.kick_members or is_mod:
-                        print_msg = _("ReTrigger: Kick is ignored because "
-                                      "{author} has kick permissions ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: Kick is ignored because " "{author} has kick permissions "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                         continue
                 elif "ban" in trigger.response_type:
                     if channel_perms.ban_members or is_mod:
-                        print_msg = _("ReTrigger: Ban is ignored because {author} "
-                                      "has ban permissions ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: Ban is ignored because {author} " "has ban permissions "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                         continue
                 elif any(t for t in trigger.response_type if t in ["add_role", "remove_role"]):
                     if channel_perms.manage_roles or is_mod:
-                        print_msg = _("ReTrigger: role change is ignored because {author} "
-                                      "has mange roles permissions ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: role change is ignored because {author} "
+                            "has mange roles permissions "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                 else:
                     if any([local_perms, global_perms, ignored_channel]):
-                        print_msg = _("ReTrigger: Channel is ignored or "
-                                      "{author} is blacklisted ").format(author=author)
+                        print_msg = _(
+                            "ReTrigger: Channel is ignored or " "{author} is blacklisted "
+                        ).format(author=author)
                         log.info(print_msg + trigger.name)
                         continue
                     if is_command:
                         continue
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
-                await self.perform_trigger(message, trigger, search[0]) 
+                await self.perform_trigger(message, trigger, search[0])
                 await self.config.guild(guild).trigger_list.set(trigger_list)
                 # if not await self.config.guild(guild).allow_multiple():
                 return
@@ -478,7 +523,7 @@ class TriggerHandler:
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         if "resize" in trigger.response_type:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-            task = functools.partial(self.resize_image, size=len(find)-3, image=path)
+            task = functools.partial(self.resize_image, size=len(find) - 3, image=path)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
@@ -520,7 +565,7 @@ class TriggerHandler:
                     log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "ban" in trigger.response_type and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
-                # Don't want to accidentally ban the bot owner 
+                # Don't want to accidentally ban the bot owner
                 # or try to ban the guild owner
                 return
             if guild.me.top_role > author.top_role:
@@ -530,7 +575,7 @@ class TriggerHandler:
                     log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
-                # Don't want to accidentally kick the bot owner 
+                # Don't want to accidentally kick the bot owner
                 # or try to kick the guild owner
                 return
             if guild.me.top_role > author.top_role:
@@ -576,7 +621,9 @@ class TriggerHandler:
                     log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
         if "remove_role" in trigger.response_type:
             if trigger.multi_payload:
-                response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"]
+                response = [
+                    r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
+                ]
             else:
                 response = trigger.text
             for roles in response:
@@ -592,7 +639,7 @@ class TriggerHandler:
                 await message.delete()
             except Exception as e:
                 log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
-            
+
         if "mock" in trigger.response_type:
             if trigger.multi_payload:
                 response = [t[1] for t in trigger.multi_payload if t[0] == "mock"]
@@ -611,7 +658,7 @@ class TriggerHandler:
                 mocker = guild.get_member(trigger.author)
                 command = await self.convert_parms(message, trigger.text)
                 if not mocker:
-                    return # We'll exit early if the author isn't on the server anymore
+                    return  # We'll exit early if the author isn't on the server anymore
                 msg.author = mocker
                 prefix_list = await self.bot.command_prefix(self.bot, message)
                 msg.content = prefix_list[0] + command
@@ -671,7 +718,6 @@ class TriggerHandler:
         else:
             return raw_result
         return str(getattr(first, second, raw_result))
-            
 
     async def delete_modlog_action(self, message, trigger):
         modlogs = await self.config.guild(message.guild).modlog()
@@ -691,12 +737,14 @@ class TriggerHandler:
                 modlog_channel = guild.get_channel(modlogs)
                 if modlog_channel is None:
                     return
-            infomessage = (_("A message from ") + str(author) +
-                           _(" was deleted in ") +
-                           message.channel.name)
-            embed = discord.Embed(description=message.content,
-                                  colour=discord.Colour.dark_red(),
-                                  timestamp=datetime.now())
+            infomessage = (
+                _("A message from ") + str(author) + _(" was deleted in ") + message.channel.name
+            )
+            embed = discord.Embed(
+                description=message.content,
+                colour=discord.Colour.dark_red(),
+                timestamp=datetime.now(),
+            )
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Trigger Name"), value=trigger.name)
             finds = re.findall(trigger.regex, message.content)
@@ -705,8 +753,9 @@ class TriggerHandler:
                 files = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
-            embed.set_author(name=str(author) + _(" - Deleted Message"), 
-                             icon_url=author.avatar_url)
+            embed.set_author(
+                name=str(author) + _(" - Deleted Message"), icon_url=author.avatar_url
+            )
             try:
                 if modlog_channel.permissions_for(guild.me).embed_links:
                     await modlog_channel.send(embed=embed)
@@ -714,7 +763,6 @@ class TriggerHandler:
                     await modlog_channel.send(infomessage)
             except:
                 pass
-
 
     async def remove_trigger(self, guild, trigger_name):
         trigger_list = await self.config.guild(guild).trigger_list()

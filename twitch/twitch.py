@@ -10,16 +10,21 @@ import aiohttp
 import time
 
 
-
 BASE_URL = "https://api.twitch.tv/helix"
+
 
 class Twitch(getattr(commands, "Cog", object)):
     """
         Get twitch user information and post when a user gets new followers
     """
 
-    global_defaults = {"client_id":"", "client_secret":"", "access_token":{}, "twitch_accounts":[]}
-    user_defaults = {"id": "", "login":"", "display_name":""}
+    global_defaults = {
+        "client_id": "",
+        "client_secret": "",
+        "access_token": {},
+        "twitch_accounts": [],
+    }
+    user_defaults = {"id": "", "login": "", "display_name": ""}
 
     def __init__(self, bot):
         self.config = Config.get_conf(self, 1543454673)
@@ -31,14 +36,13 @@ class Twitch(getattr(commands, "Cog", object)):
         self.rate_limit_remaining = 0
         self.loop = bot.loop.create_task(self.check_for_new_followers())
 
-
     #####################################################################################
     # Logic for accessing twitch API with rate limit checks                             #
     # https://github.com/tsifrer/python-twitch-client/blob/master/twitch/helix/base.py  #
     #####################################################################################
 
     async def get_header(self):
-        header = {"Client-ID":await self.config.client_id()}
+        header = {"Client-ID": await self.config.client_id()}
         access_token = await self.config.access_token()
         if access_token != {}:
             # Return bearer token if availavble for more access
@@ -70,10 +74,12 @@ class Twitch(getattr(commands, "Cog", object)):
             return
         if access_token == {}:
             # Attempts to acquire an app access token
-            params = {"client_id":client_id,
-                      "client_secret":client_secret,
-                      "grant_type":"client_credentials",
-                      "scope":"analytics:read:extensions analytics:read:games bits:read clips:edit user:edit user:edit:broadcast"}
+            params = {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "client_credentials",
+                "scope": "analytics:read:extensions analytics:read:games bits:read clips:edit user:edit user:edit:broadcast",
+            }
             async with self.session.post(url, params=params) as resp:
                 access_token = await resp.json()
             await self.config.access_token.set(access_token)
@@ -82,7 +88,7 @@ class Twitch(getattr(commands, "Cog", object)):
                 # Tries to re-aquire access token if set one is incorrect
                 await self.config.access_token.set({})
                 return await self.oauth_check()
-            header = {"Authorization":"OAuth {}".format(access_token["access_token"])}
+            header = {"Authorization": "OAuth {}".format(access_token["access_token"])}
             url = "https://id.twitch.tv/oauth2/validate"
             resp = await self.session.get(url, headers=header)
             if resp.status == 200:
@@ -91,7 +97,6 @@ class Twitch(getattr(commands, "Cog", object)):
             else:
                 await self.config.access_token.set({})
                 return await self.oauth_check()
-
 
     async def get_response(self, url):
         """Get responses from twitch after checking rate limits"""
@@ -118,7 +123,9 @@ class Twitch(getattr(commands, "Cog", object)):
         em = discord.Embed(colour=int("6441A4", 16))
         em.description = profile.description
         url = "https://twitch.tv/{}".format(profile.login)
-        em.set_author(name="{}".format(profile.display_name), url=url, icon_url=profile.profile_image_url)
+        em.set_author(
+            name="{}".format(profile.display_name), url=url, icon_url=profile.profile_image_url
+        )
         em.set_image(url=profile.offline_image_url)
         em.set_thumbnail(url=profile.profile_image_url)
         footer_text = "{} Viewer count".format(profile.view_count)
@@ -130,8 +137,11 @@ class Twitch(getattr(commands, "Cog", object)):
         em = discord.Embed(colour=int("6441A4", 16))
         url = "https://twitch.tv/{}".format(profile.login)
         em.description = "[{}]({}) has just followed!".format(profile.display_name, url)
-        em.set_author(name="{} has just followed!".format(
-                            profile.display_name), url=url, icon_url=profile.profile_image_url)
+        em.set_author(
+            name="{} has just followed!".format(profile.display_name),
+            url=url,
+            icon_url=profile.profile_image_url,
+        )
         # em.set_image(url=profile.offline_image_url)
         em.set_thumbnail(url=profile.profile_image_url)
         footer_text = "{} followers".format(total_followers)
@@ -149,12 +159,12 @@ class Twitch(getattr(commands, "Cog", object)):
         while len(follows) < total:
             count += 1
             cursor = data["pagination"]["cursor"]
-            data = await self.get_response(url+"&after="+cursor)
+            data = await self.get_response(url + "&after=" + cursor)
             for user in data["data"]:
                 if user["from_id"] not in follows:
                     follows.append(user["from_id"])
             print("{} of {}".format(len(follows), total))
-            if count == (int(total/100)+(total%100>0)):
+            if count == (int(total / 100) + (total % 100 > 0)):
                 # Break the loop if we've gone over the total we could theoretically get
                 break
         return follows, total
@@ -173,9 +183,9 @@ class Twitch(getattr(commands, "Cog", object)):
         data = await self.get_response(url)
         follows = [TwitchFollower.from_json(x) for x in data["data"]]
         total = data["total"]
-        return follows, total        
+        return follows, total
 
-    async def maybe_get_twitch_profile(self, ctx, twitch_name:str):
+    async def maybe_get_twitch_profile(self, ctx, twitch_name: str):
         if twitch_name is not None:
             # Search for twitch login name
             try:
@@ -213,7 +223,9 @@ class Twitch(getattr(commands, "Cog", object)):
                             profile = await self.get_profile_from_id(follow.from_id)
                         except Exception as e:
                             print(e)
-                        print("{} Followed! You have {} followers now.".format(profile.login, total))
+                        print(
+                            "{} Followed! You have {} followers now.".format(profile.login, total)
+                        )
                         em = await self.make_follow_embed(profile, total)
                         for channel_id in account["channels"]:
                             channel = self.bot.get_channel(id=channel_id)
@@ -236,7 +248,7 @@ class Twitch(getattr(commands, "Cog", object)):
     @twitchhelp.command(name="setfollow")
     @checks.admin_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def set_follow(self, ctx, twitch_name=None, channel:discord.TextChannel=None):
+    async def set_follow(self, ctx, twitch_name=None, channel: discord.TextChannel = None):
         """
             Setup a channel for automatic follow notifications
         """
@@ -251,9 +263,15 @@ class Twitch(getattr(commands, "Cog", object)):
         user_data = await self.check_account_added(cur_accounts, profile)
         if user_data is None:
             followers, total = await self.get_all_followers(profile.id)
-            user_data = {"id":profile.id, "login":profile.login, "display_name":profile.display_name,
-                         "followers":followers, "total_followers":total, "channels":[channel.id]}
-            
+            user_data = {
+                "id": profile.id,
+                "login": profile.login,
+                "display_name": profile.display_name,
+                "followers": followers,
+                "total_followers": total,
+                "channels": [channel.id],
+            }
+
             cur_accounts.append(user_data)
             await self.config.twitch_accounts.set(cur_accounts)
         else:
@@ -261,13 +279,16 @@ class Twitch(getattr(commands, "Cog", object)):
             user_data["channels"].append(channel.id)
             cur_accounts.append(user_data)
             await self.config.twitch_accounts.set(cur_accounts)
-        await ctx.send("{} has been setup for twitch follow notifications in {}".format(
-                        profile.display_name, channel.mention))  
+        await ctx.send(
+            "{} has been setup for twitch follow notifications in {}".format(
+                profile.display_name, channel.mention
+            )
+        )
 
     @twitchhelp.command(name="remfollow", aliases=["remove", "delete", "del"])
     @checks.admin_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def remove_follow(self, ctx, twitch_name=None, channel:discord.TextChannel=None):
+    async def remove_follow(self, ctx, twitch_name=None, channel: discord.TextChannel = None):
         """
             Remove an account from follow notifications in the specified channel
             defaults to the current channel
@@ -281,13 +302,19 @@ class Twitch(getattr(commands, "Cog", object)):
         cur_accounts = await self.config.twitch_accounts()
         user_data = await self.check_account_added(cur_accounts, profile)
         if user_data is None:
-            await ctx.send("{} is not currently posting follow notifications in {}".format(
-                           profile.login, channel.mention))
+            await ctx.send(
+                "{} is not currently posting follow notifications in {}".format(
+                    profile.login, channel.mention
+                )
+            )
             return
         else:
             if channel.id not in user_data["channels"]:
-                await ctx.send("{} is not currently posting follow notifications in {}".format(
-                           profile.login, channel.mention))
+                await ctx.send(
+                    "{} is not currently posting follow notifications in {}".format(
+                        profile.login, channel.mention
+                    )
+                )
                 return
             else:
                 cur_accounts.remove(user_data)
@@ -298,9 +325,11 @@ class Twitch(getattr(commands, "Cog", object)):
                 else:
                     cur_accounts.append(user_data)
                     await self.config.twitch_accounts.set(cur_accounts)
-        await ctx.send("Done, {}'s new followers won't be posted in {} anymore.".format(
-                       profile.login, channel.mention))
-
+        await ctx.send(
+            "Done, {}'s new followers won't be posted in {} anymore.".format(
+                profile.login, channel.mention
+            )
+        )
 
     @twitchhelp.command(name="set")
     async def twitch_set(self, ctx, twitch_name):
@@ -314,7 +343,7 @@ class Twitch(getattr(commands, "Cog", object)):
         await ctx.send("{} set for you.".format(profile.display_name))
 
     @twitchhelp.command(name="follows", aliases=["followers"])
-    async def get_user_follows(self, ctx, twitch_name:str=None):
+    async def get_user_follows(self, ctx, twitch_name: str = None):
         """
             Get latest Twitch followers
         """
@@ -340,21 +369,26 @@ class Twitch(getattr(commands, "Cog", object)):
             await ctx.send(e)
             return
         if ctx.channel.permissions_for(ctx.me).embed_links:
-            em = await self.make_user_embed(profile)        
+            em = await self.make_user_embed(profile)
             await ctx.send(embed=em)
         else:
             await ctx.send("https://twitch.tv/{}".format(profile.login))
 
-
-    async def twitch_menu(self, ctx: Context, post_list: list, total_followers=0,
-                             message: discord.Message=None,
-                             page=0, timeout: int=30):
+    async def twitch_menu(
+        self,
+        ctx: Context,
+        post_list: list,
+        total_followers=0,
+        message: discord.Message = None,
+        page=0,
+        timeout: int = 30,
+    ):
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         user_id = post_list[page].from_id
         followed_at = post_list[page].followed_at
         url = "{}/users?id={}".format(BASE_URL, user_id)
-        header = {"Client-ID":await self.config.client_id()}
+        header = {"Client-ID": await self.config.client_id()}
         async with self.session.get(url, headers=header) as resp:
             data = await resp.json()
 
@@ -365,8 +399,7 @@ class Twitch(getattr(commands, "Cog", object)):
         else:
             em = None
         prof_url = "https://twitch.tv/{}".format(profile.login)
-        
-        
+
         if not message:
             message = await ctx.send(prof_url, embed=em)
             await message.add_reaction("⬅")
@@ -375,7 +408,11 @@ class Twitch(getattr(commands, "Cog", object)):
         else:
             # message edits don't return the message object anymore lol
             await message.edit(content=prof_url, embed=em)
-        check = lambda react, user:user == ctx.message.author and react.emoji in ["➡", "⬅", "❌"] and react.message.id == message.id
+        check = (
+            lambda react, user: user == ctx.message.author
+            and react.emoji in ["➡", "⬅", "❌"]
+            and react.message.id == message.id
+        )
         try:
             react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
@@ -392,8 +429,14 @@ class Twitch(getattr(commands, "Cog", object)):
                     next_page = page + 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
                     await message.remove_reaction("➡", ctx.message.author)
-                return await self.twitch_menu(ctx, post_list, total_followers, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.twitch_menu(
+                    ctx,
+                    post_list,
+                    total_followers,
+                    message=message,
+                    page=next_page,
+                    timeout=timeout,
+                )
             elif react.emoji == "⬅":
                 next_page = 0
                 if page == 0:
@@ -402,14 +445,20 @@ class Twitch(getattr(commands, "Cog", object)):
                     next_page = page - 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
                     await message.remove_reaction("⬅", ctx.message.author)
-                return await self.twitch_menu(ctx, post_list, total_followers, message=message,
-                                             page=next_page, timeout=timeout)
+                return await self.twitch_menu(
+                    ctx,
+                    post_list,
+                    total_followers,
+                    message=message,
+                    page=next_page,
+                    timeout=timeout,
+                )
             else:
                 return await message.delete()
 
     @commands.command(name="twitchcreds")
     @checks.is_owner()
-    async def twitch_creds(self, ctx, client_id:str, client_secret:str=None):
+    async def twitch_creds(self, ctx, client_id: str, client_secret: str = None):
         """
             Set twitch client_id and client_secret if required for larger followings
 

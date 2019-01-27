@@ -8,20 +8,18 @@ def edge(pixels, image, angle):
     img = Image.open(image)
     img = img.rotate(angle, expand=True)
     edges = img.filter(ImageFilter.FIND_EDGES)
-    edges = edges.convert('RGBA')
+    edges = edges.convert("RGBA")
     edge_data = edges.load()
 
     filter_pixels = []
     edge_pixels = []
     intervals = []
 
-    
     for y in range(img.size[1]):
         filter_pixels.append([])
         for x in range(img.size[0]):
             filter_pixels[y].append(edge_data[x, y])
 
-    
     for y in range(len(pixels)):
         edge_pixels.append([])
         for x in range(len(pixels[0])):
@@ -30,13 +28,14 @@ def edge(pixels, image, angle):
             else:
                 edge_pixels[y].append(constants.black_pixel)
 
-    
     for y in range(len(pixels) - 1, 1, -1):
         for x in range(len(pixels[0]) - 1, 1, -1):
-            if edge_pixels[y][x] == constants.black_pixel and edge_pixels[y][x - 1] == constants.black_pixel:
+            if (
+                edge_pixels[y][x] == constants.black_pixel
+                and edge_pixels[y][x - 1] == constants.black_pixel
+            ):
                 edge_pixels[y][x] = constants.white_pixel
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         for x in range(len(pixels[0])):
@@ -49,7 +48,6 @@ def edge(pixels, image, angle):
 def threshold(pixels, image, angle):
     intervals = []
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         for x in range(len(pixels[0])):
@@ -62,7 +60,6 @@ def threshold(pixels, image, angle):
 def random(pixels, image, angle):
     intervals = []
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         x = 0
@@ -80,7 +77,6 @@ def random(pixels, image, angle):
 def waves(pixels, image, angle):
     intervals = []
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         x = 0
@@ -100,20 +96,21 @@ def file_mask(pixels, image, angle):
     file_pixels = []
 
     img = Image.open(image)
-    img = img.convert('RGBA')
+    img = img.convert("RGBA")
     data = img.load()
     for y in range(img.size[1]):
         file_pixels.append([])
         for x in range(img.size[0]):
             file_pixels[y].append(data[x, y])
 
-    
     for y in range(len(pixels) - 1, 1, -1):
         for x in range(len(pixels[0]) - 1, 1, -1):
-            if file_pixels[y][x] == constants.black_pixel and file_pixels[y][x - 1] == constants.black_pixel:
+            if (
+                file_pixels[y][x] == constants.black_pixel
+                and file_pixels[y][x - 1] == constants.black_pixel
+            ):
                 file_pixels[y][x] = constants.white_pixel
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         for x in range(len(pixels[0])):
@@ -129,20 +126,18 @@ def file_edges(pixels, image, angle):
     img = img.rotate(angle, expand=True)
     img = img.resize((len(pixels[0]), len(pixels)), Image.ANTIALIAS)
     edges = img.filter(ImageFilter.FIND_EDGES)
-    edges = edges.convert('RGBA')
+    edges = edges.convert("RGBA")
     edge_data = edges.load()
 
     filter_pixels = []
     edge_pixels = []
     intervals = []
 
-    
     for y in range(img.size[1]):
         filter_pixels.append([])
         for x in range(img.size[0]):
             filter_pixels[y].append(edge_data[x, y])
 
-    
     for y in range(len(pixels)):
         edge_pixels.append([])
         for x in range(len(pixels[0])):
@@ -151,13 +146,14 @@ def file_edges(pixels, image, angle):
             else:
                 edge_pixels[y].append(constants.black_pixel)
 
-    
     for y in range(len(pixels) - 1, 1, -1):
         for x in range(len(pixels[0]) - 1, 1, -1):
-            if edge_pixels[y][x] == constants.black_pixel and edge_pixels[y][x - 1] == constants.black_pixel:
+            if (
+                edge_pixels[y][x] == constants.black_pixel
+                and edge_pixels[y][x - 1] == constants.black_pixel
+            ):
                 edge_pixels[y][x] = constants.white_pixel
 
-    
     for y in range(len(pixels)):
         intervals.append([])
         for x in range(len(pixels[0])):

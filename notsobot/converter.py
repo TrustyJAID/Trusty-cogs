@@ -7,11 +7,13 @@ from discord.ext.commands.errors import BadArgument
 IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png|svg))")
 EMOJI_REGEX = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$")
 
+
 class ImageFinder(Converter):
     """
         This is a class to convert notsobots image searching capabilities
         into a more general converter class
     """
+
     async def convert(self, ctx, argument):
         message = ctx.message
         channel = ctx.message.channel
@@ -24,7 +26,9 @@ class ImageFinder(Converter):
             urls.append(match.group(1))
         if emoji:
             ext = "gif" if argument.startswith("<a") else "png"
-            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=emoji.group(1), ext=ext)
+            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(
+                id=emoji.group(1), ext=ext
+            )
             urls.append(url)
         if mentions:
             for user in mentions:
@@ -52,4 +56,3 @@ class ImageFinder(Converter):
         if not urls:
             raise BadArgument("No Images found in recent history.")
         return urls
-

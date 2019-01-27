@@ -1,5 +1,7 @@
 from .translate import Translate
+
 # from redbot.core import data_manager
+
 
 def setup(bot):
     n = Translate(bot)

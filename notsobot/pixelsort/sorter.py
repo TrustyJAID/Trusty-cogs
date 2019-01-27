@@ -1,5 +1,6 @@
 import random
 
+
 def sort_image(pixels, intervals, randomness, s_func):
     sorted_pixels = []
     for y in range(len(pixels)):

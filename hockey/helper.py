@@ -11,6 +11,7 @@ from discord.ext.commands.errors import BadArgument
 
 _ = Translator("Hockey", __file__)
 
+
 def get_season():
     now = datetime.now()
     if (now.month, now.day) < (7, 1):
@@ -18,12 +19,14 @@ def get_season():
     if (now.month, now.day) >= (7, 1):
         return (now.year, now.year + 1)
 
+
 def hockey_config():
     return Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
 
-def utc_to_local(utc_dt, new_timezone='US/Eastern'):
-        eastern = pytz.timezone(new_timezone)
-        return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
+
+def utc_to_local(utc_dt, new_timezone="US/Eastern"):
+    eastern = pytz.timezone(new_timezone)
+    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
 
 
 class HockeyTeams(Converter):
@@ -35,6 +38,7 @@ class HockeyTeams(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
         guild = ctx.guild
@@ -50,32 +54,42 @@ class HockeyTeams(Converter):
             if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
                 new_msg = await ctx.send(msg)
                 team_emojis = [TEAMS[team]["emoji"] for team in team_list]
+
                 def reaction_check(r, u):
-                    return u == ctx.message.author and str(r.emoji).replace("<:", "").replace(">", "") in team_emojis
+                    return (
+                        u == ctx.message.author
+                        and str(r.emoji).replace("<:", "").replace(">", "") in team_emojis
+                    )
+
                 for emoji in team_emojis:
                     await new_msg.add_reaction(emoji)
                 try:
-                    reaction, user = await ctx.bot.wait_for("reaction_add", check=reaction_check, timeout=15)
+                    reaction, user = await ctx.bot.wait_for(
+                        "reaction_add", check=reaction_check, timeout=15
+                    )
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
                     return
                 else:
-                    result = team_list[team_emojis.index(str(reaction.emoji).replace("<:", "").replace(">", ""))]
+                    result = team_list[
+                        team_emojis.index(str(reaction.emoji).replace("<:", "").replace(">", ""))
+                    ]
 
             else:
                 for i, team_name in enumerate(team_list):
-                    msg += "{}: {}\n".format(i+1, team_name)
+                    msg += "{}: {}\n".format(i + 1, team_name)
+
                 def msg_check(m):
                     return m.author == ctx.message.author
-                
+
                 try:
                     msg = await ctx.bot.wait_for("message", check=msg_check, timeout=15)
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
                     return
-                
+
                 if msg.content.isdigit():
-                    msg = int(msg.content)-1
+                    msg = int(msg.content) - 1
                     try:
                         result = team_list[msg]
                     except (IndexError, ValueError, AttributeError):
@@ -100,6 +114,7 @@ class HockeyStandings(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     
     """
+
     async def convert(self, ctx, argument):
         bot = ctx.bot
         guild = ctx.guild
@@ -111,6 +126,7 @@ class HockeyStandings(Converter):
             result = team_list[0]
         return result
 
+
 async def check_to_post(channel, post_state):
     config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
     channel_teams = await config.channel(channel).team()
@@ -120,10 +136,11 @@ async def check_to_post(channel, post_state):
             should_post = True
     return should_post
 
+
 async def get_team_role(guild, home_team, away_team):
     home_role = None
     away_role = None
-    
+
     for role in guild.roles:
         if "Montréal Canadiens" in home_team and "Montreal Canadiens" in role.name:
             home_role = role.mention
@@ -139,6 +156,7 @@ async def get_team_role(guild, home_team, away_team):
         away_role = away_team
     return home_role, away_role
 
+
 async def get_team(team):
     config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
     return_team = None
@@ -153,6 +171,7 @@ async def get_team(team):
         team_list.append(return_team.to_json())
         await config.teams.set(team_list)
         return await get_team(team)
+
 
 async def check_valid_team(team_name, standings=False):
     """
@@ -191,6 +210,3 @@ async def check_valid_team(team_name, standings=False):
         if team_name.lower() == "caps":
             is_team.append("Washington Capitals")
     return is_team
-
-
-

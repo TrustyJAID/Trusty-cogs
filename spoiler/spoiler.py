@@ -18,10 +18,9 @@ class Spoiler(getattr(commands, "Cog", object)):
 
     def __init__(self, bot):
         self.bot = bot
-        default_guild = {"messages":[]}
+        default_guild = {"messages": []}
         self.config = Config.get_conf(self, 545496534746)
         self.config.register_guild(**default_guild)
-
 
     @commands.command(name="spoiler", aliases=["spoilers"])
     @commands.guild_only()
@@ -31,14 +30,17 @@ class Spoiler(getattr(commands, "Cog", object)):
             Post spoilers in chat, react to the message to see the spoilers
         """
         author = ctx.author.name
-        msg_text = _("**__SPOILERS__** (React to this message "
-                     "to view {auth}'s spoiler.)").format(auth=author)
+        msg_text = _(
+            "**__SPOILERS__** (React to this message " "to view {auth}'s spoiler.)"
+        ).format(auth=author)
         new_msg = await ctx.send(msg_text)
         await new_msg.add_reaction("✅")
         msg_list = await self.config.guild(ctx.guild).messages()
-        spoiler_obj = {"message_id":new_msg.id, 
-                       "spoiler_text":spoiler_msg, 
-                       "author":ctx.author.id}
+        spoiler_obj = {
+            "message_id": new_msg.id,
+            "spoiler_text": spoiler_msg,
+            "author": ctx.author.id,
+        }
         msg_list.append(spoiler_obj)
         await self.config.guild(ctx.guild).messages.set(msg_list)
         await asyncio.sleep(0.5)
@@ -54,15 +56,16 @@ class Spoiler(getattr(commands, "Cog", object)):
         author = await self.bot.get_user_info(spoiler_obj["author"])
         name = f"{author.name}#{author.discriminator} Spoiled"
         if msg:
-            spoiler_text = (spoiler_obj["spoiler_text"] + 
-                            _("\n\n [Click here for context]({jump})").format(jump=jump_url))
+            spoiler_text = spoiler_obj["spoiler_text"] + _(
+                "\n\n [Click here for context]({jump})"
+            ).format(jump=jump_url)
         else:
             spoiler_text = spoiler_obj["spoiler_text"]
-        em = discord.Embed(description = spoiler_text, timestamp=msg.created_at)
-        em.set_author(name=name, 
-                      icon_url=getattr(author, "avatar_url", discord.Embed.Empty), 
-                      url=jump_url)
-        em.set_footer(text='{} | #{}'.format(channel.guild.name, channel.name))
+        em = discord.Embed(description=spoiler_text, timestamp=msg.created_at)
+        em.set_author(
+            name=name, icon_url=getattr(author, "avatar_url", discord.Embed.Empty), url=jump_url
+        )
+        em.set_footer(text="{} | #{}".format(channel.guild.name, channel.name))
         return em
 
     async def on_raw_reaction_add(self, payload):
@@ -73,7 +76,9 @@ class Spoiler(getattr(commands, "Cog", object)):
             guild = channel.guild
         except:
             return
-        if payload.message_id not in [m["message_id"] for m in await self.config.guild(guild).messages()]:
+        if payload.message_id not in [
+            m["message_id"] for m in await self.config.guild(guild).messages()
+        ]:
             return
         user = guild.get_member(payload.user_id)
         if user.bot:
@@ -85,6 +90,6 @@ class Spoiler(getattr(commands, "Cog", object)):
                 spoiler_obj = msg
         if spoiler_obj is not None:
             try:
-                await user.send(embed = await self.make_embed(channel, spoiler_obj))
+                await user.send(embed=await self.make_embed(channel, spoiler_obj))
             except Exception as e:
                 print(e)

@@ -4,6 +4,7 @@ import discord
 from .helper import *
 from redbot.core.i18n import Translator
 from redbot.core import Config
+
 try:
     from .oilers import Oilers
 except:
@@ -12,10 +13,25 @@ except:
 
 _ = Translator("Hockey", __file__)
 
+
 class Goal:
-    def __init__(self, goal_id:str, team_name:str, scorer_id:int, jersey_no:str, description:str, 
-                 period:int, period_ord:str, time_remaining:str, time:str, home_score:int, 
-                 away_score:int, strength:str, empty_net:bool, event:str):
+    def __init__(
+        self,
+        goal_id: str,
+        team_name: str,
+        scorer_id: int,
+        jersey_no: str,
+        description: str,
+        period: int,
+        period_ord: str,
+        time_remaining: str,
+        time: str,
+        home_score: int,
+        away_score: int,
+        strength: str,
+        empty_net: bool,
+        event: str,
+    ):
         super().__init__()
         self.goal_id = goal_id
         self.team_name = team_name
@@ -36,26 +52,27 @@ class Goal:
 
     def to_json(self) -> dict:
         return {
-            "goal_id" : self.goal_id,
-            "team_name" : self.team_name,
-            "scorer_id" : self.scorer_id,
+            "goal_id": self.goal_id,
+            "team_name": self.team_name,
+            "scorer_id": self.scorer_id,
             "jersey_no": self.jersey_no,
-            "description" : self.description,
-            "period" : self.period,
-            "period_ord" : self.period_ord,
-            "time_remaining" : self.time_remaining,
-            "time" : self.time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "home_score" : self.home_score,
-            "away_score" : self.away_score,
-            "strength" : self.strength,
-            "empty_net" : self.empty_net,
-            "event" : self.event
+            "description": self.description,
+            "period": self.period,
+            "period_ord": self.period_ord,
+            "time_remaining": self.time_remaining,
+            "time": self.time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "home_score": self.home_score,
+            "away_score": self.away_score,
+            "strength": self.strength,
+            "empty_net": self.empty_net,
+            "event": self.event,
         }
-
 
     @classmethod
     async def from_json(cls, data: dict, players: dict):
-        scorer_id = [p["player"]["id"] for p in data["players"] if p["playerType"] in ["Scorer", "Shooter"]]
+        scorer_id = [
+            p["player"]["id"] for p in data["players"] if p["playerType"] in ["Scorer", "Shooter"]
+        ]
         if "strength" in data["result"]:
             str_dat = data["result"]["strength"]["name"]
             strength = "Even Strength" if str_dat == "Even" else str_dat
@@ -64,13 +81,14 @@ class Goal:
         else:
             strength = " "
         empty_net = data["result"]["emptyNet"] if "emptyNet" in data["result"] else False
-        player_id = "ID"+str(scorer_id[0])
+        player_id = "ID" + str(scorer_id[0])
         if player_id in players:
             jersey_no = players[player_id]["jerseyNumber"]
         else:
             jersey_no = ""
         scorer = scorer_id[0]
-        return cls(data["result"]["eventCode"],
+        return cls(
+            data["result"]["eventCode"],
             data["team"]["name"],
             scorer_id[0],
             jersey_no,
@@ -83,8 +101,8 @@ class Goal:
             data["about"]["goals"]["away"],
             strength,
             empty_net,
-            data["result"]["event"]
-                   )
+            data["result"]["event"],
+        )
 
     async def post_team_goal(self, bot, game_data):
         """
@@ -115,8 +133,9 @@ class Goal:
                     game_day_channels = await self.config.guild(guild).gdc()
                     # Don't want to ping people in the game day channels
                     can_embed = channel.permissions_for(guild.me).embed_links
-                    can_manage_webhooks = False # channel.permissions_for(guild.me).manage_webhooks
-                    
+                    can_manage_webhooks = (
+                        False
+                    )  # channel.permissions_for(guild.me).manage_webhooks
 
                     for roles in guild.roles:
                         if roles.name == self.team_name + " GOAL":
@@ -138,9 +157,10 @@ class Goal:
                         if webhook is None:
                             webhook = await channel.create_webhook(name=guild.me.name)
                         url = TEAMS[self.team_name]["logo"]
-                        await webhook.send(username=self.team_name, avatar_url=url, embed=goal_embed)
+                        await webhook.send(
+                            username=self.team_name, avatar_url=url, embed=goal_embed
+                        )
                         continue
-
 
                     if not can_embed and not can_manage_webhooks:
                         # Create text only message if embed_links permission is not set
@@ -217,12 +237,12 @@ class Goal:
                     if roles.name == self.team_name + " GOAL":
                         role = roles
                 if game_day_channels is not None:
-                        # We don't want to ping people in the game day channels twice
-                        if channel.id in game_day_channels:
-                            role = None
+                    # We don't want to ping people in the game day channels twice
+                    if channel.id in game_day_channels:
+                        role = None
                 if role is None or "missed" in self.event.lower():
                     await message.edit(embed=em)
-                else:  
+                else:
                     await message.edit(content=role.mention, embed=em)
             except:
                 print(_("Could not edit goal in") + str(channel_id))
@@ -251,23 +271,47 @@ class Goal:
         shootout = False
         if game.period_ord == "SO":
             shootout = True
-        colour = int(TEAMS[self.team_name]["home"].replace("#", ""), 16)  if self.team_name in TEAMS else None
-        title = "🚨 {} #{} {} {} 🚨".format(self.team_name, self.jersey_no, self.strength, self.event)
+        colour = (
+            int(TEAMS[self.team_name]["home"].replace("#", ""), 16)
+            if self.team_name in TEAMS
+            else None
+        )
+        title = "🚨 {} #{} {} {} 🚨".format(
+            self.team_name, self.jersey_no, self.strength, self.event
+        )
         url = TEAMS[self.team_name]["team_url"] if self.team_name in TEAMS else "https://nhl.com"
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
-            
+
             em = discord.Embed(description=self.description)
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
-            home_str = _("Goals: **") + str(self.home_score) + _("** \nShots: **") + str(game.home_shots) + "**"
-            away_str = _("Goals: **") + str(self.away_score) + _("** \nShots: **") + str(game.away_shots) + "**"
+            home_str = (
+                _("Goals: **")
+                + str(self.home_score)
+                + _("** \nShots: **")
+                + str(game.home_shots)
+                + "**"
+            )
+            away_str = (
+                _("Goals: **")
+                + str(self.away_score)
+                + _("** \nShots: **")
+                + str(game.away_shots)
+                + "**"
+            )
             home_field = f"{game.home_emoji} {game.home_team} {game.home_emoji}"
             away_field = f"{game.away_emoji} {game.away_team} {game.away_emoji}"
             em.add_field(name=home_field, value=home_str, inline=True)
             em.add_field(name=away_field, value=away_str, inline=True)
-            em.set_footer(text=str(self.time_remaining) + _(" left in the ") + str(self.period_ord) + _(" period"), icon_url=logo)
+            em.set_footer(
+                text=str(self.time_remaining)
+                + _(" left in the ")
+                + str(self.period_ord)
+                + _(" period"),
+                icon_url=logo,
+            )
             em.timestamp = self.time
         else:
             if "missed" in self.event.lower():
@@ -280,7 +324,13 @@ class Goal:
             away_msg = await self.get_shootout_display(game.away_goals)
             em.add_field(name=game.home_team, value=home_msg)
             em.add_field(name=game.away_team, value=away_msg)
-            em.set_footer(text=str(game.period_time_left) + _(" left in the ") + str(game.period_ord) + _(" period"), icon_url=logo)
+            em.set_footer(
+                text=str(game.period_time_left)
+                + _(" left in the ")
+                + str(game.period_ord)
+                + _(" period"),
+                icon_url=logo,
+            )
             em.timestamp = self.time
         return em
 
@@ -288,14 +338,26 @@ class Goal:
         """
             Gets the text to send for goal posts
         """
-        if game.period_ord != "SO":        
-            text = (f"{game.home_emoji} {game.home_team}: {game.home_score}\n"
-                  f"{game.away_emoji} {game.away_team}: {game.away_score}\n "
-                  f"({self.time_remaining}" +  _(" left in the ") + f"{game.period_ord}" + _(" period") + ")")
+        if game.period_ord != "SO":
+            text = (
+                f"{game.home_emoji} {game.home_team}: {game.home_score}\n"
+                f"{game.away_emoji} {game.away_team}: {game.away_score}\n "
+                f"({self.time_remaining}"
+                + _(" left in the ")
+                + f"{game.period_ord}"
+                + _(" period")
+                + ")"
+            )
         else:
             home_msg = await self.get_shootout_display(game.home_goals)
             away_msg = await self.get_shootout_display(game.away_goals)
-            text = (f"{game.home_emoji} {game.home_team}: {home_msg}\n"
-                  f"{game.away_emoji} {game.away_team}: {away_msg}\n "
-                  f"({self.time_remaining}" +  _(" left in the ") + f"{game.period_ord}" + _(" period") + ")")
+            text = (
+                f"{game.home_emoji} {game.home_team}: {home_msg}\n"
+                f"{game.away_emoji} {game.away_team}: {away_msg}\n "
+                f"({self.time_remaining}"
+                + _(" left in the ")
+                + f"{game.period_ord}"
+                + _(" period")
+                + ")"
+            )
         return text

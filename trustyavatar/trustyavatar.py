@@ -12,81 +12,79 @@ from io import BytesIO
 from typing import Union, Optional
 
 
-
 class TrustyAvatar(getattr(commands, "Cog", object)):
     """Changes the bot's image every so often"""
 
     def __init__(self, bot):
         self.bot = bot
-        
-        self.activities = [discord.ActivityType.playing, 
-                           discord.ActivityType.listening, 
-                           discord.ActivityType.watching]
-        defaults = {"status":False, 
-                   "streaming":False, 
-                   "avatar":False,
-                   "last_avatar":0.0}
+
+        self.activities = [
+            discord.ActivityType.playing,
+            discord.ActivityType.listening,
+            discord.ActivityType.watching,
+        ]
+        defaults = {"status": False, "streaming": False, "avatar": False, "last_avatar": 0.0}
         self.config = Config.get_conf(self, 218773382617890828)
         self.config.register_global(**defaults)
         self.loop = bot.loop.create_task(self.maybe_change_avatar())
-        self.statuses ={
-                    "neutral": {
-                        "status":discord.Status.online, 
-                        "game":["Please Remain Calm", "Mind the Gap"], 
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/9iRBSeI.png",
-                        "xmas": "https://i.imgur.com/lSjMH5u.png",
-                        "transparent": "https://i.imgur.com/z1sHKYA.png"
-                        },
-                    "happy": {
-                        "status":discord.Status.online,
-                        "game":["Take it to Make it"],
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/P5rUpET.png",
-                        "xmas": "https://i.imgur.com/zlQzAGP.png",
-                        "transparent": "https://i.imgur.com/b21iEMj.png"
-                        },
-                    "unamused": {
-                        "status":discord.Status.idle, 
-                        "game":["Obey Posted Limits"], 
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/Wr3i9CG.png",
-                        "xmas": "https://i.imgur.com/Hp7XRjO.png",
-                        "transparent": "https://i.imgur.com/cZoFosX.png"
-                        },
-                    "quizzical": {
-                        "status": discord.Status.idle, 
-                        "game":["Yellow Means Yield"], 
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/qvBCgvU.png",
-                        "xmas": "https://i.imgur.com/1jCdG3x.png",
-                        "transparent": "https://i.imgur.com/3WBrM66.png"
-                        },
-                    "sad": {
-                        "status": discord.Status.dnd, 
-                        "game":["No Public Access"], 
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/WwrZCTY.png",
-                        "xmas": "https://i.imgur.com/tb1FZjP.png",
-                        "transparent": "https://i.imgur.com/wPAdZ7S.png"
-                        },
-                    "angry": {
-                        "status":discord.Status.dnd, 
-                        "game":["Hitchhickers May Be Escaping Inmates"], 
-                        "type":self.activities,
-                        "link": "https://i.imgur.com/0JkYNGZ.png",
-                        "xmas": "https://i.imgur.com/hODosRi.png",
-                        "transparent": "https://i.imgur.com/L7PKqZF.png"
-                        },
-                    "watching": {
-                        "status":discord.Status.dnd, 
-                        "game":[" "], 
-                        "type":[discord.ActivityType.watching],
-                        "link": "https://i.imgur.com/Xs4Mwyd.png",
-                        "xmas": "https://i.imgur.com/xSLto00.png",
-                        "transparent": "https://i.imgur.com/X6SXXvx.png"
-                        },
-                   }
+        self.statuses = {
+            "neutral": {
+                "status": discord.Status.online,
+                "game": ["Please Remain Calm", "Mind the Gap"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/9iRBSeI.png",
+                "xmas": "https://i.imgur.com/lSjMH5u.png",
+                "transparent": "https://i.imgur.com/z1sHKYA.png",
+            },
+            "happy": {
+                "status": discord.Status.online,
+                "game": ["Take it to Make it"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/P5rUpET.png",
+                "xmas": "https://i.imgur.com/zlQzAGP.png",
+                "transparent": "https://i.imgur.com/b21iEMj.png",
+            },
+            "unamused": {
+                "status": discord.Status.idle,
+                "game": ["Obey Posted Limits"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/Wr3i9CG.png",
+                "xmas": "https://i.imgur.com/Hp7XRjO.png",
+                "transparent": "https://i.imgur.com/cZoFosX.png",
+            },
+            "quizzical": {
+                "status": discord.Status.idle,
+                "game": ["Yellow Means Yield"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/qvBCgvU.png",
+                "xmas": "https://i.imgur.com/1jCdG3x.png",
+                "transparent": "https://i.imgur.com/3WBrM66.png",
+            },
+            "sad": {
+                "status": discord.Status.dnd,
+                "game": ["No Public Access"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/WwrZCTY.png",
+                "xmas": "https://i.imgur.com/tb1FZjP.png",
+                "transparent": "https://i.imgur.com/wPAdZ7S.png",
+            },
+            "angry": {
+                "status": discord.Status.dnd,
+                "game": ["Hitchhickers May Be Escaping Inmates"],
+                "type": self.activities,
+                "link": "https://i.imgur.com/0JkYNGZ.png",
+                "xmas": "https://i.imgur.com/hODosRi.png",
+                "transparent": "https://i.imgur.com/L7PKqZF.png",
+            },
+            "watching": {
+                "status": discord.Status.dnd,
+                "game": [" "],
+                "type": [discord.ActivityType.watching],
+                "link": "https://i.imgur.com/Xs4Mwyd.png",
+                "xmas": "https://i.imgur.com/xSLto00.png",
+                "transparent": "https://i.imgur.com/X6SXXvx.png",
+            },
+        }
 
     async def dl_image(self, url):
         """Download bytes like object of user avatar"""
@@ -100,7 +98,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
         img = Image.open(img)
         img = img.convert("RGBA")
         datas = img.getdata()
-        reds =[94, 221, 170]
+        reds = [94, 221, 170]
         greens = [123, 227, 185]
         blues = [75, 217, 160]
         newData = []
@@ -114,7 +112,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
         img.putdata(newData)
         temp = BytesIO()
         img.save(temp, format="PNG")
-        temp.name = ("trustyavatar.png")
+        temp.name = "trustyavatar.png"
         temp.seek(0)
         return temp
 
@@ -126,22 +124,24 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             img_list = []
             for frame in gif_list:
                 temp2 = frame.copy()
-                w,h = temp2.size
-                new_avatar = new_avatar.resize((w,h), Image.ANTIALIAS)
-                temp2.paste(new_avatar, (0,0), new_avatar)
-                temp2 = temp2.resize((200,200), Image.ANTIALIAS)
+                w, h = temp2.size
+                new_avatar = new_avatar.resize((w, h), Image.ANTIALIAS)
+                temp2.paste(new_avatar, (0, 0), new_avatar)
+                temp2 = temp2.resize((200, 200), Image.ANTIALIAS)
                 img_list.append(temp2)
                 temp = BytesIO()
-                temp2.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+                temp2.save(
+                    temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+                )
                 temp.name = "trustyavatar.gif"
                 if sys.getsizeof(temp) > 7000000 and sys.getsizeof(temp) < 8000000:
-                    break                
+                    break
         else:
             temp2 = avatar.copy()
-            w,h = temp2.size
-            new_avatar = new_avatar.resize((w,h))
-            temp2.paste(new_avatar, (0,0), new_avatar)
-            temp2 = temp2.resize((200,200), Image.ANTIALIAS)
+            w, h = temp2.size
+            new_avatar = new_avatar.resize((w, h))
+            temp2.paste(new_avatar, (0, 0), new_avatar)
+            temp2 = temp2.resize((200, 200), Image.ANTIALIAS)
             temp = BytesIO()
             temp2.save(temp, format="PNG")
             temp.name = "trustyavatar.png"
@@ -149,14 +149,14 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             temp.seek(0)
             return temp
 
-
     @commands.command(aliases=["ta"])
-    async def trustyavatar(self, 
-                           ctx, 
-                           style:Union[discord.Member, discord.Colour]=None,
-                           face:Optional[str]=None,
-                           is_gif:bool=False
-                           ):
+    async def trustyavatar(
+        self,
+        ctx,
+        style: Union[discord.Member, discord.Colour] = None,
+        face: Optional[str] = None,
+        is_gif: bool = False,
+    ):
         """
             Create your own avatar like TrustyBot's
             
@@ -175,9 +175,9 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             new_avatar = face
         if type(style) is discord.Colour:
             choice_avatar = await self.dl_image(self.statuses[new_avatar]["transparent"])
-            task = functools.partial(self.replace_colour,
-                                     img = choice_avatar,
-                                     to_colour=style.to_rgb())
+            task = functools.partial(
+                self.replace_colour, img=choice_avatar, to_colour=style.to_rgb()
+            )
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
@@ -191,20 +191,20 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             else:
                 author_avatar = await self.dl_image(author.avatar_url_as(format="png"))
             choice_avatar = await self.dl_image(self.statuses[new_avatar]["transparent"])
-            task = functools.partial(self.make_new_avatar,
-                                     author_avatar = author_avatar,
-                                     choice_avatar = choice_avatar,
-                                     is_gif=is_gif)
+            task = functools.partial(
+                self.make_new_avatar,
+                author_avatar=author_avatar,
+                choice_avatar=choice_avatar,
+                is_gif=is_gif,
+            )
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-        
+
         image = discord.File(file)
         await ctx.send(file=image)
-
-
 
     @commands.group(aliases=["taset"])
     @checks.is_owner()
@@ -215,7 +215,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
         pass
 
     @trustyavatarset.command()
-    async def set(self, ctx, *, name:str):
+    async def set(self, ctx, *, name: str):
         """
             Manually change preset options
 
@@ -266,10 +266,10 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
         if type(after.activity) == discord.ActivityType.streaming:
             await self.bot.change_presence(activity=after.activity)
 
-    async def change_avatar(self, url:str):
+    async def change_avatar(self, url: str):
         now = datetime.now().timestamp()
         last = await self.config.last_avatar()
-        if (now-last) > 1000:
+        if (now - last) > 1000:
             # Some extra checks so we don't get rate limited over reloads/resets
             try:
                 async with aiohttp.ClientSession() as session:
@@ -279,15 +279,14 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             except Exception as e:
                 print(e)
             await self.config.last_avatar.set(now)
-        
 
-    async def change_activity(self, status:discord.Status, activity:discord.ActivityType):
+    async def change_activity(self, status: discord.Status, activity: discord.ActivityType):
         try:
             await self.bot.change_presence(status=status, activity=activity)
         except Exception as e:
             print(e)
 
-    async def get_activity(self, new_status:dict) -> tuple:
+    async def get_activity(self, new_status: dict) -> tuple:
         """
             This will return which avatar, status, and activity to use
         """
@@ -295,19 +294,18 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
         activity = None
         status = None
         if date.month == 12 and date.day <= 25:
-                url = status["xmas"]
-                activity = discord.Activity(name="Merry Christmas!", 
-                                            type=discord.ActivityType.playing)
-                status = discord.Status.online
+            url = status["xmas"]
+            activity = discord.Activity(name="Merry Christmas!", type=discord.ActivityType.playing)
+            status = discord.Status.online
         elif (date.month == 12 and date.day >= 30) or (date.month == 1 and date.day == 1):
             url = new_status["link"]
-            activity = discord.Activity(name="Happy New Year!", 
-                                        type=discord.ActivityType.playing)
+            activity = discord.Activity(name="Happy New Year!", type=discord.ActivityType.playing)
             status = discord.Status.online
         else:
             url = new_status["link"]
-            activity = discord.Activity(name=choice(new_status["game"]), 
-                                        type=choice(new_status["type"]))
+            activity = discord.Activity(
+                name=choice(new_status["game"]), type=choice(new_status["type"])
+            )
             status = new_status["status"]
         return status, activity, url
 
@@ -329,7 +327,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             new_status = self.statuses.get(new_avatar, None)
             status, activity, url = await self.get_activity(new_status)
             owner = await self.get_bot_owner()
-            is_streaming = (type(owner.activity) == discord.ActivityType.streaming)
+            is_streaming = type(owner.activity) == discord.ActivityType.streaming
             if await self.config.streaming():
                 if is_streaming:
                     await self.change_activity(None, owner.activity)

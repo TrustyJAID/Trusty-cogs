@@ -11,6 +11,7 @@ class GameDayChannels:
         This is where the functions to handle creation and deletion 
         of game day channels is stored
     """
+
     def __init__(self):
         pass
 
@@ -20,14 +21,15 @@ class GameDayChannels:
             Creates game day channel name
         """
         timestamp = utc_to_local(game.game_start)
-        chn_name = "{}-vs-{}-{}-{}-{}".format(game.home_abr, game.away_abr,\
-                                              timestamp.year, timestamp.month, timestamp.day)
+        chn_name = "{}-vs-{}-{}-{}-{}".format(
+            game.home_abr, game.away_abr, timestamp.year, timestamp.month, timestamp.day
+        )
         return chn_name.lower()
 
     @staticmethod
     async def check_new_gdc(bot):
         config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
-        game_list = await Game.get_games() # Do this once so we don't spam the api
+        game_list = await Game.get_games()  # Do this once so we don't spam the api
         for guilds in await config.all_guilds():
             guild = bot.get_guild(guilds)
             if guild is None:
@@ -54,7 +56,7 @@ class GameDayChannels:
                 elif cur_channel.name != chn_name.lower():
                     await GameDayChannels.delete_gdc(bot, guild)
                     await GameDayChannels.create_gdc(bot, guild)
-                
+
             else:
                 await GameDayChannels.delete_gdc(bot, guild)
                 for game in game_list:
@@ -74,7 +76,7 @@ class GameDayChannels:
             return
         if game_data is None:
             team = await config.guild(guild).gdc_team()
-            
+
             next_games = await Game.get_games_list(team, datetime.now())
             if next_games != []:
                 next_game = await Game.from_url(next_games[0]["link"])
@@ -107,11 +109,19 @@ class GameDayChannels:
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         guild_team = await config.guild(guild).gdc_team()
         channel_team = guild_team if guild_team != "all" else next_game.home_team
-        timezone = TEAMS[channel_team]["timezone"] if channel_team in TEAMS else TEAMS[next_game.away_team]["timezone"]
-        time_string = utc_to_local(next_game.game_start, timezone).strftime("%A %B %d, %Y at %I:%M %p %Z")
+        timezone = (
+            TEAMS[channel_team]["timezone"]
+            if channel_team in TEAMS
+            else TEAMS[next_game.away_team]["timezone"]
+        )
+        time_string = utc_to_local(next_game.game_start, timezone).strftime(
+            "%A %B %d, %Y at %I:%M %p %Z"
+        )
 
-        game_msg = (f"{next_game.away_team} {next_game.away_emoji} @ "
-                    f"{next_game.home_team} {next_game.home_emoji} {time_string}")
+        game_msg = (
+            f"{next_game.away_team} {next_game.away_emoji} @ "
+            f"{next_game.home_team} {next_game.home_emoji} {time_string}"
+        )
 
         await new_chn.edit(topic=game_msg)
         if new_chn.permissions_for(guild.me).embed_links:
@@ -139,7 +149,7 @@ class GameDayChannels:
         """
         config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
         channels = await config.guild(guild).gdc()
-        
+
         for channel in channels:
             chn = bot.get_channel(channel)
             if chn is None:
@@ -156,4 +166,3 @@ class GameDayChannels:
             except Exception as e:
                 print(e)
         await config.guild(guild).gdc.set([])
-    

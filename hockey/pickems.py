@@ -7,11 +7,22 @@ from redbot.core import Config
 
 _ = Translator("Hockey", __file__)
 
+
 class Pickems:
     """
         Pickems object for handling votes on games for the day
     """
-    def __init__(self, message:list, channel:list, game_start:str, home_team:str, away_team:str, votes:list, winner:str=None):
+
+    def __init__(
+        self,
+        message: list,
+        channel: list,
+        game_start: str,
+        home_team: str,
+        away_team: str,
+        votes: list,
+        winner: str = None,
+    ):
         super().__init__()
         self.message = message
         self.channel = channel
@@ -19,13 +30,17 @@ class Pickems:
         self.home_team = home_team
         self.away_team = away_team
         self.votes = votes
-        self.home_emoji = TEAMS[home_team]["emoji"] if home_team in TEAMS else "nhl:496510372828807178"
-        self.away_emoji = TEAMS[away_team]["emoji"] if away_team in TEAMS else "nhl:496510372828807178"
+        self.home_emoji = (
+            TEAMS[home_team]["emoji"] if home_team in TEAMS else "nhl:496510372828807178"
+        )
+        self.away_emoji = (
+            TEAMS[away_team]["emoji"] if away_team in TEAMS else "nhl:496510372828807178"
+        )
         self.winner = winner
 
     def add_vote(self, user_id, team):
         time_now = datetime.utcnow()
-        
+
         team_choice = None
         if str(team.id) in self.home_emoji:
             team_choice = self.home_team
@@ -104,7 +119,6 @@ class Pickems:
                 p_data.append(pickem.to_json())
                 await config.guild(chn.guild).pickems.set(p_data)
 
-
     @staticmethod
     async def create_pickem_object(guild, message, channel, game):
         """
@@ -124,13 +138,17 @@ class Pickems:
                     old_pickem = p
 
         if old_pickem is None:
-            pickems.append({"message":[message.id], 
-                            "channel":[channel.id],
-                            "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                            "home_team":game.home_team,
-                            "away_team": game.away_team,
-                            "votes": [],
-                            "winner":None})
+            pickems.append(
+                {
+                    "message": [message.id],
+                    "channel": [channel.id],
+                    "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "home_team": game.home_team,
+                    "away_team": game.away_team,
+                    "votes": [],
+                    "winner": None,
+                }
+            )
         else:
             pickems.remove(old_pickem)
             old_pickem["message"].append(message.id)
@@ -141,7 +159,7 @@ class Pickems:
     @staticmethod
     async def reset_weekly(bot):
         # Reset the weekly leaderboard for all servers
-        config =hockey_config()
+        config = hockey_config()
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(id=guild_id)
             if guild is None:
@@ -152,7 +170,6 @@ class Pickems:
             for user in leaderboard:
                 leaderboard[str(user)]["weekly"] = 0
             await config.guild(guild).leaderboard.set(leaderboard)
-
 
     @staticmethod
     async def tally_leaderboard(bot):
@@ -177,10 +194,10 @@ class Pickems:
                             leaderboard = {}
                         for user, choice in pickems.votes:
                             if str(user) not in leaderboard:
-                                    leaderboard[str(user)] = {"season": 0, "weekly": 0, "total":0}
+                                leaderboard[str(user)] = {"season": 0, "weekly": 0, "total": 0}
                             if choice == pickems.winner:
                                 if str(user) not in leaderboard:
-                                    leaderboard[str(user)] = {"season": 1, "weekly": 1, "total":0}
+                                    leaderboard[str(user)] = {"season": 1, "weekly": 1, "total": 0}
                                 else:
                                     leaderboard[str(user)]["season"] += 1
                                     leaderboard[str(user)]["weekly"] += 1
@@ -188,24 +205,31 @@ class Pickems:
                                 leaderboard[str(user)]["total"] = 0
                             leaderboard[str(user)]["total"] += 1
                         await config.guild(guild).leaderboard.set(leaderboard)
-                await config.guild(guild).pickems.set([p.to_json() for p in pickem_list if p.winner is None])
+                await config.guild(guild).pickems.set(
+                    [p.to_json() for p in pickem_list if p.winner is None]
+                )
             except Exception as e:
                 print(_("Error tallying leaderboard in ") + f"{guild.name} {e}")
 
-                
-
     def to_json(self) -> dict:
         return {
-            "message" : self.message,
-            "channel" : self.channel,
-            "game_start" : self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "home_team" : self.home_team,
-            "away_team" : self.away_team,
-            "votes" : self.votes,
-            "winner" : self.winner
+            "message": self.message,
+            "channel": self.channel,
+            "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "home_team": self.home_team,
+            "away_team": self.away_team,
+            "votes": self.votes,
+            "winner": self.winner,
         }
 
     @classmethod
     def from_json(cls, data: dict):
-        return cls(data["message"], data["channel"], data["game_start"],
-                   data["home_team"], data["away_team"], data["votes"], data["winner"])
+        return cls(
+            data["message"],
+            data["channel"],
+            data["game_start"],
+            data["home_team"],
+            data["away_team"],
+            data["votes"],
+            data["winner"],
+        )

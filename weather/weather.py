@@ -14,14 +14,15 @@ class Weather(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 138475464)
-        default = {"units" : None}
+        default = {"units": None}
         self.config.register_guild(**default)
         self.config.register_user(**default)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.unit = {
             "imperial": {"code": ["i", "f"], "speed": "mph", "temp": "°F"},
             "metric": {"code": ["m", "c"], "speed": "km/h", "temp": "°C"},
-            "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": "°K"}}
+            "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": "°K"},
+        }
 
     @commands.command(name="weather", aliases=["we"])
     @commands.bot_has_permissions(embed_links=True)
@@ -55,9 +56,9 @@ class Weather(getattr(commands, "Cog", object)):
         elif units.lower() in ["k", "kelvin"]:
             new_units = "kelvin"
         else:
-            await ctx.send(units+_(" is not a vaild option!"))
+            await ctx.send(units + _(" is not a vaild option!"))
             return
-        
+
         await self.config.guild(guild).units.set(new_units)
         await ctx.send(_("Server's default units set to ") + units)
 
@@ -77,7 +78,7 @@ class Weather(getattr(commands, "Cog", object)):
         elif units.lower() in ["k", "kelvin"]:
             new_units = "kelvin"
         else:
-            await ctx.send(units+ _(" is not a vaild option!"))
+            await ctx.send(units + _(" is not a vaild option!"))
             return
 
         await self.config.user(author).units.set(new_units)
@@ -93,11 +94,15 @@ class Weather(getattr(commands, "Cog", object)):
             units = guild_units
         if user_units != units and user_units is not None:
             units = user_units
-        
+
         if units == "kelvin":
-            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units=metric".format(location)
+            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units=metric".format(
+                location
+            )
         else:
-            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units={1}".format(location, units)
+            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units={1}".format(
+                location, units
+            )
         async with self.session.get(url) as resp:
             data = await resp.json()
         try:
@@ -112,7 +117,7 @@ class Weather(getattr(commands, "Cog", object)):
         city = data["name"]
         country = data["sys"]["country"]
         lat, lon = data["coord"]["lat"], data["coord"]["lon"]
-        condition = ', '.join(info["main"] for info in data["weather"])
+        condition = ", ".join(info["main"] for info in data["weather"])
         windspeed = str(data["wind"]["speed"]) + " " + self.unit[units]["speed"]
         if units == "kelvin":
             currenttemp = abs(currenttemp - 273.15)
@@ -126,13 +131,16 @@ class Weather(getattr(commands, "Cog", object)):
         embed.add_field(name=_("☁ **Condition**"), value=condition)
         embed.add_field(name=_("😓 **Humidity**"), value=data["main"]["humidity"])
         embed.add_field(name=_("💨 **Wind Speed**"), value="{0}".format(windspeed))
-        embed.add_field(name=_("🌡 **Temperature**"), value="{0:.2f}{1}"
-                        .format(currenttemp, self.unit[units]["temp"]))
-        embed.add_field(name=_("🔆 **Min - Max**"), value="{0:.2f}{1} to {2:.2f}{3}"
-                        .format(mintemp, 
-                                self.unit[units]["temp"], 
-                                maxtemp, 
-                                self.unit[units]["temp"]))
+        embed.add_field(
+            name=_("🌡 **Temperature**"),
+            value="{0:.2f}{1}".format(currenttemp, self.unit[units]["temp"]),
+        )
+        embed.add_field(
+            name=_("🔆 **Min - Max**"),
+            value="{0:.2f}{1} to {2:.2f}{3}".format(
+                mintemp, self.unit[units]["temp"], maxtemp, self.unit[units]["temp"]
+            ),
+        )
         embed.add_field(name=_("🌄 **Sunrise (UTC)**"), value=sunrise)
         embed.add_field(name=_("🌇 **Sunset (UTC)**"), value=sunset)
         embed.set_footer(text=_("Powered by https://openweathermap.org"))

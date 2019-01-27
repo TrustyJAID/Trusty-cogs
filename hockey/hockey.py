@@ -19,8 +19,10 @@ from .pickems import Pickems
 from .standings import Standings
 from .gamedaychannels import GameDayChannels
 from .constants import *
+
 try:
     from .oilers import Oilers
+
     LIGHTS_SET = True
 except:
     LIGHTS_SET = False
@@ -41,34 +43,34 @@ class Hockey(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
-        default_global = {"teams":[], "created_gdc":False, "print":False}
+        default_global = {"teams": [], "created_gdc": False, "print": False}
         for team in TEAMS:
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
             default_global["teams"].append(team_entry.to_json())
         default_global["teams"].append(team_entry.to_json())
-        default_guild = {"standings_channel":None, 
-                         "standings_type":None, 
-                         "post_standings":False, 
-                         "standings_msg":None,
-                         "create_channels":False, 
-                         "category":None, 
-                         "gdc_team":None, 
-                         "gdc":[], 
-                         "delete_gdc":True,
-                         "rules":"", 
-                         "team_rules":"", 
-                         "pickems": [], 
-                         "leaderboard":{}
-                    }
-        default_channel = {"team":[], "to_delete":False}
+        default_guild = {
+            "standings_channel": None,
+            "standings_type": None,
+            "post_standings": False,
+            "standings_msg": None,
+            "create_channels": False,
+            "category": None,
+            "gdc_team": None,
+            "gdc": [],
+            "delete_gdc": True,
+            "rules": "",
+            "team_rules": "",
+            "pickems": [],
+            "leaderboard": {},
+        }
+        default_channel = {"team": [], "to_delete": False}
 
         self.config = Config.get_conf(self, CONFIG_ID)
         self.config.register_global(**default_global, force_registration=True)
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
-        self.TEST_LOOP = False # used to test a continuous loop of a single game data
-
+        self.TEST_LOOP = False  # used to test a continuous loop of a single game data
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information
@@ -84,11 +86,15 @@ class Hockey(getattr(commands, "Cog", object)):
             async with self.session.get(BASE_URL + "/api/v1/schedule") as resp:
                 data = await resp.json()
             if data["dates"] != []:
-                games = [game["link"] for game in data["dates"][0]["games"] if game["status"]["abstractGameState"] != "Final"]
+                games = [
+                    game["link"]
+                    for game in data["dates"][0]["games"]
+                    if game["status"]["abstractGameState"] != "Final"
+                ]
             else:
                 games = []
                 # Only try to create game day channels if there's no games for the day
-                # Otherwise make the game day channels once we see 
+                # Otherwise make the game day channels once we see
                 # the first preview message to delete old ones
                 await self.check_new_day()
             games_playing = False
@@ -103,11 +109,11 @@ class Hockey(getattr(commands, "Cog", object)):
                             async with self.session.get(BASE_URL + link) as resp:
                                 data = await resp.json()
                         except Exception as e:
-                            print(_("Error grabbing game data: ")+ str(e))
+                            print(_("Error grabbing game data: ") + str(e))
                             continue
                     else:
                         games_playing = False
-                        with open(str(__file__)[:-9] + "testgame.json", "r") as infile: 
+                        with open(str(__file__)[:-9] + "testgame.json", "r") as infile:
                             data = json.loads(infile.read())
                     game = await Game.from_json(data)
                     try:
@@ -117,14 +123,18 @@ class Hockey(getattr(commands, "Cog", object)):
                         print("Error checking game state: " + str(e))
 
                     if await self.config.print():
-                        print((f"{game.away_team} @ {game.home_team} "
-                               f"{game.game_state} {game.away_score} - {game.home_score}"))
+                        print(
+                            (
+                                f"{game.away_team} @ {game.home_team} "
+                                f"{game.game_state} {game.away_score} - {game.home_score}"
+                            )
+                        )
 
                     if game.game_state == "Final" and game.first_star is not None:
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception as e:
-                            print(_("Pickems Set Winner error: ") +str(e))
+                            print(_("Pickems Set Winner error: ") + str(e))
                         to_remove.append(link)
 
                 for link in to_remove:
@@ -154,7 +164,6 @@ class Hockey(getattr(commands, "Cog", object)):
             await self.config.teams.set(all_teams)
             await asyncio.sleep(300)
 
-
     async def check_new_day(self):
         if not await self.config.created_gdc():
             if datetime.now().weekday() == 6:
@@ -170,7 +179,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 print(_("Checking GDC"))
 
             await GameDayChannels.check_new_gdc(self.bot)
-            await self.config.created_gdc.set(True)    
+            await self.config.created_gdc.set(True)
 
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
@@ -179,7 +188,7 @@ class Hockey(getattr(commands, "Cog", object)):
         except:
             return
         pickems_list = await self.config.guild(guild).pickems()
-        
+
         if pickems_list is None:
             return
         pickems = [Pickems.from_json(p) for p in pickems_list]
@@ -188,7 +197,7 @@ class Hockey(getattr(commands, "Cog", object)):
         try:
             msg = await channel.get_message(id=payload.message_id)
         except:
-            return        
+            return
         user = guild.get_member(payload.user_id)
         # print(payload.user_id)
         if user.bot:
@@ -199,11 +208,15 @@ class Hockey(getattr(commands, "Cog", object)):
                 is_pickems_vote = True
                 reply_message = ""
                 try:
-                    #print(payload.emoji)
+                    # print(payload.emoji)
                     pickem.add_vote(user.id, payload.emoji)
                 except UserHasVotedError as team:
                     if msg.channel.permissions_for(msg.guild.me).manage_messages:
-                        emoji = pickem.home_emoji if str(payload.emoji.id) in pickem.away_emoji else pickem.away_emoji
+                        emoji = (
+                            pickem.home_emoji
+                            if str(payload.emoji.id) in pickem.away_emoji
+                            else pickem.away_emoji
+                        )
                         await msg.remove_reaction(emoji, user)
                     reply_message = _("You have already voted! Changing vote to) ") + str(team)
                 except VotingHasEndedError as error_msg:
@@ -236,11 +249,13 @@ class Hockey(getattr(commands, "Cog", object)):
         new_dict = {}
         for team in TEAMS:
             TEAMS[team]["emoji"] = data[team][0] if data[team][0] is not None else data["Other"][0]
-        team_data = json.dumps(TEAMS, indent=4, sort_keys=True, separators=(',',' : '))
-        constants_string = (f"BASE_URL = \"{BASE_URL}\"\n"
-                            f"HEADSHOT_URL = \"{HEADSHOT_URL}\"\n"
-                            f"CONFIG_ID = {CONFIG_ID}\n"
-                            f"TEAMS = {team_data}")
+        team_data = json.dumps(TEAMS, indent=4, sort_keys=True, separators=(",", " : "))
+        constants_string = (
+            f'BASE_URL = "{BASE_URL}"\n'
+            f'HEADSHOT_URL = "{HEADSHOT_URL}"\n'
+            f"CONFIG_ID = {CONFIG_ID}\n"
+            f"TEAMS = {team_data}"
+        )
         with open(__file__[:-9] + "constants.py", "w") as outfile:
             outfile.write(constants_string)
 
@@ -261,11 +276,8 @@ class Hockey(getattr(commands, "Cog", object)):
             break
         return msg
 
-
-
     ##############################################################################
     # Here are all the bot commands
-
 
     @commands.group(name="hockey", aliases=["nhl"])
     async def hockey_commands(self, ctx):
@@ -282,8 +294,12 @@ class Hockey(getattr(commands, "Cog", object)):
         """
         if ctx.invoked_subcommand is None:
             guild = ctx.message.guild
-            standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
-            post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
+            standings_channel = guild.get_channel(
+                await self.config.guild(guild).standings_channel()
+            )
+            post_standings = (
+                _("On") if await self.config.guild(guild).post_standings() else _("Off")
+            )
             gdc_channels = await self.config.guild(guild).gdc()
             if standings_channel is not None:
                 if ctx.channel.permissions_for(guild.me).embed_links:
@@ -291,15 +307,21 @@ class Hockey(getattr(commands, "Cog", object)):
                 else:
                     standings_chn = standings_channel.name
                 try:
-                    standings_msg = await standings_channel.get_message(await self.config.guild(guild).standings_msg())
+                    standings_msg = await standings_channel.get_message(
+                        await self.config.guild(guild).standings_msg()
+                    )
                 except discord.errors.NotFound:
                     standings_msg = None
                     pass
                 if standings_msg is not None:
                     if ctx.channel.permissions_for(guild.me).embed_links:
-                        standings_msg = _("[Standings") + f" {post_standings}]({standings_msg.jump_url})"
+                        standings_msg = (
+                            _("[Standings") + f" {post_standings}]({standings_msg.jump_url})"
+                        )
                     else:
-                        standings_msg = _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
+                        standings_msg = (
+                            _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
+                        )
             else:
                 standings_chn = "None"
                 standings_msg = "None"
@@ -317,11 +339,18 @@ class Hockey(getattr(commands, "Cog", object)):
                 em = discord.Embed(title=guild.name + _(" Hockey Settings"))
                 em.colour = await self.bot.db.color()
                 em.description = channels
-                em.add_field(name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}")
+                em.add_field(
+                    name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
+                )
                 await ctx.send(embed=em)
             else:
-                msg = (f"```\n{guild.name} " + _("Hockey Settings\n") + 
-                       f"{channels}\n"+_("Standings Settings")+"\n#{standings_chn}: {standings_msg}")
+                msg = (
+                    f"```\n{guild.name} "
+                    + _("Hockey Settings\n")
+                    + f"{channels}\n"
+                    + _("Standings Settings")
+                    + "\n#{standings_chn}: {standings_msg}"
+                )
                 if standings_msg is not None:
                     await ctx.send(msg)
                 else:
@@ -359,7 +388,7 @@ class Hockey(getattr(commands, "Cog", object)):
                         if ctx.channel.permissions_for(guild.me).embed_links:
                             created_channels += chn.mention
                         else:
-                            created_channels += ("#" + chn.name)
+                            created_channels += "#" + chn.name
                     else:
                         created_channels += "<#{}>\n".format(channel)
                 if len(channels) == 0:
@@ -367,10 +396,23 @@ class Hockey(getattr(commands, "Cog", object)):
             else:
                 created_channels = "None"
             if not ctx.channel.permissions_for(guild.me).embed_links:
-                msg = (_("```GDC settings for") + guild.name + "\n"+
-                       _("Create Game Day Channels:") + create_channels + "\n"+
-                       _("Delete Game Day Channels: ") + delete_gdc + "\n"+
-                       _("Team:") +  team + "\n" + _("Current Channels:") +created_channels + "```")
+                msg = (
+                    _("```GDC settings for")
+                    + guild.name
+                    + "\n"
+                    + _("Create Game Day Channels:")
+                    + create_channels
+                    + "\n"
+                    + _("Delete Game Day Channels: ")
+                    + delete_gdc
+                    + "\n"
+                    + _("Team:")
+                    + team
+                    + "\n"
+                    + _("Current Channels:")
+                    + created_channels
+                    + "```"
+                )
                 await ctx.send(msg)
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=_("GDC settings for ") + guild.name)
@@ -416,7 +458,7 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @gdc.command(name="category")
-    async def gdc_category(self, ctx, category:discord.CategoryChannel):
+    async def gdc_category(self, ctx, category: discord.CategoryChannel):
         """
             Change the category for channel creation. Channel is case sensitive.
         """
@@ -437,18 +479,23 @@ class Hockey(getattr(commands, "Cog", object)):
 
         cur_setting = await self.config.guild(guild).delete_gdc()
         verb = _("won't") if cur_setting else _("will")
-        msg = (_("Game day channels ") + verb + _(" be deleted on this server.\n") +
-               _("Note, this may not happen until the next set of games."))
+        msg = (
+            _("Game day channels ")
+            + verb
+            + _(" be deleted on this server.\n")
+            + _("Note, this may not happen until the next set of games.")
+        )
         await self.config.guild(guild).delete_gdc.set(not cur_setting)
         await ctx.send(msg)
 
     @gdc.command(name="setup")
-    async def gdc_setup(self, 
-                        ctx, 
-                        team:HockeyTeams, 
-                        category:discord.CategoryChannel=None, 
-                        delete_gdc:bool=True
-                    ):
+    async def gdc_setup(
+        self,
+        ctx,
+        team: HockeyTeams,
+        category: discord.CategoryChannel = None,
+        delete_gdc: bool = True,
+    ):
         """
             Setup game day channels for a single team or all teams
             
@@ -497,7 +544,9 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockeyset_commands.command(hidden=True)
     @checks.admin_or_permissions(manage_messages=True)
-    async def leaderboardset(self, ctx, user:discord.Member, season:int, weekly:int=None, total:int=None):
+    async def leaderboardset(
+        self, ctx, user: discord.Member, season: int, weekly: int = None, total: int = None
+    ):
         """
             Allows moderators to set a users points on the leaderboard
         """
@@ -510,18 +559,26 @@ class Hockey(getattr(commands, "Cog", object)):
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
         if str(user.id) not in leaderboard:
-            leaderboard[str(user.id)] = {"season":season, "weekly":weekly, "total":total}
+            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
         else:
             del leaderboard[str(user.id)]
-            leaderboard[str(user.id)] = {"season":season, "weekly":weekly, "total":total}
+            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
         await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-        msg = (user.display_name + _(" now has ") + season +
-               _(" points on the season, ") + weekly + _(" points for the week,") +
-               _(" and ") + total + _(" votes overall."))
+        msg = (
+            user.display_name
+            + _(" now has ")
+            + season
+            + _(" points on the season, ")
+            + weekly
+            + _(" points for the week,")
+            + _(" and ")
+            + total
+            + _(" votes overall.")
+        )
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
-    async def post_standings(self, ctx, standings_type:str, channel:discord.TextChannel=None):
+    async def post_standings(self, ctx, standings_type: str, channel: discord.TextChannel = None):
         """
             Posts automatic standings when all games for the day are done
 
@@ -531,11 +588,21 @@ class Hockey(getattr(commands, "Cog", object)):
         guild = ctx.message.guild
         if channel is None:
             channel = ctx.message.channel
-        standings_list = ["metropolitan", "atlantic", "pacific", "central", "eastern", "western", "all"]
+        standings_list = [
+            "metropolitan",
+            "atlantic",
+            "pacific",
+            "central",
+            "eastern",
+            "western",
+            "all",
+        ]
         division = ["metropolitan", "atlantic", "pacific", "central"]
 
         if standings_type.lower() not in standings_list:
-            await ctx.send(_("You must choose from ")+"{}".format(", ".join(s for s in standings_list)))
+            await ctx.send(
+                _("You must choose from ") + "{}".format(", ".join(s for s in standings_list))
+            )
             return
 
         standings, page = await Standings.get_team_standings(standings_type.lower())
@@ -548,9 +615,12 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(_("Sending standings to") + channel.mention)
         message = await channel.send(embed=em)
         await self.config.guild(guild).standings_msg.set(message.id)
-        await ctx.send(standings_type + _(" standings will now be automatically updated in ") + channel.mention)
+        await ctx.send(
+            standings_type
+            + _(" standings will now be automatically updated in ")
+            + channel.mention
+        )
         await self.config.guild(guild).post_standings.set(True)
-
 
     @hockeyset_commands.command()
     async def togglestandings(self, ctx):
@@ -568,7 +638,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockeyset_commands.command(name="add", aliases=["add_goals"])
     @checks.admin_or_permissions(manage_channels=True)
-    async def add_goals(self, ctx, team:HockeyTeams, channel:discord.TextChannel=None):
+    async def add_goals(self, ctx, team: HockeyTeams, channel: discord.TextChannel = None):
         """
             Adds a hockey team goal updates to a channel do 'all' for all teams
 
@@ -592,10 +662,11 @@ class Hockey(getattr(commands, "Cog", object)):
             await self.config.channel(channel).team.set(cur_teams)
         await ctx.send(team + _(" goals will be posted in ") + channel.mention)
 
-
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
     @checks.admin_or_permissions(manage_channels=True)
-    async def remove_goals(self, ctx, team:HockeyTeams=None, channel:discord.TextChannel=None):
+    async def remove_goals(
+        self, ctx, team: HockeyTeams = None, channel: discord.TextChannel = None
+    ):
         """
             Removes a teams goal updates from a channel
             defaults to the current channel
@@ -632,7 +703,7 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(_("Hockey version ") + __version__)
 
     @commands.command()
-    async def hockeyhub(self, ctx, *, search:str):
+    async def hockeyhub(self, ctx, *, search: str):
         """
             Search for hockey related items on https://hockeyhub.github.io/
 
@@ -650,16 +721,20 @@ class Hockey(getattr(commands, "Cog", object)):
             reddit  team    Team subreddit on Reddit
         """
         search = quote(search)
-        await ctx.send("https://hockeyhub.github.io/?search="+search)
+        await ctx.send("https://hockeyhub.github.io/?search=" + search)
 
     @hockey_commands.command(name="role")
-    async def team_role(self, ctx, *, team:HockeyTeams):
+    async def team_role(self, ctx, *, team: HockeyTeams):
         """Set your role to a team role"""
         guild = ctx.message.guild
         if not guild.me.guild_permissions.manage_roles:
             return
         try:
-            role = [role for role in guild.roles if (team.lower() in role.name.lower() and "GOAL" not in role.name)]
+            role = [
+                role
+                for role in guild.roles
+                if (team.lower() in role.name.lower() and "GOAL" not in role.name)
+            ]
             await ctx.author.add_roles(role[0])
             await ctx.send(role[0].name + _("role applied."))
         except Exception as e:
@@ -667,7 +742,7 @@ class Hockey(getattr(commands, "Cog", object)):
             await ctx.send(team + _(" is not an available role!"))
 
     @hockey_commands.command(name="goals")
-    async def team_goals(self, ctx, *, team:HockeyTeams=None):
+    async def team_goals(self, ctx, *, team: HockeyTeams = None):
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
         member = ctx.message.author
@@ -688,15 +763,19 @@ class Hockey(getattr(commands, "Cog", object)):
                 return
         else:
             try:
-                role = [role for role in guild.roles if (team.lower() in role.name.lower() and role.name.endswith("GOAL"))]
+                role = [
+                    role
+                    for role in guild.roles
+                    if (team.lower() in role.name.lower() and role.name.endswith("GOAL"))
+                ]
                 await ctx.message.author.add_roles(role[0])
-                await ctx.message.channel.send(role[0].name+ _(" role applied."))
+                await ctx.message.channel.send(role[0].name + _(" role applied."))
             except Exception as e:
                 print(e)
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
-    async def standings(self, ctx, *, search:HockeyStandings=None):
+    async def standings(self, ctx, *, search: HockeyStandings = None):
         """
             Displays current standings
 
@@ -712,11 +791,10 @@ class Hockey(getattr(commands, "Cog", object)):
         if search != "all":
             await hockey_menu(ctx, "standings", standings, None, page)
         else:
-            await hockey_menu(ctx, "all", standings, None, page) 
-
+            await hockey_menu(ctx, "all", standings, None, page)
 
     @hockey_commands.command(aliases=["score"])
-    async def games(self, ctx, *, team:HockeyTeams=None):
+    async def games(self, ctx, *, team: HockeyTeams = None):
         """
             Gets all NHL games for the current season
 
@@ -761,12 +839,12 @@ class Hockey(getattr(commands, "Cog", object)):
                     rosters[team] = data["roster"]
                 except KeyError:
                     pass
-            
+
             for team in rosters:
                 for player in rosters[team]:
                     if search.lower() in player["person"]["fullName"].lower():
                         players.append(player)
-        
+
         if players != []:
             await hockey_menu(ctx, "roster", players)
         else:
@@ -789,10 +867,9 @@ class Hockey(getattr(commands, "Cog", object)):
             await ctx.message.delete()
         await ctx.send(embed=em)
 
-
     @hockey_commands.command(hidden=True)
     @checks.admin_or_permissions(manage_messages=True)
-    async def pickems_page(self, ctx, date:str=None):
+    async def pickems_page(self, ctx, date: str = None):
         """
             Generates a pickems page for voting on a specified day must be "DD-MM-YYYY"
         """
@@ -800,17 +877,22 @@ class Hockey(getattr(commands, "Cog", object)):
             date = datetime.now()
         else:
             date = datetime.strptime(date, "%d-%m-%Y")
-        msg = _("**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
-               "  Vote for who you think will win!  You get one point for each correct prediction."
-               "  We will be tracking points over the course of the season and will be rewarding weekly,"
-               " worst and full-season winners!**\n\n"
-               "- Click the reaction for the team you think will win the day's match-up.\n"
-               "- Anyone who votes for both teams will have their vote removed and will receive no points!\n\n\n\n")
+        msg = _(
+            "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
+            "  Vote for who you think will win!  You get one point for each correct prediction."
+            "  We will be tracking points over the course of the season and will be rewarding weekly,"
+            " worst and full-season winners!**\n\n"
+            "- Click the reaction for the team you think will win the day's match-up.\n"
+            "- Anyone who votes for both teams will have their vote removed and will receive no points!\n\n\n\n"
+        )
         games_list = await Game.get_games(None, date, date)
         await ctx.send(msg)
         for game in games_list:
-            new_msg = await ctx.send("__**{} {}**__ @ __**{} {}**__".format(game.away_emoji, game.away_team,
-                                     game.home_emoji, game.home_team))
+            new_msg = await ctx.send(
+                "__**{} {}**__ @ __**{} {}**__".format(
+                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
+                )
+            )
             # Create new pickems object for the game
             await Pickems.create_pickem_object(ctx.guild, new_msg, ctx.channel, game)
             if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
@@ -829,9 +911,13 @@ class Hockey(getattr(commands, "Cog", object)):
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
         if leaderboard_type != "worst":
-            leaderboard = sorted(leaderboard.items(), key=lambda i: i[1][leaderboard_type], reverse=True)
+            leaderboard = sorted(
+                leaderboard.items(), key=lambda i: i[1][leaderboard_type], reverse=True
+            )
         else:
-            leaderboard = sorted(leaderboard.items(), key=lambda i: i[1]["total"]-i[1]["season"], reverse=True)
+            leaderboard = sorted(
+                leaderboard.items(), key=lambda i: i[1]["total"] - i[1]["season"], reverse=True
+            )
         msg_list = []
         count = 1
         user_position = None
@@ -849,34 +935,48 @@ class Hockey(getattr(commands, "Cog", object)):
             elif leaderboard_type == "season":
                 total = member_id[1]["total"]
                 wins = member_id[1]["season"]
-                percent = (wins/total)*100
-                msg_list.append(f"#{count}. {member_mention}: {wins}/{total} correct ({percent:.4}%)\n")
+                percent = (wins / total) * 100
+                msg_list.append(
+                    f"#{count}. {member_mention}: {wins}/{total} correct ({percent:.4}%)\n"
+                )
             else:
                 total = member_id[1]["total"]
                 losses = member_id[1]["total"] - member_id[1]["season"]
-                percent = (losses/total)*100
-                msg_list.append(f"#{count}. {member_mention}: {losses}/{total} incorrect ({percent:.4}%)\n")
+                percent = (losses / total) * 100
+                msg_list.append(
+                    f"#{count}. {member_mention}: {losses}/{total} incorrect ({percent:.4}%)\n"
+                )
             count += 1
-        leaderboard_list = [msg_list[i:i + 10] for i in range(0, len(msg_list), 10)]
+        leaderboard_list = [msg_list[i : i + 10] for i in range(0, len(msg_list), 10)]
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
             total = user["total"]
             losses = user["total"] - user["season"]
-            position = (ctx.author.display_name + _(", you're #") + str(user_position+1) + 
-                        " on the " + leaderboard_type + _(" leaderboard!"))
+            position = (
+                ctx.author.display_name
+                + _(", you're #")
+                + str(user_position + 1)
+                + " on the "
+                + leaderboard_type
+                + _(" leaderboard!")
+            )
             if leaderboard_type == "season":
-                percent = (wins/total)*100
-                position += _(" You have ")+f"{wins}/{total} "+_("correct ")+f"({percent:.4}%)."
+                percent = (wins / total) * 100
+                position += (
+                    _(" You have ") + f"{wins}/{total} " + _("correct ") + f"({percent:.4}%)."
+                )
             elif leaderboard_type == "worst":
-                percent = (losses/total)*100
-                position += _(" You have ")+f"{losses}/{total} "+_("incorrect ")+f"({percent:.4}%)."
+                percent = (losses / total) * 100
+                position += (
+                    _(" You have ") + f"{losses}/{total} " + _("incorrect ") + f"({percent:.4}%)."
+                )
             await ctx.send(position)
         await hockey_menu(ctx, leaderboard_type, leaderboard_list)
 
     @hockey_commands.command()
     @commands.guild_only()
-    async def leaderboard(self, ctx, leaderboard_type:str="seasonal"):
+    async def leaderboard(self, ctx, leaderboard_type: str = "seasonal"):
         """
             Shows the current server leaderboard either seasonal or weekly
         """
@@ -889,7 +989,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockey_commands.command(hidden=True)
     @checks.mod_or_permissions(manage_messages=True)
-    async def setrules(self, ctx, team:HockeyTeams, *, rules):
+    async def setrules(self, ctx, team: HockeyTeams, *, rules):
         """Set the main rules page for the nhl rules command"""
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             await ctx.send(_("I don't have embed links permission!"))
@@ -900,7 +1000,7 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(_("Done, here's how it will look."), embed=em)
 
     @hockey_commands.command(aliases=["link", "invite"])
-    async def otherdiscords(self, ctx, team:HockeyTeams):
+    async def otherdiscords(self, ctx, team: HockeyTeams):
         """
             Get team specific discord links
 
@@ -917,16 +1017,23 @@ class Hockey(getattr(commands, "Cog", object)):
             metropolitan = [team for team in TEAMS if TEAMS[team]["division"] == "Metropolitan"]
             central = [team for team in TEAMS if TEAMS[team]["division"] == "Central"]
             pacific = [team for team in TEAMS if TEAMS[team]["division"] == "Pacific"]
-            team_list = {"Atlantic":atlantic, "Metropolitan":metropolitan, "Central":central, "Pacific":pacific}
-            msg1 = _("__**Hockey Discord Master List**__\n```fix\n"
-                    "- Do not join other discords to troll.\n- "
-                    "Respect their rules & their members (Yes even the leafs & habs unfortunately).\n- "
-                    "We don't control the servers below. If you get banned we can not get you unbanned.\n- "
-                    "Don't be an asshole because then we all look like assholes. They won't see it as one asshole "
-                    "fan they will see it as a toxic fanbase.\n- Salt levels may vary. Your team is the best "
-                    "here but don't go on another discord and preach it to an angry mob after we just won.\n- "
-                    "Not following the above rules will result in appropriate punishments ranging from a warning"
-                    "to a ban. ```\n\nhttps://discord.gg/reddithockey")
+            team_list = {
+                "Atlantic": atlantic,
+                "Metropolitan": metropolitan,
+                "Central": central,
+                "Pacific": pacific,
+            }
+            msg1 = _(
+                "__**Hockey Discord Master List**__\n```fix\n"
+                "- Do not join other discords to troll.\n- "
+                "Respect their rules & their members (Yes even the leafs & habs unfortunately).\n- "
+                "We don't control the servers below. If you get banned we can not get you unbanned.\n- "
+                "Don't be an asshole because then we all look like assholes. They won't see it as one asshole "
+                "fan they will see it as a toxic fanbase.\n- Salt levels may vary. Your team is the best "
+                "here but don't go on another discord and preach it to an angry mob after we just won.\n- "
+                "Not following the above rules will result in appropriate punishments ranging from a warning"
+                "to a ban. ```\n\nhttps://discord.gg/reddithockey"
+            )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"
             async with self.session.get(eastern_conference) as resp:
@@ -954,18 +1061,18 @@ class Hockey(getattr(commands, "Cog", object)):
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.send(msg)
 
-    @hockey_commands.command() 
+    @hockey_commands.command()
     @checks.is_owner()
-    async def getgoals(self, ctx):  
+    async def getgoals(self, ctx):
         """
             Testing function with testgame.json
-        """ 
-        to_remove = []  
+        """
+        to_remove = []
         games_playing = True
-        # print(link)   
-        with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile: 
+        # print(link)
+        with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
             data = json.loads(infile.read())
-        # print(data)   
+        # print(data)
         game = await Game.from_json(data)
         await game.check_game_state(self.bot)
         if (game.home_score + game.away_score) != 0:
@@ -994,7 +1101,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @hockeyset_commands.command(hidden=True)
     @checks.is_owner()
-    async def check_pickem_winner(self, ctx, days:int=1):
+    async def check_pickem_winner(self, ctx, days: int = 1):
         """
             Manually check all pickems objects for winners
 
@@ -1009,7 +1116,6 @@ class Hockey(getattr(commands, "Cog", object)):
             for game in games:
                 await Pickems.set_guild_pickem_winner(self.bot, game)
         await ctx.send(_("Pickems winners set."))
-
 
     @gdc.command(hidden=True, name="test")
     @checks.is_owner()
@@ -1050,13 +1156,12 @@ class Hockey(getattr(commands, "Cog", object)):
             else:
                 guild_list[channel.guild.name] += 1
         msg = "Servers:{}\nNumber of Channels: {}\nNumber of Servers: {}".format(
-               guild_list, len(all_channels), len(all_guilds))
+            guild_list, len(all_channels), len(all_guilds)
+        )
         print(msg)
-
 
     #######################################################################
     # Owner Only Commands Mostly for Testing
-
 
     @hockeyset_commands.command()
     @checks.is_owner()
@@ -1092,7 +1197,6 @@ class Hockey(getattr(commands, "Cog", object)):
         new_msg = "".join(("<:" + TEAMS[e]["emoji"] + ">") for e in TEAMS)
         await ctx.send(_("New emojis set to: ") + new_msg)
         await ctx.send("You should reload the cog for everything to work correctly.")
-        
 
     @hockeyset_commands.command()
     @checks.is_owner()
@@ -1112,10 +1216,9 @@ class Hockey(getattr(commands, "Cog", object)):
         await self.config.teams.set(all_teams)
         await ctx.send(_("Saved game data reset."))
 
-
     @gdc.command()
     @checks.is_owner()
-    async def setcreated(self, ctx, created:bool):
+    async def setcreated(self, ctx, created: bool):
         """
             Sets whether or not the game day channels have been created
         """
@@ -1154,7 +1257,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 print(channels)
                 continue
             # if await self.config.channel(channel).to_delete():
-                # await self.config._clear_scope(Config.CHANNEL, str(channels))
+            # await self.config._clear_scope(Config.CHANNEL, str(channels))
         await ctx.send(_("Broken channels removed"))
 
     @hockeyset_commands.command()
@@ -1174,7 +1277,6 @@ class Hockey(getattr(commands, "Cog", object)):
 
         await ctx.send(_("Saved servers the bot is no longer on have been removed."))
 
-
     @hockeyset_commands.command()
     @checks.is_owner()
     async def clear_weekly(self, ctx):
@@ -1189,7 +1291,6 @@ class Hockey(getattr(commands, "Cog", object)):
         for user in leaderboard:
             leaderboard[str(user)]["weekly"] = 0
         await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-                
 
     @hockey_commands.command(hidden=True)
     @checks.is_owner()

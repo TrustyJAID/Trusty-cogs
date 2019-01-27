@@ -24,10 +24,10 @@ class AddImage(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
-        temp_folder = cog_data_path(self) /"global"
+        temp_folder = cog_data_path(self) / "global"
         temp_folder.mkdir(exist_ok=True, parents=True)
-        default_global = {"images":[]}
-        default_guild = {"images":[]}
+        default_global = {"images": []}
+        default_guild = {"images": []}
         self.config = Config.get_conf(self, 16446735546)
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
@@ -46,26 +46,23 @@ class AddImage(getattr(commands, "Cog", object)):
         """
         content = message.content
         prefix_list = await self.bot.command_prefix(self.bot, message)
-        prefixes = sorted(prefix_list,
-                          key=lambda pfx: len(pfx),
-                          reverse=True)
+        prefixes = sorted(prefix_list, key=lambda pfx: len(pfx), reverse=True)
         for p in prefixes:
             if content.startswith(p):
                 return p
         raise ValueError(_("No prefix found."))
 
     async def part_of_existing_command(self, alias):
-        '''Command or alias'''
+        """Command or alias"""
         command = self.bot.get_command(alias)
         return command is not None
-
 
     async def make_guild_folder(self, directory):
         if not directory.is_dir():
             print("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
-    async def get_image(self, alias, guild=None)-> dict:
+    async def get_image(self, alias, guild=None) -> dict:
         if guild is None:
             list_images = await self.config.images()
             for image in await self.config.images():
@@ -129,7 +126,6 @@ class AddImage(getattr(commands, "Cog", object)):
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
-
     async def on_message(self, message):
         if len(message.content) < 2 or message.guild is None:
             return
@@ -141,7 +137,7 @@ class AddImage(getattr(commands, "Cog", object)):
             prefix = await self.get_prefix(message)
         except ValueError:
             return
-        alias = await self.first_word(msg[len(prefix):])
+        alias = await self.first_word(msg[len(prefix) :])
         if not await self.local_perms(message):
             return
         if not await self.global_perms(message):
@@ -193,7 +189,7 @@ class AddImage(getattr(commands, "Cog", object)):
 
     @addimage.command(name="list")
     @commands.bot_has_permissions(embed_links=True)
-    async def listimages(self, ctx, image_loc="guild", server_id:discord.Guild=None):
+    async def listimages(self, ctx, image_loc="guild", server_id: discord.Guild = None):
         """
             List images added to bot
         """
@@ -205,25 +201,29 @@ class AddImage(getattr(commands, "Cog", object)):
                 guild = ctx.message.guild
             else:
                 guild = self.bot.get_guild(server_id)
-            image_list = await self.config.guild(guild).images()       
-        
+            image_list = await self.config.guild(guild).images()
+
         if image_list == []:
             await ctx.send(_("I does not have any images saved!"))
             return
-        post_list = [image_list[i:i + 25] for i in range(0, len(image_list), 25)]
+        post_list = [image_list[i : i + 25] for i in range(0, len(image_list), 25)]
         images = []
         for post in post_list:
             em = discord.Embed(timestamp=ctx.message.created_at)
             for image in post:
-                info = (_("__Author__: ")+
-                        "<@{}>\n".format(image["author"]) +
-                        _("__Count__: ") + "**{}**".format(image["count"]))
+                info = (
+                    _("__Author__: ")
+                    + "<@{}>\n".format(image["author"])
+                    + _("__Count__: ")
+                    + "**{}**".format(image["count"])
+                )
                 em.add_field(name=image["command_name"], value=info)
             em.set_author(name=self.bot.user.display_name, icon_url=self.bot.user.avatar_url)
-            em.set_footer(text=_("Page ")+"{}/{}".format(post_list.index(post)+1, len(post_list)))
+            em.set_footer(
+                text=_("Page ") + "{}/{}".format(post_list.index(post) + 1, len(post_list))
+            )
             images.append(em)
         await menu(ctx, images, DEFAULT_CONTROLS)
-        
 
     @addimage.command()
     @checks.is_owner()
@@ -232,10 +232,10 @@ class AddImage(getattr(commands, "Cog", object)):
             Clears the full set of images stored globally
         """
         await self.config.images.set([])
-        directory = cog_data_path(self) /"global"
+        directory = cog_data_path(self) / "global"
         for file in os.listdir(str(directory)):
             try:
-                os.remove(str(directory/file))
+                os.remove(str(directory / file))
             except Exception as e:
                 print(e)
 
@@ -246,16 +246,16 @@ class AddImage(getattr(commands, "Cog", object)):
             Clear all the images stored for the current server
         """
         await self.config.guild(ctx.guild).images.set([])
-        directory = cog_data_path(self) /str(ctx.guild.id)
+        directory = cog_data_path(self) / str(ctx.guild.id)
         for file in os.listdir(str(directory)):
             try:
-                os.remove(str(directory/file))
+                os.remove(str(directory / file))
             except Exception as e:
                 print(e)
 
     @addimage.command(name="delete", aliases=["remove", "rem", "del"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def remimage(self, ctx, name:str):
+    async def remimage(self, ctx, name: str):
         """
             Remove a selected images
 
@@ -279,11 +279,10 @@ class AddImage(getattr(commands, "Cog", object)):
             pass
         await self.config.guild(guild).images.set(all_imgs)
         await ctx.send(name + _(" has been deleted from this guild!"))
-       
 
     @checks.is_owner()
     @addimage.command(hidden=True, name="deleteglobal", aliases=["dg", "delglobal"])
-    async def rem_image_global(self, ctx, name:str):
+    async def rem_image_global(self, ctx, name: str):
         """
             Remove a selected images
 
@@ -309,23 +308,25 @@ class AddImage(getattr(commands, "Cog", object)):
         await ctx.send(name + _(" has been deleted globally!"))
 
     async def save_image_location(self, msg, name, guild=None):
-        seed = ''.join(random.sample(string.ascii_uppercase + string.digits, k=5))
+        seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = "{}-{}".format(seed, msg.attachments[0].filename)
         if guild is not None:
-            directory = cog_data_path(self) /str(guild.id)
+            directory = cog_data_path(self) / str(guild.id)
             cur_images = await self.config.guild(guild).images()
         else:
-            directory = cog_data_path(self) /"global"
+            directory = cog_data_path(self) / "global"
             cur_images = await self.config.images()
         await self.make_guild_folder(directory)
         name = name.lower()
-        
+
         file_path = "{}/{}".format(str(directory), filename)
 
-        new_entry = {"command_name": name,
-                    "count": 0,
-                    "file_loc": file_path,
-                    "author": msg.author.id}
+        new_entry = {
+            "command_name": name,
+            "count": 0,
+            "file_loc": file_path,
+            "author": msg.author.id,
+        }
 
         cur_images.append(new_entry)
         await msg.attachments[0].save(file_path)
@@ -351,7 +352,7 @@ class AddImage(getattr(commands, "Cog", object)):
     @addimage.command(name="add")
     @checks.mod_or_permissions(manage_channels=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def add_image_guild(self, ctx, name:str):
+    async def add_image_guild(self, ctx, name: str):
         """
             Add an image to direct upload on this server
 
@@ -379,11 +380,10 @@ class AddImage(getattr(commands, "Cog", object)):
             await ctx.send(name + _(" has been added to my files!"))
         else:
             await self.save_image_location(ctx.message, name, guild)
-        
 
     @checks.is_owner()
     @addimage.command(hidden=True, name="addglobal")
-    async def add_image_global(self, ctx, name:str):
+    async def add_image_global(self, ctx, name: str):
         """
             Add an image to direct upload globally
 

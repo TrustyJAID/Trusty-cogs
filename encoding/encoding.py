@@ -15,7 +15,6 @@ from string import ascii_lowercase as lc, ascii_uppercase as uc
 from .braille import *
 
 
-
 class Encoding(getattr(commands, "Cog", object)):
     """
         Convert messages into fun encodings
@@ -24,15 +23,84 @@ class Encoding(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.table = {
-    "A": ["00", "01", "10", "11", "00", "00", "00", "01", "01", "01", "10", "10", "10", "11", "11", "11"],
-    "G": ["01", "10", "11", "00", "11", "10", "01", "11", "00", "10", "11", "00", "01", "00", "01", "10"],
-    "C": ["10", "11", "00", "01", "10", "11", "10", "10", "11", "00", "01", "11", "00", "01", "00", "01"],
-    "T": ["11", "00", "01", "10", "01", "01", "11", "00", "10", "11", "00", "01", "11", "10", "10", "00"]
-    }
+            "A": [
+                "00",
+                "01",
+                "10",
+                "11",
+                "00",
+                "00",
+                "00",
+                "01",
+                "01",
+                "01",
+                "10",
+                "10",
+                "10",
+                "11",
+                "11",
+                "11",
+            ],
+            "G": [
+                "01",
+                "10",
+                "11",
+                "00",
+                "11",
+                "10",
+                "01",
+                "11",
+                "00",
+                "10",
+                "11",
+                "00",
+                "01",
+                "00",
+                "01",
+                "10",
+            ],
+            "C": [
+                "10",
+                "11",
+                "00",
+                "01",
+                "10",
+                "11",
+                "10",
+                "10",
+                "11",
+                "00",
+                "01",
+                "11",
+                "00",
+                "01",
+                "00",
+                "01",
+            ],
+            "T": [
+                "11",
+                "00",
+                "01",
+                "10",
+                "01",
+                "01",
+                "11",
+                "00",
+                "10",
+                "11",
+                "00",
+                "01",
+                "11",
+                "10",
+                "10",
+                "00",
+            ],
+        }
         # A = 00
         # G = 10
         # C = 11
         # T = 01
+
     def remove_non_ascii(self, data):
         msg = b""
         for char in data:
@@ -51,44 +119,43 @@ class Encoding(getattr(commands, "Cog", object)):
                 if char in range(47, 122):
                     count += 1
         try:
-            if(count/len(data)) >= 0.75:
+            if (count / len(data)) >= 0.75:
                 return True
         except ZeroDivisionError:
             return False
         return False
 
     @commands.group(name="hash")
-    async def hash_cmd(self, ctx, *, txt:str):
+    async def hash_cmd(self, ctx, *, txt: str):
         """
             MD5 Encrypt Text
         """
         md5 = hashlib.md5(txt.encode()).hexdigest()
-        await ctx.send("**MD5**\n"+md5)
+        await ctx.send("**MD5**\n" + md5)
 
     @hash_cmd.command(name="sha1")
-    async def hash_sha1(self, ctx, *, txt:str):
+    async def hash_sha1(self, ctx, *, txt: str):
         """
             SHA1 Encrypt Text
         """
         sha = hashlib.sha1(txt.encode()).hexdigest()
-        await ctx.send("**SHA1**\n"+sha)
+        await ctx.send("**SHA1**\n" + sha)
 
     @hash_cmd.command(name="sha256")
-    async def hash_sha256(self, ctx, *, txt:str):
+    async def hash_sha256(self, ctx, *, txt: str):
         """
             SHA256 Encrypt Text
         """
         sha256 = hashlib.sha256(txt.encode()).hexdigest()
-        await ctx.send("**SHA256**\n"+sha256)
+        await ctx.send("**SHA256**\n" + sha256)
 
     @hash_cmd.command(name="sha512")
-    async def hash_sha512(self, ctx, *, txt:str):
+    async def hash_sha512(self, ctx, *, txt: str):
         """
             SHA512 Encrypt Text
         """
         sha512 = hashlib.sha512(txt.encode()).hexdigest()
-        await ctx.send("**SHA512**\n"+sha512)
-
+        await ctx.send("**SHA512**\n" + sha512)
 
     @commands.group(name="encode")
     async def _encode(self, ctx: commands.Context):
@@ -114,7 +181,7 @@ class Encoding(getattr(commands, "Cog", object)):
             Decode binary sequences of 8
         """
         msg = message.replace(" ", "")
-        bin_ascii = "".join([chr(int(msg[i:i+8],2)) for i in range(0,len(msg),8)])
+        bin_ascii = "".join([chr(int(msg[i : i + 8], 2)) for i in range(0, len(msg), 8)])
         await ctx.send(bin_ascii)
 
     @_encode.command(name="hex")
@@ -130,7 +197,7 @@ class Encoding(getattr(commands, "Cog", object)):
         """
             Decode a hexadecimal sequence to text
         """
-        ascii_bin = "".join(chr(int("0x"+x, 16)) for x in re.split(r"[\s]+", message))
+        ascii_bin = "".join(chr(int("0x" + x, 16)) for x in re.split(r"[\s]+", message))
         await ctx.send(ascii_bin)
 
     @_encode.command(name="b64", aliases=["base64"])
@@ -220,7 +287,7 @@ class Encoding(getattr(commands, "Cog", object)):
         return lambda s: s.translate(lookup)
 
     @_encode.command(name="rot", aliases=["caeser"])
-    async def caeser_encode(self, ctx: commands.Context, rot_key:Optional[int], *, message:str):
+    async def caeser_encode(self, ctx: commands.Context, rot_key: Optional[int], *, message: str):
         """
             Encode a caeser cipher message with specified key
         """
@@ -229,14 +296,13 @@ class Encoding(getattr(commands, "Cog", object)):
         await ctx.send(self.rot_encode(rot_key)(message))
 
     @_decode.command(name="rot", aliases=["caeser"])
-    async def caeser_decode(self, ctx: commands.Context, rot_key:Optional[int], *, message:str):
+    async def caeser_decode(self, ctx: commands.Context, rot_key: Optional[int], *, message: str):
         """
             Decode a caeser cipher message with specified key
         """
         if not rot_key:
             rot_key = 13
         await ctx.send(self.rot_encode(-rot_key)(message))
-
 
     @_encode.command(name="dna")
     async def dna_encode(self, ctx: commands.Context, *, message: str):
@@ -246,7 +312,7 @@ class Encoding(getattr(commands, "Cog", object)):
         dna = {"00": "A", "01": "T", "10": "G", "11": "C"}
         message = message.strip(" ")
         binary = " ".join(bin(x)[2:].zfill(8) for x in message.encode("utf-8")).replace(" ", "")
-        binlist = [binary[i:i+2] for i in range(0, len(binary), 2)]
+        binlist = [binary[i : i + 2] for i in range(0, len(binary), 2)]
         newmsg = ""
         count = 0
         for letter in binlist:
@@ -257,9 +323,8 @@ class Encoding(getattr(commands, "Cog", object)):
                 newmsg += " "
         await ctx.send(newmsg)
 
-
     @_decode.command(name="dna")
-    async def dna_decode(self ,ctx: commands.Context, *, message: str):
+    async def dna_decode(self, ctx: commands.Context, *, message: str):
         """
             Decodes a string of DNA in 4 byte ACGT format.
         """

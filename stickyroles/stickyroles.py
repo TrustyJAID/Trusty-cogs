@@ -3,10 +3,7 @@ from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from collections import defaultdict
 
-default = {
-    "sticky_roles": [],
-    "to_reapply"  : {}
-}
+default = {"sticky_roles": [], "to_reapply": {}}
 
 _ = Translator("StickyRoles", __file__)
 
@@ -35,9 +32,11 @@ class StickyRoles(getattr(commands, "Cog", object)):
         guild = ctx.message.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
         if not guild.me.top_role.position > role.position:
-            msg = _("I don't have enough permissions to add that "
-                    "role. Remember to take role hierarchy in "
-                    "consideration.")
+            msg = _(
+                "I don't have enough permissions to add that "
+                "role. Remember to take role hierarchy in "
+                "consideration."
+            )
             await ctx.send(msg)
             return
         if role.id in sticky_roles:
@@ -77,8 +76,7 @@ class StickyRoles(getattr(commands, "Cog", object)):
         if roles:
             await ctx.send(_("Sticky roles:\n\n") + ", ".join(roles))
         else:
-            msg = (_("No sticky roles. Add some with ")+
-                   "`{}stickyroles add`".format(ctx.prefix))
+            msg = _("No sticky roles. Add some with ") + "`{}stickyroles add`".format(ctx.prefix)
             await ctx.send(msg)
 
     async def on_member_remove(self, member):
@@ -125,12 +123,15 @@ class StickyRoles(getattr(commands, "Cog", object)):
             try:
                 await member.add_roles(*to_add)
             except discord.Forbidden:
-                print(_("Failed to add roles")+
-                      _("I lack permissions to do that.")+
-                      "{} ({})\n{}\n".format(member, member.id, to_add))
+                print(
+                    _("Failed to add roles")
+                    + _("I lack permissions to do that.")
+                    + "{} ({})\n{}\n".format(member, member.id, to_add)
+                )
             except discord.HTTPException as e:
-                msg = (_("Failed to add roles to ")+
-                      "{} ({})\n{}\n{}".format(member, member.id, to_add, e))
+                msg = _("Failed to add roles to ") + "{} ({})\n{}\n{}".format(
+                    member, member.id, to_add, e
+                )
                 print(msg)
 
         await self.config.guild(guild).to_reapply.set(to_reapply)

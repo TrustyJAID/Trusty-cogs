@@ -9,6 +9,7 @@ from discord.ext.commands.errors import BadArgument
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"
 
+
 class Meme(Converter):
     """
     This will accept user ID's, mentions, and perform a fuzzy search for 
@@ -20,6 +21,7 @@ class Meme(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     
     """
+
     async def convert(self, ctx, argument):
         result = None
         if not argument.isdigit():
@@ -53,16 +55,14 @@ class Imgflip(getattr(commands, "Cog", object)):
         default_global = {"username": "", "password": ""}
         self.config.register_global(**default_global)
 
-
     async def get_meme(self, meme, text_0, text_1):
         try:
             params = {
-                "template_id":meme,
+                "template_id": meme,
                 "username": await self.config.username(),
                 "password": await self.config.password(),
-                "text0":text_0,
-                "text1":text_1
-
+                "text0": text_0,
+                "text1": text_1,
             }
             async with aiohttp.ClientSession() as session:
                 async with session.post(CAPTION_URL, params=params) as r:
@@ -86,14 +86,15 @@ class Imgflip(getattr(commands, "Cog", object)):
             async with session.get(SEARCH_URL) as r:
                 results = await r.json()
         memelist = ", ".join(m["name"] for m in results["data"]["memes"])
-        memelist += ("Find a meme <https://imgflip.com/memetemplates> "
-                     "click blank template and get the Template ID for more!")
+        memelist += (
+            "Find a meme <https://imgflip.com/memetemplates> "
+            "click blank template and get the Template ID for more!"
+        )
         for page in pagify(memelist, [","]):
             await ctx.send(page)
-        
 
     @commands.command()
-    async def meme(self, ctx, meme_name:Meme, *, text:str):
+    async def meme(self, ctx, meme_name: Meme, *, text: str):
         """ 
             Create custom memes from imgflip
             
@@ -116,11 +117,10 @@ class Imgflip(getattr(commands, "Cog", object)):
             text_1 = text[1]
         url = await self.get_meme(meme_name, text_0, text_1)
         await ctx.send(url)
-        
 
-    @commands.command(name='imgflipset', aliases=["memeset"])
+    @commands.command(name="imgflipset", aliases=["memeset"])
     @checks.is_owner()
-    async def imgflip_set(self, ctx, username:str, password:str):
+    async def imgflip_set(self, ctx, username: str, password: str):
         """Command for setting required access information for the API"""
         await self.config.username.set(username)
         await self.config.password.set(password)
