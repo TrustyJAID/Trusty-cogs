@@ -821,7 +821,7 @@ class EventMixin:
                 + _("\nAfter: ")
                 + cleanafter
             )
-            await channel.send(msg)
+            await channel.send(msg[:2000])
 
     async def on_guild_update(self, before, after):
         guild = after
