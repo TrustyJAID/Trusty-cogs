@@ -5,6 +5,7 @@ import aiohttp
 import asyncio
 import json
 import re
+from typing import Optional
 
 
 class Conversions(getattr(commands, "Cog", object)):
@@ -15,10 +16,9 @@ class Conversions(getattr(commands, "Cog", object)):
 
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
     @commands.command(aliases=["bitcoin", "BTC"])
-    async def btc(self, ctx, ammount: float = 1.0, currency="USD", full=True):
+    async def btc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             converts from BTC to a given currency.
 
@@ -37,7 +37,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ethereum", "ETH"])
-    async def eth(self, ctx, ammount: float = 1.0, currency="USD", full=True):
+    async def eth(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             converts from ETH to a given currency.
 
@@ -56,7 +56,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["litecoin", "LTC"])
-    async def ltc(self, ctx, ammount: float = 1.0, currency="USD", full=True):
+    async def ltc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -75,7 +75,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["monero", "XMR"])
-    async def xmr(self, ctx, ammount: float = 1.0, currency="USD", full=True):
+    async def xmr(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -94,7 +94,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["bitcoin-cash", "BCH"])
-    async def bch(self, ctx, ammount: float = 1.0, currency="USD", full=True):
+    async def bch(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             converts from LTC to a given currency.
 
@@ -114,8 +114,9 @@ class Conversions(getattr(commands, "Cog", object)):
 
     async def checkcoins(self, base):
         link = "https://api.coinmarketcap.com/v2/ticker/"
-        async with self.session.get(link) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(link) as resp:
+                data = await resp.json()
         for coin in data["data"]:
             if (
                 base.upper() == data["data"][coin]["symbol"].upper()
@@ -134,8 +135,9 @@ class Conversions(getattr(commands, "Cog", object)):
         """
         coin_list = []
         if coins is None:
-            async with self.session.get("https://api.coinmarketcap.com/v2/ticker/") as resp:
-                data = await resp.json()
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://api.coinmarketcap.com/v2/ticker/") as resp:
+                    data = await resp.json()
             for coin in data["data"]:
                 coin_list.append(data["data"][coin])
         else:
@@ -161,7 +163,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(msg)
 
     @commands.command()
-    async def crypto(self, ctx, coin, ammount: float = 1.0, currency="USD", full=True):
+    async def crypto(self, ctx, coin, ammount: Optional[float] = 1.0, currency="USD", full=True):
         """
             Displays the latest information about a specified crypto currency
             
@@ -222,9 +224,10 @@ class Conversions(getattr(commands, "Cog", object)):
             hour_24_emoji = "🔼" if hour_24 >= 0 else "🔽"
             days_7_emoji = "🔼" if days_7 >= 0 else "🔽"
             available_supply = "{0:,.2f}".format(coin_data["circulating_supply"])
-            max_supply = (
-                "{0:,.2f}".format(coin_data["max_supply"]) if "max_supply" in coin_data else None
-            )
+            try:
+                max_supply = "{0:,.2f}".format(coin_data["max_supply"])
+            except:
+                max_supply = "\N{INFINITY}"
             total_supply = "{0:,.2f}".format(coin_data["total_supply"])
             embed.set_thumbnail(url=coin_image)
             embed.add_field(
@@ -264,8 +267,9 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency` must be a valid currency defaults to USD
         """
         GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
-        async with self.session.get(GOLD.format(currency.upper())) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(GOLD.format(currency.upper())) as resp:
+                data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         msg = "{0} oz of Gold is {1:,.2f} {2}".format(ammount, price, currency.upper())
         embed = discord.Embed(descirption="Gold", colour=discord.Colour.gold())
@@ -289,8 +293,9 @@ class Conversions(getattr(commands, "Cog", object)):
         SILVER = (
             "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key=EKvr5W-sJUFVSevcpk4v"
         )
-        async with self.session.get(SILVER) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(SILVER) as resp:
+                data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         if currency != "USD":
             price = await self.conversionrate("USD", currency.upper()) * price
@@ -314,8 +319,9 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency` must be a valid currency defaults to USD
         """
         PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key=EKvr5W-sJUFVSevcpk4v"
-        async with self.session.get(PLATINUM) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(PLATINUM) as resp:
+                data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         if currency != "USD":
             price = await self.conversionrate("USD", currency.upper()) * price
@@ -339,8 +345,9 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency` is the currency you want to convert to defaults to USD
         """
         stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
-        async with self.session.get(stock.format(ticker.upper())) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(stock.format(ticker.upper())) as resp:
+                data = await resp.json()
         convertrate = 1
         if currency != "USD":
             convertrate = self.conversionrate("USD", currency.upper())
@@ -354,7 +361,7 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def convert(self, ctx, ammount: float = 1.0, currency1="USD", currency2="GBP"):
+    async def convert(self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"):
         """
             Converts a value between 2 different currencies
 
@@ -362,23 +369,19 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency1` is the currency you have default is USD
             `currency2` is the currency you want to convert to default is GBP
         """
-        conversion = await self.conversionrate(currency1.upper(), currency2.upper())
+        conversion = await self.conversionrate(currency1, currency2)
         conversion = conversion * ammount
         await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
 
     async def conversionrate(self, currency1, currency2):
         """Function to convert different currencies"""
-        CONVERSIONRATES = "https://free.currencyconverterapi.com/api/v6/convert?q={}_{}&compact=ultra".format(
-            currency1.upper(), currency2.upper()
-        )
+        params = {"q": "{}_{}".format(currency1.upper(), currency2.upper()), "compact": "ultra"}
+        CONVERSIONRATES = "https://free.currencyconverterapi.com/api/v6/convert"
         try:
-            async with self.session.get(CONVERSIONRATES) as resp:
-                data = await resp.json()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(CONVERSIONRATES, params=params) as resp:
+                    data = await resp.json()
             conversion = data["{}_{}".format(currency1.upper(), currency2.upper())]
             return conversion
         except:
             return None
-        """TODO: add feeder cattle, coffee, and sugar"""
-
-    def __unload(self):
-        self.bot.loop.create_task(self.session.close())
