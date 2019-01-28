@@ -115,9 +115,12 @@ class Destiny(DestinyAPI, commands.Cog):
                 )
                 title_info = "**{title_name}**\n{title_desc}\n"
                 for t in char_title:
-                    title_name = t["titleInfo"]["titlesByGenderHash"][char["genderHash"]]
-                    title_desc = t["displayProperties"]["description"]
-                    titles += title_info.format(title_name=title_name, title_desc=title_desc)
+                    try:
+                        title_name = t["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
+                        title_desc = t["displayProperties"]["description"]
+                        titles += title_info.format(title_name=title_name, title_desc=title_desc)
+                    except:
+                        pass
             embed = discord.Embed(title=info)
             embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url)
             if "emblemPath" in char:
@@ -370,7 +373,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
         await ctx.send("Destiny 2 API credentials set!")
-        msg = await ctx.send(_("Downloading Manifest..."))
-        async with ctx.typing():
-            await self.get_manifest()
-            await ctx.send(_("Done."))
+        # msg = await ctx.send(_("Downloading Manifest..."))
+        # async with ctx.typing():
+            # await self.get_manifest()
+            # await ctx.send(_("Done."))
