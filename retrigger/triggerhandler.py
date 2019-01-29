@@ -521,7 +521,8 @@ class TriggerHandler:
         channel = message.channel
         author = message.author
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
-        if "resize" in trigger.response_type:
+        error_in = _("Retrigger encountered an error in ") 
+        if "resize" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             task = functools.partial(self.resize_image, size=len(find) - 3, image=path)
             task = self.bot.loop.run_in_executor(None, task)
@@ -530,9 +531,9 @@ class TriggerHandler:
             except asyncio.TimeoutError:
                 pass
             try:
-                await message.channel.send(file=file)
+                await channel.send(file=file)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                log.error(error_in + guild.name, exc_info=True)
         if "text" in trigger.response_type and own_permissions.send_messages:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -542,7 +543,7 @@ class TriggerHandler:
             try:
                 await channel.send(response)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                log.error(error_in + guild.name, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -552,7 +553,7 @@ class TriggerHandler:
             try:
                 await author.send(response)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ") + str(author), exc_info=True)
+                log.error(error_in + str(author), exc_info=True)
         if "react" in trigger.response_type and own_permissions.add_reactions:
             if trigger.multi_payload:
                 response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"]
@@ -562,7 +563,7 @@ class TriggerHandler:
                 try:
                     await message.add_reaction(emoji)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                    log.error(error_in + guild.name, exc_info=True)
         if "ban" in trigger.response_type and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally ban the bot owner
@@ -572,7 +573,7 @@ class TriggerHandler:
                 try:
                     await author.ban(reason=reason, delete_message_days=0)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                    log.error(error_in + guild.name, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally kick the bot owner
@@ -582,7 +583,7 @@ class TriggerHandler:
                 try:
                     await author.kick(reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                    log.error(error_in + guild.name, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             file = discord.File(path)
@@ -592,7 +593,7 @@ class TriggerHandler:
             try:
                 await channel.send(trigger.text, file=file)
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                log.error(error_in + guild.name, exc_info=True)
         if "command" in trigger.response_type:
             if trigger.multi_payload:
                 response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
@@ -608,7 +609,7 @@ class TriggerHandler:
                 prefix_list = await self.bot.command_prefix(self.bot, message)
                 msg.content = prefix_list[0] + command
                 self.bot.dispatch("message", msg)
-        if "add_role" in trigger.response_type:
+        if "add_role" in trigger.response_type and own_permissions.manage_roles:
             if trigger.multi_payload:
                 response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"]
             else:
@@ -618,8 +619,8 @@ class TriggerHandler:
                 try:
                     await author.add_roles(role, reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
-        if "remove_role" in trigger.response_type:
+                    log.error(error_in + guild.name, exc_info=True)
+        if "remove_role" in trigger.response_type and own_permissions.manage_roles:
             if trigger.multi_payload:
                 response = [
                     r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
@@ -631,14 +632,14 @@ class TriggerHandler:
                 try:
                     await author.remove_roles(role, reason=reason)
                 except Exception as e:
-                    log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
-        if "delete" in trigger.response_type:
+                    log.error(error_in + guild.name, exc_info=True)
+        if "delete" in trigger.response_type and own_permissions.manage_messages:
             log.debug("Performing delete trigger")
             await self.delete_modlog_action(message, trigger)
             try:
                 await message.delete()
             except Exception as e:
-                log.error(_("Retrigger encountered an error in ") + guild.name, exc_info=True)
+                log.error(error_in + guild.name, exc_info=True)
 
         if "mock" in trigger.response_type:
             if trigger.multi_payload:
