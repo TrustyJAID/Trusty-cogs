@@ -1,5 +1,6 @@
 import aiohttp
 import discord
+import logging
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from discord.ext.commands.converter import Converter
@@ -23,6 +24,7 @@ Join the official development guild                https://discord.gg/uekTNPj
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)
+log = logging.getLogger("red.Translate")
 
 
 class FlagTranslation(Converter):
@@ -51,6 +53,10 @@ class FlagTranslation(Converter):
         return result
 
 
+class GoogleTranslateAPIError(Exception):
+    pass
+
+
 @cog_i18n(_)
 class Translate(getattr(commands, "Cog", object)):
     """
@@ -74,6 +80,9 @@ class Translate(getattr(commands, "Cog", object)):
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
+        if "error" in data:
+            log.error(data["error"]["message"])
+            raise GoogleTranslateAPIError(data["message"])
         return data["data"]["detections"]
 
     async def translation_embed(self, author, translation, requestor=None):
@@ -106,6 +115,9 @@ class Translate(getattr(commands, "Cog", object)):
                     data = await resp.json()
         except:
             return None
+        if "error" in data:
+            log.error(data["error"]["message"])
+            raise GoogleTranslateAPIError(data["message"])
         if "data" in data:
             translated_text = data["data"]["translations"][0]["translatedText"]
             return translated_text
@@ -144,12 +156,18 @@ class Translate(getattr(commands, "Cog", object)):
             to_translate = message.embeds[0].description
         else:
             to_translate = message.clean_content
-        detected_lang = await self.detect_language(to_translate)
+        try:
+            detected_lang = await self.detect_language(to_translate)
+        except GoogleTranslateAPIError:
+            return
         original_lang = detected_lang[0][0]["language"]
         target = FLAGS[flag]["code"]
         if target == original_lang:
             return
-        translated_text = await self.translate_text(original_lang, target, to_translate)
+        try:
+            translated_text = await self.translate_text(original_lang, target, to_translate)
+        except GoogleTranslateAPIError:
+            return
         if not translated_text:
             return
 
@@ -203,11 +221,17 @@ class Translate(getattr(commands, "Cog", object)):
         if num_emojis > 1:
             return
         target = FLAGS[str(payload.emoji)]["code"]
-        detected_lang = await self.detect_language(to_translate)
+        try:
+            detected_lang = await self.detect_language(to_translate)
+        except GoogleTranslateAPIError:
+            return
         original_lang = detected_lang[0][0]["language"]
         if target == original_lang:
             return
-        translated_text = await self.translate_text(original_lang, target, to_translate)
+        try:
+            translated_text = await self.translate_text(original_lang, target, to_translate)
+        except:
+            return
         if not translated_text:
             return
         author = message.author
@@ -289,11 +313,18 @@ class Translate(getattr(commands, "Cog", object)):
             msg = _("The bot owner needs to set an api key first!")
             await ctx.send(msg)
             return
-
-        detected_lang = await self.detect_language(message)
+        try:
+            detected_lang = await self.detect_language(message)
+        except GoogleTranslateAPIError as e:
+            await ctx.send(str(e))
+            return
         from_lang = detected_lang[0][0]["language"].upper()
         original_lang = detected_lang[0][0]["language"]
-        translated_text = await self.translate_text(original_lang, to_language, message)
+        try:
+            translated_text = await self.translate_text(original_lang, to_language, message)
+        except GoogleTranslateAPIError as e:
+            await ctx.send(str(e))
+            return
         author = ctx.message.author
         if ctx.channel.permissions_for(ctx.me).embed_links:
             translation = (translated_text, from_lang, to_language)
