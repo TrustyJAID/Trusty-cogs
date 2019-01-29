@@ -622,7 +622,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             await ctx.send(_("You can only set a number between 0 and 120"))
             return
         await channel.edit(slowmode_delay=time)
-        msg = _("Slowmode set to") + str(time) + _(" in ") + channel.mention
+        msg = _("Slowmode set to `{time}` in {channel}").format(time=time, channel=channel.mention)
         await ctx.send(msg)
 
     @commands.command()
