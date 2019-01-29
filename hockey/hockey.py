@@ -288,6 +288,7 @@ class Hockey(getattr(commands, "Cog", object)):
 
     @commands.group(name="hockeyset", aliases=["nhlset"])
     @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
     async def hockeyset_commands(self, ctx):
         """
             Setup commands for the server
@@ -357,7 +358,7 @@ class Hockey(getattr(commands, "Cog", object)):
                     await ctx.send(msg + "```")
 
     @commands.group()
-    @checks.admin_or_permissions(manage_channels=True)
+    @checks.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
     async def gdc(self, ctx):
         """
@@ -530,7 +531,7 @@ class Hockey(getattr(commands, "Cog", object)):
     # All Hockey setup commands
 
     @hockeyset_commands.command()
-    @checks.admin_or_permissions(manage_messages=True)
+    @checks.admin_or_permissions(administrator=True)
     async def reset(self, ctx):
         """
             Restarts the hockey loop incase there are issues with the posts
@@ -543,7 +544,6 @@ class Hockey(getattr(commands, "Cog", object)):
         # await ctx.send("Done.")
 
     @hockeyset_commands.command(hidden=True)
-    @checks.admin_or_permissions(manage_messages=True)
     async def leaderboardset(
         self, ctx, user: discord.Member, season: int, weekly: int = None, total: int = None
     ):
@@ -637,7 +637,6 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="add", aliases=["add_goals"])
-    @checks.admin_or_permissions(manage_channels=True)
     async def add_goals(self, ctx, team: HockeyTeams, channel: discord.TextChannel = None):
         """
             Adds a hockey team goal updates to a channel do 'all' for all teams
@@ -663,7 +662,6 @@ class Hockey(getattr(commands, "Cog", object)):
         await ctx.send(team + _(" goals will be posted in ") + channel.mention)
 
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
-    @checks.admin_or_permissions(manage_channels=True)
     async def remove_goals(
         self, ctx, team: HockeyTeams = None, channel: discord.TextChannel = None
     ):
