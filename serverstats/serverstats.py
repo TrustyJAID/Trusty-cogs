@@ -650,7 +650,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             Modify the guilds verification level
 
             `level` must be one of:
-            `none`, `low`, `medium`, `high`, `table flip`, `extreme` or `double table flip`
+            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`) 
         """
 
         levels = {
@@ -691,7 +691,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         """
         Change the servers AFK voice channel
 
-        Defaults to no AFK channel
+        Defaults to no AFK channel.
         """
         reason = _("Requested by {author}").format(author=ctx.author)
         try:
