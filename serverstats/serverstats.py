@@ -625,6 +625,98 @@ class ServerStats(getattr(commands, "Cog", object)):
         msg = _("Slowmode set to `{time}` in {channel}").format(time=time, channel=channel.mention)
         await ctx.send(msg)
 
+    @commands.group()
+    @checks.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
+    async def guildedit(self, ctx):
+        """Edit various guild settings"""
+        pass
+
+    @guildedit.command(name="name")
+    async def guild_name(self, ctx, *, name:str):
+        """
+        Change the server name
+        """
+        reason = _("Requested by {author}").format(author=ctx.author)
+        try:
+            await ctx.guild.edit(name=name, reason=reason)
+        except Exception as e:
+            print(e)
+            pass
+
+    @guildedit.command(name="verificationlevel", aliases=["verification"])
+    async def verifivation_level(self, ctx, *, level:str):
+        """
+            Modify the guilds verification level
+
+            `level` must be one of:
+            `none`, `low`, `medium`, `high`, `table flip`, `extreme` or `double table flip`
+        """
+
+        levels = {
+            "none":discord.VerificationLevel.none,
+            "low":discord.VerificationLevel.low,
+            "medium":discord.VerificationLevel.medium,
+            "high":discord.VerificationLevel.high,
+            "table flip":discord.VerificationLevel.high,
+            "extreme":discord.VerificationLevel.extreme,
+            "double table flip":discord.VerificationLevel.extreme
+        }
+        reason = _("Requested by {author}").format(author=ctx.author)
+        if level.lower() not in levels:
+            await ctx.send(_("`{}` is not a proper verification level.").format(level))
+            return
+        try:
+            await ctx.guild.edit(verification_level=levels[level], reason=reason)
+        except Exception as e:
+            print(e)
+            pass
+
+    @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
+    async def system_channel(self, ctx, channel:discord.TextChannel=None):
+        """
+        Change the system channel
+
+        This is the default discord welcome channel.
+        """
+        reason = _("Requested by {author}").format(author=ctx.author)
+        try:
+            await ctx.guild.edit(system_channel=channel, reason=reason)
+        except Exception as e:
+            print(e)
+            pass
+
+    @guildedit.command(name="afkchannel")
+    async def afk_channel(self, ctx, channel:discord.VoiceChannel=None):
+        """
+        Change the servers AFK voice channel
+
+        Defaults to no AFK channel
+        """
+        reason = _("Requested by {author}").format(author=ctx.author)
+        try:
+            await ctx.guild.edit(afk_channel=channel, reason=reason)
+        except Exception as e:
+            print(e)
+            pass
+
+    @guildedit.command(name="afktimeout")
+    async def afk_timeout(self, ctx, timeout:int):
+        """
+        Change the servers AFK timeout
+
+        `timeout` must be a value of 60, 300, 900, 1800, or 3600.
+        """
+        if timeout not in [60, 300, 900, 1800, 3600]:
+            await ctx.send(_("`timeout` must be a value of 60, 300, 900, 1800, or 3600."))
+            return
+        reason = _("Requested by {author}").format(author=ctx.author)
+        try:
+            await ctx.guild.edit(afk_timeout=timeout, reason=reason)
+        except Exception as e:
+            print(e)
+            pass
+
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
     async def topmembers(self, ctx, number: Optional[int] = 10, guild: GuildConverter = None):
