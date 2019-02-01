@@ -848,6 +848,7 @@ class EventMixin:
             "owner": _("Server Owner:"),
             "splash": _("Splash Image:"),
             "system_channel": _("Welcome message channel:"),
+            "verification_level":_("Verification Level:")
         }
         for attr, name in guild_updates.items():
             before_attr = getattr(before, attr)
@@ -857,21 +858,21 @@ class EventMixin:
                 msg += _("After ") + f"{name} {after_attr}\n"
                 embed.add_field(name=_("Before ") + name, value=str(before_attr))
                 embed.add_field(name=_("After ") + name, value=str(after_attr))
-        perp = []
-        reason = []
+        perps = []
+        reasons = []
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.guild_update
             async for log in guild.audit_logs(limit=int(len(embed.fields) / 2), action=action):
-                perp.append(log.user)
+                perps.append(log.user)
                 if log.reason:
                     reasons.append(log.reason)
-        if perp:
-            perps = ", ".join(str(p) for p in perp)
+        if perps:
+            perps = ", ".join(str(p) for p in perps)
             msg += _("Update by ") + f"{perps}\n"
             perps = ", ".join(p.mention for p in perp)
             embed.add_field(name=_("Updated by"), value=perps)
-        if reason:
-            reasons = ", ".join(str(r) for r in reason)
+        if reasons:
+            reasons = ", ".join(str(r) for r in reasons)
             msg += _("Reasons ") + f"{reasons}\n"
             embed.add_field(name=_("Reasons "), value=reasons)
         if channel.permissions_for(guild.me).embed_links:
