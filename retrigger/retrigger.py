@@ -18,7 +18,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -36,13 +36,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
-    @retrigger.command(hidden=True)
-    async def fix(self, ctx):
+    async def initialize(self):
         """
-            Force fixup triggers to the new data scheme
+            Force fixup triggers to the new data scheme on load
         """
         for guild_id in await self.config.all_guilds():
-            guild = ctx.bot.get_guild(int(guild_id))
+            guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 await self.config._clear_scope(Config.GUILD, str(guild_id))
                 continue
@@ -51,7 +50,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 t = Trigger.from_json(triggers[trigger])
                 triggers[t.name] = t.to_json()
             await self.config.guild(guild).trigger_list.set(triggers)
-        await ctx.tick()
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
@@ -281,7 +279,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, "text", author, 0, None, text, [], [], {}, [])
+        new_trigger = Trigger(name, regex, ["text"], author, 0, None, text, [], [], {}, [])
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)

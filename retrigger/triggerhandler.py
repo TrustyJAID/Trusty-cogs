@@ -116,6 +116,8 @@ class TriggerHandler:
         )
         if surpass_ignore:
             return True
+        if mod is None:
+            return True
         guild_ignored = await mod.settings.guild(guild).ignored()
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
@@ -417,19 +419,21 @@ class TriggerHandler:
         await self.check_triggers(message)
 
     async def check_triggers(self, message):
-        local_perms = not await self.local_perms(message)
-        global_perms = not await self.global_perms(message)
-        ignored_channel = not await self.check_ignored_channel(message)
-
         msg = message.content
         guild = message.guild
         channel = message.channel
         author = message.author
 
+        trigger_list = await self.config.guild(guild).trigger_list()
+        if not trigger_list:
+            return
+        local_perms = not await self.local_perms(message)
+        global_perms = not await self.global_perms(message)
+        ignored_channel = not await self.check_ignored_channel(message)
         channel_perms = channel.permissions_for(author)
         is_command = await self.check_is_command(message)
         is_mod = await self.is_mod_or_admin(author)
-        trigger_list = await self.config.guild(guild).trigger_list()
+        
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
 

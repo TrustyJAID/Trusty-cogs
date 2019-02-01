@@ -1,6 +1,7 @@
 from .retrigger import ReTrigger
 
 
-def setup(bot):
-    n = ReTrigger(bot)
-    bot.add_cog(n)
+async def setup(bot):
+    cog = ReTrigger(bot)
+    await cog.initialize()
+    bot.add_cog(cog)
