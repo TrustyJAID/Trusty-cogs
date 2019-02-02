@@ -485,8 +485,6 @@ class ServerStats(getattr(commands, "Cog", object)):
             return
         if reaction.emoji == "✅":
             for member in member_list:
-                if member.id != 261320113444225025:
-                    continue
                 roles = list(set(member.roles) - set(removed_roles))
                 await member.edit(roles=roles, reason=_("Roles removed due to inactivity."))
         else:
