@@ -30,7 +30,7 @@ class Trigger:
         multi_payload: list,
     ):
         self.name = name
-        self.regex = regex
+        self.regex = re.compile(regex)
         self.response_type = response_type
         self.author = author
         self.count = count
@@ -48,7 +48,7 @@ class Trigger:
     def to_json(self) -> dict:
         return {
             "name": self.name,
-            "regex": self.regex,
+            "regex": self.regex.pattern,
             "response_type": self.response_type,
             "author": self.author,
             "count": self.count,

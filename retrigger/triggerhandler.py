@@ -15,7 +15,7 @@ import functools
 import asyncio
 import random
 import string
-from multiprocessing import Pool, TimeoutError
+from multiprocessing.pool import TimeoutError
 
 from .converters import *
 
@@ -32,6 +32,7 @@ class TriggerHandler:
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
+        self.re_pool
 
     async def local_perms(self, message):
         """Check the user is/isn't locally whitelisted/blacklisted.
@@ -433,7 +434,7 @@ class TriggerHandler:
         channel_perms = channel.permissions_for(author)
         is_command = await self.check_is_command(message)
         is_mod = await self.is_mod_or_admin(author)
-        
+
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
 
@@ -447,15 +448,59 @@ class TriggerHandler:
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
 
+            if await self.check_trigger_cooldown(message, trigger):
+                continue
+            if any(t for t in trigger.response_type if t in auto_mod):
+                if await autoimmune(message):
+                    print_msg = _(
+                        "ReTrigger: {author} is immune " "from automated actions "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+                    continue
+            if "delete" in trigger.response_type:
+                if channel_perms.manage_messages or is_mod:
+                    print_msg = _(
+                        "ReTrigger: Delete is ignored because {author} "
+                        "has manage messages permission "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+                    continue
+            elif "kick" in trigger.response_type:
+                if channel_perms.kick_members or is_mod:
+                    print_msg = _(
+                        "ReTrigger: Kick is ignored because " "{author} has kick permissions "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+                    continue
+            elif "ban" in trigger.response_type:
+                if channel_perms.ban_members or is_mod:
+                    print_msg = _(
+                        "ReTrigger: Ban is ignored because {author} " "has ban permissions "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+                    continue
+            elif any(t for t in trigger.response_type if t in ["add_role", "remove_role"]):
+                if channel_perms.manage_roles or is_mod:
+                    print_msg = _(
+                        "ReTrigger: role change is ignored because {author} "
+                        "has mange roles permissions "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+            else:
+                if any([local_perms, global_perms, ignored_channel]):
+                    print_msg = _(
+                        "ReTrigger: Channel is ignored or " "{author} is blacklisted "
+                    ).format(author=author)
+                    log.debug(print_msg + trigger.name)
+                    continue
+                if is_command:
+                    continue
             try:
-                pool = Pool(processes=1)
-                process = pool.apply_async(re.findall, (trigger.regex, message.content))
+                process = self.re_pool.apply_async(trigger.regex.findall, (message.content,))
                 task = functools.partial(process.get, timeout=10)
                 task = self.bot.loop.run_in_executor(None, task)
                 search = await asyncio.wait_for(task, timeout=10)
-                pool.close()
             except (TimeoutError, asyncio.TimeoutError) as e:
-                pool.close()
                 error_msg = (
                     "ReTrigger took too long to find matches "
                     f"{guild.name} ({guild.id}) "
@@ -463,55 +508,12 @@ class TriggerHandler:
                 )
                 log.error(error_msg, exc_info=True)
                 return  # we certainly don't want to be performing multiple triggers if this happens
-
+            except Exception as e:
+                log.error(
+                    f"{trigger.name} {trigger.regex} in {guild.name} {guild.id}", exc_info=True
+                )
+                continue
             if search != []:
-                if await self.check_trigger_cooldown(message, trigger):
-                    continue
-                if any(t for t in trigger.response_type if t in auto_mod):
-                    if await autoimmune(message):
-                        print_msg = _(
-                            "ReTrigger: {author} is immune " "from automated actions "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                        continue
-                if "delete" in trigger.response_type:
-                    if channel_perms.manage_messages or is_mod:
-                        print_msg = _(
-                            "ReTrigger: Delete is ignored because {author} "
-                            "has manage messages permission "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                        continue
-                elif "kick" in trigger.response_type:
-                    if channel_perms.kick_members or is_mod:
-                        print_msg = _(
-                            "ReTrigger: Kick is ignored because " "{author} has kick permissions "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                        continue
-                elif "ban" in trigger.response_type:
-                    if channel_perms.ban_members or is_mod:
-                        print_msg = _(
-                            "ReTrigger: Ban is ignored because {author} " "has ban permissions "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                        continue
-                elif any(t for t in trigger.response_type if t in ["add_role", "remove_role"]):
-                    if channel_perms.manage_roles or is_mod:
-                        print_msg = _(
-                            "ReTrigger: role change is ignored because {author} "
-                            "has mange roles permissions "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                else:
-                    if any([local_perms, global_perms, ignored_channel]):
-                        print_msg = _(
-                            "ReTrigger: Channel is ignored or " "{author} is blacklisted "
-                        ).format(author=author)
-                        log.info(print_msg + trigger.name)
-                        continue
-                    if is_command:
-                        continue
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0])
@@ -525,7 +527,7 @@ class TriggerHandler:
         channel = message.channel
         author = message.author
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
-        error_in = _("Retrigger encountered an error in ") 
+        error_in = _("Retrigger encountered an error in ")
         if "resize" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             task = functools.partial(self.resize_image, size=len(find) - 3, image=path)

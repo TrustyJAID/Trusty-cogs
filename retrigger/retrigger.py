@@ -6,6 +6,7 @@ import logging
 
 from .converters import *
 from .triggerhandler import TriggerHandler
+from multiprocessing.pool import Pool
 
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -18,13 +19,17 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.0.1"
+    __version__ = "2.0.2"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247)
         default_guild = {"trigger_list": {}, "allow_multiple": False, "modlog": "default"}
         self.config.register_guild(**default_guild)
+        self.re_pool = Pool()
+
+    def __unload(self):
+        self.re_pool.close()
 
     @commands.group()
     @commands.guild_only()
