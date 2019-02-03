@@ -27,7 +27,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | REKT | **Release** |  <details><summary>Display a random list of funny rekt messages. </summary></details> |
 | Weather | **Release** | <details><summary>check the current weather in many cities around the world including in Kelvin. </details> |
 | Starboad | **Release** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
-| Imgflip | **release** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
+| Imgflip | **Release** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
 | Imagemaker | **Release** | <details><summary>A cog to paste avatars onto images like beautiful and pepe.</summary> Requirements: pillow, opencv-python, and numpy</details> |
 | Conversions | **Release** | <details><summary>Currency, crypto, and stocks commands. </summary></details> |
 | Mock | **Release** | <details><summary>Mock the user who last posted!</summary>Note: This requires not having the `--dev` flag enabled, however if you need both install the dev cog in my repo.</details> |
