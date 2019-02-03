@@ -867,10 +867,10 @@ class EventMixin:
                 if log.reason:
                     reasons.append(log.reason)
         if perps:
-            perps = ", ".join(str(p) for p in perps)
-            msg += _("Update by ") + f"{perps}\n"
-            perps = ", ".join(p.mention for p in perp)
-            embed.add_field(name=_("Updated by"), value=perps)
+            perp_s = ", ".join(str(p) for p in perps)
+            msg += _("Update by ") + f"{perp_s}\n"
+            perp_m = ", ".join(p.mention for p in perps)
+            embed.add_field(name=_("Updated by"), value=perp_m)
         if reasons:
             reasons = ", ".join(str(r) for r in reasons)
             msg += _("Reasons ") + f"{reasons}\n"
