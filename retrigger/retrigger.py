@@ -21,7 +21,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.1.0"
+    __version__ = "2.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -65,13 +65,22 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     )
                     if triggers[trigger]["image"] is not None:
                         image = triggers[trigger]["image"]
-                        path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-                        try:
-                            os.remove(path)
-                        except Exception as e:
-                            msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
-                            log.error(msg, exc_info=True)
-                            pass
+                        if isinstance(image, list):
+                            for i in image:
+                                path = str(cog_data_path(self)) + f"/{guild.id}/{i}"
+                                try:
+                                    os.remove(path)
+                                except Exception as e:
+                                    msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                    log.error(msg, exc_info=True)
+                        else:
+                            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
+                            try:
+                                os.remove(path)
+                            except Exception as e:
+                                msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                log.error(msg, exc_info=True)
+                                pass
                     del triggers[trigger]
                     continue
                 triggers[t.name] = t.to_json()
@@ -399,7 +408,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await self.config.guild(guild).trigger_list.set(trigger_list)
         await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
-    @retrigger.command()
+    @retrigger.command(aliases=["randimage", "randimg", "rimage", "rimg"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
     async def randomimage(self, ctx, name: TriggerExists, regex: ValidRegex):

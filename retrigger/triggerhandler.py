@@ -845,12 +845,21 @@ class TriggerHandler:
             if triggers == trigger_name:
                 if trigger_list[triggers]["image"] is not None:
                     image = trigger_list[triggers]["image"]
-                    path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-                    try:
-                        os.remove(path)
-                    except Exception as e:
-                        msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
-                        log.error(msg, exc_info=True)
+                    if isinstance(image, list):
+                        for i in image:
+                            path = str(cog_data_path(self)) + f"/{guild.id}/{i}"
+                            try:
+                                os.remove(path)
+                            except Exception as e:
+                                msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                log.error(msg, exc_info=True)
+                    else:
+                        path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
+                        try:
+                            os.remove(path)
+                        except Exception as e:
+                            msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                            log.error(msg, exc_info=True)
                 del trigger_list[triggers]
                 await self.config.guild(guild).trigger_list.set(trigger_list)
                 return True
