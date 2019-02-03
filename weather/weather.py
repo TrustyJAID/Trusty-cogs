@@ -19,9 +19,9 @@ class Weather(getattr(commands, "Cog", object)):
         self.config.register_user(**default)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.unit = {
-            "imperial": {"code": ["i", "f"], "speed": "mph", "temp": "°F"},
-            "metric": {"code": ["m", "c"], "speed": "km/h", "temp": "°C"},
-            "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": "°K"},
+            "imperial": {"code": ["i", "f"], "speed": "mph", "temp": " °F"},
+            "metric": {"code": ["m", "c"], "speed": "km/h", "temp": " °C"},
+            "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": " K"},
         }
 
     @commands.command(name="weather", aliases=["we"])
@@ -123,8 +123,8 @@ class Weather(getattr(commands, "Cog", object)):
             currenttemp = abs(currenttemp - 273.15)
             mintemp = abs(maxtemp - 273.15)
             maxtemp = abs(maxtemp - 273.15)
-        sunrise = datetime.datetime.fromtimestamp(data["sys"]["sunrise"]).strftime("%H:%M")
-        sunset = datetime.datetime.fromtimestamp(data["sys"]["sunset"]).strftime("%H:%M")
+        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"]).strftime("%H:%M")
+        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"]).strftime("%H:%M")
         embed = discord.Embed(colour=discord.Colour.blue())
         embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
         embed.add_field(name=_("📏 **Lat,Long**"), value="{0}, {1}".format(lat, lon))
