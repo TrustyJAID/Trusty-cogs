@@ -21,7 +21,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.0.3"
+    __version__ = "2.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -311,6 +311,33 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await self.config.guild(guild).trigger_list.set(trigger_list)
         await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
+    @retrigger.command(aliases=["randomtext", "rtext"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def random(self, ctx, name: TriggerExists, regex: ValidRegex):
+        """
+            Add a random text response trigger
+
+            `name` name of the trigger
+            `regex` the regex that will determine when to respond
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        text = await self.get_random_responses_text(ctx)
+        if not text:
+            await ctx.send(_("No responses supplied"))
+            return
+        guild = ctx.guild
+        author = ctx.message.author.id
+        new_trigger = Trigger(name, regex, ["randtext"], author, 0, None, text, [], [], {}, [])
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     async def dm(self, ctx, name: TriggerExists, regex: ValidRegex, *, text: str):
@@ -367,6 +394,32 @@ class ReTrigger(TriggerHandler, commands.Cog):
             filename = await self.save_image_location(image_url, guild)
 
         new_trigger = Trigger(name, regex, ["image"], author, 0, filename, None, [], [], {}, [])
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(attach_files=True)
+    async def randomimage(self, ctx, name: TriggerExists, regex: ValidRegex):
+        """
+            Add a random image/file response trigger
+
+            `name` name of the trigger
+            `regex` the regex that will determine when to respond
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        guild = ctx.guild
+        author = ctx.message.author.id
+        filename = await self.wait_for_multiple_images(ctx)
+
+        new_trigger = Trigger(name, regex, ["randimage"], author, 0, filename, None, [], [], {}, [])
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)

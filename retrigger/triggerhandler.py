@@ -158,6 +158,52 @@ class TriggerHandler:
                 break
         return msg
 
+    async def wait_for_multiple_images(self, ctx):
+        await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
+        link_regex = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
+        files = []
+        while True:
+            check = lambda m: m.author == ctx.author
+            try:
+                msg = await self.bot.wait_for("message", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                return files
+            if "exit" in msg.content.lower():
+                return files
+            else:
+                link = link_regex.search(msg.content)
+                for a in msg.attachments:
+                    if a.size > 8 * 1000 * 100:
+                        continue
+                    try:
+                        files.append(await self.save_image_location(a.url, ctx.guild))
+                    except:
+                        pass
+                if link:
+                    try:
+                        files.append(await self.save_image_location(link.group(0), ctx.guild))
+                    except:
+                        pass
+        return files
+
+    async def wait_for_multiple_responses(self, ctx):
+        msg_text = _(
+            "Please enter your desired phrase to be used for this trigger."
+            "Type `exit` to stop adding responses."
+        )
+        msg = await ctx.send(msg_text)
+        responses = []
+        while True:
+            check = lambda m: m.author == ctx.author
+            try:
+                message = await self.bot.wait_for("message", check=check, timeout=60)
+            except asyncio.TimeoutError:
+                return responses
+            if message.content == "exit":
+                return responses
+            else:
+                responses.append(message.content)
+
     async def get_colour(self, guild):
         if await self.bot.db.guild(guild).use_bot_color():
             return guild.me.colour
@@ -550,6 +596,16 @@ class TriggerHandler:
                 await channel.send(response)
             except Exception as e:
                 log.error(error_in + guild.name, exc_info=True)
+        if "randtext" in trigger.response_type and own_permissions.send_messages:
+            if trigger.multi_payload:
+                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+            else:
+                response = random.choice(trigger.text)
+            response = await self.convert_parms(message, response)
+            try:
+                await channel.send(response)
+            except Exception as e:
+                log.error(error_in + guild.name, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -592,6 +648,17 @@ class TriggerHandler:
                     log.error(error_in + guild.name, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+            file = discord.File(path)
+            response = trigger.text
+            if response:
+                response = await self.convert_parms(message, response)
+            try:
+                await channel.send(trigger.text, file=file)
+            except Exception as e:
+                log.error(error_in + guild.name, exc_info=True)
+        if "randimage" in trigger.response_type and own_permissions.attach_files:
+            image = random.choice(trigger.image)
+            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
             file = discord.File(path)
             response = trigger.text
             if response:
