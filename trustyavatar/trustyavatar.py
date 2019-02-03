@@ -119,13 +119,15 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
     def make_new_avatar(self, author_avatar, choice_avatar, is_gif):
         avatar = Image.open(author_avatar)
         new_avatar = Image.open(choice_avatar)
+        new_avatar = new_avatar.convert("RGBA")
         if is_gif:
             gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
             img_list = []
             for frame in gif_list:
-                temp2 = frame.copy()
-                w, h = temp2.size
-                new_avatar = new_avatar.resize((w, h), Image.ANTIALIAS)
+                temp2 = Image.new("RGBA",frame.size)
+                temp2.paste(frame, (0,0))
+                w, h = frame.size
+                new_avatar = new_avatar.resize((w, h))
                 temp2.paste(new_avatar, (0, 0), new_avatar)
                 temp2 = temp2.resize((200, 200), Image.ANTIALIAS)
                 img_list.append(temp2)
@@ -153,7 +155,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
     async def trustyavatar(
         self,
         ctx,
-        style: Union[discord.Member, discord.Colour] = None,
+        style: Optional[Union[discord.Member, discord.Colour]] = None,
         face: Optional[str] = None,
         is_gif: bool = False,
     ):
@@ -173,7 +175,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                 await ctx.send("That is not a valid choice.")
                 return
             new_avatar = face
-        if type(style) is discord.Colour:
+        if isinstance(style, discord.Colour):
             choice_avatar = await self.dl_image(self.statuses[new_avatar]["transparent"])
             task = functools.partial(
                 self.replace_colour, img=choice_avatar, to_colour=style.to_rgb()
@@ -184,7 +186,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             except asyncio.TimeoutError:
                 return
         else:
-            if type(style) is discord.Member:
+            if isinstance(style, discord.Member):
                 author = style
             if author.is_avatar_animated() and is_gif:
                 author_avatar = await self.dl_image(author.avatar_url_as(format="gif"))
@@ -202,9 +204,14 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
                 file = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-
-        image = discord.File(file)
-        await ctx.send(file=image)
+        embed = discord.Embed(colour=author.colour, description="TrustyAvatar")
+        embed.set_author(name="{} - {}".format(author, author.display_name), icon_url=author.avatar_url)
+        embed.set_image(url="attachment://trustyavatar.png")
+        image = discord.File(file, "trustyavatar.png")
+        if is_gif:
+            image = discord.File(file, "trustyavatar.gif")
+            embed.set_image(url="attachment://trustyavatar.gif")
+        await ctx.send(embed=embed, files=[image])
 
     @commands.group(aliases=["taset"])
     @checks.is_owner()
