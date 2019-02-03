@@ -335,7 +335,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
             return await ctx.send(msg)
-        text = await self.get_random_responses_text(ctx)
+        text = await self.wait_for_multiple_responses(ctx)
         if not text:
             await ctx.send(_("No responses supplied"))
             return

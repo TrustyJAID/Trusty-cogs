@@ -166,6 +166,7 @@ class TriggerHandler:
             check = lambda m: m.author == ctx.author
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
+                await msg.add_reaction("✅")
             except asyncio.TimeoutError:
                 return files
             if "exit" in msg.content.lower():
@@ -197,6 +198,7 @@ class TriggerHandler:
             check = lambda m: m.author == ctx.author
             try:
                 message = await self.bot.wait_for("message", check=check, timeout=60)
+                await message.add_reaction("✅")
             except asyncio.TimeoutError:
                 return responses
             if message.content == "exit":
