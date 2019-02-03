@@ -774,10 +774,11 @@ class TriggerHandler:
     async def remove_trigger(self, guild, trigger_name):
         trigger_list = await self.config.guild(guild).trigger_list()
         for triggers in trigger_list:
-            trigger = Trigger.from_json(trigger_list[triggers])
-            if trigger.name == trigger_name:
-                if trigger.image is not None:
-                    path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+            # trigger = Trigger.from_json(trigger_list[triggers])
+            if triggers == trigger_name:
+                if trigger_list[triggers]["image"] is not None:
+                    image = trigger_list[triggers]["image"]
+                    path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
                     try:
                         os.remove(path)
                     except Exception as e:

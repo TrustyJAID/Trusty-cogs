@@ -1,8 +1,10 @@
 import discord
 from redbot.core import commands, checks, Config, modlog
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from typing import Union
 import logging
+import os
 
 from .converters import *
 from .triggerhandler import TriggerHandler
@@ -19,7 +21,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.0.2"
+    __version__ = "2.0.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -52,7 +54,26 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 continue
             triggers = await self.config.guild(guild).trigger_list()
             for trigger in await self.config.guild(guild).trigger_list():
-                t = Trigger.from_json(triggers[trigger])
+                try:
+                    t = Trigger.from_json(triggers[trigger])
+                except Exception as e:
+                    log.error(
+                        _("Removing {trigger} from {guild} ({guild.id})").format(
+                            trigger=trigger, guild=guild
+                        ),
+                        exc_info=True,
+                    )
+                    if triggers[trigger]["image"] is not None:
+                        image = triggers[trigger]["image"]
+                        path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
+                        try:
+                            os.remove(path)
+                        except Exception as e:
+                            msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                            log.error(msg, exc_info=True)
+                            pass
+                    del triggers[trigger]
+                    continue
                 triggers[t.name] = t.to_json()
             await self.config.guild(guild).trigger_list.set(triggers)
 
