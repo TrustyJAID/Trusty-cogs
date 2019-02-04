@@ -232,14 +232,19 @@ class Badges(getattr(commands, "Cog", object)):
         if badge.lower() == "list":
             await ctx.invoke(self.listbadges)
             return
-        badge = await self.get_badge(badge, guild)
+        badge_obj = await self.get_badge(badge, guild)
+        if not badge_obj:
+            await ctx.send(_("`{}` is not an available badge.").format(badge))
+            return
         async with ctx.channel.typing():
-            badge_img = await self.create_badge(user, badge, False)
+            badge_img = await self.create_badge(user, badge_obj, False)
             if badge_img is None:
                 await ctx.send(_("Something went wrong sorry!"))
                 return
-            image = discord.File(badge_img)
-            await ctx.send(file=image)
+            image = discord.File(badge_img, "badge.png")
+            embed = discord.Embed(color=ctx.author.color)
+            embed.set_image(url="attachment://badge.png")
+            await ctx.send(files=[image])
 
     @commands.command(aliases=["gbadge"])
     async def gbadges(self, ctx, *, badge):
@@ -255,9 +260,12 @@ class Badges(getattr(commands, "Cog", object)):
         if badge.lower() == "list":
             await ctx.invoke(self.listbadges)
             return
-        badge = await self.get_badge(badge, guild)
+        badge_obj = await self.get_badge(badge, guild)
+        if not badge_obj:
+            await ctx.send(_("`{}` is not an available badge.").format(badge))
+            return
         async with ctx.channel.typing():
-            badge_img = await self.create_badge(user, badge, True)
+            badge_img = await self.create_badge(user, badge_obj, True)
             if badge_img is None:
                 await ctx.send(_("Something went wrong sorry!"))
                 return

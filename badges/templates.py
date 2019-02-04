@@ -8,7 +8,7 @@ blank_template = [
     {
         "badge_name": "discord",
         "code": "DISCORD",
-        "file_name": "https://i.imgur.com/undefined.png",
+        "file_name": "https://i.imgur.com/Q4zkz9k.png",
         "is_inverted": False,
     },
     {
