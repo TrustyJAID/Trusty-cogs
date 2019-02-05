@@ -296,6 +296,14 @@ class Welcome(getattr(commands, "Cog", object)):
         em.set_thumbnail(url=member.avatar_url_as(format="png"))
         return em
 
+    async def make_embed_whisper(self, member: discord.Member, msg: str):
+        em = discord.Embed(
+            description=msg.format(member, member.guild), timestamp=member.joined_at
+        )
+        em.set_author(name=member.name + "#" + member.discriminator, icon_url=member.avatar_url)
+        em.set_thumbnail(url=member.guild.icon_url)
+        return em
+
     async def get_colour(self, guild):
         if await self.bot.db.guild(guild).use_bot_color():
             return guild.me.colour
@@ -319,7 +327,7 @@ class Welcome(getattr(commands, "Cog", object)):
         if not member.bot and await self.config.guild(guild).WHISPER():
             try:
                 if is_embed:
-                    em = await self.make_embed(member, msg)
+                    em = await self.make_embed_whisper(member, msg)
                     await member.send(embed=em)
                 else:
                     await member.send(msg.format(member, guild))
@@ -406,7 +414,7 @@ class Welcome(getattr(commands, "Cog", object)):
             print(msg)
             if not bot and await self.config.guild(guild).WHISPER():
                 if is_embed:
-                    em = await self.make_embed(member, msg)
+                    em = await self.make_embed_whisper(member, msg)
                     await ctx.author.send(embed=em)
                 else:
                     await ctx.author.send(msg.format(member, guild))
