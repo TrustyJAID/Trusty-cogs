@@ -1,6 +1,7 @@
 from random import choice, randint
 import discord
 import asyncio
+import unidecode
 
 import datetime
 import aiohttp
@@ -43,13 +44,13 @@ class FuzzyMember(IDConverter):
             # Not a mention
             if guild:
                 for m in guild.members:
-                    if argument.lower() in m.display_name.lower():
+                    if argument.lower() in unidecode.unidecode(m.display_name.lower()):
                         # display_name so we can get the nick of the user first
                         # without being NoneType and then check username if that matches
                         # what we're expecting
                         result.append(m)
                         continue
-                    if argument.lower() in m.name.lower():
+                    if argument.lower() in unidecode.unidecode(m.name.lower()):
                         result.append(m)
                         continue
         else:

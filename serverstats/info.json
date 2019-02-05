@@ -13,7 +13,7 @@
     ],
     "name" : "ServerStats",
     "permissions" : [],
-    "requirements" : [],
+    "requirements" : ["unidecode"],
     "short" : "Get various stats about servers the bot is on.",
     "tags" : []
 }
