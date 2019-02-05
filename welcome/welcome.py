@@ -409,7 +409,7 @@ class Welcome(getattr(commands, "Cog", object)):
             await ctx.send(msg)
             return
         if channel is None:
-            await ctx.send(_("`Sending a testing message to ") + "`DM")
+            await ctx.send(_("`Sending a testing message to ") + "` DM")
         else:
             await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if self.speak_permissions(guild, await self.config.guild(guild).CHANNEL()):
@@ -428,9 +428,9 @@ class Welcome(getattr(commands, "Cog", object)):
                 else:
                     await channel.send(msg.format(member, guild))
         else:
-            msg = (
-                _("I do not have permissions ")
-                + _("to send messages to ")
-                + "{0.mention}".format(channel)
-            )
+            msg = _("I do not have permissions to send messages to ")
+            if channel:
+                msg += "{0.mention}".format(channel)
+            else:
+                return
             await ctx.send(msg)
