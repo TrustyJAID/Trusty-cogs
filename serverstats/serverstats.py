@@ -22,6 +22,30 @@ from typing import Union, Optional
 
 _ = Translator("ServerStats", __file__)
 
+verif = {0: "0 - None", 1: "1 - Low", 2: "2 - Medium", 3: "3 - Hard", 4: "4 - Extreme"}
+
+region = {
+    "vip-us-east": "__VIP__ US East :flag_us:",
+    "vip-us-west": "__VIP__ US West :flag_us:",
+    "vip-amsterdam": "__VIP__ Amsterdam :flag_nl:",
+    "eu-west": "EU West :flag_eu:",
+    "eu-central": "EU Central :flag_eu:",
+    "london": "London :flag_gb:",
+    "frankfurt": "Frankfurt :flag_de:",
+    "amsterdam": "Amsterdam :flag_nl:",
+    "us-west": "US West :flag_us:",
+    "us-east": "US East :flag_us:",
+    "us-south": "US South :flag_us:",
+    "us-central": "US Central :flag_us:",
+    "singapore": "Singapore :flag_sg:",
+    "sydney": "Sydney :flag_au:",
+    "brazil": "Brazil :flag_br:",
+    "hongkong": "Hong Kong :flag_hk:",
+    "russia": "Russia :flag_ru:",
+    "japan": "Japan :flag_jp:",
+    "southafrica": "South Africa :flag_za:",
+}
+
 
 class FuzzyMember(IDConverter):
     """
@@ -153,19 +177,21 @@ class ServerStats(getattr(commands, "Cog", object)):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        em = await self.guild_embed(guild)
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has joined a server!\n "
-            "That's {num} servers now! \n"
-            "Server created {since}. "
-            "That's over {passed} days ago!"
+            "That's **{num}** servers now! "
+            "That's a total of **{users}** users !\n"
+            "Server created on **{since}**. "
+            "That's over **{passed}** days ago!"
         ).format(
             bot=channel.guild.me.mention,
             num=len(self.bot.guilds),
-            since=guild.created_at.strftime("%d %b %Y %H:%M"),
+            users=sum(len(s.members) for s in self.bot.guilds),
+            since=guild.created_at.strftime("%d %b %Y %H:%M:%S"),
             passed=passed,
         )
+        em = await self.guild_embed(guild)
         em.description = created_at
         await channel.send(embed=em)
 
@@ -173,39 +199,134 @@ class ServerStats(getattr(commands, "Cog", object)):
         """
             Builds the guild embed information used throughout the cog
         """
-        online = len(
-            [
-                m.status
-                for m in guild.members
-                if m.status == discord.Status.online or m.status == discord.Status.idle
-            ]
-        )
+
+        def check_feature(feature):
+            return "\N{WHITE HEAVY CHECK MARK}" if feature in guild.features else "\N{CROSS MARK}"
+
+        format_kwargs = {
+            "vip": check_feature("VIP_REGIONS"),
+            "van": check_feature("VANITY_URL"),
+            "splash": check_feature("INVITE_SPLASH"),
+            "m_emojis": check_feature("MORE_EMOJI"),
+            "verify": check_feature("VERIFIED"),
+        }
+        online = len([m.status for m in guild.members if m.status == discord.Status.online])
+        idle = len([m.status for m in guild.members if m.status == discord.Status.idle])
+        dnd = len([m.status for m in guild.members if m.status == discord.Status.dnd])
+        offline = len([m.status for m in guild.members if m.status == discord.Status.offline])
+        streaming = len([m for m in guild.members if isinstance(m.activity, discord.Streaming)])
+        mobile = len([m for m in guild.members if m.is_on_mobile()])
+        lurkers = len([m for m in guild.members if m.joined_at is None])
         total_users = len(guild.members)
+        humans = len([a for a in guild.members if a.bot == False])
+        bots = len([a for a in guild.members if a.bot])
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("Server created {since}. " "That's over {passed} days ago!").format(
+        created_at = _("Created on **{since}**. " "That's over **{passed}** days ago!").format(
             since=guild.created_at.strftime("%d %b %Y %H:%M"), passed=passed
         )
+        joined_at = guild.me.joined_at
+        since_joined = (datetime.datetime.utcnow() - joined_at).days
+        bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
+        joined_on = _(
+            "**{bot_name}** joined this server on **{bot_join}**. That's over **{since_join}** days ago!"
+        ).format(bot_name=guild.me.name, bot_join=bot_joined, since_join=since_joined)
 
         colour = guild.roles[-1].colour
 
-        em = discord.Embed(description=created_at, colour=colour, timestamp=guild.created_at)
-        em.add_field(name=_("Region"), value=str(guild.region))
-        em.add_field(name=_("Users"), value="{}/{}".format(online, total_users))
-        em.add_field(name=_("Text Channels"), value=text_channels)
-        em.add_field(name=_("Voice Channels"), value=voice_channels)
-        em.add_field(name=_("Roles"), value=len(guild.roles))
+        em = discord.Embed(description=f"{created_at}\n{joined_on}", colour=colour)
+        if lurkers:
+            em.add_field(
+                name=_("Members :"),
+                value=_(
+                    "Total users : **{total}**\nLurkers : **{lurkers}**\nHumans : **{hum}** • Bots : **{bots}**\n"
+                    "📗 `{online}` 📙 `{idle}`\n📕 `{dnd}` 📓 `{off}`\n"
+                    "🎥 `{streaming}` 📱 `{mobile}`\n"
+                ).format(
+                    total=total_users,
+                    lurkers=lurkers,
+                    hum=humans,
+                    bots=bots,
+                    online=online,
+                    idle=idle,
+                    dnd=dnd,
+                    off=offline,
+                    streaming=streaming,
+                    mobile=mobile,
+                ),
+            )
+        else:
+            em.add_field(
+                name=_("Members :"),
+                value=_(
+                    "Total users : **{total}**\nHumans : **{hum}** • Bots : **{bots}**\n"
+                    "📗 `{online}` 📙 `{idle}`\n📕 `{dnd}` 📓 `{off}`\n"
+                    "🎥 `{streaming}` 📱 `{mobile}`\n"
+                ).format(
+                    total=total_users,
+                    lurkers=lurkers,
+                    hum=humans,
+                    bots=bots,
+                    online=online,
+                    idle=idle,
+                    dnd=dnd,
+                    off=offline,
+                    streaming=streaming,
+                    mobile=mobile,
+                ),
+            )
         em.add_field(
-            name=_("Owner"), value="{} | {}".format(str(guild.owner), guild.owner.mention)
+            name=_("Channels :"),
+            value=_("💬 Text : **{text}**\n🔊 Voice : **{voice}**").format(
+                text=text_channels, voice=voice_channels
+            ),
+        )
+        em.add_field(
+            name=_("Utility :"),
+            value=_(
+                "Owner : **{owner}**\nRegion : **{region}**\nVerif. level : **{verif}**\nServer ID : **{id}**"
+            ).format(
+                owner=guild.owner,
+                region=region[str(guild.region)],
+                verif=verif[int(guild.verification_level)],
+                id=guild.id,
+            ),
+        )
+        em.add_field(
+            name=_("Misc :"),
+            value=_(
+                "AFK channel : **{afk_chan}**\nAFK Timeout : **{afk_timeout}sec**\nCustom emojis : **{emojis}**\nRoles : **{roles}**"
+            ).format(
+                afk_chan=guild.afk_channel,
+                afk_timeout=guild.afk_timeout,
+                emojis=len(guild.emojis),
+                roles=len(guild.roles),
+            ),
         )
         if guild.features:
             em.add_field(
-                name=_("Guild Features"), value=", ".join(feature for feature in guild.features)
+                name=_("Special features :"),
+                value=_(
+                    "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n{m_emojis} More Emojis\n{verify} Verified"
+                ).format(**format_kwargs),
             )
-        em.set_footer(text=_("Guild ID: ") + "{}".format(guild.id))
-        em.set_author(name=guild.name, icon_url=guild.icon_url_as(format="png"))
-        em.set_thumbnail(url=guild.icon_url_as(format="png"))
+        if "VERIFIED" in guild.features:
+            em.set_author(
+                name=guild.name,
+                icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
+            )
+        if guild.icon_url:
+            em.set_author(name=guild.name, url=guild.icon_url)
+            em.set_thumbnail(url=guild.icon_url)
+        else:
+            em.set_author(
+                name=guild.name,
+                url="https://cdn.discordapp.com/attachments/494975386334134273/529843761635786754/Discord-Logo-Black.png",
+            )
+            em.set_thumbnail(
+                url="https://cdn.discordapp.com/attachments/494975386334134273/529843761635786754/Discord-Logo-Black.png"
+            )
         return em
 
     async def on_guild_remove(self, guild):
@@ -218,12 +339,14 @@ class ServerStats(getattr(commands, "Cog", object)):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has left a server!\n "
-            "That's {num} servers now! \n"
-            "Server created {since}. "
-            "That's over {passed} days ago!"
+            "That's **{num}** servers now! \n"
+            "That's a total of **{users}** users !\n"
+            "Server created on **{since}**. "
+            "That's over **{passed}** days ago!"
         ).format(
             bot=channel.guild.me.mention,
             num=len(self.bot.guilds),
+            users=sum(len(s.members) for s in self.bot.guilds),
             since=guild.created_at.strftime("%d %b %Y %H:%M"),
             passed=passed,
         )
@@ -551,13 +674,13 @@ class ServerStats(getattr(commands, "Cog", object)):
                 if member.id in members:
                     guild_list.append(guild)
             if guild_list != []:
-                msg = "{} ({}) ".format(member, member.id) + _("is on:\n")
+                msg = "**{}** ({}) ".format(member, member.id) + _("is on:\n\n")
                 for guild in guild_list:
-                    msg += "{} ({})\n".format(guild.name, guild.id)
+                    msg += "__{}__ ({})\n".format(guild.name, guild.id)
                 for page in pagify(msg, ["\n"]):
                     await ctx.send(page)
             else:
-                msg = f"{member} ({member.id}) " + _("is not in any shared servers!")
+                msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                 await ctx.send(msg)
         else:
             guild_list = []
@@ -566,13 +689,13 @@ class ServerStats(getattr(commands, "Cog", object)):
                 if member.id in members and ctx.author.id in members:
                     guild_list.append(guild)
             if guild_list != []:
-                msg = "{} ({}) ".format(member, member.id) + _("is on:\n")
+                msg = "**{}** ({}) ".format(member, member.id) + _("is on:\n\n")
                 for guild in guild_list:
-                    msg += "{} ({})\n".format(guild.name, guild.id)
+                    msg += "__{}__ ({})\n".format(guild.name, guild.id)
                 for page in pagify(msg, ["\n"]):
                     await ctx.send(page)
             else:
-                msg = f"{member} ({member.id}) " + _("is not in any shared servers!")
+                msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                 await ctx.send(msg)
 
     @commands.command(hidden=True)
@@ -632,7 +755,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         pass
 
     @guildedit.command(name="name")
-    async def guild_name(self, ctx, *, name:str):
+    async def guild_name(self, ctx, *, name: str):
         """
         Change the server name
         """
@@ -644,7 +767,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             pass
 
     @guildedit.command(name="verificationlevel", aliases=["verification"])
-    async def verifivation_level(self, ctx, *, level:str):
+    async def verifivation_level(self, ctx, *, level: str):
         """
             Modify the guilds verification level
 
@@ -653,13 +776,13 @@ class ServerStats(getattr(commands, "Cog", object)):
         """
 
         levels = {
-            "none":discord.VerificationLevel.none,
-            "low":discord.VerificationLevel.low,
-            "medium":discord.VerificationLevel.medium,
-            "high":discord.VerificationLevel.high,
-            "table flip":discord.VerificationLevel.high,
-            "extreme":discord.VerificationLevel.extreme,
-            "double table flip":discord.VerificationLevel.extreme
+            "none": discord.VerificationLevel.none,
+            "low": discord.VerificationLevel.low,
+            "medium": discord.VerificationLevel.medium,
+            "high": discord.VerificationLevel.high,
+            "table flip": discord.VerificationLevel.high,
+            "extreme": discord.VerificationLevel.extreme,
+            "double table flip": discord.VerificationLevel.extreme,
         }
         reason = _("Requested by {author}").format(author=ctx.author)
         if level.lower() not in levels:
@@ -672,7 +795,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             pass
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
-    async def system_channel(self, ctx, channel:discord.TextChannel=None):
+    async def system_channel(self, ctx, channel: discord.TextChannel = None):
         """
         Change the system channel
 
@@ -686,7 +809,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             pass
 
     @guildedit.command(name="afkchannel")
-    async def afk_channel(self, ctx, channel:discord.VoiceChannel=None):
+    async def afk_channel(self, ctx, channel: discord.VoiceChannel = None):
         """
         Change the servers AFK voice channel
 
@@ -700,7 +823,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             pass
 
     @guildedit.command(name="afktimeout")
-    async def afk_timeout(self, ctx, timeout:int):
+    async def afk_timeout(self, ctx, timeout: int):
         """
         Change the servers AFK timeout
 
