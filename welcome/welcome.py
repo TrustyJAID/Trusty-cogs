@@ -408,7 +408,10 @@ class Welcome(getattr(commands, "Cog", object)):
             msg = _("I can't find the specified channel. " "It might have been deleted.")
             await ctx.send(msg)
             return
-        await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
+        if channel is None:
+            await ctx.send(_("`Sending a testing message to ") + "`DM")
+        else:
+            await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if self.speak_permissions(guild, await self.config.guild(guild).CHANNEL()):
             msg = await self.config.guild(guild).BOTS_MSG() if bot else rand_msg
             print(msg)
