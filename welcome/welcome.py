@@ -35,7 +35,7 @@ _ = Translator("WelcomeLeaver", __file__)
 @cog_i18n(_)
 class WelcomeLeave(getattr(commands, "Cog", object)):
     """Welcomes and goodbye users to the guild.
-    Rewritten from https://github.com/TrustyJAID/Trusty-cogs/tree/master/welcome"""
+    Rewritten from https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     def __init__(self, bot):
         self.bot = bot
