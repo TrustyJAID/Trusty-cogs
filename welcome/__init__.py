@@ -1,6 +1,6 @@
-from .welcome import Welcome
+from .welcomeleave import WelcomeLeave
 
 
 def setup(bot):
-    n = Welcome(bot)
+    n = WelcomeLeave(bot)
     bot.add_cog(n)
