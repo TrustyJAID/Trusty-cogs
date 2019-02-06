@@ -681,12 +681,13 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     def generate_ascii(self, image):
         font = PIL.ImageFont.truetype(
-            str(bundled_data_path(self)) + "/arial.ttf", 15, encoding="unic"
+            str(bundled_data_path(self)) + "/FreeMonoBold.ttf", 15
         )
         image_width, image_height = image.size
         aalib_screen_width = int(image_width / 24.9) * 10
         aalib_screen_height = int(image_height / 41.39) * 10
         screen = aalib.AsciiScreen(width=aalib_screen_width, height=aalib_screen_height)
+        
         im = image.convert("L").resize(screen.virtual_size)
         screen.put_image((0, 0), im)
         y = 0
@@ -696,9 +697,19 @@ class NotSoBot(getattr(commands, "Cog", object)):
         draw = PIL.ImageDraw.Draw(img)
         for lines in screen.render().splitlines():
             draw.text((0, y), lines, (0, 0, 0), font=font)
-            y = y + 15
+            y += 15
         imagefit = PIL.ImageOps.fit(img, (image_width, image_height), PIL.Image.ANTIALIAS)
         return imagefit
+
+    async def check_font_file(self):
+        try:
+            font = PIL.ImageFont.truetype(bundled_data_path(self)/"FreeMonoBold.ttf", 15)
+            font = None # just overwrite so we don't re-open this multiple times
+        except:
+            async with self.session.get("https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf") as resp:
+                data = await resp.read()
+            with open(bundled_data_path(self)/"FreeMonoBold.ttf", "wb") as save_file:
+                save_file.write(data)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -707,6 +718,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         if not AALIB_INSTALLED:
             await ctx.send("aalib couldn't be found on this machine!")
             return
+        await self.check_font_file()
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
@@ -739,7 +751,6 @@ class NotSoBot(getattr(commands, "Cog", object)):
             count = 0
             try:
                 for frame in gif_list[:20]:
-                    print(count)
                     im = frame.copy()
                     new_im = self.generate_ascii(im)
                     img_list.append(new_im)
@@ -762,6 +773,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
         if not AALIB_INSTALLED:
             await ctx.send("aalib couldn't be found on this machine!")
             return
+        await self.check_font_file()
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
