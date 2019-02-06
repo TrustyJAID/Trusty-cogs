@@ -2,7 +2,7 @@ import discord
 from redbot.core import commands, checks, Config, modlog
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from typing import Union
+from typing import Union, Optional
 import logging
 import os
 
@@ -21,7 +21,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -71,14 +71,18 @@ class ReTrigger(TriggerHandler, commands.Cog):
                                 try:
                                     os.remove(path)
                                 except Exception as e:
-                                    msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                    msg = _("Error deleting saved image in {guild}").format(
+                                        guild=guild.id
+                                    )
                                     log.error(msg, exc_info=True)
                         else:
                             path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
                             try:
                                 os.remove(path)
                             except Exception as e:
-                                msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                msg = _("Error deleting saved image in {guild}").format(
+                                    guild=guild.id
+                                )
                                 log.error(msg, exc_info=True)
                                 pass
                     del triggers[trigger]
@@ -123,7 +127,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Set the modlog channel for filtered words
 
-            `channel` The channel you would like filtered word notifications to go
+            `<channel>` The channel you would like filtered word notifications to go
             Use `none` or `clear` to not show any modlogs
             User `default` to use the built in modlog channel
         """
@@ -146,10 +150,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Set cooldown options for retrigger
 
-            `trigger` is the name of the trigger
-            `time` is a time in seconds until the trigger will run again
+            `<trigger>` is the name of the trigger
+            `<time>` is a time in seconds until the trigger will run again
             set a time of 0 or less to remove the cooldown
-            `style` must be either `guild`, `server`, `channel`, `user`, or `member`
+            `[style=guild]` must be either `guild`, `server`, `channel`, `user`, or `member`
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -179,8 +183,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add channel to triggers whitelist
 
-            `trigger` is the name of the trigger
-            `channel_user_role` is the channel, user or role to whitelist
+            `<trigger>` is the name of the trigger
+            `<channel_user_role>` is the channel, user or role to whitelist
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -202,8 +206,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove channel from triggers whitelist
 
-            `trigger` is the name of the trigger
-            `channel_user_role` is the channel, user or role to remove from the whitelist
+            `<trigger>` is the name of the trigger
+            `<channel_user_role>` is the channel, user or role to remove from the whitelist
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -223,8 +227,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add channel to triggers blacklist
 
-            `trigger` is the name of the trigger
-            `channel_user_role` is the channel, user or role to blacklist
+            `<trigger>` is the name of the trigger
+            `<channel_user_role>` is the channel, user or role to blacklist
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -246,8 +250,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove channel from triggers blacklist
 
-            `trigger` is the name of the trigger
-            `channel_user_role` is the channel, user or role to remove from the blacklist
+            `<trigger>` is the name of the trigger
+            `<channel_user_role>` is the channel, user or role to remove from the blacklist
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -266,7 +270,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             List information about triggers
 
-            `trigger` if supplied provides information about named trigger
+            `<trigger>` if supplied provides information about named trigger
         """
         if trigger:
             if type(trigger) is str:
@@ -288,7 +292,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove a specified trigger
 
-            `trigger` is the name of the trigger
+            `<trigger>` is the name of the trigger
         """
         if type(trigger) is Trigger:
             await self.remove_trigger(ctx.guild, trigger.name)
@@ -302,8 +306,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a text response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `text` response of the trigger
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -326,8 +330,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a random text response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -353,8 +357,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a dm response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `text` response of the trigger
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -378,8 +382,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add an image/file response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `image_url` optional image_url if none is provided the bot will ask to upload an image
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -415,8 +419,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a random image/file response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -428,7 +432,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         author = ctx.message.author.id
         filename = await self.wait_for_multiple_images(ctx)
 
-        new_trigger = Trigger(name, regex, ["randimage"], author, 0, filename, None, [], [], {}, [])
+        new_trigger = Trigger(
+            name, regex, ["randimage"], author, 0, filename, None, [], [], {}, []
+        )
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
@@ -443,8 +449,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add an image/file response with text trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `text` the triggered text response
             `image_url` optional image_url if none is provided the bot will ask to upload an image
             See https://regex101.com/ for help building a regex pattern
@@ -482,8 +488,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Add an image to resize in response to a trigger
             this will attempt to resize the image based on length of matching regex
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `image_url` optional image_url if none is provided the bot will ask to upload an image
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -521,8 +527,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             This respects hierarchy so ensure the bot role is lower in the list
             than mods and admin so they don't get banned by accident
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -547,8 +553,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             This respects hierarchy so ensure the bot role is lower in the list
             than mods and admin so they don't get kicked by accident
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -571,8 +577,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a reaction trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `emojis` the emojis to react with when triggered separated by spaces
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -595,8 +601,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a command trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `command` the command that will be triggered, do add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -624,8 +630,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a trigger for command as if you used the command
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             `command` the command that will be triggered, do add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
@@ -650,12 +656,14 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command(aliases=["deletemsg"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def filter(self, ctx, name: TriggerExists, regex: str):
+    async def filter(
+        self, ctx, name: TriggerExists, check_filenames: Optional[bool] = False, *, regex: str
+    ):
         """
             Add a trigger to delete a message
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -665,7 +673,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["delete"], author, 0, None, None, [], [], {}, [])
+        new_trigger = Trigger(
+            name, regex, ["delete"], author, 0, None, check_filenames, [], [], {}, []
+        )
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
@@ -678,9 +688,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a trigger to add a role
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
-            `role` the role applied when the regex pattern matches
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `[role...]` the roles applied when the regex pattern matches space separated
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -708,9 +718,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a trigger to remove a role
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
-            `role` the role applied when the regex pattern matches
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `[role...]` the roles applied when the regex pattern matches space separated
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -739,9 +749,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a multiple response trigger
 
-            `name` name of the trigger
-            `regex` the regex that will determine when to respond
-            `multi_response` the actions to perform when the trigger matches
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `[multi_response...]` the actions to perform when the trigger matches
             multiple responses start with the name of the action which must be one of:
             dm, text, filter, add_role, remove_role, ban, or kick
             followed by a `;` if there is a followup response and a space for the next 

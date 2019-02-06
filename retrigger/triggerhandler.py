@@ -543,8 +543,11 @@ class TriggerHandler:
                     continue
                 if is_command:
                     continue
+            content = message.content
+            if "delete" in trigger.response_type and trigger.text:
+                content = message.content + " " + " ".join(f.filename for f in message.attachments)
             try:
-                process = self.re_pool.apply_async(trigger.regex.findall, (message.content,))
+                process = self.re_pool.apply_async(trigger.regex.findall, (content,))
                 task = functools.partial(process.get, timeout=10)
                 task = self.bot.loop.run_in_executor(None, task)
                 search = await asyncio.wait_for(task, timeout=10)
@@ -566,7 +569,6 @@ class TriggerHandler:
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0])
                 await self.config.guild(guild).trigger_list.set(trigger_list)
-                # if not await self.config.guild(guild).allow_multiple():
                 return
 
     async def perform_trigger(self, message, trigger, find):
