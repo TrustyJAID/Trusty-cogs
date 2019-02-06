@@ -3,7 +3,7 @@
         "irdumb",
         "TrustyJAID"
     ],
-    "description" : "Welcome new users to the server",
+    "description" : "Welcome new users, and say goodbye to the leavers to the server",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "welcome",
@@ -15,6 +15,6 @@
     "name" : "welcome",
     "permissions" : [],
     "requirements" : [],
-    "short" : "Welcome new users to the server",
+    "short" : "Welcome new users, and say goodbye to the leavers to the server",
     "tags" : []
 }
