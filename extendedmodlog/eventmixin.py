@@ -212,7 +212,8 @@ class EventMixin:
         invites = await self.config.guild(guild).invite_links()
         possible_link = ""
         check_logs = manage_guild and guild.me.guild_permissions.view_audit_log
-
+        if manage_guild and "VANITY_URL" in guild.features:
+            possible_link = str(await guild.vanity_invite())
         if invites and manage_guild:
             guild_invites = await guild.invites()
             for invite in guild_invites:
