@@ -969,9 +969,10 @@ class ServerStats(getattr(commands, "Cog", object)):
                 except:
                     pass
             elif react.emoji == "\N{INBOX TRAY}":
-                try:
-                    await ctx.send(str(await self.get_guild_invite(ctx, guild)))
-                except:
+                invite = await self.get_guild_invite(guild)
+                if invite:
+                    await ctx.send(str(invite))
+                else:
                     await ctx.send(
                         _("I cannot find or create an invite for `{guild}`").format(
                             guild=guild.name
