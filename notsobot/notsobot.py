@@ -25,7 +25,7 @@ from concurrent.futures._base import CancelledError
 import random, uuid
 from typing import Optional
 
-from redbot.core.data_manager import bundled_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
 
@@ -681,7 +681,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     def generate_ascii(self, image):
         font = PIL.ImageFont.truetype(
-            str(bundled_data_path(self)) + "/FreeMonoBold.ttf", 15
+            str(cog_data_path(self)) + "/FreeMonoBold.ttf", 15
         )
         image_width, image_height = image.size
         aalib_screen_width = int(image_width / 24.9) * 10
@@ -703,12 +703,12 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     async def check_font_file(self):
         try:
-            font = PIL.ImageFont.truetype(bundled_data_path(self)/"FreeMonoBold.ttf", 15)
+            font = PIL.ImageFont.truetype(cog_data_path(self)/"FreeMonoBold.ttf", 15)
             font = None # just overwrite so we don't re-open this multiple times
         except:
             async with self.session.get("https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf") as resp:
                 data = await resp.read()
-            with open(bundled_data_path(self)/"FreeMonoBold.ttf", "wb") as save_file:
+            with open(cog_data_path(self)/"FreeMonoBold.ttf", "wb") as save_file:
                 save_file.write(data)
 
     @commands.command()
