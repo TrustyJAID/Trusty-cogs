@@ -276,11 +276,11 @@ class EventMixin:
             embed = discord.Embed(
                 description=member.mention,
                 colour=discord.Colour.green(),
-                timestamp=member.created_at,
+                timestamp=member.joined_at,
             )
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
-            embed.set_footer(text=_("User ID: ") + str(member.id) + _(" Created on"))
+            embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
                 name=name.display_name + _(" has joined the guild"),
                 url=member.avatar_url,
