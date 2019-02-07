@@ -13,6 +13,7 @@ from redbot.core import checks, bank, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, box
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.predicates import MessagePredicate
 
 from discord.ext.commands.converter import IDConverter
 from discord.ext.commands.converter import _get_from_guilds
@@ -21,30 +22,6 @@ from typing import Union, Optional
 
 
 _ = Translator("ServerStats", __file__)
-
-verif = {0: "0 - None", 1: "1 - Low", 2: "2 - Medium", 3: "3 - Hard", 4: "4 - Extreme"}
-
-region = {
-    "vip-us-east": "__VIP__ US East :flag_us:",
-    "vip-us-west": "__VIP__ US West :flag_us:",
-    "vip-amsterdam": "__VIP__ Amsterdam :flag_nl:",
-    "eu-west": "EU West :flag_eu:",
-    "eu-central": "EU Central :flag_eu:",
-    "london": "London :flag_gb:",
-    "frankfurt": "Frankfurt :flag_de:",
-    "amsterdam": "Amsterdam :flag_nl:",
-    "us-west": "US West :flag_us:",
-    "us-east": "US East :flag_us:",
-    "us-south": "US South :flag_us:",
-    "us-central": "US Central :flag_us:",
-    "singapore": "Singapore :flag_sg:",
-    "sydney": "Sydney :flag_au:",
-    "brazil": "Brazil :flag_br:",
-    "hongkong": "Hong Kong :flag_hk:",
-    "russia": "Russia :flag_ru:",
-    "japan": "Japan :flag_jp:",
-    "southafrica": "South Africa :flag_za:",
-}
 
 
 class FuzzyMember(IDConverter):
@@ -109,7 +86,7 @@ class GuildConverter(IDConverter):
         if ctx.author.id != ctx.bot.owner_id:
             # Don't need to be snooping other guilds unless we're
             # the bot owner
-            return
+            raise BadArgument(_("That option is only available for the bot owner."))
         if match is None:
             # Not a mention
             for g in bot.guilds:
@@ -203,6 +180,30 @@ class ServerStats(getattr(commands, "Cog", object)):
         def check_feature(feature):
             return "\N{WHITE HEAVY CHECK MARK}" if feature in guild.features else "\N{CROSS MARK}"
 
+        verif = {0: "0 - None", 1: "1 - Low", 2: "2 - Medium", 3: "3 - Hard", 4: "4 - Extreme"}
+
+        region = {
+            "vip-us-east": "__VIP__ US East :flag_us:",
+            "vip-us-west": "__VIP__ US West :flag_us:",
+            "vip-amsterdam": "__VIP__ Amsterdam :flag_nl:",
+            "eu-west": "EU West :flag_eu:",
+            "eu-central": "EU Central :flag_eu:",
+            "london": "London :flag_gb:",
+            "frankfurt": "Frankfurt :flag_de:",
+            "amsterdam": "Amsterdam :flag_nl:",
+            "us-west": "US West :flag_us:",
+            "us-east": "US East :flag_us:",
+            "us-south": "US South :flag_us:",
+            "us-central": "US Central :flag_us:",
+            "singapore": "Singapore :flag_sg:",
+            "sydney": "Sydney :flag_au:",
+            "brazil": "Brazil :flag_br:",
+            "hongkong": "Hong Kong :flag_hk:",
+            "russia": "Russia :flag_ru:",
+            "japan": "Japan :flag_jp:",
+            "southafrica": "South Africa :flag_za:",
+        }
+
         format_kwargs = {
             "vip": check_feature("VIP_REGIONS"),
             "van": check_feature("VANITY_URL"),
@@ -285,7 +286,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         em.add_field(
             name=_("Utility :"),
             value=_(
-                "Owner : **{owner}**\nRegion : **{region}**\nVerif. level : **{verif}**\nServer ID : **{id}**"
+                "Owner : {owner.mention}\n**{owner}**\nRegion : **{region}**\nVerif. level : **{verif}**\nServer ID : **{id}**"
             ).format(
                 owner=guild.owner,
                 region=region[str(guild.region)],
@@ -920,12 +921,14 @@ class ServerStats(getattr(commands, "Cog", object)):
             await message.add_reaction("⬅")
             await message.add_reaction("❌")
             await message.add_reaction("➡")
+            await message.add_reaction("📤")
+            await message.add_reaction("📥")
         else:
             # message edits don't return the message object anymore lol
             await message.edit(embed=em)
         check = (
             lambda react, user: user == ctx.message.author
-            and react.emoji in ["➡", "⬅", "❌"]
+            and react.emoji in ["➡", "⬅", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
             and react.message.id == message.id
         )
         try:
@@ -934,6 +937,8 @@ class ServerStats(getattr(commands, "Cog", object)):
             await message.remove_reaction("⬅", ctx.me)
             await message.remove_reaction("❌", ctx.me)
             await message.remove_reaction("➡", ctx.me)
+            await message.remove_reaction("\N{INBOX TRAY}", ctx.me)
+            await message.remove_reaction("\N{OUTBOX TRAY}", ctx.me)
             return None
         else:
             if react.emoji == "➡":
@@ -958,11 +963,76 @@ class ServerStats(getattr(commands, "Cog", object)):
                 return await self.guild_menu(
                     ctx, post_list, message=message, page=next_page, timeout=timeout
                 )
+            elif react.emoji == "\N{OUTBOX TRAY}":
+                try:
+                    await self.confirm_leave_guild(ctx, guild)
+                except:
+                    pass
+            elif react.emoji == "\N{INBOX TRAY}":
+                try:
+                    await ctx.send(str(await self.get_guild_invite(ctx, guild)))
+                except:
+                    await ctx.send(
+                        _("I cannot find or create an invite for `{guild}`").format(
+                            guild=guild.name
+                        )
+                    )
             else:
                 return await message.delete()
 
+    @staticmethod
+    async def confirm_leave_guild(ctx, guild):
+        await ctx.send(
+            _("Are you sure you want to leave {guild}? (reply yes or no)").format(guild=guild.name)
+        )
+        pred = MessagePredicate.yes_or_no(ctx)
+        await ctx.bot.wait_for("message", check=pred)
+        if pred.result is True:
+            try:
+                await ctx.send(_("Leaving {guild}.").format(guild=guild.name))
+                await guild.leave()
+            except:
+                await ctx.send(_("I couldn't leave {guild}.").format(guild=guild.name))
+        else:
+            await ctx.send(_("Okay, not leaving {guild}.").format(guild=guild.name))
+
+    @staticmethod
+    async def get_guild_invite(guild: discord.Guild, max_age: int = 86400):
+        """Handles the reinvite logic for getting an invite
+        to send the newly unbanned user
+        :returns: :class:`Invite`"""
+        my_perms: discord.Permissions = guild.me.guild_permissions
+        if my_perms.manage_guild or my_perms.administrator:
+            if "VANITY_URL" in guild.features:
+                # guild has a vanity url so use it as the one to send
+                return await guild.vanity_invite()
+            invites = await guild.invites()
+        else:
+            invites = []
+        for inv in invites:  # Loop through the invites for the guild
+            if not (inv.max_uses or inv.max_age or inv.temporary):
+                # Invite is for the guild's default channel,
+                # has unlimited uses, doesn't expire, and
+                # doesn't grant temporary membership
+                # (i.e. they won't be kicked on disconnect)
+                return inv
+        else:  # No existing invite found that is valid
+            channels_and_perms = zip(
+                guild.text_channels, map(guild.me.permissions_in, guild.text_channels)
+            )
+            channel = next(
+                (channel for channel, perms in channels_and_perms if perms.create_instant_invite),
+                None,
+            )
+            if channel is None:
+                return
+            try:
+                # Create invite that expires after max_age
+                return await channel.create_invite(max_age=max_age)
+            except discord.HTTPException:
+                return
+
     @commands.command()
-    @checks.is_owner()
     @commands.bot_has_permissions(embed_links=True)
     async def getguild(self, ctx, *, guild: GuildConverter = None):
         """
@@ -970,10 +1040,12 @@ class ServerStats(getattr(commands, "Cog", object)):
 
             `guild_name` can be either the server ID or partial name
         """
-        page = 0
-        if guild:
-            page = ctx.bot.guilds.index(guild)
-        await self.guild_menu(ctx, ctx.bot.guilds, None, page)
+        page = ctx.bot.guilds.index(ctx.guild)
+        if guild or await ctx.bot.is_owner(ctx.author):
+            page = ctx.bot.guilds.index(guild) if guild else page
+            await self.guild_menu(ctx, ctx.bot.guilds, None, page)
+        else:
+            await ctx.send(embed=await self.guild_embed(ctx.guild))
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
