@@ -595,7 +595,7 @@ class TriggerHandler:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
                 response = trigger.text
-            response = await self.convert_parms(message, response)
+            response = await self.convert_parms(message, response, trigger.regex)
             try:
                 await channel.send(response)
             except Exception as e:
@@ -605,7 +605,7 @@ class TriggerHandler:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
                 response = random.choice(trigger.text)
-            response = await self.convert_parms(message, response)
+            response = await self.convert_parms(message, response, trigger.regex)
             try:
                 await channel.send(response)
             except Exception as e:
@@ -615,7 +615,7 @@ class TriggerHandler:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
             else:
                 response = trigger.text
-            response = await self.convert_parms(message, response)
+            response = await self.convert_parms(message, response, trigger.regex)
             try:
                 await author.send(response)
             except Exception as e:
@@ -655,7 +655,7 @@ class TriggerHandler:
             file = discord.File(path)
             response = trigger.text
             if response:
-                response = await self.convert_parms(message, response)
+                response = await self.convert_parms(message, response, trigger.regex)
             try:
                 await channel.send(trigger.text, file=file)
             except Exception as e:
@@ -666,7 +666,7 @@ class TriggerHandler:
             file = discord.File(path)
             response = trigger.text
             if response:
-                response = await self.convert_parms(message, response)
+                response = await self.convert_parms(message, response, trigger.regex)
             try:
                 await channel.send(trigger.text, file=file)
             except Exception as e:
@@ -742,7 +742,7 @@ class TriggerHandler:
                 msg.content = prefix_list[0] + command
                 self.bot.dispatch("message", msg)
 
-    async def convert_parms(self, message, raw_response) -> str:
+    async def convert_parms(self, message, raw_response, regex_replace) -> str:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
         ctx = await self.bot.get_context(message)
         cc_args = (*ctx.args, *ctx.kwargs.values())
@@ -755,7 +755,8 @@ class TriggerHandler:
             low = min(int(result[1]) for result in results)
             for result in results:
                 index = int(result[1]) - low
-                arg = self.transform_arg(result[0], result[2], cc_args[index])
+                arg = message.content.replace(regex_replace.search(message.content).group(0), "")
+                log.info(arg)
                 raw_response = raw_response.replace("{" + result[0] + "}", arg)
         return raw_response
         # await ctx.send(raw_response)
@@ -855,7 +856,9 @@ class TriggerHandler:
                             try:
                                 os.remove(path)
                             except Exception as e:
-                                msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
+                                msg = _("Error deleting saved image in {guild}").format(
+                                    guild=guild.id
+                                )
                                 log.error(msg, exc_info=True)
                     else:
                         path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
