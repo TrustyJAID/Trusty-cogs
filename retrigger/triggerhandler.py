@@ -675,14 +675,14 @@ class TriggerHandler:
             if trigger.multi_payload:
                 response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
                 for command in response:
-                    command = await self.convert_parms(message, command)
+                    command = await self.convert_parms(message, command, trigger.regex)
                     msg = copy(message)
                     prefix_list = await self.bot.command_prefix(self.bot, message)
                     msg.content = prefix_list[0] + response
                     self.bot.dispatch("message", msg)
             else:
                 msg = copy(message)
-                command = await self.convert_parms(message, trigger.text)
+                command = await self.convert_parms(message, trigger.text, trigger.regex)
                 prefix_list = await self.bot.command_prefix(self.bot, message)
                 msg.content = prefix_list[0] + command
                 self.bot.dispatch("message", msg)
@@ -722,7 +722,7 @@ class TriggerHandler:
             if trigger.multi_payload:
                 response = [t[1] for t in trigger.multi_payload if t[0] == "mock"]
                 for command in response:
-                    command = await self.convert_parms(message, command)
+                    command = await self.convert_parms(message, command, trigger.regex)
                     msg = copy(message)
                     mocker = guild.get_member(trigger.author)
                     if not mocker:
@@ -734,7 +734,7 @@ class TriggerHandler:
             else:
                 msg = copy(message)
                 mocker = guild.get_member(trigger.author)
-                command = await self.convert_parms(message, trigger.text)
+                command = await self.convert_parms(message, trigger.text, trigger.regex)
                 if not mocker:
                     return  # We'll exit early if the author isn't on the server anymore
                 msg.author = mocker
