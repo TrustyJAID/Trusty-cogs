@@ -157,7 +157,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has joined a server!\n "
-            "That's **{num}** servers now! "
+            "That's **{num}** servers now!\n"
             "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
@@ -340,7 +340,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has left a server!\n "
-            "That's **{num}** servers now! \n"
+            "That's **{num}** servers now!\n"
             "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
@@ -1121,7 +1121,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         for page in pagify(new_msg, shorten_by=20):
             await ctx.send("```py\n{}\n```".format(page))
 
-    @commands.command(aliases=["serverstats"])
+    @commands.command(name="serverstats")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True)
     async def server_stats(
@@ -1225,7 +1225,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 await warning_msg.delete()
             await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
-    @commands.command(aliases=["channelstats"])
+    @commands.command(name="channelstats")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def channel_stats(
