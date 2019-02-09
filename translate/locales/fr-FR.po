@@ -1,0 +1,157 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2019-02-09 00:37+0100\n"
+"PO-Revision-Date: 2019-02-09 01::03+0100\n"
+"Last-Translator: Predä <EMAIL@ADDRESS>\n"
+"Language-Team: FRENCH <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.2\n"
+
+
+#: translate.py:62
+#, docstring
+msgid ""
+"\n"
+"        Translate messages using google translate\n"
+"    "
+msgstr ""
+"\n"
+"        Traduire des messages en utilisant Google Traduction\n\n"
+"    "
+
+#: translate.py:90
+msgid " said:"
+msgstr " a dit :"
+
+#: translate.py:91
+msgid " to "
+msgstr " vers "
+
+#: translate.py:91
+msgid "Requested by "
+msgstr "Demandé par "
+
+#: translate.py:185
+msgid "said:"
+msgstr "a dit :"
+
+#: translate.py:305
+#, docstring
+msgid ""
+"\n"
+"            Translate messages with google translate\n"
+"\n"
+"            `to_language` is the language you would like to translate\n"
+"            `message` is the message to translate\n"
+"        "
+msgstr ""
+"\n"
+"            Traduire des messages avec Google Traduction\n"
+"\n"
+"            `to_language` est la langue que vous souhaitez traduire\n\n"
+"            `message` est le message que vous voulez traduire\n\n"
+"        "
+
+#: translate.py:313
+msgid "The bot owner needs to set an api key first!"
+msgstr "Le propriétaire du bot doit d'abord définir la clé API !"
+
+#: translate.py:340
+#, docstring
+msgid ""
+"\n"
+"            Toggle the bot auto translating\n"
+"        "
+msgstr ""
+"\n"
+"            Activer la traduction automatique du bot\n\n"
+"        "
+
+#: translate.py:349
+#, docstring
+msgid ""
+"\n"
+"            Toggle translations to flag emoji reactions\n"
+"        "
+msgstr ""
+"\n"
+"            Activer la traduction en utilisant des drapeaux dans les réactions\n\n"
+"        "
+
+#: translate.py:355 translate.py:372
+msgid "on"
+msgstr "activée"
+
+#: translate.py:357 translate.py:374
+msgid "off"
+msgstr "désactivée"
+
+#: translate.py:359
+msgid "Reaction translations have been turned "
+msgstr "La traduction en se servant des réactions a été "
+
+#: translate.py:366
+#, docstring
+msgid ""
+"\n"
+"            Toggle translations with flag emojis in text\n"
+"        "
+msgstr ""
+"\n"
+"            Activer la traduction en utilisant des émojis de drapeaux dans le texte\n"
+"        "
+
+#: translate.py:376
+msgid "Flag emoji translations have been turned "
+msgstr "La traduction en utilisant des émojis de drapeaux a été "
+
+#: translate.py:382
+#, docstring
+msgid ""
+"\n"
+"            You must get an API key from google to set this up\n"
+"\n"
+"            Note: Using this cog costs money, current rates are $20 per 1 million characters.\n"
+"\n"
+"            1. Go to Google Developers Console and log in with your Google account. \n"
+"            (https://console.developers.google.com/)\n"
+"            2. You should be prompted to create a new project (name does not matter).\n"
+"            3. Click on Enable APIs and Services at the top.\n"
+"            4. In the list of APIs choose or search for Cloud Translate API and click on it. \n"
+"            Choose Enable.\n"
+"            5. Click on Credentials on the left navigation bar.\n"
+"            6. Click on Create Credential at the top.\n"
+"            7. At the top click the link for \"API key\".\n"
+"            8. No application restrictions are needed. Click Create at the bottom.\n"
+"            9. You now have a key to add to `[p]translateset`\n"
+"        "
+msgstr ""
+"\n"
+"            Vous devez obtenir une clé d'API de Google pour configurer ceci\n"
+"\n"
+"            Remarque : L'utilisation de ce cog coûte de l'argent, les taux actuels sont d'environ 17€ pour 1 million de caractères.\n"
+"\n"
+"            1. Allez sur la console développeurs Google, et connectez-vous avec votre compte Google. \n\n"
+"            (https://console.developers.google.com/)\n\n"
+"            2. Vous devriez être invité à créer un nouveau projet (le nom n'a pas d'importance).\n\n"
+"            3. Cliquez sur \"Activer des API et des services\" en haut de la page.\n\n"
+"            4. Dans la liste des APIs, choisissez ou recherchez Cloud Translate API, cliquez dessus. \n\n"
+"            Choisissez \"Activer\".\n\n"
+"            5. Cliquez sur \"Identifiants\" dans la barre de navigation en bas à gauche.\n\n"
+"            6. Cliquez sur \"Créer des identifiants\" en haut de la page.\n\n"
+"            7. En haut cliquez sur le lien pour \"Clé API\".\n\n"
+"            8. Aucunes restrictions d'applications sont nécessaires. Cliquez sur \"Créer\" en bas de la page.\n\n"
+"            9. Vous avez maintenant une clé à ajouter sur `[p]translateset`\n\n"
+"        "
+
+#: translate.py:400
+msgid "API key set."
+msgstr "Clé API définie."
+
