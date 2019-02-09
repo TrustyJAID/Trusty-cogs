@@ -360,8 +360,8 @@ class Conversions(getattr(commands, "Cog", object)):
         else:
             await ctx.send(embed=embed)
 
-    @commands.command()
-    async def convert(self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"):
+    @commands.command(aliases=["currency"])
+    async def convertcurrency(self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"):
         """
             Converts a value between 2 different currencies
 
