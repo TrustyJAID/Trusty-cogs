@@ -41,7 +41,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 127486454786)
-        default_global = {"api": None, "io_user": None, "io_key": None}
+        default_global = {"api": None, "io_user": None, "io_key": None, "allow_dm":False}
         default_guild = {"channel": None, "toggle": False}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
@@ -89,6 +89,7 @@ class Cleverbot(getattr(commands, "Cog", object)):
         pass
 
     @cleverbotset.command()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def toggle(self, ctx):
         """Toggles reply on mention"""
@@ -101,7 +102,20 @@ class Cleverbot(getattr(commands, "Cog", object)):
             await ctx.send("I won't reply on mention anymore.")
 
     @cleverbotset.command()
+    @checks.is_owner()
+    async def dm(self, ctx):
+        """Toggles reply in DM"""
+        guild = ctx.message.guild
+        if not await self.config.allow_dm():
+            await self.config.allow_dm.set(True)
+            await ctx.send("I will reply directly to DM's.")
+        else:
+            await self.config.allow_dm.set(False)
+            await ctx.send("I won't reply directly to DM's.")
+
+    @cleverbotset.command()
     @checks.mod_or_permissions(manage_channels=True)
+    @commands.guild_only()
     async def channel(self, ctx, channel: discord.TextChannel = None):
         """
             Toggles channel for automatic replies
@@ -148,11 +162,8 @@ class Cleverbot(getattr(commands, "Cog", object)):
             payload["input"] = text
             return await self.get_cleverbotcom_response(payload, author)
         except NoCredentials:
-            guild = author.guild
-            if guild is None:
-                return
             payload["user"], payload["key"] = await self.get_io_credentials()
-            payload["nick"] = str("{}#{}".format(guild.me.name, guild.me.discriminator))
+            payload["nick"] = str("{}".format(self.bot.user))
             return await self.get_cleverbotio_response(payload, text)
 
     async def make_cleverbotio_instance(self, payload):
@@ -227,6 +238,34 @@ class Cleverbot(getattr(commands, "Cog", object)):
             return
         guild = message.guild
         if guild is None:
+            if await self.config.allow_dm() and message.author.id != self.bot.user.id:
+                async with message.channel.typing():
+                    try:
+                        response = await self.get_response(message.author, message.clean_content)
+                    except NoCredentials:
+                        await channel.send(
+                            "The owner needs to set the credentials first.\n"
+                            "See: `[p]cleverbot apikey`"
+                        )
+                    except APIError as e:
+                        await channel.send("Error contacting the API. Error code: {}".format(e))
+                    except InvalidCredentials:
+                        await channel.send(
+                            "The token that has been set is not valid.\n" "See: `[p]cleverbotset`"
+                        )
+                    except OutOfRequests:
+                        await channel.send(
+                            "You have ran out of requests for this month. "
+                            "The free tier has a 5000 requests a month limit."
+                        )
+                    except OutdatedCredentials:
+                        await channel.send(
+                            "You need a valid cleverbot.com api key for this to "
+                            "work. The old cleverbot.io service will soon be no "
+                            "longer active. See `[p]help cleverbotset`"
+                        )
+                    else:
+                        await message.channel.send(response)
             return
         author = message.author
         channel = message.channel
