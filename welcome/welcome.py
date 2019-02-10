@@ -48,7 +48,8 @@ log = logging.getLogger("red.Welcome")
 
 @cog_i18n(_)
 class Welcome(Events, commands.Cog):
-    """Welcomes new members to the guild in the default channel rewritten for V3 from
+    """Welcomes new members and goodbye those who leave to the guild
+     in the default channel rewritten for V3 from
      https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     def __init__(self, bot):
@@ -245,35 +246,35 @@ class Welcome(Events, commands.Cog):
     @welcomeset_goodbye.command(name="add")
     async def welcomeset_goodbye_add(self, ctx, *, format_msg):
         """
-        Adds a welcome message format for the guild to be chosen at random
+        Adds a goodbye message format for the guild to be chosen at random
 
         {0} is user
         {1} is guild
         Default is set to:
-            Welcome {0.name} to {1.name}!
+            See you later {0.name}!
 
         Example formats:
-            {0.mention}.. What are you doing here?
-            {1.name} has a new member! {0.name}#{0.discriminator} - {0.id}
-            Someone new joined! Who is it?! D: IS HE HERE TO HURT US?!
+            {0.mention}.. well, bye.
+            {1.name} has lost a member. {0.name}#{0.discriminator} - {0.id}
+            Someone has quit the server! Who is it?! D:
         """
         guild = ctx.message.guild
         guild_settings = await self.config.guild(guild).GOODBYE()
         guild_settings.append(format_msg)
         await self.config.guild(guild).GOODBYE.set(guild_settings)
-        await ctx.send(_("Welcome message added for the guild."))
+        await ctx.send(_("Goodbye message added for the guild."))
         await self.send_testing_msg(ctx, msg=format_msg, leave=True)
 
 
     @welcomeset_goodbye.command(name="del")
     async def welcomeset_goodbye_del(self, ctx):
         """
-        Removes a welcome message from the random message list
+        Removes a goodbye message from the random message list
         """
         guild = ctx.message.guild
         author = ctx.message.author
         guild_settings = await self.config.guild(guild).GOODBYE()
-        msg = _("Choose a welcome message to delete:\n\n")
+        msg = _("Choose a goodbye message to delete:\n\n")
         for c, m in enumerate(guild_settings):
             msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ["\n", " "], shorten_by=20):
@@ -300,10 +301,10 @@ class Welcome(Events, commands.Cog):
     @welcomeset_goodbye.command(name="list")
     async def welcomeset_goodbye_list(self, ctx):
         """
-            Lists the welcome messages of this guild
+            Lists the goodbye messages of this guild
         """
         guild = ctx.message.guild
-        msg = _("Welcome messages:\n\n")
+        msg = _("Goodbye messages:\n\n")
         guild_settings = await self.config.guild(guild).GOODBYE()
         for c, m in enumerate(guild_settings):
             msg += "  {}. {}\n".format(c, m)
@@ -313,7 +314,7 @@ class Welcome(Events, commands.Cog):
     @welcomeset_goodbye.command(name="toggle")
     async def welcomeset_goodbye_toggle(self, ctx):
         """
-            Turns on/off welcoming new users to the guild
+            Turns on/off goodbying users who leave to the guild
         """
         guild = ctx.message.guild
         guild_settings = await self.config.guild(guild).LEAVE_ON()
@@ -328,7 +329,7 @@ class Welcome(Events, commands.Cog):
     @welcomeset_goodbye.command(name="channel")
     async def welcomeset_goodbye_channel(self, ctx, channel: discord.TextChannel):
         """
-        Sets the channel to send the welcome message
+        Sets the channel to send the goodbye message
         """
         guild = ctx.message.guild
         if not channel.permissions_for(ctx.me).send_messages:
@@ -344,7 +345,7 @@ class Welcome(Events, commands.Cog):
 
     @welcomeset_goodbye.command(name="test")
     async def welcomeset_goodbye_test(self, ctx):
-        """Test the welcome message deleted after 60 seconds"""
+        """Test the goodbye message deleted after 60 seconds"""
         await self.send_testing_msg(ctx, leave=True)
 
     @welcomeset.group(name="bot")
