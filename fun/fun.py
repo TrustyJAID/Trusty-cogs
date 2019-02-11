@@ -372,4 +372,7 @@ class Fun(getattr(commands, "Cog", object)):
                     reactions.append(char)
 
         for i in reactions:
-            await msg_id.add_reaction(i)
+            try:
+                await msg_id.add_reaction(i)
+            except:
+                pass
