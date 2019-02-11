@@ -1288,10 +1288,13 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
-    async def guildemojis(self, ctx, *, guild: GuildConverter = None):
+    async def guildemojis(self, ctx, id_emojis: bool = False, *, guild: GuildConverter = None):
         """
             Display all server emojis in a menu that can be scrolled through
 
+            `id_emojis` return the id of emojis. Default to False, set True
+             if you want to see emojis ID's. Then if you use `guild_name`
+             you need to set True or False before.\n
             `guild_name` can be either the server ID or partial name
         """
         if not guild:
@@ -1301,7 +1304,10 @@ class ServerStats(getattr(commands, "Cog", object)):
         embed.set_author(name=guild.name, icon_url=guild.icon_url)
         regular = []
         for emoji in guild.emojis:
-            regular.append(f"{emoji} = `:{emoji.name}:`\n")
+            if id_emojis:
+                regular.append(f"{emoji} = `:{emoji.name}:` `<:{emoji.name}:{emoji.id}>`\n")
+            else:
+                regular.append(f"{emoji} = `:{emoji.name}:`\n")
         if regular != "":
             embed.description = regular
         x = [regular[i : i + 10] for i in range(0, len(regular), 10)]
