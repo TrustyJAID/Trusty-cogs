@@ -1288,13 +1288,12 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
-    async def guildemojis(self, ctx, id_emojis: bool = False, *, guild: GuildConverter = None):
+    async def guildemojis(self, ctx, id_emojis: Optional[bool]=False, *, guild: GuildConverter = None):
         """
             Display all server emojis in a menu that can be scrolled through
 
             `id_emojis` return the id of emojis. Default to False, set True
-             if you want to see emojis ID's. Then if you use `guild_name`
-             you need to set True or False before.\n
+             if you want to see emojis ID's.
             `guild_name` can be either the server ID or partial name
         """
         if not guild:
