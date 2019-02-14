@@ -370,7 +370,8 @@ class Fun(getattr(commands, "Cog", object)):
                     reactions.append(self.emoji_dict[char][0])
                 else:
                     reactions.append(char)
-
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            await ctx.message.delete()
         for i in reactions:
             try:
                 await msg_id.add_reaction(i)
