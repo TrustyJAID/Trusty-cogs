@@ -274,14 +274,21 @@ class Fun(getattr(commands, "Cog", object)):
             channel = ctx.message.channel
         if msg_id is None:
             async for message in channel.history(limit=2):
-                msg = message
+                msg_id = message
         else:
-            msg = await channel.get_message(msg_id)
+            try:
+                msg_id = await channel.get_message(msg_id)
+            except:
+                await ctx.send("Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5)
+                return
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
         if channel.permissions_for(ctx.me).add_reactions:
             for emoji in emojis:
-                await msg.add_reaction(emoji)
+                try:
+                    await msg_id.add_reaction(emoji)
+                except:
+                    pass
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
@@ -308,7 +315,7 @@ class Fun(getattr(commands, "Cog", object)):
             try:
                 msg_id = await channel.get_message(msg_id)
             except:
-                await ctx.send("Message ID {} not found in {}".format(msg_id, channel.mention))
+                await ctx.send("Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5)
                 return
 
         limit = 25 if msg_id else 2
