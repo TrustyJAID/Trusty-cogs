@@ -369,19 +369,22 @@ class Conversions(getattr(commands, "Cog", object)):
             `currency1` is the currency you have default is USD
             `currency2` is the currency you want to convert to default is GBP
         """
+        currency1 = currency1.upper()
+        currency2 = currency2.upper()
         conversion = await self.conversionrate(currency1, currency2)
         conversion = conversion * ammount
         await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
 
     async def conversionrate(self, currency1, currency2):
         """Function to convert different currencies"""
-        params = {"q": "{}_{}".format(currency1.upper(), currency2.upper()), "compact": "ultra"}
-        CONVERSIONRATES = "https://free.currencyconverterapi.com/api/v6/convert"
+        params = {"base":currency1,"symbols": currency2}
+        CONVERSIONRATES = "https://api.exchangeratesapi.io/latest"
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(CONVERSIONRATES, params=params) as resp:
                     data = await resp.json()
-            conversion = data["{}_{}".format(currency1.upper(), currency2.upper())]
+            conversion = data["rates"][currency2]
             return conversion
-        except:
+        except Exception as e:
+            print(e)
             return None
