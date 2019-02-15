@@ -18,13 +18,13 @@ class Conversions(getattr(commands, "Cog", object)):
         self.bot = bot
 
     @commands.command(aliases=["bitcoin", "BTC"])
-    async def btc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def btc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
         """
             converts from BTC to a given currency.
 
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -37,13 +37,13 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ethereum", "ETH"])
-    async def eth(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def eth(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
         """
             converts from ETH to a given currency.
 
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -56,13 +56,13 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["litecoin", "LTC"])
-    async def ltc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def ltc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
         """
             converts from LTC to a given currency.
 
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -75,13 +75,13 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["monero", "XMR"])
-    async def xmr(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def xmr(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
         """
-            converts from LTC to a given currency.
+            converts from XMR to a given currency.
 
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -94,13 +94,13 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["bitcoin-cash", "BCH"])
-    async def bch(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def bch(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
         """
-            converts from LTC to a given currency.
+            converts from BCH to a given currency.
 
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -163,14 +163,16 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(msg)
 
     @commands.command()
-    async def crypto(self, ctx, coin, ammount: Optional[float] = 1.0, currency="USD", full=True):
+    async def crypto(
+        self, ctx, coin, ammount: Optional[float] = 1.0, currency="USD", full: bool = True
+    ):
         """
             Displays the latest information about a specified crypto currency
             
             `coin` must be the name or symbol of a crypto coin
-            `amount` is any number to convert the value of defaults to 1 coin
-            `currency` is the desired currency you want to convert defaults to USD
-            `full` is a True/False value whether to display just the converted amount
+            `[ammount]` is any number to convert the value of defaults to 1 coin
+            `[currency]` is the desired currency you want to convert defaults to USD
+            `[full]` is a True/False value whether to display just the converted amount
             or the full display for the currency
         """
         if ammount == 1.0:
@@ -259,12 +261,12 @@ class Conversions(getattr(commands, "Cog", object)):
             return embed
 
     @commands.command()
-    async def gold(self, ctx, ammount=1, currency="USD"):
+    async def gold(self, ctx, ammount: Optional[int] = 1, currency="USD"):
         """
             Converts gold in ounces to a given currency.
 
             `ammount` must be a number of ounces to convert defaults to 1 ounce
-            `currency` must be a valid currency defaults to USD
+            `[currency]` must be a valid currency defaults to USD
         """
         GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
         async with aiohttp.ClientSession() as session:
@@ -283,12 +285,12 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def silver(self, ctx, ammount=1, currency="USD"):
+    async def silver(self, ctx, ammount: Optional[int] = 1, currency="USD"):
         """
             Converts silver in ounces to a given currency.
 
-            `ammount` must be a number of ounces to convert defaults to 1 ounce
-            `currency` must be a valid currency defaults to USD
+            `[ammount]` must be a number of ounces to convert defaults to 1 ounce
+            `[currency]` must be a valid currency defaults to USD
         """
         SILVER = (
             "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key=EKvr5W-sJUFVSevcpk4v"
@@ -311,12 +313,12 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def platinum(self, ctx, ammount=1, currency="USD"):
+    async def platinum(self, ctx, ammount: Optional[int] = 1, currency="USD"):
         """
             Converts platinum in ounces to a given currency.
 
-            `ammount` must be a number of ounces to convert defaults to 1 ounce
-            `currency` must be a valid currency defaults to USD
+            `[ammount]` must be a number of ounces to convert defaults to 1 ounce
+            `[currency]` must be a valid currency defaults to USD
         """
         PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key=EKvr5W-sJUFVSevcpk4v"
         async with aiohttp.ClientSession() as session:
@@ -341,8 +343,8 @@ class Conversions(getattr(commands, "Cog", object)):
         """
             Gets current ticker symbol price.
 
-            `ticker` is the ticker symbol you want to look up
-            `currency` is the currency you want to convert to defaults to USD
+            `<ticker>` is the ticker symbol you want to look up
+            `[currency]` is the currency you want to convert to defaults to USD
         """
         stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
         async with aiohttp.ClientSession() as session:
@@ -361,13 +363,15 @@ class Conversions(getattr(commands, "Cog", object)):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["currency"])
-    async def convertcurrency(self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"):
+    async def convertcurrency(
+        self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"
+    ):
         """
             Converts a value between 2 different currencies
 
-            `ammount` is the ammount you want to convert default is 1
-            `currency1` is the currency you have default is USD
-            `currency2` is the currency you want to convert to default is GBP
+            `[ammount]` is the ammount you want to convert default is 1
+            `[currency1]` is the currency you have default is USD
+            `[currency2]` is the currency you want to convert to default is GBP
         """
         currency1 = currency1.upper()
         currency2 = currency2.upper()
@@ -377,7 +381,7 @@ class Conversions(getattr(commands, "Cog", object)):
 
     async def conversionrate(self, currency1, currency2):
         """Function to convert different currencies"""
-        params = {"base":currency1,"symbols": currency2}
+        params = {"base": currency1, "symbols": currency2}
         CONVERSIONRATES = "https://api.exchangeratesapi.io/latest"
         try:
             async with aiohttp.ClientSession() as session:
