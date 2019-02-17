@@ -95,6 +95,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
     async def blacklist(self, ctx):
         """
             Set blacklist options for retrigger
+
+            blacklisting supports channels, users, or roles
         """
         pass
 
@@ -103,6 +105,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
     async def whitelist(self, ctx):
         """
             Set whitelist options for retrigger
+
+            whitelisting supports channels, users, or roles
         """
         pass
 
@@ -115,11 +119,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if await self.config.guild(ctx.guild).allow_multiple():
             await self.config.guild(ctx.guild).allow_multiple.set(False)
             msg = _("Multiple responses disabled, " "only the first trigger will happen.")
-            await ctx.send(msg)
+            # await ctx.send(msg)
         else:
             await self.config.guild(ctx.guild).allow_multiple.set(True)
             msg = _("Multiple responses enabled, " "all triggers will occur.")
-            await ctx.send(msg)
+            # await ctx.send(msg)
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_channels=True)
@@ -181,7 +185,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist_add(self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole):
         """
-            Add channel to triggers whitelist
+            Add a channel, user, or role to triggers whitelist
 
             `<trigger>` is the name of the trigger
             `<channel_user_role>` is the channel, user or role to whitelist
@@ -204,7 +208,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole
     ):
         """
-            Remove channel from triggers whitelist
+            Remove a channel, user, or role from triggers whitelist
 
             `<trigger>` is the name of the trigger
             `<channel_user_role>` is the channel, user or role to remove from the whitelist
@@ -225,7 +229,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_add(self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole):
         """
-            Add channel to triggers blacklist
+            Add a channel, user, or role to triggers blacklist
 
             `<trigger>` is the name of the trigger
             `<channel_user_role>` is the channel, user or role to blacklist
@@ -248,7 +252,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole
     ):
         """
-            Remove channel from triggers blacklist
+            Remove a channel, user, or role from triggers blacklist
 
             `<trigger>` is the name of the trigger
             `<channel_user_role>` is the channel, user or role to remove from the blacklist
@@ -270,7 +274,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             List information about triggers
 
-            `<trigger>` if supplied provides information about named trigger
+            `[trigger]` if supplied provides information about named trigger
         """
         if trigger:
             if type(trigger) is str:
