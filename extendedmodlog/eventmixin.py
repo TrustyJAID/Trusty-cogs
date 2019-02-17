@@ -896,8 +896,10 @@ class EventMixin:
         embed = discord.Embed(description="", timestamp=time, colour=discord.Colour.gold())
         embed.set_author(name=_("Updated Server Emojis"), icon_url=guild.icon_url)
         msg = _("Updated Server Emojis") + "\n"
-        b = set(before)
-        a = set(after)
+        before_str = [str(e.name) for e in before]
+        after_str = [str(e.name) for e in after]
+        b = set(before_str)
+        a = set(after_str)
         added_emoji = [list(a - b)][0]
         removed_emoji = [list(b - a)][0]
         changed_emoji = [list(set([e.name for e in after]) - set([e.name for e in before]))][0]
