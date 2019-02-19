@@ -23,6 +23,10 @@ from .converters import *
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
+RE_CTX = re.compile(r"{([^}]+)\}")
+RE_POS = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
+LINK_REGEX = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
+
 
 class TriggerHandler:
     """
@@ -160,7 +164,6 @@ class TriggerHandler:
 
     async def wait_for_multiple_images(self, ctx):
         await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
-        link_regex = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
         files = []
         while True:
             check = lambda m: m.author == ctx.author
@@ -172,9 +175,9 @@ class TriggerHandler:
             if "exit" in msg.content.lower():
                 return files
             else:
-                link = link_regex.search(msg.content)
+                link = LINK_REGEX.search(msg.content)
                 for a in msg.attachments:
-                    if a.size > 8 * 1000 * 100:
+                    if a.size > 8 * 1000 * 1000:
                         continue
                     try:
                         files.append(await self.save_image_location(a.url, ctx.guild))
@@ -746,11 +749,11 @@ class TriggerHandler:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
         ctx = await self.bot.get_context(message)
         cc_args = (*ctx.args, *ctx.kwargs.values())
-        results = re.findall(r"{([^}]+)\}", raw_response)
+        results = RE_CTX.findall(raw_response)
         for result in results:
             param = self.transform_parameter(result, ctx.message)
             raw_response = raw_response.replace("{" + result + "}", param)
-        results = re.findall(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}", raw_response)
+        results = RE_POS.findall(raw_response)
         if results:
             low = min(int(result[1]) for result in results)
             for result in results:

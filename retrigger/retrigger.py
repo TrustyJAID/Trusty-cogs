@@ -312,7 +312,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `text` response of the trigger
+            `<text>` response of the trigger
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}` 
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -363,7 +367,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `text` response of the trigger
+            `<text>` response of the trigger
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}` 
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -455,8 +463,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `text` the triggered text response
-            `image_url` optional image_url if none is provided the bot will ask to upload an image
+            `<text>` the triggered text response
+            `[image_url]` optional image_url if none is provided the bot will ask to upload an image
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}` 
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -494,7 +506,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `image_url` optional image_url if none is provided the bot will ask to upload an image
+            `[image_url]` optional image_url if none is provided the bot will ask to upload an image
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -607,7 +619,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `command` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
@@ -636,7 +648,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `command` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
