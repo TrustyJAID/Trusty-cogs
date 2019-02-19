@@ -599,7 +599,7 @@ class Welcome(Events, commands.Cog):
         Note: This will override the icon image if it is set
         """
         cur_setting = await self.config.guild(ctx.guild).EMBED_DATA.author()
-        await self.config.guild(ctx.guild).EMBED_DATA.timestamp.set(not cur_setting)
+        await self.config.guild(ctx.guild).EMBED_DATA.author.set(not cur_setting)
         if cur_setting:
             verb = _("off")
         else:
