@@ -81,9 +81,9 @@ class Events:
                 if is_embed:
                     em = await self.make_embed(member, guild, msg)
                     if await self.config.guild(guild).EMBED_DATA.mention():
-                        await channel.send(member.mention, embed=em)
+                        await member.send(member.mention, embed=em)
                     else:
-                        await channel.send(embed=em)
+                        await member.send(embed=em)
                 else:
                     await member.send(msg.format(member, guild))
             except:
@@ -126,7 +126,7 @@ class Events:
             return
         if bot_welcome:
             # finally, welcome them
-            if is_embed:
+            if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     await channel.send(member.mention, embed=em)
@@ -135,7 +135,7 @@ class Events:
             else:
                 await channel.send(bot_welcome.format(member, guild))
         elif not member.bot:
-            if is_embed:
+            if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     await channel.send(member.mention, embed=em)
@@ -221,7 +221,7 @@ class Events:
         else:
             await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if not bot and guild_settings["WHISPER"]:
-            if is_embed and ctx.author.permissions_for(guild.me).embed_links:
+            if is_embed:
                 em = await self.make_embed(member, guild, rand_msg, delete_after=60)
                 await ctx.author.send(embed=em, delete_after=60)
             else:
