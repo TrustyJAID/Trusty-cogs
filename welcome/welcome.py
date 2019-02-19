@@ -469,7 +469,7 @@ class Welcome(Events, commands.Cog):
         await ctx.tick()
 
     @_embed.command()
-    async def footer(self, ctx, footer: str = ""):
+    async def footer(self, ctx, *, footer: str = ""):
         """
         Set the embed footer
         """
