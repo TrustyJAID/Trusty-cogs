@@ -755,8 +755,7 @@ class TriggerHandler:
             low = min(int(result[1]) for result in results)
             for result in results:
                 index = int(result[1]) - low
-                arg = message.content.replace(regex_replace.search(message.content).group(0), "")
-                # log.debug(arg)
+                arg = regex_replace.search(message.content).group(int(result[0])+1)
                 raw_response = raw_response.replace("{" + result[0] + "}", arg)
         return raw_response
         # await ctx.send(raw_response)
