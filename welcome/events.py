@@ -222,7 +222,7 @@ class Events:
             await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if not bot and guild_settings["WHISPER"]:
             if is_embed:
-                em = await self.make_embed(member, guild, rand_msg, delete_after=60)
+                em = await self.make_embed(member, guild, rand_msg)
                 await ctx.author.send(embed=em, delete_after=60)
             else:
                 await ctx.author.send(rand_msg.format(member, guild), delete_after=60)
