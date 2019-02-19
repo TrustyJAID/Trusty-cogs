@@ -473,7 +473,7 @@ class Welcome(Events, commands.Cog):
         """
         Set the embed footer
         """
-        await self.config.guild(ctx.guild).EMBED_DATA.footer.set(title)
+        await self.config.guild(ctx.guild).EMBED_DATA.footer.set(footer[:256])
         await ctx.tick()
 
     @_embed.command()
