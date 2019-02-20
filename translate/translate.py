@@ -197,6 +197,8 @@ class Translate(getattr(commands, "Cog", object)):
             user = guild.get_member(payload.user_id)
         except:
             return
+        if user.bot:
+            return
         if await self.config.api_key() is None:
             return
         # check_emoji = lambda emoji: emoji in FLAGS
