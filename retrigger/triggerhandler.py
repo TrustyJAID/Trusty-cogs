@@ -551,9 +551,9 @@ class TriggerHandler:
                 content = message.content + " " + " ".join(f.filename for f in message.attachments)
             try:
                 process = self.re_pool.apply_async(trigger.regex.findall, (content,))
-                task = functools.partial(process.get, timeout=10)
+                task = functools.partial(process.get, timeout=1)
                 task = self.bot.loop.run_in_executor(None, task)
-                search = await asyncio.wait_for(task, timeout=10)
+                search = await asyncio.wait_for(task, timeout=1)
             except (TimeoutError, asyncio.TimeoutError) as e:
                 error_msg = (
                     "ReTrigger took too long to find matches "
