@@ -21,7 +21,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.1.2"
+    __version__ = "2.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -174,7 +174,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             cooldown = {"time": time, "style": style, "last": []}
         if time <= 0:
             cooldown = {}
-            msg = _("Cooldown for Trigger `") + name + _("` reset.")
+            msg = _("Cooldown for Trigger `{name}` reset.")
         trigger_list = await self.config.guild(ctx.guild).trigger_list()
         trigger.cooldown = cooldown
         trigger_list[trigger.name] = trigger.to_json()
