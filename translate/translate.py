@@ -44,15 +44,15 @@ class FlagTranslation(Converter):
         else:
             for lang in FLAGS:
                 if FLAGS[lang]["name"].lower() in argument.lower():
-                    result = FLAGS[lang]["code"].upper()
+                    result = FLAGS[lang]["code"]
                     break
                 if FLAGS[lang]["country"].lower() in argument.lower():
-                    result = FLAGS[lang]["code"].upper()
+                    result = FLAGS[lang]["code"]
                     break
                 if not FLAGS[lang]["code"]:
                     continue
                 if FLAGS[lang]["code"] in argument.lower():
-                    result = FLAGS[lang]["code"].upper()
+                    result = FLAGS[lang]["code"]
                     break
         if not result:
             raise BadArgument('Language "{}" not found'.format(argument))
@@ -124,7 +124,7 @@ class Translate(getattr(commands, "Cog", object)):
             return None
         if "error" in data:
             log.error(data["error"]["message"])
-            raise GoogleTranslateAPIError(data["message"])
+            raise GoogleTranslateAPIError(data["error"]["message"])
         if "data" in data:
             translated_text = data["data"]["translations"][0]["translatedText"]
             return translated_text
@@ -326,8 +326,14 @@ class Translate(getattr(commands, "Cog", object)):
         except GoogleTranslateAPIError as e:
             await ctx.send(str(e))
             return
-        from_lang = detected_lang[0][0]["language"].upper()
+        from_lang = detected_lang[0][0]["language"]
         original_lang = detected_lang[0][0]["language"]
+        if to_language == original_lang:
+            return await ctx.send(
+                _("I cannot translate `{from_lang}` to `{to}`").format(
+                    from_lang=from_lang, to=to_language
+                )
+            )
         try:
             translated_text = await self.translate_text(original_lang, to_language, message)
         except GoogleTranslateAPIError as e:
