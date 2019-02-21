@@ -42,6 +42,7 @@ class Weather(getattr(commands, "Cog", object)):
         pass
 
     @weather_set.command(name="guild")
+    @checks.mod_or_permissions(manage_messages=True)
     async def set_guild(self, ctx, units):
         """
             Sets the guild default weather units 
