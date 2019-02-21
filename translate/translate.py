@@ -45,9 +45,16 @@ class FlagTranslation(Converter):
             for lang in FLAGS:
                 if FLAGS[lang]["name"].lower() in argument.lower():
                     result = FLAGS[lang]["code"].upper()
+                    break
                 if FLAGS[lang]["country"].lower() in argument.lower():
                     result = FLAGS[lang]["code"].upper()
-        if result is None:
+                    break
+                if not FLAGS[lang]["code"]:
+                    continue
+                if FLAGS[lang]["code"] in argument.lower():
+                    result = FLAGS[lang]["code"].upper()
+                    break
+        if not result:
             raise BadArgument('Language "{}" not found'.format(argument))
 
         return result
@@ -310,7 +317,6 @@ class Translate(getattr(commands, "Cog", object)):
             `to_language` is the language you would like to translate
             `message` is the message to translate
         """
-
         if await self.config.api_key() is None:
             msg = _("The bot owner needs to set an api key first!")
             await ctx.send(msg)
