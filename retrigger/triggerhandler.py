@@ -499,8 +499,7 @@ class TriggerHandler:
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
 
-            if await self.check_trigger_cooldown(message, trigger):
-                continue
+            
             if any(t for t in trigger.response_type if t in auto_mod):
                 if await autoimmune(message):
                     print_msg = _(
@@ -568,6 +567,8 @@ class TriggerHandler:
                 )
                 continue
             if search != []:
+                if await self.check_trigger_cooldown(message, trigger):
+                    continue
                 trigger._add_count(1)
                 trigger_list[triggers] = trigger.to_json()
                 await self.perform_trigger(message, trigger, search[0])
