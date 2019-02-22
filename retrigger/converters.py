@@ -1,9 +1,12 @@
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 import re
 import discord
 import logging
+import asyncio
 
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -177,6 +180,20 @@ class MultiResponse(Converter):
             raise BadArgument(_('I require "Kick Members" permission to use that.'))
         if result[0] == "react" and not my_perms.add_reactions:
             raise BadArgument(_('I require "Add Reactions" permission to use that.'))
+        if result[0] == "mock":
+            
+            msg = await ctx.send(
+                _("Mock commands can allow any user to run a command "
+                  "as if you did, are you sure you want to add this?")
+            )
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
+            except asyncio.TimeoutError:
+                raise BadArgument(_("Not creating trigger."))
+            if not pred.result:
+                raise BadArgument(_("Not creating trigger."))
         if result[0] in ["add_role", "remove_role"]:
             good_roles = []
             for r in result[1:]:

@@ -2,6 +2,8 @@ import discord
 from redbot.core import commands, checks, Config, modlog
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 from typing import Union, Optional
 import logging
 import os
@@ -21,7 +23,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.2.0"
+    __version__ = "2.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -649,10 +651,21 @@ class ReTrigger(TriggerHandler, commands.Cog):
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
             `<command>` the command that will be triggered, do add [p] prefix
-            See https://regex101.com/ for help building a regex pattern
-            Example for simple search: `"\\bthis matches"` the whole phrase only
-            For case insensitive searches add `(?i)` at the start of the regex
+            Warning: This function can let other users run a command on your behalf,
+            use with caution.
         """
+        msg = await ctx.send(
+            _("Mock commands can allow any user to run a command "
+              "as if you did, are you sure you want to add this?")
+        )
+        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+        try:
+            await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
+        except asyncio.TimeoutError:
+            return await ctx.send(_("Not creating trigger."))
+        if not pred.result:
+            return await ctx.send(_("Not creating trigger."))
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
             return await ctx.send(msg)
