@@ -150,6 +150,7 @@ class MultiResponse(Converter):
             "delete",
             "react",
             "command",
+            "mock",
         ]
         log.debug(match)
         my_perms = ctx.channel.permissions_for(ctx.me)

@@ -641,7 +641,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await ctx.send(_("Trigger `{name}` set.").format(name=name))
 
     @retrigger.command(aliases=["cmdmock"], hidden=True)
-    @checks.is_owner()
+    @checks.admin_or_permissions(administrator=True)
     async def mock(self, ctx, name: TriggerExists, regex: ValidRegex, *, command: str):
         """
             Add a trigger for command as if you used the command
