@@ -171,7 +171,7 @@ class Starboard(getattr(commands, "Cog", object)):
         ).format(channels=channels, roles=roles, boards=boards)
         await ctx.send(msg)
 
-    @starboard.command(name="update")
+    @starboard.command(name="update", hidden=True)
     @checks.is_owner()
     async def update_starboard(self, ctx):
         """
@@ -680,6 +680,18 @@ class Starboard(getattr(commands, "Cog", object)):
                     unique_users.append(user.id)
         return len(unique_users)
 
+    async def is_mod_or_admin(self, member: discord.Member):
+        guild = member.guild
+        if member == guild.owner:
+            return True
+        if await self.bot.is_owner(member):
+            return True
+        if await self.bot.is_admin(member):
+            return True
+        if await self.bot.is_mod(member):
+            return True
+        return False
+
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:
@@ -704,9 +716,12 @@ class Starboard(getattr(commands, "Cog", object)):
             return
         if not await self.check_channel(starboard, channel):
             return
+
         if starboard.emoji == str(payload.emoji):
             star_channel = self.bot.get_channel(starboard.channel)
-
+            if member.id == msg.author.id and not await self.is_mod_or_admin(member):
+                # allow mods, admins and owner to automatically star messages
+                return
             for messages in [StarboardMessage.from_json(m) for m in starboard.messages]:
                 same_msg = messages.original_message == msg.id
                 same_channel = messages.original_channel == channel.id
@@ -720,7 +735,11 @@ class Starboard(getattr(commands, "Cog", object)):
                     return
                 if (same_msg and same_channel) or (starboard_msg and starboard_channel):
                     count = await self.get_count(messages, payload.emoji)
-                    msg_edit = await star_channel.get_message(messages.new_message)
+                    try:
+                        msg_edit = await star_channel.get_message(messages.new_message)
+                    except:
+                        # starboard message may have been deleted
+                        return
                     count_msg = f"{payload.emoji} **#{count}**"
                     await msg_edit.edit(content=count_msg)
                     return
