@@ -366,10 +366,14 @@ class ServerStats(getattr(commands, "Cog", object)):
             url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=emoji.id, ext=ext)
             filename = "{name}.{ext}".format(name=emoji.name, ext=ext)
         else:
-            """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
-            cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
-            url = cdn_fmt.format(codepoint=ord(emoji))
-            filename = "emoji.png"
+            try:
+                """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
+                cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
+                url = cdn_fmt.format(codepoint=ord(emoji))
+                filename = "emoji.png"
+            except TypeError:
+                await ctx.send(_("That doesn't appear to be a valid emoji"))
+                return
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
@@ -1304,7 +1308,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         regular = []
         for emoji in guild.emojis:
             if id_emojis:
-                regular.append(f"{emoji} = `:{emoji.name}:` `<:{emoji.name}:{emoji.id}>`\n")
+                regular.append((f"{emoji} = `:{emoji.name}:` "
+                                f"`<{'a' if emoji.animated else ''}:{emoji.name}:{emoji.id}>`\n"))
             else:
                 regular.append(f"{emoji} = `:{emoji.name}:`\n")
         if regular != "":
