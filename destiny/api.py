@@ -11,7 +11,14 @@ from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.data_manager import cog_data_path
 
-from .errors import *
+from .errors import (
+    Destiny2APIError,
+    Destiny2APICooldown,
+    Destiny2InvalidParameters,
+    Destiny2MissingAPITokens,
+    Destiny2MissingManifest,
+    Destiny2RefreshTokenError,
+)
 
 BASE_URL = "https://www.bungie.net/Platform"
 IMAGE_URL = "https://www.bungie.net"
@@ -40,7 +47,10 @@ class DestinyAPI:
                 if resp.status == 200:
                     data = await resp.json()
                     self.throttle = data["ThrottleSeconds"] + time_now
+                    fp = cog_data_path(self) / "data.json"
+
                     if data["ErrorCode"] == 1 and "Response" in data:
+                        await JsonIO(fp)._threadsafe_save_json(data["Response"])
                         return data["Response"]
                     else:
                         raise Destiny2InvalidParameters(data["Message"])
@@ -101,7 +111,10 @@ class DestinyAPI:
             "everything after `?code=` shown in the URL.\n"
         )
         check = lambda m: m.author == ctx.message.author
-        await ctx.send(msg + url)
+        try:
+            await ctx.author.send(msg + url)
+        except:
+            await ctx.send(msg + url)
         try:
             msg = await ctx.bot.wait_for("message", check=check, timeout=60)
         except asyncio.TimeoutError:
@@ -179,7 +192,7 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except:
             raise Destiny2RefreshTokenError
-        params = {"components": "200,205,300,302,304"}
+        params = {"components": "200,204,205,300,302,304"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
@@ -243,13 +256,40 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def has_oauth(self, ctx: commands.Context):
+    async def get_activity_history(self, user: discord.User, character, mode):
+        try:
+            headers = await self.build_headers(user)
+        except:
+            raise Destiny2RefreshTokenError
+        params = {"count":5, "mode":mode}
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"
+        return await self.request_url(url, params=params, headers=headers)
+
+    async def has_oauth(self, ctx: commands.Context, user: discord.Member = None):
+        if (
+            user
+            and not (await self.config.user(user).oauth()
+                        or await self.config.user(user).account())
+        ):
+            # bypass OAuth procedure since the user has not authorized it
+            return await ctx.send(
+                _("That user has not provided an OAuth scope to view destiny data.")
+            )
+        else:
+            return True
         if not await self.config.user(ctx.author).oauth():
             now = datetime.now().timestamp()
             try:
                 data = await self.get_o_auth(ctx)
+                if not data:
+                    return
             except Destiny2InvalidParameters as e:
-                await ctx.send(str(e))
+                try:
+                    await ctx.author.send(str(e))
+                except:
+                    await ctx.send(str(e))
                 return False
             except Destiny2MissingAPITokens as e:
                 # await ctx.send(str(e))
@@ -257,7 +297,10 @@ class DestinyAPI:
             data["expires_at"] = now + data["expires_in"]
             data["refresh_expires_at"] = now + data["refresh_expires_in"]
             await self.config.user(ctx.author).oauth.set(data)
-            await ctx.send(_("Credentials saved."))
+            try:
+                await ctx.author.send(_("Credentials saved."))
+            except:
+                await ctx.send(_("Credentials saved."))
         if not await self.config.user(ctx.author).account():
             data = await self.get_user_profile(ctx.author)
             platform = ""
@@ -288,7 +331,10 @@ class DestinyAPI:
             msg += f"**{count}. {account_name} {platform}**\n"
             count += 1
         check = lambda m: m.author == ctx.message.author and m.content.isdigit()
-        await ctx.send(msg)
+        try:
+            await ctx.author.send(msg)
+        except:
+            await ctx.send(msg)
         try:
             msg = await ctx.bot.wait_for("message", check=check, timeout=60)
         except asyncio.TimeoutError:
