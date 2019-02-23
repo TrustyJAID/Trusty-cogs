@@ -220,7 +220,6 @@ class Destiny(DestinyAPI, commands.Cog):
             break
         items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
         data = await self.get_definition("DestinyInventoryItemDefinition", items)
-        log.info(data)
         embeds = []
         embed = discord.Embed(
             colour=discord.Colour.red(), description=xur_def[0]["displayProperties"]["description"]
