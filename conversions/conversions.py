@@ -376,6 +376,8 @@ class Conversions(getattr(commands, "Cog", object)):
         currency1 = currency1.upper()
         currency2 = currency2.upper()
         conversion = await self.conversionrate(currency1, currency2)
+        if not conversion:
+            return await ctx.send("The currencies provided are not valid!")
         conversion = conversion * ammount
         await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
 
