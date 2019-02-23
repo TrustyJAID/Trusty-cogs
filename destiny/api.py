@@ -268,17 +268,15 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def has_oauth(self, ctx: commands.Context, user: discord.Member = None):
-        if (
-            user
-            and not (await self.config.user(user).oauth()
-                        or await self.config.user(user).account())
-        ):
+        if user:
+            if not (await self.config.user(user).oauth()
+                    or await self.config.user(user).account()):
             # bypass OAuth procedure since the user has not authorized it
-            return await ctx.send(
-                _("That user has not provided an OAuth scope to view destiny data.")
-            )
-        else:
-            return True
+                return await ctx.send(
+                    _("That user has not provided an OAuth scope to view destiny data.")
+                )
+            else:
+                return True
         if not await self.config.user(ctx.author).oauth():
             now = datetime.now().timestamp()
             try:
