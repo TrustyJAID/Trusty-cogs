@@ -4,7 +4,7 @@ class StarboardEntry:
         name: str,
         channel: int,
         emoji: str,
-        colour: str,
+        colour: str = "user",
         enabled: bool = True,
         blacklist_role: list = [],
         whitelist_role: list = [],
