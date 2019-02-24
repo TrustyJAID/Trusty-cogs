@@ -17,7 +17,7 @@
         "attach_files"
     ],
     "requirements" : [
-        "moviepy",
+        "moviepy"
     ],
     "short" : "Make Crab rave videos!",
     "tags" : ["fun"]
