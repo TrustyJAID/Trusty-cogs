@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Starboard", __file__)
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 __author__ = "TrustyJAID"
 
 
@@ -89,9 +89,9 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Create a starboard on this server
 
-            `name` is the name for the starboard and will be lowercase only
-            `channel` is the channel where posts will be made defaults to current channel
-            `emoji` is the emoji that will be used to add to the starboard defaults to ⭐
+            `<name>` is the name for the starboard and will be lowercase only
+            `[channel]` is the channel where posts will be made defaults to current channel
+            `[emoji=⭐]` is the emoji that will be used to add to the starboard defaults to ⭐
         """
         guild = ctx.message.guild
         name = name.lower()
@@ -220,7 +220,7 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Remove a starboard from the server
 
-            `name` is the name for the starboard and will be lowercase only
+            `<name>` is the name for the starboard and will be lowercase only
         """
         guild = ctx.message.guild
         name = name.lower()
@@ -240,9 +240,9 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Manually star a message
 
-            `name` is the name of the starboard you would like to add the message to
-            `msg_id` is the message ID you want to star
-            `channel` is the channel where that message is located
+            `<name>` is the name of the starboard you would like to add the message to
+            `<msg_id>` is the message ID you want to star
+            `[channel]` is the channel where that message is located
         """
         guild = ctx.guild
         if channel is None:
@@ -284,7 +284,7 @@ class Starboard(getattr(commands, "Cog", object)):
                 await msg_edit.edit(content=count_msg)
                 return
 
-        em = await self.build_embed(guild, msg)
+        em = await self.build_embed(guild, msg, starboard)
         count_msg = f"{starboard.emoji} **#{count}**"
         post_msg = await star_channel.send(count_msg, embed=em)
         star_message = StarboardMessage(
@@ -309,8 +309,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Add a channel to the starboard blacklist
 
-            `name` is the name of the starboard to adjust
-            `channel_or_role` is the channel or role you would like to add to the blacklist
+            `<name>` is the name of the starboard to adjust
+            `<channel_or_role>` is the channel or role you would like to add to the blacklist
         """
         guild = ctx.guild
         name = name.lower()
@@ -347,8 +347,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Remove a channel to the starboard blacklist
 
-            `name` is the name of the starboard to adjust
-            `channel_or_role` is the channel or role you would like to remove from the blacklist
+            `<name>` is the name of the starboard to adjust
+            `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
         name = name.lower()
@@ -385,8 +385,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Add a channel to the starboard whitelist
 
-            `name` is the name of the starboard to adjust
-            `channel_or_role` is the channel or role you would like to add to the whitelist
+            `<name>` is the name of the starboard to adjust
+            `<channel_or_role>` is the channel or role you would like to add to the whitelist
         """
         guild = ctx.guild
         name = name.lower()
@@ -423,8 +423,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Remove a channel to the starboard whitelist
 
-            `name` is the name of the starboard to adjust
-            `channel_or_role` is the channel or role you would like to remove from the whitelist
+            `<name>` is the name of the starboard to adjust
+            `<channel_or_role>` is the channel or role you would like to remove from the whitelist
         """
         guild = ctx.guild
         name = name.lower()
@@ -459,8 +459,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Change the channel that the starboard gets posted to
 
-            `name` is the name of the starboard to adjust
-            `channel_or_role` is the channel or role you would like to remove from the blacklist
+            `<name>` is the name of the starboard to adjust
+            `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
         name = name.lower()
@@ -492,7 +492,7 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Toggle a starboard on/off
 
-            `name` is the name of the starboard to toggle
+            `<name>` is the name of the starboard to toggle
         """
         guild = ctx.guild
         name = name.lower()
@@ -509,13 +509,46 @@ class Starboard(getattr(commands, "Cog", object)):
         await self.save_starboard(guild, starboard)
         await ctx.send(msg)
 
+    @starboard.command(name="colour", aliases=["color"])
+    async def colour_starboard(self, ctx, name: str, colour: Union[discord.Colour, str]):
+        """
+            Change the default colour for a starboard
+
+            `<name>` is the name of the starboard to toggle
+            `<colour>` The colour to use for the starboard embed
+            This can be a hexcode or integer for colour or `author/member/user` to use
+            the original posters colour or `bot` to use the bots colour.
+            Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/rewrite/api.html#discord.Colour)
+        """
+        guild = ctx.guild
+        name = name.lower()
+        try:
+            starboard = await self.get_starboard_from_name(guild, name)
+        except NoStarboardError:
+            await ctx.send(_("There is no starboard named ") + name)
+            return
+        if isinstance(colour, str):
+            colour = colour.lower()
+            if colour not in ["user", "member", "author", "bot"]:
+                return await ctx.send(_("The provided colour option is not valid."))
+            else:
+                starboard.colour = colour
+        else:
+            starboard.colour = colour.value
+        await self.save_starboard(guild, starboard)
+        msg = _("Starboard `{name}` colour set to `{colour}`.").format(
+            name=starboard.name, 
+            colour=starboard.colour
+        )
+        await ctx.send(msg)
+
     @starboard.command(name="emoji")
     async def set_emoji(self, ctx, name: str, emoji: Union[discord.Emoji, str]):
         """
             Set the emoji for the starboard
 
-            `name` is the name of the starboard to change the emoji for
-            `emoji` must be an emoji on the server or a default emoji
+            `<name>` is the name of the starboard to change the emoji for
+            `<emoji>` must be an emoji on the server or a default emoji
         """
         guild = ctx.guild
         name = name.lower()
@@ -538,8 +571,8 @@ class Starboard(getattr(commands, "Cog", object)):
         """
             Set the threshold before posting to the starboard
 
-            `name` is the name of the starboard to change the threshold for
-            `threshold` must be a number of reactions before a post gets
+            `<name>` is the name of the starboard to change the threshold for
+            `<threshold>` must be a number of reactions before a post gets
             moved to the starboard
         """
         guild = ctx.guild
@@ -604,12 +637,10 @@ class Starboard(getattr(commands, "Cog", object)):
         raise NoStarboardError
 
     async def save_starboard(self, guild, starboard):
-        starboards = await self.config.guild(guild).starboards()
-        del starboards[starboard.name]
-        starboards[starboard.name] = starboard.to_json()
-        await self.config.guild(guild).starboards.set(starboards)
+        async with self.config.guild(guild).starboards() as boards:
+            boards[starboard.name] = starboard.to_json()
 
-    async def build_embed(self, guild, msg):
+    async def build_embed(self, guild, msg, starboard):
         channel = msg.channel
         author = msg.author
         if msg.embeds != []:
@@ -625,11 +656,12 @@ class Starboard(getattr(commands, "Cog", object)):
                     )
         else:
             em = discord.Embed(timestamp=msg.created_at)
-            try:
-                em.color = author.top_role.color
-            except Exception as e:
-                print(e)
-                pass
+            if starboard.colour in ["user", "member", "author"]:
+                em.color = author.colour
+            elif starboard.colour == "bot":
+                em.color = await self.get_colour(guild)
+            else:
+                em.color = discord.Colour(starboard.colour)
             em.description = msg.content
             em.set_author(name=author.display_name, url=msg.jump_url, icon_url=author.avatar_url)
             if msg.attachments != []:
@@ -756,7 +788,7 @@ class Starboard(getattr(commands, "Cog", object)):
                 self.message_list.remove((guild.id, payload.message_id))
                 return
 
-            em = await self.build_embed(guild, msg)
+            em = await self.build_embed(guild, msg, starboard)
             count_msg = "{} **#{}**".format(payload.emoji, count)
             post_msg = await star_channel.send(count_msg, embed=em)
             star_message = StarboardMessage(

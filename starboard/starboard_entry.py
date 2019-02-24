@@ -4,6 +4,7 @@ class StarboardEntry:
         name: str,
         channel: int,
         emoji: str,
+        colour: str,
         enabled: bool = True,
         blacklist_role: list = [],
         whitelist_role: list = [],
@@ -17,6 +18,7 @@ class StarboardEntry:
         self.name = name
         self.channel = channel
         self.emoji = emoji
+        self.colour = colour
         self.enabled = enabled
         self.blacklist_role = blacklist_role
         self.whitelist_role = whitelist_role
@@ -31,6 +33,7 @@ class StarboardEntry:
             "enabled": self.enabled,
             "channel": self.channel,
             "emoji": self.emoji,
+            "colour": self.colour,
             "blacklist_role": self.blacklist_role,
             "whitelist_role": self.whitelist_role,
             "messages": self.messages,
@@ -41,10 +44,15 @@ class StarboardEntry:
 
     @classmethod
     def from_json(cls, data: dict):
+        if "colour" not in data:
+            colour = "user"
+        else:
+            colour = data["colour"]
         return cls(
             data["name"],
             data["channel"],
             data["emoji"],
+            colour,
             data["enabled"],
             data["blacklist_role"],
             data["whitelist_role"],
