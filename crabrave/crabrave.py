@@ -13,6 +13,7 @@ from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 
 CRAB_LINK = "https://github.com/DankMemer/meme-server/raw/9ce10a61e133f5b87b24d425fc671c9295affa6a/assets/crab/template.mp4"
 # Use a historical link incase something changes
+FONT_FILE = "https://github.com/matomo-org/travis-scripts/raw/65cace9ce09dca617832cbac2bbae3dacdffa264/fonts/Verdana.ttf"
 log = logging.getLogger("red.crabrave")
 
 class CrabRave(commands.Cog):
@@ -36,6 +37,19 @@ class CrabRave(commands.Cog):
                 return False
         return True
 
+    async def check_font_file(self):
+        if not (cog_data_path(self) / "Verdana.ttf").is_file():
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(FONT_FILE) as resp:
+                        data = await resp.read()
+                with open(cog_data_path(self) / "Verdana.ttf", "wb") as save_file:
+                    save_file.write(data)
+            except Exception as e:
+                log.error("Error downloading crabrave video template", exc_info=True)
+                return False
+        return True
+
     @commands.command()
     @checks.bot_has_permissions(attach_files=True)
     async def crab(self, ctx, *, text: str):
@@ -47,6 +61,8 @@ class CrabRave(commands.Cog):
         t = t.upper().replace(", ", ",").split(",")
         if not await self.check_video_file():
             return await ctx.send("I couldn't download the template file.")
+        if not await self.check_font_file():
+            return await ctx.send("I couldn't download the font file.")
         if len(t) != 2:
             return await ctx.send("You must submit exactly two strings split by comma")
         if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
@@ -76,16 +92,17 @@ class CrabRave(commands.Cog):
         
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
         """
+        fp = str(cog_data_path(self) / f"Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + "/template.mp4")
-        text = TextClip(t[0], fontsize=48, color="white", font="Verdana")
+        text = TextClip(t[0], fontsize=48, color="white", font=fp)
         text2 = (
-            TextClip("____________________", fontsize=48, color="white", font="Verdana")
+            TextClip("____________________", fontsize=48, color="white", font=fp)
             .set_position(("center", 210))
             .set_duration(15.4)
         )
         text = text.set_position(("center", 200)).set_duration(15.4)
         text3 = (
-            TextClip(t[1], fontsize=48, color="white", font="Verdana")
+            TextClip(t[1], fontsize=48, color="white", font=fp)
             .set_position(("center", 270))
             .set_duration(15.4)
         )
