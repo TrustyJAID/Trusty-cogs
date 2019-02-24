@@ -1,0 +1,105 @@
+import os
+import discord
+import aiohttp
+import asyncio
+import logging
+import functools
+
+from redbot.core import commands, checks
+from redbot.core.data_manager import cog_data_path
+
+from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
+
+
+CRAB_LINK = "https://github.com/DankMemer/meme-server/raw/9ce10a61e133f5b87b24d425fc671c9295affa6a/assets/crab/template.mp4"
+# Use a historical link incase something changes
+log = logging.getLogger("red.crabrave")
+
+class CrabRave(commands.Cog):
+    """
+        Create your very own crab rave
+    """
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def check_video_file(self):
+        if not (cog_data_path(self) / "template.mp4").is_file():
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(CRAB_LINK) as resp:
+                        data = await resp.read()
+                with open(cog_data_path(self) / "template.mp4", "wb") as save_file:
+                    save_file.write(data)
+            except Exception as e:
+                log.error("Error downloading crabrave video template", exc_info=True)
+                return False
+        return True
+
+    @commands.command()
+    @checks.bot_has_permissions(attach_files=True)
+    async def crab(self, ctx, *, text: str):
+        """Make crab rave videos
+        
+            There must be exactly 1 `,` to split the message
+        """
+        t = ctx.message.clean_content.replace(ctx.invoked_with, "").replace(ctx.prefix, "")
+        t = t.upper().replace(", ", ",").split(",")
+        if not await self.check_video_file():
+            return await ctx.send("I couldn't download the template file.")
+        if len(t) != 2:
+            return await ctx.send("You must submit exactly two strings split by comma")
+        if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
+            return await ctx.send("Cannot render empty text")
+        task = functools.partial(self.make_crab, t=t, u_id=ctx.author.id)
+        task = self.bot.loop.run_in_executor(None, task)
+        async with ctx.typing():
+            try:
+                video = await asyncio.wait_for(task, timeout=300)
+            except asyncio.TimeoutError:
+                log.error("Error generating crabrave video", exc_info=True)
+                return
+        fp = cog_data_path(self) / f"{ctx.author.id}crabrave.mp4"
+        file = discord.File(str(fp), filename="crabrave.mp4")
+        try:
+            await ctx.send(files=[file])
+        except Exception as e:
+            log.error("Error sending crabrave video", exc_info=True)
+            pass
+        try:
+            os.remove(fp)
+        except Exception as e:
+            log.error("Error deleting crabrave video", exc_info=True)
+
+    def make_crab(self, t, u_id):
+        """Non blocking crab rave video generation from DankMemer bot
+        
+        https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
+        """
+        clip = VideoFileClip(str(cog_data_path(self)) + "/template.mp4")
+        text = TextClip(t[0], fontsize=48, color="white", font="Verdana")
+        text2 = (
+            TextClip("____________________", fontsize=48, color="white", font="Verdana")
+            .set_position(("center", 210))
+            .set_duration(15.4)
+        )
+        text = text.set_position(("center", 200)).set_duration(15.4)
+        text3 = (
+            TextClip(t[1], fontsize=48, color="white", font="Verdana")
+            .set_position(("center", 270))
+            .set_duration(15.4)
+        )
+
+        video = CompositeVideoClip(
+            [clip, text.crossfadein(1), text2.crossfadein(1), text3.crossfadein(1)]
+        ).set_duration(15.4)
+        video.write_videofile(
+            str(cog_data_path(self)) + f"/{u_id}crabrave.mp4",
+            threads=1,
+            preset="superfast",
+            verbose=False,
+            logger=None,
+        )
+        clip.close()
+        video.close()
+        return True

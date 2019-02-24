@@ -1,0 +1,24 @@
+{
+    "author" : [
+        "DankMemer Team",
+        "TrustyJAID",
+    ],
+    "description" : "Create a crab rave.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "This cog downloads a template video which is then saved locally and generates crab rave videos from the template.",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "CrabRave",
+    "permissions" : [
+        "attach_files"
+    ],
+    "requirements" : [
+        "moviepy",
+    ],
+    "short" : "Make Crab rave videos!",
+    "tags" : ["fun"]
+}
