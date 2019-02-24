@@ -234,39 +234,46 @@ class Cleverbot(getattr(commands, "Cog", object)):
             return io_user, io_key
 
     async def on_message(self, message):
-        if not hasattr(message, "guild"):
-            return
         guild = message.guild
         if guild is None:
             if await self.config.allow_dm() and message.author.id != self.bot.user.id:
+                ctx = await self.bot.get_context(message)
+                if ctx.prefix:
+                    return
                 async with message.channel.typing():
                     try:
-                        response = await self.get_response(message.author, message.clean_content)
+                        response = await self.get_response(
+                            message.author, message.clean_content
+                        )
                     except NoCredentials:
-                        await channel.send(
+                        await ctx.send(
                             "The owner needs to set the credentials first.\n"
-                            "See: `[p]cleverbot apikey`"
+                            "See: [p]cleverbot apikey"
                         )
                     except APIError as e:
-                        await channel.send("Error contacting the API. Error code: {}".format(e))
+                        await ctx.send(
+                            "Error contacting the API. Error code: {}".format(e)
+                        )
                     except InvalidCredentials:
-                        await channel.send(
-                            "The token that has been set is not valid.\n" "See: `[p]cleverbotset`"
+                        await ctx.send(
+                            "The token that has been set is not valid.\n"
+                            "See: [p]cleverbotset"
                         )
                     except OutOfRequests:
-                        await channel.send(
+                        await ctx.send(
                             "You have ran out of requests for this month. "
                             "The free tier has a 5000 requests a month limit."
                         )
                     except OutdatedCredentials:
-                        await channel.send(
+                        await ctx.send(
                             "You need a valid cleverbot.com api key for this to "
                             "work. The old cleverbot.io service will soon be no "
-                            "longer active. See `[p]help cleverbotset`"
+                            "longer active. See [p]help cleverbotset"
                         )
                     else:
-                        await message.channel.send(response)
+                        await ctx.send(response)
             return
+
         author = message.author
         channel = message.channel
         msg = message.content
