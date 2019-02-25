@@ -639,36 +639,41 @@ class Destiny(DestinyAPI, commands.Cog):
                     ).format(char_id=char_id, activity=activity)
                 )
                 continue
-            if not data or stat_type not in data:
+            if not data:
                 continue
-            key = stat_type
-            embed = discord.Embed(title=stat_type.title())
-            embed.set_author(name=char_info, icon_url=user.avatar_url)
-            kills = data[key]["allTime"]["kills"]["basic"]["displayValue"]
-            deaths = data[key]["allTime"]["deaths"]["basic"]["displayValue"]
-            assists = data[key]["allTime"]["assists"]["basic"]["displayValue"]
-            kda = f"{kills} | {deaths} | {assists}"
-            embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
-            if "emblemPath" in char:
-                embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-            for stat, values in data[key]["allTime"].items():
+            try:
+                key = stat_type
+                embed = discord.Embed(title=stat_type.title())
+                embed.set_author(name=char_info, icon_url=user.avatar_url)
+                kills = data[key]["allTime"]["kills"]["basic"]["displayValue"]
+                deaths = data[key]["allTime"]["deaths"]["basic"]["displayValue"]
+                assists = data[key]["allTime"]["assists"]["basic"]["displayValue"]
+                kda = f"{kills} | {deaths} | {assists}"
+                embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
+                if "emblemPath" in char:
+                    embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+                for stat, values in data[key]["allTime"].items():
 
-                if values["basic"]["value"] < 0 or stat not in ATTRS:
-                    continue
-                embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
-            if "killsDeathsRatio" in data[key] and "killsDeathsAssists" in data[key]:
-                kdr = data[key]["killsDeathsRatio"]
-                kda = data[key]["killsDeathsAssists"]
-                if kdr or kda:
-                    embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
-            if "resurrectionsPerformed" in data[key] and "resurrectionsReceived" in data[key]:
-                res = data[key]["resurrectionsPerformed"]
-                resur = data[key]["resurrectionsReceived"]
-                if res or resur:
-                    embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
-            embed = await self.get_char_colour(embed, char)
+                    if values["basic"]["value"] < 0 or stat not in ATTRS:
+                        continue
+                    embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
+                if "killsDeathsRatio" in data[key] and "killsDeathsAssists" in data[key]:
+                    kdr = data[key]["killsDeathsRatio"]
+                    kda = data[key]["killsDeathsAssists"]
+                    if kdr or kda:
+                        embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
+                if "resurrectionsPerformed" in data[key] and "resurrectionsReceived" in data[key]:
+                    res = data[key]["resurrectionsPerformed"]
+                    resur = data[key]["resurrectionsReceived"]
+                    if res or resur:
+                        embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
+                embed = await self.get_char_colour(embed, char)
 
-            embeds.append(embed)
+                embeds.append(embed)
+            except Exception as e:
+                log.error(f"User {user.id} had an issue generating stats for character {char_id}")
+                continue
+
         if not embeds:
             return
         await menu(ctx, embeds, DEFAULT_CONTROLS)
