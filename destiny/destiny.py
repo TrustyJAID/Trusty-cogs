@@ -30,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -639,7 +639,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     ).format(char_id=char_id, activity=activity)
                 )
                 continue
-            if not data:
+            if not data or stat_type not in data:
                 continue
             key = stat_type
             embed = discord.Embed(title=stat_type.title())
