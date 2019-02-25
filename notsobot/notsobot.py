@@ -8,20 +8,12 @@ import PIL, PIL.Image, PIL.ImageFont, PIL.ImageOps, PIL.ImageDraw
 from PIL import ImageSequence
 import numpy as np
 import jpglitch
-import hashlib, base64
-from .pixelsort import sorter, sorting, interval
-from .pixelsort import util as ps_util
 from .vw import macintoshplus
-from urllib.parse import parse_qs
-from lxml import etree
-from imgurpython import ImgurClient
 from io import BytesIO, StringIO
 from redbot.core import commands
 from redbot.core import checks
 from pyfiglet import figlet_format
-from string import ascii_lowercase as alphabet
 from urllib.parse import quote
-from concurrent.futures._base import CancelledError
 import random, uuid
 from typing import Optional
 
@@ -262,7 +254,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
             exif_msg = ""
             count = 0
             i = wand.image.Image(file=img)
-            i.format = "jpg"
+            i.format = "png"
             i.alpha_channel = True
             if i.size >= (3000, 3000):
                 return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None

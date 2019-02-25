@@ -12,17 +12,14 @@
         6,
         2
     ],
-    "name" : "Modlogs",
+    "name" : "NotSoBot",
     "permissions" : [
         "attach_files"
     ],
     "requirements" : [
-        "python-aalib",
-        "imgurpython",
         "pyfiglet",
         "numpy",
         "pillow",
-        "lxml",
         "git+https://github.com/Kareeeeem/jpglitch",
         "wand"
     ],
