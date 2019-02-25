@@ -40,6 +40,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Gabai | **Beta** | <details><summary>A cog to grab information and posts from gab.ai. </summary></details> |
 | Tarot | **Release** | <details><summary>Find your tarot reading, your life reading, or pull a random tarot card!</summary> Search for specific tarot cards. </details> |
 | APNGFilter | **Release** | <details><summary>Automatically filter animated PNG's.</summary>Also works with linked animated PNG's.</details> |
+| CrabRave | **Release** | <details><summary>Create your very own Crab Rave videos with custom text!</summary>This cog requires moviepy, FFMPEG, and Imagemagick and downloads the template video locally.</details> |
 
 
 
@@ -91,5 +92,6 @@ Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authori
 * Aziz - Translate cog
 * Palmtree5 - Tweets cog
 * irdumb - Welcome cog
+* DankMemer Team - CrabRave cog
 
 Credits wouldn't be complete without a huge shout out to all the people who have inspired me to create many of these cogs. Thank you to everyone who has pushed me to think about new ideas and implement them.
