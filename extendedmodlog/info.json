@@ -3,6 +3,11 @@
         "RePulsR",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
     "disabled" : false,
     "hidden" : false,
@@ -16,7 +21,9 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "ExtendedModLog, track changes made in the server.",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

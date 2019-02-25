@@ -3,6 +3,11 @@
         "Appu",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "All sorts of commands that users may find fun or useful",
     "disabled" : false,
     "hidden" : false,
@@ -16,7 +21,9 @@
     "permissions" : [
         "add_reactions"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Various fun commands like react, textflip, and regional",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

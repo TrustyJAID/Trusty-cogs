@@ -3,6 +3,11 @@
         "NotSoSuper",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Some working, some not working NotSoBot commands",
     "disabled" : false,
     "hidden" : false,
@@ -16,6 +21,7 @@
     "permissions" : [
         "attach_files"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "pyfiglet",
         "numpy",
@@ -24,5 +30,10 @@
         "wand"
     ],
     "short" : "Some working commands from NotSoBot",
-    "tags" : []
+    "tags" : [
+        "fun",
+        "memes",
+        "images"
+    ],
+    "type" : "COG"
 }

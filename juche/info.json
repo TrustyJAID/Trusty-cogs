@@ -2,8 +2,13 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Have the bot correct the current year to the Juche Calendar",
-    "disabled" : false,
+    "disabled" : true,
     "hidden" : true,
     "install_msg" : "Various commands.",
     "min_python_version" : [
@@ -13,7 +18,9 @@
     ],
     "name" : "Juche",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
-    "short" : "General commands",
-    "tags" : []
+    "short" : "I think the year is actually 101.",
+    "tags" : [],
+    "type" : "COG"
 }

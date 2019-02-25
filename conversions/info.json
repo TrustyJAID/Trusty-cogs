@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Conversions for BTC, currencies, precious metals, and stocks.",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,9 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Conversions",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

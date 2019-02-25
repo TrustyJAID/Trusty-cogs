@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "DNA and binary encoding/decoding and hashing of messages",
     "disabled" : false,
     "hidden" : false,
@@ -13,7 +18,13 @@
     ],
     "name" : "encoding",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
-    "short" : "General commands",
-    "tags" : []
+    "short" : "Encode or decode different ways.",
+    "tags" : [
+        "encoding",
+        "rot",
+        "caeser cipher"
+    ],
+    "type" : "COG"
 }

@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Gathers information from the Halo API and posts it on discord.",
     "disabled" : false,
     "hidden" : false,
@@ -12,8 +17,14 @@
         2
     ],
     "name" : "Halo",
-    "permissions" : [],
+    "permissions" : [
+        "embed_links"
+    ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "halo",
-    "tags" : []
+    "tags" : [
+        "halo"
+    ],
+    "type" : "COG"
 }

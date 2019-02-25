@@ -3,6 +3,11 @@
         "Twentysix",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Recreation of Red v1 meme generator",
     "disabled" : false,
     "hidden" : false,
@@ -14,7 +19,13 @@
     ],
     "name" : "imgflip",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Recreation of Red v1 meme generator",
-    "tags" : []
+    "tags" : [
+        "meme",
+        "memes",
+        "fun"
+    ],
+    "type" : "COG"
 }

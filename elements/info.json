@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Get a plethora of information about elements on the periodic table",
     "disabled" : false,
     "hidden" : false,
@@ -15,9 +20,14 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "mendeleev"
     ],
     "short" : "Periodic table of elements",
-    "tags" : ["science", "elements"]
+    "tags" : [
+        "science",
+        "elements"
+    ],
+    "type" : "COG"
 }

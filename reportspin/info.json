@@ -5,8 +5,13 @@
         "mikeshardmind(Sinbad)",
         "Tobotimus"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Reports cog but pins new reports",
-    "disabled" : false,
+    "disabled" : true,
     "hidden" : true,
     "install_msg" : "Redbot core reports cog but pins new reports",
     "min_python_version" : [
@@ -18,10 +23,11 @@
     "permissions" : [
         "manage_messages"
     ],
-    "requirements" : [
-    ],
+    "required_cogs" : [],
+    "requirements" : [],
     "short" : "Pin all new reports",
     "tags" : [
         "reports"
-    ]
+    ],
+    "type" : "COG"
 }

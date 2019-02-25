@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Add image for the bot to directly upload similar to alias.",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,9 @@
     "permissions" : [
         "attach_files"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Add images for direct upload per guild and globally.",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

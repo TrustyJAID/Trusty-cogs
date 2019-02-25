@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Gathers weather data for a city.",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,12 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Weather",
-    "tags" : []
+    "tags" : [
+        "weather",
+        "utility"
+    ],
+    "type" : "COG"
 }

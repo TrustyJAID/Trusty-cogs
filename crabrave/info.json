@@ -3,6 +3,11 @@
         "DankMemer Team",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Create a crab rave.",
     "disabled" : false,
     "hidden" : false,
@@ -16,9 +21,13 @@
     "permissions" : [
         "attach_files"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "moviepy"
     ],
     "short" : "[p]Make Crab rave videos, in discord!",
-    "tags" : ["fun"]
+    "tags" : [
+        "fun"
+    ],
+    "type" : "COG"
 }

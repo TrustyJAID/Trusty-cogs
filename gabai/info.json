@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Get information from gab.ai's API and display in discord.",
     "disabled" : false,
     "hidden" : false,
@@ -13,7 +18,11 @@
     ],
     "name" : "Gabai",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Gab.ai information",
-    "tags" : []
+    "tags" : [
+        "gab"
+    ],
+    "type" : "COG"
 }

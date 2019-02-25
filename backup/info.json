@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Backup all channel messages on a server. Ensure all saved messages are stored on an encrypted drive!",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,9 @@
     "permissions" : [
         "read_message_history"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Backup all channel messages on a server.",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

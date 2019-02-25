@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Toggle APNG message automatic deletion.",
     "disabled" : false,
     "hidden" : false,
@@ -15,9 +20,11 @@
     "permissions" : [
         "manage_messages"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Toggle APNG message automatic deletion.",
     "tags" : [
         "utility"
-    ]
+    ],
+    "type" : "COG"
 }

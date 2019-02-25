@@ -3,6 +3,11 @@
         "Twentysix",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Allows for interaction with cleverbot.com through mention/command",
     "disabled" : false,
     "hidden" : false,
@@ -14,7 +19,9 @@
     ],
     "name" : "Cleverbot",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Talk with Cleverbot!",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

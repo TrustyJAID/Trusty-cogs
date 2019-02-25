@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Set a channel to show which anime is currently airing!",
     "disabled" : true,
     "hidden" : true,
@@ -15,7 +20,9 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Anime episode updates",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

@@ -3,6 +3,11 @@
         "Aziz",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Set a server to post translated messages when a flag emoji has been reacted to the message or translate any text!",
     "disabled" : false,
     "hidden" : false,
@@ -14,7 +19,12 @@
     ],
     "name" : "translate",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Translate messages using google translate!",
-    "tags" : []
+    "tags" : [
+        "utility",
+        "translation"
+    ],
+    "type" : "COG"
 }

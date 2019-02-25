@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Are you REKT?",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,11 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "REKT",
-    "tags" : []
+    "tags" : [
+        "rekt"
+    ],
+    "type" : "COG"
 }

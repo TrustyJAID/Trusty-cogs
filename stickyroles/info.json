@@ -3,6 +3,11 @@
         "Twentysix",
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "With this cog you can specify which roles you want to be reapplied on join. This is particularly useful to fight \"role evasion\".",
     "disabled" : false,
     "hidden" : false,
@@ -16,7 +21,12 @@
     "permissions" : [
         "manage_roles"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Reapplies specific roles on join",
-    "tags" : []
+    "tags" : [
+        "utility",
+        "mod"
+    ],
+    "type" : "COG"
 }

@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Lets you control your philips hue lights with redbot.",
     "disabled" : false,
     "hidden" : false,
@@ -13,9 +18,11 @@
     ],
     "name" : "Hue",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [
         "phue"
     ],
     "short" : "Control your philips hue lights with redbot!",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

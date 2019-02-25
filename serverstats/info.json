@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Get information about servers the bot is on.",
     "disabled" : false,
     "hidden" : false,
@@ -12,8 +17,17 @@
         2
     ],
     "name" : "ServerStats",
-    "permissions" : [],
-    "requirements" : ["unidecode"],
+    "permissions" : [
+        "read_message_history",
+        "embed_links"
+    ],
+    "required_cogs" : [],
+    "requirements" : [
+        "unidecode"
+    ],
     "short" : "Get various stats about servers the bot is on.",
-    "tags" : []
+    "tags" : [
+        "stats"
+    ],
+    "type" : "COG"
 }

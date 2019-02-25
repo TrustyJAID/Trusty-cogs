@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "React to messages containing any emojis!",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,11 @@
     "permissions" : [
         "add_reactions"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Emoji Reaction",
-    "tags" : []
+    "tags" : [
+        "fun"
+    ],
+    "type" : "COG"
 }

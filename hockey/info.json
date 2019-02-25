@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Gather hockey information from nhl.com and display in discord.",
     "disabled" : false,
     "hidden" : false,
@@ -17,9 +22,14 @@
         "manage_messages",
         "manage_channels"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "pytz"
     ],
     "short" : "Hockey commands",
-    "tags" : []
+    "tags" : [
+        "hockey",
+        "nhl"
+    ],
+    "type" : "COG"
 }

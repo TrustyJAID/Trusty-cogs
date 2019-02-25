@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Gathers stats from Runescape API endpoints.",
     "disabled" : false,
     "hidden" : false,
@@ -15,9 +20,14 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "tabulate"
     ],
     "short" : "Runescape",
-    "tags" : []
+    "tags" : [
+        "rune",
+        "games"
+    ],
+    "type" : "COG"
 }

@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Show Destiny 2 information from the bungie API",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,13 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Destiny 2 information",
-    "tags" : ["destiny", "gaming", "games"]
+    "tags" : [
+        "destiny",
+        "gaming",
+        "games"
+    ],
+    "type" : "COG"
 }

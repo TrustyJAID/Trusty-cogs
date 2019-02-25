@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Create your own 3 letter agency badge! Works with gif avatars too.",
     "disabled" : false,
     "hidden" : false,
@@ -15,10 +20,12 @@
     "permissions" : [
         "attach_files"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "pillow",
         "pybarcode"
     ],
     "short" : "Create your own badge!",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

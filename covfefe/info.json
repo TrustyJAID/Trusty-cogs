@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Covfefeify almost any word!",
     "disabled" : false,
     "hidden" : false,
@@ -13,7 +18,9 @@
     ],
     "name" : "Covfefe",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
-    "short" : "General commands",
-    "tags" : []
+    "short" : "Despite the negative press, covfefe",
+    "tags" : [],
+    "type" : "COG"
 }

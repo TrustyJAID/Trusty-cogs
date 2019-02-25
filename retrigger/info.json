@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Trigger events based on regular expressions",
     "disabled" : false,
     "hidden" : false,
@@ -15,9 +20,14 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [
         "pillow"
     ],
     "short" : "ReTrigger",
-    "tags" : []
+    "tags" : [
+        "trigger",
+        "reactions"
+    ],
+    "type" : "COG"
 }

@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Post spoiler messages through the bot.",
     "disabled" : false,
     "hidden" : false,
@@ -16,7 +21,9 @@
         "manage_messages",
         "add_reactions"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Spoiler messages",
-    "tags" : []
+    "tags" : [],
+    "type" : "COG"
 }

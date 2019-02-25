@@ -3,10 +3,15 @@
         "irdumb",
         "TrustyJAID"
     ],
-    "description" : "Welcome new users to the server",
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
+    "description" : "Welcome new users to the server or say goodbye when they leave.",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "welcome",
+    "install_msg" : "Use `[p]welcomeset` to see what options are available.",
     "min_python_version" : [
         3,
         6,
@@ -14,7 +19,12 @@
     ],
     "name" : "welcome",
     "permissions" : [],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Welcome new users to the server",
-    "tags" : []
+    "tags" : [
+        "welcome",
+        "utility"
+    ],
+    "type" : "COG"
 }

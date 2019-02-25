@@ -2,6 +2,11 @@
     "author" : [
         "TrustyJAID"
     ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
     "description" : "Create a starboard channel to save those amazing posts!",
     "disabled" : false,
     "hidden" : false,
@@ -15,7 +20,12 @@
     "permissions" : [
         "embed_links"
     ],
+    "required_cogs" : [],
     "requirements" : [],
     "short" : "Starboard",
-    "tags" : []
+    "tags" : [
+        "starboard",
+        "star"
+    ],
+    "type" : "COG"
 }
