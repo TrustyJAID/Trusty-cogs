@@ -8,9 +8,11 @@ from typing import Union, Optional
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.json_io import JsonIO
+from redbot.core.data_manager import cog_data_path
 
 from .errors import Destiny2APIError, Destiny2MissingManifest
-from .converter import DestinyActivity
+from .converter import DestinyActivity, StatsPage
 from .api import DestinyAPI
 
 
@@ -28,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -419,30 +421,30 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def gambit(self, ctx):
         """
-            Display a menu of past gambit matches
+            Display a menu of each characters gambit stats
         """
         msg = ctx.message
-        msg.content = f"{ctx.prefix}destiny history gambit"
+        msg.content = f"{ctx.prefix}destiny stats gambit"
         ctx.bot.dispatch("message", msg)
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def pvp(self, ctx):
         """
-            Display a menu of past pvp matches
+            Display a menu of each characters pvp stats
         """
         msg = ctx.message
-        msg.content = f"{ctx.prefix}destiny history pvp"
+        msg.content = f"{ctx.prefix}destiny stats pvp"
         ctx.bot.dispatch("message", msg)
 
     @destiny.command(aliases=["raids"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def raid(self, ctx):
         """
-            Display a menu of past RAIDS
+            Display a menu for each characters RAID stats
         """
         msg = ctx.message
-        msg.content = f"{ctx.prefix}destiny history raid"
+        msg.content = f"{ctx.prefix}destiny stats raid"
         ctx.bot.dispatch("message", msg)
 
     @destiny.command(aliases=["qp"])
@@ -534,12 +536,16 @@ class Destiny(DestinyAPI, commands.Cog):
                     title=activity_data["displayProperties"]["name"],
                     description=activity_data["displayProperties"]["description"],
                 )
+
                 date = datetime.datetime.strptime(activities["period"], "%Y-%m-%dT%H:%M:%SZ")
                 embed.timestamp = date
                 if activity_data["displayProperties"]["hasIcon"]:
                     embed.set_thumbnail(url=IMAGE_URL + activity_data["displayProperties"]["icon"])
-                elif activity_data["pgcrImage"] != "/img/misc/missing_icon_d2.png":
-                    embed.set_thumbnail(url=IMAGE_URL + activity_data["pgcrImage"])
+                elif (
+                    activity_data["pgcrImage"] != "/img/misc/missing_icon_d2.png"
+                    and "emblemPath" in char
+                ):
+                    embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
                 embed.set_author(name=char_info, icon_url=user.avatar_url)
                 for attr, name in RAID.items():
                     if activities["values"][attr]["basic"]["value"] < 0:
@@ -550,6 +556,121 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed = await self.get_char_colour(embed, char)
 
                 embeds.append(embed)
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @staticmethod
+    async def get_extra_attrs(stat_type: str, attrs: dict):
+        """Helper function to receive the total attributes we care about"""
+        EXTRA_ATTRS = {}
+        if stat_type == "allPvECompetitive":
+            EXTRA_ATTRS = {
+                "winLossRatio": _("Win Loss Ratio"),
+                "invasions": _("Invasions"),
+                "invasionKills": _("Invasion Kills"),
+                "invasionDeaths": _("Invasion Deaths"),
+                "invaderDeaths": _("Invader Deaths"),
+                "invaderKills": _("Invader Kills"),
+                "primevalKills": _("Primeval Kills"),
+                "blockerKills": _("Blocker Kills"),
+                "mobKills": _("Mob Kills"),
+                "highValueKills": _("High Value Targets Killed"),
+                "motesPickedUp": _("Motes Picked Up"),
+                "motesDeposited": _("Motes Deposited"),
+                "motesDenied": _("Motes Denied"),
+                "motesLost": _("Motes Lost"),
+            }
+        if stat_type == "allPvP":
+            EXTRA_ATTRS = {"winLossRatio": _("Win Loss Ratio")}
+        for k, v in EXTRA_ATTRS.items():
+            attrs[k] = v
+        return attrs
+
+    @destiny.command()
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    async def stats(self, ctx: commands.Context, stat_type: StatsPage):
+        """
+            Display each characters stats for a specific activity
+            `<activity>` The type of stats to display, available options are:
+            `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
+        """
+        if not await self.has_oauth(ctx):
+            return
+        user = ctx.author
+        try:
+            chars = await self.get_characters(user)
+        except Destiny2APIError as e:
+            # log.debug(e)
+            msg = _("I can't seem to find your Destiny profile.")
+            await ctx.send(msg)
+            return
+        # base stats should be available for all stat types
+        ATTRS = {
+            "opponentsDefeated": _("Opponents Defeated"),
+            "efficiency": _("Efficiency"),
+            "bestSingleGameKills": _("Best Single Game Kills"),
+            "bestSingleGameScore": _("Best Single Game Score"),
+            "precisionKills": _("Precision Kills"),
+            "longestKillSpree": _("Longest Killing Spree"),
+            "longestSingleLife": _("Longest Single Life"),
+            "totalActivityDurationSeconds": _("Total time playing"),
+            "averageLifespan": _("Average Life Span"),
+            "weaponBestType": _("Best Weapon Type"),
+        }
+        ATTRS = await self.get_extra_attrs(stat_type, ATTRS)
+        embeds = []
+        for char_id, char in chars["characters"]["data"].items():
+            # log.debug(char)
+            char_info = ""
+            race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
+            gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+            char_class = await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+            char_info += "{user} - {race} {gender} {char_class} ".format(
+                user=user.display_name,
+                race=race[0]["displayProperties"]["name"],
+                gender=gender[0]["displayProperties"]["name"],
+                char_class=char_class[0]["displayProperties"]["name"],
+            )
+            try:
+                data = await self.get_historical_stats(user, char_id, 0)
+            except:
+                log.error(
+                    _(
+                        "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
+                    ).format(char_id=char_id, activity=activity)
+                )
+                continue
+            if not data:
+                continue
+            key = stat_type
+            embed = discord.Embed(title=stat_type.title())
+            embed.set_author(name=char_info, icon_url=user.avatar_url)
+            kills = data[key]["allTime"]["kills"]["basic"]["displayValue"]
+            deaths = data[key]["allTime"]["deaths"]["basic"]["displayValue"]
+            assists = data[key]["allTime"]["assists"]["basic"]["displayValue"]
+            kda = f"{kills} | {deaths} | {assists}"
+            embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
+            if "emblemPath" in char:
+                embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+            for stat, values in data[key]["allTime"].items():
+
+                if values["basic"]["value"] < 0 or stat not in ATTRS:
+                    continue
+                embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
+            if "killsDeathsRatio" in data[key] and "killsDeathsAssists" in data[key]:
+                kdr = data[key]["killsDeathsRatio"]
+                kda = data[key]["killsDeathsAssists"]
+                if kdr or kda:
+                    embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
+            if "resurrectionsPerformed" in data[key] and "resurrectionsReceived" in data[key]:
+                res = data[key]["resurrectionsPerformed"]
+                resur = data[key]["resurrectionsReceived"]
+                if res or resur:
+                    embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
+            embed = await self.get_char_colour(embed, char)
+
+            embeds.append(embed)
+        if not embeds:
+            return
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @destiny.command()

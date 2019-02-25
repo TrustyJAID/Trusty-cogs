@@ -47,14 +47,15 @@ class DestinyAPI:
                 if resp.status == 200:
                     data = await resp.json()
                     self.throttle = data["ThrottleSeconds"] + time_now
-                    fp = cog_data_path(self) / "data.json"
-
                     if data["ErrorCode"] == 1 and "Response" in data:
-                        await JsonIO(fp)._threadsafe_save_json(data["Response"])
+                        # fp = cog_data_path(self) / "data.json"
+                        # await JsonIO(fp)._threadsafe_save_json(data["Response"])
                         return data["Response"]
                     else:
+                        log.error(data["message"])
                         raise Destiny2InvalidParameters(data["Message"])
                 else:
+                    log.error("Could not connect to the API")
                     raise Destiny2APIError
 
     async def get_access_token(self, code):
@@ -261,17 +262,47 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except:
             raise Destiny2RefreshTokenError
-        params = {"count":5, "mode":mode}
+        params = {"count": 5, "mode": mode}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"
         return await self.request_url(url, params=params, headers=headers)
 
+    async def get_historical_stats(
+        self, user: discord.User, character, mode, period=2, dayend=None, daystart=None,
+    ):
+        """
+            Setup access to historical data
+            requires a user object, character hash, and mode type
+
+            can accept period between Daily, AllTime, and Activity
+            Can also accept a YYYY-MM-DD formatted string for daystart and dayend
+        """
+        try:
+            headers = await self.build_headers(user)
+        except:
+            raise Destiny2RefreshTokenError
+        params = {
+            "mode": mode,
+            "periodType": period,
+            "grops": "1,2,3,101,102,103",
+        }
+        # Set these up incase we want to use them later
+        if dayend:
+            params["dayend"] = dayend
+        if daystart:
+            params["daystart"] = daystart
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/"
+        return await self.request_url(url, params=params, headers=headers)
+
     async def has_oauth(self, ctx: commands.Context, user: discord.Member = None):
         if user:
-            if not (await self.config.user(user).oauth()
-                    or await self.config.user(user).account()):
-            # bypass OAuth procedure since the user has not authorized it
+            if not (
+                await self.config.user(user).oauth() or await self.config.user(user).account()
+            ):
+                # bypass OAuth procedure since the user has not authorized it
                 return await ctx.send(
                     _("That user has not provided an OAuth scope to view destiny data.")
                 )

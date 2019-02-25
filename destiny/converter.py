@@ -91,3 +91,34 @@ class DestinyActivity(Converter):
                 )
             )
         return result
+
+@cog_i18n(_)
+class StatsPage(Converter):
+    """Returns a tuple of strings of the correct stats page type to use"""
+
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        possible_results = {
+            "allpvp":{"code": "allPvP","alt":["pvp"]},
+            "patrol":{"code": "patrol","alt":[]},
+            "raid":{"code": "raid","alt":["all"]},
+            "story":{"code": "story","alt":[]},
+            "allstrikes":{"code": "allStrikes","alt":["strikes", "strike"]},
+            "allpve":{"code": "allPvE","alt":["pve"]},
+            "allpvecompetitive":{"code": "allPvECompetitive","alt":["gambit"]},
+        }
+        result = None
+        argument = argument.lower()
+        if argument in possible_results:
+            result = possible_results[argument]["code"]
+        else:
+            for k, v in possible_results.items():
+                if argument in v["alt"]:
+                    result = v["code"]
+        if not result:
+            raise BadArgument(
+                _("That is not an available stats page, pick from these: {activity_list}").format(
+                    activity_list=humanize_list(list(possible_results.keys()))
+                )
+            )
+        return result
