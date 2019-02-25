@@ -37,6 +37,10 @@ class DestinyAPI:
         self.bot: Red
 
     async def request_url(self, url, params=None, headers=None):
+        """
+            Helper to make requests from formed headers and params elsewhere 
+            and apply rate limiting to prevent issues
+        """
         time_now = datetime.now().timestamp()
         if self.throttle > time_now:
             raise Destiny2APICooldown(str(self.throttle - time_now))
@@ -59,6 +63,9 @@ class DestinyAPI:
                     raise Destiny2APIError
 
     async def get_access_token(self, code):
+        """
+            Called once the OAuth flow is complete and acquires an access token
+        """
         client_id = await self.config.api_token.client_id()
         client_secret = await self.config.api_token.client_secret()
         tokens = b64encode(f"{client_id}:{client_secret}".encode("ascii")).decode("utf8")
@@ -79,6 +86,9 @@ class DestinyAPI:
                     raise Destiny2InvalidParameters(_("That token is invalid."))
 
     async def get_refresh_token(self, user: discord.User):
+        """
+            Generate a refresh token if the token is expired
+        """
         client_id = await self.config.api_token.client_id()
         client_secret = await self.config.api_token.client_secret()
         tokens = b64encode(f"{client_id}:{client_secret}".encode("ascii")).decode("utf8")
@@ -100,6 +110,9 @@ class DestinyAPI:
                     raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
 
     async def get_o_auth(self, ctx):
+        """
+            This sets up the OAuth flow for logging into the API
+        """
         client_id = await self.config.api_token.client_id()
         if not client_id:
             raise Destiny2MissingAPITokens(
@@ -125,6 +138,11 @@ class DestinyAPI:
         pass
 
     async def build_headers(self, user: discord.User = None):
+        """
+            Build the headers for each API call from a discord User
+            if present, if a function doesn't require OAuth it won't pass
+            the user object
+        """
         if not await self.config.api_token.api_key():
             raise Destiny2MissingAPITokens("The Bot owner needs to set an API Key first.")
         header = {
@@ -189,6 +207,9 @@ class DestinyAPI:
             return
 
     async def get_characters(self, user: discord.User):
+        """
+            This pulls the data for each character from the API given a user object
+        """
         try:
             headers = await self.build_headers(user)
         except:
@@ -200,11 +221,19 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def get_entities(self, entity: str):
+        """
+            This loads the entity from the saved manifest
+        """
         json_io = JsonIO(cog_data_path(self) / f"{entity}.json")
         data = json_io._load_json()
         return data
 
     async def get_definition(self, entity: str, entity_hash: list):
+        """
+            This will attempt to get a definition from the manifest
+            if the manifest is missing it will try and pull the data
+            from the API
+        """
         items = []
         try:
             data = await self.get_entities(entity)
@@ -220,6 +249,9 @@ class DestinyAPI:
         # return data[entity][entity_hash]
 
     async def get_definition_from_api(self, entity: str, entity_hash):
+        """
+            This will acquire definition data from the API when the manifest is missing
+        """
         try:
             headers = await self.build_headers()
         except:
@@ -232,6 +264,9 @@ class DestinyAPI:
         return items
 
     async def search_definition(self, entity: str, entity_hash: str):
+        """
+            This is a helper to search clean names for a given definition of data
+        """
         try:
             data = await self.get_entities(entity)
         except:
@@ -247,6 +282,9 @@ class DestinyAPI:
         return items
 
     async def get_vendor(self, user: discord.User, character, vendor):
+        """
+            This gets the inventory of a specified Vendor
+        """
         try:
             headers = await self.build_headers(user)
         except:
@@ -258,6 +296,10 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def get_activity_history(self, user: discord.User, character, mode):
+        """
+            This retreieves the activity history for a users character
+
+        """
         try:
             headers = await self.build_headers(user)
         except:
@@ -269,7 +311,7 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def get_historical_stats(
-        self, user: discord.User, character, mode, period=2, dayend=None, daystart=None,
+        self, user: discord.User, character, mode, period=2, dayend=None, daystart=None
     ):
         """
             Setup access to historical data
@@ -282,11 +324,7 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except:
             raise Destiny2RefreshTokenError
-        params = {
-            "mode": mode,
-            "periodType": period,
-            "grops": "1,2,3,101,102,103",
-        }
+        params = {"mode": mode, "periodType": period, "groups": "1,2,3,101,102,103"}
         # Set these up incase we want to use them later
         if dayend:
             params["dayend"] = dayend
@@ -297,7 +335,28 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
+    async def get_historical_stats_account(self, user: discord.User):
+        """
+            This works the same as get_historical_stats but gets
+            stats for all characters merged together
+
+            This does not provide Gambit stats though
+        """
+        try:
+            headers = await self.build_headers(user)
+        except:
+            raise Destiny2RefreshTokenError
+        params = {"groups": "1,2,3,101,102,103"}
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Stats/"
+        return await self.request_url(url, params=params, headers=headers)
+
     async def has_oauth(self, ctx: commands.Context, user: discord.Member = None):
+        """
+            Basic checks to see if the user has OAuth setup
+            if not or the OAuth keys are expired this will call the refresh
+        """
         if user:
             if not (
                 await self.config.user(user).oauth() or await self.config.user(user).account()
@@ -348,6 +407,10 @@ class DestinyAPI:
         return True
 
     async def pick_account(self, ctx, memberships: list):
+        """
+            Have the user pick which account they want to pull data
+            from if they have multiple accounts across platforms
+        """
         msg = _(
             "There are multiple destiny memberships "
             "available, which one would you like to use?\n"
@@ -373,6 +436,9 @@ class DestinyAPI:
         return (membership, membership_name)
 
     async def get_manifest(self):
+        """
+            Checks if the manifest is up to date and downloads if it's not
+        """
         await self.bot.wait_until_ready()
         try:
             headers = await self.build_headers()

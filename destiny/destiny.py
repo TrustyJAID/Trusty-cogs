@@ -585,9 +585,180 @@ class Destiny(DestinyAPI, commands.Cog):
             attrs[k] = v
         return attrs
 
+    async def build_character_stats(self, user, chars, stat_type):
+
+        embeds = []
+        for char_id, char in chars["characters"]["data"].items():
+            # log.debug(char)
+
+            try:
+                data = await self.get_historical_stats(user, char_id, 0)
+            except:
+                log.error(
+                    _(
+                        "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
+                    ).format(char_id=char_id, activity=activity)
+                )
+                continue
+            if not data:
+                continue
+            try:
+                if stat_type != "allPvECompetitive":
+                    embed = await self.build_stat_embed_char_basic(user, char, data, stat_type)
+                    embeds.append(embed)
+                else:
+                    data = data[stat_type]["allTime"]
+                    embed = await self.build_stat_embed_char_gambit(user, char, data, stat_type)
+                    embeds.append(embed)
+            except Exception as e:
+                log.error(
+                    f"User {user.id} had an issue generating stats for character {char_id}",
+                    exc_info=True,
+                )
+                continue
+        return embeds
+
+    async def build_stat_embed_char_basic(self, user, char, data, stat_type):
+        char_info = ""
+        race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
+        gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+        char_class = await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+        char_info += "{user} - {race} {gender} {char_class} ".format(
+            user=user.display_name,
+            race=race[0]["displayProperties"]["name"],
+            gender=gender[0]["displayProperties"]["name"],
+            char_class=char_class[0]["displayProperties"]["name"],
+        )
+        ATTRS = {
+            "opponentsDefeated": _("Opponents Defeated"),
+            "efficiency": _("Efficiency"),
+            "bestSingleGameKills": _("Best Single Game Kills"),
+            "bestSingleGameScore": _("Best Single Game Score"),
+            "precisionKills": _("Precision Kills"),
+            "longestKillSpree": _("Longest Killing Spree"),
+            "longestSingleLife": _("Longest Single Life"),
+            "totalActivityDurationSeconds": _("Total time playing"),
+            "averageLifespan": _("Average Life Span"),
+            "weaponBestType": _("Best Weapon Type"),
+        }
+        embed = discord.Embed(title=stat_type.title())
+        embed.set_author(name=char_info, icon_url=user.avatar_url)
+        kills = data[stat_type]["allTime"]["kills"]["basic"]["displayValue"]
+        deaths = data[stat_type]["allTime"]["deaths"]["basic"]["displayValue"]
+        assists = data[stat_type]["allTime"]["assists"]["basic"]["displayValue"]
+        kda = f"{kills} | {deaths} | {assists}"
+        embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
+        if "emblemPath" in char:
+            embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+        for stat, values in data[stat_type]["allTime"].items():
+
+            if values["basic"]["value"] < 0 or stat not in ATTRS:
+                continue
+            embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
+        if "killsDeathsRatio" in data[stat_type] and "killsDeathsAssists" in data[stat_type]:
+            kdr = data[stat_type]["killsDeathsRatio"]
+            kda = data[stat_type]["killsDeathsAssists"]
+            if kdr or kda:
+                embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
+        if (
+            "resurrectionsPerformed" in data[stat_type]
+            and "resurrectionsReceived" in data[stat_type]
+        ):
+            res = data[stat_type]["resurrectionsPerformed"]
+            resur = data[stat_type]["resurrectionsReceived"]
+            if res or resur:
+                embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
+        return await self.get_char_colour(embed, char)
+
+    async def build_stat_embed_char_gambit(self, user, char, data, stat_type):
+        char_info = ""
+        race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
+        gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+        char_class = await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+        char_info += "{user} - {race} {gender} {char_class} ".format(
+            user=user.display_name,
+            race=race[0]["displayProperties"]["name"],
+            gender=gender[0]["displayProperties"]["name"],
+            char_class=char_class[0]["displayProperties"]["name"],
+        )
+        ATTRS = {
+            "opponentsDefeated": _("Opponents Defeated"),
+            "efficiency": _("Efficiency"),
+            "bestSingleGameKills": _("Best Single Game Kills"),
+            "bestSingleGameScore": _("Best Single Game Score"),
+            "precisionKills": _("Precision Kills"),
+            "longestKillSpree": _("Longest Killing Spree"),
+            "longestSingleLife": _("Longest Single Life"),
+            "totalActivityDurationSeconds": _("Total time playing"),
+            "averageLifespan": _("Average Life Span"),
+            "weaponBestType": _("Best Weapon Type"),
+            "winLossRatio": _("Win Loss Ratio"),
+        }
+        embed = discord.Embed(title="Gambit")
+        embed.set_author(name=char_info, icon_url=user.avatar_url)
+        kills = data["kills"]["basic"]["displayValue"]
+        deaths = data["deaths"]["basic"]["displayValue"]
+        assists = data["assists"]["basic"]["displayValue"]
+        kda = f"{kills} | {deaths} | {assists}"
+        embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
+        small_blocker = data["smallBlockersSent"]["basic"]["displayValue"]
+        med_blocker = data["mediumBlockersSent"]["basic"]["displayValue"]
+        large_blocker = data["largeBlockersSent"]["basic"]["displayValue"]
+        blockers = f"S {small_blocker}, M {med_blocker}, L {large_blocker}"
+        embed.add_field(name=_("Blockers"), value=blockers)
+        invasions = _("Invasions: {invasions}").format(
+            invasions=data["invasions"]["basic"]["displayValue"]
+        )
+        invasion_kills = _("Kills: {kills}\nDeaths: {deaths}").format(
+            kills=data["invasionKills"]["basic"]["displayValue"],
+            deaths=data["invasionDeaths"]["basic"]["displayValue"],
+        )
+        embed.add_field(name=invasions, value=invasion_kills)
+        invaders = _("Killed: {killed}\nKilled By: {by}").format(
+            killed=data["invaderKills"]["basic"]["displayValue"],
+            by=data["invaderDeaths"]["basic"]["displayValue"],
+        )
+        embed.add_field(name=_("Invaders"), value=invaders)
+        motes_dep = data["motesDeposited"]["basic"]["value"]
+        try:
+            lost = 1-(motes_dep / data["motesPickedUp"]["basic"]["value"])
+            motes_lost = "{:.2%}".format(lost)
+        except ZeroDivisionError:
+            motes_lost = "0%"
+        motes = _("{motes:,} ({lost} Lost)").format(motes=motes_dep, lost=motes_lost)
+        embed.add_field(name=_("Motes Deposited"), value=motes)
+        motes_denied = data["motesDenied"]["basic"]["value"]
+        embed.add_field(name=_("Motes Denied"), value="{:,}".format(motes_denied))
+        mob_kills = data["mobKills"]["basic"]["value"]
+        primeval_kills = data["primevalKills"]["basic"]["value"]
+        high_kills = data["highValueKills"]["basic"]["value"]
+        kills_msg = _("Primevals: {prime:,}\nHigh Value Targets: {high:,}\nMobs: {mobs:,}").format(
+            prime=primeval_kills, high=high_kills, mobs=mob_kills
+        )
+        embed.add_field(name=_("Kill Stats"), value=kills_msg)
+        if "killsDeathsRatio" in data and "killsDeathsAssists" in data:
+            kdr = data["killsDeathsRatio"]["basic"]["displayValue"]
+            kda = data["killsDeathsAssists"]["basic"]["displayValue"]
+            if kdr or kda:
+                embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
+        if "resurrectionsPerformed" in data and "resurrectionsReceived" in data:
+            res = data["resurrectionsPerformed"]["basic"]["displayValue"]
+            resur = data["resurrectionsReceived"]["basic"]["displayValue"]
+            if res or resur:
+                embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
+        if "emblemPath" in char:
+            embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+        for stat, values in data.items():
+
+            if values["basic"]["value"] < 0 or stat not in ATTRS:
+                continue
+            embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
+
+        return await self.get_char_colour(embed, char)
+
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def stats(self, ctx: commands.Context, stat_type: StatsPage):
+    async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True):
         """
             Display each characters stats for a specific activity
             `<activity>` The type of stats to display, available options are:
@@ -604,75 +775,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         # base stats should be available for all stat types
-        ATTRS = {
-            "opponentsDefeated": _("Opponents Defeated"),
-            "efficiency": _("Efficiency"),
-            "bestSingleGameKills": _("Best Single Game Kills"),
-            "bestSingleGameScore": _("Best Single Game Score"),
-            "precisionKills": _("Precision Kills"),
-            "longestKillSpree": _("Longest Killing Spree"),
-            "longestSingleLife": _("Longest Single Life"),
-            "totalActivityDurationSeconds": _("Total time playing"),
-            "averageLifespan": _("Average Life Span"),
-            "weaponBestType": _("Best Weapon Type"),
-        }
-        ATTRS = await self.get_extra_attrs(stat_type, ATTRS)
-        embeds = []
-        for char_id, char in chars["characters"]["data"].items():
-            # log.debug(char)
-            char_info = ""
-            race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
-            gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
-            char_class = await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-            char_info += "{user} - {race} {gender} {char_class} ".format(
-                user=user.display_name,
-                race=race[0]["displayProperties"]["name"],
-                gender=gender[0]["displayProperties"]["name"],
-                char_class=char_class[0]["displayProperties"]["name"],
-            )
-            try:
-                data = await self.get_historical_stats(user, char_id, 0)
-            except:
-                log.error(
-                    _(
-                        "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
-                    ).format(char_id=char_id, activity=activity)
-                )
-                continue
-            if not data:
-                continue
-            try:
-                key = stat_type
-                embed = discord.Embed(title=stat_type.title())
-                embed.set_author(name=char_info, icon_url=user.avatar_url)
-                kills = data[key]["allTime"]["kills"]["basic"]["displayValue"]
-                deaths = data[key]["allTime"]["deaths"]["basic"]["displayValue"]
-                assists = data[key]["allTime"]["assists"]["basic"]["displayValue"]
-                kda = f"{kills} | {deaths} | {assists}"
-                embed.add_field(name=_("Kills | Deaths | Assists"), value=kda)
-                if "emblemPath" in char:
-                    embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-                for stat, values in data[key]["allTime"].items():
-
-                    if values["basic"]["value"] < 0 or stat not in ATTRS:
-                        continue
-                    embed.add_field(name=ATTRS[stat], value=str(values["basic"]["displayValue"]))
-                if "killsDeathsRatio" in data[key] and "killsDeathsAssists" in data[key]:
-                    kdr = data[key]["killsDeathsRatio"]
-                    kda = data[key]["killsDeathsAssists"]
-                    if kdr or kda:
-                        embed.add_field(name=_("KDR/KDA"), value=f"{kdr}/{kda}")
-                if "resurrectionsPerformed" in data[key] and "resurrectionsReceived" in data[key]:
-                    res = data[key]["resurrectionsPerformed"]
-                    resur = data[key]["resurrectionsReceived"]
-                    if res or resur:
-                        embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
-                embed = await self.get_char_colour(embed, char)
-
-                embeds.append(embed)
-            except Exception as e:
-                log.error(f"User {user.id} had an issue generating stats for character {char_id}")
-                continue
+        embeds = await self.build_character_stats(user, chars, stat_type)
 
         if not embeds:
             return
