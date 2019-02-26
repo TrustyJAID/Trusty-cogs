@@ -116,6 +116,7 @@ class CrabRave(commands.Cog):
             preset="superfast",
             verbose=False,
             logger=None,
+            temp_audiofile=str(cog_data_path(self) / "crabraveaudio.mp3")
         )
         clip.close()
         video.close()
