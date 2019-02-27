@@ -492,7 +492,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
 
-        new_trigger = Trigger(name, regex, ["kick"], author, 0, filename, text, [], [], {}, [])
+        new_trigger = Trigger(name, regex, ["image"], author, 0, filename, text, [], [], {}, [])
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
