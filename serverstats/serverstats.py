@@ -1208,22 +1208,26 @@ class ServerStats(getattr(commands, "Cog", object)):
             x = [x[i : i + 10] for i in range(0, len(x), 10)]
             msg_list = []
             for page in x:
+                if guild is ctx.guild:
+                    members = "\n".join(f"{k.mention}: {v}" for k, v in page)
+                else:
+                    members = "\n".join(f"{k}: {v}" for k, v in page)
+                total = len(members)
                 em = discord.Embed(colour=await ctx.embed_colour())
                 em.title = _("Most posts on the server")
                 em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
                 pg_count = 0
-                for chn_page in pagify(new_msg, ["\n"], page_length=1024):
+                for chn_page in pagify(new_msg, ["\n"], page_length=1000):
+                    if total + len(chn_page) >= 5000:
+                        break
                     if pg_count == 0:
+                        total += len(chn_page)
                         em.description = chn_page
                     else:
                         em.add_field(name=_("Most posts (continued)"), value=chn_page)
                     pg_count += 1
-                if guild is ctx.guild:
-                    members = "\n".join(f"{k.mention}: {v}" for k, v in page)
-                    em.add_field(name=_("Members List"), value=members)
-                else:
-                    members = "\n".join(f"{k}: {v}" for k, v in page)
-                    em.add_field(name=_("Members List"), value=members)
+                
+                em.add_field(name=_("Members List"), value=members)
                 msg_list.append(em)
             if warning_msg:
                 await warning_msg.delete()
