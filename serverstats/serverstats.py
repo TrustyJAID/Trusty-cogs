@@ -1221,11 +1221,11 @@ class ServerStats(getattr(commands, "Cog", object)):
                     if total + len(chn_page) >= 5000:
                         break
                     if pg_count == 0:
-                        total += len(chn_page)
                         em.description = chn_page
                     else:
                         em.add_field(name=_("Most posts (continued)"), value=chn_page)
                     pg_count += 1
+                    total += len(chn_page)
                 
                 em.add_field(name=_("Members List"), value=members)
                 msg_list.append(em)
