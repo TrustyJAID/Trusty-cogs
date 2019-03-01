@@ -56,7 +56,10 @@ class DestinyAPI:
                         # await JsonIO(fp)._threadsafe_save_json(data["Response"])
                         return data["Response"]
                     else:
-                        log.error(data["message"])
+                        if "message" in data:
+                            log.error(data["message"])
+                        else:
+                            log.error("Incorrect response data")
                         raise Destiny2InvalidParameters(data["Message"])
                 else:
                     log.error("Could not connect to the API")
