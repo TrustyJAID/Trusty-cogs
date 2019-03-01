@@ -4,6 +4,9 @@ from .game import Game
 from .constants import BASE_URL, CONFIG_ID, TEAMS
 from .pickems import Pickems
 from .helper import *
+import logging
+
+log = logging.getLogger("red.Hockey")
 
 
 class GameDayChannels:
@@ -39,7 +42,6 @@ class GameDayChannels:
             team = await config.guild(guild).gdc_team()
             if team != "all":
                 next_games = await Game.get_games_list(team, datetime.now())
-                # print(next_game)
                 if next_games != []:
                     next_game = await Game.from_url(next_games[0]["link"])
                 if next_game is None:
@@ -49,7 +51,7 @@ class GameDayChannels:
                     cur_channels = await config.guild(guild).gdc()
                     cur_channel = bot.get_channel(cur_channels[0])
                 except Exception as e:
-                    print(e)
+                    log.error("Error checking new GDC", exc_info=True)
                     cur_channel = None
                 if cur_channel is None:
                     await GameDayChannels.create_gdc(bot, guild)
@@ -93,7 +95,7 @@ class GameDayChannels:
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
         except Exception as e:
-            print("Error creating channels in {}: {}".format(guild.name, e))
+            log.error("Error creating channels in {}".format(guild.name), exc_info=True)
             return
         cur_channels = await config.guild(guild).gdc()
         if cur_channels is None:
@@ -140,7 +142,7 @@ class GameDayChannels:
                 await preview_msg.add_reaction(next_game.away_emoji[2:-1])
                 await preview_msg.add_reaction(next_game.home_emoji[2:-1])
             except Exception as e:
-                print(e)
+                log.debug("cannot add reactions")
 
     @staticmethod
     async def delete_gdc(bot, guild):
@@ -164,5 +166,5 @@ class GameDayChannels:
                 await config.channel(chn).clear()
                 await chn.delete()
             except Exception as e:
-                print(e)
+                log.error("Cannot delete GDC channels")
         await config.guild(guild).gdc.set([])

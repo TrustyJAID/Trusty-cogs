@@ -5,8 +5,11 @@ from .constants import BASE_URL, TEAMS, HEADSHOT_URL
 from .helper import *
 from .standings import Standings
 from redbot.core.i18n import Translator
+import logging
 
 _ = Translator("Hockey", __file__)
+
+log = logging.getLogger("red.Hockey")
 
 
 async def make_rules_embed(guild, team, rules):

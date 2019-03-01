@@ -4,6 +4,7 @@ import discord
 from .helper import *
 from redbot.core.i18n import Translator
 from redbot.core import Config
+import logging
 
 try:
     from .oilers import Oilers
@@ -12,6 +13,8 @@ except:
 
 
 _ = Translator("Hockey", __file__)
+
+log = logging.getLogger("red.Hockey")
 
 
 class Goal:
@@ -124,7 +127,7 @@ class Goal:
             channel = bot.get_channel(id=channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
-                print("{} channel was removed because it no longer exists".format(channels))
+                log.info("{} channel was removed because it no longer exists".format(channels))
                 continue
             should_post = await check_to_post(channel, post_state)
             if should_post:
@@ -178,7 +181,7 @@ class Goal:
                         msg = await channel.send(role.mention, embed=goal_embed)
                         msg_list[str(channel.id)] = msg.id
                 except Exception as e:
-                    print(_("Could not post goal in ") + str(channels) + str(e))
+                    log.error(_("Could not post goal in ") + str(channels), exc_info=True)
                     pass
         return msg_list
 
@@ -194,7 +197,7 @@ class Goal:
             try:
                 old_msgs = team_data["goal_id"][goal]["messages"].items()
             except Exception as e:
-                print(e)
+                log.error("Error iterating saved goals", exc_info=True)
                 return
             for channel_id, message_id in old_msgs:
                 channel = bot.get_channel(id=int(channel_id))
@@ -203,7 +206,7 @@ class Goal:
                     if message is not None:
                         await message.delete()
                 except Exception as e:
-                    print(_("Cannot find message ") + team + " " + goal + " " + str(e))
+                    log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
                     pass
             try:
                 team_list.remove(team_data)
@@ -211,7 +214,7 @@ class Goal:
                 team_list.append(team_data)
                 await config.teams.set(team_list)
             except Exception as e:
-                print(e)
+                log.error("Error removing team data", exc_info=True)
                 return
         return
 
@@ -245,7 +248,7 @@ class Goal:
                 else:
                     await message.edit(content=role.mention, embed=em)
             except:
-                print(_("Could not edit goal in") + str(channel_id))
+                log.error(_("Could not edit goal in") + str(channel_id))
         return
 
     async def get_shootout_display(self, game_goals):

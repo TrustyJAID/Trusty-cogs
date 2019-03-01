@@ -3,6 +3,9 @@ import aiohttp
 import discord
 from .constants import BASE_URL, TEAMS
 from .helper import hockey_config
+import logging
+
+log = logging.getLogger("red.Hockey")
 
 
 class Standings:
@@ -23,6 +26,7 @@ class Standings:
         streak_type: str,
         goals: int,
         gaa: int,
+        wc: str,
         last_updated: str,
     ):
         super().__init__()
@@ -41,6 +45,7 @@ class Standings:
         self.streak_type = streak_type
         self.goals = goals
         self.gaa = gaa
+        self.wc = wc
         self.last_updated = datetime.strptime(last_updated, "%Y-%m-%dT%H:%M:%SZ")
 
     def to_json(self) -> dict:
@@ -60,6 +65,7 @@ class Standings:
             "streak_type": self.streak_type,
             "goals": self.goals,
             "gaa": self.gaa,
+            "wc": self.wc,
             "last_updated": self.last_updated.strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
@@ -96,7 +102,6 @@ class Standings:
 
             index = 0
             for div in [e, w]:
-                # print(div[0].conference)
                 if div[0].conference.lower() == style and style != "conference":
                     index = [e, w].index(div)
             return [e, w], index
@@ -136,14 +141,14 @@ class Standings:
             Automatically update a standings embed with the latest stats
             run when new games for the day is updated
         """
-        print("Updating Standings.")
+        log.debug("Updating Standings.")
         config = hockey_config()
         all_guilds = await config.all_guilds()
         for guilds in all_guilds:
             guild = bot.get_guild(guilds)
             if guild is None:
                 continue
-            print(guild.name)
+            log.debug(guild.name)
             if await config.guild(guild).post_standings():
 
                 search = await config.guild(guild).standings_type()
@@ -192,6 +197,7 @@ class Standings:
             streak_type,
             data["goalsScored"],
             data["goalsAgainst"],
+            data["wildCardRank"],
             data["lastUpdated"],
         )
 
@@ -208,10 +214,11 @@ class Standings:
             if team.division not in new_dict:
                 new_dict[team.division] = ""
             emoji = TEAMS[team.name]["emoji"]
+            wildcard = f"(WC{team.wc})" if team.wc in ["1", "2"] else ""
             new_dict[team.division] += (
                 f"{team.division_rank}. <:{emoji}> GP: **{team.gp}** "
                 f"W: **{team.wins}** L: **{team.losses}** OT: "
-                f"**{team.ot}** PTS: **{team.pts}**\n"
+                f"**{team.ot}** PTS: **{team.pts}** {wildcard}\n"
             )
             if team == post_standings[-1]:
                 new_dict[team.division] += "\nFrom: https://www.nhl.com/standings"

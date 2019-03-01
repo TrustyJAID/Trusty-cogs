@@ -6,6 +6,7 @@ from .embeds import *
 from .standings import Standings
 from .game import Game
 from redbot.core.i18n import Translator
+from redbot.core.utils.menus import start_adding_reactions, DEFAULT_CONTROLS
 
 _ = Translator("Hockey", __file__)
 
@@ -52,9 +53,10 @@ async def hockey_menu(
 
     if not message:
         message = await ctx.send(embed=em)
-        await message.add_reaction("⬅")
-        await message.add_reaction("❌")
-        await message.add_reaction("➡")
+        start_adding_reactions(message, DEFAULT_CONTROLS.keys())
+        # await message.add_reaction("⬅")
+        # await message.add_reaction("❌")
+        # await message.add_reaction("➡")
     else:
         # message edits don't return the message object anymore lol
         await message.edit(embed=em)

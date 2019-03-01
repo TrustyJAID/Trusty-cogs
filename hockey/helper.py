@@ -6,10 +6,13 @@ from .constants import TEAMS, CONFIG_ID
 from .teamentry import TeamEntry
 from redbot.core.i18n import Translator
 import pytz
+import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
 _ = Translator("Hockey", __file__)
+
+log = logging.getLogger("red.Hockey")
 
 
 def get_season():

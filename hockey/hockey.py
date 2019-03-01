@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 import json
 import yaml
+import logging
 from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import quote
@@ -30,7 +31,9 @@ except:
 
 _ = Translator("Hockey", __file__)
 
-__version__ = "2.3.1"
+log = logging.getLogger("red.Hockey")
+
+__version__ = "2.3.2"
 __author__ = "TrustyJAID"
 
 
@@ -109,7 +112,7 @@ class Hockey(getattr(commands, "Cog", object)):
                             async with self.session.get(BASE_URL + link) as resp:
                                 data = await resp.json()
                         except Exception as e:
-                            print(_("Error grabbing game data: ") + str(e))
+                            log.error(_("Error grabbing game data: "), exc_info=True)
                             continue
                     else:
                         games_playing = False
@@ -120,32 +123,30 @@ class Hockey(getattr(commands, "Cog", object)):
                         await self.check_new_day()
                         await game.check_game_state(self.bot)
                     except Exception as e:
-                        print("Error checking game state: " + str(e))
+                        log.error("Error checking game state: ", exc_info=True)
 
-                    if await self.config.print():
-                        print(
-                            (
-                                f"{game.away_team} @ {game.home_team} "
-                                f"{game.game_state} {game.away_score} - {game.home_score}"
-                            )
+                    log.debug(
+                        (
+                            f"{game.away_team} @ {game.home_team} "
+                            f"{game.game_state} {game.away_score} - {game.home_score}"
                         )
+                    )
 
                     if game.game_state == "Final" and game.first_star is not None:
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception as e:
-                            print(_("Pickems Set Winner error: ") + str(e))
+                            log.error(_("Pickems Set Winner error: "), exc_info=True)
                         to_remove.append(link)
 
                 for link in to_remove:
                     games.remove(link)
                 await asyncio.sleep(60)
-            if await self.config.print():
-                print(_("Games Done Playing"))
+            log.debug(_("Games Done Playing"))
             try:
                 await Pickems.tally_leaderboard(self.bot)
             except Exception as e:
-                print(_("Error tallying leaderboard:") + str(e))
+                log.error(_("Error tallying leaderboard:"), exc_info=True)
                 pass
             if games_playing:
                 await self.config.created_gdc.set(False)
@@ -170,13 +171,13 @@ class Hockey(getattr(commands, "Cog", object)):
                 try:
                     await Pickems.reset_weekly(self.bot)
                 except Exception as e:
-                    print(_("Error reseting the weekly leaderboard: ") + str(e))
+                    log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception as e:
-                print(e)
-            if await self.config.print():
-                print(_("Checking GDC"))
+                log.error("Error updating standings", exc_info=True)
+
+            log.debug(_("Checking GDC"))
 
             await GameDayChannels.check_new_gdc(self.bot)
             await self.config.created_gdc.set(True)
@@ -199,7 +200,7 @@ class Hockey(getattr(commands, "Cog", object)):
         except:
             return
         user = guild.get_member(payload.user_id)
-        # print(payload.user_id)
+        # log.debug(payload.user_id)
         if user.bot:
             return
         is_pickems_vote = False
@@ -208,7 +209,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 is_pickems_vote = True
                 reply_message = ""
                 try:
-                    # print(payload.emoji)
+                    # log.debug(payload.emoji)
                     pickem.add_vote(user.id, payload.emoji)
                 except UserHasVotedError as team:
                     if msg.channel.permissions_for(msg.guild.me).manage_messages:
@@ -736,7 +737,7 @@ class Hockey(getattr(commands, "Cog", object)):
             await ctx.author.add_roles(role[0])
             await ctx.send(role[0].name + _("role applied."))
         except Exception as e:
-            print(e)
+            log.error("error adding team role", exc_info=True)
             await ctx.send(team + _(" is not an available role!"))
 
     @hockey_commands.command(name="goals")
@@ -769,7 +770,6 @@ class Hockey(getattr(commands, "Cog", object)):
                 await ctx.message.author.add_roles(role[0])
                 await ctx.message.channel.send(role[0].name + _(" role applied."))
             except Exception as e:
-                print(e)
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
@@ -898,7 +898,7 @@ class Hockey(getattr(commands, "Cog", object)):
                     await new_msg.add_reaction(game.away_emoji[2:-1])
                     await new_msg.add_reaction(game.home_emoji[2:-1])
                 except Exception as e:
-                    print(e)
+                    log.debug("Error adding reactions")
 
     async def post_leaderboard(self, ctx, leaderboard_type):
         """
@@ -1067,10 +1067,10 @@ class Hockey(getattr(commands, "Cog", object)):
         """
         to_remove = []
         games_playing = True
-        # print(link)
+        # log.debug(link)
         with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
             data = json.loads(infile.read())
-        # print(data)
+        # log.debug(data)
         game = await Game.from_json(data)
         await game.check_game_state(self.bot)
         if (game.home_score + game.away_score) != 0:
@@ -1132,7 +1132,7 @@ class Hockey(getattr(commands, "Cog", object)):
         try:
             await Standings.post_automatic_standings(self.bot)
         except Exception as e:
-            print(e)
+            log.debug("error testing standings page", exc_info=True)
 
     @hockeyset_commands.command()
     @checks.is_owner()
@@ -1147,7 +1147,7 @@ class Hockey(getattr(commands, "Cog", object)):
         for channels in all_channels.keys():
             channel = self.bot.get_channel(channels)
             if channel is None:
-                print(channels)
+                log.debug(channels)
                 continue
             if channel.guild.name not in guild_list:
                 guild_list[channel.guild.name] = 1
@@ -1156,7 +1156,7 @@ class Hockey(getattr(commands, "Cog", object)):
         msg = "Servers:{}\nNumber of Channels: {}\nNumber of Servers: {}".format(
             guild_list, len(all_channels), len(all_guilds)
         )
-        print(msg)
+        log.debug(msg)
 
     #######################################################################
     # Owner Only Commands Mostly for Testing
@@ -1236,7 +1236,7 @@ class Hockey(getattr(commands, "Cog", object)):
             channel = self.bot.get_channel(channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
-                print(channels)
+                log.info("Removed the following channels" + str(channels))
                 continue
             else:
                 good_channels.append(channel.id)
@@ -1252,7 +1252,7 @@ class Hockey(getattr(commands, "Cog", object)):
             channel = self.bot.get_channel(channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
-                print(channels)
+                log.info("Removed the following channels" + str(channels))
                 continue
             # if await self.config.channel(channel).to_delete():
             # await self.config._clear_scope(Config.CHANNEL, str(channels))
@@ -1303,20 +1303,6 @@ class Hockey(getattr(commands, "Cog", object)):
             await hue.goal_lights()
         else:
             return
-
-    @hockeyset_commands.command()
-    @checks.is_owner()
-    async def print(self, ctx):
-        """
-            Toggle the console print for cog functions
-        """
-        if not await self.config.print():
-            await self.config.print.set(True)
-            msg = "on"
-        else:
-            await self.config.print.set(False)
-            msg = "off"
-        await ctx.send(_("Console printing is now ") + msg)
 
     @hockeyset_commands.command()
     @checks.is_owner()

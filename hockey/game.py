@@ -8,10 +8,13 @@ from .goal import Goal
 from .helper import *
 from .standings import Standings
 import discord
+import logging
 from redbot.core.i18n import Translator
 
 
 _ = Translator("Hockey", __file__)
+
+log = logging.getLogger("red.Hockey")
 
 
 class Game:
@@ -135,7 +138,7 @@ class Game:
                             data = await resp.json()
                     return_games_list.append(await Game.from_json(data))
                 except Exception as e:
-                    print(_("Error grabbing game data: ") + "{}".format(e))
+                    log.error("Error grabbing game data:", exc_info=True)
                     continue
         return return_games_list
 
@@ -186,7 +189,7 @@ class Game:
                 async with session.get(BASE_URL + game["link"]) as resp:
                     game_json = await resp.json()
             data = await Game.from_json(game_json)
-            print(BASE_URL + game["link"])
+            log.debug(BASE_URL + game["link"])
         else:
             data = game
 
@@ -438,9 +441,8 @@ class Game:
         if self.game_state == "Live":
             """Checks what the period is and posts the game is starting in the appropriate channel"""
             if home["period"] != self.period:
-                if await self.config.print():
-                    msg = "**{} Period starting {} at {}**"
-                    print(msg.format(self.period_ord, self.away_team, self.home_team))
+                msg = "**{} Period starting {} at {}**"
+                log.debug(msg.format(self.period_ord, self.away_team, self.home_team))
                 await self.post_game_state(bot)
                 await self.save_game_state()
 
@@ -455,9 +457,8 @@ class Game:
                 await self.check_team_goals(bot)
             if home["game_state"] != self.game_state and home["game_state"] != "Null":
                 # Post game final data and check for next game
-                if await self.config.print():
-                    msg = "Game Final {} @ {}"
-                    print(msg.format(self.home_team, self.away_team))
+                msg = "Game Final {} @ {}"
+                log.debug(msg.format(self.home_team, self.away_team))
                 await self.post_game_state(bot)
                 await self.save_game_state()
 
@@ -473,7 +474,7 @@ class Game:
             channel = bot.get_channel(id=channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
-                print("{} channel was removed because it no longer exists".format(channels))
+                log.info("{} channel was removed because it no longer exists".format(channels))
                 continue
             guild = channel.guild
             should_post = await check_to_post(channel, post_state)
@@ -505,7 +506,7 @@ class Game:
                         else:
                             await channel.send(msg, embed=state_embed)
                     except Exception as e:
-                        print(_("Could not post goal in ") + str(channels) + str(e))
+                        log.error(_("Could not post goal in ") + str(channels), exc_info=True)
 
                 else:
                     if self.game_state == "Preview":
@@ -527,9 +528,9 @@ class Game:
                                     await preview_msg.add_reaction(self.away_emoji[2:-1])
                                     await preview_msg.add_reaction(self.home_emoji[2:-1])
                                 except Exception as e:
-                                    print(e)
+                                    log.debug("Could not add reactions")
                     except Exception as e:
-                        print(_("Could not post goal in ") + str(channels) + str(e))
+                        log.error(_("Could not post goal in ") + str(channels), exc_info=True)
 
     async def check_team_goals(self, bot):
         """
@@ -617,7 +618,7 @@ class Game:
             channel = bot.get_channel(id=channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
-                print("{} channel was removed because it no longer exists".format(channels))
+                log.info("{} channel was removed because it no longer exists".format(channels))
                 continue
 
             should_post = await check_to_post(channel, post_state)
@@ -634,7 +635,7 @@ class Game:
                 try:
                     await channel.send(msg)
                 except Exception as e:
-                    print(_("Could not post goal in ") + str(channels) + str(e))
+                    log.error(_("Could not post goal in ") + str(channels), exc_info=True)
 
     @staticmethod
     async def from_url(url: str):
@@ -644,7 +645,7 @@ class Game:
                     data = await resp.json()
             return await Game.from_json(data)
         except Exception as e:
-            print(_("Error grabbing game data: ") + "{}".format(e))
+            log.error(_("Error grabbing game data: "), exc_info=True)
             return
 
     @classmethod

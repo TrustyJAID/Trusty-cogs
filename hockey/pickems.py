@@ -4,8 +4,11 @@ from .constants import TEAMS
 from .helper import *
 from redbot.core.i18n import Translator
 from redbot.core import Config
+import logging
+
 
 _ = Translator("Hockey", __file__)
+log = logging.getLogger("red.Hockey")
 
 
 class Pickems:
@@ -134,7 +137,7 @@ class Pickems:
             if p["home_team"] == game.home_team and p["away_team"] == game.away_team:
                 if p["game_start"] == game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"):
                     # Only use the old one if the date is the same and the same teams are playing
-                    print(_("Pickem already exists, adding channel"))
+                    log.debug(_("Pickem already exists, adding channel"))
                     old_pickem = p
 
         if old_pickem is None:
@@ -209,7 +212,7 @@ class Pickems:
                     [p.to_json() for p in pickem_list if p.winner is None]
                 )
             except Exception as e:
-                print(_("Error tallying leaderboard in ") + f"{guild.name} {e}")
+                log.error(_("Error tallying leaderboard in ") + f"{guild.name}", exc_info=True)
 
     def to_json(self) -> dict:
         return {
