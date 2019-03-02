@@ -227,9 +227,14 @@ class ServerStats(getattr(commands, "Cog", object)):
         created_at = _("Created on **{since}**. " "That's over **{passed}** days ago!").format(
             since=guild.created_at.strftime("%d %b %Y %H:%M"), passed=passed
         )
-        joined_at = guild.me.joined_at
-        since_joined = (datetime.datetime.utcnow() - joined_at).days
+        try:
+            joined_at = guild.me.joined_at
+        except:
+            joined_at = datetime.utcnow()
+            
         bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
+        since_joined = (datetime.datetime.utcnow() - joined_at).days
+        
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**. That's over **{since_join}** days ago!"
         ).format(bot_name=guild.me.name, bot_join=bot_joined, since_join=since_joined)
