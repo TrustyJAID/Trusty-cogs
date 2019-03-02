@@ -705,6 +705,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.check(lambda ctx: AALIB_INSTALLED)
     async def iascii(self, ctx, urls: ImageFinder = None):
         """Generate an ascii art image of last image in chat or from URL"""
         if not AALIB_INSTALLED:
@@ -760,6 +761,7 @@ class NotSoBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.check(lambda ctx: AALIB_INSTALLED)
     async def gascii(self, ctx, urls: ImageFinder = None):
         """Gif to ASCII"""
         if not AALIB_INSTALLED:
