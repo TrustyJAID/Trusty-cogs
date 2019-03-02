@@ -223,14 +223,13 @@ class Starboard(getattr(commands, "Cog", object)):
             `<name>` is the name for the starboard and will be lowercase only
         """
         guild = ctx.message.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
             await ctx.send(name + _(" Doesn't appear to be a starboard on this server."))
             return
         starboards = await self.config.guild(guild).starboards()
-        del starboards[name]
+        del starboards[starboard.name]
         await self.config.guild(guild).starboards.set(starboards)
         await ctx.send(_("Deleted starboard ") + name)
 
@@ -250,26 +249,26 @@ class Starboard(getattr(commands, "Cog", object)):
         try:
             msg = await channel.get_message(msg_id)
         except:
-            error_msg = _("That message doesn't appear " "to exist in the specified channel.")
+            error_msg = _("That message doesn't appear to exist in the specified channel.")
             await ctx.send(error_msg)
             return
         try:
-            starboard = await self.get_starboard_from_name(guild, name.lower())
+            starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
             return
         if not starboard.enabled:
-            error_msg = _("Starboard") + name.lower() + _(" isn't enabled.")
+            error_msg = _("Starboard {name} isn't enabled.").format(name=starboard.name)
             await ctx.send(error_msg)
             return
         if not await self.check_roles(starboard, ctx.message.author):
             error_msg = _(
-                "One of your roles is blacklisted " "or you don't have the whitelisted role."
+                "One of your roles is blacklisted or you don't have the whitelisted role."
             )
             await ctx.send(error_msg)
             return
         if not await self.check_channel(starboard, channel):
             error_msg = _(
-                "This channel is either blacklisted " "or not in the whitelisted channels."
+                "This channel is either blacklisted or not in the whitelisted channels."
             )
             await ctx.send(error_msg)
             return
@@ -313,7 +312,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<channel_or_role>` is the channel or role you would like to add to the blacklist
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -351,7 +349,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -389,7 +386,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<channel_or_role>` is the channel or role you would like to add to the whitelist
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -427,7 +423,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<channel_or_role>` is the channel or role you would like to remove from the whitelist
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -463,7 +458,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
-        name = name.lower()
         if not channel.permissions_for(guild.me).send_messages:
             send_perms = _("I don't have permission to post in ")
             await ctx.send(send_perms + channel.mention)
@@ -495,7 +489,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<name>` is the name of the starboard to toggle
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -506,6 +499,27 @@ class Starboard(getattr(commands, "Cog", object)):
         else:
             msg = _("Starboard ") + name + _(" enabled.")
         starboard.enabled = not starboard.enabled
+        await self.save_starboard(guild, starboard)
+        await ctx.send(msg)
+
+    @starboard.command(name="selfstar")
+    async def toggle_selfstar(self, ctx, name: str):
+        """
+            Toggle whether or not a user can star their own post
+
+            `<name>` is the name of the starboard to toggle
+        """
+        guild = ctx.guild
+        try:
+            starboard = await self.get_starboard_from_name(guild, name)
+        except NoStarboardError:
+            await ctx.send(_("There is no starboard named ") + name)
+            return
+        if starboard.selfstar:
+            msg = _("Selfstarring on starboard {name} disabled.").format(name=starboard.name)
+        else:
+            msg = _("Selfstarring on starboard {name} enabled.").format(name=starboard.name)
+        starboard.selfstar = not starboard.selfstar
         await self.save_starboard(guild, starboard)
         await ctx.send(msg)
 
@@ -521,7 +535,6 @@ class Starboard(getattr(commands, "Cog", object)):
             Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/rewrite/api.html#discord.Colour)
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -551,7 +564,6 @@ class Starboard(getattr(commands, "Cog", object)):
             `<emoji>` must be an emoji on the server or a default emoji
         """
         guild = ctx.guild
-        name = name.lower()
         try:
             starboard = await self.get_starboard_from_name(guild, name)
         except NoStarboardError:
@@ -576,7 +588,6 @@ class Starboard(getattr(commands, "Cog", object)):
             moved to the starboard
         """
         guild = ctx.guild
-        name = name.lower()
         if threshold <= 0:
             threshold = 1
         try:
@@ -616,7 +627,7 @@ class Starboard(getattr(commands, "Cog", object)):
     async def get_starboard_from_name(self, guild: discord.Guild, name: str):
         starboards = await self.config.guild(guild).starboards()
         try:
-            starboard = StarboardEntry.from_json(starboards.get(name))
+            starboard = StarboardEntry.from_json(starboards.get(name.lower()))
         except Exception as e:
             print(e)
             raise NoStarboardError
@@ -751,7 +762,7 @@ class Starboard(getattr(commands, "Cog", object)):
 
         if starboard.emoji == str(payload.emoji):
             star_channel = self.bot.get_channel(starboard.channel)
-            if member.id == msg.author.id and not await self.is_mod_or_admin(member):
+            if member.id == msg.author.id and not starboard.selfstar:
                 # allow mods, admins and owner to automatically star messages
                 return
             for messages in [StarboardMessage.from_json(m) for m in starboard.messages]:

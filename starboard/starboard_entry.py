@@ -6,6 +6,7 @@ class StarboardEntry:
         emoji: str,
         colour: str = "user",
         enabled: bool = True,
+        selfstar: bool = False,
         blacklist_role: list = [],
         whitelist_role: list = [],
         messages: list = [],
@@ -20,6 +21,7 @@ class StarboardEntry:
         self.emoji = emoji
         self.colour = colour
         self.enabled = enabled
+        self.selfstar = selfstar
         self.blacklist_role = blacklist_role
         self.whitelist_role = whitelist_role
         self.messages = messages
@@ -34,6 +36,7 @@ class StarboardEntry:
             "channel": self.channel,
             "emoji": self.emoji,
             "colour": self.colour,
+            "selfstar": self.selfstar,
             "blacklist_role": self.blacklist_role,
             "whitelist_role": self.whitelist_role,
             "messages": self.messages,
@@ -44,9 +47,11 @@ class StarboardEntry:
 
     @classmethod
     def from_json(cls, data: dict):
-        if "colour" not in data:
-            colour = "user"
-        else:
+        colour = "user"
+        selfstar = False
+        if "selfstar" in data:
+            selfstar = data["selfstar"]
+        if "colour" in data:
             colour = data["colour"]
         return cls(
             data["name"],
@@ -54,6 +59,7 @@ class StarboardEntry:
             data["emoji"],
             colour,
             data["enabled"],
+            selfstar,
             data["blacklist_role"],
             data["whitelist_role"],
             data["messages"],
