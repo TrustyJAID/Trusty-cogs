@@ -29,7 +29,6 @@ class Trigger:
         whitelist: list,
         blacklist: list,
         cooldown: dict,
-        # is_multi:bool,
         multi_payload: list,
     ):
         self.name = name
@@ -42,7 +41,6 @@ class Trigger:
         self.whitelist = whitelist
         self.blacklist = blacklist
         self.cooldown = cooldown
-        # self.is_multi = is_multi
         self.multi_payload = multi_payload
 
     def _add_count(self, number: int):
@@ -60,7 +58,6 @@ class Trigger:
             "whitelist": self.whitelist,
             "blacklist": self.blacklist,
             "cooldown": self.cooldown,
-            # "is_multi": self.is_multi,
             "multi_payload": self.multi_payload,
         }
 

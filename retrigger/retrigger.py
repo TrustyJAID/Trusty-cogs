@@ -12,6 +12,12 @@ from .converters import *
 from .triggerhandler import TriggerHandler
 from multiprocessing.pool import Pool
 
+try:
+    from PIL import Image
+    ALLOW_RESIZE = True
+except:
+    ALLOW_RESIZE = False
+
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
@@ -23,17 +29,18 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.2.1"
+    __version__ = "2.3.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247)
         default_guild = {"trigger_list": {}, "allow_multiple": False, "modlog": "default"}
         self.config.register_guild(**default_guild)
-        self.re_pool = Pool()
+        self.re_pool = Pool(maxtasksperchild=1)
 
     def __unload(self):
         self.re_pool.close()
+        self.bot.loop.run_in_executor(None, self.re_pool.join)
 
     @commands.group()
     @commands.guild_only()
@@ -45,52 +52,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
-    async def initialize(self):
-        """
-            Force fixup triggers to the new data scheme on load
-        """
-        for guild_id in await self.config.all_guilds():
-            guild = self.bot.get_guild(int(guild_id))
-            if guild is None:
-                await self.config._clear_scope(Config.GUILD, str(guild_id))
-                continue
-            triggers = await self.config.guild(guild).trigger_list()
-            for trigger in await self.config.guild(guild).trigger_list():
-                try:
-                    t = Trigger.from_json(triggers[trigger])
-                except Exception as e:
-                    log.error(
-                        _("Removing {trigger} from {guild} ({guild.id})").format(
-                            trigger=trigger, guild=guild
-                        ),
-                        exc_info=True,
-                    )
-                    if triggers[trigger]["image"] is not None:
-                        image = triggers[trigger]["image"]
-                        if isinstance(image, list):
-                            for i in image:
-                                path = str(cog_data_path(self)) + f"/{guild.id}/{i}"
-                                try:
-                                    os.remove(path)
-                                except Exception as e:
-                                    msg = _("Error deleting saved image in {guild}").format(
-                                        guild=guild.id
-                                    )
-                                    log.error(msg, exc_info=True)
-                        else:
-                            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-                            try:
-                                os.remove(path)
-                            except Exception as e:
-                                msg = _("Error deleting saved image in {guild}").format(
-                                    guild=guild.id
-                                )
-                                log.error(msg, exc_info=True)
-                                pass
-                    del triggers[trigger]
-                    continue
-                triggers[t.name] = t.to_json()
-            await self.config.guild(guild).trigger_list.set(triggers)
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
@@ -501,6 +462,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
+    @commands.check(lambda ctx: ALLOW_RESIZE)
     async def resize(self, ctx, name: TriggerExists, regex: ValidRegex, image_url: str = None):
         """
             Add an image to resize in response to a trigger
