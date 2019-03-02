@@ -276,7 +276,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
     async def change_avatar(self, url: str):
         now = datetime.now().timestamp()
         last = await self.config.last_avatar()
-        if (now - last) > 1000:
+        if (now - last) > 1800:
             # Some extra checks so we don't get rate limited over reloads/resets
             try:
                 async with aiohttp.ClientSession() as session:
@@ -344,7 +344,7 @@ class TrustyAvatar(getattr(commands, "Cog", object)):
             if await self.config.avatar():
                 await self.change_avatar(url)
                 print("changing avatar to {}".format(new_avatar))
-            await asyncio.sleep(randint(1000, 1500))
+            await asyncio.sleep(randint(1800, 3600))
 
     def __unload(self):
         self.loop.cancel()
