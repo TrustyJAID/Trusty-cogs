@@ -903,6 +903,7 @@ class EventMixin:
         added_emoji = [list(a - b)][0]
         removed_emoji = [list(b - a)][0]
         changed_emoji = [list(set([e.name for e in after]) - set([e.name for e in before]))][0]
+        action = None
         for emoji in removed_emoji:
             new_msg = f"`{emoji}`" + _(" Removed from the guild\n")
             msg += new_msg
@@ -923,12 +924,14 @@ class EventMixin:
             action = discord.AuditLogAction.emoji_update
         perp = None
         reason = None
+
         if channel.permissions_for(guild.me).view_audit_log:
-            async for log in guild.audit_logs(limit=1, action=action):
-                perp = log.user
-                if log.reason:
-                    reason = log.reason
-                break
+            if action:
+                async for log in guild.audit_logs(limit=1, action=action):
+                    perp = log.user
+                    if log.reason:
+                        reason = log.reason
+                    break
         if perp:
             embed.add_field(name=_("Updated by "), value=perp.mention)
             msg += _("Updated by ") + str(perp) + "\n"
