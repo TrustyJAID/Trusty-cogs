@@ -230,7 +230,7 @@ class ServerStats(getattr(commands, "Cog", object)):
         try:
             joined_at = guild.me.joined_at
         except:
-            joined_at = datetime.utcnow()
+            joined_at = datetime.datetime.utcnow()
             
         bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
         since_joined = (datetime.datetime.utcnow() - joined_at).days
