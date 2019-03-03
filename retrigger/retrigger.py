@@ -4,6 +4,7 @@ from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.chat_formatting import humanize_list
 from typing import Union, Optional
 import logging
 import os
@@ -29,7 +30,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -146,7 +147,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @whitelist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
-    async def whitelist_add(self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole):
+    async def whitelist_add(self, ctx, trigger: TriggerExists, *channel_user_role: ChannelUserRole):
         """
             Add a channel, user, or role to triggers whitelist
 
@@ -155,20 +156,19 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if channel_user_role.id not in trigger.whitelist:
-            trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.whitelist.append(channel_user_role.id)
-            trigger_list[trigger.name] = trigger.to_json()
-            await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = _("Trigger {name} added `{list_type}` to its whitelist.")
-        else:
-            msg = _("Trigger `{name}` already has {list_type} whitelisted.")
-        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
+        for obj in channel_user_role:
+            if obj.id not in trigger.whitelist:
+                async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+                    trigger.whitelist.append(obj.id)
+                    trigger_list[trigger.name] = trigger.to_json()
+        msg = _("Trigger {name} added `{list_type}` to its whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
     @whitelist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist_remove(
-        self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole
+        self, ctx, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ):
         """
             Remove a channel, user, or role from triggers whitelist
@@ -178,19 +178,18 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if channel_user_role.id in trigger.whitelist:
-            trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.whitelist.remove(channel_user_role.id)
-            trigger_list[trigger.name] = trigger.to_json()
-            await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = _("Trigger {name} removed `{list_type}` from its whitelist.")
-        else:
-            msg = _("Trigger `{name}` does not have {list_type} whitelisted.")
-        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
+        for obj in channel_user_role:
+            if obj.id in trigger.whitelist:
+                async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+                    trigger.whitelist.remove(obj.id)
+                    trigger_list[trigger.name] = trigger.to_json()
+        msg = _("Trigger {name} removed `{list_type}` from its whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
     @blacklist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
-    async def blacklist_add(self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole):
+    async def blacklist_add(self, ctx, trigger: TriggerExists, *channel_user_role: ChannelUserRole):
         """
             Add a channel, user, or role to triggers blacklist
 
@@ -199,20 +198,19 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if channel_user_role.id not in trigger.blacklist:
-            trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.blacklist.append(channel_user_role.id)
-            trigger_list[trigger.name] = trigger.to_json()
-            await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = _("Trigger {name} added `{list_type}` to its blacklist.")
-        else:
-            msg = _("Trigger `{name}` already has {list_type} blacklisted.")
+        for obj in channel_user_role:
+            if obj.id not in trigger.blacklist:
+                async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+                    trigger.blacklist.append(obj.id)
+                    trigger_list[trigger.name] = trigger.to_json()
+        msg += _("Trigger {name} added `{list_type}` to its blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
 
     @blacklist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_remove(
-        self, ctx, trigger: TriggerExists, channel_user_role: ChannelUserRole
+        self, ctx, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ):
         """
             Remove a channel, user, or role from triggers blacklist
@@ -222,14 +220,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if channel_user_role.id in trigger.blacklist:
-            trigger_list = await self.config.guild(ctx.guild).trigger_list()
-            trigger.blacklist.remove(channel_user_role.id)
-            trigger_list[trigger.name] = trigger.to_json()
-            await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
-            msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
-        else:
-            msg = _("Trigger `{name}` does not have {list_type} blacklisted.")
+        for obj in channel_user_role:
+            if obj.id not in trigger.blacklist:
+                async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+                    trigger.blacklist.remove(obj.id)
+                    trigger_list[trigger.name] = trigger.to_json()
+        msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
 
     @retrigger.command()
