@@ -5,7 +5,7 @@ from redbot.core import commands, Config, modlog
 from datetime import datetime
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.data_manager import cog_data_path
-from redbot.core.utils.chat_formatting import humanize_list, box
+from redbot.core.utils.chat_formatting import humanize_list, box, escape
 from redbot.core.utils.menus import start_adding_reactions, DEFAULT_CONTROLS
 from io import BytesIO
 from copy import copy
@@ -542,7 +542,7 @@ class TriggerHandler:
                     if await self.check_trigger_cooldown(message, trigger):
                         continue
                     trigger_list[triggers]["count"] += 1
-                    await self.perform_trigger(message, trigger, search[0])
+                    await self.perform_trigger(message, trigger, search)
                     return
 
     async def safe_regex_search(self, guild, trigger, content):
@@ -561,7 +561,10 @@ class TriggerHandler:
             return "critical"
             # we certainly don't want to be performing multiple triggers if this happens
         except Exception as e:
-            log.error(f"Removing {trigger.name} {trigger.regex} in {guild.name} {guild.id}", exc_info=True)
+            log.error(
+                f"Removing {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
+                exc_info=True,
+            )
             return "critical"
         else:
             return search
@@ -575,7 +578,7 @@ class TriggerHandler:
         error_in = _("Retrigger encountered an error in ")
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-            task = functools.partial(self.resize_image, size=len(find) - 3, image=path)
+            task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
             task = self.bot.loop.run_in_executor(None, task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
@@ -633,6 +636,8 @@ class TriggerHandler:
             if guild.me.top_role > author.top_role:
                 try:
                     await author.ban(reason=reason, delete_message_days=0)
+                    if await self.config.guild(guild).ban_logs():
+                        await self.modlog_action(message, trigger, find, _("Banned"))
                 except Exception as e:
                     log.error(error_in + guild.name, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
@@ -643,6 +648,8 @@ class TriggerHandler:
             if guild.me.top_role > author.top_role:
                 try:
                     await author.kick(reason=reason)
+                    if await self.config.guild(guild).kick_logs():
+                        await self.modlog_action(message, trigger, find, _("Kicked"))
                 except Exception as e:
                     log.error(error_in + guild.name, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
@@ -682,6 +689,7 @@ class TriggerHandler:
                 msg.content = prefix_list[0] + command
                 self.bot.dispatch("message", msg)
         if "add_role" in trigger.response_type and own_permissions.manage_roles:
+            
             if trigger.multi_payload:
                 response = [r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"]
             else:
@@ -690,9 +698,12 @@ class TriggerHandler:
                 role = guild.get_role(roles)
                 try:
                     await author.add_roles(role, reason=reason)
+                    if await self.config.guild(guild).add_role_logs():
+                        await self.modlog_action(message, trigger, find, _("Added Role"))
                 except Exception as e:
                     log.error(error_in + guild.name, exc_info=True)
         if "remove_role" in trigger.response_type and own_permissions.manage_roles:
+            
             if trigger.multi_payload:
                 response = [
                     r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
@@ -703,13 +714,16 @@ class TriggerHandler:
                 role = guild.get_role(roles)
                 try:
                     await author.remove_roles(role, reason=reason)
+                    if await self.config.guild(guild).remove_role_logs():
+                        await self.modlog_action(message, trigger, find, _("Removed Role"))
                 except Exception as e:
                     log.error(error_in + guild.name, exc_info=True)
         if "delete" in trigger.response_type and own_permissions.manage_messages:
             log.debug("Performing delete trigger")
-            await self.delete_modlog_action(message, trigger)
             try:
                 await message.delete()
+                if await self.config.guild(guild).filter_logs():
+                    await self.modlog_action(message, trigger, find, _("Deleted Message"))
             except Exception as e:
                 log.error(error_in + guild.name, exc_info=True)
 
@@ -792,7 +806,7 @@ class TriggerHandler:
             return raw_result
         return str(getattr(first, second, raw_result))
 
-    async def delete_modlog_action(self, message, trigger):
+    async def modlog_action(self, message, trigger, find, action):
         modlogs = await self.config.guild(message.guild).modlog()
         guild = message.guild
         author = message.author
@@ -810,9 +824,7 @@ class TriggerHandler:
                 modlog_channel = guild.get_channel(modlogs)
                 if modlog_channel is None:
                     return
-            infomessage = (
-                _("A message from ") + str(author) + _(" was deleted in ") + message.channel.name
-            )
+            infomessage = f"{author} - {action}\n"
             embed = discord.Embed(
                 description=message.content,
                 colour=discord.Colour.dark_red(),
@@ -820,48 +832,62 @@ class TriggerHandler:
             )
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Trigger Name"), value=trigger.name)
-            finds = re.findall(trigger.regex, message.content)
-            embed.add_field(name=_("Found Triggers"), value=str(finds))
+            embed.add_field(name=_("Found Triggers"), value=humanize_list(find)[:1024])
+            embed.add_field(name=_("Trigger author"), value=f"<@{trigger.author}>")
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
-                name=str(author) + _(" - Deleted Message"), icon_url=author.avatar_url
+                name= infomessage,
+                icon_url=author.avatar_url,
             )
             try:
                 if modlog_channel.permissions_for(guild.me).embed_links:
                     await modlog_channel.send(embed=embed)
                 else:
-                    await modlog_channel.send(infomessage)
-            except:
+                    infomessage += _(
+                        "Channel: {channel}\n"
+                        "Trigger Name: {trigger}\n"
+                        "Trigger author: {t_author}\n"
+                        "Found Triggers: {found_triggers}\n"
+                    ).format(
+                        channel=message.channel.mention,
+                        trigger=trigger.name,
+                        t_author=f"{trigger.author}",
+                        found_triggers=humanize_list(find)[:1024],
+                    )
+                    msg = escape(infomessage.replace("@&", ""), mass_mentions=True, formatting=True)
+                    await modlog_channel.send(msg)
+            except Exception as e:
+                log.error("Error posting modlog message", exc_info=True)
                 pass
 
+
     async def remove_trigger(self, guild, trigger_name):
-        trigger_list = await self.config.guild(guild).trigger_list()
-        for triggers in trigger_list:
-            # trigger = Trigger.from_json(trigger_list[triggers])
-            if triggers == trigger_name:
-                if trigger_list[triggers]["image"] is not None:
-                    image = trigger_list[triggers]["image"]
-                    if isinstance(image, list):
-                        for i in image:
-                            path = str(cog_data_path(self)) + f"/{guild.id}/{i}"
+        async with self.config.guild(guild).trigger_list() as trigger_list:
+            for triggers in trigger_list:
+                # trigger = Trigger.from_json(trigger_list[triggers])
+                if triggers == trigger_name:
+                    if trigger_list[triggers]["image"] is not None:
+                        image = trigger_list[triggers]["image"]
+                        if isinstance(image, list):
+                            for i in image:
+                                path = str(cog_data_path(self)) + f"/{guild.id}/{i}"
+                                try:
+                                    os.remove(path)
+                                except Exception as e:
+                                    msg = _("Error deleting saved image in {guild}").format(
+                                        guild=guild.id
+                                    )
+                                    log.error(msg, exc_info=True)
+                        else:
+                            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
                             try:
                                 os.remove(path)
                             except Exception as e:
-                                msg = _("Error deleting saved image in {guild}").format(
-                                    guild=guild.id
-                                )
+                                msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
                                 log.error(msg, exc_info=True)
-                    else:
-                        path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-                        try:
-                            os.remove(path)
-                        except Exception as e:
-                            msg = _("Error deleting saved image in {guild}").format(guild=guild.id)
-                            log.error(msg, exc_info=True)
-                del trigger_list[triggers]
-                await self.config.guild(guild).trigger_list.set(trigger_list)
-                return True
+                    del trigger_list[triggers]
+                    return True
         return False

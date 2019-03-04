@@ -30,14 +30,23 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.3.2"
+    __version__ = "2.4.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247)
-        default_guild = {"trigger_list": {}, "allow_multiple": False, "modlog": "default"}
+        default_guild = {
+            "trigger_list": {}, 
+            "allow_multiple": False, 
+            "modlog": "default",
+            "ban_logs":False,
+            "kick_logs": False,
+            "add_role_logs": False,
+            "remove_role_logs": False,
+            "filter_logs": False,
+        }
         self.config.register_guild(**default_guild)
-        self.re_pool = Pool(maxtasksperchild=1)
+        self.re_pool = Pool(maxtasksperchild=2)
 
     def __unload(self):
         self.re_pool.close()
@@ -74,6 +83,14 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
+    @retrigger.group(name="modlog")
+    @checks.mod_or_permissions(manage_channels=True)
+    async def _modlog(self, ctx):
+        """
+            Set which events to record in the modlog.
+        """
+        pass
+
     @retrigger.command(hidden=True)
     @checks.mod_or_permissions(administrator=True)
     async def allowmultiple(self, ctx):
@@ -89,9 +106,103 @@ class ReTrigger(TriggerHandler, commands.Cog):
             msg = _("Multiple responses enabled, " "all triggers will occur.")
             # await ctx.send(msg)
 
-    @retrigger.command()
+    @_modlog.command(name="settings", aliases=["list"])
+    async def modlog_settings(self, ctx):
+        """
+            Show the current modlog settings for this server.
+        """
+        guild_data = await self.config.guild(ctx.guild).all()
+        variables = {
+            "ban_logs": _("Bans"),
+            "kick_logs": _("Kicks"),
+            "add_role_logs": _("Add Roles"),
+            "remove_role_logs": _("Remove Roles"),
+            "filter_logs": _("Filtered Messages"),
+            "modlog": _("Channel")
+        }
+        msg = ""
+        for log, name in variables.items():
+            msg += f"__**{name}**__: {guild_data[log]}\n"
+        await ctx.maybe_send_embed(msg)    
+
+    @_modlog.command(name="bans", aliases=["ban"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog(self, ctx, channel: Union[discord.TextChannel, str]):
+    async def modlog_bans(self, ctx):
+        """
+            Toggle custom ban messages in the modlog
+        """
+        if await self.config.guild(ctx.guild).ban_logs():
+            await self.config.guild(ctx.guild).ban_logs.set(False)
+            msg = _("Custom ban events disabled.")
+            # await ctx.send(msg)
+        else:
+            await self.config.guild(ctx.guild).ban_logs.set(True)
+            msg = _("Custom ban events will now appear in the modlog if it's setup.")
+        await ctx.send(msg)
+
+    @_modlog.command(name="kicks", aliases=["kick"])
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog_kicks(self, ctx):
+        """
+            Toggle custom kick messages in the modlog
+        """
+        if await self.config.guild(ctx.guild).kick_logs():
+            await self.config.guild(ctx.guild).kick_logs.set(False)
+            msg = _("Custom kick events disabled.")
+            # await ctx.send(msg)
+        else:
+            await self.config.guild(ctx.guild).kick_logs.set(True)
+            msg = _("Custom kick events will now appear in the modlog if it's setup.")
+        await ctx.send(msg)
+
+    @_modlog.command(name="filter", aliases=["delete", "filters", "deletes"])
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog_filter(self, ctx):
+        """
+            Toggle custom filter messages in the modlog
+        """
+        if await self.config.guild(ctx.guild).filter_logs():
+            await self.config.guild(ctx.guild).filter_logs.set(False)
+            msg = _("Custom filter events disabled.")
+            # await ctx.send(msg)
+        else:
+            await self.config.guild(ctx.guild).filter_logs.set(True)
+            msg = _("Custom filter events will now appear in the modlog if it's setup.")
+        await ctx.send(msg)
+
+    @_modlog.command(name="addroles", aliases=["addrole"])
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog_addroles(self, ctx):
+        """
+            Toggle custom add role messages in the modlog
+        """
+        if await self.config.guild(ctx.guild).add_role_logs():
+            await self.config.guild(ctx.guild).add_role_logs.set(False)
+            msg = _("Custom add role events disabled.")
+            # await ctx.send(msg)
+        else:
+            await self.config.guild(ctx.guild).add_role_logs.set(True)
+            msg = _("Custom add role events will now appear in the modlog if it's setup.")
+        await ctx.send(msg)
+
+    @_modlog.command(name="removeroles", aliases=["removerole", "remrole", "rolerem"])
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog_removeroles(self, ctx):
+        """
+            Toggle custom add role messages in the modlog
+        """
+        if await self.config.guild(ctx.guild).remove_role_logs():
+            await self.config.guild(ctx.guild).remove_role_logs.set(False)
+            msg = _("Custom remove role events disabled.")
+            # await ctx.send(msg)
+        else:
+            await self.config.guild(ctx.guild).remove_role_logs.set(True)
+            msg = _("Custom remove role events will now appear in the modlog if it's setup.")
+        await ctx.send(msg)
+
+    @_modlog.command(name="channel")
+    @checks.mod_or_permissions(manage_channels=True)
+    async def modlog_channel(self, ctx, channel: Union[discord.TextChannel, str]):
         """
             Set the modlog channel for filtered words
 
