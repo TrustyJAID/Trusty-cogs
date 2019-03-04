@@ -12,7 +12,7 @@
         0
     ],
     "description" : "Cog loadable dev commands, replaces mock with legacy sudo command",
-    "disabled" : true,
+    "disabled" : false,
     "hidden" : true,
     "install_msg" : "Separate loadable dev functions instead of `--dev` startup command",
     "min_python_version" : [
