@@ -196,7 +196,7 @@ class MultiResponse(Converter):
             for r in result[1:]:
                 try:
                     role = await RoleConverter().convert(ctx, r)
-                    if role < ctx.guild.me.top_role:
+                    if role < ctx.guild.me.top_role and role < ctx.author.top_role:
                         good_roles.append(role.id)
                 except BadArgument as e:
                     log.error("Role `{}` not found.".fomrat(r))

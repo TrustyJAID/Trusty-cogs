@@ -30,7 +30,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.3.1"
+    __version__ = "2.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -688,8 +688,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         for role in roles:
             if role >= ctx.me.top_role:
-                await ctx.send(_("I can't assign roles higher than my own."))
-                return
+                return await ctx.send(_("I can't assign roles higher than my own."))
+            if role >= ctx.author.top_role:
+                return await ctx.send(_("I can't assign roles higher than you are able to assign."))
         roles = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.message.author.id
@@ -718,8 +719,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         for role in roles:
             if role >= ctx.me.top_role:
-                await ctx.send(_("I can't remove roles higher than my own."))
-                return
+                return await ctx.send(_("I can't remove roles higher than my own."))
+            if role >= ctx.author.top_role:
+                return await ctx.send(_("I can't remove roles higher than you are able to remove."))
         roles = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.message.author.id
