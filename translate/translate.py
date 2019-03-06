@@ -51,7 +51,7 @@ class FlagTranslation(Converter):
                     break
                 if not FLAGS[lang]["code"]:
                     continue
-                if FLAGS[lang]["code"] in argument.lower():
+                if FLAGS[lang]["code"] in argument.lower() and len(argument) == 2:
                     result = FLAGS[lang]["code"]
                     break
         if not result:
@@ -95,7 +95,9 @@ class Translate(getattr(commands, "Cog", object)):
     async def translation_embed(self, author, translation, requestor=None):
         em = discord.Embed(colour=author.colour, description=translation[0])
         em.set_author(name=author.display_name + _(" said:"), icon_url=author.avatar_url)
-        detail_string = translation[1] + _(" to ") + translation[2] + " | " + _("Requested by ")
+        detail_string = _("{_from} to {_to} | Requested by ").format(
+            _from=translation[1].upper(), _to=translation[2].upper()
+        )
         if requestor:
             detail_string += str(requestor)
         else:
