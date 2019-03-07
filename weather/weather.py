@@ -1,10 +1,30 @@
 import discord
-from redbot.core import commands, Config, checks
-from redbot.core.i18n import Translator, cog_i18n
 import datetime
 import aiohttp
 
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
+
+from redbot.core import commands, Config, checks
+from redbot.core.i18n import Translator, cog_i18n
+
 _ = Translator("Weather", __file__)
+
+
+class UnitConverter(Converter):
+    async def convert(self, ctx, argument):
+        new_units = None
+        if argument.lower() in ["f", "imperial", "mph"]:
+            new_units = "imperial"
+        elif argument.lower() in ["c", "metric", "kph"]:
+            new_units = "metric"
+        elif argument.lower() in ["k", "kelvin"]:
+            new_units = "kelvin"
+        elif argument.lower() in ["clear", "none"]:
+            new_units = None
+        else:
+            raise BadArgument(_("`{units}` is not a vaild option!").format(units=argument))
+        return new_units
 
 
 @cog_i18n(_)
@@ -15,6 +35,7 @@ class Weather(getattr(commands, "Cog", object)):
         self.bot = bot
         self.config = Config.get_conf(self, 138475464)
         default = {"units": None}
+        self.config.register_global(**default)
         self.config.register_guild(**default)
         self.config.register_user(**default)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
@@ -41,30 +62,31 @@ class Weather(getattr(commands, "Cog", object)):
         """Set user or guild default units"""
         pass
 
-    @weather_set.command(name="guild")
+    @weather_set.command(name="guild", aliases=["server"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def set_guild(self, ctx, units):
+    async def set_guild(self, ctx, units: UnitConverter):
         """
             Sets the guild default weather units 
 
             `units` must be one of imperial, metric, or kelvin
         """
         guild = ctx.message.guild
-        if units.lower() in ["f", "imperial", "mph"]:
-            new_units = "imperial"
-        elif units.lower() in ["c", "metric", "kph"]:
-            new_units = "metric"
-        elif units.lower() in ["k", "kelvin"]:
-            new_units = "kelvin"
-        else:
-            await ctx.send(units + _(" is not a vaild option!"))
-            return
+        await self.config.guild(guild).units.set(units)
+        await ctx.send(_("Server's default units set to `{units}`").format(units=str(units)))
 
-        await self.config.guild(guild).units.set(new_units)
-        await ctx.send(_("Server's default units set to ") + units)
+    @weather_set.command(name="bot")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def set_bot(self, ctx, units: UnitConverter):
+        """
+            Sets the bots default weather units 
+
+            `units` must be one of imperial, metric, or kelvin
+        """
+        await self.config.units.set(units)
+        await ctx.send(_("Bots default units set to {units}").format(units=str(units)))
 
     @weather_set.command(name="user")
-    async def set_user(self, ctx, units):
+    async def set_user(self, ctx, units: UnitConverter):
         """
             Sets the user default weather units 
 
@@ -72,28 +94,25 @@ class Weather(getattr(commands, "Cog", object)):
             Note: User settings override guild settings.
         """
         author = ctx.message.author
-        if units.lower() in ["f", "imperial", "mph"]:
-            new_units = "imperial"
-        elif units.lower() in ["c", "metric", "kph"]:
-            new_units = "metric"
-        elif units.lower() in ["k", "kelvin"]:
-            new_units = "kelvin"
-        else:
-            await ctx.send(units + _(" is not a vaild option!"))
-            return
-
-        await self.config.user(author).units.set(new_units)
-        await ctx.send(author.name + _(" default units set to ") + units)
+        await self.config.user(author).units.set(units)
+        await ctx.send(
+            _("{author} default units set to `{units}`").format(
+                author=author.display_name, units=str(units)
+            )
+        )
 
     async def get_weather(self, ctx, location):
         guild = ctx.message.guild
         author = ctx.message.author
+        bot_units = await self.config.units()
         guild_units = await self.config.guild(guild).units()
         user_units = await self.config.user(author).units()
         units = "imperial"
-        if guild_units != units and guild_units is not None:
+        if bot_units:
+            units = bot_units
+        if guild_units:
             units = guild_units
-        if user_units != units and user_units is not None:
+        if user_units:
             units = user_units
 
         if units == "kelvin":
