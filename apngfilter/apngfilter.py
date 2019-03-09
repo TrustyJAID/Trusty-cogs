@@ -5,6 +5,7 @@ import re
 import aiohttp
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
+APNG_REGEX = re.compile(rb"fdAT")
 
 
 class APNGFilter(getattr(commands, "Cog", object)):
@@ -53,7 +54,7 @@ class APNGFilter(getattr(commands, "Cog", object)):
             await attachment.save(temp)
             temp.seek(0)
             # https://stackoverflow.com/questions/4525152/can-i-programmatically-determine-if-a-png-is-animated
-            if b"acTL" in temp.getvalue():
+            if APNG_REGEX.search(temp.getvalue()):
                 await message.delete()
                 break
         if is_link:
@@ -64,5 +65,5 @@ class APNGFilter(getattr(commands, "Cog", object)):
                         data = await file.read()
                         temp.write(data)
                         temp.seek(0)
-                if b"acTL" in temp.getvalue():
+                if APNG_REGEX.search(temp.getvalue()):
                     await message.delete()
