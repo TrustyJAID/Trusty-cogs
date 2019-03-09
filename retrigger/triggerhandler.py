@@ -550,16 +550,24 @@ class TriggerHandler:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))
             task = functools.partial(process.get, timeout=1)
             task = self.bot.loop.run_in_executor(None, task)
-            search = await asyncio.wait_for(task, timeout=2)
-        except (TimeoutError, asyncio.TimeoutError) as e:
+            search = await asyncio.wait_for(task, timeout=5)
+        except TimeoutError as e:
             error_msg = (
-                "ReTrigger took too long. Removing from config "
+                "ReTrigger: regex process took too long. Removing from config "
                 f"{guild.name} ({guild.id}) Author {trigger.author} "
                 f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
             )
             log.warning(error_msg)
             return "critical"
             # we certainly don't want to be performing multiple triggers if this happens
+        except asyncio.TimeoutError as e:
+            error_msg = (
+                "ReTrigger: regex asyncio timed out."
+                f"{guild.name} ({guild.id}) Author {trigger.author} "
+                f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
+            )
+            log.warning(error_msg)
+            return "critical"
         except Exception as e:
             log.error(
                 f"Removing {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
