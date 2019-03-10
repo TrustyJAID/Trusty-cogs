@@ -104,6 +104,29 @@ class GuildConverter(IDConverter):
 
         return result
 
+class ChannelConverter(IDConverter):
+    """
+    This is to convert ID's from a category, voice, or text channel via ID's or names
+    """
+
+    async def convert(self, ctx, argument):
+        bot = ctx.bot
+        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+        result = None
+        guild = ctx.guild
+
+        if match is None:
+            # not a mention
+            result = discord.utils.get(guild.channels, name=argument)
+
+        else:
+            channel_id = int(match.group(1))
+            result = guild.get_channel(channel_id)
+
+        if not result:
+            raise BadArgument(f"Channel `{argument}` not found")
+        return result
+
 
 @cog_i18n(_)
 class ServerStats(getattr(commands, "Cog", object)):
@@ -211,16 +234,28 @@ class ServerStats(getattr(commands, "Cog", object)):
             "m_emojis": check_feature("MORE_EMOJI"),
             "verify": check_feature("VERIFIED"),
         }
-        online = len([m.status for m in guild.members if m.status == discord.Status.online])
-        idle = len([m.status for m in guild.members if m.status == discord.Status.idle])
-        dnd = len([m.status for m in guild.members if m.status == discord.Status.dnd])
-        offline = len([m.status for m in guild.members if m.status == discord.Status.offline])
-        streaming = len([m for m in guild.members if isinstance(m.activity, discord.Streaming)])
-        mobile = len([m for m in guild.members if m.is_on_mobile()])
-        lurkers = len([m for m in guild.members if m.joined_at is None])
-        total_users = len(guild.members)
-        humans = len([a for a in guild.members if a.bot == False])
-        bots = len([a for a in guild.members if a.bot])
+        online_stats = {
+            _("Humans: "): lambda x: not x.bot,
+            _(" • Bots: "): lambda x: x.bot, 
+            "📗": lambda x: x.status == discord.Status.online,
+            "📙": lambda x: x.status == discord.Status.idle,
+            "📕": lambda x: x.status == discord.Status.idle,
+            "📓": lambda x: x.status == discord.Status.offline,
+            "🎥": lambda x: x.activity == discord.Streaming,
+            "📱": lambda x: x.is_on_mobile()
+        }
+        member_msg = _("Total Users: {total}\n").format(total=len(guild.members))
+        count = 1
+        for k, v in online_stats.items():
+
+            try:
+                num = len([m for m in guild.members if v(m)])
+            except Exception as e:
+                print(e)
+                continue
+            else:
+                member_msg += k + str(num) + ("\n" if count % 2 == 0 else "")
+            count += 1
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
@@ -237,51 +272,12 @@ class ServerStats(getattr(commands, "Cog", object)):
         
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**. That's over **{since_join}** days ago!"
-        ).format(bot_name=guild.me.name, bot_join=bot_joined, since_join=since_joined)
+        ).format(bot_name=self.bot.user.name, bot_join=bot_joined, since_join=since_joined)
 
         colour = guild.roles[-1].colour
 
         em = discord.Embed(description=f"{created_at}\n{joined_on}", colour=colour)
-        if lurkers:
-            em.add_field(
-                name=_("Members :"),
-                value=_(
-                    "Total users : **{total}**\nLurkers : **{lurkers}**\nHumans : **{hum}** • Bots : **{bots}**\n"
-                    "📗 `{online}` 📙 `{idle}`\n📕 `{dnd}` 📓 `{off}`\n"
-                    "🎥 `{streaming}` 📱 `{mobile}`\n"
-                ).format(
-                    total=total_users,
-                    lurkers=lurkers,
-                    hum=humans,
-                    bots=bots,
-                    online=online,
-                    idle=idle,
-                    dnd=dnd,
-                    off=offline,
-                    streaming=streaming,
-                    mobile=mobile,
-                ),
-            )
-        else:
-            em.add_field(
-                name=_("Members :"),
-                value=_(
-                    "Total users : **{total}**\nHumans : **{hum}** • Bots : **{bots}**\n"
-                    "📗 `{online}` 📙 `{idle}`\n📕 `{dnd}` 📓 `{off}`\n"
-                    "🎥 `{streaming}` 📱 `{mobile}`\n"
-                ).format(
-                    total=total_users,
-                    lurkers=lurkers,
-                    hum=humans,
-                    bots=bots,
-                    online=online,
-                    idle=idle,
-                    dnd=dnd,
-                    off=offline,
-                    streaming=streaming,
-                    mobile=mobile,
-                ),
-            )
+        em.add_field(name=_("Members :"),value=member_msg)
         em.add_field(
             name=_("Channels :"),
             value=_("💬 Text : **{text}**\n🔊 Voice : **{voice}**").format(
@@ -291,7 +287,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         em.add_field(
             name=_("Utility :"),
             value=_(
-                "Owner : {owner.mention}\n**{owner}**\nRegion : **{region}**\nVerif. level : **{verif}**\nServer ID : **{id}**"
+                "Owner : {owner.mention}\n**{owner}**\nRegion : **{region}**\n"
+                "Verif. level : **{verif}**\nServer ID : **{id}**"
             ).format(
                 owner=guild.owner,
                 region=region[str(guild.region)],
@@ -302,7 +299,8 @@ class ServerStats(getattr(commands, "Cog", object)):
         em.add_field(
             name=_("Misc :"),
             value=_(
-                "AFK channel : **{afk_chan}**\nAFK Timeout : **{afk_timeout}sec**\nCustom emojis : **{emojis}**\nRoles : **{roles}**"
+                "AFK channel : **{afk_chan}**\nAFK Timeout : **{afk_timeout}sec**\n"
+                "Custom emojis : **{emojis}**\nRoles : **{roles}**"
             ).format(
                 afk_chan=guild.afk_channel,
                 afk_timeout=guild.afk_timeout,
@@ -314,7 +312,8 @@ class ServerStats(getattr(commands, "Cog", object)):
             em.add_field(
                 name=_("Special features :"),
                 value=_(
-                    "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n{m_emojis} More Emojis\n{verify} Verified"
+                    "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n"
+                    "{m_emojis} More Emojis\n{verify} Verified"
                 ).format(**format_kwargs),
             )
         if "VERIFIED" in guild.features:
@@ -391,6 +390,7 @@ class ServerStats(getattr(commands, "Cog", object)):
 
     @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
     async def topic(self, ctx, channel: Optional[discord.TextChannel], *, topic: str = ""):
         """
             Sets a specified channels topic
@@ -407,7 +407,102 @@ class ServerStats(getattr(commands, "Cog", object)):
                 _('I require the "Manage Channels" permission to execute that command.')
             )
             return
-        await channel.edit(topic=topic[:1024])
+        await channel.edit(topic=topic[:1024], reason=_("Requested by {author}").format(author=ctx.author))
+        await ctx.tick()
+
+    @commands.group()
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channeledit(self, ctx):
+        """Modify channel options"""
+        pass
+
+    @channeledit.command(name="name")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_name(self, ctx, channel:Optional[ChannelConverter], *, name: str):
+        """Edit a channels name"""
+        if not channel:
+            channel = ctx.channel
+        await channel.edit(name=name[:100], reason=_("Requested by {author}").format(author=ctx.author))
+        await ctx.tick()
+
+    @channeledit.command(name="position")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_position(self, ctx, channel:Optional[ChannelConverter], position: int):
+        """Edit a channels position"""
+        if not channel:
+            channel = ctx.channel
+        try:
+            await channel.edit(position=position, reason=_("Requested by {author}").format(author=ctx.author))
+        except Exception as e:
+            print(e)
+            return
+        await ctx.tick()
+
+    @channeledit.command(name="sync")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_sync(self, ctx, channel:Optional[ChannelConverter], toggle:bool):
+        """Set whether or not to sync permissions with the channels Category"""
+        if not channel:
+            channel = ctx.channel
+        await channel.edit(sync_permissions=toggle, reason=_("Requested by {author}").format(author=ctx.author))
+        await ctx.tick()
+
+    @channeledit.command(name="nsfw")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_nsfw(self, ctx, toggle:bool, channel:discord.TextChannel=None):
+        """Set whether or not a channel is NSFW"""
+        if not channel:
+            channel = ctx.channel
+        await channel.edit(nsfw=toggle, reason=_("Requested by {author}").format(author=ctx.author))
+        await ctx.tick()
+
+    @channeledit.command(name="topic")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_topic(self, ctx, channel:Optional[discord.TextChannel], *, topic: str):
+        """Edit a channels topic"""
+        if not channel:
+            channel = ctx.channel
+        await channel.edit(topic=topic[:1024], reason=_("Requested by {author}").format(author=ctx.author))
+        await ctx.tick()
+
+    @channeledit.command(name="bitrate")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_bitrate(self, ctx, channel:discord.VoiceChannel, bitrate:int):
+        """Edit a voice channels bitrate"""
+        try:
+            await channel.edit(bitrate=bitrate, reason=_("Requested by {author}").format(author=ctx.author))
+        except Exception as e:
+            await ctx.send(
+                _(
+                    "`{bitrate}` is either too high or too low please "
+                    "provide a number between 8000 and 96000."
+                ).format(bitrate=bitrate)
+            )
+            return
+        await ctx.tick()
+
+    @channeledit.command(name="userlimit")
+    @checks.mod_or_permissions(manage_channels=True)
+    @checks.bot_has_permissions(manage_channels=True)
+    async def channel_userlimit(self, ctx, channel:discord.VoiceChannel, limit:int):
+        """Edit a voice channels user limit"""
+        try:
+            await channel.edit(user_limit=limit, reason=_("Requested by {author}").format(author=ctx.author))
+        except Exception as e:
+            await ctx.send(
+                _(
+                    "`{limit}` is either too high or too low please "
+                    "provide a number between 0 and 99."
+                ).format(limit=limit)
+            )
+            return
         await ctx.tick()
 
     async def ask_for_invite(self, ctx):
@@ -677,6 +772,14 @@ class ServerStats(getattr(commands, "Cog", object)):
             except discord.errors.NotFound:
                 await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
                 return
+        embed = discord.Embed()
+        since_created = (ctx.message.created_at - member.created_at).days
+        user_created = member.created_at.strftime("%d %b %Y %H:%M")
+        created_on = _("Joined Discord on {}\n({} days ago)").format(user_created, since_created)
+        embed.description = created_on
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.colour = await ctx.embed_colour()
+        embed.set_author(name=f"{member} ({member.id})", icon_url=member.avatar_url)
         if await self.bot.is_owner(ctx.author):
             guild_list = []
             for guild in self.bot.guilds:
@@ -684,14 +787,24 @@ class ServerStats(getattr(commands, "Cog", object)):
                 if member.id in members:
                     guild_list.append(guild)
             if guild_list != []:
-                msg = "**{}** ({}) ".format(member, member.id) + _("is on:\n\n")
+                msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
+                embed_list = ""
                 for guild in guild_list:
-                    msg += "__{}__ ({})\n".format(guild.name, guild.id)
-                for page in pagify(msg, ["\n"]):
-                    await ctx.send(page)
+                    msg += f"__{guild.name}__ ({guild.id})\n"
+                    embed_list += f"__{guild.name}__ ({guild.id})\n"
+                if ctx.channel.permissions_for(ctx.me).embed_links:
+                    for page in pagify(embed_list, ["\n"], shorten_by=1000):
+                        embed.add_field(name=_("Shared Servers"), value=page)
+                    await ctx.send(embed=embed)
+                else:
+                    for page in pagify(msg, ["\n"], shorten_by=1000):
+                        await ctx.send(page)
             else:
-                msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
-                await ctx.send(msg)
+                if ctx.channel.permissions_for(ctx.me).embed_links:
+                    await ctx.send(embed=embed)
+                else:
+                    msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
+                    await ctx.send(msg)
         else:
             guild_list = []
             for guild in self.bot.guilds:
