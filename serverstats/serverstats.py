@@ -244,7 +244,7 @@ class ServerStats(getattr(commands, "Cog", object)):
             "🎥": lambda x: x.activity == discord.Streaming,
             "📱": lambda x: x.is_on_mobile()
         }
-        member_msg = _("Total Users: {total}\n").format(total=len(guild.members))
+        member_msg = _("Total Users: **{total}**\n").format(total=len(guild.members))
         count = 1
         for k, v in online_stats.items():
 
@@ -254,7 +254,7 @@ class ServerStats(getattr(commands, "Cog", object)):
                 print(e)
                 continue
             else:
-                member_msg += k + str(num) + ("\n" if count % 2 == 0 else "")
+                member_msg += f"{k} **{num}** " + ("\n" if count % 2 == 0 else "")
             count += 1
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
@@ -1163,12 +1163,15 @@ class ServerStats(getattr(commands, "Cog", object)):
 
             `guild_name` can be either the server ID or partial name
         """
-        page = ctx.bot.guilds.index(ctx.guild)
         if guild or await ctx.bot.is_owner(ctx.author):
-            page = ctx.bot.guilds.index(guild) if guild else page
+            if not ctx.guild:
+                page = 1
+            else:
+                page = ctx.bot.guilds.index(guild) if guild else ctx.bot.guilds.index(ctx.guild)
             await self.guild_menu(ctx, ctx.bot.guilds, None, page)
         else:
-            await ctx.send(embed=await self.guild_embed(ctx.guild))
+            if ctx.guild:
+                await ctx.send(embed=await self.guild_embed(ctx.guild))
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
