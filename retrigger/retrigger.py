@@ -336,7 +336,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         for obj in channel_user_role:
-            if obj.id not in trigger.blacklist:
+            if obj.id in trigger.blacklist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
                     trigger.blacklist.remove(obj.id)
                     trigger_list[trigger.name] = trigger.to_json()
