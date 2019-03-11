@@ -79,8 +79,6 @@ class TriggerHandler:
 
     async def check_bw_list(self, trigger, message):
         can_run = True
-        if await self.is_mod_or_admin(message.author):
-            return True
         if trigger.whitelist:
             can_run = False
             if message.channel.id in trigger.whitelist:
@@ -520,7 +518,7 @@ class TriggerHandler:
                         ).format(author=author)
                         log.debug(print_msg + trigger.name)
                 else:
-                    if any([local_perms, global_perms, ignored_channel]):
+                    if any([local_perms, global_perms]):
                         print_msg = _(
                             "ReTrigger: Channel is ignored or " "{author} is blacklisted "
                         ).format(author=author)

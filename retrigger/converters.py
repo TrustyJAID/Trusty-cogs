@@ -75,7 +75,6 @@ class Trigger:
             is_multi = False
             multi_payload = []
         else:
-            # is_multi = data["is_multi"]
             multi_payload = data["multi_payload"]
         return cls(
             data["name"],
@@ -88,7 +87,6 @@ class Trigger:
             data["whitelist"],
             data["blacklist"],
             cooldown,
-            # is_multi,
             multi_payload,
         )
 
