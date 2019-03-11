@@ -319,7 +319,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = trigger.to_json()
         msg = _("Trigger {name} added `{list_type}` to its blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
-        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
+        await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
     @blacklist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -342,7 +342,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = trigger.to_json()
         msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
-        await ctx.send(msg.format(list_type=channel_user_role.name, name=trigger.name))
+        await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
     @retrigger.command()
     async def list(self, ctx, trigger: TriggerExists = None):
