@@ -2,8 +2,12 @@ import discord
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from .unicode_codes import UNICODE_EMOJI
+import re
 
 _ = Translator("EmojiReactions", __file__)
+
+EMOJI = re.compile(r"(<?(a)?:([0-9a-zA-Z]+):([0-9]+)?>?)")
+UNICODE_RE = re.compile("|".join(rf"{re.escape(w)}" for w in UNICODE_EMOJI.keys()))
 
 
 @cog_i18n(_)
@@ -90,13 +94,15 @@ class EmojiReactions(getattr(commands, "Cog", object)):
         emoji_list = []
         if message.guild is None:
             return
-        guild_emoji = await self.config.guild(message.guild).guild()
-        unicode_emoji = await self.config.guild(message.guild).unicode()
-        for word in message.content.split(" "):
-            if word.startswith("<:") and word.endswith(">") and guild_emoji:
-                emoji_list.append(word.rpartition(">")[0].partition("<")[2])
-            if word in UNICODE_EMOJI and unicode_emoji:
-                emoji_list.append(word)
+        if await self.config.guild(message.guild).guild():
+            for match in EMOJI.finditer(message.content):
+                if match.group(4):
+                    emoji_list.append(f"{match.group(2)}:{match.group(3)}:{match.group(4)}")
+                else:
+                    emoji_list.append(discord.utils.get(self.bot.emojis, name=match.group(3)))
+        if await self.config.guild(message.guild).unicode():
+            for emoji in UNICODE_RE.findall(message.content):
+                emoji_list.append(str(emoji))
         if emoji_list == []:
             return
         for emoji in emoji_list:
