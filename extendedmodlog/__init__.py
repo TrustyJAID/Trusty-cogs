@@ -1,5 +1,7 @@
 from .extendedmodlog import ExtendedModLog
 
 
-def setup(bot):
-    bot.add_cog(ExtendedModLog(bot))
+async def setup(bot):
+    cog = ExtendedModLog(bot)
+    await cog.initialize()
+    bot.add_cog(cog)

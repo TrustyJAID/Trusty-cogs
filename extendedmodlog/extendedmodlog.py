@@ -1,24 +1,26 @@
-from redbot.core import commands, checks, Config, modlog
 import datetime
 import discord
 import asyncio
 from random import choice, randint
+
+from redbot.core import commands, checks, Config, modlog
+from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 
-from .eventmixin import EventMixin
+from .eventmixin import EventMixin, CommandPrivs
 
 inv_settings = {
-    "message_edit": False,
-    "message_delete": False,
-    "user_change": False,
-    "role_change": False,
-    "voice_change": False,
-    "user_join": False,
-    "user_left": False,
-    "channel_change": False,
-    "guild_change": False,
-    "emoji_change": False,
-    "commands_used": False,
+    "message_edit": {"enabled": False, "channel": None},
+    "message_delete": {"enabled": False, "channel": None},
+    "user_change": {"enabled": False, "channel": None},
+    "role_change": {"enabled": False, "channel": None},
+    "voice_change": {"enabled": False, "channel": None},
+    "user_join": {"enabled": False, "channel": None},
+    "user_left": {"enabled": False, "channel": None},
+    "channel_change": {"enabled": False, "channel": None},
+    "guild_change": {"enabled": False, "channel": None},
+    "emoji_change": {"enabled": False, "channel": None},
+    "commands_used": {"enabled": False, "channel": None, "privs":["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]},
     "ignored_channels": [],
     "invite_links": {},
 }
@@ -33,112 +35,180 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
+    __version__ = "2.0.0"
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 154457677895)
         self.config.register_guild(**inv_settings, force_registration=True)
         self.loop = bot.loop.create_task(self.invite_links_loop())
 
+    async def initialize(self):
+        all_data = await self.config.all_guilds()
+        for guild_id, data in all_data.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                await self.config._clear_scope(Config.GUILD, str(guild_id))
+                continue
+            for entry in inv_settings.keys():
+                setting = data[entry]
+                # print(type(setting))
+                if type(setting) == bool:
+                    new_data = {"enabled": setting, "channel": None}
+                    if entry == "commands_used":
+                        new_data["privs"] = ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]
+                    await self.config.guild(guild).set_raw(entry, value=new_data)
+
+    async def modlog_settings(self, ctx):
+        guild = ctx.message.guild
+        try:
+            _modlog_channel = await modlog.get_modlog_channel(guild)
+            modlog_channel = _modlog_channel.mention
+        except:
+            modlog_channel = "Not Set"
+        cur_settings = {
+            "message_edit": _("Message edits"),
+            "message_delete": _("Message delete"),
+            "user_change": _("Member changes"),
+            "role_change": _("Role changes"),
+            "voice_change": _("Voice changes"),
+            "user_join": _("User join"),
+            "user_left": _("Member left"),
+            "channel_change": _("Channel changes"),
+            "guild_change": _("Guild changes"),
+            "emoji_change": _("Emoji changes"),
+            "commands_used": _("Mod/Admin Commands"),
+        }
+        msg = _("Setting for {guild}\n Modlog Channel {channel}\n\n").format(
+            guild=guild.name, channel=modlog_channel
+        )
+        data = await self.config.guild(guild).all()
+        ign_chans = data["ignored_channels"]
+        ignored_channels = []
+        for c in ign_chans:
+            chn = guild.get_channel(c)
+            if chn is None:
+                # a bit of automatic cleanup so things don't break
+                data["ignored_channels"].remove(c)
+            else:
+                ignored_channels.append(chn)
+        enabled = ""
+        disabled = ""
+        for settings, name in cur_settings.items():
+            msg += f"{name}: **{data[settings]['enabled']}**"
+            if data[settings]["channel"]:
+                chn = guild.get_channel(data[settings]["channel"])
+                if chn is None:
+                    # a bit of automatic cleanup so things don't break
+                    data[settings]["channel"] = None
+                else:
+                    msg += f" {chn.mention}\n"
+            else:
+                msg += "\n"
+
+        if enabled == "":
+            enabled = _("None  ")
+        if disabled == "":
+            disabled = _("None  ")
+        if ignored_channels:
+            chans = ", ".join(c.mention for c in ignored_channels)
+            msg += _("Ignored Channels") + ": " + chans
+        await self.config.guild(ctx.guild).set(data)
+        # save the data back to config incase we had some deleted channels
+        await ctx.maybe_send_embed(msg)
+
     @checks.admin_or_permissions(manage_channels=True)
-    @commands.group(aliases=["modlogtoggle"])
+    @commands.group(name="modlog", aliases=["modlogtoggle", "modlogs"])
     @commands.guild_only()
-    async def modlogtoggles(self, ctx):
+    async def _modlog(self, ctx):
         """
             Toggle various extended modlog notifications
 
             Requires the channel to be setup with `[p]modlogset modlog #channel` first
         """
+
         if await self.config.guild(ctx.message.guild).settings() == {}:
             await self.config.guild(ctx.message.guild).set(inv_settings)
         if ctx.invoked_subcommand is None:
-            guild = ctx.message.guild
-            try:
-                modlog_channel = await modlog.get_modlog_channel(guild)
-            except:
-                await ctx.send(
-                    _("You need to setup a channel with `[p]modlogset modlog #channel` first.")
-                )
-                return
-            cur_settings = {
-                "message_edit": _("Message edits"),
-                "message_delete": _("Message delete"),
-                "user_change": _("Member changes"),
-                "role_change": _("Role changes"),
-                "voice_change": _("Voice changes"),
-                "user_join": _("User join"),
-                "user_left": _("Member left"),
-                "channel_change": _("Channel changes"),
-                "guild_change": _("Guild changes"),
-                "emoji_change": _("Emoji changes"),
-                "commands_used": _("Mod/Admin Commands"),
-            }
-            msg = _("Setting for ") + guild.name + "\n"
-            e = discord.Embed(title=_("Setting for ") + guild.name)
-            e.colour = await ctx.embed_colour()
-            e.description = _("ModLogs channel set to ") + modlog_channel.mention
-            ignored_channels = await self.config.guild(guild).ignored_channels()
-            enabled = ""
-            disabled = ""
-            for setting, name in cur_settings.items():
-                if await self.config.guild(ctx.guild).get_raw(setting):
-                    enabled += name + ", "
-                else:
-                    disabled += name + ", "
-            if enabled == "":
-                enabled = _("None  ")
-            if disabled == "":
-                disabled = _("None  ")
-            msg += _("Enabled") + ": " + enabled + "\n"
-            msg += _("Disabled") + ": " + disabled + "\n"
-            e.add_field(name=_("Enabled"), value=enabled[:-2])
-            e.add_field(name=_("Disabled"), value=disabled[:-2])
-            if ignored_channels:
-                chans = ", ".join(guild.get_channel(c).mention for c in ignored_channels)
-                msg += _("Ignored Channels") + ": " + chans
-                e.add_field(name=_("Ignored Channels"), value=chans)
+            await self.modlog_settings(ctx)
 
-            e.set_thumbnail(url=guild.icon_url)
-            if ctx.channel.permissions_for(ctx.me).embed_links:
-                await ctx.send(embed=e)
-            else:
-                await ctx.send(msg)
+    @_modlog.group(name="edit")
+    async def _edit(self, ctx):
+        """
+            Message edit logging settings
+        """
+        pass
 
-    @modlogtoggles.command()
-    async def edit(self, ctx):
+    @_edit.command(name="toggle")
+    async def _edit_toggle(self, ctx):
         """
             Toggle message edit notifications
         """
         guild = ctx.message.guild
         msg = _("Edit messages ")
-        if not await self.config.guild(guild).message_edit():
-            await self.config.guild(guild).message_edit.set(True)
+        if not await self.config.guild(guild).message_edit.enabled():
+            await self.config.guild(guild).message_edit.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_edit.set(False)
+            await self.config.guild(guild).message_edit.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
-    async def join(self, ctx):
+    @_edit.command(name="channel")
+    async def _edit_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for edit logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).message_edit.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="join")
+    async def _join(self, ctx):
+        """
+            Member join logging settings
+        """
+        pass
+
+    @_join.command(name="toggle")
+    async def _join_toggle(self, ctx):
         """
             Toggle member join notifications
         """
         guild = ctx.message.guild
         msg = _("Join message logs ")
-        if not await self.config.guild(guild).user_join():
-            await self.config.guild(guild).user_join.set(True)
+        if not await self.config.guild(guild).user_join.enabled():
+            await self.config.guild(guild).user_join.enabled.set(True)
             links = await self.save_invite_links(guild)
             if links:
                 verb = _("enabled with invite links")
             else:
                 verb = _("enabled")
         else:
-            await self.config.guild(guild).user_join.set(False)
+            await self.config.guild(guild).user_join.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
-    async def guild(self, ctx):
+    @_join.command(name="channel")
+    async def _join_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for join logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).user_join.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="guild")
+    async def _guild(self, ctx):
+        """
+            Guild change logging settings
+        """
+        pass
+
+    @_guild.command(name="toggle")
+    async def _guild_toggle(self, ctx):
         """
             Toggle guild change notifications
 
@@ -146,16 +216,33 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         guild = ctx.message.guild
         msg = _("Guild logs ")
-        if not await self.config.guild(guild).guild_change():
-            await self.config.guild(guild).guild_change.set(True)
+        if not await self.config.guild(guild).guild_change.enabled():
+            await self.config.guild(guild).guild_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).guild_change.set(False)
+            await self.config.guild(guild).guild_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command(aliases=["channels"])
-    async def channel(self, ctx):
+    @_guild.command(name="channel")
+    async def _guild_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for guild logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).guild_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="channel", aliases=["channels"])
+    async def _channel(self, ctx):
+        """
+            Channel change logging settings
+        """
+        pass
+
+    @_channel.command(name="toggle")
+    async def _channel_toggle(self, ctx):
         """
             Toggle channel edit notifications
 
@@ -163,46 +250,97 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         guild = ctx.message.guild
         msg = _("Channel logs ")
-        if not await self.config.guild(guild).channel_change():
-            await self.config.guild(guild).channel_change.set(True)
+        if not await self.config.guild(guild).channel_change.enabled():
+            await self.config.guild(guild).channel_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).channel_change.set(False)
+            await self.config.guild(guild).channel_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
-    async def leave(self, ctx):
+    @_channel.command(name="channel")
+    async def _channel_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for channel logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).channel_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="leave")
+    async def _leave(self, ctx):
+        """
+            Member leave logging settings
+        """
+        pass
+
+    @_leave.command(name="toggle")
+    async def _leave_toggle(self, ctx):
         """
             Toggle member leave notifications
         """
         guild = ctx.message.guild
         msg = _("Leave logs ")
-        if not await self.config.guild(guild).user_left():
-            await self.config.guild(guild).user_left.set(True)
+        if not await self.config.guild(guild).user_left.enabled():
+            await self.config.guild(guild).user_left.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).user_left.set(False)
+            await self.config.guild(guild).user_left.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
-    async def delete(self, ctx):
+    @_leave.command(name="channel")
+    async def _leave_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for user leave logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).user_left.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="delete")
+    async def _delete(self, ctx):
+        """
+            Delete logging settings
+        """
+        pass
+
+    @_delete.command(name="toggle")
+    async def _delete_toggle(self, ctx):
         """
             Toggle message delete notifications
         """
         guild = ctx.message.guild
         msg = _("Message delete logs ")
-        if not await self.config.guild(guild).message_delete():
-            await self.config.guild(guild).message_delete.set(True)
+        if not await self.config.guild(guild).message_delete.enabled():
+            await self.config.guild(guild).message_delete.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).message_delete.set(False)
+            await self.config.guild(guild).message_delete.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command(aliases=["member"])
-    async def user(self, ctx):
+    @_delete.command(name="channel")
+    async def _delete_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for delete logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).message_delete.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="user", aliases=["member"])
+    async def _user(self, ctx):
+        """
+            User logging settings
+        """
+        pass
+
+    @_user.command(name="toggle")
+    async def _user_toggle(self, ctx):
         """
             Toggle member change notifications
 
@@ -210,16 +348,33 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         guild = ctx.message.guild
         msg = _("Profile logs ")
-        if not await self.config.guild(guild).user_change():
-            await self.config.guild(guild).user_change.set(True)
+        if not await self.config.guild(guild).user_change.enabled():
+            await self.config.guild(guild).user_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).user_change.set(False)
+            await self.config.guild(guild).user_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command(aliases=["roles"])
-    async def role(self, ctx):
+    @_user.command(name="channel")
+    async def _user_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for user logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).user_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="roles", aliases=["role"])
+    async def _roles(self, ctx):
+        """
+            Role logging settings
+        """
+        pass
+
+    @_roles.command(name="toggle")
+    async def _roles_toggle(self, ctx):
         """
             Toggle role change notifications
 
@@ -227,16 +382,33 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         guild = ctx.message.guild
         msg = _("Role logs ")
-        if not await self.config.guild(guild).role_change():
-            await self.config.guild(guild).role_change.set(True)
+        if not await self.config.guild(guild).role_change.enabled():
+            await self.config.guild(guild).role_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).role_change.set(False)
+            await self.config.guild(guild).role_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
-    async def voice(self, ctx):
+    @_roles.command(name="channel")
+    async def _roles_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for roles logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).role_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="voice")
+    async def _voice(self, ctx):
+        """
+            Voice logging settings
+        """
+        pass
+
+    @_voice.command(name="toggle")
+    async def _voice_toggle(self, ctx):
         """
             Toggle voice state notifications
 
@@ -244,45 +416,108 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         guild = ctx.message.guild
         msg = _("Voice logs ")
-        if not await self.config.guild(guild).voice_change():
-            await self.config.guild(guild).voice_change.set(True)
+        if not await self.config.guild(guild).voice_change.enabled():
+            await self.config.guild(guild).voice_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).voice_change.set(False)
+            await self.config.guild(guild).voice_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command(aliases=["emojis"])
-    async def emoji(self, ctx):
+    @_voice.command(name="channel")
+    async def _voice_channel(self, ctx, channel: discord.TextChannel=None):
         """
-            Toggle emoji change notifications
+            Set custom channel for voice logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).voice_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="emoji", aliases=["emojis"])
+    async def _emoji(self, ctx):
+        """
+            Emoji change logging settings
+        """
+        pass
+
+    @_emoji.command(name="toggle")
+    async def _emoji_toggle(self, ctx):
+        """
+            Toggle emoji change logging
         """
         guild = ctx.message.guild
         msg = _("Emoji logs ")
-        if not await self.config.guild(guild).emoji_change():
-            await self.config.guild(guild).emoji_change.set(True)
+        if not await self.config.guild(guild).emoji_change.enabled():
+            await self.config.guild(guild).emoji_change.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).emoji_change.set(False)
+            await self.config.guild(guild).emoji_change.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command(aliases=["commands"])
-    async def command(self, ctx):
+    @_emoji.command(name="channel")
+    async def _emoji_channel(self, ctx, channel: discord.TextChannel=None):
         """
-            Toggle mod/admin command usage
+            Set custom channel for emoji logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).emoji_change.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group(name="command", aliases=["commands"])
+    async def _command(self, ctx):
+        """
+            Toggle command logging
+        """
+        pass
+
+    @_command.command(name="level")
+    async def _command_level(self, ctx, *level:CommandPrivs):
+        """
+            Set the level of commands to be logged
+
+            `[level...]` must include all levels you want from:
+            MOD, ADMIN, BOT_OWNER, GUILD_OWNER, and NONE
+
+            These are the basic levels commands check for in permissions.
+            `NONE` is a command anyone has permission to use, where as `MOD`
+            can be `mod or permissions`
+        """
+        if len(level) == 0:
+            return await ctx.send_help()
+        guild = ctx.message.guild
+        msg = _("Command logs set to: ")
+        await self.config.guild(guild).commands_used.privs.set(list(level))
+        await ctx.send(msg + humanize_list(level))
+
+    @_command.command(name="toggle")
+    async def _command_toggle(self, ctx):
+        """
+            Toggle command usage logging
         """
         guild = ctx.message.guild
         msg = _("Command logs ")
-        if not await self.config.guild(guild).commands_used():
-            await self.config.guild(guild).commands_used.set(True)
+        if not await self.config.guild(guild).commands_used.enabled():
+            await self.config.guild(guild).commands_used.enabled.set(True)
             verb = _("enabled")
         else:
-            await self.config.guild(guild).commands_used.set(False)
+            await self.config.guild(guild).commands_used.enabled.set(False)
             verb = _("disabled")
         await ctx.send(msg + verb)
 
-    @modlogtoggles.command()
+    @_command.command(name="channel")
+    async def _command_channel(self, ctx, channel: discord.TextChannel=None):
+        """
+            Set custom channel for command logging
+        """
+        if channel is not None:
+            channel = channel.id
+        settings = await self.config.guild(ctx.guild).commands_used.channel.set(channel)
+        await ctx.tick()
+
+    @_modlog.group()
     async def ignore(self, ctx, channel: discord.TextChannel = None):
         """
             Ignore a channel from message delete/edit events and bot commands
@@ -301,7 +536,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await ctx.send(channel.mention + _(" is already being ignored."))
 
-    @modlogtoggles.command()
+    @_modlog.group()
     async def unignore(self, ctx, channel: discord.TextChannel = None):
         """
             Unignore a channel from message delete/edit events and bot commands

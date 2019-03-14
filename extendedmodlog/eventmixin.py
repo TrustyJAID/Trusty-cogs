@@ -1,13 +1,41 @@
-from redbot.core import commands, checks, Config, modlog
 import datetime
 import discord
 import asyncio
 import logging
+
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
+
 from random import choice, randint
+
+from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.ExtendedModLog")
+
+
+
+class CommandPrivs(Converter):
+    """
+        Converter for command privliges
+    """
+    async def convert(self, ctx, argument):
+        levels = [
+            "MOD",
+            "ADMIN",
+            "BOT_OWNER",
+            "GUILD_OWNER",
+            "NONE"
+        ]
+        result = None
+        if argument.upper() in levels:
+            result = argument.upper()
+        if argument == "all":
+            result = "NONE"
+        if not result:
+            raise BadArgument(_("`{arg}` is not an available command permission.").format(arg=argument))
+        return result
 
 
 @cog_i18n(_)
@@ -49,16 +77,28 @@ class EventMixin:
                 can = False
         return can
 
+    async def modlog_channel(self, guild: discord.Guild, event:str):
+        channel = None
+        settings = await self.config.guild(guild).get_raw(event)
+        if settings["channel"]:
+            channel = guild.get_channel(settings["channel"])
+        if channel is None:
+            try:
+                channel = await modlog.get_modlog_channel(guild)
+            except:
+                raise RuntimeError("No Modlog set")
+        return channel
+
     async def on_command(self, ctx: commands.Context):
         guild = ctx.guild
         if guild is None:
             return
-        if not await self.config.guild(guild).commands_used():
+        if not await self.config.guild(guild).commands_used.enabled():
             return
         if ctx.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "commands_used")
         except:
             return
         time = ctx.message.created_at
@@ -71,24 +111,28 @@ class EventMixin:
             privs = self.bot.get_command(command).requires.privilege_level.name
         except:
             return
-        if privs not in ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]:
+        if privs not in await self.config.guild(guild).commands_used.privs():
+            logger.debug(f"command not in list {privs}")
             return
+
         if privs == "MOD":
             mod_role_id = await ctx.bot.db.guild(guild).mod_role()
             if mod_role_id is not None:
                 role = guild.get_role(mod_role_id).mention + f"\n{privs}"
             else:
                 role = _("Not Set\nMOD")
-        if privs == "ADMIN":
+        elif privs == "ADMIN":
             admin_role_id = await ctx.bot.db.guild(guild).admin_role()
             if admin_role_id != None:
                 role = guild.get_role(admin_role_id).mention + f"\n{privs}"
             else:
                 role = _("Not Set\nADMIN")
-        if privs == "BOT_OWNER":
+        elif privs == "BOT_OWNER":
             role = guild.get_member(ctx.bot.owner_id).mention + f"\n{privs}"
-        if privs == "GUILD_OWNER":
+        elif privs == "GUILD_OWNER":
             role = guild.owner.mention + f"\n{privs}"
+        else:
+            role = f"everyone\n{privs}"
 
         for i in ctx.message.mentions:
             cleanmsg = cleanmsg.replace(i.mention, str(i))
@@ -104,7 +148,7 @@ class EventMixin:
 
             embed = discord.Embed(
                 title=infomessage,
-                description=f"`{message.content}`",
+                description=cleanmsg,
                 colour=await self.get_colour(guild),
                 timestamp=time,
             )
@@ -112,7 +156,7 @@ class EventMixin:
             embed.add_field(name=_("Can Run"), value=str(can_run))
             embed.add_field(name=_("Required Role"), value=role)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
-            author_title = name + _(" - Used a MOD/ADMIN Command")
+            author_title = name + _(" - Used a Command")
             embed.set_author(name=author_title, icon_url=message.author.avatar_url)
             await channel.send(embed=embed)
         else:
@@ -123,12 +167,12 @@ class EventMixin:
         guild = message.guild
         if guild is None:
             return
-        if not await self.config.guild(guild).message_delete():
+        if not await self.config.guild(guild).message_delete.enabled():
             return
         if message.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "message_edit")
         except:
             return
         if message.content == "" and message.attachments == []:
@@ -183,7 +227,7 @@ class EventMixin:
                 if guild is None:
                     # Let's remove missing guilds
                     await self.config.clear_scope(Config.GUILD, str(guild_id))
-                if await self.config.guild(guild).user_join():
+                if await self.config.guild(guild).user_join.enabled():
                     await self.save_invite_links(guild)
             await asyncio.sleep(300)
 
@@ -255,10 +299,10 @@ class EventMixin:
     async def on_member_join(self, member):
         guild = member.guild
 
-        if not await self.config.guild(guild).user_join():
+        if not await self.config.guild(guild).user_join.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "user_join")
         except:
             return
         time = datetime.datetime.utcnow()
@@ -303,10 +347,10 @@ class EventMixin:
     async def on_member_remove(self, member):
         guild = member.guild
 
-        if not await self.config.guild(guild).user_left():
+        if not await self.config.guild(guild).user_left.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "user_left")
         except:
             return
         if channel is None:
@@ -398,10 +442,10 @@ class EventMixin:
 
     async def on_guild_channel_create(self, new_channel):
         guild = new_channel.guild
-        if not await self.config.guild(guild).channel_change():
+        if not await self.config.guild(guild).channel_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "channel_change")
         except:
             return
         if channel is None:
@@ -445,10 +489,10 @@ class EventMixin:
 
     async def on_guild_channel_delete(self, old_channel):
         guild = old_channel.guild
-        if not await self.config.guild(guild).channel_change():
+        if not await self.config.guild(guild).channel_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "channel_change")
         except:
             return
         if channel is None:
@@ -492,10 +536,10 @@ class EventMixin:
 
     async def on_guild_channel_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).channel_change():
+        if not await self.config.guild(guild).channel_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "channel_change")
         except:
             return
         if channel is None:
@@ -622,10 +666,10 @@ class EventMixin:
 
     async def on_guild_role_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).role_change():
+        if not await self.config.guild(guild).role_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "role_change")
         except:
             return
         if channel is None:
@@ -688,10 +732,10 @@ class EventMixin:
 
     async def on_guild_role_create(self, role):
         guild = role.guild
-        if not await self.config.guild(guild).role_change():
+        if not await self.config.guild(guild).role_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "role_change")
         except:
             return
         if channel is None:
@@ -727,10 +771,10 @@ class EventMixin:
 
     async def on_guild_role_delete(self, role):
         guild = role.guild
-        if not await self.config.guild(guild).role_change():
+        if not await self.config.guild(guild).role_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "role_change")
         except:
             return
         if channel is None:
@@ -770,7 +814,7 @@ class EventMixin:
             return
         if before.author.bot:
             return
-        if not await self.config.guild(guild).message_edit():
+        if not await self.config.guild(guild).message_edit.enabled():
             return
         if before.channel.id in await self.config.guild(guild).ignored_channels():
             return
@@ -783,7 +827,7 @@ class EventMixin:
         for i in after.mentions:
             cleanafter = cleanafter.replace(i.mention, str(i))
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "message_edit")
         except:
             return
         if channel is None:
@@ -826,10 +870,10 @@ class EventMixin:
 
     async def on_guild_update(self, before, after):
         guild = after
-        if not await self.config.guild(guild).guild_change():
+        if not await self.config.guild(guild).guild_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "guild_change")
         except:
             return
         if channel is None:
@@ -882,10 +926,10 @@ class EventMixin:
             await channel.send(msg)
 
     async def on_guild_emojis_update(self, guild, before, after):
-        if not await self.config.guild(guild).guild_change():
+        if not await self.config.guild(guild).guild_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "emoji_change")
         except:
             return
         if channel is None:
@@ -945,12 +989,12 @@ class EventMixin:
 
     async def on_voice_state_update(self, member, before, after):
         guild = member.guild
-        if not await self.config.guild(guild).voice_change():
+        if not await self.config.guild(guild).voice_change.enabled():
             return
         if member.bot:
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "voice_change")
         except:
             return
         if channel is None:
@@ -1027,10 +1071,10 @@ class EventMixin:
 
     async def on_member_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).user_change():
+        if not await self.config.guild(guild).user_change.enabled():
             return
         try:
-            channel = await modlog.get_modlog_channel(guild)
+            channel = await self.modlog_channel(guild, "user_change")
         except:
             return
         if channel is None:
