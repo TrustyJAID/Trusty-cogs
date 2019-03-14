@@ -72,7 +72,7 @@ class TrustyBot(getattr(commands, "Cog", object)):
         """
         if member is None:
             member = ctx.me
-        if ctx.channel.permissions_for(ctx.guild).manage_messages:
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
         guild = ctx.guild
         webhook = None
@@ -90,13 +90,14 @@ class TrustyBot(getattr(commands, "Cog", object)):
 
     @commands.command()
     async def pingtime(self, ctx):
-        """
-            Pseudo ping time determination
-        """
-        t1 = time.perf_counter()
-        await ctx.channel.trigger_typing()
-        t2 = time.perf_counter()
-        await ctx.send("pong: {}ms".format(round((t2 - t1) * 1000)))
+        """Ping pong."""
+
+        # https://github.com/aikaterna/aikaterna-cogs/blob/v3/pingtime/pingtime.py
+        latencies = ctx.bot.latencies
+        msg = "Pong!\n"
+        for shard, ping in ctx.bot.latencies:
+            msg += f"Shard {shard+1}/{len(ctx.bot.latencies)}: {round(ping * 1000)}ms\n"
+        await ctx.send(msg)
 
     @commands.command(aliases=["guildhelp", "serverhelp", "helpserver"])
     async def helpguild(self, ctx):
