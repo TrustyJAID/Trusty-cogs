@@ -1123,7 +1123,10 @@ class ServerStats(getattr(commands, "Cog", object)):
     async def get_guild_invite(guild: discord.Guild, max_age: int = 86400):
         """Handles the reinvite logic for getting an invite
         to send the newly unbanned user
-        :returns: :class:`Invite`"""
+        :returns: :class:`Invite`
+
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L771
+        """
         my_perms: discord.Permissions = guild.me.guild_permissions
         if my_perms.manage_guild or my_perms.administrator:
             if "VANITY_URL" in guild.features:
