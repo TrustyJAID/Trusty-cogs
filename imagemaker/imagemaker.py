@@ -11,15 +11,21 @@ import numpy as np
 import os
 import json
 from copy import copy
-from typing import Union
+from typing import Union, Optional
 import textwrap
 
 try:
     import cv2
-
     TRUMP = True
 except ImportError:
     TRUMP = False
+
+try:
+    import imageio
+    BANNER = True
+except ImportError:
+    BANNER = False
+
 
 
 class ImageMaker(getattr(commands, "Cog", object)):
@@ -53,6 +59,56 @@ class ImageMaker(getattr(commands, "Cog", object)):
             file = discord.File(wheeze_img)
             # ext = await self.make_beautiful(user)
             await ctx.send(file=file)
+
+    @commands.command()
+    @commands.check(lambda ctx: BANNER)
+    async def banner(self, ctx, colour:Optional[discord.Colour]=(255,0,0), *, text: str):
+        """
+            Generate a scrolling text gif banner
+        """
+        if isinstance(colour, discord.Colour):
+            colour = colour.to_rgb() + (0,)
+        async with ctx.channel.typing():
+            task = functools.partial(self.make_banner, text=text, colour=colour)
+            task = ctx.bot.loop.run_in_executor(None, task)
+            try:
+                image = await asyncio.wait_for(task, timeout=60)
+            except asyncio.TimeoutError:
+                return
+            file = discord.File(image)
+            await ctx.send(files=[file])
+
+
+    @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.guild)
+    async def obama(self, ctx, *, text: str):
+        """
+            Synthesize video clips of Obama
+        """
+        text = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}"):]
+        if len(text) > 280:
+            msg = "A maximum character total of 280 is enforced. You sent: `{}` characters"
+            return await ctx.send(msg.format(len(text)))
+        async with ctx.typing():
+            async with self.session.post(
+                    url="http://talkobamato.me/synthesize.py", data={"input_text": text}) as resp:
+                if resp.status >= 400:
+                    raise discord.HTTPException(resp, f"{resp.url} returned error code {resp.status}")
+                url = resp.url
+
+            key = url.query['speech_key']
+            link = f"http://talkobamato.me/synth/output/{key}/obama.mp4"
+            await asyncio.sleep(len(text) // 5)
+            async with self.session.get(link) as resp:
+                if resp.status >= 400:
+                    raise discord.HTTPException(resp, f"{resp.url} returned error code {resp.status}")
+            async with self.session.get(link) as r:
+                data = BytesIO(await r.read())
+            data.name = "obama.mp4"
+            data.seek(0)
+            file = discord.File(data)
+            await ctx.send(files=[file])
+
 
     @commands.command()
     async def gwheeze(self, ctx, member: discord.Member = None):
@@ -112,6 +168,7 @@ class ImageMaker(getattr(commands, "Cog", object)):
             await ctx.send(file=file)
 
     @commands.command(aliases=["isnowillegal"])
+    @commands.check(lambda ctx: TRUMP)
     async def trump(self, ctx, *, message):
         """
             Generate isnowillegal gif image
@@ -297,6 +354,27 @@ class ImageMaker(getattr(commands, "Cog", object)):
             temp.name = "beautiful.gif"
             if sys.getsizeof(temp) < 8000000 and sys.getsizeof(temp) > 7000000:
                 break
+        return temp
+
+    def make_banner(self, text, colour):
+        im = Image.new("RGBA", (300,100), (0,0,0,0))
+        font = ImageFont.truetype(str(bundled_data_path(self)/"impact.ttf"), 18)
+        draw = ImageDraw.Draw(im)
+        size_w, size_h = draw.textsize(text, font=font)
+        W, H = (size_w+25,  100)
+
+        images = []
+        for i in range(0, W):
+            im = Image.new("RGBA", (W,H), colour)
+            draw = ImageDraw.Draw(im)
+            draw.text((((W-size_w)/2)-i, (100-size_h)/2), text, font=font, fill="white")
+            draw.text((10+W-i, (100-size_h)/2), text, font=font, fill="white")
+            images.append(np.array(im))
+
+        temp = BytesIO()
+        temp.name = "temp.gif"
+        imageio.mimwrite(temp, images, "gif", duration=0.02)
+        temp.seek(0)
         return temp
 
     def make_beautiful_img(self, template, avatar):
