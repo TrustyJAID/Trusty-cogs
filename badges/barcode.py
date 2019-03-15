@@ -378,7 +378,6 @@ else:
             self._draw.rectangle(size, outline=color, fill=color)
 
         def _paint_text(self, xpos, ypos):
-            print(self.FONT)
             font = ImageFont.truetype(self.FONT, self.font_size * 2)
             width, height = font.getsize(self.text)
             pos = (mm2px(xpos, self.dpi) - width // 2,

@@ -66,7 +66,7 @@ class Imgflip(getattr(commands, "Cog", object)):
         self.config.register_global(**default_global)
 
     async def get_meme(self, meme: int, boxes: List[Dict[str, str]], username: str, password: str):
-        log.info(log.info(boxes))
+        log.debug(boxes)
         try:
             form_data = aiohttp.FormData()
             form_data.add_field("template_id", meme)
@@ -129,7 +129,6 @@ class Imgflip(getattr(commands, "Cog", object)):
         text = " ".join(ctx.message.clean_content.replace(ctx.prefix, "").split()[2:])
         text = re.split(r"\|", text)
         boxes = [{"text": v, "color": "#ffffff", "outline_color": "#000000"} for v in text]
-        print(meme_name)
         try:
             url = await self.get_meme(meme_name, boxes, user_pass["username"], user_pass["password"])
         except Exception as e:
