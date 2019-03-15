@@ -22,8 +22,7 @@
     ],
     "required_cogs" : [],
     "requirements" : [
-        "pillow",
-        "pybarcode"
+        "pillow"
     ],
     "short" : "Create your own badge!",
     "tags" : [],

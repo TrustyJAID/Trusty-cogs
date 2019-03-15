@@ -5,8 +5,7 @@ import aiohttp
 import os
 from PIL import Image, ImageColor, ImageFont, ImageDraw
 from PIL import ImageSequence
-from barcode import generate
-from barcode.writer import ImageWriter
+from .barcode import generate, ImageWriter
 from redbot.core.data_manager import bundled_data_path
 from io import BytesIO
 from .templates import blank_template
@@ -92,7 +91,7 @@ class Badges(getattr(commands, "Cog", object)):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
-        temp_barcode = generate("code39", str(user.id), writer=ImageWriter(), output=barcode)
+        temp_barcode = generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)
         fill = (0, 0, 0)  # text colour fill
