@@ -421,6 +421,8 @@ class TriggerHandler:
             if msg.startswith(prefix):
                 # Don't run a trigger if it's the name of a command
                 command_text = msg.replace(prefix, "").split(" ")[0]
+                if not command_text:
+                    continue
                 command = self.bot.get_command(command_text)
                 if command:
                     is_command = True
