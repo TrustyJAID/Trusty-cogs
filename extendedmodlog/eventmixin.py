@@ -172,7 +172,7 @@ class EventMixin:
         if message.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
-            channel = await self.modlog_channel(guild, "message_edit")
+            channel = await self.modlog_channel(guild, "message_delete")
         except:
             return
         if message.content == "" and message.attachments == []:
