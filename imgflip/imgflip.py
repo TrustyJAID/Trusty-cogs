@@ -1,13 +1,17 @@
 from redbot.core import commands, checks, Config
 from random import choice
 import aiohttp
-from typing import Union
+from typing import Union, List, Dict
 from redbot.core.utils.chat_formatting import pagify
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+import re
+import logging
+import json
 
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"
+log = logging.getLogger("red.ImgFlip")
 
 
 class Meme(Converter):
@@ -44,6 +48,12 @@ class Meme(Converter):
         return result
 
 
+class ImgFlipAPIError(Exception):
+    """ImgFlip API Error"""
+
+    pass
+
+
 class Imgflip(getattr(commands, "Cog", object)):
     """
         Generate memes from imgflip.com API
@@ -55,25 +65,29 @@ class Imgflip(getattr(commands, "Cog", object)):
         default_global = {"username": "", "password": ""}
         self.config.register_global(**default_global)
 
-    async def get_meme(self, meme, text_0, text_1):
+    async def get_meme(self, meme: int, boxes: List[Dict[str, str]], username: str, password: str):
+        log.info(log.info(boxes))
         try:
-            params = {
-                "template_id": meme,
-                "username": await self.config.username(),
-                "password": await self.config.password(),
-                "text0": text_0,
-                "text1": text_1,
-            }
+            form_data = aiohttp.FormData()
+            form_data.add_field("template_id", meme)
+            form_data.add_field("username", username)
+            form_data.add_field("password", password)
+            i = 0
+            for box in boxes:
+                for k, v in box.items():
+                    form_data.add_field(f"boxes[{i}][{k}]", v)
+                i += 1
+
             async with aiohttp.ClientSession() as session:
-                async with session.post(CAPTION_URL, params=params) as r:
+                async with session.post(CAPTION_URL, data=form_data) as r:
                     result = await r.json()
             if result["success"]:
                 return result["data"]["url"]
             if not result["success"]:
-                return
+                raise ImgFlipAPIError(result["error_message"])
         except Exception as e:
-            print(e)
-            return
+            log.error("Error grabbing meme", exc_info=True)
+            raise ImgFlipAPIError(e)
 
     @commands.command(alias=["listmemes"])
     async def getmemes(self, ctx):
@@ -99,23 +113,28 @@ class Imgflip(getattr(commands, "Cog", object)):
             Create custom memes from imgflip
             
             `meme_name` can be the name of the meme to use or the ID from imgflip
-            `text` can one or two lines of text separated by `;`
+            `text` is lines of text separated by `|`
             Do `[p]getmemes` to see which meme names will work
 
             You can get meme ID's from https://imgflip.com/memetemplates
             click blank template and use the Template ID in place of meme_name
         """
+        user_pass = await self.config.all()
+        if not user_pass["username"] or not user_pass["password"]:
+            return await ctx.send(
+                "You need to set a username and password first with "
+                f"`{ctx.prefix}imgflipset <username> <password>`"
+            )
         await ctx.trigger_typing()
-        for member in ctx.message.mentions:
-            text = text.replace(member.mention, member.display_name.replace(";", ""))
-        text = text.split(";")
-        if len(text) == 1:
-            text_0 = text[0]
-            text_1 = " "
-        else:
-            text_0 = text[0]
-            text_1 = text[1]
-        url = await self.get_meme(meme_name, text_0, text_1)
+        text = " ".join(ctx.message.clean_content.replace(ctx.prefix, "").split()[2:])
+        text = re.split(r"\|", text)
+        boxes = [{"text": v, "color": "#ffffff", "outline_color": "#000000"} for v in text]
+        print(meme_name)
+        try:
+            url = await self.get_meme(meme_name, boxes, user_pass["username"], user_pass["password"])
+        except Exception as e:
+            return await ctx.send("Something went wrong generating a meme.")
+
         await ctx.send(url)
 
     @commands.command(name="imgflipset", aliases=["memeset"])
@@ -124,4 +143,6 @@ class Imgflip(getattr(commands, "Cog", object)):
         """Command for setting required access information for the API"""
         await self.config.username.set(username)
         await self.config.password.set(password)
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            await ctx.message.delete()
         await ctx.send("Credentials set!")
