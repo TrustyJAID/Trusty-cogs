@@ -16,14 +16,13 @@ log = logging.getLogger("red.ImgFlip")
 
 class Meme(Converter):
     """
-    This will accept user ID's, mentions, and perform a fuzzy search for 
+    This will accept user ID's, mentions, and perform a fuzzy search for
     members within the guild and return a list of member objects
     matching partial names
 
     Guidance code on how to do this from:
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    
     """
 
     async def convert(self, ctx, argument):
@@ -36,7 +35,7 @@ class Meme(Converter):
                 for memes in results["data"]["memes"]:
                     if argument.lower() in memes["name"].lower():
                         result = memes["id"]
-            except:
+            except Exception:
                 result = None
 
         else:
@@ -44,8 +43,10 @@ class Meme(Converter):
 
         if result is None:
             raise BadArgument('Meme "{}" not found'.format(argument))
-
-        return result
+        arg = argument
+        if " " in argument:
+            arg = f'"{argument}"'
+        return (result, arg)
 
 
 class ImgFlipAPIError(Exception):
@@ -108,10 +109,9 @@ class Imgflip(getattr(commands, "Cog", object)):
             await ctx.send(page)
 
     @commands.command()
-    async def meme(self, ctx, meme_name: Meme, *, text: str):
-        """ 
-            Create custom memes from imgflip
-            
+    async def meme(self, ctx, meme: Meme, *, text: str):
+        """Create custom memes from imgflip
+
             `meme_name` can be the name of the meme to use or the ID from imgflip
             `text` is lines of text separated by `|`
             Do `[p]getmemes` to see which meme names will work
@@ -126,11 +126,13 @@ class Imgflip(getattr(commands, "Cog", object)):
                 f"`{ctx.prefix}imgflipset <username> <password>`"
             )
         await ctx.trigger_typing()
-        text = " ".join(ctx.message.clean_content.replace(ctx.prefix, "").split()[2:])
+        text = " ".join(
+            ctx.message.clean_content.replace(f"{ctx.prefix}{ctx.invoked_with} {meme[1]}", "")
+        )
         text = re.split(r"\|", text)
         boxes = [{"text": v, "color": "#ffffff", "outline_color": "#000000"} for v in text]
         try:
-            url = await self.get_meme(meme_name, boxes, user_pass["username"], user_pass["password"])
+            url = await self.get_meme(meme[0], boxes, user_pass["username"], user_pass["password"])
         except Exception as e:
             return await ctx.send("Something went wrong generating a meme.")
 
