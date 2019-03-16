@@ -1,12 +1,14 @@
-from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
-from discord.ext.commands.errors import BadArgument
-from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.predicates import ReactionPredicate
-from redbot.core.utils.menus import start_adding_reactions
-import re
 import discord
 import logging
 import asyncio
+import re
+
+from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
+from discord.ext.commands.errors import BadArgument
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core import commands
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -43,10 +45,7 @@ class Trigger:
         self.cooldown = cooldown
         self.multi_payload = multi_payload
 
-    def _add_count(self, number: int):
-        self.count += number
-
-    def to_json(self) -> dict:
+    async def to_json(self) -> dict:
         return {
             "name": self.name,
             "regex": self.regex.pattern,
@@ -62,7 +61,7 @@ class Trigger:
         }
 
     @classmethod
-    def from_json(cls, data: dict):
+    async def from_json(cls, data: dict):
         if "cooldown" not in data:
             cooldown = {}
         else:
@@ -99,7 +98,7 @@ class TriggerExists(Converter):
         trigger_list = await config.guild(guild).trigger_list()
         result = None
         if argument in trigger_list:
-            result = Trigger.from_json(trigger_list[argument])
+            result = await Trigger.from_json(trigger_list[argument])
         else:
             result = argument
         return result
@@ -112,10 +111,9 @@ class ValidRegex(Converter):
     Guidance code on how to do this from:
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str):
         bot = ctx.bot
         try:
             re.compile(argument)
@@ -133,7 +131,7 @@ class MultiResponse(Converter):
     to be used in multiple reponses
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str):
         bot = ctx.bot
         result = []
         match = re.split(r"(;)", argument)
@@ -176,10 +174,11 @@ class MultiResponse(Converter):
         if result[0] == "react" and not my_perms.add_reactions:
             raise BadArgument(_('I require "Add Reactions" permission to use that.'))
         if result[0] == "mock":
-            
             msg = await ctx.send(
-                _("Mock commands can allow any user to run a command "
-                  "as if you did, are you sure you want to add this?")
+                _(
+                    "Mock commands can allow any user to run a command "
+                    "as if you did, are you sure you want to add this?"
+                )
             )
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -226,7 +225,7 @@ class ValidEmoji(IDConverter):
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str):
         match = self._get_id_match(argument) or re.match(
             r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)", argument
         )
@@ -264,7 +263,7 @@ class ValidEmoji(IDConverter):
             try:
                 await ctx.message.add_reaction(argument)
                 result = argument
-            except Exception as e:
+            except Exception:
                 raise BadArgument(_("`{}` is not an emoji I can use.").format(argument))
 
         return result
@@ -277,10 +276,9 @@ class ChannelUserRole(IDConverter):
     Guidance code on how to do this from:
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str):
         bot = ctx.bot
         guild = ctx.guild
         result = None
