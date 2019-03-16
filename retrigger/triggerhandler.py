@@ -56,7 +56,7 @@ class TriggerHandler:
             return True
         elif message.guild is None:
             return True
-        if not getattr(message.author, roles, None):
+        if not getattr(message.author, "roles", None):
             return False
         guild_settings = self.bot.db.guild(message.guild)
         local_blacklist = await guild_settings.blacklist()
