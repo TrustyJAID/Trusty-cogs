@@ -8,7 +8,7 @@ import logging
 
 try:
     from .oilers import Oilers
-except:
+except ImportError:
     pass
 
 

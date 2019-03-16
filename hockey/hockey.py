@@ -25,7 +25,7 @@ try:
     from .oilers import Oilers
 
     LIGHTS_SET = True
-except:
+except ImportError:
     LIGHTS_SET = False
     pass
 
@@ -33,7 +33,7 @@ _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.Hockey")
 
-__version__ = "2.3.2"
+__version__ = "2.3.3"
 __author__ = "TrustyJAID"
 
 
@@ -186,7 +186,7 @@ class Hockey(getattr(commands, "Cog", object)):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:
             guild = channel.guild
-        except:
+        except Exception:
             return
         pickems_list = await self.config.guild(guild).pickems()
 
@@ -197,7 +197,7 @@ class Hockey(getattr(commands, "Cog", object)):
             return
         try:
             msg = await channel.get_message(id=payload.message_id)
-        except:
+        except Exception:
             return
         user = guild.get_member(payload.user_id)
         # log.debug(payload.user_id)
@@ -231,7 +231,7 @@ class Hockey(getattr(commands, "Cog", object)):
                 if reply_message != "":
                     try:
                         await user.send(reply_message)
-                    except:
+                    except Exception:
                         pass
         if is_pickems_vote:
             pickems_list = [p.to_json() for p in pickems]

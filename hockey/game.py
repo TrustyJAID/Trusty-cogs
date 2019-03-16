@@ -123,7 +123,7 @@ class Game:
             Get a specified days games, defaults to the current day
             requires a datetime object
             returns a list of game objects
-            if a start date and an end date are not provided to the url 
+            if a start date and an end date are not provided to the url
             it returns only todays games
 
             returns a list of game objects
@@ -148,7 +148,7 @@ class Game:
             Get a specified days games, defaults to the current day
             requires a datetime object
             returns a list of game objects
-            if a start date and an end date are not provided to the url 
+            if a start date and an end date are not provided to the url
             it returns only todays games
 
             returns a list of games
@@ -264,11 +264,24 @@ class Game:
                 for goals in list_goals:
                     ordinal = goals
                     goal_msg = ""
+                    count = 0
                     for goal in list_goals[ordinal]:
+                        if count == 5:
+                            em.add_field(
+                                name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024]
+                            )
+                            count = 0
+                            goal_msg = ""
                         emoji = TEAMS[goal.team_name]["emoji"]
                         goal_msg += f"<:{emoji}> {goal.team_name} Goal By {goal.description}\n\n"
-                    if goal_msg != "":
-                        em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg)
+                        count += 1
+                    if len(list_goals[ordinal]) > 5 and goal_msg != "":
+                        em.add_field(
+                            name=str(ordinal) + _(" Period Goals (Continued)"),
+                            value=goal_msg[:1024],
+                        )
+                    if len(list_goals[ordinal]) <= 5 and goal_msg != "":
+                        em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024])
                 if len(so_goals) != 0:
                     home_msg = ""
                     away_msg = ""
@@ -403,7 +416,7 @@ class Game:
                         gp=team.gp,
                         streak=streak,
                     )
-        except:
+        except Exception:
             pass
         return home_str, away_str
 
@@ -439,7 +452,7 @@ class Game:
                 # Create channel and look for game day thread
 
         if self.game_state == "Live":
-            """Checks what the period is and posts the game is starting in the appropriate channel"""
+            # Checks what the period is and posts the game is starting in the appropriate channel
             if home["period"] != self.period:
                 msg = "**{} Period starting {} at {}**"
                 log.debug(msg.format(self.period_ord, self.away_team, self.home_team))
