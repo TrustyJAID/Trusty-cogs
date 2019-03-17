@@ -15,7 +15,6 @@ _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.ExtendedModLog")
 
 
-
 class CommandPrivs(Converter):
     """
         Converter for command privliges
@@ -34,7 +33,9 @@ class CommandPrivs(Converter):
         if argument == "all":
             result = "NONE"
         if not result:
-            raise BadArgument(_("`{arg}` is not an available command permission.").format(arg=argument))
+            raise BadArgument(
+                _("`{arg}` is not an available command permission.").format(arg=argument)
+            )
         return result
 
 
@@ -77,7 +78,7 @@ class EventMixin:
                 can = False
         return can
 
-    async def modlog_channel(self, guild: discord.Guild, event:str):
+    async def modlog_channel(self, guild: discord.Guild, event: str):
         channel = None
         settings = await self.config.guild(guild).get_raw(event)
         if settings["channel"]:
@@ -85,7 +86,7 @@ class EventMixin:
         if channel is None:
             try:
                 channel = await modlog.get_modlog_channel(guild)
-            except:
+            except RuntimeError:
                 raise RuntimeError("No Modlog set")
         return channel
 
@@ -99,7 +100,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "commands_used")
-        except:
+        except RuntimeError:
             return
         time = ctx.message.created_at
         cleanmsg = ctx.message.content
@@ -109,7 +110,7 @@ class EventMixin:
         com = command.split(" ")[0]
         try:
             privs = self.bot.get_command(command).requires.privilege_level.name
-        except:
+        except Exception:
             return
         if privs not in await self.config.guild(guild).commands_used.privs():
             logger.debug(f"command not in list {privs}")
@@ -123,7 +124,7 @@ class EventMixin:
                 role = _("Not Set\nMOD")
         elif privs == "ADMIN":
             admin_role_id = await ctx.bot.db.guild(guild).admin_role()
-            if admin_role_id != None:
+            if admin_role_id is not None:
                 role = guild.get_role(admin_role_id).mention + f"\n{privs}"
             else:
                 role = _("Not Set\nADMIN")
@@ -167,13 +168,17 @@ class EventMixin:
         guild = message.guild
         if guild is None:
             return
-        if not await self.config.guild(guild).message_delete.enabled():
+        settings = await self.config.guild(guild).message_delete()
+        if not settings["enabled"]:
+            return
+        if message.author.bot and not settings["bots"]:
+            # return to ignore bot accounts if enabled
             return
         if message.channel.id in await self.config.guild(guild).ignored_channels():
             return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
-        except:
+        except RuntimeError:
             return
         if message.content == "" and message.attachments == []:
             return
@@ -303,7 +308,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "user_join")
-        except:
+        except RuntimeError:
             return
         time = datetime.datetime.utcnow()
         users = len(guild.members)
@@ -351,7 +356,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "user_left")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -446,7 +451,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -493,7 +498,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -540,7 +545,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -670,7 +675,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "role_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -736,7 +741,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "role_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -775,7 +780,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "role_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -812,9 +817,10 @@ class EventMixin:
         guild = before.guild
         if guild is None:
             return
-        if before.author.bot:
+        settings = await self.config.guild(guild).message_edit()
+        if not settings["enabled"]:
             return
-        if not await self.config.guild(guild).message_edit.enabled():
+        if before.author.bot and not settings["bots"]:
             return
         if before.channel.id in await self.config.guild(guild).ignored_channels():
             return
@@ -828,7 +834,7 @@ class EventMixin:
             cleanafter = cleanafter.replace(i.mention, str(i))
         try:
             channel = await self.modlog_channel(guild, "message_edit")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -874,7 +880,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "guild_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -893,7 +899,7 @@ class EventMixin:
             "owner": _("Server Owner:"),
             "splash": _("Splash Image:"),
             "system_channel": _("Welcome message channel:"),
-            "verification_level":_("Verification Level:")
+            "verification_level": _("Verification Level:")
         }
         for attr, name in guild_updates.items():
             before_attr = getattr(before, attr)
@@ -930,7 +936,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "emoji_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -995,7 +1001,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "voice_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return
@@ -1075,7 +1081,7 @@ class EventMixin:
             return
         try:
             channel = await self.modlog_channel(guild, "user_change")
-        except:
+        except RuntimeError:
             return
         if channel is None:
             return

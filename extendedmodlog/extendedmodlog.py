@@ -10,8 +10,8 @@ from redbot.core.i18n import Translator, cog_i18n
 from .eventmixin import EventMixin, CommandPrivs
 
 inv_settings = {
-    "message_edit": {"enabled": False, "channel": None},
-    "message_delete": {"enabled": False, "channel": None},
+    "message_edit": {"enabled": False, "channel": None, "bots": False},
+    "message_delete": {"enabled": False, "channel": None, "bots": False},
     "user_change": {"enabled": False, "channel": None},
     "role_change": {"enabled": False, "channel": None},
     "voice_change": {"enabled": False, "channel": None},
@@ -20,7 +20,11 @@ inv_settings = {
     "channel_change": {"enabled": False, "channel": None},
     "guild_change": {"enabled": False, "channel": None},
     "emoji_change": {"enabled": False, "channel": None},
-    "commands_used": {"enabled": False, "channel": None, "privs":["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]},
+    "commands_used": {
+        "enabled": False,
+        "channel": None,
+        "privs": ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"],
+    },
     "ignored_channels": [],
     "invite_links": {},
 }
@@ -64,7 +68,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         try:
             _modlog_channel = await modlog.get_modlog_channel(guild)
             modlog_channel = _modlog_channel.mention
-        except:
+        except Exception:
             modlog_channel = "Not Set"
         cur_settings = {
             "message_edit": _("Message edits"),
@@ -154,8 +158,23 @@ class ExtendedModLog(EventMixin, commands.Cog):
             verb = _("disabled")
         await ctx.send(msg + verb)
 
+    @_edit.command(name="bots")
+    async def _edit_toggle(self, ctx):
+        """
+            Toggle message edit notifications for bot users
+        """
+        guild = ctx.message.guild
+        msg = _("Bots edited messages ")
+        if not await self.config.guild(guild).message_edit.bots():
+            await self.config.guild(guild).message_edit.bots.set(True)
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).message_edit.bots.set(False)
+            verb = _("disabled")
+        await ctx.send(msg + verb)
+
     @_edit.command(name="channel")
-    async def _edit_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _edit_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for edit logging
         """
@@ -191,7 +210,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_join.command(name="channel")
-    async def _join_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _join_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for join logging
         """
@@ -225,7 +244,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_guild.command(name="channel")
-    async def _guild_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _guild_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for guild logging
         """
@@ -259,7 +278,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_channel.command(name="channel")
-    async def _channel_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _channel_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for channel logging
         """
@@ -291,7 +310,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_leave.command(name="channel")
-    async def _leave_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _leave_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for user leave logging
         """
@@ -322,8 +341,23 @@ class ExtendedModLog(EventMixin, commands.Cog):
             verb = _("disabled")
         await ctx.send(msg + verb)
 
+    @_delete.command(name="bots")
+    async def _delete_bots(self, ctx):
+        """
+            Toggle message delete notifications for bot users
+        """
+        guild = ctx.message.guild
+        msg = _("Bot delete logs ")
+        if not await self.config.guild(guild).message_delete.bots():
+            await self.config.guild(guild).message_delete.bots.set(True)
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.bots.set(False)
+            verb = _("disabled")
+        await ctx.send(msg + verb)
+
     @_delete.command(name="channel")
-    async def _delete_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _delete_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for delete logging
         """
@@ -357,7 +391,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_user.command(name="channel")
-    async def _user_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _user_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for user logging
         """
@@ -391,7 +425,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_roles.command(name="channel")
-    async def _roles_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _roles_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for roles logging
         """
@@ -425,7 +459,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_voice.command(name="channel")
-    async def _voice_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _voice_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for voice logging
         """
@@ -457,7 +491,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_emoji.command(name="channel")
-    async def _emoji_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _emoji_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for emoji logging
         """
@@ -474,7 +508,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         pass
 
     @_command.command(name="level")
-    async def _command_level(self, ctx, *level:CommandPrivs):
+    async def _command_level(self, ctx, *level: CommandPrivs):
         """
             Set the level of commands to be logged
 
@@ -508,7 +542,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_command.command(name="channel")
-    async def _command_channel(self, ctx, channel: discord.TextChannel=None):
+    async def _command_channel(self, ctx, channel: discord.TextChannel = None):
         """
             Set custom channel for command logging
         """
