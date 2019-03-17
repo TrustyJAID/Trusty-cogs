@@ -11,7 +11,7 @@ _ = Translator("Spoiler", __file__)
 
 
 @cog_i18n(_)
-class Spoiler(getattr(commands, "Cog", object)):
+class Spoiler(commands.Cog):
     """
         Post spoilers in chat without spoining the text for everyone
     """

@@ -8,7 +8,7 @@ IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
 APNG_REGEX = re.compile(rb"fdAT")
 
 
-class APNGFilter(getattr(commands, "Cog", object)):
+class APNGFilter(commands.Cog):
     """Filter those pesky APNG images"""
 
     def __init__(self, bot):

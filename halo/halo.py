@@ -9,7 +9,7 @@ import asyncio
 numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 
 
-class Halo(getattr(commands, "Cog", object)):
+class Halo(commands.Cog):
     """
         Display Halo 5 and Halo Wars 2 stats and information
     """

@@ -28,7 +28,7 @@ class UnitConverter(Converter):
 
 
 @cog_i18n(_)
-class Weather(getattr(commands, "Cog", object)):
+class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
 
     def __init__(self, bot):

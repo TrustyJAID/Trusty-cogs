@@ -16,7 +16,7 @@ _ = Translator("Autorole", __file__)
 
 
 @cog_i18n(_)
-class Autorole(getattr(commands, "Cog", object)):
+class Autorole(commands.Cog):
     """
         Autorole commands. Rewritten for V3 from 
         https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/autorole/autorole.py

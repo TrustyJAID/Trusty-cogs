@@ -20,7 +20,7 @@ class NotFoundError(GabaiError):
     pass
 
 
-class Gabai(getattr(commands, "Cog", object)):
+class Gabai(commands.Cog):
     """
         Get information from gab.ai and display on discord
     """

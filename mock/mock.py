@@ -4,7 +4,7 @@ from redbot.core import commands
 from typing import Union, Optional
 
 
-class Mock(getattr(commands, "Cog", object)):
+class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     def __init__(self, bot):

@@ -122,7 +122,7 @@ compliments = [
 
 
 @cog_i18n(_)
-class Compliment(getattr(commands, "Cog", object)):
+class Compliment(commands.Cog):
     """Compliment users because there's too many insults"""
 
     def __init__(self, bot):

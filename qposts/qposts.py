@@ -21,7 +21,7 @@ except:
 numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 
 
-class QPosts(getattr(commands, "Cog", object)):
+class QPosts(commands.Cog):
     """Gather Qanon updates from 8chan"""
 
     def __init__(self, bot):

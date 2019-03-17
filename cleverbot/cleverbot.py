@@ -35,7 +35,7 @@ class OutdatedCredentials(CleverbotError):
     pass
 
 
-class Cleverbot(getattr(commands, "Cog", object)):
+class Cleverbot(commands.Cog):
     """Cleverbot rewritten for V3 from https://github.com/Twentysix26/26-Cogs/tree/master/cleverbot"""
 
     def __init__(self, bot):

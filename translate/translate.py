@@ -65,7 +65,7 @@ class GoogleTranslateAPIError(Exception):
 
 
 @cog_i18n(_)
-class Translate(getattr(commands, "Cog", object)):
+class Translate(commands.Cog):
     """
         Translate messages using google translate
     """

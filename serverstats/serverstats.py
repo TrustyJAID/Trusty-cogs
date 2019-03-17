@@ -129,7 +129,7 @@ class ChannelConverter(IDConverter):
 
 
 @cog_i18n(_)
-class ServerStats(getattr(commands, "Cog", object)):
+class ServerStats(commands.Cog):
     """
         Gather useful information about servers the bot is in
         A lot of commands are bot owner only

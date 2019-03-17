@@ -435,7 +435,7 @@ FACES = [
 ]
 
 
-class Faces(getattr(commands, "Cog", object)):
+class Faces(commands.Cog):
     """
         Generate fun/random unicode faces courtesy of the CIA files
     """

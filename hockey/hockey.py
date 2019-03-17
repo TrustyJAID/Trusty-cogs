@@ -38,7 +38,7 @@ __author__ = "TrustyJAID"
 
 
 @cog_i18n(_)
-class Hockey(getattr(commands, "Cog", object)):
+class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """

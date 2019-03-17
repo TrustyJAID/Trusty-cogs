@@ -13,7 +13,7 @@ from random import choice as randchoice
 numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 
 
-class Anime(getattr(commands, "Cog", object)):
+class Anime(commands.Cog):
     """
         Display latest airing anime episodes
     """

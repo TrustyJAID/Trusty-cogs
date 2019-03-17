@@ -13,7 +13,7 @@ import time
 BASE_URL = "https://api.twitch.tv/helix"
 
 
-class Twitch(getattr(commands, "Cog", object)):
+class Twitch(commands.Cog):
     """
         Get twitch user information and post when a user gets new followers
     """

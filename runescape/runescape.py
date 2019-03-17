@@ -12,7 +12,7 @@ from tabulate import tabulate
 from .profile import Profile
 
 
-class Runescape(getattr(commands, "Cog", object)):
+class Runescape(commands.Cog):
     """
         Display Runescape account info
     """

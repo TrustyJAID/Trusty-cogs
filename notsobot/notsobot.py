@@ -79,7 +79,7 @@ class DataProtocol(asyncio.SubprocessProtocol):
             pass
 
 
-class NotSoBot(getattr(commands, "Cog", object)):
+class NotSoBot(commands.Cog):
     """
         Rewrite of many NotSoBot commands to work on RedBot V3
     """

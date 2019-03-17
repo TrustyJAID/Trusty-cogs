@@ -11,7 +11,7 @@ UNICODE_RE = re.compile("|".join(rf"{re.escape(w)}" for w in UNICODE_EMOJI.keys(
 
 
 @cog_i18n(_)
-class EmojiReactions(getattr(commands, "Cog", object)):
+class EmojiReactions(commands.Cog):
     """
         Automatically react to messages with emojis in them with the emoji
     """

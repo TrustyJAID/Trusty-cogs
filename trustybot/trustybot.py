@@ -1,10 +1,9 @@
 import discord
-import time
 from redbot.core import commands, checks
 from typing import Optional
 
 
-class TrustyBot(getattr(commands, "Cog", object)):
+class TrustyBot(commands.Cog):
     """
         This is mostly a test cog to try out new things 
         before I figure out how to make them work elsewhere
@@ -93,7 +92,6 @@ class TrustyBot(getattr(commands, "Cog", object)):
         """Ping pong."""
 
         # https://github.com/aikaterna/aikaterna-cogs/blob/v3/pingtime/pingtime.py
-        latencies = ctx.bot.latencies
         msg = "Pong!\n"
         for shard, ping in ctx.bot.latencies:
             msg += f"Shard {shard+1}/{len(ctx.bot.latencies)}: {round(ping * 1000)}ms\n"

@@ -9,7 +9,7 @@ _ = Translator("StickyRoles", __file__)
 
 
 @cog_i18n(_)
-class StickyRoles(getattr(commands, "Cog", object)):
+class StickyRoles(commands.Cog):
     """Reapplies specific roles on join. Rewritten for V3 from 
     https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py"""
 

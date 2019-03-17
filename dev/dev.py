@@ -25,7 +25,7 @@ _ = Translator("Dev", __file__)
 START_CODE_BLOCK_RE = re.compile(r"^((```py)(?=\s)|(```))")
 
 
-class Dev(getattr(commands, "Cog", object)):
+class Dev(commands.Cog):
     """Various development focused utilities."""
 
     def __init__(self, bot):

@@ -12,7 +12,7 @@ from io import BytesIO
 from typing import Union, Optional
 
 
-class TrustyAvatar(getattr(commands, "Cog", object)):
+class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
 
     def __init__(self, bot):

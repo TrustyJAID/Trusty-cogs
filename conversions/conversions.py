@@ -8,7 +8,7 @@ import re
 from typing import Optional
 
 
-class Conversions(getattr(commands, "Cog", object)):
+class Conversions(commands.Cog):
     """
         Gather information about various crypto currencies,
         rare metals, stocks, and converts to different currencies

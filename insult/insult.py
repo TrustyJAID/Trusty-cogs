@@ -221,7 +221,7 @@ insults = [
 
 
 @cog_i18n(_)
-class Insult(getattr(commands, "Cog", object)):
+class Insult(commands.Cog):
 
     """Airenkun's Insult Cog"""
 

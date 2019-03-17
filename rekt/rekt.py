@@ -92,7 +92,7 @@ rektlist = [
 
 
 @cog_i18n(_)
-class Rekt(getattr(commands, "Cog", object)):
+class Rekt(commands.Cog):
     """
         Post embed with random rekt messages
     """

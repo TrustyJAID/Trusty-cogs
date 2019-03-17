@@ -3,7 +3,7 @@ from redbot.core import commands
 import re
 
 
-class Covfefe(getattr(commands, "Cog", object)):
+class Covfefe(commands.Cog):
     """
         Convert almost any word into covfefe
     """

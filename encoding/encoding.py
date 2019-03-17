@@ -15,7 +15,7 @@ from string import ascii_lowercase as lc, ascii_uppercase as uc
 from .braille import *
 
 
-class Encoding(getattr(commands, "Cog", object)):
+class Encoding(commands.Cog):
     """
         Convert messages into fun encodings
     """

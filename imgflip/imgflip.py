@@ -55,7 +55,7 @@ class ImgFlipAPIError(Exception):
     pass
 
 
-class Imgflip(getattr(commands, "Cog", object)):
+class Imgflip(commands.Cog):
     """
         Generate memes from imgflip.com API
     """

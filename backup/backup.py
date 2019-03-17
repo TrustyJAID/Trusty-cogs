@@ -16,7 +16,7 @@ class GuildNotFoundError(Exception):
     pass
 
 
-class Backup(getattr(commands, "Cog", object)):
+class Backup(commands.Cog):
     """
         Create a set of json backups of a server
     """

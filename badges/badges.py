@@ -18,7 +18,7 @@ _ = Translator("Badges", __file__)
 
 
 @cog_i18n(_)
-class Badges(getattr(commands, "Cog", object)):
+class Badges(commands.Cog):
     """
         Create fun fake badges based on your discord profile
     """

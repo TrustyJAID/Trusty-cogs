@@ -9,7 +9,7 @@ import discord
 """
 
 
-class Fun(getattr(commands, "Cog", object)):
+class Fun(commands.Cog):
     """
         RedBot V3 conversion of Appu's Fun cog
     """

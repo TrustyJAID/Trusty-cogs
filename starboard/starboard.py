@@ -15,7 +15,7 @@ __author__ = "TrustyJAID"
 
 
 @cog_i18n(_)
-class Starboard(getattr(commands, "Cog", object)):
+class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """

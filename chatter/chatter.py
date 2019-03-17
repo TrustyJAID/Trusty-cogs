@@ -19,7 +19,7 @@ LINK_REGEX = re.compile(
 )
 
 
-class Chatter(getattr(commands, "Cog", object)):
+class Chatter(commands.Cog):
     """
         Train the bot to speak automatically by watching guilds
     """

@@ -28,7 +28,7 @@ except ImportError:
 
 
 
-class ImageMaker(getattr(commands, "Cog", object)):
+class ImageMaker(commands.Cog):
     """
         Create various fun images
     """

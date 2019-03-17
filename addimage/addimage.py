@@ -16,7 +16,7 @@ _ = Translator("AddImage", __file__)
 
 
 @cog_i18n(_)
-class AddImage(getattr(commands, "Cog", object)):
+class AddImage(commands.Cog):
     """
         Add images the bot can upload
     """

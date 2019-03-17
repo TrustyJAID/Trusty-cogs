@@ -10,7 +10,7 @@ import asyncio
 from phue import Bridge
 
 
-class Hue(getattr(commands, "Cog", object)):
+class Hue(commands.Cog):
     """
         Control philips hue light on the same network as the bot
     """

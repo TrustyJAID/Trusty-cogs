@@ -9,7 +9,7 @@ from random import choice
 import time
 
 
-class TarotReading(getattr(commands, "Cog", object)):
+class TarotReading(commands.Cog):
     """
         Post information about tarot cards and readings
     """

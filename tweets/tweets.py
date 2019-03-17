@@ -50,7 +50,7 @@ class TweetListener(tw.StreamListener):
 
 
 @cog_i18n(_)
-class Tweets(getattr(commands, "Cog", object)):
+class Tweets(commands.Cog):
     """
         Cog for displaying info from Twitter's API
     """
