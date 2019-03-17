@@ -1,28 +1,27 @@
 import discord
 import logging
-import os
+import asyncio
 
 from multiprocessing.pool import Pool
 from typing import Union, Optional
 
 
-from redbot.core import commands, checks, Config, modlog
-from redbot.core.data_manager import cog_data_path
+from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .converters import *
+from .converters import (
+    Trigger,
+    TriggerExists,
+    ValidRegex,
+    MultiResponse,
+    ValidEmoji,
+    ChannelUserRole,
+)
 from .triggerhandler import TriggerHandler
 
-
-try:
-    from PIL import Image
-
-    ALLOW_RESIZE = True
-except ImportError:
-    ALLOW_RESIZE = False
 
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
@@ -35,7 +34,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.4.4"
+    __version__ = "2.4.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -94,21 +93,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Set which events to record in the modlog.
         """
         pass
-
-    @retrigger.command(hidden=True)
-    @checks.mod_or_permissions(administrator=True)
-    async def allowmultiple(self, ctx: commands.Context):
-        """
-            Toggle multiple triggers to respond at once
-        """
-        if await self.config.guild(ctx.guild).allow_multiple():
-            await self.config.guild(ctx.guild).allow_multiple.set(False)
-            msg = _("Multiple responses disabled, " "only the first trigger will happen.")
-            # await ctx.send(msg)
-        else:
-            await self.config.guild(ctx.guild).allow_multiple.set(True)
-            msg = _("Multiple responses enabled, " "all triggers will occur.")
-            # await ctx.send(msg)
 
     @_modlog.command(name="settings", aliases=["list"])
     async def modlog_settings(self, ctx: commands.Context):
@@ -216,7 +200,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Use `none` or `clear` to not show any modlogs
             User `default` to use the built in modlog channel
         """
-        if type(channel) is str:
+        if isinstance(channel, discord.TextChannel):
+            await self.config.guild(ctx.guild).modlog.set(channel.id)
+        else:
             if channel.lower() in ["none", "clear"]:
                 channel = None
             elif channel.lower() in ["default"]:
@@ -225,8 +211,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 await ctx.send(_('Channel "{channel}" not found.').format(channel=channel))
                 return
             await self.config.guild(ctx.guild).modlog.set(channel)
-        else:
-            await self.config.guild(ctx.guild).modlog.set(channel.id)
         await ctx.send(_("Modlog set to {channel}").format(channel=channel))
 
     @retrigger.command()
@@ -501,8 +485,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
-            image_url = ctx.message.attachments[0].url
-            filename = await self.save_image_location(image_url, guild)
+            attachment_url = ctx.message.attachments[0].url
+            filename = await self.save_image_location(attachment_url, guild)
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
         else:
@@ -578,8 +562,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
-            image_url = ctx.message.attachments[0].url
-            filename = await self.save_image_location(image_url, guild)
+            attachment_url = ctx.message.attachments[0].url
+            filename = await self.save_image_location(attachment_url, guild)
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
         else:
@@ -598,7 +582,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    @commands.check(lambda ctx: ALLOW_RESIZE)
+    @commands.check(lambda ctx: TriggerHandler.ALLOW_RESIZE)
     async def resize(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, image_url: str = None
     ):
@@ -620,8 +604,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         if ctx.message.attachments != []:
-            image_url = ctx.message.attachments[0].url
-            filename = await self.save_image_location(image_url, guild)
+            attachment_url = ctx.message.attachments[0].url
+            filename = await self.save_image_location(attachment_url, guild)
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
         else:
@@ -850,10 +834,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 return await ctx.send(
                     _("I can't assign roles higher than you are able to assign.")
                 )
-        roles = [r.id for r in roles]
+        role_ids = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["add_role"], author, 0, None, roles, [], [], {}, [])
+        new_trigger = Trigger(name, regex, ["add_role"], author, 0, None, role_ids, [], [], {}, [])
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)
@@ -885,10 +869,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 return await ctx.send(
                     _("I can't remove roles higher than you are able to remove.")
                 )
-        roles = [r.id for r in roles]
+        role_ids = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["remove_role"], author, 0, None, roles, [], [], {}, [])
+        new_trigger = Trigger(
+            name, regex, ["remove_role"], author, 0, None, role_ids, [], [], {}, []
+        )
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
         await self.config.guild(guild).trigger_list.set(trigger_list)

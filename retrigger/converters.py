@@ -2,92 +2,17 @@ import discord
 import logging
 import asyncio
 import re
+from typing import List, Union, Tuple
 
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core import commands
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
 
 log = logging.getLogger("red.ReTrigger")
 _ = Translator("ReTrigger", __file__)
-
-
-class Trigger:
-    """
-        Trigger class to handle trigger objects
-    """
-
-    def __init__(
-        self,
-        name: str,
-        regex: str,
-        response_type: list,
-        author: int,
-        count: int,
-        image: str,
-        text: str,
-        whitelist: list,
-        blacklist: list,
-        cooldown: dict,
-        multi_payload: list,
-    ):
-        self.name = name
-        self.regex = re.compile(regex)
-        self.response_type = response_type
-        self.author = author
-        self.count = count
-        self.image = image
-        self.text = text
-        self.whitelist = whitelist
-        self.blacklist = blacklist
-        self.cooldown = cooldown
-        self.multi_payload = multi_payload
-
-    async def to_json(self) -> dict:
-        return {
-            "name": self.name,
-            "regex": self.regex.pattern,
-            "response_type": self.response_type,
-            "author": self.author,
-            "count": self.count,
-            "image": self.image,
-            "text": self.text,
-            "whitelist": self.whitelist,
-            "blacklist": self.blacklist,
-            "cooldown": self.cooldown,
-            "multi_payload": self.multi_payload,
-        }
-
-    @classmethod
-    async def from_json(cls, data: dict):
-        if "cooldown" not in data:
-            cooldown = {}
-        else:
-            cooldown = data["cooldown"]
-        if type(data["response_type"]) is str:
-            response_type = [data["response_type"]]
-        else:
-            response_type = data["response_type"]
-        if "multi_payload" not in data:
-            is_multi = False
-            multi_payload = []
-        else:
-            multi_payload = data["multi_payload"]
-        return cls(
-            data["name"],
-            data["regex"],
-            response_type,
-            data["author"],
-            data["count"],
-            data["image"],
-            data["text"],
-            data["whitelist"],
-            data["blacklist"],
-            cooldown,
-            multi_payload,
-        )
 
 
 class TriggerExists(Converter):
@@ -114,12 +39,11 @@ class ValidRegex(Converter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str):
-        bot = ctx.bot
         try:
             re.compile(argument)
             result = argument
         except Exception as e:
-            log.error("Retrigger conversion error", exc_info=True)
+            log.error("Retrigger conversion error")
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=argument, e=e)
             raise BadArgument(err_msg)
         return result
@@ -132,7 +56,6 @@ class MultiResponse(Converter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str):
-        bot = ctx.bot
         result = []
         match = re.split(r"(;)", argument)
         valid_reactions = [
@@ -195,8 +118,8 @@ class MultiResponse(Converter):
                     role = await RoleConverter().convert(ctx, r)
                     if role < ctx.guild.me.top_role and role < ctx.author.top_role:
                         good_roles.append(role.id)
-                except BadArgument as e:
-                    log.error("Role `{}` not found.".fomrat(r))
+                except BadArgument:
+                    log.error("Role `{}` not found.".format(r))
             result = [result[0]] + good_roles
         if result[0] == "react":
             good_emojis = []
@@ -279,7 +202,6 @@ class ChannelUserRole(IDConverter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str):
-        bot = ctx.bot
         guild = ctx.guild
         result = None
         id_match = self._get_id_match(argument)
@@ -314,3 +236,78 @@ class ChannelUserRole(IDConverter):
             msg = _("{arg} is not a valid channel, user or role.").format(arg=argument)
             raise BadArgument(msg)
         return result
+
+
+class Trigger:
+    """
+        Trigger class to handle trigger objects
+    """
+
+    def __init__(
+        self,
+        name: str,
+        regex: str,
+        response_type: list,
+        author: int,
+        count: int,
+        image: Union[List[Union[int, str]], str, None],
+        text: Union[List[Union[int, str]], str, None],
+        whitelist: list,
+        blacklist: list,
+        cooldown: dict,
+        multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
+    ):
+        self.name = name
+        self.regex = re.compile(regex)
+        self.response_type = response_type
+        self.author = author
+        self.count = count
+        self.image = image
+        self.text = text
+        self.whitelist = whitelist
+        self.blacklist = blacklist
+        self.cooldown = cooldown
+        self.multi_payload = multi_payload
+
+    async def to_json(self) -> dict:
+        return {
+            "name": self.name,
+            "regex": self.regex.pattern,
+            "response_type": self.response_type,
+            "author": self.author,
+            "count": self.count,
+            "image": self.image,
+            "text": self.text,
+            "whitelist": self.whitelist,
+            "blacklist": self.blacklist,
+            "cooldown": self.cooldown,
+            "multi_payload": self.multi_payload,
+        }
+
+    @classmethod
+    async def from_json(cls, data: dict):
+        if "cooldown" not in data:
+            cooldown: dict = {}
+        else:
+            cooldown = data["cooldown"]
+        if type(data["response_type"]) is str:
+            response_type = [data["response_type"]]
+        else:
+            response_type = data["response_type"]
+        if "multi_payload" not in data:
+            multi_payload: List[MultiResponse] = []
+        else:
+            multi_payload = data["multi_payload"]
+        return cls(
+            data["name"],
+            data["regex"],
+            response_type,
+            data["author"],
+            data["count"],
+            data["image"],
+            data["text"],
+            data["whitelist"],
+            data["blacklist"],
+            cooldown,
+            multi_payload,
+        )
