@@ -289,7 +289,7 @@ class TriggerHandler:
                 else:
                     emoji_response = trigger.text
                 server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
-                unicode_emojis = "".join(e for e in response if len(e) < 5)
+                unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
                 info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
             if "add_role" in trigger.response_type:
                 if trigger.multi_payload:
