@@ -51,6 +51,7 @@ class CrabRave(commands.Cog):
         return True
 
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.guild)
     @checks.bot_has_permissions(attach_files=True)
     async def crab(self, ctx, *, text: str):
         """Make crab rave videos
