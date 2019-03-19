@@ -43,6 +43,7 @@ insults = [
     _("What is the weighted center between Planet X and Planet Y? Oh it's YOU!"),
     _(":eggplant: :eggplant: :eggplant:"),
     _("Your birth certificate is an apology letter from the condom factory."),
+    _("I wasn't born with enough middle fingers to let you know how I feel about you."),
     _("You must have been born on a highway because that's where most accidents happen."),
     _("I'm jealous of all the people that haven't met you."),
     _("I bet your brain feels as good as new, seeing that you never use it."),
