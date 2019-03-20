@@ -11,10 +11,17 @@ from redbot.core.data_manager import cog_data_path
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 
 
-CRAB_LINK = "https://github.com/DankMemer/meme-server/raw/9ce10a61e133f5b87b24d425fc671c9295affa6a/assets/crab/template.mp4"
+CRAB_LINK = (
+    "https://github.com/DankMemer/meme-server"
+    "/raw/9ce10a61e133f5b87b24d425fc671c9295affa6a/assets/crab/template.mp4"
+)
 # Use a historical link incase something changes
-FONT_FILE = "https://github.com/matomo-org/travis-scripts/raw/65cace9ce09dca617832cbac2bbae3dacdffa264/fonts/Verdana.ttf"
+FONT_FILE = (
+    "https://github.com/matomo-org/travis-scripts/"
+    "raw/65cace9ce09dca617832cbac2bbae3dacdffa264/fonts/Verdana.ttf"
+)
 log = logging.getLogger("red.crabrave")
+
 
 class CrabRave(commands.Cog):
     """
@@ -32,7 +39,7 @@ class CrabRave(commands.Cog):
                         data = await resp.read()
                 with open(cog_data_path(self) / "template.mp4", "wb") as save_file:
                     save_file.write(data)
-            except Exception as e:
+            except Exception:
                 log.error("Error downloading crabrave video template", exc_info=True)
                 return False
         return True
@@ -45,7 +52,7 @@ class CrabRave(commands.Cog):
                         data = await resp.read()
                 with open(cog_data_path(self) / "Verdana.ttf", "wb") as save_file:
                     save_file.write(data)
-            except Exception as e:
+            except Exception:
                 log.error("Error downloading crabrave video template", exc_info=True)
                 return False
         return True
@@ -55,7 +62,7 @@ class CrabRave(commands.Cog):
     @checks.bot_has_permissions(attach_files=True)
     async def crab(self, ctx, *, text: str):
         """Make crab rave videos
-        
+
             There must be exactly 1 `,` to split the message
         """
         t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}"):]
@@ -68,11 +75,11 @@ class CrabRave(commands.Cog):
             return await ctx.send("You must submit exactly two strings split by comma")
         if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
             return await ctx.send("Cannot render empty text")
-        task = functools.partial(self.make_crab, t=t, u_id=ctx.author.id)
-        task = self.bot.loop.run_in_executor(None, task)
+        fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.author.id)
+        task = self.bot.loop.run_in_executor(None, fake_task)
         async with ctx.typing():
             try:
-                video = await asyncio.wait_for(task, timeout=300)
+                await asyncio.wait_for(task, timeout=300)
             except asyncio.TimeoutError:
                 log.error("Error generating crabrave video", exc_info=True)
                 return
@@ -80,17 +87,17 @@ class CrabRave(commands.Cog):
         file = discord.File(str(fp), filename="crabrave.mp4")
         try:
             await ctx.send(files=[file])
-        except Exception as e:
+        except Exception:
             log.error("Error sending crabrave video", exc_info=True)
             pass
         try:
             os.remove(fp)
-        except Exception as e:
+        except Exception:
             log.error("Error deleting crabrave video", exc_info=True)
 
     def make_crab(self, t, u_id):
         """Non blocking crab rave video generation from DankMemer bot
-        
+
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
         """
         fp = str(cog_data_path(self) / f"Verdana.ttf")
