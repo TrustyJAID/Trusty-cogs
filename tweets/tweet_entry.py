@@ -1,8 +1,3 @@
-from typing import Tuple
-from redbot.core import commands
-
-import discord
-
 
 class TweetEntry:
     def __init__(

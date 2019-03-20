@@ -77,53 +77,45 @@ class Tweets(commands.Cog):
 
     async def start_stream(self):
         await self.bot.wait_until_ready()
+        api = None
         while self is self.bot.get_cog("Tweets"):
             if not await self.config.api.consumer_key():
                 # Don't run the loop until tokens are set
                 await asyncio.sleep(300)
                 continue
             tweet_list = [str(x["twitter_id"]) for x in await self.config.accounts()]
-            try:
-                api = await self.authenticate()
-            except:
-                # Just continue on our own until this works
-                # No sense trying to restart the stream if we can't authenticate
+            if tweet_list == []:
                 await asyncio.sleep(300)
                 continue
-            if self.mystream is None:
-                if tweet_list != []:
-                    try:
-                        stream_start = TweetListener(api, self.bot)
-                        self.mystream = tw.Stream(
-                            api.auth, stream_start, chunk_size=1024, timeout=900.0
-                        )
-                        task = functools.partial(
-                            self.mystream.filter, follow=tweet_list, is_async=True
-                        )
-                        task = self.bot.loop.run_in_executor(None, task)
-                        try:
-                            await asyncio.wait_for(task, timeout=60)
-                        except asyncio.TimeoutError:
-                            pass
-                    except Exception as e:
-                        log.error("Error starting stream", exc_info=True)
-            if not getattr(self.mystream, "running", False):
+            if not api:
                 try:
-                    stream_start = TweetListener(api, self.bot)
-                    self.mystream = tw.Stream(
-                        api.auth, stream_start, chunk_size=1024, timeout=900.0
-                    )
-                    task = functools.partial(
-                        self.mystream.filter, follow=tweet_list, is_async=True
-                    )
-                    task = self.bot.loop.run_in_executor(None, task)
-                    try:
-                        await asyncio.wait_for(task, timeout=60)
-                    except asyncio.TimeoutError:
-                        pass
-                except Exception as e:
-                    log.error("Error starting stream", exc_info=True)
+                    api = await self.authenticate()
+                except Exception:
+                    # Just continue on our own until this works
+                    # No sense trying to restart the stream if we can't authenticate
+                    await asyncio.sleep(300)
+                    continue
+            if not getattr(self.mystream, "running", False):
+                await self._start_stream(tweet_list, api)
             await asyncio.sleep(300)
+
+    async def _start_stream(self, tweet_list, api):
+        try:
+            stream_start = TweetListener(api, self.bot)
+            self.mystream = tw.Stream(
+                api.auth, stream_start, chunk_size=1024, timeout=900.0
+            )
+            fake_task = functools.partial(
+                self.mystream.filter, follow=tweet_list, is_async=True
+            )
+            task = self.bot.loop.run_in_executor(None, fake_task)
+            try:
+                await asyncio.wait_for(task, timeout=5)
+            except asyncio.TimeoutError:
+                log.info("Timeout opening tweet stream.")
+                pass
+        except Exception:
+            log.error("Error starting stream", exc_info=True)
 
     async def authenticate(self):
         """Authenticate with Twitter's API"""
@@ -159,7 +151,7 @@ class Tweets(commands.Cog):
             await channel.send(str(error) + help_msg)
             if "420" in error:
                 msg = _(
-                    "You're being rate limited. Maybe you " "should unload the cog for a while..."
+                    "You're being rate limited. Maybe you should unload the cog for a while..."
                 )
                 log.critical(msg)
                 await channel.send(msg)
@@ -167,7 +159,6 @@ class Tweets(commands.Cog):
 
     async def build_tweet_embed(self, status):
         username = status.user.screen_name
-        user_id = status.user.id
         post_url = "https://twitter.com/{}/status/{}".format(status.user.screen_name, status.id)
         em = discord.Embed(
             colour=discord.Colour(value=int(status.user.profile_link_color, 16)),
@@ -212,58 +203,49 @@ class Tweets(commands.Cog):
         username = status.user.screen_name
         user_id = status.user.id
         account = None
-        post_url = f"https://twitter.com/{status.user.screen_name}/status/{status.id}"
+
         for accounts in await self.get_followed_accounts():
             if accounts.twitter_id == user_id:
                 account = accounts
         if not account:
             return
-        try:
-            if status.in_reply_to_screen_name is not None and not account.replies:
-                return
-            em = await self.build_tweet_embed(status)
-            channel_list = account.channel
-            for channel in channel_list:
-                try:
-                    channel_send = self.bot.get_channel(int(channel))
-                    if channel_send is None:
-                        await self.del_account(channel, user_id, username)
-                    if channel_send.permissions_for(channel_send.guild.me).embed_links:
-                        await channel_send.send(post_url, embed=em)
-                    elif channel_send.permissions_for(channel_send.guild.me).manage_webhooks:
-                        webhook = None
-                        for hook in await channel_send.webhooks():
-                            if hook.name == channel_send.guild.me.name:
-                                webhook = hook
-                        if webhook is None:
-                            webhook = await channel_send.create_webhook(
-                                name=channel_send.guild.me.name
-                            )
-                        avatar = status.user.profile_image_url
-                        await webhook.send(
-                            post_url, username=username, avatar_url=avatar, embed=em
-                        )
-                    else:
-                        await channel_send.send(post_url)
-                except Exception as e:
-                    msg = "{0} from <#{1}>({1}): {2}".format(username, channel, e)
-                    error_channel = self.bot.get_channel(await self.config.error_channel())
-                    if "FORBIDDEN" in str(e) or "403" in str(e):
-                        await error_channel.send("Removing " + msg)
-                        await self.del_account(channel, user_id, username)
-                    elif "NoneType" in str(e):
-                        await error_channel.send("Removing " + msg)
-                        await self.del_account(channel, user_id, username)
-                    else:
-                        await error_channel.send(msg)
-
-        except Exception as e:
-            msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
-            log.error(msg, exc_info=True)
-            if await self.config.error_channel() is not None:
-                error_channel = self.bot.get_channel(await self.config.error_channel())
-                await error_channel.send(str(e) + ": Username" + username)
+        tasks = []
+        if status.in_reply_to_screen_name is not None and not account.replies:
             return
+        em = await self.build_tweet_embed(status)
+        channel_list = account.channel
+        for channel in channel_list:
+            channel_send = self.bot.get_channel(int(channel))
+            if channel_send is None:
+                await self.del_account(channel, user_id, username)
+                continue
+            tasks.append(self.post_tweet_status(channel_send, em, status))
+        await asyncio.gather(*tasks)
+
+    async def post_tweet_status(self, channel_send, em, status):
+        username = status.user.screen_name
+        post_url = f"https://twitter.com/{status.user.screen_name}/status/{status.id}"
+        try:
+            if channel_send.permissions_for(channel_send.guild.me).embed_links:
+                await channel_send.send(post_url, embed=em)
+            elif channel_send.permissions_for(channel_send.guild.me).manage_webhooks:
+                webhook = None
+                for hook in await channel_send.webhooks():
+                    if hook.name == channel_send.guild.me.name:
+                        webhook = hook
+                if webhook is None:
+                    webhook = await channel_send.create_webhook(
+                        name=channel_send.guild.me.name
+                    )
+                avatar = status.user.profile_image_url
+                await webhook.send(
+                    post_url, username=username, avatar_url=avatar, embed=em
+                )
+            else:
+                await channel_send.send(post_url)
+        except Exception:
+            msg = "{0} from <#{1}>({1}): {2}".format(post_url, channel_send.id)
+            log.error(msg, exc_info=True)
 
     async def tweet_menu(
         self, ctx, post_list: list, message: discord.Message = None, page=0, timeout: int = 30
@@ -343,12 +325,12 @@ class Tweets(commands.Cog):
             if ctx.message.attachments != []:
                 temp = BytesIO()
                 filename = ctx.message.attachments[0].filename
-                file_send = await ctx.message.attachments[0].save(temp)
+                await ctx.message.attachments[0].save(temp)
                 api.update_with_media(filename, status=message, file=temp)
             else:
                 api.update_status(message)
-        except Exception as e:
-            log.error("Error sending tweet {}".format(e), exc_info=True)
+        except Exception:
+            log.error("Error sending tweet", exc_info=True)
             await ctx.send(_("An error has occured, check the console for more details."))
             return
         await ctx.send(_("Tweet sent!"))
@@ -478,9 +460,11 @@ class Tweets(commands.Cog):
     async def _error(self, ctx: commands.context, channel: discord.TextChannel = None):
         """Set an error channel for tweet stream error updates"""
         if not channel:
-            channel = ctx.channel
-        await self.config.error_channel.set(channel.id)
-        await ctx.send("Twitter error channel set to {}".format(channel.mention))
+            save_channel = ctx.channel.id
+        else:
+            save_channel = channel.id
+        await self.config.error_channel.set(save_channel)
+        await ctx.send("Twitter error channel set to {}".format(save_channel))
 
     @_autotweet.command(name="cleanup")
     @checks.is_owner()
@@ -558,11 +542,9 @@ class Tweets(commands.Cog):
         try:
             user_id = None
             screen_name = None
-            last_id = None
             for status in tw.Cursor(api.user_timeline, id=username).items(1):
                 user_id = status.user.id
                 screen_name = status.user.screen_name
-                last_id = status.id
         except tw.TweepError as e:
             msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
             log.error(msg, exc_info=True)
@@ -629,7 +611,7 @@ class Tweets(commands.Cog):
 
     async def add_account(self, channel, user_id, screen_name):
         """
-            Adds a twitter account to the specified channel. 
+            Adds a twitter account to the specified channel.
             Returns False if it is already in the channel.
         """
         followed_accounts = await self.config.accounts()
@@ -668,7 +650,7 @@ class Tweets(commands.Cog):
         api = await self.authenticate()
         try:
             cursor = -1
-            list_members = []
+            list_members: list = []
             member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
             while len(list_members) < member_count:
                 member_list = api.list_members(
@@ -678,7 +660,7 @@ class Tweets(commands.Cog):
                     list_members.append(member)
                 cursor = member_list[1][-1]
 
-        except Exception as e:
+        except Exception:
             log.error("Error adding list", exc_info=True)
             msg = _("That `owner` and `list_name` " "don't appear to be available")
             await ctx.send(msg)
@@ -732,7 +714,7 @@ class Tweets(commands.Cog):
         channel: discord.TextChannel = None,
     ):
         """
-            Remove an entire twitter list from a specified channel. 
+            Remove an entire twitter list from a specified channel.
 
             The list must be public or the bot owner must own it.
             `owner` is the owner of the list's @handle
@@ -742,7 +724,7 @@ class Tweets(commands.Cog):
         api = await self.authenticate()
         try:
             cursor = -1
-            list_members = []
+            list_members: list = []
             member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
             while len(list_members) < member_count:
                 member_list = api.list_members(
@@ -751,7 +733,7 @@ class Tweets(commands.Cog):
                 for member in member_list[0]:
                     list_members.append(member)
                 cursor = member_list[1][-1]
-        except:
+        except Exception:
             msg = _("That `owner` and `list_name` " "don't appear to be available")
             await ctx.send(msg)
             return
