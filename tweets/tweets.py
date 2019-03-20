@@ -7,7 +7,7 @@ from redbot.core.utils.chat_formatting import pagify
 from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
 import tweepy as tw
-from typing import Generator, Tuple, Any
+from typing import Tuple, Any
 from datetime import datetime
 import functools
 
@@ -204,9 +204,10 @@ class Tweets(commands.Cog):
         user_id = status.user.id
         account = None
 
-        for accounts in await self.get_followed_accounts():
-            if accounts.twitter_id == user_id:
-                account = accounts
+        for accounts in await self.config.accounts():
+            if accounts["twitter_id"] == user_id:
+                account = TweetEntry.from_json(accounts)
+                break
         if not account:
             return
         tasks = []
@@ -516,9 +517,6 @@ class Tweets(commands.Cog):
                 await ctx.send(_("Now posting replies from ") + username)
             else:
                 await ctx.send(_("No longer posting replies from") + username)
-
-    async def get_followed_accounts(self) -> Generator[TweetEntry, None, None]:
-        return (TweetEntry.from_json(d) for d in (await self.config.accounts()))
 
     async def is_followed_account(self, twitter_id) -> Tuple[bool, Any]:
         followed_accounts = await self.config.accounts()
