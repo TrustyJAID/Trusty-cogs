@@ -159,7 +159,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.send(msg + verb)
 
     @_edit.command(name="bots")
-    async def _edit_toggle(self, ctx):
+    async def _edit_toggle_bots(self, ctx):
         """
             Toggle message edit notifications for bot users
         """
