@@ -8,7 +8,7 @@
         0
     ],
     "description" : "Hardcoded custom commands for TrustyBot",
-    "disabled" : true,
+    "disabled" : false,
     "hidden" : true,
     "install_msg" : "You probably don't want to use this cog.",
     "min_python_version" : [
