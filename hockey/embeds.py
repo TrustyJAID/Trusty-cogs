@@ -2,8 +2,6 @@ import discord
 import aiohttp
 from datetime import datetime
 from .constants import BASE_URL, TEAMS, HEADSHOT_URL
-from .helper import *
-from .standings import Standings
 from redbot.core.i18n import Translator
 import logging
 

@@ -8,18 +8,17 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import quote
 from redbot.core import commands, checks, Config
-from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from .teamentry import TeamEntry
 from .menu import hockey_menu
-from .embeds import *
-from .helper import *
-from .errors import *
+from .embeds import make_rules_embed
+from .helper import HockeyStandings, HockeyTeams, get_season
+from .errors import UserHasVotedError, VotingHasEndedError, NotAValidTeamError, InvalidFileError
 from .game import Game
 from .pickems import Pickems
 from .standings import Standings
 from .gamedaychannels import GameDayChannels
-from .constants import *
+from .constants import BASE_URL, CONFIG_ID, TEAMS, HEADSHOT_URL
 
 try:
     from .oilers import Oilers
@@ -33,7 +32,7 @@ _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.Hockey")
 
-__version__ = "2.3.3"
+__version__ = "2.4.0"
 __author__ = "TrustyJAID"
 
 
@@ -80,7 +79,7 @@ class Hockey(commands.Cog):
 
     async def game_check_loop(self):
         """
-            This loop grabs the current games for the day 
+            This loop grabs the current games for the day
             then passes off to other functions as necessary
         """
         await self.bot.wait_until_ready()
@@ -111,7 +110,7 @@ class Hockey(commands.Cog):
                         try:
                             async with self.session.get(BASE_URL + link) as resp:
                                 data = await resp.json()
-                        except Exception as e:
+                        except Exception:
                             log.error(_("Error grabbing game data: "), exc_info=True)
                             continue
                     else:
@@ -122,7 +121,7 @@ class Hockey(commands.Cog):
                     try:
                         await self.check_new_day()
                         await game.check_game_state(self.bot)
-                    except Exception as e:
+                    except Exception:
                         log.error("Error checking game state: ", exc_info=True)
 
                     log.debug(
@@ -135,7 +134,7 @@ class Hockey(commands.Cog):
                     if game.game_state == "Final" and game.first_star is not None:
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
-                        except Exception as e:
+                        except Exception:
                             log.error(_("Pickems Set Winner error: "), exc_info=True)
                         to_remove.append(link)
 
@@ -145,7 +144,7 @@ class Hockey(commands.Cog):
             log.debug(_("Games Done Playing"))
             try:
                 await Pickems.tally_leaderboard(self.bot)
-            except Exception as e:
+            except Exception:
                 log.error(_("Error tallying leaderboard:"), exc_info=True)
                 pass
             if games_playing:
@@ -170,11 +169,11 @@ class Hockey(commands.Cog):
             if datetime.now().weekday() == 6:
                 try:
                     await Pickems.reset_weekly(self.bot)
-                except Exception as e:
+                except Exception:
                     log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
             try:
                 await Standings.post_automatic_standings(self.bot)
-            except Exception as e:
+            except Exception:
                 log.error("Error updating standings", exc_info=True)
 
             log.debug(_("Checking GDC"))
@@ -247,7 +246,7 @@ class Hockey(commands.Cog):
                 data = yaml.safe_load(await infile.read())
         except yaml.error.YAMLError as exc:
             raise InvalidFileError("Error Parsing the YAML") from exc
-        new_dict = {}
+        # new_dict = {}
         for team in TEAMS:
             TEAMS[team]["emoji"] = data[team][0] if data[team][0] is not None else data["Other"][0]
         team_data = json.dumps(TEAMS, indent=4, sort_keys=True, separators=(",", " : "))
@@ -266,7 +265,10 @@ class Hockey(commands.Cog):
         """
         msg = None
         while msg is None:
-            check = lambda m: m.author == ctx.message.author and m.attachments != []
+
+            def check(m):
+                return m.author == ctx.message.author and m.attachments != []
+
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
@@ -466,7 +468,7 @@ class Hockey(commands.Cog):
         """
         guild = ctx.message.guild
 
-        cur_setting = await self.config.guild(guild).category()
+        # cur_setting = await self.config.guild(guild).category()
 
         msg = _("Game day channels will be created in ")
         await self.config.guild(guild).category.set(category.id)
@@ -500,7 +502,7 @@ class Hockey(commands.Cog):
     ):
         """
             Setup game day channels for a single team or all teams
-            
+
             Required parameters:
             `team` must use quotes if a space is in the name will search for partial team name
             Optional Parameters:
@@ -598,7 +600,7 @@ class Hockey(commands.Cog):
             "western",
             "all",
         ]
-        division = ["metropolitan", "atlantic", "pacific", "central"]
+        # division = ["metropolitan", "atlantic", "pacific", "central"]
 
         if standings_type.lower() not in standings_list:
             await ctx.send(
@@ -681,7 +683,7 @@ class Hockey(commands.Cog):
             await ctx.send(_("All goal updates will not be posted in ") + channel.mention)
             return
         if team is not None:
-            guild = ctx.message.guild
+            # guild = ctx.message.guild
             if team in cur_teams:
                 cur_teams.remove(team)
                 if cur_teams == []:
@@ -723,20 +725,21 @@ class Hockey(commands.Cog):
         await ctx.send("https://hockeyhub.github.io/?search=" + search)
 
     @hockey_commands.command(name="role")
+    @checks.bot_has_permissions(manage_roles=True)
     async def team_role(self, ctx, *, team: HockeyTeams):
         """Set your role to a team role"""
         guild = ctx.message.guild
-        if not guild.me.guild_permissions.manage_roles:
-            return
         try:
             role = [
                 role
                 for role in guild.roles
                 if (team.lower() in role.name.lower() and "GOAL" not in role.name)
             ]
+            if role[0] >= guild.me.top_role:
+                return
             await ctx.author.add_roles(role[0])
             await ctx.send(role[0].name + _("role applied."))
-        except Exception as e:
+        except Exception:
             log.error("error adding team role", exc_info=True)
             await ctx.send(team + _(" is not an available role!"))
 
@@ -754,6 +757,8 @@ class Hockey(commands.Cog):
                     team_roles.append(role)
             if team_roles != []:
                 for role in team_roles:
+                    if role[0] >= guild.me.top_role:
+                        continue
                     await ctx.message.author.add_roles(role)
                 role_list = ", ".join(r.name for r in team_roles)
                 await ctx.message.channel.send(f"{role_list} role applied.")
@@ -769,7 +774,7 @@ class Hockey(commands.Cog):
                 ]
                 await ctx.message.author.add_roles(role[0])
                 await ctx.message.channel.send(role[0].name + _(" role applied."))
-            except Exception as e:
+            except Exception:
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
@@ -778,7 +783,7 @@ class Hockey(commands.Cog):
             Displays current standings
 
             If a search is provided you can see a teams complete stats
-            by searching for team or get all standings at once 
+            by searching for team or get all standings at once
             separated by division
         """
         if search is None:
@@ -798,7 +803,7 @@ class Hockey(commands.Cog):
 
             If team is provided it will grab that teams schedule
         """
-        games_list = []
+        games_list: list = []
         page_num = 0
         today = datetime.now()
         start_date = datetime.strptime(f"{get_season()[0]}-9-1", "%Y-%m-%d")
@@ -872,18 +877,20 @@ class Hockey(commands.Cog):
             Generates a pickems page for voting on a specified day must be "DD-MM-YYYY"
         """
         if date is None:
-            date = datetime.now()
+            new_date = datetime.now()
         else:
-            date = datetime.strptime(date, "%d-%m-%Y")
+            new_date = datetime.strptime(date, "%d-%m-%Y")
         msg = _(
             "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
             "  Vote for who you think will win!  You get one point for each correct prediction."
-            "  We will be tracking points over the course of the season and will be rewarding weekly,"
+            "  We will be tracking points over the course "
+            "of the season and will be rewarding weekly,"
             " worst and full-season winners!**\n\n"
             "- Click the reaction for the team you think will win the day's match-up.\n"
-            "- Anyone who votes for both teams will have their vote removed and will receive no points!\n\n\n\n"
+            "- Anyone who votes for both teams will have their "
+            "vote removed and will receive no points!\n\n\n\n"
         )
-        games_list = await Game.get_games(None, date, date)
+        games_list = await Game.get_games(None, new_date, new_date)
         await ctx.send(msg)
         for game in games_list:
             new_msg = await ctx.send(
@@ -897,7 +904,7 @@ class Hockey(commands.Cog):
                 try:
                     await new_msg.add_reaction(game.away_emoji[2:-1])
                     await new_msg.add_reaction(game.home_emoji[2:-1])
-                except Exception as e:
+                except Exception:
                     log.debug("Error adding reactions")
 
     async def post_leaderboard(self, ctx, leaderboard_type):
@@ -945,7 +952,7 @@ class Hockey(commands.Cog):
                     f"#{count}. {member_mention}: {losses}/{total} incorrect ({percent:.4}%)\n"
                 )
             count += 1
-        leaderboard_list = [msg_list[i : i + 10] for i in range(0, len(msg_list), 10)]
+        leaderboard_list = [msg_list[i: i + 10] for i in range(0, len(msg_list), 10)]
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
@@ -1002,7 +1009,7 @@ class Hockey(commands.Cog):
         """
             Get team specific discord links
 
-            choosing all will create a nicely formatted list of 
+            choosing all will create a nicely formatted list of
             all current NHL team discord server links
         """
         if team not in ["all"]:
@@ -1024,12 +1031,18 @@ class Hockey(commands.Cog):
             msg1 = _(
                 "__**Hockey Discord Master List**__\n```fix\n"
                 "- Do not join other discords to troll.\n- "
-                "Respect their rules & their members (Yes even the leafs & habs unfortunately).\n- "
-                "We don't control the servers below. If you get banned we can not get you unbanned.\n- "
-                "Don't be an asshole because then we all look like assholes. They won't see it as one asshole "
-                "fan they will see it as a toxic fanbase.\n- Salt levels may vary. Your team is the best "
-                "here but don't go on another discord and preach it to an angry mob after we just won.\n- "
-                "Not following the above rules will result in appropriate punishments ranging from a warning"
+                "Respect their rules & their members "
+                "(Yes even the leafs & habs unfortunately).\n- "
+                "We don't control the servers below. "
+                "If you get banned we can not get you unbanned.\n- "
+                "Don't be an asshole because then we all look like assholes. "
+                "They won't see it as one asshole "
+                "fan they will see it as a toxic fanbase.\n- "
+                "Salt levels may vary. Your team is the best "
+                "here but don't go on another discord and preach "
+                "it to an angry mob after we just won.\n- "
+                "Not following the above rules will result in "
+                "appropriate punishments ranging from a warning"
                 "to a ban. ```\n\nhttps://discord.gg/reddithockey"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
@@ -1065,8 +1078,8 @@ class Hockey(commands.Cog):
         """
             Testing function with testgame.json
         """
-        to_remove = []
-        games_playing = True
+        # to_remove = []
+        # games_playing = True
         # log.debug(link)
         with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
             data = json.loads(infile.read())
@@ -1131,7 +1144,7 @@ class Hockey(commands.Cog):
         """
         try:
             await Standings.post_automatic_standings(self.bot)
-        except Exception as e:
+        except Exception:
             log.debug("error testing standings page", exc_info=True)
 
     @hockeyset_commands.command()
@@ -1167,9 +1180,10 @@ class Hockey(commands.Cog):
         """
             Set custom emojis for the bot to use
 
-            Requires you to upload a .yaml file with 
+            Requires you to upload a .yaml file with
             emojis that the bot can see
-            an example may be found [here](https://github.com/TrustyJAID/Trusty-cogs/blob/V3/hockey/emoji.yaml)
+            an example may be found
+            [here](https://github.com/TrustyJAID/Trusty-cogs/blob/V3/hockey/emoji.yaml)
             if no emoji is provided for a team the Other
             slot will be filled instead
             It's recommended to have an emoji for every team
@@ -1227,7 +1241,7 @@ class Hockey(commands.Cog):
     @checks.is_owner()
     async def cleargdc(self, ctx):
         """
-            Checks for manually deleted channels from the GDC channel list 
+            Checks for manually deleted channels from the GDC channel list
             and removes them
         """
         guild = ctx.message.guild
@@ -1264,7 +1278,7 @@ class Hockey(commands.Cog):
         """
             Removes a server that no longer exists on the bot
         """
-        all_guilds = await self.config.all_guilds()
+        # all_guilds = await self.config.all_guilds()
         for guilds in await self.config.all_guilds():
             guild = self.bot.get_guild(guilds)
             if guild is None:
@@ -1298,9 +1312,10 @@ class Hockey(commands.Cog):
             This is hard coded at the moment with no plans to make work generally
             this will be safely ignored.
         """
-        if not LIGHTS_SET:
+        if LIGHTS_SET:
             hue = Oilers(self.bot)
-            await hue.goal_lights()
+            hue.goal_lights()
+            print("done")
         else:
             return
 

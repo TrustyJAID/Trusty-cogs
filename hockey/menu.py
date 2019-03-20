@@ -1,8 +1,7 @@
 import asyncio
 import discord
-import aiohttp
 from redbot.core.commands import Context
-from .embeds import *
+from .embeds import roster_embed, make_leaderboard_embed
 from .standings import Standings
 from .game import Game
 from redbot.core.i18n import Translator

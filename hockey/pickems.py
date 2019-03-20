@@ -1,7 +1,7 @@
-from .errors import *
+from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
 from datetime import datetime
 from .constants import TEAMS
-from .helper import *
+from .helper import hockey_config
 from redbot.core.i18n import Translator
 from redbot.core import Config
 import logging
@@ -101,7 +101,8 @@ class Pickems:
             for p in pickems:
                 if p["home_team"] == game.home_team and p["away_team"] == game.away_team:
                     if p["game_start"] == game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"):
-                        # Only use the old one if the date is the same and the same teams are playing
+                        # Only use the old one if the date
+                        # is the same and the same teams are playing
                         return_pickems.append(Pickems.from_json(p))
         return return_pickems
 
@@ -114,7 +115,7 @@ class Pickems:
                 chn = bot.get_channel(channel)
                 if chn is None:
                     continue
-                if pickem.winner != None:
+                if pickem.winner is not None:
                     continue
                 p_data = await config.guild(chn.guild).pickems()
                 p_data.remove(pickem.to_json())
@@ -211,7 +212,7 @@ class Pickems:
                 await config.guild(guild).pickems.set(
                     [p.to_json() for p in pickem_list if p.winner is None]
                 )
-            except Exception as e:
+            except Exception:
                 log.error(_("Error tallying leaderboard in ") + f"{guild.name}", exc_info=True)
 
     def to_json(self) -> dict:

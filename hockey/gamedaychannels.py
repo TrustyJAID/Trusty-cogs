@@ -1,9 +1,9 @@
 from datetime import datetime
 from redbot.core import Config
 from .game import Game
-from .constants import BASE_URL, CONFIG_ID, TEAMS
+from .constants import CONFIG_ID, TEAMS
 from .pickems import Pickems
-from .helper import *
+from .helper import utc_to_local
 import logging
 
 log = logging.getLogger("red.Hockey")
@@ -11,7 +11,7 @@ log = logging.getLogger("red.Hockey")
 
 class GameDayChannels:
     """
-        This is where the functions to handle creation and deletion 
+        This is where the functions to handle creation and deletion
         of game day channels is stored
     """
 
@@ -50,7 +50,7 @@ class GameDayChannels:
                 try:
                     cur_channels = await config.guild(guild).gdc()
                     cur_channel = bot.get_channel(cur_channels[0])
-                except Exception as e:
+                except Exception:
                     log.error("Error checking new GDC", exc_info=True)
                     cur_channel = None
                 if cur_channel is None:
@@ -72,12 +72,13 @@ class GameDayChannels:
             returns None if not setup
         """
         config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
-        category = bot.get_channel(await config.guild(guild).category())
+        guild_data = await config.guild(guild).all()
+        category = bot.get_channel(guild_data["category"])
         if category is None:
             # Return none if there's no category to create the channel
             return
         if game_data is None:
-            team = await config.guild(guild).gdc_team()
+            team = guild_data["gdc_team"]
 
             next_games = await Game.get_games_list(team, datetime.now())
             if next_games != []:
@@ -94,23 +95,23 @@ class GameDayChannels:
         chn_name = await GameDayChannels.get_chn_name(next_game)
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
-        except Exception as e:
+        except Exception:
             log.error("Error creating channels in {}".format(guild.name), exc_info=True)
             return
-        cur_channels = await config.guild(guild).gdc()
-        if cur_channels is None:
-            cur_channels = []
-        cur_channels.append(new_chn.id)
-        await config.guild(guild).gdc.set(cur_channels)
-        await config.guild(guild).create_channels.set(True)
+        # cur_channels = await config.guild(guild).gdc()
+        if guild_data["gdc"] is None:
+            guild_data["gdc"] = []
+        guild_data["gdc"].append(new_chn.id)
+        await config.guild(guild).gdc.set(guild_data["gdc"])
+        # await config.guild(guild).create_channels.set(True)
         await config.channel(new_chn).team.set([team])
-        delete_gdc = await config.guild(guild).delete_gdc()
-        await config.channel(new_chn).to_delete.set(delete_gdc)
+        # delete_gdc = await config.guild(guild).delete_gdc()
+        await config.channel(new_chn).to_delete.set(guild_data["delete_gdc"])
 
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        guild_team = await config.guild(guild).gdc_team()
-        channel_team = guild_team if guild_team != "all" else next_game.home_team
+        # guild_team = await config.guild(guild).gdc_team()
+        channel_team = team if team != "all" else next_game.home_team
         timezone = (
             TEAMS[channel_team]["timezone"]
             if channel_team in TEAMS
@@ -141,7 +142,7 @@ class GameDayChannels:
             try:
                 await preview_msg.add_reaction(next_game.away_emoji[2:-1])
                 await preview_msg.add_reaction(next_game.home_emoji[2:-1])
-            except Exception as e:
+            except Exception:
                 log.debug("cannot add reactions")
 
     @staticmethod
@@ -157,7 +158,7 @@ class GameDayChannels:
             if chn is None:
                 try:
                     await config._clear_scope(Config.CHANNEL, str(chn))
-                except:
+                except Exception:
                     pass
                 continue
             if not await config.channel(chn).to_delete():
@@ -165,6 +166,6 @@ class GameDayChannels:
             try:
                 await config.channel(chn).clear()
                 await chn.delete()
-            except Exception as e:
+            except Exception:
                 log.error("Cannot delete GDC channels")
         await config.guild(guild).gdc.set([])

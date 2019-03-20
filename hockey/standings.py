@@ -50,7 +50,7 @@ class Standings:
 
     def to_json(self) -> dict:
         return {
-            "team": self.team,
+            "name": self.name,
             "division": self.division_rank,
             "conference": self.conference_rank,
             "division_rank": self.division_rank,
@@ -304,8 +304,14 @@ class Standings:
             conference = team_stats[0].conference
             em.colour = int("c41230", 16) if conference == "Eastern" else int("003e7e", 16)
             logo = {
-                "Eastern": "https://upload.wikimedia.org/wikipedia/en/thumb/1/16/NHL_Eastern_Conference.svg/1280px-NHL_Eastern_Conference.svg.png",
-                "Western": "https://upload.wikimedia.org/wikipedia/en/thumb/6/65/NHL_Western_Conference.svg/1280px-NHL_Western_Conference.svg.png",
+                "Eastern": (
+                    "https://upload.wikimedia.org/wikipedia/en/thumb/1/"
+                    "16/NHL_Eastern_Conference.svg/1280px-NHL_Eastern_Conference.svg.png"
+                ),
+                "Western": (
+                    "https://upload.wikimedia.org/wikipedia/en/thumb/6/"
+                    "65/NHL_Western_Conference.svg/1280px-NHL_Western_Conference.svg.png"
+                ),
             }
             em.set_author(
                 name=conference + " Conference",

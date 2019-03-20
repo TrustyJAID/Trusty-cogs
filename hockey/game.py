@@ -1,15 +1,15 @@
 import aiohttp
 from datetime import datetime
 from redbot.core import Config
-from .embeds import *
 from .pickems import Pickems
 from .constants import BASE_URL, TEAMS
 from .goal import Goal
-from .helper import *
+from .helper import hockey_config, utc_to_local, check_to_post, get_team, get_team_role
 from .standings import Standings
 import discord
 import logging
 from redbot.core.i18n import Translator
+import asyncio
 
 
 _ = Translator("Hockey", __file__)
@@ -137,7 +137,7 @@ class Game:
                         async with session.get(BASE_URL + games["link"]) as resp:
                             data = await resp.json()
                     return_games_list.append(await Game.from_json(data))
-                except Exception as e:
+                except Exception:
                     log.error("Error grabbing game data:", exc_info=True)
                     continue
         return return_games_list
@@ -326,7 +326,7 @@ class Game:
         """
             Makes the game state embed based on the game self provided
         """
-        post_state = ["all", self.home_team, self.away_team]
+        # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = f"{self.away_team} @ {self.home_team} {self.game_state}"
         em = discord.Embed(timestamp=self.game_start)
@@ -370,7 +370,7 @@ class Game:
         return em
 
     async def game_state_text(self):
-        post_state = ["all", self.home_team, self.away_team]
+        # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         time_string = utc_to_local(self.game_start).strftime("%I:%M %p %Z")
         em = (
@@ -421,10 +421,10 @@ class Game:
         return home_str, away_str
 
     async def check_game_state(self, bot):
-        post_state = ["all", self.home_team, self.away_team]
+        # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(self.home_team)
-        away = await get_team(self.away_team)
-        team_list = await self.config.teams()
+        # away = await get_team(self.away_team)
+        # team_list = await self.config.teams()
         # Home team checking
         if self.game_state == "Preview":
             """Checks if the the game state has changes from Final to Preview
@@ -483,6 +483,7 @@ class Game:
         post_state = ["all", self.home_team, self.away_team]
         state_embed = await self.game_state_embed()
         state_text = await self.game_state_text()
+        tasks = []
         for channels in await self.config.all_channels():
             channel = bot.get_channel(id=channels)
             if channel is None:
@@ -492,58 +493,76 @@ class Game:
             guild = channel.guild
             should_post = await check_to_post(channel, post_state)
             if should_post:
-                game_day_channels = await self.config.guild(guild).gdc()
-                can_embed = channel.permissions_for(guild.me).embed_links
-                can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
+                tasks.append(self.actually_post_state(channel, state_embed, state_text))
+        previews = await asyncio.gather(*tasks)
+        for preview in previews:
+            if preview is None:
+                continue
+            else:
+                await Pickems.create_pickem_object(guild, preview[1], preview[0], self)
 
-                if self.game_state == "Live":
-                    home_role, away_role = await get_team_role(
-                        guild, self.home_team, self.away_team
-                    )
-                    if game_day_channels is not None:
-                        # We don't want to ping people in the game day channels twice
-                        if channel.id in game_day_channels:
-                            home_role, away_role = self.home_team, self.away_team
-                    msg = (
-                        "**"
-                        + str(self.period_ord)
-                        + _(" Period starting ")
-                        + away_role
-                        + _(" at ")
-                        + home_role
-                        + "**"
-                    )
-                    try:
-                        if not can_embed:
-                            await channel.send(msg + "\n{}".format(state_text))
-                        else:
-                            await channel.send(msg, embed=state_embed)
-                    except Exception as e:
-                        log.error(_("Could not post goal in ") + str(channels), exc_info=True)
+    async def actually_post_state(self, channel, state_embed, state_text):
+        guild = channel.guild
+        game_day_channels = await self.config.guild(guild).gdc()
+        can_embed = channel.permissions_for(guild.me).embed_links
+        # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
+        if self.game_state == "Live":
+            home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
+            if game_day_channels is not None:
+                # We don't want to ping people in the game day channels twice
+                if channel.id in game_day_channels:
+                    home_role, away_role = self.home_team, self.away_team
+            msg = (
+                "**"
+                + str(self.period_ord)
+                + _(" Period starting ")
+                + away_role
+                + _(" at ")
+                + home_role
+                + "**"
+            )
+            try:
+                if not can_embed:
+                    await channel.send(msg + "\n{}".format(state_text))
                 else:
-                    if self.game_state == "Preview":
-                        if game_day_channels is not None:
-                            # Don't post the preview message twice in the channel
-                            if channel.id in game_day_channels:
-                                continue
-                    try:
-                        if not can_embed:
-                            preview_msg = await channel.send(state_text)
-                        else:
-                            preview_msg = await channel.send(embed=state_embed)
+                    await channel.send(msg, embed=state_embed)
+            except Exception:
+                log.error(
+                    _("Could not post goal in {channel} ({id})").format(
+                        channel=channel, id=channel.id
+                    ),
+                    exc_info=True,
+                )
 
-                        # Create new pickems object for the game
-                        if self.game_state == "Preview":
-                            await Pickems.create_pickem_object(guild, preview_msg, channel, self)
-                            if channel.permissions_for(guild.me).add_reactions:
-                                try:
-                                    await preview_msg.add_reaction(self.away_emoji[2:-1])
-                                    await preview_msg.add_reaction(self.home_emoji[2:-1])
-                                except Exception as e:
-                                    log.debug("Could not add reactions")
-                    except Exception as e:
-                        log.error(_("Could not post goal in ") + str(channels), exc_info=True)
+        else:
+            if self.game_state == "Preview":
+                if game_day_channels is not None:
+                    # Don't post the preview message twice in the channel
+                    if channel.id in game_day_channels:
+                        return
+            try:
+                if not can_embed:
+                    preview_msg = await channel.send(state_text)
+                else:
+                    preview_msg = await channel.send(embed=state_embed)
+
+                # Create new pickems object for the game
+                if self.game_state == "Preview":
+                    if channel.permissions_for(guild.me).add_reactions:
+                        try:
+                            await preview_msg.add_reaction(self.away_emoji[2:-1])
+                            await preview_msg.add_reaction(self.home_emoji[2:-1])
+                        except Exception:
+                            log.debug("Could not add reactions")
+                        return channel, preview_msg
+            except Exception:
+                log.error(
+                    _("Could not post goal in {channel} ({id})").format(
+                        channel=channel, id=channel.id
+                    ),
+                    exc_info=True,
+                )
 
     async def check_team_goals(self, bot):
         """
@@ -551,12 +570,12 @@ class Game:
         """
         home_team_data = await get_team(self.home_team)
         away_team_data = await get_team(self.away_team)
-        all_data = await get_team("all")
+        # all_data = await get_team("all")
         team_list = await self.config.teams()
-        post_state = ["all", self.home_team, self.away_team]
+        # post_state = ["all", self.home_team, self.away_team]
 
-        home_goal_ids = [goal.goal_id for goal in self.home_goals]
-        away_goal_ids = [goal.goal_id for goal in self.away_goals]
+        # home_goal_ids = [goal.goal_id for goal in self.home_goals]
+        # away_goal_ids = [goal.goal_id for goal in self.away_goals]
 
         home_goal_list = list(home_team_data["goal_id"])
         away_goal_list = list(away_team_data["goal_id"])
@@ -627,6 +646,16 @@ class Game:
             Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
+        msg = _(
+                "{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!"
+            ).format(
+                time=time_left,
+                away_emoji=self.away_emoji,
+                away=self.away_team,
+                home_emoji=self.home_emoji,
+                home=self.home_team,
+            )
+        tasks = []
         for channels in await self.config.all_channels():
             channel = bot.get_channel(id=channels)
             if channel is None:
@@ -637,18 +666,19 @@ class Game:
             should_post = await check_to_post(channel, post_state)
             team_to_post = await self.config.channel(channel).team()
             if should_post and "all" not in team_to_post:
-                guild = channel.guild
-                msg = (
-                    str(time_left)
-                    + _(" minutes until ")
-                    + f"{self.away_emoji} {self.away_team}"
-                    + f" @ {self.home_emoji} {self.home_team}"
-                    + _(" starts")
-                )
-                try:
-                    await channel.send(msg)
-                except Exception as e:
-                    log.error(_("Could not post goal in ") + str(channels), exc_info=True)
+                tasks.append(self.post_game_start(channel, msg))
+        await asyncio.gather(*tasks)
+
+    async def post_game_start(self, channel, msg):
+        try:
+            await channel.send(msg)
+        except Exception:
+            log.error(
+                _("Could not post goal in {channel} ({id})").format(
+                    channel=channel, id=channel.id
+                ),
+                exc_info=True,
+            )
 
     @staticmethod
     async def from_url(url: str):
@@ -657,7 +687,7 @@ class Game:
                 async with session.get(BASE_URL + url) as resp:
                     data = await resp.json()
             return await Game.from_json(data)
-        except Exception as e:
+        except Exception:
             log.error(_("Error grabbing game data: "), exc_info=True)
             return
 

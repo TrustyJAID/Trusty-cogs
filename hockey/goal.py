@@ -1,7 +1,9 @@
-from .constants import HEADSHOT_URL
+from .constants import HEADSHOT_URL, TEAMS
+import asyncio
+from typing import List
 from datetime import datetime
 import discord
-from .helper import *
+from .helper import hockey_config, check_to_post, get_team
 from redbot.core.i18n import Translator
 from redbot.core import Config
 import logging
@@ -52,6 +54,7 @@ class Goal:
         self.empty_net = empty_net
         self.event = event
         self.config = hockey_config()
+        self.tasks: List[asyncio.Task] = []
 
     def to_json(self) -> dict:
         return {
@@ -89,7 +92,7 @@ class Goal:
             jersey_no = players[player_id]["jerseyNumber"]
         else:
             jersey_no = ""
-        scorer = scorer_id[0]
+        # scorer = scorer_id[0]
         return cls(
             data["result"]["eventCode"],
             data["team"]["name"],
@@ -117,13 +120,13 @@ class Goal:
         if "Edmonton Oilers" in self.team_name and "missed" not in self.event.lower():
             try:
                 hue = Oilers(bot)
-                await hue.goal_lights()
-            except:
+                self.tasks.append(hue.goal_lights())
+            except Exception:
                 pass
         goal_embed = await self.goal_post_embed(game_data)
         goal_text = await self.goal_post_text(game_data)
+        tasks = []
         for channels in await self.config.all_channels():
-            role = None
             channel = bot.get_channel(id=channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
@@ -131,59 +134,70 @@ class Goal:
                 continue
             should_post = await check_to_post(channel, post_state)
             if should_post:
-                try:
-                    guild = channel.guild
-                    game_day_channels = await self.config.guild(guild).gdc()
-                    # Don't want to ping people in the game day channels
-                    can_embed = channel.permissions_for(guild.me).embed_links
-                    can_manage_webhooks = (
-                        False
-                    )  # channel.permissions_for(guild.me).manage_webhooks
-
-                    for roles in guild.roles:
-                        if roles.name == self.team_name + " GOAL":
-                            role = roles
-                    if game_day_channels is not None:
-                        # We don't want to ping people in the game day channels twice
-                        if channel.id in game_day_channels:
-                            role = None
-
-                    if not can_embed and can_manage_webhooks:
-                        # try to create a webhook with the teams info to bypass embed permissions
-                        # Waiting for d.py to return messages from webhook responses
-                        # After testing it doesn't look as nice as I would like
-                        # Will leave it off until at some point I can make it look better
-                        webhook = None
-                        for hook in await channel.webhooks():
-                            if hook.name == guild.me.name:
-                                webhook = hook
-                        if webhook is None:
-                            webhook = await channel.create_webhook(name=guild.me.name)
-                        url = TEAMS[self.team_name]["logo"]
-                        await webhook.send(
-                            username=self.team_name, avatar_url=url, embed=goal_embed
-                        )
-                        continue
-
-                    if not can_embed and not can_manage_webhooks:
-                        # Create text only message if embed_links permission is not set
-                        if role is not None:
-                            msg = await channel.send("{}\n{}".format(role, goal_text))
-                        else:
-                            msg = await channel.send("{}".format(goal_text))
-                        msg_list[str(channel.id)] = msg.id
-                        continue
-
-                    if role is None or "missed" in self.event.lower():
-                        msg = await channel.send(embed=goal_embed)
-                        msg_list[str(channel.id)] = msg.id
-                    else:
-                        msg = await channel.send(role.mention, embed=goal_embed)
-                        msg_list[str(channel.id)] = msg.id
-                except Exception as e:
-                    log.error(_("Could not post goal in ") + str(channels), exc_info=True)
-                    pass
+                tasks.append(self.actually_post_goal(channel, goal_embed, goal_text))
+        data = await asyncio.gather(*tasks)
+        for channel in data:
+            if channel is None:
+                continue
+            else:
+                msg_list[str(channel[0])] = channel[1]
         return msg_list
+
+    async def actually_post_goal(self, channel, goal_embed, goal_text):
+        try:
+            guild = channel.guild
+            game_day_channels = await self.config.guild(guild).gdc()
+            # Don't want to ping people in the game day channels
+            can_embed = channel.permissions_for(guild.me).embed_links
+            can_manage_webhooks = (
+                False
+            )  # channel.permissions_for(guild.me).manage_webhooks
+            role = None
+            for roles in guild.roles:
+                if roles.name == self.team_name + " GOAL":
+                    role = roles
+            if game_day_channels is not None:
+                # We don't want to ping people in the game day channels twice
+                if channel.id in game_day_channels:
+                    role = None
+
+            if not can_embed and can_manage_webhooks:
+                # try to create a webhook with the teams info to bypass embed permissions
+                # Waiting for d.py to return messages from webhook responses
+                # After testing it doesn't look as nice as I would like
+                # Will leave it off until at some point I can make it look better
+                webhook = None
+                for hook in await channel.webhooks():
+                    if hook.name == guild.me.name:
+                        webhook = hook
+                if webhook is None:
+                    webhook = await channel.create_webhook(name=guild.me.name)
+                url = TEAMS[self.team_name]["logo"]
+                await webhook.send(
+                    username=self.team_name, avatar_url=url, embed=goal_embed
+                )
+                return
+
+            if not can_embed and not can_manage_webhooks:
+                # Create text only message if embed_links permission is not set
+                if role is not None:
+                    msg = await channel.send(f"{role}\n{goal_text}")
+                else:
+                    msg = await channel.send(goal_text)
+                # msg_list[str(channel.id)] = msg.id
+                return channel.id, msg.id
+
+            if role is None or "missed" in self.event.lower():
+                msg = await channel.send(embed=goal_embed)
+                # msg_list[str(channel.id)] = msg.id
+                return channel.id, msg.id
+            else:
+                msg = await channel.send(role.mention, embed=goal_embed)
+                # msg_list[str(channel.id)] = msg.id
+                return channel.id, msg.id
+        except Exception:
+            log.error(_("Could not post goal in "), exc_info=True)
+            return
 
     @staticmethod
     async def remove_goal_post(bot, goal, team, data):
@@ -196,7 +210,7 @@ class Goal:
         if goal not in [goal.goal_id for goal in data.goals]:
             try:
                 old_msgs = team_data["goal_id"][goal]["messages"].items()
-            except Exception as e:
+            except Exception:
                 log.error("Error iterating saved goals", exc_info=True)
                 return
             for channel_id, message_id in old_msgs:
@@ -205,7 +219,7 @@ class Goal:
                     message = await channel.get_message(message_id)
                     if message is not None:
                         await message.delete()
-                except Exception as e:
+                except Exception:
                     log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
                     pass
             try:
@@ -213,7 +227,7 @@ class Goal:
                 del team_data["goal_id"][goal]
                 team_list.append(team_data)
                 await config.teams.set(team_list)
-            except Exception as e:
+            except Exception:
                 log.error("Error removing team data", exc_info=True)
                 return
         return
@@ -223,33 +237,39 @@ class Goal:
             When a goal scorer has changed we want to edit the original post
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
-        post_state = ["all", game_data.home_team, game_data.away_team]
+        # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
+        tasks = []
         for channel_id, message_id in og_msg.items():
-            try:
-                role = None
-                channel = bot.get_channel(id=int(channel_id))
-                if channel is None:
-                    continue
-                if not channel.permissions_for(channel.guild.me).embed_links:
-                    continue
-                message = await channel.get_message(message_id)
-                guild = message.guild
-                game_day_channels = await self.config.guild(guild).gdc()
-                for roles in guild.roles:
-                    if roles.name == self.team_name + " GOAL":
-                        role = roles
-                if game_day_channels is not None:
-                    # We don't want to ping people in the game day channels twice
-                    if channel.id in game_day_channels:
-                        role = None
-                if role is None or "missed" in self.event.lower():
-                    await message.edit(embed=em)
-                else:
-                    await message.edit(content=role.mention, embed=em)
-            except:
-                log.error(_("Could not edit goal in") + str(channel_id))
+            channel = bot.get_channel(id=int(channel_id))
+            if channel is None:
+                continue
+            tasks.append(self.edit_goal(channel, message_id, em))
+
+        await asyncio.gather(*tasks)
         return
+
+    async def edit_goal(self, channel, message_id, em):
+        try:
+            if not channel.permissions_for(channel.guild.me).embed_links:
+                return
+            message = await channel.get_message(message_id)
+            guild = message.guild
+            game_day_channels = await self.config.guild(guild).gdc()
+            role = None
+            for roles in guild.roles:
+                if roles.name == self.team_name + " GOAL":
+                    role = roles
+            if game_day_channels is not None:
+                # We don't want to ping people in the game day channels twice
+                if channel.id in game_day_channels:
+                    role = None
+            if role is None or "missed" in self.event.lower():
+                await message.edit(embed=em)
+            else:
+                await message.edit(content=role.mention, embed=em)
+        except Exception:
+            log.error(_("Could not edit goal in "))
 
     async def get_shootout_display(self, game_goals):
         """
@@ -269,8 +289,8 @@ class Goal:
         """
             Gets the embed for goal posts
         """
-        h_emoji = game.home_emoji
-        a_emoji = game.away_emoji
+        # h_emoji = game.home_emoji
+        # a_emoji = game.away_emoji
         shootout = False
         if game.period_ord == "SO":
             shootout = True

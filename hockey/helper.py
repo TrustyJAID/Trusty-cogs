@@ -1,4 +1,3 @@
-from redbot.core import commands
 import asyncio
 from datetime import datetime, timezone
 from redbot.core import Config
@@ -39,12 +38,9 @@ class HockeyTeams(Converter):
     Guidance code on how to do this from:
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    
     """
 
     async def convert(self, ctx, argument):
-        bot = ctx.bot
-        guild = ctx.guild
         result = []
         team_list = await check_valid_team(argument)
         if team_list == []:
@@ -115,12 +111,9 @@ class HockeyStandings(Converter):
     Guidance code on how to do this from:
     https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    
     """
 
     async def convert(self, ctx, argument):
-        bot = ctx.bot
-        guild = ctx.guild
         result = []
         team_list = await check_valid_team(argument, True)
         if team_list == []:
