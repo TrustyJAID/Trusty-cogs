@@ -93,7 +93,7 @@ class Tweets(commands.Cog):
                 # Don't run the loop until tokens are set
                 await asyncio.sleep(300)
                 continue
-            tweet_list = list(self.accounts.keys())
+            tweet_list = list(await self.config.accounts())
             if tweet_list == []:
                 await asyncio.sleep(300)
                 continue
@@ -213,14 +213,14 @@ class Tweets(commands.Cog):
         username = status.user.screen_name
         user_id = status.user.id
 
-        if user_id not in self.accounts:
+        if str(user_id) not in self.accounts:
             return
         tasks = []
-        if not status.in_reply_to_screen_name and not self.accounts[user_id]["replies"]:
+        if not status.in_reply_to_screen_name and not self.accounts[str(user_id)]["replies"]:
             return
         em = await self.build_tweet_embed(status)
         # channel_list = account.channel
-        for channel in self.accounts[user_id]["channel"]:
+        for channel in self.accounts[str(user_id)]["channel"]:
             channel_send = self.bot.get_channel(int(channel))
             if channel_send is None:
                 await self.del_account(channel, user_id, username)
