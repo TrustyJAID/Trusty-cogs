@@ -30,7 +30,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
         Translate messages using google translate
     """
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -117,7 +117,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         await ctx.send(msg + verb)
 
     @translateset.command(aliases=["multi"])
-    @checks.mod_or_permissions(manage_channels=True)
+    @checks.is_owner()
     @commands.guild_only()
     async def multiple(self, ctx):
         """
@@ -136,7 +136,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         await ctx.send(msg + verb)
 
     @translateset.command(aliases=["cooldown"])
-    @checks.mod_or_permissions(manage_channels=True)
+    @checks.is_owner()
     @commands.guild_only()
     async def timeout(self, ctx, time: int):
         """
