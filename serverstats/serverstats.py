@@ -978,9 +978,15 @@ class ServerStats(commands.Cog):
             number = 50
         if number < 10:
             number = 10
-        member_list = sorted(guild.members, key=lambda m: m.joined_at)
+        def joined(member: discord.Member):
+            return getattr(member, "joined_at", datetime.utcnow())
+        member_list = sorted(guild.members, key=joined)
         is_embed = ctx.channel.permissions_for(ctx.me).embed_links
-        x = [member_list[i : i + number] for i in range(0, len(member_list), number)]
+        x = []
+        for i in range(0, len(member_list), number):
+            x.append(member_list[i : i + number])
+            await asyncio.sleep(0.2)
+
         msg_list = []
         for page in x:
             header_msg = (
@@ -1000,6 +1006,7 @@ class ServerStats(commands.Cog):
 
             else:
                 msg_list.append(header_msg + msg)
+            await asyncio.sleep(0.1)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     @commands.command()
