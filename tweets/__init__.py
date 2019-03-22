@@ -1,5 +1,7 @@
 from .tweets import Tweets
 
 
-def setup(bot):
-    bot.add_cog(Tweets(bot))
+async def setup(bot):
+    cog = Tweets(bot)
+    await cog.initialize()
+    bot.add_cog(cog)
