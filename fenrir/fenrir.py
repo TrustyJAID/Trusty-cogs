@@ -133,10 +133,12 @@ class Fenrir(commands.Cog):
             msg = await channel.get_message(payload.message_id)
             ctx = await self.bot.get_context(msg)
             if await self.is_mod_or_admin(member) or str(payload.emoji) == "🐶":
-                compliment = self.bot.get_cog("Compliment").compliment
-                if not compliment:
+                try:
+                    compliment = self.bot.get_cog("Compliment").compliment
+                except AttributeError:
                     compliment = self.bot.get_cog("Insult").insult
-                await ctx.invoke(compliment)
+                await ctx.invoke(compliment, user=member)
             else:
                 insult = self.bot.get_cog("Insult").insult
-                await ctx.invoke(insult)
+                await ctx.invoke(insult, user=member)
+            self.feedback[payload.message_id].append(member.id)
