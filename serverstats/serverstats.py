@@ -979,7 +979,7 @@ class ServerStats(commands.Cog):
         if number < 10:
             number = 10
         def joined(member: discord.Member):
-            return getattr(member, "joined_at", datetime.utcnow())
+            return getattr(member, "joined_at", datetime.datetime.utcnow())
         member_list = sorted(guild.members, key=joined)
         is_embed = ctx.channel.permissions_for(ctx.me).embed_links
         x = []
