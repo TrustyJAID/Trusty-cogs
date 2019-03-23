@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.6.0"
+    __version__ = "2.6.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -590,6 +590,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["text"], author, 0, None, text, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -620,6 +622,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["randtext"], author, 0, None, text, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -653,6 +657,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["dm"], author, 0, None, text, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -695,6 +701,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["image"], author, 0, filename, None, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -724,6 +732,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["randimage"], author, 0, filename, None, [], [], {}, []
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -776,6 +786,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["image"], author, 0, filename, text, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -821,6 +833,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["resize"], author, 0, filename, None, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -850,6 +864,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["ban"], author, 0, None, None, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -879,6 +895,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["kick"], author, 0, None, None, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -909,6 +927,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["react"], author, 0, None, emojis, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -943,6 +963,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["command"], author, 0, None, command, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -990,6 +1012,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["mock"], author, 0, None, command, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -1035,6 +1059,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             [],
             ctx.message.id,
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -1073,6 +1099,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["add_role"], author, 0, None, role_ids, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -1111,6 +1139,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         new_trigger = Trigger(
             name, regex, ["remove_role"], author, 0, None, role_ids, [], [], {}, [], ctx.message.id
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
@@ -1161,6 +1191,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             multi_response,
             ctx.message.id,
         )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
         trigger_list = await self.config.guild(guild).trigger_list()
         trigger_list[name] = await new_trigger.to_json()
