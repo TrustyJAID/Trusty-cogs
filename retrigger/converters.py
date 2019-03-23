@@ -242,6 +242,18 @@ class Trigger:
     """
         Trigger class to handle trigger objects
     """
+    name: str
+    regex: str
+    response_type: list
+    author: int
+    count: int
+    image: Union[List[Union[int, str]], str, None]
+    text: Union[List[Union[int, str]], str, None]
+    whitelist: list
+    blacklist: list
+    cooldown: dict
+    multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]]
+    created: int
 
     def __init__(
         self,
@@ -256,6 +268,7 @@ class Trigger:
         blacklist: list,
         cooldown: dict,
         multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
+        created_at: int,
     ):
         self.name = name
         self.regex = re.compile(regex)
@@ -268,6 +281,7 @@ class Trigger:
         self.blacklist = blacklist
         self.cooldown = cooldown
         self.multi_payload = multi_payload
+        self.created_at = created_at
 
     async def to_json(self) -> dict:
         return {
@@ -282,22 +296,24 @@ class Trigger:
             "blacklist": self.blacklist,
             "cooldown": self.cooldown,
             "multi_payload": self.multi_payload,
+            "created_at": self.created_at
         }
 
     @classmethod
     async def from_json(cls, data: dict):
-        if "cooldown" not in data:
-            cooldown: dict = {}
-        else:
+        cooldown: dict = {}
+        multi_payload: List[MultiResponse] = []
+        created_at: int = 0
+        if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
             response_type = [data["response_type"]]
         else:
             response_type = data["response_type"]
-        if "multi_payload" not in data:
-            multi_payload: List[MultiResponse] = []
-        else:
+        if "multi_payload" in data:
             multi_payload = data["multi_payload"]
+        if "created_at" in data:
+            created_at = data["created_at"]
         return cls(
             data["name"],
             data["regex"],
@@ -310,4 +326,5 @@ class Trigger:
             data["blacklist"],
             cooldown,
             multi_payload,
+            created_at,
         )
