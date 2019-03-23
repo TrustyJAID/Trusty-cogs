@@ -452,6 +452,8 @@ class TriggerHandler:
             operations.
         """
         guild: discord.Guild = cast(discord.Guild, message.guild)
+        if guild.id not in self.triggers:
+            return
         channel: discord.TextChannel = cast(discord.TextChannel, message.channel)
         author: discord.Member = cast(discord.Member, message.author)
 
