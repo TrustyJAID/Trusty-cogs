@@ -1,4 +1,3 @@
-from random import choice, randint
 import random
 import aiohttp
 import discord
@@ -6,7 +5,6 @@ import asyncio
 from redbot.core import commands, checks, Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
-from pathlib import Path
 import os
 import string
 from redbot.core.i18n import Translator, cog_i18n
@@ -31,6 +29,20 @@ class AddImage(commands.Cog):
         self.config = Config.get_conf(self, 16446735546)
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
+
+    async def initialize(self):
+        guilds = await self.config.all_guilds()
+        for guild_id, data in guilds.items():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            for image in data["images"]:
+                image["file_loc"] = image["file_loc"].split("/")[-1]
+            await self.config.guild(guild).set(data)
+
+        async with self.config.images() as images:
+            for image in images:
+                image["file_loc"] = image["file_loc"].split("/")[-1]
 
     async def first_word(self, msg):
         return msg.split(" ")[0].lower()
@@ -64,12 +76,10 @@ class AddImage(commands.Cog):
 
     async def get_image(self, alias, guild=None) -> dict:
         if guild is None:
-            list_images = await self.config.images()
             for image in await self.config.images():
                 if image["command_name"].lower() == alias.lower():
                     return image
         else:
-            list_images = await self.config.guild(guild).images()
             for image in await self.config.guild(guild).images():
                 # print(image)
                 if image["command_name"].lower() == alias.lower():
@@ -108,7 +118,9 @@ class AddImage(commands.Cog):
         return message.author.id not in await self.bot.db.blacklist()
 
     async def check_ignored_channel(self, message):
-        """https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273"""
+        """
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273
+        """
         channel = message.channel
         guild = channel.guild
         author = message.author
@@ -137,7 +149,7 @@ class AddImage(commands.Cog):
             prefix = await self.get_prefix(message)
         except ValueError:
             return
-        alias = await self.first_word(msg[len(prefix) :])
+        alias = await self.first_word(msg[len(prefix):])
         if not await self.local_perms(message):
             return
         if not await self.global_perms(message):
@@ -149,25 +161,31 @@ class AddImage(commands.Cog):
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias)
-                list_images = await self.config.images()
-                list_images.remove(image)
-                image["count"] += 1
-                list_images.append(image)
-                await self.config.images.set(list_images)
-                file = discord.File(image["file_loc"])
-                await channel.send(file=file)
+                async with self.config.images() as list_images:
+                    list_images.remove(image)
+                    image["count"] += 1
+                    list_images.append(image)
+                path = str(cog_data_path(self)) + "/global/" + image["file_loc"]
+                file = discord.File(path)
+                try:
+                    await channel.send(files=[file])
+                except discord.errors.Forbidden:
+                    pass
 
         elif alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias, guild)
-                guild_images = await self.config.guild(guild).images()
-                guild_images.remove(image)
-                image["count"] += 1
-                guild_images.append(image)
-                await self.config.guild(guild).images.set(guild_images)
-                file = discord.File(image["file_loc"])
-                await channel.send(file=file)
+                async with self.config.guild(guild).images() as guild_images:
+                    guild_images.remove(image)
+                    image["count"] += 1
+                    guild_images.append(image)
+                path = str(cog_data_path(self)) + f"/{guild.id}/" + image["file_loc"]
+                file = discord.File(path)
+                try:
+                    await channel.send(files=[file])
+                except discord.errors.Forbidden:
+                    pass
 
     async def check_command_exists(self, command, guild):
         if command in [x["command_name"] for x in await self.config.guild(guild).images()]:
@@ -193,7 +211,6 @@ class AddImage(commands.Cog):
         """
             List images added to bot
         """
-        msg = ""
         if image_loc in ["global"]:
             image_list = await self.config.images()
         elif image_loc in ["guild", "server"]:
@@ -206,7 +223,7 @@ class AddImage(commands.Cog):
         if image_list == []:
             await ctx.send(_("I does not have any images saved!"))
             return
-        post_list = [image_list[i : i + 25] for i in range(0, len(image_list), 25)]
+        post_list = [image_list[i: i + 25] for i in range(0, len(image_list), 25)]
         images = []
         for post in post_list:
             em = discord.Embed(timestamp=ctx.message.created_at)
@@ -261,7 +278,6 @@ class AddImage(commands.Cog):
 
             `name` the command name used to post the image
         """
-        author = ctx.message.author
         guild = ctx.message.guild
         channel = ctx.message.channel
         name = name.lower()
@@ -275,7 +291,7 @@ class AddImage(commands.Cog):
         all_imgs.remove(image)
         try:
             os.remove(image.file_loc)
-        except:
+        except Exception:
             pass
         await self.config.guild(guild).images.set(all_imgs)
         await ctx.send(name + _(" has been deleted from this guild!"))
@@ -288,8 +304,6 @@ class AddImage(commands.Cog):
 
             `name` the command name used to post the image
         """
-        author = ctx.message.author
-        guild = ctx.message.guild
         channel = ctx.message.channel
         name = name.lower()
         if name not in [x["command_name"] for x in await self.config.images()]:
@@ -302,7 +316,7 @@ class AddImage(commands.Cog):
         all_imgs.remove(image)
         try:
             os.remove(image.file_loc)
-        except:
+        except Exception:
             pass
         await self.config.images.set(all_imgs)
         await ctx.send(name + _(" has been deleted globally!"))
@@ -324,7 +338,7 @@ class AddImage(commands.Cog):
         new_entry = {
             "command_name": name,
             "count": 0,
-            "file_loc": file_path,
+            "file_loc": filename,
             "author": msg.author.id,
         }
 
@@ -338,7 +352,8 @@ class AddImage(commands.Cog):
     async def wait_for_image(self, ctx):
         msg = None
         while msg is None:
-            check = lambda m: m.author == ctx.author and (m.attachments or "exit" in m.content)
+            def check(m: discord.Member):
+                return m.author == ctx.author and (m.attachments or "exit" in m.content)
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
@@ -358,9 +373,7 @@ class AddImage(commands.Cog):
 
             `name` the command name used to post the image
         """
-        author = ctx.message.author
         guild = ctx.message.guild
-        channel = ctx.message.channel
         if name.lower() == "global":
             msg = _("global is not a valid command name! Try something else.")
             return await ctx.send(msg)
@@ -389,9 +402,7 @@ class AddImage(commands.Cog):
 
             `name` the command name used to post the image
         """
-        author = ctx.message.author
         guild = ctx.message.guild
-        channel = ctx.message.channel
         msg = ctx.message
         if name.lower() == "global":
             msg = _("global is not a valid command name! Try something else.")
