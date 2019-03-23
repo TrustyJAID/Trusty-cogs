@@ -58,6 +58,29 @@ class TriggerHandler:
         self.triggers: Dict[int, List[Trigger]]
         self.ALLOW_RESIZE = ALLOW_RESIZE
 
+    async def remove_trigger_from_cache(self, guild: discord.Guild, trigger: Trigger):
+        try:
+            for t in self.triggers[guild.id]:
+                if t.name == trigger.name:
+                    self.triggers[guild.id].remove(t)
+        except ValueError:
+            # it will get removed on the next reload of the cog
+            log.info("Trigger can't be removed :blobthinking:")
+            pass
+
+    async def can_edit(self, author: discord.Member, trigger: Trigger):
+        """Chekcs to see if the member is allowed to edit the trigger"""
+        if trigger.multi_payload:
+            # explicitly deny editing all multi triggers
+            # they should be deleted and re-added manually
+            return False
+        if trigger.author == author.id:
+            return True
+        if await self.bot.is_owner(author):
+            return True
+        if author is author.guild.owner and "mock" not in trigger.response_type:
+            return True
+
     async def local_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't locally whitelisted/blacklisted.
             https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
@@ -361,8 +384,6 @@ class TriggerHandler:
         return msg_list
 
     async def check_trigger_cooldown(self, message: discord.Message, trigger: Trigger) -> bool:
-        guild = message.guild
-        trigger_list = await self.config.guild(guild).trigger_list()
         now = datetime.now().timestamp()
         if trigger.cooldown:
             if trigger.cooldown["style"] in ["guild", "server"]:
@@ -370,8 +391,6 @@ class TriggerHandler:
                 time = trigger.cooldown["time"]
                 if (now - last) > time:
                     trigger.cooldown["last"] = now
-                    trigger_list[trigger.name] = await trigger.to_json()
-                    await self.config.guild(guild).trigger_list.set(trigger_list)
                     return False
                 else:
                     return True
@@ -380,8 +399,6 @@ class TriggerHandler:
                 snowflake = getattr(message, style)
                 if snowflake.id not in [x["id"] for x in trigger.cooldown["last"]]:
                     trigger.cooldown["last"].append({"id": snowflake.id, "last": now})
-                    trigger_list[trigger.name] = await trigger.to_json()
-                    await self.config.guild(guild).trigger_list.set(trigger_list)
                     return False
                 else:
                     entity_list = trigger.cooldown["last"]
@@ -392,8 +409,6 @@ class TriggerHandler:
                             if (now - last) > time:
                                 trigger.cooldown["last"].remove({"id": snowflake.id, "last": last})
                                 trigger.cooldown["last"].append({"id": snowflake.id, "last": now})
-                                trigger_list[trigger.name] = await trigger.to_json()
-                                await self.config.guild(guild).trigger_list.set(trigger_list)
                                 return False
                             else:
                                 return True

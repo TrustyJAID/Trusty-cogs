@@ -2,7 +2,7 @@ import discord
 import logging
 import asyncio
 import re
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Pattern
 
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
@@ -55,7 +55,7 @@ class MultiResponse(Converter):
     to be used in multiple reponses
     """
 
-    async def convert(self, ctx: commands.Context, argument: str):
+    async def convert(self, ctx: commands.Context, argument: str) -> Union[List[str], List[int]]:
         result = []
         match = re.split(r"(;)", argument)
         valid_reactions = [
@@ -120,7 +120,9 @@ class MultiResponse(Converter):
                         good_roles.append(role.id)
                 except BadArgument:
                     log.error("Role `{}` not found.".format(r))
-            result = [result[0]] + good_roles
+            result = [result[0]]
+            for r_id in good_roles:
+                result.append(r_id)
         if result[0] == "react":
             good_emojis = []
             for r in result[1:]:
@@ -243,7 +245,7 @@ class Trigger:
         Trigger class to handle trigger objects
     """
     name: str
-    regex: str
+    regex: Pattern
     response_type: list
     author: int
     count: int
