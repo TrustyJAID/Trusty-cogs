@@ -277,7 +277,7 @@ class Starboard(commands.Cog):
         for messages in [StarboardMessage.from_json(m) for m in starboard.messages]:
             same_msg = messages.original_message == msg.id
             same_channel = messages.original_channel == channel.id
-            if same_msg and same_channel:
+            if same_msg and same_channel and messages.new_message:
                 msg_edit = await star_channel.get_message(messages.new_message)
                 count_msg = f"{starboard.emoji} **#{count}**"
                 await msg_edit.edit(content=count_msg)
