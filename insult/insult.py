@@ -204,7 +204,6 @@ insults = [
     _(
         "You look like you're going to spend your life having one epiphany after another, always thinking you've finally figured out what's holding you back, and how you can finally be productive and creative and turn your life around. But nothing will ever change. That cycle of mediocrity isn't due to some obstacle. It's who you *are*. The thing standing in the way of your dreams is; that the person having them is *you*."
     ),
-    _("May your day and future be as pleasant as you are."),
     _("I would agree with you but then we would both be wrong."),
     _("I bite my thumb at you, sir."),
     _("I'd call you a tool, but that would imply you were useful in at least one way."),
@@ -255,6 +254,12 @@ insults = [
     _("Looks like you traded in your neck for an extra chin!"),
     _("I'd like to help you out. Which way did you came in?"),
     _("You look better from the back..."),
+    _(
+        "Blue whales are amazing creatures! They can grow up to over a hundred feet long, and it's stomach can hold literally thousands of pound of krill, which after being passed though its system, exists through a multi-foot diameter anus, the second biggest asshole on Earth, after you."
+    ),
+    _("Your father could've used a condom but here you are."),
+    _("You look like a randomized sim."),
+    
 ]
 
 
