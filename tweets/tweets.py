@@ -622,7 +622,7 @@ class Tweets(commands.Cog):
                 # await self.config.accounts.set(followed_accounts)
         else:
             twitter_account = TweetEntry(user_id, screen_name, [channel.id], 0)
-            self.accounts[user_id] = twitter_account.to_json()
+            self.accounts[str(user_id)] = twitter_account.to_json()
             await self.config.accounts.set(self.accounts)
         return True
 
@@ -766,7 +766,7 @@ class Tweets(commands.Cog):
             return False
         # account_list = [x for x in await self.config.accounts()]
         # twitter_account = [x for x in account_list if user_id == x["twitter_id"]][0]
-        if channel_id in self.accounts[user_id]:
+        if channel_id in self.accounts[str(user_id)]:
             self.accounts[str(user_id)]["channel"].remove(channel_id)
             # await self.config.accounts.set(account_list)
             if len(self.accounts[str(user_id)]["channel"]) < 1:
