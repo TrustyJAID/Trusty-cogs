@@ -276,7 +276,7 @@ class EventMixin:
                 for code, data in invites.items():
                     try:
                         invite = await self.bot.get_invite(code)
-                    except (discord.errors.NotFound, discord.errors.HTTPException):
+                    except (discord.errors.NotFound, discord.errors.HTTPException, Exception):
                         logger.error("Error getting invite ".format(code))
                         invite = None
                         pass
