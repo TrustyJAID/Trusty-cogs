@@ -14,10 +14,12 @@ Install the latest source in Ubuntu with:
 https://linuxconfig.org/how-to-install-imagemagick-7-on-ubuntu-18-04-linux
 
 
-```wget ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick.tar.gz
+```bash
+wget ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick.tar.gz
 tar xvfz ImageMagick.tar.gz
 cd ImageMagick-*
 ./configure --disable-shared
 make
-sudo make install```
+sudo make install
+```
 

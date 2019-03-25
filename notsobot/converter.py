@@ -1,4 +1,3 @@
-import discord
 import re
 
 from discord.ext.commands.converter import Converter
@@ -15,8 +14,6 @@ class ImageFinder(Converter):
     """
 
     async def convert(self, ctx, argument):
-        message = ctx.message
-        channel = ctx.message.channel
         attachments = ctx.message.attachments
         mentions = ctx.message.mentions
         match = IMAGE_LINKS.match(argument)

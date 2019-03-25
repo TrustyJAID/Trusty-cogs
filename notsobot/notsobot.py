@@ -1,31 +1,45 @@
 # https://github.com/NotSoSuper/NotSoBot
 
-import asyncio, aiohttp, discord
-import os, sys, linecache, traceback, glob
-import re, json, random, math, html
-import wand, wand.color, wand.drawing
-import PIL, PIL.Image, PIL.ImageFont, PIL.ImageOps, PIL.ImageDraw
+import asyncio
+import aiohttp
+import discord
+import os
+import sys
+import linecache
+import glob
+import re
+import random
+import wand
+import wand.color
+import wand.drawing
+import PIL
+import PIL.Image
+import PIL.ImageFont
+import PIL.ImageOps
+import PIL.ImageDraw
 from PIL import ImageSequence
 import numpy as np
 import jpglitch
 from .vw import macintoshplus
-from io import BytesIO, StringIO
+from io import BytesIO
 from redbot.core import commands
-from redbot.core import checks
 from pyfiglet import figlet_format
 from urllib.parse import quote
-import random, uuid
+import uuid
 from typing import Optional
+import logging
 
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
 
+log = logging.getLogger("red.NotSoBot")
+
 try:
     import aalib
 
     AALIB_INSTALLED = True
-except:
+except Exception:
     AALIB_INSTALLED = False
 
 code = "```py\n{0}\n```"
@@ -60,13 +74,13 @@ class DataProtocol(asyncio.SubprocessProtocol):
     def process_exited(self):
         try:
             self.exit_future.set_result(True)
-        except:
+        except Exception:
             pass
 
     def pipe_connection_lost(self, fd, exc):
         try:
             self.exit_future.set_result(True)
-        except:
+        except Exception:
             pass
 
     def connection_made(self, transport):
@@ -75,7 +89,7 @@ class DataProtocol(asyncio.SubprocessProtocol):
     def connection_lost(self, exc):
         try:
             self.exit_future.set_result(True)
-        except:
+        except Exception:
             pass
 
 
@@ -139,10 +153,10 @@ class NotSoBot(commands.Cog):
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.image_mimes = ["image/png", "image/pjpeg", "image/jpeg", "image/x-icon"]
 
-    def random(self, image=False, ext: str = False):
+    def random(self, image=False, ext: str = "png"):
         h = str(uuid.uuid4().hex)
         if image:
-            return "{0}.{1}".format(h, ext) if ext else h + ".png"
+            return "{0}.{1}".format(h, ext)
         return h
 
     async def get_text(self, url: str):
@@ -151,7 +165,7 @@ class NotSoBot(commands.Cog):
                 try:
                     text = await resp.text()
                     return text
-                except:
+                except Exception:
                     return False
         except asyncio.TimeoutError:
             return False
@@ -159,7 +173,7 @@ class NotSoBot(commands.Cog):
     async def truncate(self, channel, msg):
         if len(msg) == 0:
             return
-        split = [msg[i : i + 1999] for i in range(0, len(msg), 1999)]
+        split = [msg[i: i + 1999] for i in range(0, len(msg), 1999)]
         try:
             for s in split:
                 await channel.send(s)
@@ -176,7 +190,7 @@ class NotSoBot(commands.Cog):
                         return True
                     else:
                         return False
-        except:
+        except Exception:
             return False
 
     async def isgif(self, url: str):
@@ -188,7 +202,7 @@ class NotSoBot(commands.Cog):
                         return True
                     else:
                         return False
-        except:
+        except Exception:
             return False
 
     async def download(self, url: str, path: str):
@@ -300,7 +314,6 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         try:
             msg = await ctx.message.channel.send("ok, processing")
-            list_imgs = []
             b = await self.bytes_download(urls[0])
             final, content_msg = await self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
             if type(final) == str:
@@ -322,7 +335,7 @@ class NotSoBot(commands.Cog):
         try:
             try:
                 frame = PIL.Image.open(gif)
-            except:
+            except Exception:
                 return ":warning: Invalid Gif."
             if frame.size >= (3000, 3000):
                 os.remove(gif)
@@ -384,7 +397,7 @@ class NotSoBot(commands.Cog):
                     i.resize(i.width, i.height)
                     i.save(filename="{0}/{1}_{2}.png".format(gif_dir, x + 1, rand))
                 return True
-        except Exception as e:
+        except Exception:
             exc_type, exc_obj, tb = sys.exc_info()
             f = tb.tb_frame
             lineno = tb.tb_lineno
@@ -436,11 +449,11 @@ class NotSoBot(commands.Cog):
             try:
                 if framerate:
                     if framerate > 60:
-                        framerate = str(60)
+                        framerate = 60
                     elif framerate < 0:
-                        framerate = str(20)
+                        framerate = 20
                     else:
-                        framerate = str(framerate)
+                        framerate = framerate
                     args = [
                         "ffmpeg",
                         "-y",
@@ -464,8 +477,8 @@ class NotSoBot(commands.Cog):
                         gif_dir + "%d_{0}.png".format(rand),
                         gifout,
                     ]
-            except Exception as e:
-                print("Some error has occured:" + e)
+            except Exception:
+                print("Some error has occured:")
             print(gifout)
             await self.run_process(args, True)
             file = discord.File(gifout, filename="gmagik.gif")
@@ -486,8 +499,8 @@ class NotSoBot(commands.Cog):
         text: str = None,
         color=None,
         size=None,
-        x: int = None,
-        y: int = None,
+        x: float = None,
+        y: float = None,
     ):
         """Add caption to an image\n .caption text image_url"""
         if urls is None:
@@ -496,11 +509,12 @@ class NotSoBot(commands.Cog):
         try:
             if url is None:
                 await ctx.send(
-                    "Error: Invalid Syntax\n`.caption <image_url> <text>** <color>* <size>* <x>* <y>*`\n`* = Optional`\n`** = Wrap text in quotes`"
+                    "Error: Invalid Syntax\n`.caption <image_url> <text>**"
+                    " <color>* <size>* <x>* <y>*`\n`* = Optional`\n`** = Wrap text in quotes`"
                 )
                 return
             check = await self.isimage(url)
-            if check == False:
+            if check is False:
                 await ctx.send("Invalid or Non-Image!")
                 return
             if text is None:
@@ -510,10 +524,10 @@ class NotSoBot(commands.Cog):
             img = wand.image.Image(file=b)
             i = img.clone()
             font_path = str(bundled_data_path(self)) + "/arial.ttf"
-            if size != None:
+            if not size:
                 color = wand.color.Color("{0}".format(color))
                 font = wand.font.Font(path=font_path, size=int(size), color=color)
-            elif color != None:
+            elif not color:
                 color = wand.color.Color("{0}".format(color))
                 font = wand.font.Font(path=font_path, size=40, color=color)
             else:
@@ -522,15 +536,15 @@ class NotSoBot(commands.Cog):
             if x is None:
                 x = None
                 y = int(i.height / 10)
-            if x != None and x > 250:
+            if x and x > 250:
                 x = x / 2
-            if y != None and y > 250:
+            if y and y > 250:
                 y = y / 2
-            if x != None and x > 500:
+            if x and x > 500:
                 x = x / 4
-            if y != None and y > 500:
+            if y and y > 500:
                 y = y / 4
-            if x != None:
+            if x:
                 i.caption(str(text), left=x, top=y, font=font, gravity="center")
             else:
                 i.caption(str(text), top=y, font=font, gravity="center")
@@ -542,7 +556,8 @@ class NotSoBot(commands.Cog):
             await ctx.send(file=file)
         except Exception as e:
             await ctx.send(
-                "Error: Invalid Syntax\n `.caption <image_url> <text>** <color>* <size>* <x>* <y>*`\n`* = Optional`\n`** = Wrap text in quotes`"
+                "Error: Invalid Syntax\n `.caption <image_url> <text>** "
+                "<color>* <size>* <x>* <y>*`\n`* = Optional`\n`** = Wrap text in quotes`"
             )
             print(e)
 
@@ -615,7 +630,7 @@ class NotSoBot(commands.Cog):
             try:
                 os.remove(path)
                 os.remove(path2)
-            except:
+            except Exception:
                 pass
 
     @commands.command(aliases=["aes"])
@@ -645,7 +660,7 @@ class NotSoBot(commands.Cog):
             imgs.save(final, "png")
             final.seek(0)
             return final, txt
-        except:
+        except Exception:
             return False, False
 
     @commands.command(aliases=["expand"])
@@ -679,7 +694,7 @@ class NotSoBot(commands.Cog):
         aalib_screen_width = int(image_width / 24.9) * 10
         aalib_screen_height = int(image_height / 41.39) * 10
         screen = aalib.AsciiScreen(width=aalib_screen_width, height=aalib_screen_height)
-        
+
         im = image.convert("L").resize(screen.virtual_size)
         screen.put_image((0, 0), im)
         y = 0
@@ -695,10 +710,12 @@ class NotSoBot(commands.Cog):
 
     async def check_font_file(self):
         try:
-            font = PIL.ImageFont.truetype(cog_data_path(self)/"FreeMonoBold.ttf", 15)
-            font = None # just overwrite so we don't re-open this multiple times
-        except:
-            async with self.session.get("https://github.com/opensourcedesign/fonts/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf") as resp:
+            PIL.ImageFont.truetype(cog_data_path(self)/"FreeMonoBold.ttf", 15)
+        except Exception:
+            async with self.session.get(
+                "https://github.com/opensourcedesign/fonts"
+                "/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf"
+            ) as resp:
                 data = await resp.read()
             with open(cog_data_path(self)/"FreeMonoBold.ttf", "wb") as save_file:
                 save_file.write(data)
@@ -797,7 +814,7 @@ class NotSoBot(commands.Cog):
             name = ctx.message.author.name
         if len(ctx.message.mentions) >= 1:
             name = ctx.message.mentions[0].name
-        if text != None:
+        if text:
             if len(text) > 22:
                 one = text[:22]
                 two = text[22:]
@@ -840,12 +857,14 @@ class NotSoBot(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.group()
+    @commands.command()
     @commands.cooldown(1, 5)
-    async def merge(self, ctx, urls: ImageFinder = None):
+    async def merge(self, ctx, vertical: Optional[bool] = True, *urls: Optional[str]):
         """Merge/Combine Two Photos"""
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
+        if not urls:
+            return await ctx.send("No images found.")
         try:
             if len(urls) == 1:
                 await ctx.send("You gonna merge one image?")
@@ -877,6 +896,7 @@ class NotSoBot(commands.Cog):
             file = discord.File(final, filename="merge.png")
             await ctx.send(file=file)
         except Exception as e:
+            log.info("error merging images", exc_info=True)
             await ctx.send(code.format(e))
 
     @commands.command(aliases=["cancerify", "em"])
@@ -920,7 +940,7 @@ class NotSoBot(commands.Cog):
             if sentence_msg != "":
                 em.add_field(name="Sentences", value=sentence_msg)
             await ctx.send(embed=em)
-        except:
+        except Exception:
             full_msg = "\n**Emotions**" + code.format(emotions_msg)
             if sentence_msg != "":
                 full_msg += "**Sentence Style**" + code.format(sentence_msg)
@@ -950,8 +970,14 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["needsmorejpeg", "jpegify", "magik2"])
     @commands.cooldown(2, 5, commands.BucketType.user)
-    async def jpeg(self, ctx, urls: ImageFinder = None, quality: int = 1):
-        """Add more JPEG to an Image\nNeeds More JPEG!"""
+    async def jpeg(self, ctx, urls: Optional[ImageFinder] = None, quality: int = 1):
+        """
+        Add more JPEG to an Image
+
+        Needs More JPEG!
+        `[urls]` is optional, if not provided will search chat for a valid image.
+        `[quality]` is the quality of the new jpeg image to make
+        """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
@@ -963,11 +989,14 @@ class NotSoBot(commands.Cog):
         if b is False:
             await ctx.send(":warning: **Command download function failed...**")
             return
-        img = PIL.Image.open(b).convert("RGB")
-        final = BytesIO()
-        img.save(final, "JPEG", quality=quality)
-        final.seek(0)
-        file = discord.File(final, filename="needsmorejpeg.jpg")
+
+        def make_jpeg(b):
+            img = PIL.Image.open(b).convert("RGB")
+            final = BytesIO()
+            img.save(final, "JPEG", quality=quality)
+            final.seek(0)
+            return discord.File(final, filename="needsmorejpeg.jpg")
+        file = await ctx.bot.loop.run_in_executor(None, make_jpeg, b)
         await ctx.send(file=file)
 
     def do_vw(self, b, txt):
@@ -1021,46 +1050,42 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         try:
             check = await self.isimage(url)
-            if check == False:
+            if not check:
                 await ctx.send("Invalid or Non-Image!")
                 return
             b = await self.bytes_download(url)
             if mark == "brazzers" or mark is None:
                 wmm = await self.bytes_download("https://i.imgur.com/YAb1RMZ.png")
+                wmm.name = "watermark.png"
             else:
                 check = await self.isimage(mark)
-                if check == False:
+                if not check:
                     await ctx.send("Invalid or Non-Image for Watermark!")
                     return
                 wmm = await self.bytes_download(mark)
-            final = BytesIO()
-            with wand.image.Image(file=b) as img:
-                if mark:
-                    with wand.image.Image(file=wmm) as wm:
-                        img.watermark(image=wm, left=0, top=0)
-                else:
-                    with wand.image.Image(filename=wmm) as wm:
-                        img.watermark(image=wm, left=0, top=0)
-                img.save(file=final)
-            final.seek(0)
-            file = discord.File(final, filename="watermark.png")
+
+            def add_watermark(b, wmm, mark):
+                final = BytesIO()
+                with wand.image.Image(file=b) as img:
+                    if mark:
+                        with wand.image.Image(file=wmm) as wm:
+                            img.watermark(image=wm, left=0, top=0)
+                    else:
+                        with wand.image.Image(file=wmm) as wm:
+                            img.watermark(image=wm, left=0, top=0)
+                    img.save(file=final)
+                final.seek(0)
+                return discord.File(final, filename="watermark.png")
+            file = await ctx.bot.loop.run_in_executor(None, add_watermark, b, wmm, mark)
             await ctx.send(file=file)
-        except Exception as e:
-            exc_type, exc_obj, tb = sys.exc_info()
-            f = tb.tb_frame
-            lineno = tb.tb_lineno
-            filename = f.f_code.co_filename
-            linecache.checkcache(filename)
-            line = linecache.getline(filename, lineno, f.f_globals)
-            await ctx.send(
-                code.format(
-                    'EXCEPTION IN ({}, LINE {} "{}"): {}'.format(
-                        filename, lineno, line.strip(), exc_obj
-                    )
-                )
-            )
+        except Exception:
+            log.error("Error creating watermark", exc_info=True)
 
     def do_glitch(self, b, amount, seed, iterations):
+        img = PIL.Image.open(b)
+        img = img.convert("RGB")
+        b = BytesIO()
+        img.save(b, format="JPEG")
         b.seek(0)
         img = jpglitch.Jpeg(bytearray(b.getvalue()), amount, seed, iterations)
         final = BytesIO()
@@ -1109,10 +1134,6 @@ class NotSoBot(commands.Cog):
             gif = await self.isgif(url)
             b = await self.bytes_download(url)
             if not gif:
-                img = PIL.Image.open(b)
-                img = img.convert("RGB")
-                b = BytesIO()
-                img.save(b, format="JPEG")
                 final = await self.bot.loop.run_in_executor(
                     None, self.do_glitch, b, amount, seed, iterations
                 )
@@ -1241,7 +1262,7 @@ class NotSoBot(commands.Cog):
             print(e)
             try:
                 os.remove(path)
-            except:
+            except Exception:
                 pass
             raise
 
@@ -1262,33 +1283,36 @@ class NotSoBot(commands.Cog):
                 if len(img_urls) > 1:
                     await ctx.send(":warning: **Command download function failed...**")
                     return
-            bg = (0, 0, 0)
-            img = PIL.Image.open(b)
-            img = img.resize(
-                (int(img.size[0] / pixels), int(img.size[1] / pixels)), PIL.Image.NEAREST
-            )
-            img = img.resize(
-                (int(img.size[0] * pixels), int(img.size[1] * pixels)), PIL.Image.NEAREST
-            )
-            load = img.load()
-            for i in range(0, img.size[0], pixels):
-                for j in range(0, img.size[1], pixels):
-                    for r in range(pixels):
-                        load[i + r, j] = bg
-                        load[i, j + r] = bg
-            final = BytesIO()
-            img.save(final, "png")
-            final.seek(0)
-            file = discord.File(final, filename="pixelated.png")
+            file = await ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels, scale_msg)
             await ctx.send(scale_msg, file=file)
         except Exception as e:
             print(e)
             await ctx.send(":warning: `Too many pixels.`")
 
+    def make_pixel(self, b, pixels, scale_msg):
+        bg = (0, 0, 0)
+        img = PIL.Image.open(b)
+        img = img.resize(
+            (int(img.size[0] / pixels), int(img.size[1] / pixels)), PIL.Image.NEAREST
+        )
+        img = img.resize(
+            (int(img.size[0] * pixels), int(img.size[1] * pixels)), PIL.Image.NEAREST
+        )
+        load = img.load()
+        for i in range(0, img.size[0], pixels):
+            for j in range(0, img.size[1], pixels):
+                for r in range(pixels):
+                    load[i + r, j] = bg
+                    load[i, j + r] = bg
+        final = BytesIO()
+        img.save(final, "png")
+        final.seek(0)
+        return discord.File(final, filename="pixelated.png")
+
     async def do_retro(self, text, bcg):
         if "|" not in text:
             if len(text) >= 15:
-                text = [text[i : i + 15] for i in range(0, len(text), 15)]
+                text = [text[i: i + 15] for i in range(0, len(text), 15)]
             else:
                 split = text.split()
                 if len(split) == 1:
@@ -1318,7 +1342,7 @@ class NotSoBot(commands.Cog):
                 "https://photofunia.com/effects/retro-wave?guild=3", data=payload, headers=headers
             ) as r:
                 txt = await r.text()
-        except:
+        except Exception:
             return
         match = self.retro_regex.findall(txt)
         if match:
@@ -1360,7 +1384,7 @@ class NotSoBot(commands.Cog):
     def do_waaw(self, b):
         f = BytesIO()
         f2 = BytesIO()
-        with wand.image.Image(file=b, format="png") as img:
+        with wand.image.Image(file=b) as img:
             h1 = img.clone()
             width = int(img.width / 2) if int(img.width / 2) > 0 else 1
             h1.crop(width=width, height=int(img.height), gravity="east")
@@ -1400,7 +1424,7 @@ class NotSoBot(commands.Cog):
     def do_haah(self, b):
         f = BytesIO()
         f2 = BytesIO()
-        with wand.image.Image(file=b, format="png") as img:
+        with wand.image.Image(file=b) as img:
             h1 = img.clone()
             h1.transform("50%x100%")
             h2 = h1.clone()
@@ -1438,7 +1462,7 @@ class NotSoBot(commands.Cog):
     def do_woow(self, b):
         f = BytesIO()
         f2 = BytesIO()
-        with wand.image.Image(file=b, format="png") as img:
+        with wand.image.Image(file=b) as img:
             h1 = img.clone()
             width = int(img.width) if int(img.width) > 0 else 1
             h1.crop(width=width, height=int(img.height / 2), gravity="north")
@@ -1477,7 +1501,7 @@ class NotSoBot(commands.Cog):
     def do_hooh(self, b):
         f = BytesIO()
         f2 = BytesIO()
-        with wand.image.Image(file=b, format="png") as img:
+        with wand.image.Image(file=b) as img:
             h1 = img.clone()
             width = int(img.width) if int(img.width) > 0 else 1
             h1.crop(width=width, height=int(img.height / 2), gravity="south")
@@ -1520,12 +1544,16 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         b = await self.bytes_download(url)
-        img = PIL.Image.open(b)
-        img = PIL.ImageOps.flip(img)
-        final = BytesIO()
-        img.save(final, "png")
-        final.seek(0)
-        file = discord.File(final, filename="flip.png")
+
+        def flip_img(b):
+            img = PIL.Image.open(b)
+            img = PIL.ImageOps.flip(img)
+            final = BytesIO()
+            img.save(final, "png")
+            final.seek(0)
+            return discord.File(final, filename="flip.png")
+
+        file = await ctx.bot.loop.run_in_executor(None, flip_img, b)
         await ctx.send(file=file)
 
     @commands.command()
@@ -1535,12 +1563,15 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         b = await self.bytes_download(url)
-        img = PIL.Image.open(b)
-        img = PIL.ImageOps.mirror(img)
-        final = BytesIO()
-        img.save(final, "png")
-        final.seek(0)
-        file = discord.File(final, filename="flop.png")
+
+        def flop_img(b):
+            img = PIL.Image.open(b)
+            img = PIL.ImageOps.mirror(img)
+            final = BytesIO()
+            img.save(final, "png")
+            final.seek(0)
+            return discord.File(final, filename="flop.png")
+        file = await ctx.bot.loop.run_in_executor(None, flop_img, b)
         await ctx.send(file=file)
 
     @commands.command(aliases=["inverse", "negate"])
@@ -1550,12 +1581,15 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         b = await self.bytes_download(url)
-        img = PIL.Image.open(b).convert("RGB")
-        img = PIL.ImageOps.invert(img)
-        final = BytesIO()
-        img.save(final, "png")
-        final.seek(0)
-        file = discord.File(final, filename="flop.png")
+
+        def invert_img(b):
+            img = PIL.Image.open(b).convert("RGB")
+            img = PIL.ImageOps.invert(img)
+            final = BytesIO()
+            img.save(final, "png")
+            final.seek(0)
+            return discord.File(final, filename="flop.png")
+        file = await ctx.bot.loop.run_in_executor(None, invert_img(b))
         await ctx.send(file=file)
 
     @commands.command()
@@ -1565,15 +1599,16 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         b = await self.bytes_download(url)
-        img = PIL.Image.open(b).convert("RGBA")
-        img = img.rotate(int(degrees))
-        final = BytesIO()
-        img.save(final, "png")
-        final.seek(0)
-        file = discord.File(final, filename="rotate.png")
+
+        def rotate_img(b, degrees):
+            img = PIL.Image.open(b).convert("RGBA")
+            img = img.rotate(int(degrees))
+            final = BytesIO()
+            img.save(final, "png")
+            final.seek(0)
+            return discord.File(final, filename="rotate.png")
+        file = await ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
         await ctx.send("Rotated: `{0}°`".format(degrees), file=file)
 
     def __unload(self):
         self.bot.loop.create_task(self.session.close())
-
-    __del__ = __unload
