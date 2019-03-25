@@ -1,7 +1,4 @@
-import datetime
 import discord
-import asyncio
-from random import choice, randint
 
 from redbot.core import commands, checks, Config, modlog
 from redbot.core.utils.chat_formatting import humanize_list

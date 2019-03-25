@@ -6,8 +6,7 @@ import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
-from random import choice, randint
-
+from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -129,7 +128,7 @@ class EventMixin:
             else:
                 role = _("Not Set\nADMIN")
         elif privs == "BOT_OWNER":
-            role = guild.get_member(ctx.bot.owner_id).mention + f"\n{privs}"
+            role = f"<@!{ctx.bot.owner_id}>\n{privs}"
         elif privs == "GUILD_OWNER":
             role = guild.owner.mention + f"\n{privs}"
         else:
@@ -186,7 +185,6 @@ class EventMixin:
         cleanmsg = message.content
         for i in message.mentions:
             cleanmsg = cleanmsg.replace(i.mention, str(i))
-        fmt = "%H:%M"
         perp = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.message_delete
@@ -251,7 +249,7 @@ class EventMixin:
                     "inviter": invite.inviter.id,
                     "channel": invite.channel.id,
                 }
-            except:
+            except Exception:
                 pass
         await self.config.guild(guild).invite_links.set(invites)
         return True
@@ -278,7 +276,7 @@ class EventMixin:
                 for code, data in invites.items():
                     try:
                         invite = await self.bot.get_invite(code)
-                    except (discord.errors.NotFound, discord.errors.HTTPException) as e:
+                    except (discord.errors.NotFound, discord.errors.HTTPException):
                         logger.error("Error getting invite ".format(code))
                         invite = None
                         pass
@@ -315,7 +313,6 @@ class EventMixin:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/develop/cogs/general.py
         since_created = (time - member.created_at).days
         user_created = member.created_at.strftime("%d %b %Y %H:%M")
-        member_number = sorted(guild.members, key=lambda m: m.joined_at).index(member) + 1
 
         created_on = "{}\n({} days ago)".format(user_created, since_created)
 
@@ -361,7 +358,6 @@ class EventMixin:
         if channel is None:
             return
         time = datetime.datetime.utcnow()
-        fmt = "%H:%M:%S"
         perp = None
         reason = None
         if channel.permissions_for(guild.me).embed_links:
@@ -843,13 +839,6 @@ class EventMixin:
         if channel.permissions_for(guild.me).embed_links:
             name = before.author
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
-
-            infomessage = (
-                _("A message by ")
-                + f"{before.author}"
-                + _(" was edited in ")
-                + before.channel.name
-            )
             embed = discord.Embed(
                 description=before.content,
                 colour=discord.Colour.orange(),
