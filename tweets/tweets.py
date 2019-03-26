@@ -766,11 +766,13 @@ class Tweets(commands.Cog):
             return False
         # account_list = [x for x in await self.config.accounts()]
         # twitter_account = [x for x in account_list if user_id == x["twitter_id"]][0]
-        if channel_id in self.accounts[str(user_id)]:
+        if channel_id in self.accounts[str(user_id)]["channel"]:
             self.accounts[str(user_id)]["channel"].remove(channel_id)
             # await self.config.accounts.set(account_list)
             if len(self.accounts[str(user_id)]["channel"]) < 1:
                 del self.accounts[str(user_id)]
+        else:
+            return False
         await self.config.accounts.set(self.accounts)
         return True
 
