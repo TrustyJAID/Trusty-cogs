@@ -433,18 +433,14 @@ class Tweets(commands.Cog):
         cnt = count
         if count > 25:
             cnt = 25
-        followed_accounts = [x for x in await self.config.accounts()]
-        if username.lower() in [x["twitter_name"].lower() for x in followed_accounts]:
-            account = [
-                x for x in followed_accounts if username.lower() == x["twitter_name"].lower()
-            ]
-            replies_on = account[0]["replies"]
-        else:
-            replies_on = False
         msg_list = []
         api = await self.authenticate()
         try:
             for status in tw.Cursor(api.user_timeline, id=username).items(cnt):
+                if str(status.user.id) in self.accounts:
+                    replies_on = self.accounts[str(status.user.id)]["replies"]
+                else:
+                    replies_on = False
                 if status.in_reply_to_screen_name is not None and not replies_on:
                     continue
                 msg_list.append(status)
