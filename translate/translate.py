@@ -92,7 +92,6 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @commands.group()
     @checks.mod_or_permissions(manage_channels=True)
-    @commands.guild_only()
     async def translateset(self, ctx):
         """
             Toggle the bot auto translating
