@@ -490,7 +490,6 @@ class Game:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
                 log.info("{} channel was removed because it no longer exists".format(channels))
                 continue
-            guild = channel.guild
             should_post = await check_to_post(channel, post_state)
             if should_post:
                 tasks.append(self.actually_post_state(channel, state_embed, state_text))
@@ -499,7 +498,7 @@ class Game:
             if preview is None:
                 continue
             else:
-                await Pickems.create_pickem_object(guild, preview[1], preview[0], self)
+                await Pickems.create_pickem_object(preview[0].guild, preview[1], preview[0], self)
 
     async def actually_post_state(self, channel, state_embed, state_text):
         guild = channel.guild
