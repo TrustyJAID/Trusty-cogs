@@ -290,6 +290,46 @@ class ServerStats(commands.Cog):
         await ctx.send(file=file)
 
     @commands.command()
+    async def botstats(self, ctx):
+        """Display stats about the bot"""
+        servers = len(ctx.bot.guilds)
+        members = set()
+        passed = (datetime.datetime.utcnow() - ctx.me.created_at).days
+        since = ctx.me.created_at.strftime("%d %b %Y %H:%M")
+        for g in ctx.bot.guilds:
+            count = 0
+            for m in g.members:
+                members.add(m.id)
+                count += 1
+            if not count % 10:
+                await asyncio.sleep(0.1)
+        msg = _(
+            "{bot} is on {servers} servers serving {members} members!\n"
+            "{bot} was created on **{since}**.\n"
+            "That's over **{passed}** days ago!"
+        ).format(
+            bot=ctx.me.mention,
+            servers=servers,
+            members=len(members),
+            since=since,
+            passed=passed
+        )
+        em = discord.Embed(
+            description=msg,
+            colour=await ctx.embed_colour(),
+            timestamp=ctx.message.created_at,
+        )
+        em.set_author(
+            name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
+            icon_url=ctx.me.avatar_url
+        )
+        em.set_thumbnail(url=ctx.me.avatar_url)
+        if ctx.channel.permissions_for(ctx.me).embed_links:
+            await ctx.send(embed=em)
+        else:
+            await ctx.send(msg)
+
+    @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def topic(self, ctx, channel: Optional[discord.TextChannel], *, topic: str = ""):
