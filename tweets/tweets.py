@@ -756,7 +756,7 @@ class Tweets(commands.Cog):
             for page in pagify(msg_send, ["\n"]):
                 await ctx.send(page)
 
-    async def del_account(self, channel_id: int, user_id: int, screen_name: str):
+    async def del_account(self, channel_id: int, user_id: int, screen_name: str = ""):
         # account_ids = [x["twitter_id"] for x in await self.config.accounts()]
         if str(user_id) not in self.accounts:
             return False
