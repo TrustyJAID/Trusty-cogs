@@ -604,7 +604,9 @@ class TriggerHandler:
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         own_permissions = channel.permissions_for(guild.me)
 
-        error_in = _("Retrigger encountered an error in ")
+        error_in = _(
+            "Retrigger encountered an error in {guild} with trigger {trigger} "
+        ).format(guild=guild.name, trigger=trigger.name)
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
@@ -616,7 +618,7 @@ class TriggerHandler:
             try:
                 await channel.send(file=file)
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
         if "text" in trigger.response_type and own_permissions.send_messages:
             if trigger.multi_payload:
                 text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -626,7 +628,7 @@ class TriggerHandler:
             try:
                 await channel.send(response)
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
         if "randtext" in trigger.response_type and own_permissions.send_messages:
             rand_text_response: str = random.choice(trigger.text)
             crand_text_response = await self.convert_parms(
@@ -635,7 +637,7 @@ class TriggerHandler:
             try:
                 await channel.send(crand_text_response)
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -645,7 +647,7 @@ class TriggerHandler:
             try:
                 await author.send(response)
             except Exception:
-                log.error(error_in + str(author), exc_info=True)
+                log.error(error_in, exc_info=True)
         if "react" in trigger.response_type and own_permissions.add_reactions:
             if trigger.multi_payload:
                 react_response = [
@@ -657,7 +659,7 @@ class TriggerHandler:
                 try:
                     await message.add_reaction(emoji)
                 except Exception:
-                    log.error(error_in + guild.name, exc_info=True)
+                    log.error(error_in, exc_info=True)
         if "ban" in trigger.response_type and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally ban the bot owner
@@ -669,7 +671,7 @@ class TriggerHandler:
                     if await self.config.guild(guild).ban_logs():
                         await self.modlog_action(message, trigger, find, _("Banned"))
                 except Exception:
-                    log.error(error_in + guild.name, exc_info=True)
+                    log.error(error_in, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
                 # Don't want to accidentally kick the bot owner
@@ -681,17 +683,19 @@ class TriggerHandler:
                     if await self.config.guild(guild).kick_logs():
                         await self.modlog_action(message, trigger, find, _("Kicked"))
                 except Exception:
-                    log.error(error_in + guild.name, exc_info=True)
+                    log.error(error_in, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             file = discord.File(path)
             image_text_response = trigger.text
             if image_text_response:
-                text_response = await self.convert_parms(message, response, trigger.regex)
+                image_text_response = await self.convert_parms(
+                    message, image_text_response, trigger.regex
+                )
             try:
                 await channel.send(image_text_response, file=file)
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
         if "randimage" in trigger.response_type and own_permissions.attach_files:
             image = random.choice(trigger.image)
             path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
@@ -702,7 +706,7 @@ class TriggerHandler:
             try:
                 await channel.send(rimage_text_response, file=file)
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
         if "command" in trigger.response_type:
             if trigger.multi_payload:
                 command_response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
@@ -735,7 +739,7 @@ class TriggerHandler:
                     if await self.config.guild(guild).add_role_logs():
                         await self.modlog_action(message, trigger, find, _("Added Role"))
                 except Exception:
-                    log.error(error_in + guild.name, exc_info=True)
+                    log.error(error_in, exc_info=True)
         if "remove_role" in trigger.response_type and own_permissions.manage_roles:
 
             if trigger.multi_payload:
@@ -753,7 +757,7 @@ class TriggerHandler:
                     if await self.config.guild(guild).remove_role_logs():
                         await self.modlog_action(message, trigger, find, _("Removed Role"))
                 except Exception:
-                    log.error(error_in + guild.name, exc_info=True)
+                    log.error(error_in, exc_info=True)
         if "delete" in trigger.response_type and own_permissions.manage_messages:
             log.debug("Performing delete trigger")
             try:
@@ -761,7 +765,7 @@ class TriggerHandler:
                 if await self.config.guild(guild).filter_logs():
                     await self.modlog_action(message, trigger, find, _("Deleted Message"))
             except Exception:
-                log.error(error_in + guild.name, exc_info=True)
+                log.error(error_in, exc_info=True)
 
         if "mock" in trigger.response_type:
             if trigger.multi_payload:
