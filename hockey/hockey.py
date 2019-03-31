@@ -67,9 +67,9 @@ class Hockey(commands.Cog):
         }
         default_channel = {"team": [], "to_delete": False}
 
-        self.config = Config.get_conf(self, CONFIG_ID)
+        self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
         self.config.register_global(**default_global, force_registration=True)
-        self.config.register_guild(**default_guild)
+        self.config.register_guild(**default_guild, force_registration=True)
         self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False  # used to test a continuous loop of a single game data
@@ -870,7 +870,7 @@ class Hockey(commands.Cog):
             await ctx.message.delete()
         await ctx.send(embed=em)
 
-    @hockey_commands.command(hidden=True)
+    @hockey_commands.command(name="pickemspage", hidden=True)
     @checks.admin_or_permissions(manage_messages=True)
     async def pickems_page(self, ctx, date: str = None):
         """
