@@ -23,7 +23,9 @@
     ],
     "required_cogs" : [],
     "requirements" : [
-        "unidecode"
+        "unidecode",
+        "pytz",
+        "python-dateutil"
     ],
     "short" : "Get various stats about servers the bot is on.",
     "tags" : [
