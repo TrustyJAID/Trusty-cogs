@@ -540,6 +540,8 @@ class Tweets(commands.Cog):
             `channel` has to be a valid server channel, defaults to the current channel
         """
         api = await self.authenticate()
+        user_id = None
+        screen_name = None
         try:
             for status in tw.Cursor(api.user_timeline, id=username).items(1):
                 user_id = status.user.id
@@ -549,6 +551,8 @@ class Tweets(commands.Cog):
             log.error(msg, exc_info=True)
             await ctx.send(_("That username does not exist."))
             return
+        if user_id is None or screen_name is None:
+            return await ctx.send(_("That username does not exist."))
         if channel is None:
             channel = ctx.message.channel
         own_perms = channel.permissions_for(ctx.guild.me)
@@ -562,7 +566,7 @@ class Tweets(commands.Cog):
                 + _("I recommend enabling that for pretty twitter posts!")
             )
             await ctx.send(msg)
-        in_list = user_id in self.accounts
+        in_list = str(user_id) in self.accounts
         added = await self.add_account(channel, user_id, screen_name)
         if added:
             await ctx.send(username + _(" added to ") + channel.mention)
