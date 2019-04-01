@@ -99,6 +99,8 @@ class GameDayChannels:
             log.error("Error creating channels in {}".format(guild.name), exc_info=True)
             return
         # cur_channels = await config.guild(guild).gdc()
+        if "gdc" not in guild_data:
+            guild_data["gdc"] = []
         if guild_data["gdc"] is None:
             guild_data["gdc"] = []
         guild_data["gdc"].append(new_chn.id)
