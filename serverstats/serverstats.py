@@ -836,8 +836,10 @@ class ServerStats(commands.Cog):
             `[channel]` is the channel you want to set slowmode on defaults to current channel
             `<time>` the amount of time to set the slowmode to, maximum 6 hours.
         """
+        if time in ["clear", "none", "remove", "rem"]:
+            time = "0 s"
         time_delta = parse_timedelta(time)
-        if not time_delta:
+        if time_delta is None:
             return await ctx.send(_("You must supply a ammount and time unit like `120 seconds`."))
         if channel is None:
             channel = ctx.channel
