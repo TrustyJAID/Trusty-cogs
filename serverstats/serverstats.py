@@ -833,10 +833,12 @@ class ServerStats(commands.Cog):
         """
             Set a channels slowmode setting
 
-            `time` must be a number between 0 and 120
-            `channel` is the channel you want to set slowmode on defaults to current channel
+            `[channel]` is the channel you want to set slowmode on defaults to current channel
+            `<time>` the amount of time to set the slowmode to, maximum 6 hours.
         """
         time_delta = parse_timedelta(time)
+        if not time_delta:
+            return await ctx.send(_("You must supply a ammount and time unit like `120 seconds`."))
         if channel is None:
             channel = ctx.channel
         if time_delta.seconds < 0 or time_delta.seconds > 21600:
