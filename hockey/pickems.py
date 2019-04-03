@@ -109,6 +109,8 @@ class Pickems:
     @staticmethod
     async def set_guild_pickem_winner(bot, game):
         pickem_obj = await Pickems.find_pickems_object(bot, game)
+        if len(pickem_obj) == 0:
+            return
         config = hockey_config()
         for pickem in pickem_obj:
             for channel in pickem.channel:
