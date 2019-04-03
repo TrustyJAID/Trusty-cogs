@@ -120,7 +120,13 @@ class Pickems:
                 if pickem.winner is not None:
                     continue
                 p_data = await config.guild(chn.guild).pickems()
-                p_data.remove(pickem.to_json())
+                try:
+                    p_data.remove(pickem.to_json())
+                except ValueError:
+                    log.error(
+                        "pickems object doesn't exist in the list :thonk: " + pickem.game_start
+                    )
+                    continue
                 await pickem.set_pickem_winner(game)
                 p_data.append(pickem.to_json())
                 await config.guild(chn.guild).pickems.set(p_data)
