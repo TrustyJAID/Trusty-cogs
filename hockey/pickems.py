@@ -124,7 +124,8 @@ class Pickems:
                     p_data.remove(pickem.to_json())
                 except ValueError:
                     log.error(
-                        "pickems object doesn't exist in the list :thonk: " + pickem.game_start
+                        "pickems object doesn't exist in the list :thonk: "
+                        + pickem.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
                     )
                     continue
                 await pickem.set_pickem_winner(game)
