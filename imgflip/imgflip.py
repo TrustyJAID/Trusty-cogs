@@ -126,7 +126,7 @@ class Imgflip(commands.Cog):
                 f"`{ctx.prefix}imgflipset <username> <password>`"
             )
         await ctx.trigger_typing()
-        text = " ".join(
+        text = "".join(
             ctx.message.clean_content.replace(f"{ctx.prefix}{ctx.invoked_with} {meme[1]}", "")
         )
         text = re.split(r"\|", text)
