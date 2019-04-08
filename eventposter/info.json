@@ -1,0 +1,31 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "bot_version" : [
+        3,
+        0,
+        0
+    ],
+    "description" : "Allow users to setup and host events to be approved by admins.",
+    "disabled" : false,
+    "hidden" : false,
+    "install_msg" : "Setup a channel with `[p]eventset channel` for announcements and an admin channel with `[p]eventset approvalchannel`. Then anyone can ask to make an event with `[p]event`",
+    "min_python_version" : [
+        3,
+        6,
+        2
+    ],
+    "name" : "EventPoster",
+    "permissions" : [
+        "embed_links",
+        "add_reactions"
+    ],
+    "required_cogs" : [],
+    "requirements" : [],
+    "short" : "Admin approved announcments/events",
+    "tags" : [
+        "events"
+    ],
+    "type" : "COG"
+}
