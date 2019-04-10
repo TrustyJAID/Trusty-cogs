@@ -12,7 +12,7 @@ from .event_obj import Event, ValidImage
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -94,6 +94,8 @@ class EventPoster(commands.Cog):
                 embed=em,
             )
         async with self.config.guild(ctx.guild).events() as events:
+            event = await Event.from_json(events[str(ctx.author.id)])
+            await event.message.edit(content="This event has ended.")
             del events[str(ctx.author.id)]
         await ctx.tick()
 
@@ -165,7 +167,7 @@ class EventPoster(commands.Cog):
     @event_settings.command(name="channel")
     @commands.guild_only()
     async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
-        """Set the admin approval channel"""
+        """Set the Announcement channel for events"""
         if not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send("I require `Embed Links` permission to use that channel.")
         save_channel = None
