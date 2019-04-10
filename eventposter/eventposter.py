@@ -12,7 +12,7 @@ from .event_obj import Event, ValidImage
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -139,7 +139,7 @@ class EventPoster(commands.Cog):
     async def make_event_embed(self, ctx, event):
         em = discord.Embed(title=event.event)
         em.set_author(name=f"{event.hoster} is hosting", icon_url=event.hoster.avatar_url)
-        em.description = f"To join this event type `{ctx.prefix}{event.hoster}`"
+        em.description = f"To join this event type `{ctx.prefix}join {event.hoster}`"
         for i, member in enumerate(event.members):
             em.add_field(name=f"Slot {i+1}", value=member.mention, inline=False)
         if event.approver:
