@@ -23,7 +23,7 @@
     ],
     "required_cogs" : [],
     "requirements" : [],
-    "short" : "Fenrir",
+    "short" : "Give users the option to kick, ban, or insult themselves via reactions.",
     "tags" : [
     ],
     "type" : "COG"
