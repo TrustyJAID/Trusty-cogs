@@ -244,6 +244,7 @@ class NotSoBot(commands.Cog):
             return False
         except Exception as e:
             print(e)
+            return False
         finally:
             transport.close()
 
@@ -1589,7 +1590,7 @@ class NotSoBot(commands.Cog):
             img.save(final, "png")
             final.seek(0)
             return discord.File(final, filename="flop.png")
-        file = await ctx.bot.loop.run_in_executor(None, invert_img(b))
+        file = await ctx.bot.loop.run_in_executor(None, invert_img, b)
         await ctx.send(file=file)
 
     @commands.command()
