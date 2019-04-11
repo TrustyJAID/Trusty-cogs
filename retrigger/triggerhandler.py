@@ -273,10 +273,10 @@ class TriggerHandler:
                 whitelist_s = ", ".join(x.name for x in whitelist)
             responses = ", ".join(r for r in trigger.response_type)
             info = _(
-                "__Name__: **{name}** \n"
-                "__Author__: {author}\n"
-                "__Count__: **{count}**\n"
-                "__Response__: **{response}**\n"
+                "Name: **{name}** \n"
+                "Author: {author}\n"
+                "Count: **{count}**\n"
+                "Response: **{response}**\n"
             )
             if embeds:
                 info = info.format(
@@ -294,19 +294,19 @@ class TriggerHandler:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
                 else:
                     response = trigger.text
-                info += _("__Text__: ") + "**{response}**\n".format(response=response)
+                info += _("Text: ") + "**{response}**\n".format(response=response)
             if "dm" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
                 else:
                     response = trigger.text
-                info += _("__DM__: ") + "**{response}**\n".format(response=response)
+                info += _("DM: ") + "**{response}**\n".format(response=response)
             if "command" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
                 else:
                     response = trigger.text
-                info += _("__Command__: ") + "**{response}**\n".format(response=response)
+                info += _("Command: ") + "**{response}**\n".format(response=response)
             if "react" in trigger.response_type:
                 if trigger.multi_payload:
                     emoji_response = [
@@ -316,7 +316,7 @@ class TriggerHandler:
                     emoji_response = trigger.text
                 server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
                 unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
-                info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
+                info += _("Emojis: ") + server_emojis + unicode_emojis + "\n"
             if "add_role" in trigger.response_type:
                 if trigger.multi_payload:
                     role_response = [
@@ -330,9 +330,9 @@ class TriggerHandler:
                 else:
                     roles_list = [r.name for r in roles if r is not None]
                 if roles_list:
-                    info += _("__Roles Added__: ") + humanize_list(roles_list) + "\n"
+                    info += _("Roles Added: ") + humanize_list(roles_list) + "\n"
                 else:
-                    info += _("__Roles Added__: Deleted Roles\n")
+                    info += _("Roles Added: Deleted Roles\n")
             if "remove_role" in trigger.response_type:
                 if trigger.multi_payload:
                     role_response = [
@@ -346,18 +346,18 @@ class TriggerHandler:
                 else:
                     roles_list = [r.name for r in roles if r is not None]
                 if roles_list:
-                    info += _("__Roles Removed__: ") + humanize_list(roles_list) + "\n"
+                    info += _("Roles Removed: ") + humanize_list(roles_list) + "\n"
                 else:
-                    info += _("__Roles Added__: Deleted Roles\n")
+                    info += _("Roles Added: Deleted Roles\n")
             if whitelist_s:
-                info += _("__Whitelist__: ") + whitelist_s + "\n"
+                info += _("Whitelist: ") + whitelist_s + "\n"
             if blacklist_s:
-                info += _("__Blacklist__: ") + blacklist_s + "\n"
+                info += _("Blacklist: ") + blacklist_s + "\n"
             if trigger.cooldown:
                 time = trigger.cooldown["time"]
                 style = trigger.cooldown["style"]
-                info += _("__Cooldown__: ") + "**{}s per {}**\n".format(time, style)
-            info += _("__Regex__: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
+                info += _("Cooldown: ") + "**{}s per {}**\n".format(time, style)
+            info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
             if embeds:
                 em = discord.Embed(
                     timestamp=ctx.message.created_at,
