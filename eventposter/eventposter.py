@@ -12,7 +12,7 @@ from .event_obj import Event, ValidImage
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -71,7 +71,7 @@ class EventPoster(commands.Cog):
         else:
             return
 
-    @commands.command(name="clearevent")
+    @commands.command(name="clearevent", aliases=["endevent"])
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def clear_event(self, ctx, clear: bool = False):
@@ -135,6 +135,63 @@ class EventPoster(commands.Cog):
         async with self.config.guild(ctx.guild).events() as cur_events:
             cur_events[str(event.hoster.id)] = event.to_json()
         await ctx.tick()
+
+    @commands.command(name="leaveevent")
+    @commands.guild_only()
+    async def leave_event(self, ctx, hoster: discord.Member):
+        """Leave an event being hosted"""
+        if str(hoster.id) not in await self.config.guild(ctx.guild).events():
+            return await ctx.send("That user is not currently hosting any events.")
+        event_data = await self.config.guild(ctx.guild).events()
+        event = await Event.from_json(event_data[str(hoster.id)], ctx.guild)
+        if ctx.author not in event.members:
+            return await ctx.send("You're not participating in this event!")
+        event.members.remove(ctx.author)
+        em = await self.make_event_embed(ctx, event)
+        await event.message.edit(embed=em)
+        async with self.config.guild(ctx.guild).events() as cur_events:
+            cur_events[str(event.hoster.id)] = event.to_json()
+        await ctx.tick()
+
+    @commands.command(name="removefromevent")
+    @commands.guild_only()
+    async def remove_from_event(self, ctx, member: discord.Member, hoster: discord.Member = None):
+        """
+            Remove a user from an event you're hosting
+
+            `<member>` The member to remove from your event
+            `<hoster>` mod/admin only to specify whos event to remove a user from.
+        """
+        if hoster and not await self.is_mod_or_admin(ctx.author):
+            return await ctx.send("You cannot remove a member from someone elses event")
+        if not hoster:
+            hoster = ctx.author
+        if member is hoster:
+            return await ctx.send("You cannot remove the hoster from this event.")
+        if str(hoster.id) not in await self.config.guild(ctx.guild).events():
+            return await ctx.send("You are not currently hosting any events.")
+        event_data = await self.config.guild(ctx.guild).events()
+        event = await Event.from_json(event_data[str(ctx.author.id)], ctx.guild)
+        if member not in event.members:
+            return await ctx.send("That member is not participating in that event!")
+        event.members.remove(member)
+        em = await self.make_event_embed(ctx, event)
+        await event.message.edit(embed=em)
+        async with self.config.guild(ctx.guild).events() as cur_events:
+            cur_events[str(event.hoster.id)] = event.to_json()
+        await ctx.tick()
+
+    async def is_mod_or_admin(self, member: discord.Member) -> bool:
+        guild = member.guild
+        if member == guild.owner:
+            return True
+        if await self.bot.is_owner(member):
+            return True
+        if await self.bot.is_admin(member):
+            return True
+        if await self.bot.is_mod(member):
+            return True
+        return False
 
     async def make_event_embed(self, ctx, event):
         em = discord.Embed(title=event.event)
