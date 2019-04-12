@@ -253,7 +253,7 @@ def draw_method1(k, name, im):
 
 
 if __name__ == "__main__":
-    """k is for nuanced transformations in individual functions"""
+    # k is for nuanced transformations in individual functions
     # for k in range(100,200):
     # 	# if k!= 2: continue
     # 	print k, '------------'
