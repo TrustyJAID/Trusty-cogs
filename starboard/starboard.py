@@ -54,7 +54,7 @@ class Starboard(commands.Cog):
                         chans = ", ".join(c.mention for c in channels if c is not None)
                         msg += _("Blacklisted Channels: ") + chans + "\n"
                     if s_boards[s]["whitelist_channel"]:
-                        channles = [guild.get_channel(c) for c in s_boards[s]["whitelist_channel"]]
+                        channels = [guild.get_channel(c) for c in s_boards[s]["whitelist_channel"]]
                         chans = ", ".join(c.mention for c in channels if c is not None)
                         msg += _("Whitelisted Channels: ") + chans + "\n"
                     if s_boards[s]["blacklist_role"]:
