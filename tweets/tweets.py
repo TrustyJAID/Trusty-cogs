@@ -218,18 +218,18 @@ class Tweets(commands.Cog):
 
         if str(user_id) not in self.accounts:
             return
-        tasks = []
-        if not status.in_reply_to_screen_name and not self.accounts[str(user_id)]["replies"]:
+        if status.in_reply_to_screen_name and not self.accounts[str(user_id)]["replies"]:
             return
         em = await self.build_tweet_embed(status)
         # channel_list = account.channel
+        tasks = []
         for channel in self.accounts[str(user_id)]["channel"]:
             channel_send = self.bot.get_channel(int(channel))
             if channel_send is None:
                 await self.del_account(channel, user_id, username)
                 continue
             tasks.append(self.post_tweet_status(channel_send, em, status))
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def post_tweet_status(self, channel_send, em, status):
         username = status.user.screen_name
@@ -513,10 +513,11 @@ class Tweets(commands.Cog):
             return
         else:
             # all_accounts.remove(edited_account)
-            self.accounts[edited_account]["replies"] = not edited_account["replies"]
+            replies = self.accounts[str(edited_account)]["replies"]
+            self.accounts[str(edited_account)]["replies"] = not replies
 
             await self.config.accounts.set(self.accounts)
-            if self.accounts[edited_account]["replies"]:
+            if self.accounts[str(edited_account)]["replies"]:
                 await ctx.send(_("Now posting replies from ") + username)
             else:
                 await ctx.send(_("No longer posting replies from") + username)
