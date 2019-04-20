@@ -1,7 +1,6 @@
-import random
 import re
-import json
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import pagify
 import discord
 
 """Module for fun/meme commands commands
@@ -257,8 +256,11 @@ class Fun(commands.Cog):
             msg = msg.split(" ", 1)[1].strip()
         else:
             spaces = " "
-        spaced_message = spaces.join(list(msg))
-        await ctx.send(spaced_message)
+        spaced_message = pagify(spaces.join(list(msg)))
+        try:
+            await ctx.send_interactive(spaced_message)
+        except discord.errors.HTTPException:
+            await ctx.send("That message is too long.", delete_after=10)
 
     @commands.command()
     async def oof(self, ctx, msg_id: int = None, channel: discord.TextChannel = None):
