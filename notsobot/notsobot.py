@@ -1019,7 +1019,10 @@ class NotSoBot(commands.Cog):
         if txt is None:
             txt = "vapor wave"
         b = await self.bytes_download(url)
-        final = await self.bot.loop.run_in_executor(None, self.do_vw, b, txt)
+        try:
+            final = await self.bot.loop.run_in_executor(None, self.do_vw, b, txt)
+        except Exception:
+            return await ctx.send("That image cannot be vaporwaved.")
         file = discord.File(final, filename="vapewave.png")
         await ctx.send(file=file)
 
