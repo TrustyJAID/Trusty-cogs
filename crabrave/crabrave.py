@@ -57,7 +57,7 @@ class CrabRave(commands.Cog):
                 return False
         return True
 
-    @commands.command()
+    @commands.command(aliases=["crabrave"])
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @checks.bot_has_permissions(attach_files=True)
     async def crab(self, ctx, *, text: str):
