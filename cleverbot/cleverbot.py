@@ -59,7 +59,7 @@ class Cleverbot(commands.Cog):
             except NoCredentials:
                 await ctx.send(
                     "The owner needs to set the credentials first.\n"
-                    "See: `[p]cleverbotset` or `[p]cleverbotset`"
+                    "See: `[p]cleverbotset apikey` or `[p]cleverbotset ioapikey`"
                 )
             except APIError as e:
                 await ctx.send("Error contacting the API. Error code: {}".format(e))
