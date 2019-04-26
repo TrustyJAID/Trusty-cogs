@@ -835,7 +835,7 @@ class Tweets(commands.Cog):
             await ctx.message.delete()
         await ctx.send(_("Set the access credentials!"))
 
-    def __unload(self):
+    def cog_unload(self):
         if self.mystream is not None:
             self.mystream.disconnect()
         self.twitter_loop.cancel()

@@ -67,6 +67,7 @@ class ServerStats(commands.Cog):
         else:
             await ctx.send(embed=embed_list[0])
 
+    @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         """Build and send a message containing serverinfo when the bot joins a new server"""
         channel_id = await self.config.join_channel()
@@ -234,6 +235,7 @@ class ServerStats(commands.Cog):
             )
         return em
 
+    @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         """Build and send a message containing serverinfo when the bot leaves a server"""
         channel_id = await self.config.join_channel()
