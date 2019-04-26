@@ -5,7 +5,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Gets the latest Tweet from twitter accounts and posts them in the specified channels",
@@ -14,8 +14,8 @@
     "install_msg" : "`[p]tweets` to see commands. Make sure to do pip3 install tweepy before using this plugin. Do [p]tweetset to find commands for setting consumer key and secret and access token and secret. If you need these, visit https://apps.twitter.com/ and create an application. This plugin only needs read only permissions as it will only read public information",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "Tweets",
     "permissions" : [

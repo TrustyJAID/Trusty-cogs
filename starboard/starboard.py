@@ -176,7 +176,7 @@ class Starboard(commands.Cog):
     async def update_starboard(self, ctx):
         """
             This is to update all previous starboards
-            to the new starboard storage method keeping as many 
+            to the new starboard storage method keeping as many
             settings as possible
             This works for all guilds
         """
@@ -550,7 +550,7 @@ class Starboard(commands.Cog):
             starboard.colour = colour.value
         await self.save_starboard(guild, starboard)
         msg = _("Starboard `{name}` colour set to `{colour}`.").format(
-            name=starboard.name, 
+            name=starboard.name,
             colour=starboard.colour
         )
         await ctx.send(msg)
@@ -735,6 +735,7 @@ class Starboard(commands.Cog):
             return True
         return False
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:
@@ -743,7 +744,7 @@ class Starboard(commands.Cog):
             # DMChannels don't have guilds
             return
         try:
-            msg = await channel.get_message(id=payload.message_id)
+            msg = await channel.fetch_message(id=payload.message_id)
         except:
             return
         member = guild.get_member(payload.user_id)

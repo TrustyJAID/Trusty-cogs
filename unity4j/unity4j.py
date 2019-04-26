@@ -55,6 +55,7 @@ class Unity4J(commands.Cog):
         em.timestamp = datetime.utcnow()
         await ctx.send(embed=em)
 
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         guild = before.guild
         if guild.id != 469771424274317312:
@@ -80,6 +81,7 @@ class Unity4J(commands.Cog):
             except Exception as e:
                 print(e)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if message.channel.id == 469783041145962496 or message.channel.id == 469771424773701649:
             if "donate" in message.content.lower() and not message.author.bot:

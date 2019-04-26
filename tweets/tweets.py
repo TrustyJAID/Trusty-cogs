@@ -153,6 +153,7 @@ class Tweets(commands.Cog):
         self.twitter_loop.cancel()
         self.twitter_loop = self.bot.loop.create_task(self.start_stream())
 
+    @commands.Cog.listener()
     async def on_tweet_error(self, error):
         """Posts tweet stream errors to a specified channel"""
         if await self.config.error_channel() is not None:
@@ -211,6 +212,7 @@ class Tweets(commands.Cog):
         em.set_footer(text="@" + username)
         return em
 
+    @commands.Cog.listener()
     async def on_tweet_status(self, status):
         """Posts the tweets to the channel"""
         username = status.user.screen_name

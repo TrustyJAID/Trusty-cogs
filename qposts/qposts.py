@@ -1,21 +1,17 @@
 import discord
 import aiohttp
 import asyncio
-import json
-import os
 from datetime import datetime
-from redbot.core import commands
-from redbot.core import Config
-from redbot.core import checks
+from redbot.core import commands, Config, checks
+from redbot.core.utils.chat_formatting import escape
 from redbot.core.data_manager import cog_data_path
-from pathlib import Path
 from bs4 import BeautifulSoup
 
 try:
     import tweepy as tw
 
     twInstalled = True
-except:
+except ImportError:
     twInstalled = False
 
 numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
@@ -66,7 +62,7 @@ class QPosts(commands.Cog):
                 await self.config.twitter.access_token(), await self.config.twitter.access_secret()
             )
             return tw.API(auth)
-        except:
+        except Exception:
             return
 
     async def send_tweet(self, message: str, file=None):
@@ -79,7 +75,7 @@ class QPosts(commands.Cog):
                 api.update_status(message)
             else:
                 api.update_with_media(file, status=message)
-        except:
+        except Exception:
             return
 
     @commands.command()
@@ -120,19 +116,22 @@ class QPosts(commands.Cog):
         await self.config.boards.set(board_posts)
 
     @commands.command(name="qrole")
+    @checks.bot_has_permissions(manage_roles=True)
     async def qrole(self, ctx):
         """
             Apply @QPOSTS role to get notified whenever
             a new Q Post comes int
-            
+
             The role must be created by you
         """
         guild = ctx.message.guild
         try:
             role = [role for role in guild.roles if role.name == "QPOSTS"][0]
+            if role >= ctx.guild.me.top_role:
+                return await ctx.send("The QPOSTS role is higher than my current role.")
             await ctx.message.author.add_roles(role)
             await ctx.send("Role applied.")
-        except:
+        except Exception:
             return
 
     async def get_q_posts(self):
@@ -164,7 +163,7 @@ class QPosts(commands.Cog):
                                     "{}/{}/res/{}.json".format(self.url, board, thread["no"])
                                 ) as resp:
                                     posts = await resp.json()
-                            except:
+                            except Exception:
                                 print(
                                     "error grabbing thread {} in board {}".format(
                                         thread["no"], board
@@ -210,7 +209,7 @@ class QPosts(commands.Cog):
                     a["href"].split("#")[0].replace("html", "json"),
                     int(a["href"].split("#")[1]),
                 )
-            except:
+            except Exception:
                 continue
             async with self.session.get(self.url + url) as resp:
                 data = await resp.json()
@@ -249,30 +248,24 @@ class QPosts(commands.Cog):
                 file_id = reference[0]["tim"]
                 file_ext = reference[0]["ext"]
                 img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
-                await self.save_q_files(reference[0])
+                # await self.save_q_files(reference[0])
         if "tim" in qpost:
             file_id = qpost["tim"]
             file_ext = qpost["ext"]
             img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
-            await self.save_q_files(qpost)
+            # await self.save_q_files(qpost)
 
         # print("here")
         em = discord.Embed(colour=discord.Colour.red())
         em.set_author(name=name + qpost["trip"], url=url)
         em.timestamp = datetime.utcfromtimestamp(qpost["time"])
         if text != "":
-            if text.count("_") > 2 or text.count("~") > 2 or text.count("*") > 2:
-                em.description = "```\n{}```".format(text[:1990])
-            else:
-                em.description = text[:1900]
+            em.description = escape(text[:1900], formatting=True)
         else:
-            em.description = qpost["com"]
+            em.description = qpost["com"] if qpost["com"] else "."
 
         if ref_text != "":
-            if ref_text.count("_") > 2 or ref_text.count("~") > 2 or ref_text.count("*") > 2:
-                em.add_field(name=str(post["no"]), value="```{}```".format(ref_text[:1000]))
-            else:
-                em.add_field(name=str(post["no"]), value=ref_text[:1000])
+            em.add_field(name=str(post["no"]), value=escape(ref_text[:1000], formatting=True))
         if img_url != "":
             em.set_image(url=img_url)
             try:
@@ -295,7 +288,7 @@ class QPosts(commands.Cog):
                 print(f"Error sending tweet: {e}")
                 pass
         em.set_footer(text=board)
-
+        tasks = []
         for channel_id in await self.config.channels():
             try:
                 channel = self.bot.get_channel(id=channel_id)
@@ -304,19 +297,23 @@ class QPosts(commands.Cog):
                 continue
             if channel is None:
                 continue
-            guild = channel.guild
-            if not channel.permissions_for(guild.me).send_messages:
-                continue
-            if not channel.permissions_for(guild.me).embed_links:
-                await channel.send(text[:1900])
-            try:
-                role = "".join(role.mention for role in guild.roles if role.name == "QPOSTS")
-                if role != "":
-                    await channel.send("{} <{}>".format(role, url), embed=em)
-                else:
-                    await channel.send("<{}>".format(url), embed=em)
-            except Exception as e:
-                print(f"Error posting Qpost in {channel_id}: {e}")
+            tasks.append(self.post_updates(channel, text, em, url))
+        await asyncio.gather(*tasks)
+
+    async def post_updates(self, channel, text, em, url):
+        guild = channel.guild
+        if not channel.permissions_for(guild.me).send_messages:
+            return
+        if not channel.permissions_for(guild.me).embed_links:
+            await channel.send(text[:1900])
+        try:
+            role = "".join(role.mention for role in guild.roles if role.name == "QPOSTS")
+            if role != "":
+                await channel.send("{} <{}>".format(role, url), embed=em)
+            else:
+                await channel.send("<{}>".format(url), embed=em)
+        except Exception as e:
+            print(f"Error posting Qpost in {channel.id}: {e}")
 
     async def q_menu(
         self,
@@ -470,7 +467,6 @@ class QPosts(commands.Cog):
         """Set the channel for live qposts"""
         if channel is None:
             channel = ctx.message.channel
-        guild = ctx.message.guild
         cur_chans = await self.config.channels()
         if channel.id in cur_chans:
             await ctx.send("{} is already posting new Q posts!".format(channel.mention))
@@ -485,7 +481,6 @@ class QPosts(commands.Cog):
         """Remove qpost updates from a channel"""
         if channel is None:
             channel = ctx.message.channel
-        guild = ctx.message.guild
         cur_chans = await self.config.channels()
         if channel.id not in cur_chans:
             await ctx.send("{} is not posting new Q posts!".format(channel.mention))

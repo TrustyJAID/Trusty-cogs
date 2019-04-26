@@ -8,7 +8,7 @@ class Fenrir(commands.Cog):
         Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -78,6 +78,7 @@ class Fenrir(commands.Cog):
             return True
         return False
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         try:
             guild = self.bot.get_guild(payload.guild_id)

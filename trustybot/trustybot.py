@@ -5,7 +5,7 @@ from typing import Optional
 
 class TrustyBot(commands.Cog):
     """
-        This is mostly a test cog to try out new things 
+        This is mostly a test cog to try out new things
         before I figure out how to make them work elsewhere
         Generally for commands that don't fit anywhere else or are
         not meant to be used by anyone except TrustyBot

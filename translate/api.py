@@ -124,6 +124,7 @@ class GoogleTranslateAPI:
             translated_text = data["data"]["translations"][0]["translatedText"]
             return translated_text
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         """
             Translates the message based off reactions
@@ -199,6 +200,7 @@ class GoogleTranslateAPI:
         if not cooldown["multiple"]:
             self.cache["translations"].append(translation.id)
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         """
             Translates the message based off reactions

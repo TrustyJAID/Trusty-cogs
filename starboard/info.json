@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Create a starboard channel to save those amazing posts!",
@@ -13,8 +13,8 @@
     "install_msg" : "Create a starboard!",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "Starboard",
     "permissions" : [

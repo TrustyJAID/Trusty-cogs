@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Gathers stats from Runescape API endpoints.",
@@ -13,8 +13,8 @@
     "install_msg" : "gathers runescape stats and information.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "runescape",
     "permissions" : [

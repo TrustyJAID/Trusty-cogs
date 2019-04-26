@@ -138,6 +138,7 @@ class AddImage(commands.Cog):
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if len(message.content) < 2 or message.guild is None:
             return
@@ -424,5 +425,5 @@ class AddImage(commands.Cog):
         else:
             await self.save_image_location(ctx.message, name)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

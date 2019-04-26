@@ -181,6 +181,7 @@ class Hockey(commands.Cog):
             await GameDayChannels.check_new_gdc(self.bot)
             await self.config.created_gdc.set(True)
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:
@@ -408,7 +409,7 @@ class Hockey(commands.Cog):
                     + create_channels
                     + "\n"
                     + _("Delete Game Day Channels: ")
-                    + delete_gdc
+                    + str(delete_gdc)
                     + "\n"
                     + _("Team:")
                     + team
@@ -1349,9 +1350,9 @@ class Hockey(commands.Cog):
         await self.config.guild(ctx.guild).leaderboard.set({})
         await ctx.send(_("Server leaderboard reset."))
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()
 
-    __del__ = __unload
+    __del__ = cog_unload

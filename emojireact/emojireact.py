@@ -89,6 +89,7 @@ class EmojiReactions(commands.Cog):
             msg = _("Okay, I will react to messages " "containing all emojis!")
             await ctx.send(msg)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         channel = message.channel
         emoji_list = []

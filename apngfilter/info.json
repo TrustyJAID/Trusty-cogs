@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Toggle APNG message automatic deletion.",
@@ -13,8 +13,8 @@
     "install_msg" : "Do `[p]apngfilter` to toggle servers automatically deleting APNG files.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "APNGFilter",
     "permissions" : [

@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Post spoiler messages through the bot.",
@@ -13,8 +13,8 @@
     "install_msg" : "Use `[p]spoiler spoiler message` to post a spoiler message, react to be DM'd the spoiler.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "Spoiler",
     "permissions" : [

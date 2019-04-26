@@ -233,6 +233,7 @@ class Cleverbot(commands.Cog):
         else:
             return io_user, io_key
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         guild = message.guild
         if guild is None:
@@ -313,5 +314,5 @@ class Cleverbot(commands.Cog):
                 else:
                     await channel.send(response)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Mock another user!",
@@ -13,8 +13,8 @@
     "install_msg" : "Type `[p]mock` to mock the last user to post. If you need the core dev commands start the bot without the `--dev` flag and install the dev cog in my repo that replaces its `mock` with `sudo` like V2.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "Mock",
     "permissions" : [

@@ -5,7 +5,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "With this cog you can specify which roles you want to be reapplied on join. This is particularly useful to fight \"role evasion\".",
@@ -14,8 +14,8 @@
     "install_msg" : "The command group is `[p]stickyroles`. Remember that role names are case sensitive. If a user with the roles you specified with `[p]stickyroles add` leaves the server and comes back those roles will be reapplied to them. Make sure that Red has appropriate permissions.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "stickyroles",
     "permissions" : [

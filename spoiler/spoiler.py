@@ -68,6 +68,7 @@ class Spoiler(commands.Cog):
         em.set_footer(text="{} | #{}".format(channel.guild.name, channel.name))
         return em
 
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if str(payload.emoji) != "✅":
             return

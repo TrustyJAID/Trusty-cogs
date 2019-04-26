@@ -62,6 +62,7 @@ class Events:
             em.set_author(name=str(member), icon_url=member.avatar_url)
         return em
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
         if not await self.config.guild(guild).ON():
@@ -144,6 +145,7 @@ class Events:
             else:
                 await channel.send(msg.format(member, guild))
 
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         guild = member.guild
         if not await self.config.guild(guild).LEAVE_ON():

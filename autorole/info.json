@@ -5,7 +5,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Automatically apply a role to new users",
@@ -14,8 +14,8 @@
     "install_msg" : "autorole",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "autorole",
     "permissions" : [

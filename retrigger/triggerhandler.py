@@ -430,6 +430,7 @@ class TriggerHandler:
                     is_command = True
         return is_command
 
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.guild is None:
             return
@@ -437,6 +438,7 @@ class TriggerHandler:
             return
         await self.check_triggers(message)
 
+    @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         if "content" not in payload.data:
             return

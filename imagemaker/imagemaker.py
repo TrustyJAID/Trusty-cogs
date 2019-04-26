@@ -27,7 +27,6 @@ except ImportError:
     BANNER = False
 
 
-
 class ImageMaker(commands.Cog):
     """
         Create various fun images

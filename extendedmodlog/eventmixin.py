@@ -89,6 +89,7 @@ class EventMixin:
                 raise RuntimeError("No Modlog set")
         return channel
 
+    @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context):
         guild = ctx.guild
         if guild is None:
@@ -163,6 +164,7 @@ class EventMixin:
             clean_msg = f"{infomessage}\n`{cleanmsg}`"
             await channel.send(clean_msg)
 
+    @commands.Cog.listener()
     async def on_message_delete(self, message):
         guild = message.guild
         if guild is None:
@@ -299,6 +301,7 @@ class EventMixin:
                     break
         return possible_link
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
 
@@ -346,6 +349,7 @@ class EventMixin:
             )
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         guild = member.guild
 
@@ -400,6 +404,7 @@ class EventMixin:
                 )
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def get_permission_change(self, before, after, embed_links):
         p_msg = ""
         before_perms = {}
@@ -441,6 +446,7 @@ class EventMixin:
                 continue
         return p_msg
 
+    @commands.Cog.listener()
     async def on_guild_channel_create(self, new_channel):
         guild = new_channel.guild
         if not await self.config.guild(guild).channel_change.enabled():
@@ -488,6 +494,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_guild_channel_delete(self, old_channel):
         guild = old_channel.guild
         if not await self.config.guild(guild).channel_change.enabled():
@@ -535,6 +542,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         guild = before.guild
         if not await self.config.guild(guild).channel_change.enabled():
@@ -665,6 +673,7 @@ class EventMixin:
                 p_msg += f"{p} Set to {change}\n"
         return p_msg
 
+    @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
         guild = before.guild
         if not await self.config.guild(guild).role_change.enabled():
@@ -731,6 +740,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_guild_role_create(self, role):
         guild = role.guild
         if not await self.config.guild(guild).role_change.enabled():
@@ -770,6 +780,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
         guild = role.guild
         if not await self.config.guild(guild).role_change.enabled():
@@ -809,6 +820,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         guild = before.guild
         if guild is None:
@@ -863,6 +875,7 @@ class EventMixin:
             )
             await channel.send(msg[:2000])
 
+    @commands.Cog.listener()
     async def on_guild_update(self, before, after):
         guild = after
         if not await self.config.guild(guild).guild_change.enabled():
@@ -920,6 +933,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_guild_emojis_update(self, guild, before, after):
         if not await self.config.guild(guild).guild_change.enabled():
             return
@@ -982,6 +996,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         guild = member.guild
         if not await self.config.guild(guild).voice_change.enabled():
@@ -1064,6 +1079,7 @@ class EventMixin:
         else:
             await channel.send(msg.replace(member.mention, str(member)))
 
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         guild = before.guild
         if not await self.config.guild(guild).user_change.enabled():

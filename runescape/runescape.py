@@ -186,5 +186,5 @@ class Runescape(commands.Cog):
         # em.set_footer(text="Offline", icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/64px-Red_pog.svg.png")
         return em
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

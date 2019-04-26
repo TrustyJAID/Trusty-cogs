@@ -30,7 +30,7 @@ class Mock(commands.Cog):
     ):
         """
             Mock a user with the spongebob meme
-            
+
             `channel` Optional channel to retrieve messages from and post the mock message
             `msg` Optional either member, message ID, or string
             if no `msg` is provided the command will use the last message in channel before the command
@@ -43,8 +43,9 @@ class Mock(commands.Cog):
         mocker = ctx.message.author
         if type(msg) is int:
             try:
-                msg = await ctx.channel.get_message(msg)
-            except:
+                msg = await ctx.channel.fetch_message(msg)
+            except Exception as e:
+                print(e)
                 return
         elif msg is None:
             async for message in channel.history(limit=2):

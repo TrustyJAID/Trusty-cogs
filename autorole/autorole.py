@@ -18,7 +18,7 @@ _ = Translator("Autorole", __file__)
 @cog_i18n(_)
 class Autorole(commands.Cog):
     """
-        Autorole commands. Rewritten for V3 from 
+        Autorole commands. Rewritten for V3 from
         https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/autorole/autorole.py
     """
 
@@ -52,6 +52,7 @@ class Autorole(commands.Cog):
         else:
             return await self.bot.db.color()
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         guild = message.guild
         user = message.author
@@ -126,6 +127,7 @@ class Autorole(commands.Cog):
         for role in roles:
             await member.add_roles(role, reason=_("Joined the server"))
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
         if await self.config.guild(guild).ENABLED():
@@ -209,7 +211,7 @@ class Autorole(commands.Cog):
     async def role(self, ctx, *, role: discord.Role):
         """
             Add a role for autorole to assign.
-        
+
             You can use this command multiple times to add multiple roles.
         """
         guild = ctx.message.guild
@@ -251,19 +253,19 @@ class Autorole(commands.Cog):
     async def agreement(self, ctx):
         """
             Set the channel and message that will be used for accepting the rules.
-            
+
             `channel` is the channel they must type the key in to get the role.
             `key` is the message they must type to gain access and must be in quotes.
             `msg` is the message DM'd to them when they join.
 
             `{key}` must be included in the message so a user knows what to type in the channel.
-            
+
             Optional additions to the message include:
             `{channel}` Mentions the channel where they must include the agreement message.
             `{mention}` Mentions the user incase they have DM permissions turned off this should be used.
             `{name}` Says the member name if you don't want to ping them.
             `{guild}` Says the servers current name.
-            
+
             Entering nothing will disable these.
         """
         pass
@@ -351,19 +353,19 @@ class Autorole(commands.Cog):
     ):
         """
             Set the channel and message that will be used for accepting the rules.
-            
+
             `channel` is the channel they must type the key in to get the role.
             `key` is the message they must type to gain access and must be in quotes.
             `msg` is the message DM'd to them when they join.
 
             `{key}` must be included in the message so a user knows what to type in the channel.
-            
+
             Optional additions to the message include:
             `{channel}` Mentions the channel where they must include the agreement message.
             `{mention}` Mentions the user incase they have DM permissions turned off this should be used.
             `{name}` Says the member name if you don't want to ping them.
             `{guild}` Says the servers current name.
-            
+
             Entering nothing will disable this.
         """
         guild = ctx.message.guild

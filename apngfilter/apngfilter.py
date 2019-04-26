@@ -1,4 +1,3 @@
-import discord
 import io
 from redbot.core import checks, commands, Config
 import re
@@ -32,6 +31,7 @@ class APNGFilter(commands.Cog):
             msg = "Enabled"
         await ctx.send("APNG Filter " + msg)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         if not message.guild:
             return

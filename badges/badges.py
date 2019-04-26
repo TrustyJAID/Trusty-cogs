@@ -293,5 +293,5 @@ class Badges(commands.Cog):
             em.add_field(name=_("Global Badges"), value=badges)
         await ctx.send(embed=em)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

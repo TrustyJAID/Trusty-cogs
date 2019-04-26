@@ -5,7 +5,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
@@ -14,8 +14,8 @@
     "install_msg" : "Please ensure that the modlog cog is loaded for this cog to work. The channel is set via `[p]modlogset modlog #channel`.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "ExtendedModLog",
     "permissions" : [

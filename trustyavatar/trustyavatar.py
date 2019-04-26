@@ -94,13 +94,15 @@ class TrustyAvatar(commands.Cog):
                 return BytesIO(test)
 
     def replace_colour(self, img, to_colour):
-        """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
+        """
+        https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent
+        """
         img = Image.open(img)
         img = img.convert("RGBA")
         datas = img.getdata()
-        reds = [94, 221, 170]
-        greens = [123, 227, 185]
-        blues = [75, 217, 160]
+        # reds = [94, 221, 170]
+        # greens = [123, 227, 185]
+        # blues = [75, 217, 160]
         newData = []
         for item in datas:
             # if item[0] in [94] and item[1] in [123] and item[2] in [75]:
@@ -124,8 +126,8 @@ class TrustyAvatar(commands.Cog):
             gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
             img_list = []
             for frame in gif_list:
-                temp2 = Image.new("RGBA",frame.size)
-                temp2.paste(frame, (0,0))
+                temp2 = Image.new("RGBA", frame.size)
+                temp2.paste(frame, (0, 0))
                 w, h = frame.size
                 new_avatar = new_avatar.resize((w, h))
                 temp2.paste(new_avatar, (0, 0), new_avatar)
@@ -161,12 +163,12 @@ class TrustyAvatar(commands.Cog):
     ):
         """
             Create your own avatar like TrustyBot's
-            
+
             `style` can be a user or a colour code if none is supplied the authors avatar
             is used
             `face` must be one of neutral, happy, unamused, quizzical,
             sad, angry, or watching if none are supplied a random one is picked
-            
+
         """
         author = ctx.author
         new_avatar = choice([s for s in self.statuses])
@@ -177,10 +179,10 @@ class TrustyAvatar(commands.Cog):
             new_avatar = face
         if isinstance(style, discord.Colour):
             choice_avatar = await self.dl_image(self.statuses[new_avatar]["transparent"])
-            task = functools.partial(
+            fake_task = functools.partial(
                 self.replace_colour, img=choice_avatar, to_colour=style.to_rgb()
             )
-            task = self.bot.loop.run_in_executor(None, task)
+            task = self.bot.loop.run_in_executor(None, fake_task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -193,19 +195,22 @@ class TrustyAvatar(commands.Cog):
             else:
                 author_avatar = await self.dl_image(author.avatar_url_as(format="png"))
             choice_avatar = await self.dl_image(self.statuses[new_avatar]["transparent"])
-            task = functools.partial(
+            fake_task = functools.partial(
                 self.make_new_avatar,
                 author_avatar=author_avatar,
                 choice_avatar=choice_avatar,
                 is_gif=is_gif,
             )
-            task = self.bot.loop.run_in_executor(None, task)
+            task = self.bot.loop.run_in_executor(None, fake_task)
             try:
                 file = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
         embed = discord.Embed(colour=author.colour, description="TrustyAvatar")
-        embed.set_author(name="{} - {}".format(author, author.display_name), icon_url=author.avatar_url)
+        embed.set_author(
+            name="{} - {}".format(author, author.display_name),
+            icon_url=author.avatar_url
+        )
         embed.set_image(url="attachment://trustyavatar.png")
         image = discord.File(file, "trustyavatar.png")
         if is_gif:
@@ -264,6 +269,7 @@ class TrustyAvatar(commands.Cog):
         await self.config.streaming.set(not is_streaming)
         await ctx.send("Streaming sync set to " + str(not is_streaming))
 
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         """This essentially syncs streaming status with the bot owner"""
         if before.id != self.bot.owner_id:
@@ -301,7 +307,7 @@ class TrustyAvatar(commands.Cog):
         activity = None
         status = None
         if date.month == 12 and date.day <= 25:
-            url = status["xmas"]
+            url = new_status["xmas"]
             activity = discord.Activity(name="Merry Christmas!", type=discord.ActivityType.playing)
             status = discord.Status.online
         elif (date.month == 12 and date.day >= 30) or (date.month == 1 and date.day == 1):
@@ -346,5 +352,5 @@ class TrustyAvatar(commands.Cog):
                 print("changing avatar to {}".format(new_avatar))
             await asyncio.sleep(randint(1800, 3600))
 
-    def __unload(self):
+    def cog_unload(self):
         self.loop.cancel()

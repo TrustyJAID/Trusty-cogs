@@ -160,5 +160,5 @@ class Backup(commands.Cog):
                 pass
         await channel.send("{} messages saved from {}".format(total_msgs, guild.name))
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

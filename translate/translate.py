@@ -190,5 +190,5 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         await self.config.api_key.set(api_key)
         await ctx.send(_("API key set."))
 
-    def __unload(self):
+    def cog_unload(self):
         self.clear_cache.cancel()

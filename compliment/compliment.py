@@ -136,7 +136,7 @@ class Compliment(commands.Cog):
             `user` the user you would like to compliment
         """
         msg = " "
-        if user != None:
+        if user is not None:
 
             if user.id == self.bot.user.id:
                 user = ctx.message.author

@@ -5,7 +5,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Allows for interaction with cleverbot.com through mention/command",
@@ -14,8 +14,8 @@
     "install_msg" : "Needs to be setup with an API key first. See `[p]cleverbotset apikey` / `[p]cleverbotset ioapikey`\n[p]cleverbot <text>` to talk with cleverbot.\n`@Mention <text>` works too.\n`[p]cleverbotset toggle` toggles replies by mention.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "Cleverbot",
     "permissions" : [],

@@ -4,7 +4,7 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Add image for the bot to directly upload similar to alias.",
@@ -13,8 +13,8 @@
     "install_msg" : "This cog will create folders to save and delete images added locally. [p]addimage to add an image to the guild. Owner can add global bot images. ",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "AddImage",
     "permissions" : [

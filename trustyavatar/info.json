@@ -4,17 +4,17 @@
     ],
     "bot_version" : [
         3,
-        0,
+        1,
         0
     ],
     "description" : "Hardcoded custom avatar and statuses for TrustyBot",
-    "disabled" : true,
+    "disabled" : false,
     "hidden" : true,
     "install_msg" : "You probably don't want to use this cog. If you do use this and modify it, changing the interval puts your bot at risk of rate limiting.",
     "min_python_version" : [
         3,
-        6,
-        2
+        7,
+        0
     ],
     "name" : "TrustyAvatar",
     "permissions" : [],

@@ -192,7 +192,7 @@ class ServerStats(commands.Cog):
             ).format(
                 owner=guild.owner,
                 region=region[str(guild.region)],
-                verif=verif[int(guild.verification_level)],
+                verif=str(guild.verification_level).title(),
                 id=guild.id,
             ),
         )
@@ -725,7 +725,7 @@ class ServerStats(commands.Cog):
             return await ctx.send(_("You need to supply a user ID for this to work properly."))
         if type(member) is int:
             try:
-                member = await self.bot.get_user_info(member)
+                member = await self.bot.fetch_user(member)
             except discord.errors.NotFound:
                 await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
                 return
@@ -877,7 +877,7 @@ class ServerStats(commands.Cog):
             Modify the guilds verification level
 
             `level` must be one of:
-            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`) 
+            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`)
         """
 
         levels = {
@@ -1224,7 +1224,7 @@ class ServerStats(commands.Cog):
         """
         if channel is None:
             channel = ctx.message.channel
-        msg = await channel.get_message(message_id)
+        msg = await channel.fetch_message(message_id)
         new_msg = ""
         for reaction in msg.reactions:
             async for user in reaction.users():
@@ -1392,7 +1392,7 @@ class ServerStats(commands.Cog):
                 pass
             except AttributeError:
                 pass
-        # User get_user_info incase the top posts is by someone no longer
+        # User fetch_user incase the top posts is by someone no longer
         # in the guild
         x = sorted(channel_contribution.items(), key=lambda x: x[1], reverse=True)
         x = [x[i : i + 10] for i in range(0, len(x), 10)]
