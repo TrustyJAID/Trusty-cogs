@@ -73,6 +73,15 @@ class Tweets(commands.Cog):
         self.twitter_loop = bot.loop.create_task(self.start_stream())
         self.accounts = {}
 
+    @staticmethod
+    def convert_old_keys(old_key: str):
+        lookup = {
+                "consumer_key": "api_key",
+                "consumer_secret": "api_secret_key",
+                "access_token": "access_token",
+                "access_secret": "access_token_secret",
+            }
+
     async def initialize(self):
         data = await self.config.accounts()
         if type(data) == list:
@@ -81,6 +90,14 @@ class Tweets(commands.Cog):
             await self.config.accounts.set(self.accounts)
         else:
             self.accounts = await self.config.accounts()
+        old_keys = await self.config.api()
+        for key, value in old_keys.items():
+            if value:
+                await self.bot.db.api_tokens.set_raw(
+                    "twitter",
+                    value={self.convert_old_keys(key), value}
+                )
+        await self.config.api.clear()
 
     ###################################################################
     # Here is all the logic for handling tweets and tweet creation
@@ -132,11 +149,18 @@ class Tweets(commands.Cog):
 
     async def authenticate(self):
         """Authenticate with Twitter's API"""
+        default_keys = {
+                "api_key": "",
+                "api_secret_key": "",
+                "access_token": "",
+                "access_token_secret": "",
+            }
+        tokens = await self.bot.db.api_tokens.get_raw("twitter", default=default_keys)
         auth = tw.OAuthHandler(
-            await self.config.api.consumer_key(), await self.config.api.consumer_secret()
+            tokens["api_key"], tokens["api_secret_key"]
         )
         auth.set_access_token(
-            await self.config.api.access_token(), await self.config.api.access_secret()
+            tokens["access_token"], tokens["access_token_secret"]
         )
         return tw.API(
             auth,
@@ -807,33 +831,24 @@ class Tweets(commands.Cog):
             await ctx.send(username + _(" doesn't seem to be posting in ") + channel.mention)
 
     @commands.group(name="tweetset")
-    @checks.admin_or_permissions(manage_guild=True)
+    @checks.is_owner()
     async def _tweetset(self, ctx):
         """Command for setting required access information for the API.
-
-        1. Visit https://apps.twitter.com and apply for a developer account.
-        2. Once your account is approved setup an application and follout the form
-        3. Do `[p]tweetset creds consumer_key consumer_secret access_token access_secret`
-        to the bot in a private channel (DM's preferred).
         """
         pass
 
     @_tweetset.command(name="creds")
     @checks.is_owner()
-    async def set_creds(
-        self, ctx, consumer_key: str, consumer_secret: str, access_token: str, access_secret: str
-    ):
-        """[p]tweetset """
-        api = {
-            "consumer_key": consumer_key,
-            "consumer_secret": consumer_secret,
-            "access_token": access_token,
-            "access_secret": access_secret,
-        }
-        await self.config.api.set(api)
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.message.delete()
-        await ctx.send(_("Set the access credentials!"))
+    async def set_creds(self, ctx):
+        """How to set twitter credentials"""
+        msg = (
+            "1. Visit https://apps.twitter.com and apply for a developer account.\n"
+            "2. Once your account is approved setup an application and follout the form.\n"
+            "3. Do `[p]set api twitter api_key,your_key api_secret_key,your_secret "
+            "access_token,your_access_token access_token_secret,your_access_secret`"
+            "to the bot in a private channel (DM's preferred)."
+        )
+        await ctx.maybe_send_embed(msg)
 
     def cog_unload(self):
         if self.mystream is not None:
