@@ -51,7 +51,7 @@ class TrustyBot(commands.Cog):
     @checks.is_owner()
     async def snipe(self, ctx, *, message = "sniped"):
         """
-            Get sniped Slime
+            Get sniped Slime <@!204027971516891136>
         """
         u = ctx.bot.get_user(204027971516891136)
         try:
