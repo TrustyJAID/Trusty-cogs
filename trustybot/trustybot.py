@@ -5,7 +5,7 @@ from typing import Optional
 
 class TrustyBot(commands.Cog):
     """
-        This is mostly a test cog to try out new things 
+        This is mostly a test cog to try out new things
         before I figure out how to make them work elsewhere
         Generally for commands that don't fit anywhere else or are
         not meant to be used by anyone except TrustyBot
@@ -46,6 +46,21 @@ class TrustyBot(commands.Cog):
         em.set_author(name=ctx.guild.name, icon_url="https://i.imgur.com/EfOnDQy.gif")
         await ctx.message.delete()
         await ctx.send(embed=em)
+
+    @commands.command()
+    @checks.is_owner()
+    async def snipe(self, ctx, *, message = "sniped"):
+        """
+            Get sniped Slime
+        """
+        u = ctx.bot.get_user(204027971516891136)
+        try:
+            await u.send(message)
+        except discord.errors.Forbidden:
+            pass
+        except Exception:
+            pass
+        await ctx.tick()
 
     @commands.command(hidden=True)
     async def say(self, ctx, *, msg: str):
