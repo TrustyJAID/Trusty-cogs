@@ -42,6 +42,7 @@ class GameDayChannels:
             team = await config.guild(guild).gdc_team()
             if team != "all":
                 next_games = await Game.get_games_list(team, datetime.now())
+                next_game = None
                 if next_games != []:
                     next_game = await Game.from_url(next_games[0]["link"])
                 if next_game is None:
