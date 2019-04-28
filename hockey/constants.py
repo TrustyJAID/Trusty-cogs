@@ -117,7 +117,7 @@ TEAMS = {
         "emoji": "DallasStars:381568942520664065",
         "home": "#006847",
         "id": 25,
-        "invite": "https://discord.gg/KzxfCH4",
+        "invite": "https://discord.gg/uNdH6hX",
         "logo": "https://nhl.bamcontent.com/images/photos/281726660/256x256/cut.png",
         "team_url": "http://www.dallasstars.com",
         "timezone": "US/Central",
