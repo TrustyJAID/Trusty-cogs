@@ -47,21 +47,6 @@ class TrustyBot(commands.Cog):
         await ctx.message.delete()
         await ctx.send(embed=em)
 
-    @commands.command()
-    @checks.is_owner()
-    async def snipe(self, ctx, *, message = "sniped"):
-        """
-            Get sniped Slime <@!204027971516891136>
-        """
-        u = ctx.bot.get_user(204027971516891136)
-        try:
-            await u.send(message)
-        except discord.errors.Forbidden:
-            pass
-        except Exception:
-            pass
-        await ctx.tick()
-
     @commands.command(hidden=True)
     async def say(self, ctx, *, msg: str):
         """Say things as the bot"""
