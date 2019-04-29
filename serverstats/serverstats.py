@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import pagify
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Tuple
 
 from .converters import FuzzyMember, GuildConverter, ChannelConverter
 from .time_utils import parse_timedelta, td_format
@@ -33,7 +33,7 @@ class ServerStats(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         default_global = {"join_channel": None}
-        self.config = Config.get_conf(self, 54853421465543)
+        self.config = Config.get_conf(self, 54_853_421_465_543)
         self.config.register_global(**default_global)
 
     @commands.command()
@@ -309,20 +309,14 @@ class ServerStats(commands.Cog):
             "{bot} was created on **{since}**.\n"
             "That's over **{passed}** days ago!"
         ).format(
-            bot=ctx.me.mention,
-            servers=servers,
-            members=len(members),
-            since=since,
-            passed=passed
+            bot=ctx.me.mention, servers=servers, members=len(members), since=since, passed=passed
         )
         em = discord.Embed(
-            description=msg,
-            colour=await ctx.embed_colour(),
-            timestamp=ctx.message.created_at,
+            description=msg, colour=await ctx.embed_colour(), timestamp=ctx.message.created_at
         )
         em.set_author(
             name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-            icon_url=ctx.me.avatar_url
+            icon_url=ctx.me.avatar_url,
         )
         em.set_thumbnail(url=ctx.me.avatar_url)
         if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -484,13 +478,20 @@ class ServerStats(commands.Cog):
         else:
             return msg.content
 
-    async def get_members_since(self, ctx, days: int, role: Optional[discord.Role]):
+    async def get_members_since(
+        self, ctx, days: int, role: Optional[discord.Role, Tuple[discord.Role]]
+    ):
         now = datetime.datetime.utcnow()
         after = now - datetime.timedelta(days=days)
-        if role is None:
-            member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
-        else:
-            member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
+        member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
+        if role:
+            if not isinstance(role, discord.Role):
+                for r in role:
+                    for m in r.members:
+                        if m.top_role < ctx.me.top_role:
+                            member_list.remove(m)
+            else:
+                member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
         for channel in ctx.guild.text_channels:
             if not channel.permissions_for(ctx.me).read_message_history:
                 continue
@@ -613,7 +614,7 @@ class ServerStats(commands.Cog):
             )
             await ctx.send(msg)
             return
-        member_list = await self.get_members_since(ctx, days, None)
+        member_list = await self.get_members_since(ctx, days, new_roles)
         send_msg = str(len(member_list)) + _(
             " estimated users to give the role. " "Would you like to reassign their roles now?"
         )
@@ -653,7 +654,7 @@ class ServerStats(commands.Cog):
             )
             await ctx.send(msg)
             return
-        member_list = await self.get_members_since(ctx, days, None)
+        member_list = await self.get_members_since(ctx, days, removed_roles)
         send_msg = str(len(member_list)) + _(
             " estimated users to remove their roles. "
             "Would you like to reassign their roles now?"
@@ -715,7 +716,7 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
-    async def whois(self, ctx, *, member: Union[int, discord.Member, discord.User, None]=None):
+    async def whois(self, ctx, *, member: Union[int, discord.Member, discord.User, None] = None):
         """
             Display servers a user shares with the bot
 
@@ -877,7 +878,7 @@ class ServerStats(commands.Cog):
             Modify the guilds verification level
 
             `level` must be one of:
-            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`) 
+            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`)
         """
 
         levels = {
@@ -1318,7 +1319,7 @@ class ServerStats(commands.Cog):
                 )
 
             x = sorted(total_contribution.items(), key=lambda x: x[1], reverse=True)
-            x = [x[i: i + 10] for i in range(0, len(x), 10)]
+            x = [x[i : i + 10] for i in range(0, len(x), 10)]
             msg_list = []
             for page in x:
                 if guild is ctx.guild:
