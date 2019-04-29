@@ -229,6 +229,7 @@ class NotSoBot(commands.Cog):
 
     async def run_process(self, code, response=False):
         try:
+            transport = None
             loop = self.bot.loop
             exit_future = asyncio.Future(loop=loop)
             create = loop.subprocess_exec(
@@ -246,7 +247,8 @@ class NotSoBot(commands.Cog):
             print(e)
             return False
         finally:
-            transport.close()
+            if transport:
+                transport.close()
 
     async def gist(self, ctx, idk, content: str):
         payload = {
@@ -626,8 +628,8 @@ class NotSoBot(commands.Cog):
             await ctx.send(file=file)
             os.remove(path)
             os.remove(path2)
-        except Exception as e:
-            await ctx.send(e)
+        except Exception:
+            log.error("Error triggering image", exc_info=True)
             try:
                 os.remove(path)
                 os.remove(path2)
@@ -1603,6 +1605,8 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         b = await self.bytes_download(url)
+        if not b:
+            return await ctx.send("That's not a valid image to rotate.")
 
         def rotate_img(b, degrees):
             img = PIL.Image.open(b).convert("RGBA")
