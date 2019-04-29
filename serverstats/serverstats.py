@@ -479,7 +479,7 @@ class ServerStats(commands.Cog):
             return msg.content
 
     async def get_members_since(
-        self, ctx, days: int, role: Optional[discord.Role, Tuple[discord.Role]]
+        self, ctx, days: int, role: Union[discord.Role, Tuple[discord.Role], None]
     ):
         now = datetime.datetime.utcnow()
         after = now - datetime.timedelta(days=days)

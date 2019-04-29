@@ -12,7 +12,7 @@ from .event_obj import Event, ValidImage
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
