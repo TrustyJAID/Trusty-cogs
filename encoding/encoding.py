@@ -126,7 +126,12 @@ class Encoding(commands.Cog):
         return False
 
     @commands.group(name="hash")
-    async def hash_cmd(self, ctx, *, txt: str):
+    async def hash_cmd(self, ctx):
+        """Various hashing commands"""
+        pass
+
+    @hash_cmd.group(name="md5")
+    async def hash_md5(self, ctx, *, txt: str):
         """
             MD5 Encrypt Text
         """
