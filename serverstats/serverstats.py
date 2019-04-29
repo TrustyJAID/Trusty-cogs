@@ -483,15 +483,17 @@ class ServerStats(commands.Cog):
     ):
         now = datetime.datetime.utcnow()
         after = now - datetime.timedelta(days=days)
-        member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
+        member_list = []
         if role:
             if not isinstance(role, discord.Role):
                 for r in role:
                     for m in r.members:
                         if m.top_role < ctx.me.top_role:
-                            member_list.remove(m)
+                            member_list.append(m)
             else:
                 member_list = [m for m in role.members if m.top_role < ctx.me.top_role]
+        else:
+            member_list = [m for m in ctx.guild.members if m.top_role < ctx.me.top_role]
         for channel in ctx.guild.text_channels:
             if not channel.permissions_for(ctx.me).read_message_history:
                 continue
