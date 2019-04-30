@@ -5,7 +5,7 @@ import re
 import aiohttp
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
-APNG_REGEX = re.compile(rb"fdAT")
+APNG_REGEX = re.compile(rb"fdAT")  # credit to Soulrift for researh on this
 
 
 class APNGFilter(commands.Cog):
