@@ -1,15 +1,11 @@
 import discord
 from redbot.core import commands
 from redbot.core import Config
-from random import randint
-from random import choice
-from enum import Enum
 import json
-import datetime
 import aiohttp
-import asyncio
 from tabulate import tabulate
 from .profile import Profile
+from redbot.core.utils.chat_formatting import pagify, box
 
 
 class Runescape(commands.Cog):
@@ -29,12 +25,44 @@ class Runescape(commands.Cog):
         """Search for a user account or profile"""
         pass
 
+    @commands.group(name="osrs")
+    async def osrs(self, ctx):
+        """Search for OSRS highscores"""
+        pass
+
+    @osrs.command(name="stats")
+    async def osrs_stats(self, ctx, runescape_name=None):
+        user = self.bot.get_user(ctx.message.author.id)
+        if runescape_name is None:
+            runescape_name = await self.config.user(user).rsn()
+            if runescape_name is None:
+                await ctx.send("You need to set your Runescape name first!")
+                return
+
+        details = await self.get_osrs_hiscores(runescape_name)
+        if not details:
+            return await ctx.send("I can't find username `{}`".format(runescape_name))
+        msg = await self.osrs_stats_page(details, runescape_name)
+        for page in pagify(msg):
+            await ctx.send(box(page, lang="css"))
+
     @runescape.command()
     async def set(self, ctx, RunescapeName):
         """Set your runescape name for easer commands."""
         user = self.bot.get_user(ctx.message.author.id)
         await self.config.user(user).rsn.set(RunescapeName)
         await ctx.send("Your Runescape name has been set. To change re-do this command.")
+
+    async def osrs_highscores(self, runescape_name):
+        return "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player={}".format(
+            runescape_name
+        )
+
+    async def get_osrs_hiscores(self, runescape_name):
+        async with self.session.get(await self.osrs_highscores(runescape_name)) as resp:
+            if resp.status != 200:
+                return None
+            return await resp.read()
 
     async def make_url_profile(self, runescape_name, activities):
         return "https://apps.runescape.com/runemetrics/profile/profile?user={}&activities={}".format(
@@ -156,6 +184,16 @@ class Runescape(commands.Cog):
         spaces = int(((top_row_len - (14 + len(p.name))) / 2) - 1) * " "
         skills = "```css\n{top_row}\n|{spaces}RS3 STATS FOR {user}{spaces}|\n{top_row}\n{skills}\n{top_row}```".format(
             spaces=spaces, top_row=top_row, user=p.name, skills=table
+        )
+        return skills
+
+    async def osrs_stats_page(self, data, runescape_name):
+        table = await Profile.from_text(data)
+        top_row_len = len(table.split("\n")[0])
+        top_row = top_row_len * "-"
+        spaces = int(((top_row_len - (14 + len(runescape_name))) / 2) - 1) * " "
+        skills = "{top_row}\n|{spaces}OSRS STATS FOR {user}{spaces}|\n{top_row}\n{skills}\n{top_row}".format(
+            spaces=spaces, top_row=top_row, user=runescape_name, skills=table
         )
         return skills
 

@@ -1,7 +1,4 @@
-from typing import Tuple
-from redbot.core import commands
-
-import discord
+from tabulate import tabulate
 
 
 class Profile:
@@ -215,4 +212,54 @@ class Profile:
             get_skill(24),
             get_skill(25),
             get_skill(26),
+        )
+
+    @classmethod
+    async def from_text(cls, data: str):
+        order = [
+            "Overall",
+            "Attack",
+            "Defence",
+            "Strength",
+            "Hitpoints",
+            "Ranged",
+            "Prayer",
+            "Magic",
+            "Cooking",
+            "Woodcutting",
+            "Fletching",
+            "Fishing",
+            "Firemaking",
+            "Crafting",
+            "Smithing",
+            "Mining",
+            "Herblore",
+            "Agility",
+            "Thieving",
+            "Slayer",
+            "Farming",
+            "Runecrafting",
+            "Hunter",
+            "Construction",
+            "Bounty Hunter - Hunter",
+            "Bounty Hunter - Rogues",
+            "Clue Scrolls All",
+            "Clue Scrolls Easy",
+            "Clue Scrolls Medium",
+            "Clue Scrolls Hard",
+            "Clue Scrolls Elite",
+            "Clue Scrolls Master",
+            "LMS Rank"
+        ]
+        skills_list = []
+        for line in enumerate(data.decode().split("\n")):
+            try:
+                xp = line[1].split(",")[2]
+                rank = line[1].split(",")[0]
+                level = line[1].split(",")[1]
+                skills_list.append([order[line[0]], level, xp, rank])
+            except Exception:
+                pass
+        return tabulate(
+            skills_list, headers=["Skill", "Level", "Experience", "Rank"], tablefmt="orgtbl"
         )
