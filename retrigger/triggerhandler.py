@@ -19,6 +19,8 @@ from redbot.core.i18n import Translator
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import humanize_list, box, escape
 
+from discord.ext.commands.errors import BadArgument
+
 from multiprocessing import TimeoutError
 from multiprocessing.pool import Pool
 
@@ -261,12 +263,22 @@ class TriggerHandler:
             author = ctx.guild.get_member(trigger.author)
             if not author:
                 author = await self.bot.get_user_info(trigger.author)
-            blacklist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger.blacklist]
+            blacklist = []
+            for y in trigger.blacklist:
+                try:
+                    blacklist.append(await ChannelUserRole().convert(ctx, str(y)))
+                except BadArgument:
+                    continue
             if embeds:
                 blacklist_s = ", ".join(x.mention for x in blacklist)
             else:
                 blacklist_s = ", ".join(x.name for x in blacklist)
-            whitelist = [await ChannelUserRole().convert(ctx, str(y)) for y in trigger.whitelist]
+            whitelist = []
+            for y in trigger.whitelist:
+                try:
+                    whitelist.append(await ChannelUserRole().convert(ctx, str(y)))
+                except BadArgument:
+                    continue
             if embeds:
                 whitelist_s = ", ".join(x.mention for x in whitelist)
             else:
