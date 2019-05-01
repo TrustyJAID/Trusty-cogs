@@ -102,6 +102,7 @@ class CrabRave(commands.Cog):
         """
         fp = str(cog_data_path(self) / f"Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + "/template.mp4")
+        # clip.volume(0.5)
         text = TextClip(t[0], fontsize=48, color="white", font=fp)
         text2 = (
             TextClip("____________________", fontsize=48, color="white", font=fp)
@@ -118,6 +119,7 @@ class CrabRave(commands.Cog):
         video = CompositeVideoClip(
             [clip, text.crossfadein(1), text2.crossfadein(1), text3.crossfadein(1)]
         ).set_duration(15.4)
+        video = video.volumex(0.1)
         video.write_videofile(
             str(cog_data_path(self)) + f"/{u_id}crabrave.mp4",
             threads=1,
@@ -125,6 +127,7 @@ class CrabRave(commands.Cog):
             verbose=False,
             logger=None,
             temp_audiofile=str(cog_data_path(self) / "crabraveaudio.mp3")
+            # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()
         video.close()
