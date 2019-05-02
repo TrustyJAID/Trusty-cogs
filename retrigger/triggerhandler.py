@@ -158,14 +158,15 @@ class TriggerHandler:
             directory.mkdir(exist_ok=True, parents=True)
 
     async def save_image_location(self, image_url: str, guild: discord.Guild) -> str:
+        good_image_url = LINK_REGEX.search(image_url)
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
-        filename = image_url.split("/")[-1]
+        filename = good_image_url.group(1).split("/")[-1]
         filename = "{}-{}".format(seed, filename)
         directory = cog_data_path(self) / str(guild.id)
         file_path = str(cog_data_path(self)) + f"/{guild.id}/{filename}"
         await self.make_guild_folder(directory)
         async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as resp:
+            async with session.get(good_image_url.group(1)) as resp:
                 test = await resp.read()
                 with open(file_path, "wb") as f:
                     f.write(test)
