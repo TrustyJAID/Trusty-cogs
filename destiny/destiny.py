@@ -30,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -143,6 +143,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         embeds = []
+        await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             info = ""
             race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
@@ -171,6 +172,9 @@ class Destiny(DestinyAPI, commands.Cog):
             embed.set_author(name=user.display_name, icon_url=user.avatar_url)
             if "emblemPath" in char:
                 embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+            if titles:
+                # embed.add_field(name=_("Titles"), value=titles)
+                embed.set_author(name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url)
             items = chars["characterEquipment"]["data"][char_id]["items"]
             # log.debug(data)
             level = char["baseCharacterLevel"]
@@ -203,6 +207,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         embeds = []
+        await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
             try:
@@ -282,6 +287,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         embeds = []
+        await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             log.debug(char_id)
             try:
@@ -332,6 +338,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(msg)
             return
         embeds = []
+        await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
             info = ""
@@ -364,7 +371,8 @@ class Destiny(DestinyAPI, commands.Cog):
             if "emblemPath" in char:
                 embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
             if titles:
-                embed.add_field(name=_("Titles"), value=titles)
+                # embed.add_field(name=_("Titles"), value=titles)
+                embed.set_author(name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url)
             char_items = chars["characterEquipment"]["data"][char_id]["items"]
             item_list = [i["itemHash"] for i in char_items]
             # log.debug(item_list)
@@ -464,16 +472,16 @@ class Destiny(DestinyAPI, commands.Cog):
             Display a meny of each characters last 5 activities
 
             `<activity>` The activity type to display stats on available types include:
-            all, story, strike, raid, allpvp, patrol, allpve, control, clash, 
-            crimsondoubles, nightfall, heroicnightfall, allstrikes, ironbanner, allmayhem, 
-            supremacy, privatematchesall, survival, countdown, trialsofthenine, social, 
-            trialscountdown, trialssurvival, ironbannercontrol, ironbannerclash, 
-            ironbannersupremacy, scorednightfall, scoredheroicnightfall, rumble, alldoubles, 
-            doubles, privatematchesclash, privatematchescontrol, privatematchessupremacy, 
-            privatematchescountdown, privatematchessurvival, privatematchesmayhem, 
-            privatematchesrumble, heroicadventure, showdown, lockdown, scorched, 
-            scorchedteam, gambit, allpvecompetitive, breakthrough, blackarmoryrun, 
-            salvage, ironbannersalvage, pvpcompetitive, pvpquickplay, clashquickplay, 
+            all, story, strike, raid, allpvp, patrol, allpve, control, clash,
+            crimsondoubles, nightfall, heroicnightfall, allstrikes, ironbanner, allmayhem,
+            supremacy, privatematchesall, survival, countdown, trialsofthenine, social,
+            trialscountdown, trialssurvival, ironbannercontrol, ironbannerclash,
+            ironbannersupremacy, scorednightfall, scoredheroicnightfall, rumble, alldoubles,
+            doubles, privatematchesclash, privatematchescontrol, privatematchessupremacy,
+            privatematchescountdown, privatematchessurvival, privatematchesmayhem,
+            privatematchesrumble, heroicadventure, showdown, lockdown, scorched,
+            scorchedteam, gambit, allpvecompetitive, breakthrough, blackarmoryrun,
+            salvage, ironbannersalvage, pvpcompetitive, pvpquickplay, clashquickplay,
             clashcompetitive, controlquickplay, and controlcompetitive
         """
         if not await self.has_oauth(ctx):
@@ -501,6 +509,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "completed": _("Completed"),
         }
         embeds = []
+        await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
             char_info = ""
@@ -774,6 +783,7 @@ class Destiny(DestinyAPI, commands.Cog):
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
+        await ctx.trigger_typing()
         # base stats should be available for all stat types
         embeds = await self.build_character_stats(user, chars, stat_type)
 
@@ -792,27 +802,24 @@ class Destiny(DestinyAPI, commands.Cog):
         if not version:
             version = "Not Downloaded"
         await ctx.send(_("Current manifest version is {version}").format(version=version))
-        while True:
-            msg = await ctx.send(_("Would you like to re-download the manifest?"))
-            await msg.add_reaction("✅")
-            await msg.add_reaction("❌")
-            check = lambda r, u: u == ctx.author and str(r.emoji) in ["✅", "❌"]
+        await ctx.trigger_typing()
+        msg = await ctx.send(_("Would you like to re-download the manifest?"))
+        await msg.add_reaction("✅")
+        await msg.add_reaction("❌")
+        check = lambda r, u: u == ctx.author and str(r.emoji) in ["✅", "❌"]
+        try:
+            react, user = await self.bot.wait_for("reaction_add", check=check, timeout=15)
+        except asyncio.TimeoutError:
+            await msg.delete()
+        if str(react.emoji) == "✅":
             try:
-                react, user = await self.bot.wait_for("reaction_add", check=check, timeout=15)
-            except asyncio.TimeoutError:
-                await msg.delete()
-                break
-            if str(react.emoji) == "✅":
-                try:
-                    await self.get_manifest()
-                except:
-                    await ctx.send(_("There was an issue downloading the manifest."))
-                await msg.delete()
-                await ctx.tick()
-                break
-            else:
-                await msg.delete()
-                break
+                await self.get_manifest()
+            except:
+                await ctx.send(_("There was an issue downloading the manifest."))
+            await msg.delete()
+            await ctx.tick()
+        else:
+            await msg.delete()
 
     @destiny.command()
     @checks.is_owner()
@@ -821,7 +828,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Set the API tokens for Destiny 2's API
 
         Required information is found at:
-        https://www.bungie.net/en/Application 
+        https://www.bungie.net/en/Application
         select create a new application
         choose **Confidential** OAuth Client type
         Select the scope you would like the bot to have access to
