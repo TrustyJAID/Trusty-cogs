@@ -41,6 +41,12 @@ RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
 
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
+
 
 class TriggerHandler:
     """
@@ -251,7 +257,8 @@ class TriggerHandler:
             im.thumbnail((length * size, width * size), Image.ANTIALIAS)
             byte_array = BytesIO()
             im.save(byte_array, format="PNG")
-            return discord.File(byte_array.getvalue(), filename="resize.png")
+            byte_array.seek(0)
+            return discord.File(byte_array, filename="resize.png")
 
     async def trigger_embed(
         self, ctx: commands.Context, trigger_list: List[dict]
@@ -443,6 +450,7 @@ class TriggerHandler:
                     is_command = True
         return is_command
 
+    @listener()
     async def on_message(self, message: discord.Message):
         if message.guild is None:
             return
@@ -450,6 +458,7 @@ class TriggerHandler:
             return
         await self.check_triggers(message)
 
+    @listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         if "content" not in payload.data:
             return
@@ -459,7 +468,10 @@ class TriggerHandler:
             return
         try:
             channel = self.bot.get_channel(int(payload.data["channel_id"]))
-            message = await channel.get_message(int(payload.data["id"]))
+            try:
+                message = await channel.get_message(int(payload.data["id"]))
+            except AttributeError:
+                message = await channel.fetch_message(int(payload.data["id"]))
         except discord.errors.Forbidden:
             log.debug(_("I don't have permission to read channel history"))
             return

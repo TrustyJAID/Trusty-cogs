@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.6.5"
+    __version__ = "2.6.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -54,8 +54,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.re_pool = Pool(maxtasksperchild=2)
         self.triggers = {}
         self.save_triggers = self.bot.loop.create_task(self.save_loop())
+        self.__unload = self.cog_unload
 
-    def __unload(self):
+    def cog_unload(self):
+        log.debug("Closing process pools.")
         self.re_pool.close()
         self.bot.loop.run_in_executor(None, self.re_pool.join)
         self.save_triggers.cancel()
@@ -303,6 +305,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
         for obj in channel_user_role:
             if obj.id not in trigger.whitelist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -328,6 +334,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _(
+                    "You must supply 1 or more channels users "
+                    "or roles to be removed from the whitelist"
+                )
+            )
         for obj in channel_user_role:
             if obj.id in trigger.whitelist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -353,6 +366,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be blacklisted.")
+            )
         for obj in channel_user_role:
             if obj.id not in trigger.blacklist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -378,6 +395,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _(
+                    "You must supply 1 or more channels users or "
+                    "roles to be removed from the blacklist."
+                )
+            )
         for obj in channel_user_role:
             if obj.id in trigger.blacklist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
