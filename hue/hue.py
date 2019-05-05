@@ -103,7 +103,7 @@ class Hue(commands.Cog):
             )
         except asyncio.TimeoutError:
             return
-        await ctx.bot.loop.run_in_executor(None, token.__authorise__(msg.content))
+        token.__authorise__(msg.content)
         await ctx.tick()
 
     @hue_set.command(name="ip")
