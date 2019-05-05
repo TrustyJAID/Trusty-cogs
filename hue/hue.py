@@ -150,7 +150,7 @@ class Hue(commands.Cog):
         await ctx.bot.loop.run_in_executor(None, _change, brightness, name)
         await ctx.tick()
 
-    @_hue.command(name="temp", aliases=["ct", "colourtemp", "temperature"])
+    @_hue.command(name="temp", aliases=["ct", "colourtemp", "colortemp", "temperature"])
     async def colourtemp_set(self, ctx, ct: int = 500, *, name=None):
         """
             Sets the colour temperature for lights
@@ -222,7 +222,7 @@ class Hue(commands.Cog):
         await ctx.bot.loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
-    @_hue.command(name="colourloop", aliases=["cl"])
+    @_hue.command(name="colourloop", aliases=["cl", "colorloop"])
     async def hue_colourloop(self, ctx, *, name=None):
         """
             Toggles the light on colour looping all colours
@@ -244,7 +244,7 @@ class Hue(commands.Cog):
         await ctx.bot.loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
-    @_hue.group(name="colour")
+    @_hue.group(name="colour", aliases=["color"])
     async def _colour(self, ctx):
         """Sets the colour for lights"""
         if not await self.get_bridge():
