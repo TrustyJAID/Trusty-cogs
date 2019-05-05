@@ -1,12 +1,8 @@
-import os
 import re
 import asyncio
 import logging
 
 import discord
-
-from random import choice as rand_choice
-from datetime import datetime
 
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import pagify
@@ -21,6 +17,7 @@ default_settings = {
     "ON": False,
     "LEAVE_ON": False,
     "LEAVE_CHANNEL": None,
+    "GROUPED": False,
     "GOODBYE": [default_goodbye],
     "CHANNEL": None,
     "WHISPER": False,
@@ -43,7 +40,7 @@ default_settings = {
 IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
 
 _ = Translator("Welcome", __file__)
-log = logging.getLogger("red.Welcome")
+log = logging.getLogger("red.trusty-cogs.Welcome")
 
 
 @cog_i18n(_)
@@ -56,6 +53,21 @@ class Welcome(Events, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
         self.config.register_guild(**default_settings)
+        self.group_check = bot.loop.create_task(self.group_welcome())
+        self.cog_unload = self.__unload
+        self.joined = {}
+
+    def __unload(self):
+        self.group_check.cancel()
+
+    async def group_welcome(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            log.info("Checking for new welcomes")
+            for guild_id, members in self.joined.items():
+                await self.send_member_join(members, self.bot.get_guild(guild_id))
+            self.joined = {}
+            await asyncio.sleep(300)
 
     @commands.group()
     @checks.admin_or_permissions(manage_channels=True)
@@ -68,6 +80,7 @@ class Welcome(Events, commands.Cog):
             setting_names = {
                 "GREETING": _("Random Greeting "),
                 "GOODBYE": _("Random Goodbye "),
+                "GROUPED": _("Grouped welcomes "),
                 "ON": _("Welcomes On "),
                 "CHANNEL": _("Channel "),
                 "LEAVE_ON": _("Goodbyes On "),
@@ -87,7 +100,7 @@ class Welcome(Events, commands.Cog):
                 for attr, name in setting_names.items():
                     if attr in ["GREETING", "GOODBYE"]:
                         embed.add_field(
-                            name=name, 
+                            name=name,
                             value="\n".join(g for g in guild_settings[attr])[:1024],
                             inline=False,
                         )
@@ -125,6 +138,11 @@ class Welcome(Events, commands.Cog):
         """
         pass
 
+    @welcomeset_greeting.command(name="grouped")
+    async def welcomeset_greeting_grouped(self, ctx, grouped: bool):
+        """Set whether to group welcome messages"""
+        await self.config.guild(ctx.guild).GROUPED.set(grouped)
+        await self.send_testing_msg(ctx)
 
     @welcomeset_greeting.command(name="add")
     async def welcomeset_greeting_add(self, ctx, *, format_msg):
@@ -147,7 +165,6 @@ class Welcome(Events, commands.Cog):
         await self.config.guild(guild).GREETING.set(guild_settings)
         await ctx.send(_("Welcome message added for the guild."))
         await self.send_testing_msg(ctx, msg=format_msg)
-
 
     @welcomeset_greeting.command(name="del")
     async def welcomeset_greeting_del(self, ctx):
@@ -265,7 +282,6 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("Goodbye message added for the guild."))
         await self.send_testing_msg(ctx, msg=format_msg, leave=True)
 
-
     @welcomeset_goodbye.command(name="del")
     async def welcomeset_goodbye_del(self, ctx):
         """
@@ -359,6 +375,7 @@ class Welcome(Events, commands.Cog):
     async def welcomeset_bot_test(self, ctx):
         """Test the bot joining message"""
         await self.send_testing_msg(ctx, bot=True)
+
 
     @welcomeset_bot.command(name="msg")
     async def welcomeset_bot_msg(self, ctx, *, format_msg=None):
@@ -618,5 +635,3 @@ class Welcome(Events, commands.Cog):
         else:
             verb = _("on")
         await ctx.send(_("Mentioning the user turned {verb}").format(verb=verb))
-
-
