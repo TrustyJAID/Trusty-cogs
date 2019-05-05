@@ -75,7 +75,7 @@ class CrabRave(commands.Cog):
             return await ctx.send("You must submit exactly two strings split by comma")
         if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
             return await ctx.send("Cannot render empty text")
-        fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.author.id)
+        fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.message.id)
         task = self.bot.loop.run_in_executor(None, fake_task)
         async with ctx.typing():
             try:
@@ -83,7 +83,7 @@ class CrabRave(commands.Cog):
             except asyncio.TimeoutError:
                 log.error("Error generating crabrave video", exc_info=True)
                 return
-        fp = cog_data_path(self) / f"{ctx.author.id}crabrave.mp4"
+        fp = cog_data_path(self) / f"{ctx.message.id}crabrave.mp4"
         file = discord.File(str(fp), filename="crabrave.mp4")
         try:
             await ctx.send(files=[file])
@@ -126,7 +126,7 @@ class CrabRave(commands.Cog):
             preset="superfast",
             verbose=False,
             logger=None,
-            temp_audiofile=str(cog_data_path(self) / "crabraveaudio.mp3")
+            temp_audiofile=str(cog_data_path(self) / f"{u_id}crabraveaudio.mp3")
             # ffmpeg_params=["-filter:a", "volume=0.5"]
         )
         clip.close()
