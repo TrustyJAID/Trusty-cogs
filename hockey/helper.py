@@ -11,7 +11,7 @@ from discord.ext.commands.errors import BadArgument
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.Hockey")
+log = logging.getlogger("red.cogs.Hockey")
 
 
 def get_season():

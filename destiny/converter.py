@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Destiny", __file__)
 
-log = logging.getLogger("red.Destiny")
+log = logging.getlogger("red.cogs.Destiny")
 
 
 @cog_i18n(_)

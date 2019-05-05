@@ -7,7 +7,7 @@ import logging
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.Hockey")
+log = logging.getlogger("red.cogs.Hockey")
 
 
 async def make_rules_embed(guild, team, rules):

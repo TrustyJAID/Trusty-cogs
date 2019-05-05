@@ -13,7 +13,7 @@ from mendeleev import element as ELEMENTS
 
 from .data import IMAGES, LATTICES, UNITS
 
-log = logging.getLogger("red.elements")
+log = logging.getlogger("red.cogs.elements")
 
 
 class ElementConverter(Converter):

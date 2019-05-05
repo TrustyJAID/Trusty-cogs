@@ -43,7 +43,7 @@ default_settings = {
 IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
 
 _ = Translator("Welcome", __file__)
-log = logging.getLogger("red.Welcome")
+log = logging.getlogger("red.cogs.Welcome")
 
 
 @cog_i18n(_)

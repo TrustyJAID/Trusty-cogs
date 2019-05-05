@@ -10,7 +10,7 @@ from redbot.core.utils.chat_formatting import pagify
 from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Welcome", __file__)
-log = logging.getLogger("red.Welcome")
+log = logging.getlogger("red.cogs.Welcome")
 
 
 @cog_i18n(_)

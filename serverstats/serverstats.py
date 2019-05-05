@@ -20,7 +20,7 @@ from .time_utils import parse_timedelta, td_format
 
 
 _ = Translator("ServerStats", __file__)
-log = logging.getLogger("red.ServerStats")
+log = logging.getlogger("red.cogs.ServerStats")
 
 
 @cog_i18n(_)

@@ -34,7 +34,7 @@ except ImportError:
     ALLOW_RESIZE = False
 
 
-log = logging.getLogger("red.ReTrigger")
+log = logging.getlogger("red.cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")

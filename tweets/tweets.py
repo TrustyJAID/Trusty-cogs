@@ -13,7 +13,7 @@ import functools
 
 _ = Translator("Tweets", __file__)
 
-log = logging.getLogger("red.Tweets")
+log = logging.getlogger("red.cogs.Tweets")
 
 
 @cog_i18n(_)

@@ -14,7 +14,7 @@ import asyncio
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.Hockey")
+log = logging.getlogger("red.cogs.Hockey")
 
 
 class Game:

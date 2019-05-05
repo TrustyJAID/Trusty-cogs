@@ -22,7 +22,7 @@ Join the official development guild                https://discord.gg/uekTNPj
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)
-log = logging.getLogger("red.Translate")
+log = logging.getlogger("red.cogs.Translate")
 
 
 @cog_i18n(_)

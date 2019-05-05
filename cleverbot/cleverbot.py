@@ -8,7 +8,7 @@ from redbot.core import commands, checks, Config
 API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
 
-log = logging.getLogger("red.Cleverbot")
+log = logging.getlogger("red.cogs.Cleverbot")
 
 
 class CleverbotError(Exception):

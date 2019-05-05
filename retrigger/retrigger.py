@@ -24,7 +24,7 @@ from .converters import (
 from .triggerhandler import TriggerHandler
 
 
-log = logging.getLogger("red.ReTrigger")
+log = logging.getlogger("red.cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 

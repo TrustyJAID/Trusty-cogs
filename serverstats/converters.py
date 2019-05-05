@@ -12,7 +12,7 @@ from discord.ext.commands.errors import BadArgument
 from typing import List
 
 _ = Translator("ServerStats", __file__)
-log = logging.getLogger("red.ServerStats")
+log = logging.getlogger("red.cogs.ServerStats")
 
 
 class FuzzyMember(IDConverter):
