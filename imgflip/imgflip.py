@@ -11,7 +11,7 @@ import json
 
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"
-log = logging.getLogger("red.ImgFlip")
+log = logging.getLogger("red.trusty-cogs.ImgFlip")
 
 
 class Meme(Converter):

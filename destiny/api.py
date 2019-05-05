@@ -27,7 +27,7 @@ TOKEN_URL = "https://www.bungie.net/platform/app/oauth/token/"
 
 
 _ = Translator("Destiny", __file__)
-log = logging.getLogger("red.Destiny")
+log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)
@@ -38,7 +38,7 @@ class DestinyAPI:
 
     async def request_url(self, url, params=None, headers=None):
         """
-            Helper to make requests from formed headers and params elsewhere 
+            Helper to make requests from formed headers and params elsewhere
             and apply rate limiting to prevent issues
         """
         time_now = datetime.now().timestamp()

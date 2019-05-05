@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Destiny", __file__)
 
-log = logging.getLogger("red.Destiny")
+log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)
@@ -18,65 +18,67 @@ class DestinyActivity(Converter):
     async def convert(self, ctx, argument):
         bot = ctx.bot
         possible_results = {
-            "all":{"code": 0,"alt":["none"]},
-            "story":{"code": 2,"alt":[]},
-            "strike":{"code": 3,"alt":[]},
-            "raid":{"code": 4,"alt":[]},
-            "allpvp":{"code": 5,"alt":["pvp"]},
-            "patrol":{"code": 6,"alt":[]},
-            "allpve":{"code": 7,"alt":["pve"]},
-            "control": {"code": 10,"alt":[]},
-            "clash": {"code": 12,"alt":[]},
-            "crimsondoubles": {"code": 15,"alt":[]},
-            "nightfall": {"code": 16,"alt":[]},
-            "heroicnightfall": {"code": 17,"alt":[]},
-            "allstrikes": {"code": 18,"alt":[]},
-            "ironbanner": {"code": 19,"alt":[]},
-            "allmayhem": {"code": 25,"alt":[]},
-            "supremacy": {"code": 31,"alt":[]},
-            "privatematchesall": {"code": 32,"alt":["private"]},
-            "survival": {"code": 37,"alt":[]},
-            "countdown": {"code": 38,"alt":[]},
-            "trialsofthenine": {"code": 39,"alt":["9", "trials"]},
-            "social": {"code": 40,"alt":[]},
-            "trialscountdown": {"code": 41,"alt":[]},
-            "trialssurvival": {"code": 42,"alt":[]},
-            "ironbannercontrol": {"code": 43,"alt":[]},
-            "ironbannerclash": {"code": 44,"alt":[]},
-            "ironbannersupremacy": {"code": 45,"alt":[]},
-            "scorednightfall": {"code": 46,"alt":[]},
-            "scoredheroicnightfall": {"code": 47,"alt":[]},
-            "rumble": {"code": 48,"alt":[]},
-            "alldoubles": {"code": 49,"alt":[]},
-            "doubles": {"code": 50,"alt":[]},
-            "privatematchesclash": {"code": 51,"alt":["privateclash"]},
-            "privatematchescontrol": {"code": 52,"alt":["privatecontrol"]},
-            "privatematchessupremacy": {"code": 53,"alt":["privatesupremacy"]},
-            "privatematchescountdown": {"code": 54,"alt":["privatecountdown"]},
-            "privatematchessurvival": {"code": 55,"alt":["privatesurvival"]},
-            "privatematchesmayhem": {"code": 56,"alt":["privatemayhem"]},
-            "privatematchesrumble": {"code": 57,"alt":["privaterumble"]},
-            "heroicadventure": {"code": 58,"alt":[]},
-            "showdown": {"code": 59,"alt":[]},
-            "lockdown": {"code": 60,"alt":[]},
-            "scorched": {"code": 61,"alt":[]},
-            "scorchedteam": {"code": 62,"alt":[]},
-            "gambit": {"code": 63,"alt":[]},
-            "allpvecompetitive": {"code": 64,"alt":["pvecomp"]},
-            "breakthrough": {"code": 65,"alt":[]},
-            "blackarmoryrun": {"code": 66,"alt":["blackarmory", "armory"]},
-            "salvage": {"code": 67,"alt":[]},
-            "ironbannersalvage": {"code": 68,"alt":[]},
-            "pvpcompetitive": {"code": 69,"alt":["pvpcomp", "comp"]},
-            "pvpquickplay": {"code": 70,"alt":["pvpqp", "qp"]},
-            "clashquickplay": {"code": 71,"alt":["clashqp"]},
-            "clashcompetitive": {"code": 72,"alt":["clashcomp"]},
-            "controlquickplay": {"code": 73,"alt":["controlqp"]},
-            "controlcompetitive": {"code": 74,"alt":["controlcomp"]},
+            "all": {"code": 0, "alt": ["none"]},
+            "story": {"code": 2, "alt": []},
+            "strike": {"code": 3, "alt": []},
+            "raid": {"code": 4, "alt": []},
+            "allpvp": {"code": 5, "alt": ["pvp"]},
+            "patrol": {"code": 6, "alt": []},
+            "allpve": {"code": 7, "alt": ["pve"]},
+            "control": {"code": 10, "alt": []},
+            "clash": {"code": 12, "alt": []},
+            "crimsondoubles": {"code": 15, "alt": []},
+            "nightfall": {"code": 16, "alt": []},
+            "heroicnightfall": {"code": 17, "alt": []},
+            "allstrikes": {"code": 18, "alt": []},
+            "ironbanner": {"code": 19, "alt": []},
+            "allmayhem": {"code": 25, "alt": []},
+            "supremacy": {"code": 31, "alt": []},
+            "privatematchesall": {"code": 32, "alt": ["private"]},
+            "survival": {"code": 37, "alt": []},
+            "countdown": {"code": 38, "alt": []},
+            "trialsofthenine": {"code": 39, "alt": ["9", "trials"]},
+            "social": {"code": 40, "alt": []},
+            "trialscountdown": {"code": 41, "alt": []},
+            "trialssurvival": {"code": 42, "alt": []},
+            "ironbannercontrol": {"code": 43, "alt": []},
+            "ironbannerclash": {"code": 44, "alt": []},
+            "ironbannersupremacy": {"code": 45, "alt": []},
+            "scorednightfall": {"code": 46, "alt": []},
+            "scoredheroicnightfall": {"code": 47, "alt": []},
+            "rumble": {"code": 48, "alt": []},
+            "alldoubles": {"code": 49, "alt": []},
+            "doubles": {"code": 50, "alt": []},
+            "privatematchesclash": {"code": 51, "alt": ["privateclash"]},
+            "privatematchescontrol": {"code": 52, "alt": ["privatecontrol"]},
+            "privatematchessupremacy": {"code": 53, "alt": ["privatesupremacy"]},
+            "privatematchescountdown": {"code": 54, "alt": ["privatecountdown"]},
+            "privatematchessurvival": {"code": 55, "alt": ["privatesurvival"]},
+            "privatematchesmayhem": {"code": 56, "alt": ["privatemayhem"]},
+            "privatematchesrumble": {"code": 57, "alt": ["privaterumble"]},
+            "heroicadventure": {"code": 58, "alt": []},
+            "showdown": {"code": 59, "alt": []},
+            "lockdown": {"code": 60, "alt": []},
+            "scorched": {"code": 61, "alt": []},
+            "scorchedteam": {"code": 62, "alt": []},
+            "gambit": {"code": 63, "alt": []},
+            "allpvecompetitive": {"code": 64, "alt": ["pvecomp"]},
+            "breakthrough": {"code": 65, "alt": []},
+            "blackarmoryrun": {"code": 66, "alt": ["blackarmory", "armory"]},
+            "salvage": {"code": 67, "alt": []},
+            "ironbannersalvage": {"code": 68, "alt": []},
+            "pvpcompetitive": {"code": 69, "alt": ["pvpcomp", "comp"]},
+            "pvpquickplay": {"code": 70, "alt": ["pvpqp", "qp"]},
+            "clashquickplay": {"code": 71, "alt": ["clashqp"]},
+            "clashcompetitive": {"code": 72, "alt": ["clashcomp"]},
+            "controlquickplay": {"code": 73, "alt": ["controlqp"]},
+            "controlcompetitive": {"code": 74, "alt": ["controlcomp"]},
         }
         result = None
         argument = argument.lower()
-        if argument.isdigit() and int(argument) in [v["code"] for k, v in possible_results.items()]:
+        if argument.isdigit() and int(argument) in [
+            v["code"] for k, v in possible_results.items()
+        ]:
             result = int(argument)
         elif argument in possible_results:
             result = possible_results[argument]["code"]
@@ -92,6 +94,7 @@ class DestinyActivity(Converter):
             )
         return result
 
+
 @cog_i18n(_)
 class StatsPage(Converter):
     """Returns a tuple of strings of the correct stats page type to use"""
@@ -99,13 +102,13 @@ class StatsPage(Converter):
     async def convert(self, ctx, argument):
         bot = ctx.bot
         possible_results = {
-            "allpvp":{"code": "allPvP","alt":["pvp"]},
-            "patrol":{"code": "patrol","alt":[]},
-            "raid":{"code": "raid","alt":["all"]},
-            "story":{"code": "story","alt":[]},
-            "allstrikes":{"code": "allStrikes","alt":["strikes", "strike"]},
-            "allpve":{"code": "allPvE","alt":["pve"]},
-            "allpvecompetitive":{"code": "allPvECompetitive","alt":["gambit"]},
+            "allpvp": {"code": "allPvP", "alt": ["pvp"]},
+            "patrol": {"code": "patrol", "alt": []},
+            "raid": {"code": "raid", "alt": ["all"]},
+            "story": {"code": "story", "alt": []},
+            "allstrikes": {"code": "allStrikes", "alt": ["strikes", "strike"]},
+            "allpve": {"code": "allPvE", "alt": ["pve"]},
+            "allpvecompetitive": {"code": "allPvECompetitive", "alt": ["gambit"]},
         }
         result = None
         argument = argument.lower()

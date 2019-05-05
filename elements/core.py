@@ -13,7 +13,7 @@ from mendeleev import element as ELEMENTS
 
 from .data import IMAGES, LATTICES, UNITS
 
-log = logging.getLogger("red.elements")
+log = logging.getLogger("red.trusty-cogs.elements")
 
 
 class ElementConverter(Converter):
@@ -116,7 +116,7 @@ class Elements(commands.Cog):
     ):
         """
             Display information about an element
-            
+
             `element` can be the name, symbol or atomic number of the element
             `measurement` can be any of the Elements data listed here
             https://mendeleev.readthedocs.io/en/stable/data.html#electronegativities

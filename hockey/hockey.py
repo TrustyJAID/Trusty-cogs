@@ -30,7 +30,7 @@ except ImportError:
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.Hockey")
+log = logging.getLogger("red.trusty-cogs.Hockey")
 
 __version__ = "2.4.0"
 __author__ = "TrustyJAID"

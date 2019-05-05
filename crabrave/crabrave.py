@@ -20,7 +20,7 @@ FONT_FILE = (
     "https://github.com/matomo-org/travis-scripts/"
     "raw/65cace9ce09dca617832cbac2bbae3dacdffa264/fonts/Verdana.ttf"
 )
-log = logging.getLogger("red.crabrave")
+log = logging.getLogger("red.trusty-cogs.crabrave")
 
 
 class CrabRave(commands.Cog):

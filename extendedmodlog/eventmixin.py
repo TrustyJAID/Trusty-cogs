@@ -11,7 +11,7 @@ from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("ExtendedModLog", __file__)
-logger = logging.getLogger("red.ExtendedModLog")
+logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
 
 
 class CommandPrivs(Converter):

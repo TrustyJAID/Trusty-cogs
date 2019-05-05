@@ -16,7 +16,7 @@ except ImportError:
 
 _ = Translator("Hockey", __file__)
 
-log = logging.getLogger("red.Hockey")
+log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
 class Goal:

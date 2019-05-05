@@ -5,7 +5,7 @@ from .constants import BASE_URL, TEAMS
 from .helper import hockey_config
 import logging
 
-log = logging.getLogger("red.Hockey")
+log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
 class Standings:

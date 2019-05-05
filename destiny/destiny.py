@@ -21,7 +21,7 @@ IMAGE_URL = "https://www.bungie.net"
 AUTH_URL = "https://www.bungie.net/en/oauth/authorize"
 TOKEN_URL = "https://www.bungie.net/platform/app/oauth/token/"
 _ = Translator("Destiny", __file__)
-log = logging.getLogger("red.Destiny")
+log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)

@@ -11,7 +11,7 @@ from redbot.core import commands
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
 
-log = logging.getLogger("red.ReTrigger")
+log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 

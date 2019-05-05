@@ -6,7 +6,7 @@ from .pickems import Pickems
 from .helper import utc_to_local
 import logging
 
-log = logging.getLogger("red.Hockey")
+log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
 class GameDayChannels:

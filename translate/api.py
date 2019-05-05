@@ -16,7 +16,7 @@ from .errors import GoogleTranslateAPIError
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)
-log = logging.getLogger("red.Translate")
+log = logging.getLogger("red.trusty-cogs.Translate")
 
 FLAG_REGEX = re.compile(r"|".join(rf"{re.escape(f)}" for f in FLAGS.keys()))
 
