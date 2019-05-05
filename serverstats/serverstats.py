@@ -616,7 +616,7 @@ class ServerStats(commands.Cog):
             )
             await ctx.send(msg)
             return
-        member_list = await self.get_members_since(ctx, days, new_roles)
+        member_list = await self.get_members_since(ctx, days, None)
         send_msg = str(len(member_list)) + _(
             " estimated users to give the role. " "Would you like to reassign their roles now?"
         )
