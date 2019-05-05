@@ -1,6 +1,6 @@
 # How to install the Notsobot cog
 **Requirements for Python**
-`pip3 install python-aalib pyfiglet numpy pillow`
+`pip3 install python-aalib pyfiglet numpy pillow wand`
 `pip3 install git+https://github.com/Kareeeeem/jpglitch`
 **Note: python-aalib uses ctypes to access aalib. As a result aalib is not available on Mac OS systems and will not import. You can still use everything except the ascii art commands.**
 
