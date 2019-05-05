@@ -33,7 +33,7 @@ from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
 
-log = logging.getLogger("red.NotSoBot")
+log = logging.getLogger("red.cogs.NotSoBot")
 
 try:
     import aalib
