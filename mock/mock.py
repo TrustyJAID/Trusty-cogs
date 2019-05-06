@@ -44,11 +44,10 @@ class Mock(commands.Cog):
         if type(msg) is int:
             try:
                 msg = await ctx.channel.get_message(msg)
-            except:
-                try:
-                    msg = await ctx.channel.fetch_message(msg)
-                except:
-                    return
+            except AttributeError:
+                msg = await ctx.channel.fetch_message(msg)
+            except discord.errors.Forbidden:
+                return
         elif msg is None:
             async for message in channel.history(limit=2):
                 msg = message

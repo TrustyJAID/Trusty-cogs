@@ -38,7 +38,7 @@ class ServerStats(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         default_global = {"join_channel": None}
-        self.config = Config.get_conf(self, 54_853_421_465_543)
+        self.config = Config.get_conf(self, 54853421465543)
         self.config.register_global(**default_global)
 
     @commands.command()
@@ -190,6 +190,10 @@ class ServerStats(commands.Cog):
                 text=text_channels, voice=voice_channels
             ),
         )
+        try:
+            verification_level = verif[int(guild.verification_level)]
+        except TypeError:
+            verification_level = str(guild.verification_level)
         em.add_field(
             name=_("Utility :"),
             value=_(
@@ -198,7 +202,7 @@ class ServerStats(commands.Cog):
             ).format(
                 owner=guild.owner,
                 region=region[str(guild.region)],
-                verif=verif[int(guild.verification_level)],
+                verif=verification_level,
                 id=guild.id,
             ),
         )
@@ -736,6 +740,8 @@ class ServerStats(commands.Cog):
         if type(member) is int:
             try:
                 member = await self.bot.get_user_info(member)
+            except AttributeError:
+                member = await self.bot.fetch_user(member)
             except discord.errors.NotFound:
                 await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
                 return
@@ -1234,7 +1240,12 @@ class ServerStats(commands.Cog):
         """
         if channel is None:
             channel = ctx.message.channel
-        msg = await channel.get_message(message_id)
+        try:
+            msg = await channel.get_message(message_id)
+        except AttributeError:
+            msg = await channel.fetch_message(message_id)
+        except discord.errors.Forbidden:
+            return
         new_msg = ""
         for reaction in msg.reactions:
             async for user in reaction.users():
