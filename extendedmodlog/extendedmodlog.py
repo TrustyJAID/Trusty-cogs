@@ -177,7 +177,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).message_edit.channel.set(channel)
+        await self.config.guild(ctx.guild).message_edit.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="join")
@@ -213,7 +213,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).user_join.channel.set(channel)
+        await self.config.guild(ctx.guild).user_join.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="guild")
@@ -247,7 +247,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).guild_change.channel.set(channel)
+        await self.config.guild(ctx.guild).guild_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="channel", aliases=["channels"])
@@ -281,7 +281,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).channel_change.channel.set(channel)
+        await self.config.guild(ctx.guild).channel_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="leave")
@@ -313,7 +313,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).user_left.channel.set(channel)
+        await self.config.guild(ctx.guild).user_left.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="delete")
@@ -360,7 +360,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).message_delete.channel.set(channel)
+        await self.config.guild(ctx.guild).message_delete.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="user", aliases=["member"])
@@ -394,7 +394,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).user_change.channel.set(channel)
+        await self.config.guild(ctx.guild).user_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="roles", aliases=["role"])
@@ -428,7 +428,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).role_change.channel.set(channel)
+        await self.config.guild(ctx.guild).role_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="voice")
@@ -462,7 +462,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).voice_change.channel.set(channel)
+        await self.config.guild(ctx.guild).voice_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="emoji", aliases=["emojis"])
@@ -494,7 +494,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).emoji_change.channel.set(channel)
+        await self.config.guild(ctx.guild).emoji_change.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group(name="command", aliases=["commands"])
@@ -545,7 +545,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         if channel is not None:
             channel = channel.id
-        settings = await self.config.guild(ctx.guild).commands_used.channel.set(channel)
+        await self.config.guild(ctx.guild).commands_used.channel.set(channel)
         await ctx.tick()
 
     @_modlog.group()

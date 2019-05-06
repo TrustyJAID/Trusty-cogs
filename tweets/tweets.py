@@ -14,6 +14,11 @@ import functools
 _ = Translator("Tweets", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Tweets")
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 @cog_i18n(_)
@@ -153,6 +158,7 @@ class Tweets(commands.Cog):
         self.twitter_loop.cancel()
         self.twitter_loop = self.bot.loop.create_task(self.start_stream())
 
+    @listener()
     async def on_tweet_error(self, error):
         """Posts tweet stream errors to a specified channel"""
         if await self.config.error_channel() is not None:
@@ -211,6 +217,7 @@ class Tweets(commands.Cog):
         em.set_footer(text="@" + username)
         return em
 
+    @listener()
     async def on_tweet_status(self, status):
         """Posts the tweets to the channel"""
         username = status.user.screen_name
@@ -833,7 +840,9 @@ class Tweets(commands.Cog):
             await ctx.message.delete()
         await ctx.send(_("Set the access credentials!"))
 
-    def __unload(self):
+    def cog_unload(self):
         if self.mystream is not None:
             self.mystream.disconnect()
         self.twitter_loop.cancel()
+
+    __unload = cog_unload

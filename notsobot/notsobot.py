@@ -1618,5 +1618,7 @@ class NotSoBot(commands.Cog):
         file = await ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
         await ctx.send("Rotated: `{0}°`".format(degrees), file=file)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+
+    __unload = cog_unload

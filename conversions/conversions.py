@@ -2,8 +2,6 @@ import discord
 from redbot.core import commands
 import datetime
 import aiohttp
-import asyncio
-import json
 import re
 from typing import Optional
 
@@ -141,7 +139,7 @@ class Conversions(commands.Cog):
             for coin in data["data"]:
                 coin_list.append(data["data"][coin])
         else:
-            coins = re.split("\W+", coins)
+            coins = re.split(r"\W+", coins)
             for coin in coins:
                 coin_list.append(await self.checkcoins(coin))
         embed = discord.Embed(title="Crypto coin comparison")
@@ -168,7 +166,7 @@ class Conversions(commands.Cog):
     ):
         """
             Displays the latest information about a specified crypto currency
-            
+
             `coin` must be the name or symbol of a crypto coin
             `[ammount]` is any number to convert the value of defaults to 1 coin
             `[currency]` is the desired currency you want to convert defaults to USD
@@ -228,7 +226,7 @@ class Conversions(commands.Cog):
             available_supply = "{0:,.2f}".format(coin_data["circulating_supply"])
             try:
                 max_supply = "{0:,.2f}".format(coin_data["max_supply"])
-            except:
+            except KeyError:
                 max_supply = "\N{INFINITY}"
             total_supply = "{0:,.2f}".format(coin_data["total_supply"])
             embed.set_thumbnail(url=coin_image)

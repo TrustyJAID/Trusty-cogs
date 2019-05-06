@@ -7,6 +7,7 @@ from datetime import datetime
 
 
 from redbot.core.json_io import JsonIO
+from redbot.core import Red
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.data_manager import cog_data_path
@@ -127,13 +128,16 @@ class DestinyAPI:
             "this application and provide "
             "everything after `?code=` shown in the URL.\n"
         )
-        check = lambda m: m.author == ctx.message.author
         try:
             await ctx.author.send(msg + url)
-        except:
+        except discord.errors.Forbidden:
             await ctx.send(msg + url)
         try:
-            msg = await ctx.bot.wait_for("message", check=check, timeout=60)
+            msg = await ctx.bot.wait_for(
+                "message",
+                check=lambda m: m.author == ctx.message.author,
+                timeout=60
+            )
         except asyncio.TimeoutError:
             return
         if msg.content != "exit":
@@ -181,7 +185,7 @@ class DestinyAPI:
         if "refresh_expires_at" not in user_oauth:
             try:
                 refresh = await self.get_refresh_token(user)
-            except Destiny2InvalidParameters as e:
+            except Destiny2InvalidParameters:
                 raise Destiny2RefreshTokenError
             refresh["refresh_expires_at"] = now + refresh["refresh_expires_in"]
             await self.config.user(user).oauth.set(refresh)
@@ -189,7 +193,7 @@ class DestinyAPI:
         if "expires_at" not in user_oauth:
             try:
                 refresh = await self.get_refresh_token(user)
-            except Destiny2InvalidParameters as e:
+            except Destiny2InvalidParameters:
                 raise Destiny2RefreshTokenError
             refresh["expires_at"] = now + refresh["expires_in"]
             await self.config.user(user).oauth.set(refresh)
@@ -202,7 +206,7 @@ class DestinyAPI:
         if user_oauth["expires_at"] < now:
             try:
                 refresh = await self.get_refresh_token(user)
-            except Destiny2InvalidParameters as e:
+            except Destiny2InvalidParameters:
                 raise Destiny2RefreshTokenError
             refresh["expires_at"] = now + refresh["expires_in"]
             refresh["refresh_expires_at"] = now + refresh["refresh_expires_in"]
@@ -382,7 +386,7 @@ class DestinyAPI:
                 except:
                     await ctx.send(str(e))
                 return False
-            except Destiny2MissingAPITokens as e:
+            except Destiny2MissingAPITokens:
                 # await ctx.send(str(e))
                 return True  # Some magic so we can still keep it all under one top level command
             data["expires_at"] = now + data["expires_in"]

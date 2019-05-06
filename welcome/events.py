@@ -39,17 +39,15 @@ class Events:
         raw_result = "{" + result + "}"
         # forbid private members and nested attr lookups
         if attr.startswith("_") or "." in attr:
-            log.info("returning here")
             return raw_result
         return str(getattr(obj, attr, raw_result))
 
     async def convert_parms(self, member, guild, msg):
         results = RE_POS.findall(msg)
-        log.info(msg)
-        log.info(results)
+        log.debug(results)
         raw_response = msg
         for result in results:
-            log.info(result)
+            log.debug(result)
             if int(result[1]) == 1:
                 param = self.transform_arg(result[0], result[2], guild)
             elif int(result[1]) == 0:

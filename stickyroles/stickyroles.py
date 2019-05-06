@@ -6,11 +6,16 @@ from collections import defaultdict
 default = {"sticky_roles": [], "to_reapply": {}}
 
 _ = Translator("StickyRoles", __file__)
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 @cog_i18n(_)
 class StickyRoles(commands.Cog):
-    """Reapplies specific roles on join. Rewritten for V3 from 
+    """Reapplies specific roles on join. Rewritten for V3 from
     https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py"""
 
     def __init__(self, bot):
@@ -79,6 +84,7 @@ class StickyRoles(commands.Cog):
             msg = _("No sticky roles. Add some with ") + "`{}stickyroles add`".format(ctx.prefix)
             await ctx.send(msg)
 
+    @listener()
     async def on_member_remove(self, member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
@@ -98,6 +104,7 @@ class StickyRoles(commands.Cog):
         if save:
             await self.config.guild(guild).to_reapply.set(to_reapply)
 
+    @listener()
     async def on_member_join(self, member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()

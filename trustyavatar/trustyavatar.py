@@ -11,6 +11,12 @@ from PIL import Image, ImageSequence
 from io import BytesIO
 from typing import Union, Optional
 
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
+
 
 class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
@@ -161,12 +167,12 @@ class TrustyAvatar(commands.Cog):
     ):
         """
             Create your own avatar like TrustyBot's
-            
+
             `style` can be a user or a colour code if none is supplied the authors avatar
             is used
             `face` must be one of neutral, happy, unamused, quizzical,
             sad, angry, or watching if none are supplied a random one is picked
-            
+
         """
         author = ctx.author
         new_avatar = choice([s for s in self.statuses])
@@ -264,6 +270,7 @@ class TrustyAvatar(commands.Cog):
         await self.config.streaming.set(not is_streaming)
         await ctx.send("Streaming sync set to " + str(not is_streaming))
 
+    @listener()
     async def on_member_update(self, before, after):
         """This essentially syncs streaming status with the bot owner"""
         if before.id != self.bot.owner_id:
@@ -346,5 +353,7 @@ class TrustyAvatar(commands.Cog):
                 print("changing avatar to {}".format(new_avatar))
             await asyncio.sleep(randint(1800, 3600))
 
-    def __unload(self):
+    def cog_unload(self):
         self.loop.cancel()
+
+    __unload = cog_unload

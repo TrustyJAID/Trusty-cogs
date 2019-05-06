@@ -21,6 +21,11 @@ from .time_utils import parse_timedelta, td_format
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 @cog_i18n(_)
@@ -67,6 +72,7 @@ class ServerStats(commands.Cog):
         else:
             await ctx.send(embed=embed_list[0])
 
+    @listener()
     async def on_guild_join(self, guild: discord.Guild):
         """Build and send a message containing serverinfo when the bot joins a new server"""
         channel_id = await self.config.join_channel()
@@ -234,6 +240,7 @@ class ServerStats(commands.Cog):
             )
         return em
 
+    @listener()
     async def on_guild_remove(self, guild):
         """Build and send a message containing serverinfo when the bot leaves a server"""
         channel_id = await self.config.join_channel()

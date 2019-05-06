@@ -6,6 +6,12 @@ from redbot.core import checks, Config
 from datetime import datetime
 import logging
 
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
+
 
 class Unity4J(commands.Cog):
     def __init__(self, bot):
@@ -55,6 +61,7 @@ class Unity4J(commands.Cog):
         em.timestamp = datetime.utcnow()
         await ctx.send(embed=em)
 
+    @listener()
     async def on_member_update(self, before, after):
         guild = before.guild
         if guild.id != 469771424274317312:
@@ -80,6 +87,7 @@ class Unity4J(commands.Cog):
             except Exception as e:
                 print(e)
 
+    @listener()
     async def on_message(self, message):
         if message.channel.id == 469783041145962496 or message.channel.id == 469771424773701649:
             if "donate" in message.content.lower() and not message.author.bot:

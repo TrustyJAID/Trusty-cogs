@@ -30,7 +30,7 @@ class Mock(commands.Cog):
     ):
         """
             Mock a user with the spongebob meme
-            
+
             `channel` Optional channel to retrieve messages from and post the mock message
             `msg` Optional either member, message ID, or string
             if no `msg` is provided the command will use the last message in channel before the command
@@ -45,7 +45,10 @@ class Mock(commands.Cog):
             try:
                 msg = await ctx.channel.get_message(msg)
             except:
-                return
+                try:
+                    msg = await ctx.channel.fetch_message(msg)
+                except:
+                    return
         elif msg is None:
             async for message in channel.history(limit=2):
                 msg = message
@@ -58,7 +61,7 @@ class Mock(commands.Cog):
             author = msg.author
         elif type(msg) is discord.Member:
             total_msg = ""
-            async for message in channel.history(limit=10, reverse=True):
+            async for message in channel.history(limit=10):
                 if message.author == msg:
                     total_msg += message.content + "\n"
             result = await self.cap_change(total_msg)

@@ -14,6 +14,8 @@ from copy import copy
 from typing import Union, Optional
 import textwrap
 
+from .converter import ImageFinder
+
 try:
     import cv2
     TRUMP = True
@@ -27,7 +29,6 @@ except ImportError:
     BANNER = False
 
 
-
 class ImageMaker(commands.Cog):
     """
         Create various fun images
@@ -37,10 +38,13 @@ class ImageMaker(commands.Cog):
         self.bot = bot
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
-    async def dl_image(self, url):
-        async with self.session.get(url) as resp:
-            test = await resp.read()
-            return BytesIO(test)
+    async def dl_image(self, url: str):
+        async with self.session.get(str(url)) as resp:
+            if resp.status == 200:
+                test = await resp.read()
+                return BytesIO(test)
+            else:
+                return None
 
     @commands.command()
     async def wheeze(self, ctx, *, text: Union[discord.Member, str] = None):
@@ -61,8 +65,28 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=file)
 
     @commands.command()
+    async def facemerge(self, ctx, *, urls: ImageFinder):
+        """
+            Generate a wheeze image with text or a user avatar
+
+            `text` the text or user avatar who will be placed in the bottom pane
+        """
+        if len(urls) < 2:
+            urls = await ImageFinder().search_for_images(ctx)
+            if len(urls) < 2:
+                return await ctx.send("You must supply at least 2 image links.")
+        async with ctx.channel.typing():
+            face_img = await self.face_merge(urls)
+            if face_img is None:
+                await ctx.send("sorry something went wrong!")
+                return
+            file = discord.File(face_img)
+            # ext = await self.make_beautiful(user)
+            await ctx.send(file=file)
+
+    @commands.command()
     @commands.check(lambda ctx: BANNER)
-    async def banner(self, ctx, colour:Optional[discord.Colour]=(255,0,0), *, text: str):
+    async def banner(self, ctx, colour: Optional[discord.Colour] = (255, 0, 0), *, text: str):
         """
             Generate a scrolling text gif banner
         """
@@ -78,7 +102,6 @@ class ImageMaker(commands.Cog):
             file = discord.File(image)
             await ctx.send(files=[file])
 
-
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def obama(self, ctx, *, text: str):
@@ -92,23 +115,22 @@ class ImageMaker(commands.Cog):
         async with ctx.typing():
             async with self.session.post(
                     url="http://talkobamato.me/synthesize.py", data={"input_text": text}) as resp:
-                if resp.status >= 400:
-                    raise discord.HTTPException(resp, f"{resp.url} returned error code {resp.status}")
+                if resp.status != 200:
+                    return
                 url = resp.url
 
             key = url.query['speech_key']
             link = f"http://talkobamato.me/synth/output/{key}/obama.mp4"
             await asyncio.sleep(len(text) // 5)
             async with self.session.get(link) as resp:
-                if resp.status >= 400:
-                    raise discord.HTTPException(resp, f"{resp.url} returned error code {resp.status}")
+                if resp.status != 200:
+                    return
             async with self.session.get(link) as r:
                 data = BytesIO(await r.read())
             data.name = "obama.mp4"
             data.seek(0)
             file = discord.File(data)
             await ctx.send(files=[file])
-
 
     @commands.command()
     async def gwheeze(self, ctx, member: discord.Member = None):
@@ -330,6 +352,18 @@ class ImageMaker(commands.Cog):
         temp.seek(0)
         return temp
 
+    async def face_merge(self, urls):
+        print(urls)
+        images = [await self.dl_image(u) for u in urls]
+        task = functools.partial(self.face_transition, images=images)
+        task = self.bot.loop.run_in_executor(None, task)
+        try:
+            temp = await asyncio.wait_for(task, timeout=60)
+        except asyncio.TimeoutError:
+            return
+        temp.seek(0)
+        return temp
+
     # Below are all the blocking code
 
     def make_beautiful_gif(self, template, avatar):
@@ -356,8 +390,40 @@ class ImageMaker(commands.Cog):
                 break
         return temp
 
+    def face_transition(self, images: list):
+        img_list = []
+        # base = Image.open(images[-1])
+        for image in images[:-1]:
+            overlay = Image.open(image)
+            overlay = overlay.resize((256, 256), Image.ANTIALIAS)
+            overlay = overlay.convert("RGBA")
+            if len(overlay.split()) != 4:
+                alpha = Image.new("L", overlay.size, 255)
+            else:
+                alpha = overlay.convert("L")  # Image.new("L", overlay.size, 255)
+            overlay.putalpha(alpha)
+            for i in range(0, 50):
+                base_img = Image.open(images[-1])
+                base_img = base_img.convert("RGBA")
+                base_img = base_img.resize((256, 256), Image.ANTIALIAS)
+                paste_mask = overlay.split()[3].point(lambda x: x * i / 50)
+                base_img.paste(overlay, (0, 0), paste_mask)
+                img_list.append(np.array(base_img))
+            for i in range(49, -1, -1):
+                base_img = Image.open(images[-1])
+                base_img = base_img.convert("RGBA")
+                base_img = base_img.resize((256, 256), Image.ANTIALIAS)
+                paste_mask = overlay.split()[3].point(lambda x: x * i / 50)
+                base_img.paste(overlay, (0, 0), paste_mask)
+                img_list.append(np.array(base_img))
+        # print(len(img_list))
+        temp = BytesIO()
+        temp.name = "merge.gif"
+        imageio.mimwrite(temp, img_list, "gif", duration=0.02)
+        return temp
+
     def make_banner(self, text, colour):
-        im = Image.new("RGBA", (300,100), (0,0,0,0))
+        im = Image.new("RGBA", (300, 100), (0, 0, 0, 0))
         font = ImageFont.truetype(str(bundled_data_path(self)/"impact.ttf"), 18)
         draw = ImageDraw.Draw(im)
         size_w, size_h = draw.textsize(text, font=font)
@@ -642,5 +708,7 @@ class ImageMaker(commands.Cog):
         cvImage = cv2.cvtColor(cvImage, cv2.COLOR_BGR2RGB)
         return Image.fromarray(cvImage)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+
+    __unload = cog_unload

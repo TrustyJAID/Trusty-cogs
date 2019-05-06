@@ -9,9 +9,11 @@ from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Starboard", __file__)
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
-__version__ = "2.1.0"
-__author__ = "TrustyJAID"
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 @cog_i18n(_)
@@ -19,6 +21,8 @@ class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """
+    __version__ = "2.1.0"
+    __author__ = "TrustyJAID"
 
     def __init__(self, bot):
         self.bot = bot
@@ -176,7 +180,7 @@ class Starboard(commands.Cog):
     async def update_starboard(self, ctx):
         """
             This is to update all previous starboards
-            to the new starboard storage method keeping as many 
+            to the new starboard storage method keeping as many
             settings as possible
             This works for all guilds
         """
@@ -550,7 +554,7 @@ class Starboard(commands.Cog):
             starboard.colour = colour.value
         await self.save_starboard(guild, starboard)
         msg = _("Starboard `{name}` colour set to `{colour}`.").format(
-            name=starboard.name, 
+            name=starboard.name,
             colour=starboard.colour
         )
         await ctx.send(msg)
@@ -735,6 +739,7 @@ class Starboard(commands.Cog):
             return True
         return False
 
+    @listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:

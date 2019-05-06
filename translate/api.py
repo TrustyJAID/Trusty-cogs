@@ -19,6 +19,11 @@ _ = Translator("Translate", __file__)
 log = logging.getLogger("red.trusty-cogs.Translate")
 
 FLAG_REGEX = re.compile(r"|".join(rf"{re.escape(f)}" for f in FLAGS.keys()))
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 class FlagTranslation(Converter):
@@ -124,6 +129,7 @@ class GoogleTranslateAPI:
             translated_text = data["data"]["translations"][0]["translatedText"]
             return translated_text
 
+    @listener()
     async def on_message(self, message):
         """
             Translates the message based off reactions
@@ -199,6 +205,7 @@ class GoogleTranslateAPI:
         if not cooldown["multiple"]:
             self.cache["translations"].append(translation.id)
 
+    @listener()
     async def on_raw_reaction_add(self, payload):
         """
             Translates the message based off reactions

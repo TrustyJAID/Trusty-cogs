@@ -66,7 +66,7 @@ class Weather(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def set_guild(self, ctx, units: UnitConverter):
         """
-            Sets the guild default weather units 
+            Sets the guild default weather units
 
             `units` must be one of imperial, metric, or kelvin
         """
@@ -78,7 +78,7 @@ class Weather(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def set_bot(self, ctx, units: UnitConverter):
         """
-            Sets the bots default weather units 
+            Sets the bots default weather units
 
             `units` must be one of imperial, metric, or kelvin
         """
@@ -88,7 +88,7 @@ class Weather(commands.Cog):
     @weather_set.command(name="user")
     async def set_user(self, ctx, units: UnitConverter):
         """
-            Sets the user default weather units 
+            Sets the user default weather units
 
             `units` must be one of imperial, metric, or kelvin
             Note: User settings override guild settings.
@@ -166,5 +166,7 @@ class Weather(commands.Cog):
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+
+    __unload = cog_unload

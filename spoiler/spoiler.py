@@ -8,6 +8,11 @@ __version__ = "1.1.2"
 __author__ = "TrustyJAID"
 
 _ = Translator("Spoiler", __file__)
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 @cog_i18n(_)
@@ -68,6 +73,7 @@ class Spoiler(commands.Cog):
         em.set_footer(text="{} | #{}".format(channel.guild.name, channel.name))
         return em
 
+    @listener()
     async def on_raw_reaction_add(self, payload):
         if str(payload.emoji) != "✅":
             return

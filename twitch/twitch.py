@@ -466,16 +466,17 @@ class Twitch(commands.Cog):
             2. Fillout the form with the OAuth redirect URL set to https://localhost
             3. Supply the client_id and client_secret to the bot
             **Note:** client_secret is only necessary if you have more than 3000 followers
-            or you expect to be making more than 30 calls per minute to the API 
+            or you expect to be making more than 30 calls per minute to the API
         """
         await self.config.client_id.set(client_id)
         if client_secret is not None:
             await self.config.client_secret.set(client_secret)
         await ctx.send("Twitch token set.")
 
-    def __unload(self):
+    def cog_unload(self):
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()
         self.bot.loop.create_task(self.session.close())
 
-    __del__ = __unload
+    __del__ = cog_unload
+    __unload = cog_unload

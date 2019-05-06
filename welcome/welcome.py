@@ -54,16 +54,12 @@ class Welcome(Events, commands.Cog):
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
         self.config.register_guild(**default_settings)
         self.group_check = bot.loop.create_task(self.group_welcome())
-        self.cog_unload = self.__unload
         self.joined = {}
-
-    def __unload(self):
-        self.group_check.cancel()
 
     async def group_welcome(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            log.info("Checking for new welcomes")
+            log.debug("Checking for new welcomes")
             for guild_id, members in self.joined.items():
                 await self.send_member_join(members, self.bot.get_guild(guild_id))
             self.joined = {}
@@ -635,3 +631,8 @@ class Welcome(Events, commands.Cog):
         else:
             verb = _("on")
         await ctx.send(_("Mentioning the user turned {verb}").format(verb=verb))
+
+    def cog_unload(self):
+        self.group_check.cancel()
+
+    __unload = cog_unload

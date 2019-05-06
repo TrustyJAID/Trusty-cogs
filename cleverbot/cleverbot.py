@@ -9,6 +9,11 @@ API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
 
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 class CleverbotError(Exception):
@@ -233,6 +238,7 @@ class Cleverbot(commands.Cog):
         else:
             return io_user, io_key
 
+    @listener()
     async def on_message(self, message):
         guild = message.guild
         if guild is None:
@@ -313,5 +319,7 @@ class Cleverbot(commands.Cog):
                 else:
                     await channel.send(response)
 
-    def __unload(self):
+    def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+
+    __unload = cog_unload

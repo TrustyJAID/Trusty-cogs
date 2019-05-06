@@ -6,6 +6,11 @@ import aiohttp
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
 APNG_REGEX = re.compile(rb"fdAT")  # credit to Soulrift for researh on this
+listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+
+if listener is None:  # thanks Sinbad
+    def listener(name=None):
+        return lambda x: x
 
 
 class APNGFilter(commands.Cog):
@@ -32,6 +37,7 @@ class APNGFilter(commands.Cog):
             msg = "Enabled"
         await ctx.send("APNG Filter " + msg)
 
+    @listener()
     async def on_message(self, message):
         if not message.guild:
             return
