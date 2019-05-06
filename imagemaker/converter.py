@@ -35,7 +35,6 @@ class ImageFinder(Converter):
                 urls.append(url)
         if mentions:
             for mention in mentions:
-                print(mention.group(1))
                 user = ctx.guild.get_member(int(mention.group(1)))
                 if user.is_avatar_animated():
                     url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif")))
