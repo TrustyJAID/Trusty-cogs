@@ -132,7 +132,7 @@ class Autorole(commands.Cog):
         for role in roles:
             await member.add_roles(role, reason=_("Joined the server"))
 
-    @listerner()
+    @listener()
     async def on_member_join(self, member):
         guild = member.guild
         if await self.config.guild(guild).ENABLED():

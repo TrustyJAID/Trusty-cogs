@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 from redbot.core.json_io import JsonIO
-from redbot.core import Red
+from redbot.core.bot import Red
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.data_manager import cog_data_path

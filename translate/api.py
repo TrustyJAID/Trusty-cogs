@@ -5,7 +5,7 @@ import asyncio
 import time
 import re
 
-from redbot.core import Config
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from discord.ext.commands.converter import Converter
