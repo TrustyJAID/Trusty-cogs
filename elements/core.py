@@ -62,7 +62,7 @@ class MeasurementConverter(Converter):
 class Elements(commands.Cog):
     """Display information from the periodic table of elements"""
 
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -146,6 +146,8 @@ class Elements(commands.Cog):
             `elements` can be the name, symbol or atomic number of the element
             separated by spaces
         """
+        if not elements:
+            elements = [ELEMENTS(e) for e in range(1, 119)]
         await menu(ctx, [await self.element_embed(e) for e in elements], DEFAULT_CONTROLS)
 
     @commands.command()
