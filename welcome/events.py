@@ -279,8 +279,6 @@ class Events:
         channel = guild.get_channel(guild_settings["CHANNEL"])
         if leave:
             channel = guild.get_channel(guild_settings["LEAVE_CHANNEL"])
-        if channel is None:
-            return
         rand_msg = msg or rand_choice(guild_settings["GREETING"])
         if leave:
             rand_msg = msg or rand_choice(guild_settings["GOODBYE"])
