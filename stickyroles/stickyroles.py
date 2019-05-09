@@ -128,7 +128,7 @@ class StickyRoles(commands.Cog):
 
         if to_add:
             try:
-                await member.add_roles(*to_add)
+                await member.add_roles(*to_add, reason="Sticky roles")
             except discord.Forbidden:
                 print(
                     _("Failed to add roles")
