@@ -309,7 +309,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     @_leave.command(name="channel")
     async def _leave_channel(self, ctx, channel: discord.TextChannel = None):
         """
-            Set custom channel for user leave logging
+            Set custom channel for member leave logging
         """
         if channel is not None:
             channel = channel.id
@@ -363,10 +363,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await self.config.guild(ctx.guild).message_delete.channel.set(channel)
         await ctx.tick()
 
-    @_modlog.group(name="user", aliases=["member"])
+    @_modlog.group(name="member", aliases=["user"])
     async def _user(self, ctx):
         """
-            User logging settings
+            Member logging settings
         """
         pass
 

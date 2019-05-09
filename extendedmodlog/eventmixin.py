@@ -347,7 +347,7 @@ class EventMixin:
         else:
             msg = (
                 f":white_check_mark: **{member}** "
-                + _("joined the guild. Total users: ")
+                + _("joined the guild. Total members: ")
                 + str(users)
                 + "\n"
                 + possible_link
