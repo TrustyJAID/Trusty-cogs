@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.6.7"
+    __version__ = "2.6.8"
 
     def __init__(self, bot):
         self.bot = bot
@@ -754,7 +754,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         filename = await self.wait_for_multiple_images(ctx)
 
         new_trigger = Trigger(
-            name, regex, ["randimage"], author, 0, filename, None, [], [], {}, []
+            name, regex, ["randimage"], author, 0, filename, None, [], [], {}, [], ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []

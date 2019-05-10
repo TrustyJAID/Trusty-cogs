@@ -206,7 +206,6 @@ class TriggerHandler:
 
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
-                await msg.add_reaction("✅")
             except asyncio.TimeoutError:
                 return files
             if "exit" in msg.content.lower():
@@ -218,11 +217,13 @@ class TriggerHandler:
                         continue
                     try:
                         files.append(await self.save_image_location(a.url, ctx.guild))
+                        await msg.add_reaction("✅")
                     except Exception:
                         pass
                 if link:
                     try:
                         files.append(await self.save_image_location(link.group(0), ctx.guild))
+                        await msg.add_reaction("✅")
                     except Exception:
                         pass
         return files
