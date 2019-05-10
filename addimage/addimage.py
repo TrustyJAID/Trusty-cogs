@@ -155,6 +155,8 @@ class AddImage(commands.Cog):
             prefix = await self.get_prefix(message)
         except ValueError:
             return
+        if message.author.bot:
+            return
         alias = await self.first_word(msg[len(prefix):])
         if not await self.local_perms(message):
             return
