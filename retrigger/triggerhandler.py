@@ -898,9 +898,11 @@ class TriggerHandler:
                 colour=discord.Colour.dark_red(),
                 timestamp=datetime.now(),
             )
+            found_regex = humanize_list(find)
             embed.add_field(name=_("Channel"), value=channel.mention)
             embed.add_field(name=_("Trigger Name"), value=trigger.name)
-            embed.add_field(name=_("Found Triggers"), value=humanize_list(find)[:1024])
+            if found_regex:
+                embed.add_field(name=_("Found Triggers"), value=found_regex[:1024])
             embed.add_field(name=_("Trigger author"), value=f"<@{trigger.author}>")
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
