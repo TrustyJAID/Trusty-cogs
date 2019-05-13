@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.6.8"
+    __version__ = "2.7.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -49,6 +49,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             "add_role_logs": False,
             "remove_role_logs": False,
             "filter_logs": False,
+            "bypass": False,
         }
         self.config.register_guild(**default_guild)
         self.re_pool = Pool(maxtasksperchild=2)
@@ -549,6 +550,29 @@ class ReTrigger(TriggerHandler, commands.Cog):
         msg = _("Trigger {name} reactions changed to {emojis}")
         emoji_s = [f"<{e}>" for e in emojis if len(e) > 5] + [e for e in emojis if len(e) < 5]
         await ctx.send(msg.format(name=trigger.name, emojis=humanize_list(emoji_s)))
+
+    @retrigger.command(hidden=True)
+    @checks.is_owner()
+    async def bypass(self, ctx: commands.Context, bypass: bool):
+        """Bypass patterns being kicked from memory until reload"""
+        msg = await ctx.send(
+            _(
+                "Bypassing this could cause the bot to become unstable or allow "
+                "bad regex patterns to continue to exist causing slow downs and "
+                "even fatal crashes on the bot. Do you wish to continue?"
+            )
+        )
+        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
+        try:
+            await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
+        except asyncio.TimeoutError:
+            return await ctx.send(_("Not bypassing regex pattern filtering."))
+        if pred.result:
+            await self.config.guild(ctx.guild).bypass.set(bypass)
+            await ctx.tick()
+        else:
+            await ctx.send(_("Not bypassing regex pattern filtering."))
 
     @retrigger.command()
     async def list(self, ctx: commands.Context, trigger: TriggerExists = None):

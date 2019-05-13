@@ -591,6 +591,9 @@ class TriggerHandler:
             things asynchronous. If the process takes too long to complete we log a
             warning and remove the trigger from trying to run again.
         """
+        if await self.config.guild(guild).bypass():
+            log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
+            return trigger.regex.findall(content)
         try:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))
             task = functools.partial(process.get, timeout=1)
