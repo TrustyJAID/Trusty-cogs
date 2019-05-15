@@ -819,8 +819,8 @@ class ServerStats(commands.Cog):
                 count = 0
                 await asyncio.sleep(0.1)
             msg += f"{server.name}: {len(server.members)}\n"
-            msg_list.append(msg)
             count += 1
+        msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     @commands.command(hidden=True)
