@@ -348,6 +348,8 @@ class Conversions(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(stock.format(ticker.upper())) as resp:
                 data = await resp.json()
+        if "quandl_error" in data:
+            return await ctx.send(data["quandl_error"]["message"])
         convertrate = 1
         if currency != "USD":
             convertrate = self.conversionrate("USD", currency.upper())
