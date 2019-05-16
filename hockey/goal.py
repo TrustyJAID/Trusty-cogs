@@ -216,7 +216,10 @@ class Goal:
             for channel_id, message_id in old_msgs:
                 channel = bot.get_channel(id=int(channel_id))
                 try:
-                    message = await channel.get_message(message_id)
+                    try:
+                        message = await channel.get_message(message_id)
+                    except AttributeError:
+                        message = await channel.fetch_message(message_id)
                     if message is not None:
                         await message.delete()
                 except Exception:
@@ -253,7 +256,10 @@ class Goal:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
-            message = await channel.get_message(message_id)
+            try:
+                message = await channel.get_message(message_id)
+            except AttributeError:
+                message = await channel.fetch_message(message_id)
             guild = message.guild
             game_day_channels = await self.config.guild(guild).gdc()
             role = None

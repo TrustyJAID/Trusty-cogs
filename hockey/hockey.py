@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -201,7 +201,9 @@ class Hockey(commands.Cog):
             return
         try:
             msg = await channel.get_message(id=payload.message_id)
-        except Exception:
+        except AttributeError:
+            msg = await channel.fetch_message(id=payload.message_id)
+        except discord.errors.NotFound:
             return
         user = guild.get_member(payload.user_id)
         # log.debug(payload.user_id)
@@ -317,6 +319,10 @@ class Hockey(commands.Cog):
                     standings_chn = standings_channel.name
                 try:
                     standings_msg = await standings_channel.get_message(
+                        await self.config.guild(guild).standings_msg()
+                    )
+                except AttributeError:
+                    standings_msg = await standings_channel.fetch_message(
                         await self.config.guild(guild).standings_msg()
                     )
                 except discord.errors.NotFound:

@@ -163,7 +163,10 @@ class Standings:
                 standings_msg = await config.guild(guild).standings_msg()
                 if standings_msg is None:
                     continue
-                message = await channel.get_message(standings_msg)
+                try:
+                    message = await channel.get_message(standings_msg)
+                except AttributeError:
+                    message = await channel.fetch_message(standings_msg)
 
                 standings, page = await Standings.get_team_standings(search)
                 if search != "all":
