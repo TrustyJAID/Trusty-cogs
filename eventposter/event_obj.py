@@ -36,7 +36,12 @@ class Event:
     @classmethod
     async def from_json(cls, data: dict, guild: discord.Guild):
         channel = guild.get_channel(data["channel"])
-        message = await channel.get_message(data["message"])
+        try:
+            message = await channel.get_message(data["message"])
+        except AttributeError:
+            message = await channel.fetch_message(data["message"])
+        except discord.errors.Forbidden:
+            message = None
         return cls(
             guild.get_member(data["hoster"]),
             [guild.get_member(m) for m in data["members"]],
