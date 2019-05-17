@@ -733,7 +733,7 @@ class Hockey(commands.Cog):
             reddit  team    Team subreddit on Reddit
         """
         search = quote(search)
-        await ctx.send("https://hockeyhub.github.io/?search=" + search)
+        await ctx.send("https://hh.sbstp.ca/?search=" + search)
 
     @hockey_commands.command(name="role")
     @checks.bot_has_permissions(manage_roles=True)
