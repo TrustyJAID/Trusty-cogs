@@ -201,7 +201,7 @@ class ServerStats(commands.Cog):
                 "Verif. level : **{verif}**\nServer ID : **{id}**"
             ).format(
                 owner=guild.owner,
-                region=region[str(guild.region)],
+                region=str(guild.region) if guild.region not in region else region[str(guild.region)],
                 verif=verification_level,
                 id=guild.id,
             ),
