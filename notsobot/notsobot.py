@@ -1028,8 +1028,8 @@ class NotSoBot(commands.Cog):
         file = discord.File(final, filename="vapewave.png")
         await ctx.send(file=file)
 
-    @commands.command(aliases=["achievement", "ach"])
-    async def mc(self, ctx, *, txt: str):
+    @commands.command(aliases=["achievement"])
+    async def minecraftachievement(self, ctx, *, txt: str):
         """Generate a Minecraft Achievement"""
         api = "https://mcgen.herokuapp.com/a.php?i=1&h=Achievement-{0}&t={1}".format(
             ctx.message.author.name, txt
