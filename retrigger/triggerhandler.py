@@ -39,7 +39,7 @@ _ = Translator("ReTrigger", __file__)
 
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
-LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
+LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png|mp3|mp4))")
 
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
@@ -165,6 +165,8 @@ class TriggerHandler:
 
     async def save_image_location(self, image_url: str, guild: discord.Guild) -> str:
         good_image_url = LINK_REGEX.search(image_url)
+        if not good_image_url:
+            return None
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = good_image_url.group(1).split("/")[-1]
         filename = "{}-{}".format(seed, filename)
@@ -637,36 +639,45 @@ class TriggerHandler:
             "Retrigger encountered an error in {guild} with trigger {trigger} "
         ).format(guild=guild.name, trigger=trigger.name)
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
-            path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-            task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
-            new_task = self.bot.loop.run_in_executor(None, task)
-            try:
-                file: discord.File = await asyncio.wait_for(new_task, timeout=60)
-            except asyncio.TimeoutError:
-                pass
-            try:
-                await channel.send(file=file)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            async with channel.typing():
+                path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+                task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
+                new_task = self.bot.loop.run_in_executor(None, task)
+                try:
+                    file: discord.File = await asyncio.wait_for(new_task, timeout=60)
+                except asyncio.TimeoutError:
+                    pass
+                try:
+                    await channel.send(file=file)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
         if "text" in trigger.response_type and own_permissions.send_messages:
-            if trigger.multi_payload:
-                text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
-            else:
-                text_response = str(trigger.text)
-            response = await self.convert_parms(message, text_response, trigger.regex)
-            try:
-                await channel.send(response)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            async with channel.typing():
+                if trigger.multi_payload:
+                    text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                else:
+                    text_response = str(trigger.text)
+                response = await self.convert_parms(message, text_response, trigger.regex)
+                try:
+                    await channel.send(response)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
         if "randtext" in trigger.response_type and own_permissions.send_messages:
-            rand_text_response: str = random.choice(trigger.text)
-            crand_text_response = await self.convert_parms(
-                message, rand_text_response, trigger.regex
-            )
-            try:
-                await channel.send(crand_text_response)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            async with channel.typing():
+                rand_text_response: str = random.choice(trigger.text)
+                crand_text_response = await self.convert_parms(
+                    message, rand_text_response, trigger.regex
+                )
+                try:
+                    await channel.send(crand_text_response)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -675,6 +686,8 @@ class TriggerHandler:
             response = await self.convert_parms(message, dm_response, trigger.regex)
             try:
                 await author.send(response)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
             except Exception:
                 log.error(error_in, exc_info=True)
         if "react" in trigger.response_type and own_permissions.add_reactions:
@@ -687,6 +700,8 @@ class TriggerHandler:
             for emoji in react_response:
                 try:
                     await message.add_reaction(emoji)
+                except (discord.errors.Forbidden, discord.errors.NotFound):
+                    log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "ban" in trigger.response_type and own_permissions.ban_members:
@@ -699,6 +714,8 @@ class TriggerHandler:
                     await author.ban(reason=reason, delete_message_days=0)
                     if await self.config.guild(guild).ban_logs():
                         await self.modlog_action(message, trigger, find, _("Banned"))
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "kick" in trigger.response_type and own_permissions.kick_members:
@@ -711,31 +728,39 @@ class TriggerHandler:
                     await author.kick(reason=reason)
                     if await self.config.guild(guild).kick_logs():
                         await self.modlog_action(message, trigger, find, _("Kicked"))
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
-            path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-            file = discord.File(path)
-            image_text_response = trigger.text
-            if image_text_response:
-                image_text_response = await self.convert_parms(
-                    message, image_text_response, trigger.regex
-                )
-            try:
-                await channel.send(image_text_response, file=file)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            async with channel.typing():
+                path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+                file = discord.File(path)
+                image_text_response = trigger.text
+                if image_text_response:
+                    image_text_response = await self.convert_parms(
+                        message, image_text_response, trigger.regex
+                    )
+                try:
+                    await channel.send(image_text_response, file=file)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
         if "randimage" in trigger.response_type and own_permissions.attach_files:
-            image = random.choice(trigger.image)
-            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-            file = discord.File(path)
-            rimage_text_response = trigger.text
-            if rimage_text_response:
-                text_response = await self.convert_parms(message, response, trigger.regex)
-            try:
-                await channel.send(rimage_text_response, file=file)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            async with channel.typing():
+                image = random.choice(trigger.image)
+                path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
+                file = discord.File(path)
+                rimage_text_response = trigger.text
+                if rimage_text_response:
+                    text_response = await self.convert_parms(message, response, trigger.regex)
+                try:
+                    await channel.send(rimage_text_response, file=file)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
         if "command" in trigger.response_type:
             if trigger.multi_payload:
                 command_response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
@@ -767,6 +792,8 @@ class TriggerHandler:
                     await author.add_roles(add_role, reason=reason)
                     if await self.config.guild(guild).add_role_logs():
                         await self.modlog_action(message, trigger, find, _("Added Role"))
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "remove_role" in trigger.response_type and own_permissions.manage_roles:
@@ -785,6 +812,8 @@ class TriggerHandler:
                     await author.remove_roles(rem_role, reason=reason)
                     if await self.config.guild(guild).remove_role_logs():
                         await self.modlog_action(message, trigger, find, _("Removed Role"))
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "delete" in trigger.response_type and own_permissions.manage_messages:
@@ -793,6 +822,10 @@ class TriggerHandler:
                 await message.delete()
                 if await self.config.guild(guild).filter_logs():
                     await self.modlog_action(message, trigger, find, _("Deleted Message"))
+            except discord.errors.NotFound:
+                log.debug(error_in, exc_info=True)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
             except Exception:
                 log.error(error_in, exc_info=True)
 

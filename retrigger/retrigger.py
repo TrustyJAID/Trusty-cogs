@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.0"
+    __version__ = "2.7.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -609,7 +609,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             await self.remove_trigger_from_cache(ctx.guild, trigger)
             await ctx.send(_("Trigger `") + trigger.name + _("` removed."))
         else:
-            await ctx.send(_("Trigger `") + trigger + _("` doesn't exist."))
+            await ctx.send(_("Trigger `") + str(trigger) + _("` doesn't exist."))
 
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
@@ -737,8 +737,16 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if ctx.message.attachments != []:
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:

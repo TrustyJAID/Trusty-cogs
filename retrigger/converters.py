@@ -285,6 +285,9 @@ class Trigger:
         self.multi_payload = multi_payload
         self.created_at = created_at
 
+    def __str__(self):
+        return self.name
+
     async def to_json(self) -> dict:
         return {
             "name": self.name,
