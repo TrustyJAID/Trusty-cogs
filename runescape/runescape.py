@@ -47,7 +47,7 @@ class Runescape(commands.Cog):
             await ctx.send(box(page, lang="css"))
 
     @runescape.command()
-    async def set(self, ctx, RunescapeName):
+    async def set(self, ctx, *, RunescapeName: str):
         """Set your runescape name for easer commands."""
         user = self.bot.get_user(ctx.message.author.id)
         await self.config.user(user).rsn.set(RunescapeName)
