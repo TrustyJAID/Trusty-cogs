@@ -61,7 +61,7 @@ class Events:
                         param = humanize_list(params)
                     else:
                         param = params[0]
-            log.info(param)
+            log.debug(param)
             raw_response = raw_response.replace("{" + result[0] + "}", param)
         return raw_response
 
@@ -127,7 +127,7 @@ class Events:
         if guild.id not in self.joined:
             self.joined[guild.id] = []
         if await self.config.guild(guild).GROUPED() and member not in self.joined[guild.id]:
-            log.info("member joined")
+            log.debug("member joined")
             return self.joined[guild.id].append(member)
         await self.send_member_join(member, guild)
 
