@@ -72,7 +72,7 @@ class GuildConverter(IDConverter):
         bot = ctx.bot
         match = self._get_id_match(argument)
         result = None
-        if ctx.author.id != ctx.bot.owner_id:
+        if not await bot.is_owner(ctx.author):
             # Don't need to be snooping other guilds unless we're
             # the bot owner
             raise BadArgument(_("That option is only available for the bot owner."))

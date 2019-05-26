@@ -16,7 +16,7 @@
         6,
         2
     ],
-    "name" : "ReTrigger",
+    "name" : "Trigger events via regular expressions",
     "permissions" : [
         "embed_links"
     ],

@@ -20,7 +20,7 @@
     "permissions" : [],
     "required_cogs" : ["adventure"],
     "requirements" : [],
-    "short" : "ReTrigger",
+    "short" : "Receive notifications from adventure activities!",
     "tags" : [
         "fun",
         "adventure"
