@@ -595,7 +595,7 @@ class TriggerHandler:
         """
         if await self.config.guild(guild).bypass():
             log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
-            return trigger.regex.findall(content)
+            return (True, trigger.regex.findall(content))
         try:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))
             task = functools.partial(process.get, timeout=1)
