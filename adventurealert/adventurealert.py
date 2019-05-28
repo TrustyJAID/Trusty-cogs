@@ -70,7 +70,7 @@ class AdventureAlert(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def adventure_role(self, ctx, *, role: discord.Role):
         """Add or remove a role to be pinged when a dragon appears"""
-        if role.id in await self.config.guild(ctx.guild).roles():
+        if role.id in await self.config.guild(ctx.guild).adventure_roles():
             async with self.config.guild(ctx.guild).adventure_roles() as data:
                 data.remove(role.id)
             await ctx.send(f"{role.name} will no longer receive notifications on adventures.")
