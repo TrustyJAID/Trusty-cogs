@@ -1,6 +1,7 @@
 import discord
 import logging
 import asyncio
+import re
 
 from multiprocessing.pool import Pool
 from typing import Union, Optional
