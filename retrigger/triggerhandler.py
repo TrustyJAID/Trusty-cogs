@@ -574,14 +574,14 @@ class TriggerHandler:
                 )
 
             search = await self.safe_regex_search(guild, trigger, content)
-            if search == "critical":
+            if not search[0]:
                 self.triggers[guild.id].remove(trigger)
                 return
-            if search != []:
+            elif search[0] and search[1] != []:
                 if await self.check_trigger_cooldown(message, trigger):
                     continue
                 trigger.count += 1
-                await self.perform_trigger(message, trigger, search)
+                await self.perform_trigger(message, trigger, search[1])
                 return
 
     async def safe_regex_search(self, guild: discord.Guild, trigger: Trigger, content: str):
@@ -603,12 +603,12 @@ class TriggerHandler:
             search = await asyncio.wait_for(new_task, timeout=5)
         except TimeoutError:
             error_msg = (
-                "ReTrigger: regex process took too long. Removing from config "
+                "ReTrigger: regex process took too long. Removing from memory "
                 f"{guild.name} ({guild.id}) Author {trigger.author} "
                 f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
             )
             log.warning(error_msg)
-            return "critical"
+            return (False, [])
             # we certainly don't want to be performing multiple triggers if this happens
         except asyncio.TimeoutError:
             error_msg = (
@@ -617,15 +617,15 @@ class TriggerHandler:
                 f"Offending regex `{trigger.regex.pattern}` Name: {trigger.name}"
             )
             log.warning(error_msg)
-            return "this doesn't really matter string"
+            return (False, [])
         except Exception:
             log.error(
-                f"Removing {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
+                f"ReTrigger encountered an error {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
                 exc_info=True,
             )
-            return "Something went really wrong here but not worth removing"
+            return (True, [])
         else:
-            return search
+            return (True, search)
 
     async def perform_trigger(self, message: discord.Message, trigger: Trigger, find: List[str]):
 

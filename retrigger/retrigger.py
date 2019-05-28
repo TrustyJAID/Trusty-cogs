@@ -1,7 +1,6 @@
 import discord
 import logging
 import asyncio
-import re
 
 from multiprocessing.pool import Pool
 from typing import Union, Optional
@@ -35,7 +34,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.1"
+    __version__ = "2.7.2"
 
     def __init__(self, bot):
         self.bot = bot
