@@ -272,7 +272,7 @@ class Trigger:
         cooldown: dict,
         multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
         created_at: int,
-        ignore_commands: bool,
+        ignore_commands: bool = False,
     ):
         self.name = name
         self.regex = re.compile(regex)
