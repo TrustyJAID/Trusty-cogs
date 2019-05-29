@@ -214,11 +214,16 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         channel = self.bot.get_channel(id=payload.channel_id)
+        if not channel.guild:
+            return
+        guild = channel.guild
+        user = guild.get_member(payload.user_id)
         try:
-            guild = channel.guild
+            message = await channel.fetch_message(id=payload.message_id)
+        except AttributeError:
             message = await channel.get_message(id=payload.message_id)
-            user = guild.get_member(payload.user_id)
-        except Exception:
+            return
+        except discord.errors.NotFound:
             return
         if user.bot:
             return
