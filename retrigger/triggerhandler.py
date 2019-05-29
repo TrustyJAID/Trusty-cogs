@@ -78,10 +78,6 @@ class TriggerHandler:
 
     async def can_edit(self, author: discord.Member, trigger: Trigger):
         """Chekcs to see if the member is allowed to edit the trigger"""
-        if trigger.multi_payload:
-            # explicitly deny editing all multi triggers
-            # they should be deleted and re-added manually
-            return False
         if trigger.author == author.id:
             return True
         if await self.bot.is_owner(author):
@@ -312,6 +308,8 @@ class TriggerHandler:
                 info = info.format(
                     name=trigger.name, author=author.name, count=trigger.count, response=responses
                 )
+            if trigger.ignore_commands:
+                info += _("Ignore commands: **{ignore}**").format(ignore=trigger.ignore_commands)
             if "text" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -515,13 +513,15 @@ class TriggerHandler:
             # trigger = await Trigger.from_json(trigger_list[triggers])
             # except Exception:
             # continue
+
             allowed_trigger = await self.check_bw_list(trigger, message)
             is_auto_mod = trigger.response_type in auto_mod
             if not allowed_trigger:
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
-
+            if is_command and trigger.ignore_commands:
+                continue
             if any(t for t in trigger.response_type if t in auto_mod):
                 if await autoimmune(message):
                     print_msg = _(

@@ -35,7 +35,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.2"
+    __version__ = "2.7.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -452,6 +452,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if not await self.can_edit(ctx.author, trigger):
             return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
         if "text" not in trigger.response_type:
             return await ctx.send(_("That trigger cannot be edited this way."))
         trigger.text = text
@@ -461,6 +463,28 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} text changed to `{text}`")
         await ctx.send(msg.format(name=trigger.name, text=text))
+
+    @_edit.command(name="ignorecommands")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def edit_ignore_commands(
+        self, ctx: commands.Context, trigger: TriggerExists
+    ):
+        """
+            Toggle the trigger ignoring command messages entirely.
+
+            `<trigger>` is the name of the trigger
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.ignore_commands = not trigger.ignore_commands
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} ignoring commands set to `{text}`")
+        await ctx.send(msg.format(name=trigger.name, text=trigger.ignore_commands))
 
     @_edit.command(name="command", aliases=["cmd"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -477,6 +501,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if not await self.can_edit(ctx.author, trigger):
             return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
         cmd_list = command.split(" ")
         existing_cmd = self.bot.get_command(cmd_list[0])
         if existing_cmd is None:
@@ -507,6 +533,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if not await self.can_edit(ctx.author, trigger):
             return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't assign roles higher than my own."))

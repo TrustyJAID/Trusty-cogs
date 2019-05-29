@@ -256,6 +256,7 @@ class Trigger:
     cooldown: dict
     multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]]
     created: int
+    ignore_commands: bool
 
     def __init__(
         self,
@@ -271,6 +272,7 @@ class Trigger:
         cooldown: dict,
         multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
         created_at: int,
+        ignore_commands: bool,
     ):
         self.name = name
         self.regex = re.compile(regex)
@@ -284,6 +286,7 @@ class Trigger:
         self.cooldown = cooldown
         self.multi_payload = multi_payload
         self.created_at = created_at
+        self.ignore_commands = ignore_commands
 
     def __str__(self):
         return self.name
@@ -301,7 +304,8 @@ class Trigger:
             "blacklist": self.blacklist,
             "cooldown": self.cooldown,
             "multi_payload": self.multi_payload,
-            "created_at": self.created_at
+            "created_at": self.created_at,
+            "ignore_commands": self.ignore_commands
         }
 
     @classmethod
@@ -309,6 +313,7 @@ class Trigger:
         cooldown: dict = {}
         multi_payload: List[MultiResponse] = []
         created_at: int = 0
+        ignore_commands = False
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -319,6 +324,8 @@ class Trigger:
             multi_payload = data["multi_payload"]
         if "created_at" in data:
             created_at = data["created_at"]
+        if "ignore_commands" in data:
+            ignore_commands = data["ignore_commands"]
         return cls(
             data["name"],
             data["regex"],
@@ -332,4 +339,5 @@ class Trigger:
             cooldown,
             multi_payload,
             created_at,
+            ignore_commands,
         )
