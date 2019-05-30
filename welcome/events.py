@@ -171,7 +171,7 @@ class Events:
             return
         # we can stop here
 
-        if not self.speak_permissions(guild, channel.id):
+        if not self.speak_permissions(guild, channel):
             log.info(_("Permissions Error. User that joined: ") + "{0}".format(member))
             log.info(
                 _("Bot doesn't have permissions to send messages to ")
@@ -265,8 +265,7 @@ class Events:
             else:
                 await channel.send(await self.convert_parms(member, guild, msg))
 
-    def speak_permissions(self, guild, guild_settings):
-        channel = guild.get_channel(guild_settings)
+    def speak_permissions(self, guild, channel):
         if channel is None:
             return False
         return guild.me.permissions_in(channel)

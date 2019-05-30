@@ -372,7 +372,6 @@ class Welcome(Events, commands.Cog):
         """Test the bot joining message"""
         await self.send_testing_msg(ctx, bot=True)
 
-
     @welcomeset_bot.command(name="msg")
     async def welcomeset_bot_msg(self, ctx, *, format_msg=None):
         """Set the welcome msg for bots.
@@ -391,7 +390,7 @@ class Welcome(Events, commands.Cog):
 
     # TODO: Check if have permissions
     @welcomeset_bot.command(name="role")
-    async def welcomeset_bot_role(self, ctx, role: discord.Role = None):
+    async def welcomeset_bot_role(self, ctx, *, role: discord.Role = None):
         """
         Set the role to put bots in when they join.
 
@@ -403,7 +402,10 @@ class Welcome(Events, commands.Cog):
         if role is not None and role >= guild.me.top_role:
             return await ctx.send(_("I cannot assign roles higher than my own."))
         await self.config.guild(guild).BOTS_ROLE.set(guild_settings)
-        msg = _("Bots that join this guild will be given ") + role.name
+        if role:
+            msg = _("Bots that join this guild will be given ") + role.name
+        else:
+            msg = _("Bots that join this guild will not be given a role.")
         await ctx.send(msg)
 
     @welcomeset.command()
