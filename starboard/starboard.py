@@ -669,7 +669,7 @@ class Starboard(commands.Cog):
             em = msg.embeds[0]
             if msg.content != "":
                 if em.description != discord.Embed.Empty:
-                    em.description = "{}\n\n{}".format(msg.content, em.description)
+                    em.description = "{}\n\n{}".format(msg.content, em.description)[:2048]
                 else:
                     em.description = msg.content
                 if not author.bot:
@@ -761,9 +761,9 @@ class Starboard(commands.Cog):
             # DMChannels don't have guilds
             return
         try:
-            msg = await channel.get_message(id=payload.message_id)
-        except AttributeError:
             msg = await channel.fetch_message(id=payload.message_id)
+        except AttributeError:
+            msg = await channel.get_message(id=payload.message_id)
         except discord.errors.NotFound:
             return
         member = guild.get_member(payload.user_id)
