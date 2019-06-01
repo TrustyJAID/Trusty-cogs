@@ -16,7 +16,6 @@ from redbot.core.utils.menus import start_adding_reactions
 from typing import Union, Optional, List, Tuple
 
 from .converters import FuzzyMember, GuildConverter, ChannelConverter
-from .time_utils import parse_timedelta, td_format
 
 
 _ = Translator("ServerStats", __file__)
@@ -844,32 +843,6 @@ class ServerStats(commands.Cog):
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
-
-    @commands.command()
-    @checks.mod_or_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    async def slowmode(self, ctx, channel: Optional[discord.TextChannel] = None, *, time: str):
-        """
-            Set a channels slowmode setting
-
-            `[channel]` is the channel you want to set slowmode on defaults to current channel
-            `<time>` the amount of time to set the slowmode to, maximum 6 hours.
-        """
-        if time in ["clear", "none", "remove", "rem"]:
-            time = "0 s"
-        time_delta = parse_timedelta(time)
-        if time_delta is None:
-            return await ctx.send(_("You must supply a ammount and time unit like `120 seconds`."))
-        if channel is None:
-            channel = ctx.channel
-        if time_delta.seconds < 0 or time_delta.seconds > 21600:
-            await ctx.send(_("You can only set a number between 0 and 21600 seconds"))
-            return
-        await channel.edit(slowmode_delay=time_delta.seconds)
-        msg = _("Slowmode set to `{time}` in {channel}").format(
-            time=td_format(time_delta), channel=channel.mention
-        )
-        await ctx.send(msg)
 
     @commands.group()
     @checks.admin_or_permissions(manage_guild=True)
