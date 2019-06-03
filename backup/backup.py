@@ -135,7 +135,7 @@ class Backup(commands.Cog):
                     for a in message.attachments:
                         files_saved += 1
                         fp = "{}/{}/files/{}-{}".format(
-                            str(cog_data_path(self)), guild.name, a.filename, message.id
+                            str(cog_data_path(self)), guild.name, message.id, a.filename
                         )
                         await a.save(fp)
             total_msgs += len(message_list)
@@ -217,7 +217,7 @@ class Backup(commands.Cog):
                         for a in message.attachments:
                             files_saved += 1
                             fp = "{}/{}/files/{}-{}".format(
-                                str(cog_data_path(self)), guild.name, a.filename, message.id
+                                str(cog_data_path(self)), guild.name, message.id, a.filename
                             )
                             await a.save(fp)
                 total_msgs += len(message_list)
