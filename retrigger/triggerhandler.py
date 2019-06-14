@@ -768,7 +768,7 @@ class TriggerHandler:
                     command = await self.convert_parms(message, command, trigger.regex)
                     msg = copy(message)
                     prefix_list = await self.bot.command_prefix(self.bot, message)
-                    msg.content = prefix_list[0] + response
+                    msg.content = prefix_list[0] + command
                     self.bot.dispatch("message", msg)
             else:
                 msg = copy(message)
