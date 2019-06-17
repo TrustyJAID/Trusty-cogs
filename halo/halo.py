@@ -31,13 +31,13 @@ class Halo(commands.Cog):
             return await resp.json()
 
     @commands.group(name="halo5")
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _halo5(self, ctx):
         """Get information from Halo 5"""
         pass
 
     @commands.group(name="halowars")
-    @checks.admin_or_permissions(manage_server=True)
+    @checks.admin_or_permissions(manage_guild=True)
     async def _halowars(self, ctx):
         """Get information from Halo Wars 2"""
         pass
