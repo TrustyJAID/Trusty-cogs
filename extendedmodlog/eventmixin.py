@@ -413,12 +413,10 @@ class EventMixin:
         p_msg = ""
         before_perms = {}
         after_perms = {}
-        for o in before.overwrites:
-            if o[0]:
-                before_perms[str(o[0].id)] = [i for i in o[1]]
-        for o in after.overwrites:
-            if o[0]:
-                after_perms[str(o[0].id)] = [i for i in o[1]]
+        for o, p in before.overwrites.items():
+            before_perms[str(o.id)] = [i for i in p]
+        for o, p in after.overwrites.items():
+            after_perms[str(o.id)] = [i for i in p]
         for entity in before_perms:
             entity_obj = before.guild.get_role(int(entity))
             if entity_obj is None:
