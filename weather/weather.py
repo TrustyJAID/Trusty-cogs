@@ -1,6 +1,7 @@
 import discord
 import datetime
 import aiohttp
+from urllib.parse import urlencode
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -116,13 +117,14 @@ class Weather(commands.Cog):
             units = user_units
 
         if units == "kelvin":
-            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units=metric".format(
-                location
-            )
-        else:
-            url = "http://api.openweathermap.org/data/2.5/weather?q={0}&appid=88660f6af079866a3ef50f491082c386&units={1}".format(
-                location, units
-            )
+            units = "metric"
+
+        params = {
+            "q": location,
+            "appid": "88660f6af079866a3ef50f491082c386",
+            "units": units,
+        }
+        url = "https://api.openweathermap.org/data/2.5/weather?{0}".format(urlencode(params))
         async with self.session.get(url) as resp:
             data = await resp.json()
         try:
