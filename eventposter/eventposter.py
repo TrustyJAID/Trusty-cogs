@@ -12,7 +12,7 @@ from .event_obj import Event, ValidImage
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -69,6 +69,8 @@ class EventPoster(commands.Cog):
             async with self.config.guild(ctx.guild).events() as cur_events:
                 cur_events[str(event.hoster.id)] = event.to_json()
         else:
+            await ctx.send(f"{ctx.author.mention}, your event request was denied by an admin.")
+            await admin_msg.delete()
             return
 
     @commands.command(name="clearevent", aliases=["endevent"])
@@ -121,7 +123,7 @@ class EventPoster(commands.Cog):
 
     @commands.command(name="join")
     @commands.guild_only()
-    async def join_event(self, ctx, hoster: discord.Member):
+    async def join_event(self, ctx, *, hoster: discord.Member):
         """Join an event being hosted"""
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             return await ctx.send("That user is not currently hosting any events.")

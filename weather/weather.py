@@ -199,10 +199,16 @@ class Weather(commands.Cog):
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
         else:
-            embed.add_field(name=_("\N{EARTH GLOBE AMERICAS} **Location**"), value=_("*Unavailable*"))
-        embed.add_field(name=_("\N{STRAIGHT RULER} **Lat,Long**"), value="{0}, {1}".format(lat, lon))
+            embed.add_field(
+                name=_("\N{EARTH GLOBE AMERICAS} **Location**"), value=_("*Unavailable*")
+            )
+        embed.add_field(
+            name=_("\N{STRAIGHT RULER} **Lat,Long**"), value="{0}, {1}".format(lat, lon)
+        )
         embed.add_field(name=_("\N{CLOUD} **Condition**"), value=condition)
-        embed.add_field(name=_("\N{FACE WITH COLD SWEAT} **Humidity**"), value=data["main"]["humidity"])
+        embed.add_field(
+            name=_("\N{FACE WITH COLD SWEAT} **Humidity**"), value=data["main"]["humidity"]
+        )
         embed.add_field(name=_("\N{DASH SYMBOL} **Wind Speed**"), value="{0}".format(windspeed))
         embed.add_field(
             name=_("\N{THERMOMETER} **Temperature**"),

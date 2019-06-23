@@ -11,7 +11,7 @@
         0
     ],
     "description" : "Reports cog but pins new reports",
-    "disabled" : true,
+    "disabled" : false,
     "hidden" : true,
     "install_msg" : "Redbot core reports cog but pins new reports",
     "min_python_version" : [
