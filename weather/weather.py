@@ -176,7 +176,7 @@ class Weather(commands.Cog):
             if data["message"] == "city not found":
                 await ctx.send("City not found.")
                 return
-        except discord.errors.Forbidden:
+        except Exception:
             pass
         currenttemp = data["main"]["temp"]
         mintemp = data["main"]["temp_min"]
