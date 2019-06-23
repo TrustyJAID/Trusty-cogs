@@ -48,7 +48,7 @@ class Weather(commands.Cog):
 
     @commands.group(name="weather", aliases=["we"], invoke_without_command=True)
     @commands.bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, *, location):
+    async def weather(self, ctx, *, location: str):
         """
             Display weather in a given location
 
@@ -60,7 +60,7 @@ class Weather(commands.Cog):
 
     @weather.command(name="zip")
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_zip(self, ctx, *, zipcode):
+    async def weather_by_zip(self, ctx, *, zipcode: int):
         """
             Display weather in a given location
 
@@ -72,11 +72,12 @@ class Weather(commands.Cog):
 
     @weather.command(name="cityid")
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_cityid(self, ctx, *, cityid):
+    async def weather_by_cityid(self, ctx, *, cityid: int):
         """
             Display weather in a given location
 
-            `cityid` must be a valid openweathermap city ID (get list here: <https://bulk.openweathermap.org/sample/city.list.json.gz>)
+            `cityid` must be a valid openweathermap city ID
+            (get list here: <https://bulk.openweathermap.org/sample/city.list.json.gz>)
             example: `[p]weather cityid 2172797`
         """
         await ctx.trigger_typing()
@@ -88,7 +89,8 @@ class Weather(commands.Cog):
         """
             Display weather in a given location
 
-            `lat` and `lon` specify a precise point on Earth using the geographic coordinates specified by latitude (north-south) and longitude (east-west).
+            `lat` and `lon` specify a precise point on Earth using the
+            geographic coordinates specified by latitude (north-south) and longitude (east-west).
             example: `[p]weather coordinates 35 139`
         """
         await ctx.trigger_typing()
@@ -138,7 +140,9 @@ class Weather(commands.Cog):
             )
         )
 
-    async def get_weather(self, ctx, *, location=None, zipcode=None, cityid=None, lat=None, lon=None):
+    async def get_weather(
+        self, ctx, *, location=None, zipcode=None, cityid=None, lat=None, lon=None
+    ):
         guild = ctx.message.guild
         author = ctx.message.author
         bot_units = await self.config.units()
@@ -153,10 +157,7 @@ class Weather(commands.Cog):
             units = guild_units
         if user_units:
             units = user_units
-        params = {
-            "appid": "88660f6af079866a3ef50f491082c386",
-            "units": units,
-        }
+        params = {"appid": "88660f6af079866a3ef50f491082c386", "units": units}
         if units == "kelvin":
             params["units"] = "metric"
         if zipcode:
@@ -175,7 +176,7 @@ class Weather(commands.Cog):
             if data["message"] == "city not found":
                 await ctx.send("City not found.")
                 return
-        except:
+        except discord.errors.Forbidden:
             pass
         currenttemp = data["main"]["temp"]
         mintemp = data["main"]["temp_min"]
@@ -198,23 +199,23 @@ class Weather(commands.Cog):
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
         else:
-            embed.add_field(name=_("🌍 **Location**"), value=_("*Unavailable*"))
-        embed.add_field(name=_("📏 **Lat,Long**"), value="{0}, {1}".format(lat, lon))
-        embed.add_field(name=_("☁ **Condition**"), value=condition)
-        embed.add_field(name=_("😓 **Humidity**"), value=data["main"]["humidity"])
-        embed.add_field(name=_("💨 **Wind Speed**"), value="{0}".format(windspeed))
+            embed.add_field(name=_("\N{EARTH GLOBE AMERICAS} **Location**"), value=_("*Unavailable*"))
+        embed.add_field(name=_("\N{STRAIGHT RULER} **Lat,Long**"), value="{0}, {1}".format(lat, lon))
+        embed.add_field(name=_("\N{CLOUD} **Condition**"), value=condition)
+        embed.add_field(name=_("\N{FACE WITH COLD SWEAT} **Humidity**"), value=data["main"]["humidity"])
+        embed.add_field(name=_("\N{DASH SYMBOL} **Wind Speed**"), value="{0}".format(windspeed))
         embed.add_field(
-            name=_("🌡 **Temperature**"),
+            name=_("\N{THERMOMETER} **Temperature**"),
             value="{0:.2f}{1}".format(currenttemp, self.unit[units]["temp"]),
         )
         embed.add_field(
-            name=_("🔆 **Min - Max**"),
+            name=_("\N{HIGH BRIGHTNESS SYMBOL} **Min - Max**"),
             value="{0:.2f}{1} to {2:.2f}{3}".format(
                 mintemp, self.unit[units]["temp"], maxtemp, self.unit[units]["temp"]
             ),
         )
-        embed.add_field(name=_("🌄 **Sunrise (UTC)**"), value=sunrise)
-        embed.add_field(name=_("🌇 **Sunset (UTC)**"), value=sunset)
+        embed.add_field(name=_("\N{SUNRISE OVER MOUNTAINS} **Sunrise (UTC)**"), value=sunrise)
+        embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset (UTC)**"), value=sunset)
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
 
