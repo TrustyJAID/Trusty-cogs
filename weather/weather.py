@@ -56,7 +56,7 @@ class Weather(commands.Cog):
             example: `[p]weather New York,US`
         """
         await ctx.trigger_typing()
-        await self.get_weather(ctx, city=location)
+        await self.get_weather(ctx, location=location)
 
     @weather.command(name="zip")
     @commands.bot_has_permissions(embed_links=True)
@@ -89,7 +89,7 @@ class Weather(commands.Cog):
             Display weather in a given location
 
             `lat` and `lon` specify a precise point on Earth using the geographic coordinates specified by latitude (north-south) and longitude (east-west).
-            example: `[p]weather 35 139`
+            example: `[p]weather coordinates 35 139`
         """
         await ctx.trigger_typing()
         await self.get_weather(ctx, lat=lat, lon=lon)
