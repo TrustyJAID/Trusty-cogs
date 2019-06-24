@@ -28,7 +28,7 @@ class ElementConverter(Converter):
         else:
             try:
                 result = ELEMENTS(argument.title())
-            except:
+            except Exception:
                 raise BadArgument("`{}` is not a valid element!".format(argument))
         if not result:
             raise BadArgument("`{}` is not a valid element!".format(argument))
@@ -82,25 +82,25 @@ class Elements(commands.Cog):
             ka = 1239.84 / (
                 13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 2))
             )
-        except:
+        except Exception:
             ka = ""
         try:
             kb = 1239.84 / (
                 13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1 ** 2) - (1 / 3 ** 2))
             )
-        except:
+        except Exception:
             kb = ""
         try:
             la = 1239.84 / (
                 13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 3))
             )
-        except:
+        except Exception:
             la = ""
         try:
             lb = 1239.84 / (
                 13.6057 * ((element.atomic_number - 7.4) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 4))
             )
-        except:
+        except Exception:
             lb = ""
 
         data = "Kα {:.2}".format(ka) if ka else ""
@@ -158,10 +158,17 @@ class Elements(commands.Cog):
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     async def element_embed(self, element):
-        embed = discord.Embed(url=f"https://en.wikipedia.org/wiki/{element.name}")
-        embed.title = f"{element.name} ({element.symbol}) - {element.atomic_number}"
-        embed.description = ("{desc}\n\n{sources}\n\n{uses}").format(
-            name=element.name, desc=element.description, sources=element.sources, uses=element.uses
+        embed = discord.Embed()
+        embed_title = (
+            f"[{element.name} ({element.symbol})"
+            f" - {element.atomic_number}](https://en.wikipedia.org/wiki/{element.name})"
+        )
+        embed.description = ("{embed_title}\n\n{desc}\n\n{sources}\n\n{uses}").format(
+            embed_title=embed_title,
+            name=element.name,
+            desc=element.description,
+            sources=element.sources,
+            uses=element.uses
         )
         if element.name in IMAGES:
             embed.set_thumbnail(url=IMAGES[element.name]["image"])
