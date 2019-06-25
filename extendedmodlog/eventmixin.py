@@ -937,7 +937,7 @@ class EventMixin:
 
     @listener()
     async def on_guild_emojis_update(self, guild, before, after):
-        if not await self.config.guild(guild).guild_change.enabled():
+        if not await self.config.guild(guild).emoji_change.enabled():
             return
         try:
             channel = await self.modlog_channel(guild, "emoji_change")
