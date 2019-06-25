@@ -369,14 +369,14 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         perp = None
         reason = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.kick
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == member.id:
+                    perp = log.user
+                    reason = log.reason
+                    break
         if channel.permissions_for(guild.me).embed_links:
-            if channel.permissions_for(guild.me).view_audit_log:
-                action = discord.AuditLogAction.kick
-                async for log in guild.audit_logs(limit=5, action=action):
-                    if log.target.id == member.id:
-                        perp = log.user
-                        reason = log.reason
-                        break
             embed = discord.Embed(
                 description=member.mention, colour=discord.Colour.dark_green(), timestamp=time
             )
