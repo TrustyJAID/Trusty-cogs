@@ -309,7 +309,7 @@ class TriggerHandler:
                     name=trigger.name, author=author.name, count=trigger.count, response=responses
                 )
             if trigger.ignore_commands:
-                info += _("Ignore commands: **{ignore}**").format(ignore=trigger.ignore_commands)
+                info += _("Ignore commands: **{ignore}**\n").format(ignore=trigger.ignore_commands)
             if "text" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
