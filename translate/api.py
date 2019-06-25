@@ -214,7 +214,7 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         channel = self.bot.get_channel(id=payload.channel_id)
-        if not channel.guild:
+        if channel.recipient:
             return
         guild = channel.guild
         user = guild.get_member(payload.user_id)
