@@ -170,7 +170,7 @@ class EventMixin:
             await channel.send(clean_msg)
 
     @listener()
-    async def on_message_delete(self, message):
+    async def on_message_delete(self, message, *, check_audit_log=True):
         guild = message.guild
         if guild is None:
             return
@@ -193,7 +193,7 @@ class EventMixin:
         for i in message.mentions:
             cleanmsg = cleanmsg.replace(i.mention, str(i))
         perp = None
-        if channel.permissions_for(guild.me).view_audit_log:
+        if channel.permissions_for(guild.me).view_audit_log and check_audit_log:
             action = discord.AuditLogAction.message_delete
             async for log in guild.audit_logs(limit=2, action=action):
                 same_chan = log.extra.channel.id == message.channel.id
@@ -227,6 +227,46 @@ class EventMixin:
             await channel.send(embed=embed)
         else:
             await channel.send(infomessage)
+
+    @listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        guild_id = payload.guild_id
+        if guild_id is None:
+            return
+        guild = self.bot.get_guild(guild_id)
+        settings = await self.config.guild(guild).message_delete()
+        if not settings["enabled"] or not settings["bulk_enabled"]:
+            return
+        channel_id = payload.channel_id
+        if channel_id in await self.config.guild(guild).ignored_channels():
+            return
+        message_channel = guild.get_channel(channel_id)
+        try:
+            channel = await self.modlog_channel(guild, "message_delete")
+        except RuntimeError:
+            return
+        message_amount = len(payload.message_ids)
+        if channel.permissions_for(guild.me).embed_links:
+            embed = discord.Embed(
+                description=message_channel.mention, colour=discord.Colour.dark_red()
+            )
+            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon_url)
+            embed.add_field(name=_("Channel"), value=message_channel.mention)
+            embed.add_field(name=_("Messages deleted"), value=message_amount)
+            await channel.send(embed=embed)
+        else:
+            infomessage = (
+                _("Bulk message delete in ")
+                + f"{message_channel.mention}, {message_amount}"
+                + _("messages deleted.")
+            )
+            await channel.send(infomessage)
+        if settings["bulk_individual"]:
+            for message in payload.cached_messages:
+                try:
+                    await self.on_message_delete(message, check_audit_log=False)
+                except Exception:
+                    pass
 
     async def invite_links_loop(self):
         """Check every 5 minutes for updates to the invite links"""
