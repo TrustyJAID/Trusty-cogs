@@ -385,6 +385,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def _delete_bulk_individual(self, ctx):
         """
             Toggle individual message delete notifications for bulk message delete
+
+            NOTE: In versions under Red 3.1 this setting doesn't work
+            and individual message delete notifications will show regardless of it.
         """
         guild = ctx.message.guild
         msg = _("Individual message delete logs for bulk message delete ")

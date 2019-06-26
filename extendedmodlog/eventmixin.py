@@ -13,8 +13,10 @@ from redbot.core.i18n import Translator, cog_i18n
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+below_red31 = False
 
 if listener is None:  # thanks Sinbad
+    below_red31 = True
     def listener(name=None):
         return lambda x: x
 
@@ -261,7 +263,7 @@ class EventMixin:
                 + _("messages deleted.")
             )
             await channel.send(infomessage)
-        if settings["bulk_individual"]:
+        if not below_red31 and settings["bulk_individual"]:
             for message in payload.cached_messages:
                 try:
                     await self.on_message_delete(message, check_audit_log=False)
