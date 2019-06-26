@@ -169,8 +169,9 @@ class EventMixin:
             clean_msg = f"{infomessage}\n`{cleanmsg}`"
             await channel.send(clean_msg)
 
-    @listener()
-    async def on_raw_message_delete(self, payload):
+    @listener(name="on_raw_message_delete")
+    async def on_raw_message_delete_listener(self, payload):
+        # custom name of method used, because this is only supported in Red 3.1+
         guild_id = payload.guild_id
         if guild_id is None:
             return
@@ -201,6 +202,26 @@ class EventMixin:
                 infomessage = _("Message was deleted in ") + message_channel.mention
                 await channel.send(f"{infomessage}\n*Message's content unknown.*")
             return
+        await self._cached_message_delete(message, guild, settings, channel)
+
+    async def on_message_delete(self, message):
+        # listener decorator isn't used here because cached messages
+        # are handled by on_raw_message_delete event in Red 3.1+
+        guild = message.guild
+        if guild is None:
+            return
+        settings = await self.config.guild(guild).message_delete()
+        if not settings["enabled"]:
+            return
+        if message.channel.id in await self.config.guild(guild).ignored_channels():
+            return
+        try:
+            channel = await self.modlog_channel(guild, "message_delete")
+        except RuntimeError:
+            return
+        await self._cached_message_delete(message, guild, settings, channel)
+
+    async def _cached_message_delete(self, message, guild, settings, channel):
         if message.author.bot and not settings["bots"]:
             # return to ignore bot accounts if enabled
             return

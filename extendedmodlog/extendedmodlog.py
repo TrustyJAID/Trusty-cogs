@@ -362,6 +362,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
 
             Delete notifications for non-cached messages
             will only show channel info without content of deleted message or its author.
+            NOTE: This setting only works in Red 3.1+
         """
         guild = ctx.message.guild
         msg = _("Delete logs for non-cached messages ")
