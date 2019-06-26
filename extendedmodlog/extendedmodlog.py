@@ -8,7 +8,7 @@ from .eventmixin import EventMixin, CommandPrivs
 
 inv_settings = {
     "message_edit": {"enabled": False, "channel": None, "bots": False},
-    "message_delete": {"enabled": False, "channel": None, "bots": False},
+    "message_delete": {"enabled": False, "channel": None, "bots": False, "cached_only": True},
     "user_change": {"enabled": False, "channel": None},
     "role_change": {"enabled": False, "channel": None},
     "voice_change": {"enabled": False, "channel": None},
@@ -342,6 +342,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def _delete_bots(self, ctx):
         """
             Toggle message delete notifications for bot users
+
+            This will not affect delete notifications for messages that aren't in bot's cache.
         """
         guild = ctx.message.guild
         msg = _("Bot delete logs ")
@@ -351,6 +353,24 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_delete.bots.set(False)
             verb = _("disabled")
+        await ctx.send(msg + verb)
+
+    @_delete.command(name="cachedonly")
+    async def _delete_cachedonly(self, ctx):
+        """
+            Toggle message delete notifications for non-cached messages
+
+            Delete notifications for non-cached messages
+            will only show channel info without content of deleted message or its author.
+        """
+        guild = ctx.message.guild
+        msg = _("Delete logs for non-cached messages ")
+        if not await self.config.guild(guild).message_delete.cached_only():
+            await self.config.guild(guild).message_delete.cached_only.set(True)
+            verb = _("disabled")
+        else:
+            await self.config.guild(guild).message_delete.cached_only.set(False)
+            verb = _("enabled")
         await ctx.send(msg + verb)
 
     @_delete.command(name="channel")

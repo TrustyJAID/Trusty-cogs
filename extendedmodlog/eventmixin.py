@@ -170,21 +170,39 @@ class EventMixin:
             await channel.send(clean_msg)
 
     @listener()
-    async def on_message_delete(self, message):
-        guild = message.guild
-        if guild is None:
+    async def on_raw_message_delete(self, payload):
+        guild_id = payload.guild_id
+        if guild_id is None:
             return
+        guild = self.bot.get_guild(guild_id)
         settings = await self.config.guild(guild).message_delete()
         if not settings["enabled"]:
             return
-        if message.author.bot and not settings["bots"]:
-            # return to ignore bot accounts if enabled
-            return
-        if message.channel.id in await self.config.guild(guild).ignored_channels():
+        channel_id = payload.channel_id
+        if channel_id in await self.config.guild(guild).ignored_channels():
             return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
+            return
+        message = payload.cached_message
+        if message is None:
+            if settings["cached_only"]:
+                return
+            message_channel = guild.get_channel(channel_id)
+            if channel.permissions_for(guild.me).embed_links:
+                embed = discord.Embed(
+                    description=_("*Message's content unknown.*"), colour=discord.Colour.dark_red()
+                )
+                embed.add_field(name=_("Channel"), value=message_channel.mention)
+                embed.set_author(name=_("Deleted Message"))
+                await channel.send(embed=embed)
+            else:
+                infomessage = _("Message was deleted in ") + message_channel.mention
+                await channel.send(f"{infomessage}\n*Message's content unknown.*")
+            return
+        if message.author.bot and not settings["bots"]:
+            # return to ignore bot accounts if enabled
             return
         if message.content == "" and message.attachments == []:
             return
