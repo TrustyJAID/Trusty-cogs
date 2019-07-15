@@ -59,9 +59,14 @@ class ServerStats(commands.Cog):
             if not member.is_avatar_animated():
                 url = member.avatar_url_as(static_format="png")
             em.set_image(url=url)
-            em.set_author(
-                name=f"{member} {f'~ {member.nick}' if member.nick else ''}", icon_url=url, url=url
-            )
+            try:
+                em.set_author(
+                    name=f"{member} {f'~ {member.nick}' if member.nick else ''}", icon_url=url, url=url
+                )
+            except AttributeError:
+                em.set_author(
+                    name=f"{member}", icon_url=url, url=url
+                )
             embed_list.append(em)
         if not embed_list:
             await ctx.send(_("That user does not appear to exist on this server."))
