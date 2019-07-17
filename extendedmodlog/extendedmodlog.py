@@ -15,6 +15,7 @@ inv_settings = {
         "bulk_enabled": False,
         "bulk_individual": False,
         "cached_only": True,
+        "send_cached_images": False,
     },
     "user_change": {"enabled": False, "channel": None},
     "role_change": {"enabled": False, "channel": None},
@@ -419,6 +420,26 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_delete.cached_only.set(False)
             verb = _("enabled")
+        await ctx.send(msg + verb)
+
+    @_delete.command(name="sendcachedimages")
+    async def _delete_sendcachedimages(self, ctx):
+        """
+            Toggle sending cached images in message delete notifications.
+
+            If attachments size exceeds 8MB bot will try to
+            send attachments that fit this limit.
+            NOTE: There is no guarantee that image was cached by discord,
+            so don't rely on this.
+        """
+        guild = ctx.message.guild
+        msg = _("Sending cached images ")
+        if not await self.config.guild(guild).message_delete.send_cached_images():
+            await self.config.guild(guild).message_delete.send_cached_images.set(True)
+            verb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.send_cached_images.set(False)
+            verb = _("disabled")
         await ctx.send(msg + verb)
 
     @_delete.command(name="channel")

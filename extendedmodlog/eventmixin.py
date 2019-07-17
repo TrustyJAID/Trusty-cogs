@@ -1,3 +1,4 @@
+from io import BytesIO
 import datetime
 import discord
 import asyncio
@@ -254,16 +255,33 @@ class EventMixin:
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             if perp:
                 embed.add_field(name=_("Deleted by"), value=perp.mention)
+            files = []
             if message.attachments:
-                files = ", ".join(a.filename for a in message.attachments)
-                if len(message.attachments) > 1:
-                    files = files[:-2]
-                embed.add_field(name=_("Attachments"), value=files)
+                filenames = ", ".join(a.filename for a in message.attachments)
+                embed.add_field(name=_("Attachments"), value=filenames)
+                if settings["send_cached_images"]:
+                    size = 0
+                    for a in message.attachments:
+                        if size + a.size > 8_000_000:
+                            # this can be changed to support server boosting but for now Discord
+                            # didn't confirm that it is intended for bots to benefit from boosting
+                            continue
+                        if a.height is None:
+                            # if this is None, it's not image and proxy url won't work
+                            continue
+                        try:
+                            fp = BytesIO()
+                            await a.save(fp, use_cached=True)
+                        except discord.HTTPException:
+                            pass
+                        else:
+                            files.append(discord.File(fp, a.filename))
+                            size += a.size
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
                 name=str(author) + _(" - Deleted Message"), icon_url=message.author.avatar_url
             )
-            await channel.send(embed=embed)
+            await channel.send(embed=embed, files=files)
         else:
             clean_msg = f"{infomessage}\n`{message.clean_content}`"
             await channel.send(clean_msg[:2000])
