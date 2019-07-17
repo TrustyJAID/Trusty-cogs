@@ -13,8 +13,10 @@ from redbot.core.i18n import Translator, cog_i18n
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+below_red31 = False
 
 if listener is None:  # thanks Sinbad
+    below_red31 = True
     def listener(name=None):
         return lambda x: x
 
@@ -167,7 +169,7 @@ class EventMixin:
             await channel.send(clean_msg[:2000])
 
     @listener(name="on_raw_message_delete")
-    async def on_raw_message_delete_listener(self, payload):
+    async def on_raw_message_delete_listener(self, payload, *, check_audit_log=True):
         # custom name of method used, because this is only supported in Red 3.1+
         guild_id = payload.guild_id
         if guild_id is None:
@@ -199,7 +201,9 @@ class EventMixin:
                 infomessage = _("Message was deleted in ") + message_channel.mention
                 await channel.send(f"{infomessage}\n*Message's content unknown.*")
             return
-        await self._cached_message_delete(message, guild, settings, channel)
+        await self._cached_message_delete(
+            message, guild, settings, channel, check_audit_log=check_audit_log
+        )
 
     async def on_message_delete(self, message):
         # listener decorator isn't used here because cached messages
@@ -218,7 +222,9 @@ class EventMixin:
             return
         await self._cached_message_delete(message, guild, settings, channel)
 
-    async def _cached_message_delete(self, message, guild, settings, channel):
+    async def _cached_message_delete(
+        self, message, guild, settings, channel, *, check_audit_log=True
+    ):
         if message.author.bot and not settings["bots"]:
             # return to ignore bot accounts if enabled
             return
@@ -226,7 +232,7 @@ class EventMixin:
             return
         time = message.created_at
         perp = None
-        if channel.permissions_for(guild.me).view_audit_log:
+        if channel.permissions_for(guild.me).view_audit_log and check_audit_log:
             action = discord.AuditLogAction.message_delete
             async for log in guild.audit_logs(limit=2, action=action):
                 same_chan = log.extra.channel.id == message.channel.id
@@ -261,6 +267,50 @@ class EventMixin:
         else:
             clean_msg = f"{infomessage}\n`{message.clean_content}`"
             await channel.send(clean_msg[:2000])
+
+    @listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        guild_id = payload.guild_id
+        if guild_id is None:
+            return
+        guild = self.bot.get_guild(guild_id)
+        settings = await self.config.guild(guild).message_delete()
+        if not settings["enabled"] or not settings["bulk_enabled"]:
+            return
+        channel_id = payload.channel_id
+        if channel_id in await self.config.guild(guild).ignored_channels():
+            return
+        message_channel = guild.get_channel(channel_id)
+        try:
+            channel = await self.modlog_channel(guild, "message_delete")
+        except RuntimeError:
+            return
+        message_amount = len(payload.message_ids)
+        if channel.permissions_for(guild.me).embed_links:
+            embed = discord.Embed(
+                description=message_channel.mention, colour=discord.Colour.dark_red()
+            )
+            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon_url)
+            embed.add_field(name=_("Channel"), value=message_channel.mention)
+            embed.add_field(name=_("Messages deleted"), value=message_amount)
+            await channel.send(embed=embed)
+        else:
+            infomessage = (
+                _("Bulk message delete in ")
+                + f"{message_channel.mention}, {message_amount}"
+                + _("messages deleted.")
+            )
+            await channel.send(infomessage)
+        if not below_red31 and settings["bulk_individual"]:
+            for message in payload.cached_messages:
+                payload = discord.RawMessageDeleteEvent(
+                    {"id": message.id, "channel_id": channel_id, "guild_id": guild_id}
+                )
+                payload.cached_message = message
+                try:
+                    await self.on_raw_message_delete_listener(payload, check_audit_log=False)
+                except Exception:
+                    pass
 
     async def invite_links_loop(self):
         """Check every 5 minutes for updates to the invite links"""
