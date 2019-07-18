@@ -260,7 +260,7 @@ class EventMixin:
             if message.attachments:
                 filenames = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=filenames)
-                if settings["send_cached_images"]:
+                if settings["send_cached_images"] and not below_red31:
                     size = 0
                     manage_webhooks = channel.permissions_for(guild.me).manage_webhooks
                     for a in message.attachments:

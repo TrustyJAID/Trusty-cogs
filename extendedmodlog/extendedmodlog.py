@@ -436,6 +436,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             If attachments size exceeds 8MB (discord's size limit)
             bot will try to send attachments that fit this limit.
 
+            NOTE: This setting only works in Red 3.1+
             WARNING: This will delay message delete notifications for messages
             with big attachments.
         """
