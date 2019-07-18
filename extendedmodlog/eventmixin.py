@@ -256,11 +256,13 @@ class EventMixin:
             if perp:
                 embed.add_field(name=_("Deleted by"), value=perp.mention)
             files = []
+            attachment_embeds = []
             if message.attachments:
                 filenames = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=filenames)
                 if settings["send_cached_images"]:
                     size = 0
+                    manage_webhooks = channel.permissions_for(guild.me).manage_webhooks
                     for a in message.attachments:
                         if size + a.size > 8_000_000:
                             # this can be changed to support server boosting but for now Discord
@@ -276,12 +278,36 @@ class EventMixin:
                             pass
                         else:
                             files.append(discord.File(fp, a.filename))
+                            e = discord.Embed(title=_("Attachment name: ") + a.filename)
+                            e.set_thumbnail(url=f"attachment://{a.filename}")
+                            attachment_embeds.append(e)
+                            if not manage_webhooks:
+                                break
                             size += a.size
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
                 name=str(author) + _(" - Deleted Message"), icon_url=message.author.avatar_url
             )
-            await channel.send(embed=embed, files=files)
+            if attachment_embeds:
+                first_attachment_embed = attachment_embeds.pop(0)
+                embed.set_thumbnail(url=first_attachment_embed.thumbnail.url)
+                if attachment_embeds:
+                    webhook = None
+                    for hook in await channel.webhooks():
+                        if hook.name == guild.me.name:
+                            webhook = hook
+                            break
+                    if webhook is None:
+                        webhook = await channel.create_webhook(name=guild.me.name)
+                    await webhook.send(
+                        embeds=[embed] + attachment_embeds,
+                        files=files,
+                        avatar_url=guild.me.avatar_url
+                    )
+                    return
+                await channel.send(embed=embed, file=files[0])
+                return
+            await channel.send(embed=embed)
         else:
             clean_msg = f"{infomessage}\n`{message.clean_content}`"
             await channel.send(clean_msg[:2000])

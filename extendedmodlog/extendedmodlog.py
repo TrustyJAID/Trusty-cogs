@@ -427,10 +427,17 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
             Toggle sending cached images in message delete notifications.
 
-            If attachments size exceeds 8MB bot will try to
-            send attachments that fit this limit.
-            NOTE: There is no guarantee that image was cached by discord,
-            so don't rely on this.
+            Keep in mind there is no guarantee that image will stay in cache,
+            so sometimes delete notification may be sent without attached images.
+
+            If bot doesn't have Manage Webhooks permissions in modlog channel,
+            it will only send one image.
+
+            If attachments size exceeds 8MB (discord's size limit)
+            bot will try to send attachments that fit this limit.
+
+            WARNING: This will delay message delete notifications for messages
+            with big attachments.
         """
         guild = ctx.message.guild
         msg = _("Sending cached images ")
