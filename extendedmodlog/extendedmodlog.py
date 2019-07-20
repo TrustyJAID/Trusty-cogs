@@ -140,6 +140,124 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.invoked_subcommand is None:
             await self.modlog_settings(ctx)
 
+    @_modlog.group(name="all")
+    async def _all(self, ctx):
+        """
+        Turn on or off all loging
+        """
+        pass
+
+    @_all.command(name="toggle")
+    async def _all_toggle(self, ctx):
+        """
+        Toggle all logging on or off depending on current setting
+        """
+        guild = ctx.message.guild
+        emsg = _("Edit messages ")
+        if not await self.config.guild(guild).message_edit.enabled():
+            await self.config.guild(guild).message_edit.enabled.set(True)
+            everb = _("enabled")
+        else:
+            await self.config.guild(guild).message_edit.enabled.set(False)
+            everb = _("disabled")
+        bmsg = _("Bots edited messages ")
+        if not await self.config.guild(guild).message_edit.bots():
+            await self.config.guild(guild).message_edit.bots.set(True)
+            bverb = _("enabled")
+        else:
+            await self.config.guild(guild).message_edit.bots.set(False)
+            bverb = _("disabled")
+        jmsg = _("Join message logs ")
+        if not await self.config.guild(guild).user_join.enabled():
+            await self.config.guild(guild).user_join.enabled.set(True)
+            links = await self.save_invite_links(guild)
+            if links:
+                jverb = _("enabled with invite links")
+            else:
+                jverb = _("enabled")
+        else:
+            await self.config.guild(guild).user_join.enabled.set(False)
+            jverb = _("disabled")
+        gmsg = _("Guild logs ")
+        if not await self.config.guild(guild).guild_change.enabled():
+            await self.config.guild(guild).guild_change.enabled.set(True)
+            gverb = _("enabled")
+        else:
+            await self.config.guild(guild).guild_change.enabled.set(False)
+            gverb = _("disabled")
+        cmsg = _("Channel logs ")
+        if not await self.config.guild(guild).channel_change.enabled():
+            await self.config.guild(guild).channel_change.enabled.set(True)
+            cverb = _("enabled")
+        else:
+            await self.config.guild(guild).channel_change.enabled.set(False)
+            cverb = _("disabled")
+        lmsg = _("Leave logs ")
+        if not await self.config.guild(guild).user_left.enabled():
+            await self.config.guild(guild).user_left.enabled.set(True)
+            lverb = _("enabled")
+        else:
+            await self.config.guild(guild).user_left.enabled.set(False)
+            lverb = _("disabled")
+        mmsg = _("Message delete logs ")
+        if not await self.config.guild(guild).message_delete.enabled():
+            await self.config.guild(guild).message_delete.enabled.set(True)
+            mverb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.enabled.set(False)
+            mverb = _("disabled")
+        pmsg = _("Profile logs ")
+        if not await self.config.guild(guild).user_change.enabled():
+            await self.config.guild(guild).user_change.enabled.set(True)
+            pverb = _("enabled")
+        else:
+            await self.config.guild(guild).user_change.enabled.set(False)
+            pverb = _("disabled")
+        rmsg = _("Role logs ")
+        if not await self.config.guild(guild).role_change.enabled():
+            await self.config.guild(guild).role_change.enabled.set(True)
+            rverb = _("enabled")
+        else:
+            await self.config.guild(guild).role_change.enabled.set(False)
+            rverb = _("disabled")
+        vmsg = _("Voice logs ")
+        if not await self.config.guild(guild).voice_change.enabled():
+            await self.config.guild(guild).voice_change.enabled.set(True)
+            vverb = _("enabled")
+        else:
+            await self.config.guild(guild).voice_change.enabled.set(False)
+            vverb = _("disabled")
+        emmsg = _("Emoji logs ")
+        if not await self.config.guild(guild).emoji_change.enabled():
+            await self.config.guild(guild).emoji_change.enabled.set(True)
+            emverb = _("enabled")
+        else:
+            await self.config.guild(guild).emoji_change.enabled.set(False)
+            emverb = _("disabled")
+        ccmsg = _("Command logs ")
+        if not await self.config.guild(guild).commands_used.enabled():
+            await self.config.guild(guild).commands_used.enabled.set(True)
+            ccverb = _("enabled")
+        else:
+            await self.config.guild(guild).commands_used.enabled.set(False)
+            ccverb = _("disabled")
+        msg = (
+            f"{emsg} ``{everb}``\n"
+            f"{bmsg} ``{bverb}``\n"
+            f"{jmsg} ``{jverb}``\n"
+            f"{gmsg} ``{gverb}``\n"
+            f"{cmsg} ``{cverb}``\n"
+            f"{lmsg} ``{lverb}``\n"
+            f"{mmsg} ``{mverb}``\n"
+            f"{pmsg} ``{pverb}``\n"
+            f"{rmsg} ``{rverb}``\n"
+            f"{vmsg} ``{vverb}``\n"
+            f"{emmsg} ``{emverb}``\n"
+            f"{ccmsg} ``{ccverb}``"
+            )
+
+        await ctx.send(msg)
+
     @_modlog.group(name="edit")
     async def _edit(self, ctx):
         """
