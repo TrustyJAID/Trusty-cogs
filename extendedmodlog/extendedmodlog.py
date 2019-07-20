@@ -206,6 +206,34 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await self.config.guild(guild).message_delete.enabled.set(False)
             mverb = _("disabled")
+        bdmmsg = _("Bot delete logs ")
+        if not await self.config.guild(guild).message_delete.bots():
+            await self.config.guild(guild).message_delete.bots.set(True)
+            bdmverb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.bots.set(False)
+            bdmverb = _("disabled")
+        bdmsg = _("Bulk message delete logs ")
+        if not await self.config.guild(guild).message_delete.bulk_enabled():
+            await self.config.guild(guild).message_delete.bulk_enabled.set(True)
+            bdverb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.bulk_enabled.set(False)
+            bdverb = _("disabled")
+        bdimsg = _("Individual message delete logs for bulk message delete ")
+        if not await self.config.guild(guild).message_delete.bulk_individual():
+            await self.config.guild(guild).message_delete.bulk_individual.set(True)
+            bdiverb = _("enabled")
+        else:
+            await self.config.guild(guild).message_delete.bulk_individual.set(False)
+            bdiverb = _("disabled")
+        dcmsg = _("Delete logs for non-cached messages ")
+        if not await self.config.guild(guild).message_delete.cached_only():
+            await self.config.guild(guild).message_delete.cached_only.set(True)
+            dcverb = _("disabled")
+        else:
+            await self.config.guild(guild).message_delete.cached_only.set(False)
+            dcverb = _("enabled")
         pmsg = _("Profile logs ")
         if not await self.config.guild(guild).user_change.enabled():
             await self.config.guild(guild).user_change.enabled.set(True)
@@ -249,6 +277,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
             f"{cmsg} ``{cverb}``\n"
             f"{lmsg} ``{lverb}``\n"
             f"{mmsg} ``{mverb}``\n"
+            f"{bdmmsg} ``{bdmverb}``\n"
+            f"{bdmsg} ``{bdverb}``\n"
+            f"{bdimsg} ``{bdiverb}``\n"
+            f"{dcmsg} ``{dcverb}``\n"
             f"{pmsg} ``{pverb}``\n"
             f"{rmsg} ``{rverb}``\n"
             f"{vmsg} ``{vverb}``\n"
