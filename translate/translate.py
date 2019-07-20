@@ -14,7 +14,7 @@ Cog credit to aziz#5919 for the idea and
 Links
 
 Wiki                                                https://goo.gl/3fxjSA
-Github                                              https://goo.gl/oQAQde
+GitHub                                              https://goo.gl/oQAQde
 Support the developer                               https://goo.gl/Brchj4
 Invite the bot to your guild                       https://goo.gl/aQm2G7
 Join the official development guild                https://discord.gg/uekTNPj
@@ -28,7 +28,7 @@ log = logging.getLogger("red.trusty-cogs.Translate")
 @cog_i18n(_)
 class Translate(GoogleTranslateAPI, commands.Cog):
     """
-        Translate messages using google translate
+        Translate messages using Google Translate
     """
     __version__ = "2.0.1"
 
@@ -55,7 +55,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     @commands.command()
     async def translate(self, ctx, to_language: FlagTranslation, *, message: str):
         """
-            Translate messages with google translate
+            Translate messages with Google Translate
 
             `to_language` is the language you would like to translate
             `message` is the message to translate
@@ -171,7 +171,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     @checks.is_owner()
     async def creds(self, ctx, api_key):
         """
-            You must get an API key from google to set this up
+            You must get an API key from Google to set this up
 
             Note: Using this cog costs money, current rates are $20 per 1 million characters.
 

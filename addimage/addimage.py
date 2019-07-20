@@ -130,6 +130,8 @@ class AddImage(commands.Cog):
         guild = channel.guild
         author = message.author
         mod = self.bot.get_cog("Mod")
+        if mod is None:
+            return True
         perms = channel.permissions_for(author)
         surpass_ignore = (
             isinstance(channel, discord.abc.PrivateChannel)

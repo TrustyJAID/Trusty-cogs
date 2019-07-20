@@ -62,9 +62,9 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    async def dl_image(self, url):
+    async def dl_image(self, url: str):
         """Download bytes like object of user avatar"""
-        async with self.session.get(url) as resp:
+        async with self.session.get(str(url)) as resp:
             test = await resp.read()
             return BytesIO(test)
 

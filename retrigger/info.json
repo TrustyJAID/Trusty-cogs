@@ -2,11 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
+    "bot_version" : "3.0.0",
     "description" : "Trigger events based on regular expressions",
     "disabled" : false,
     "hidden" : false,

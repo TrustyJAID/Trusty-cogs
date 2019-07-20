@@ -214,8 +214,11 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         channel = self.bot.get_channel(id=payload.channel_id)
-        if not channel.guild:
-            return
+        try:
+            if channel.recipient:
+                return
+        except AttributeError:
+            pass
         guild = channel.guild
         user = guild.get_member(payload.user_id)
         try:
@@ -338,6 +341,8 @@ class GoogleTranslateAPI:
         guild = channel.guild
         author = message.author
         mod = self.bot.get_cog("Mod")
+        if mod is None:
+            return True
         perms = channel.permissions_for(author)
         surpass_ignore = (
             isinstance(channel, discord.abc.PrivateChannel)
