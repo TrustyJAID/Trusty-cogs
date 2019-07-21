@@ -143,6 +143,7 @@ class ServerStats(commands.Cog):
             "splash": check_feature("INVITE_SPLASH"),
             "m_emojis": check_feature("MORE_EMOJI"),
             "verify": check_feature("VERIFIED"),
+            "partner": check_feature("PARTNERED"),
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -228,7 +229,7 @@ class ServerStats(commands.Cog):
                 name=_("Special features :"),
                 value=_(
                     "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n"
-                    "{m_emojis} More Emojis\n{verify} Verified"
+                    "{m_emojis} More Emojis\n{verify} Verified\n {partner} Partnered"
                 ).format(**format_kwargs),
             )
         if "VERIFIED" in guild.features:
@@ -236,6 +237,10 @@ class ServerStats(commands.Cog):
                 name=guild.name,
                 icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
             )
+        if "PARTNERED" in guild.features:
+            data.set_author(
+                name=guild.name,
+                icon_url="https://www.discordia.me/uploads/icons/partner.png",
         if guild.icon_url:
             em.set_author(name=guild.name, url=guild.icon_url)
             em.set_thumbnail(url=guild.icon_url)
