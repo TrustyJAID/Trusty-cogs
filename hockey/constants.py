@@ -237,7 +237,7 @@ TEAMS = {
         "emoji": "NewYorkRangers:381568942898151435",
         "home": "#0038A8",
         "id": 3,
-        "invite": "https://discord.gg/zDWnpHM",
+        "invite": "https://discord.gg/rrjvywb",
         "logo": "https://nhl.bamcontent.com/images/photos/281718864/256x256/cut.png",
         "team_url": "http://www.newyorkrangers.com",
         "timezone": "US/Eastern",

@@ -92,10 +92,10 @@ class TrustyAvatar(commands.Cog):
             },
         }
 
-    async def dl_image(self, url):
+    async def dl_image(self, url: str):
         """Download bytes like object of user avatar"""
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
+            async with session.get(str(url)) as resp:
                 test = await resp.read()
                 return BytesIO(test)
 
