@@ -129,6 +129,8 @@ class TriggerHandler:
             if message.author.id in trigger.whitelist:
                 can_run = True
             for role in author.roles:
+                if role.is_default():
+                    continue
                 if role.id in trigger.whitelist:
                     can_run = True
             return can_run
@@ -138,6 +140,8 @@ class TriggerHandler:
             if message.author.id in trigger.blacklist:
                 can_run = False
             for role in author.roles:
+                if role.is_default():
+                    continue
                 if role.id in trigger.blacklist:
                     can_run = False
         return can_run
