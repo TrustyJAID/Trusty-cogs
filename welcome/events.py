@@ -300,7 +300,11 @@ class Events:
                 await ctx.author.send(embed=em, delete_after=60)
             else:
                 await ctx.author.send(await self.convert_parms(member, guild, rand_msg), delete_after=60)
+            if guild_settings["WHISPER"] != "BOTH":
+                return
         if bot or whisper_settings is not True:
+            if not channel:
+                return
             if guild_settings["GROUPED"]:
                 member = [ctx.author, ctx.me]
             if is_embed and channel.permissions_for(guild.me).embed_links:
