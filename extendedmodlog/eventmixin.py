@@ -123,15 +123,15 @@ class EventMixin:
             return
 
         if privs == "MOD":
-            mod_role_id = await ctx.bot.db.guild(guild).mod_role()
-            if mod_role_id is not None:
-                role = guild.get_role(mod_role_id).mention + f"\n{privs}"
+            mod_role_list = await ctx.bot.db.guild(guild).mod_role()
+            if mod_role_list != []:
+                role = ", ".join(guild.get_role(mod_role).mention for mod_role in mod_role_list) + f"\n{privs}"
             else:
                 role = _("Not Set\nMOD")
         elif privs == "ADMIN":
-            admin_role_id = await ctx.bot.db.guild(guild).admin_role()
-            if admin_role_id is not None:
-                role = guild.get_role(admin_role_id).mention + f"\n{privs}"
+            admin_role_list = await ctx.bot.db.guild(guild).admin_role()
+            if admin_role_list != []:
+                role = ", ".join(guild.get_role(admin_role).mention for admin_role in admin_role_list) + f"\n{privs}"
             else:
                 role = _("Not Set\nADMIN")
         elif privs == "BOT_OWNER":
