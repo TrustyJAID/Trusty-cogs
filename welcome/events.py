@@ -165,8 +165,8 @@ class Events:
         channel = self.bot.get_channel(await self.config.guild(guild).CHANNEL())
         if channel is None:  # complain even if only whisper
             log.info(
-                _("welcome.py: Channel not found. It was most " "likely deleted. User joined: ")
-                + member
+                _("welcome.py: Channel not found. It was most likely deleted. User joined: ")
+                + str(member)
             )
             return
         # we can stop here
