@@ -141,6 +141,7 @@ class Autorole(commands.Cog):
             else:  # Immediately give the new user the role
                 await self._auto_give(member)
 
+    @commands.guild_only()
     @commands.group(name="autorole")
     @commands.bot_has_permissions(manage_roles=True)
     async def autorole(self, ctx):
