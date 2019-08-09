@@ -21,7 +21,7 @@ class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -732,10 +732,6 @@ class Starboard(commands.Cog):
         unique_users = []
         for reaction in reactions:
             async for user in reaction.users():
-                # This makes sure that the user cannot add
-                # their own count to the starboard threshold
-                if orig_msg.author.id == user.id:
-                    continue
                 if user.id not in unique_users:
                     unique_users.append(user.id)
         return len(unique_users)
