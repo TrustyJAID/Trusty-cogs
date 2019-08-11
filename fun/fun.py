@@ -289,8 +289,8 @@ class Fun(commands.Cog):
             for emoji in emojis:
                 try:
                     await msg_id.add_reaction(emoji)
-                except:
-                    pass
+                except discord.errors.Forbidden:
+                    return
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
@@ -384,5 +384,5 @@ class Fun(commands.Cog):
         for i in reactions:
             try:
                 await msg_id.add_reaction(i)
-            except:
-                pass
+            except discord.errors.Forbidden:
+                return
