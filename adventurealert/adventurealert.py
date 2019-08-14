@@ -13,7 +13,7 @@ if listener is None:  # thanks Sinbad
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -33,7 +33,7 @@ class AdventureAlert(commands.Cog):
 
     @commands.group()
     async def dragonalert(self, ctx):
-        """Set dragon alert roles for adventure"""
+        """Set notifications for dragons appearing in adventure"""
         pass
 
     @dragonalert.command()
@@ -74,7 +74,7 @@ class AdventureAlert(commands.Cog):
 
     @commands.group()
     async def adventurealert(self, ctx):
-        """Set dragon alert roles for adventure"""
+        """Set notifications for all adventures"""
         pass
 
     @adventurealert.command(name="role", aliases=["roles"])
@@ -156,7 +156,7 @@ class AdventureAlert(commands.Cog):
 
     @commands.group()
     async def minibossalert(self, ctx):
-        """Set notifications for minibosses"""
+        """Set notifications for minibosses appearing in adventure"""
         pass
 
     @minibossalert.command(name="role", aliases=["roles"])
