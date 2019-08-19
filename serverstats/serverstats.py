@@ -734,22 +734,24 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
-    async def whois(self, ctx, *, member: Union[int, discord.Member, discord.User, None] = None):
+    async def whois(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
         """
             Display servers a user shares with the bot
 
             `member` can be a user ID or mention
         """
-        if not member:
+        if not user_id:
             return await ctx.send(_("You need to supply a user ID for this to work properly."))
-        if type(member) is int:
+        if isinstance(user_id, int):
             try:
-                member = await self.bot.get_user_info(member)
+                member = await self.bot.fetch_user(user_id)
             except AttributeError:
-                member = await self.bot.fetch_user(member)
+                member = await self.bot.get_user_info(member)
             except discord.errors.NotFound:
-                await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
+                await ctx.send(str(user_id) + _(" doesn't seem to be a discord user."))
                 return
+        else:
+            member = user_id
         embed = discord.Embed()
         since_created = (ctx.message.created_at - member.created_at).days
         user_created = member.created_at.strftime("%d %b %Y %H:%M")
