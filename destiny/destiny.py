@@ -8,7 +8,6 @@ from typing import Union, Optional
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
-from redbot.core.json_io import JsonIO
 from redbot.core.data_manager import cog_data_path
 
 from .errors import Destiny2APIError, Destiny2MissingManifest
@@ -30,7 +29,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.2.2"
+    __version__ = "1.2.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -813,11 +812,11 @@ class Destiny(DestinyAPI, commands.Cog):
             await msg.delete()
         if str(react.emoji) == "✅":
             try:
-                await self.get_manifest()
+                version = await self.get_manifest()
             except:
-                await ctx.send(_("There was an issue downloading the manifest."))
+                return await ctx.send(_("There was an issue downloading the manifest."))
             await msg.delete()
-            await ctx.tick()
+            await ctx.send(f"Manifest {version} was downloaded.")
         else:
             await msg.delete()
 

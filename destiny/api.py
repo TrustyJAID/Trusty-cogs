@@ -2,11 +2,11 @@ import discord
 import aiohttp
 import asyncio
 import logging
+import json
 from base64 import b64encode
 from datetime import datetime
 
 
-from redbot.core.json_io import JsonIO
 from redbot.core.bot import Red
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
@@ -231,8 +231,9 @@ class DestinyAPI:
         """
             This loads the entity from the saved manifest
         """
-        json_io = JsonIO(cog_data_path(self) / f"{entity}.json")
-        data = json_io._load_json()
+        path = cog_data_path(self) / f"{entity}.json"
+        with path.open(encoding="utf-8", mode="r") as f:
+            data = json.load(f)
         return data
 
     async def get_definition(self, entity: str, entity_hash: list):
@@ -383,7 +384,7 @@ class DestinyAPI:
             except Destiny2InvalidParameters as e:
                 try:
                     await ctx.author.send(str(e))
-                except:
+                except discord.errors.Forbidden:
                     await ctx.send(str(e))
                 return False
             except Destiny2MissingAPITokens:
@@ -394,7 +395,7 @@ class DestinyAPI:
             await self.config.user(ctx.author).oauth.set(data)
             try:
                 await ctx.author.send(_("Credentials saved."))
-            except:
+            except discord.errors.Forbidden:
                 await ctx.send(_("Credentials saved."))
         if not await self.config.user(ctx.author).account():
             data = await self.get_user_profile(ctx.author)
@@ -432,7 +433,7 @@ class DestinyAPI:
         check = lambda m: m.author == ctx.message.author and m.content.isdigit()
         try:
             await ctx.author.send(msg)
-        except:
+        except discord.errors.Forbidden:
             await ctx.send(msg)
         try:
             msg = await ctx.bot.wait_for("message", check=check, timeout=60)
@@ -464,8 +465,11 @@ class DestinyAPI:
                 async with session.get(f"https://bungie.net/{manifest}", headers=headers) as resp:
                     data = await resp.json()
             for key, value in data.items():
-                await JsonIO(cog_data_path(self) / f"{key}.json")._threadsafe_save_json(value)
+                path = cog_data_path(self) / f"{key}.json"
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(value, f, indent=4, sort_keys=False, separators=(",", " : "))
             await self.config.manifest_version.set(manifest_data["version"])
+        return manifest_data["version"]
 
     async def get_char_colour(self, embed: discord.Embed, character):
         r = character["emblemColor"]["red"]
