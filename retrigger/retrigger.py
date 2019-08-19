@@ -11,6 +11,7 @@ from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
+# from redbot.core.utils import menus
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .converters import (
@@ -35,7 +36,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.4"
+    __version__ = "2.7.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -623,6 +624,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list.insert(0, trigger_list.pop(trigger_list.index(t)))
         triggers = await self.trigger_embed(ctx, trigger_list)
         await menu(ctx, triggers, DEFAULT_CONTROLS)
+        # await menus.PagedMenu.send_and_wait(ctx, pages=triggers)
+        # print("Hello, world.")
 
     @retrigger.command(aliases=["del", "rem", "delete"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -657,6 +660,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -724,6 +730,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -849,6 +858,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1029,10 +1041,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `<command>` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do not add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1065,7 +1080,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `<command>` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do not add [p] prefix
             Warning: This function can let other users run a command on your behalf,
             use with caution.
         """
@@ -1253,6 +1268,17 @@ class ReTrigger(TriggerHandler, commands.Cog):
             followed up with additional `;` separations.
             e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\" filter`
             Will attempt to DM the user and delete their message simultaneously.
+
+            Available options:
+            dm
+            remove_role
+            add_role
+            ban
+            kick
+            text
+            filter or delete
+            react
+            command
         """
         # log.info(multi_response)
         # return
