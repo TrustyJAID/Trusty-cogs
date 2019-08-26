@@ -136,14 +136,16 @@ class ServerStats(commands.Cog):
             "southafrica": _("South Africa") + " :flag_za:",
             "india": _("India") + " :flag_in:",
         }
-
         format_kwargs = {
-            "vip": check_feature("VIP_REGIONS"),
-            "van": check_feature("VANITY_URL"),
-            "splash": check_feature("INVITE_SPLASH"),
-            "m_emojis": check_feature("MORE_EMOJI"),
-            "verify": check_feature("VERIFIED"),
-            "partner": check_feature("PARTNERED"),
+            "PARTNERED": _("Discord Partner"),
+            "VIP_REGIONS": _("VIP Regions"),
+            "VANITY_URL": _("Vanity URL"),
+            "INVITE_SPLASH": _("Invite Splash"),
+            "MORE_EMOJI": _("More Emoji"),
+            "VERIFIED": _("Verified"),
+            "NEWS": _("News Channel"),
+            "ANIMATED_ICON": _("Animated Server Icon"),
+            "BANNER": _("Server Banner")
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -227,10 +229,7 @@ class ServerStats(commands.Cog):
         if guild.features:
             em.add_field(
                 name=_("Special features:"),
-                value=_(
-                    "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n"
-                    "{m_emojis} More Emojis\n{verify} Verified"
-                ).format(**format_kwargs),
+                value="".join(f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n" for x in guild.features)
             )
         if "VERIFIED" in guild.features:
             em.set_author(
@@ -238,9 +237,11 @@ class ServerStats(commands.Cog):
                 icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
             )
         if "PARTNERED" in guild.features:
-            data.set_author(
+            em.set_author(
                 name=guild.name,
-                icon_url="https://www.discordia.me/uploads/icons/partner.png",
+                icon_url="https://www.discordia.me/uploads/icons/partner.png")
+        if "BANNER" in guild.features:
+            em.set_image(url=guild.banner_url)
         if guild.icon_url:
             em.set_author(name=guild.name, url=guild.icon_url)
             em.set_thumbnail(url=guild.icon_url)
