@@ -143,6 +143,7 @@ class ServerStats(commands.Cog):
             "splash": check_feature("INVITE_SPLASH"),
             "m_emojis": check_feature("MORE_EMOJI"),
             "verify": check_feature("VERIFIED"),
+            "partner": check_feature("PARTNERED"),
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -236,6 +237,10 @@ class ServerStats(commands.Cog):
                 name=guild.name,
                 icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
             )
+        if "PARTNERED" in guild.features:
+            data.set_author(
+                name=guild.name,
+                icon_url="https://www.discordia.me/uploads/icons/partner.png",
         if guild.icon_url:
             em.set_author(name=guild.name, url=guild.icon_url)
             em.set_thumbnail(url=guild.icon_url)
