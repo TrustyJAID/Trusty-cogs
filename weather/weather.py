@@ -220,8 +220,8 @@ class Weather(commands.Cog):
                 mintemp, self.unit[units]["temp"], maxtemp, self.unit[units]["temp"]
             ),
         )
-        embed.add_field(name=_("\N{SUNRISE OVER MOUNTAINS} **Sunrise (UTC)**"), value=sunrise)
-        embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset (UTC)**"), value=sunset)
+        embed.add_field(name=_("\N{SUNRISE OVER MOUNTAINS} **Sunrise**"), value=sunrise)
+        embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset**"), value=sunset)
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
 
