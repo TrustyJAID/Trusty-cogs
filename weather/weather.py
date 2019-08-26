@@ -193,8 +193,8 @@ class Weather(commands.Cog):
             currenttemp = abs(currenttemp - 273.15)
             mintemp = abs(maxtemp - 273.15)
             maxtemp = abs(maxtemp - 273.15)
-        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"]).strftime("%H:%M")
-        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"]).strftime("%H:%M")
+        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"] + data["timezone"]).strftime("%H:%M")
+        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"] + data["timezone"]).strftime("%H:%M")
         embed = discord.Embed(colour=discord.Colour.blue())
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
