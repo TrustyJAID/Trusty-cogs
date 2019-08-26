@@ -214,6 +214,8 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         channel = self.bot.get_channel(id=payload.channel_id)
+        if not channel:
+            return
         try:
             if channel.recipient:
                 return
