@@ -242,7 +242,7 @@ class Fun(commands.Cog):
 
         msg = list(msg)
         regional_list = [
-            self.regionals[x.lower()] if x.isalnum() or x in ["!", "?"] else x for x in msg
+            self.regionals[x.lower()] if x.lower() in self.regionals else x for x in msg
         ]
         regional_output = "\u200b".join(regional_list)
         await ctx.send(regional_output)
