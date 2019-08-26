@@ -188,10 +188,10 @@ class ServerStats(commands.Cog):
         colour = guild.roles[-1].colour
 
         em = discord.Embed(description=f"{created_at}\n{joined_on}", colour=colour)
-        em.add_field(name=_("Members :"), value=member_msg)
+        em.add_field(name=_("Members:"), value=member_msg)
         em.add_field(
-            name=_("Channels :"),
-            value=_("💬 Text : **{text}**\n🔊 Voice : **{voice}**").format(
+            name=_("Channels:"),
+            value=_("💬 Text: **{text}**\n🔊 Voice: **{voice}**").format(
                 text=text_channels, voice=voice_channels
             ),
         )
@@ -200,22 +200,22 @@ class ServerStats(commands.Cog):
         except TypeError:
             verification_level = str(guild.verification_level)
         em.add_field(
-            name=_("Utility :"),
+            name=_("Utility:"),
             value=_(
-                "Owner : {owner.mention}\n**{owner}**\nRegion : **{region}**\n"
-                "Verif. level : **{verif}**\nServer ID : **{id}**"
+                "Owner: {owner.mention}\n**{owner}**\nRegion: **{region}**\n"
+                "Verif. level: **{verif}**\nServer ID: **{id}**"
             ).format(
                 owner=guild.owner,
-                region=str(guild.region) if guild.region not in region else region[str(guild.region)],
+                region=str(guild.region) if str(guild.region) not in region else region[str(guild.region)],
                 verif=verification_level,
                 id=guild.id,
             ),
         )
         em.add_field(
-            name=_("Misc :"),
+            name=_("Misc:"),
             value=_(
-                "AFK channel : **{afk_chan}**\nAFK Timeout : **{afk_timeout}sec**\n"
-                "Custom emojis : **{emojis}**\nRoles : **{roles}**"
+                "AFK channel: **{afk_chan}**\nAFK Timeout: **{afk_timeout}sec**\n"
+                "Custom emojis: **{emojis}**\nRoles: **{roles}**"
             ).format(
                 afk_chan=guild.afk_channel,
                 afk_timeout=guild.afk_timeout,
@@ -225,7 +225,7 @@ class ServerStats(commands.Cog):
         )
         if guild.features:
             em.add_field(
-                name=_("Special features :"),
+                name=_("Special features:"),
                 value=_(
                     "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n"
                     "{m_emojis} More Emojis\n{verify} Verified"
