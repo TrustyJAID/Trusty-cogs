@@ -193,8 +193,8 @@ class Weather(commands.Cog):
             currenttemp = abs(currenttemp - 273.15)
             mintemp = abs(maxtemp - 273.15)
             maxtemp = abs(maxtemp - 273.15)
-        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"]).strftime("%H:%M")
-        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"]).strftime("%H:%M")
+        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"] + data["timezone"]).strftime("%H:%M")
+        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"] + data["timezone"]).strftime("%H:%M")
         embed = discord.Embed(colour=discord.Colour.blue())
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
@@ -220,8 +220,8 @@ class Weather(commands.Cog):
                 mintemp, self.unit[units]["temp"], maxtemp, self.unit[units]["temp"]
             ),
         )
-        embed.add_field(name=_("\N{SUNRISE OVER MOUNTAINS} **Sunrise (UTC)**"), value=sunrise)
-        embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset (UTC)**"), value=sunset)
+        embed.add_field(name=_("\N{SUNRISE OVER MOUNTAINS} **Sunrise**"), value=sunrise)
+        embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset**"), value=sunset)
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
 
