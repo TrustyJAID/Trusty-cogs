@@ -752,7 +752,7 @@ class ServerStats(commands.Cog):
             try:
                 member = await self.bot.fetch_user(user_id)
             except AttributeError:
-                member = await self.bot.get_user_info(member)
+                member = await self.bot.get_user_info(user_id)
             except discord.errors.NotFound:
                 await ctx.send(str(user_id) + _(" doesn't seem to be a discord user."))
                 return
