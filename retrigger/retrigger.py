@@ -36,7 +36,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.5"
+    __version__ = "2.8.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -423,7 +423,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Edit the regex of a saved trigger.
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `<regex>` The new regex pattern to use.
         """
         if type(trigger) is str:
@@ -437,6 +437,48 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} regex changed to ```bf\n{regex}\n```")
         await ctx.send(msg.format(name=trigger.name, regex=regex))
+
+    @_edit.command(name="ocr")
+    @commands.check(lambda ctx: TriggerHandler.ALLOW_OCR)
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_ocr_search(self, ctx: commands.Context, trigger: TriggerExists):
+        """
+            Toggle whether to use Optical Character Recognition to search for text within images.
+
+            <trigger> is the name of the trigger.
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.ocr_search = not trigger.ocr_search
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} OCR Search set to: {ocr_search}")
+        await ctx.send(msg.format(name=trigger.name, ocr_search=trigger.ocr_search))
+
+    @_edit.command(name="edited")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists):
+        """
+            Toggle whether the bot will listen to edited messages as well as on_message for
+            the specified trigger.
+
+            <trigger> is the name of the trigger.
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.ignore_edits = not trigger.ignore_edits
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} ignore edits set to: {ignore_edits}")
+        await ctx.send(msg.format(name=trigger.name, ignore_edits=trigger.ignore_edits))
 
     @_edit.command(name="text", aliases=["msg"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -651,7 +693,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Add a text response trigger
 
             `<name>` name of the trigger
-            `<regex>` the regex that will determine when to respond
+            `<regex>` the regex that will determine when to respond.
             `<text>` response of the trigger
             Text responses utilize regex groups for replacement so you can
             replace a group match in a specific area with `{#}`
@@ -741,6 +783,44 @@ class ReTrigger(TriggerHandler, commands.Cog):
         author = ctx.message.author.id
         new_trigger = Trigger(
             name, regex, ["dm"], author, 0, None, text, [], [], {}, [], ctx.message.id
+        )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
+        self.triggers[ctx.guild.id].append(new_trigger)
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = await new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def dmme(
+        self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
+    ):
+        """
+            Add trigger to DM yourself
+
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `<text>` response of the trigger
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}`
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        guild = ctx.guild
+        author = ctx.message.author.id
+        new_trigger = Trigger(
+            name, regex, ["dmme"], author, 0, None, text, [], [], {}, [], ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1260,17 +1340,21 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `[multi_response...]` the actions to perform when the trigger matches
-            multiple responses start with the name of the action which must be one of:
-            dm, text, filter, add_role, remove_role, ban, or kick
-            followed by a `;` if there is a followup response and a space for the next
-            trigger response. If you want to add or remove multiple roles those may be
+            `[multi_response...]` the list of actions the bot will perform
+
+            Multiple responses start with the name of the action which
+            must be one of the listed options below, followed by a `;`
+            if there is a followup response add a space for the next trigger response.
+            If you want to add or remove multiple roles those may be
             followed up with additional `;` separations.
-            e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\" filter`
-            Will attempt to DM the user and delete their message simultaneously.
+            e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\"
+            filter "remove_role;Regular Member" add_role;Timeout`
+            Will attempt to DM the user, delete their message, remove their
+            `@Regular Member` role and add the `@Timeout` role simultaneously.
 
             Available options:
             dm
+            dmme
             remove_role
             add_role
             ban

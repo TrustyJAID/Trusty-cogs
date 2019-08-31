@@ -60,6 +60,7 @@ class MultiResponse(Converter):
         match = re.split(r"(;)", argument)
         valid_reactions = [
             "dm",
+            "dmme",
             "remove_role",
             "add_role",
             "ban",
@@ -257,6 +258,8 @@ class Trigger:
     multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]]
     created: int
     ignore_commands: bool
+    ignore_edits: bool
+    ocr_search: bool
 
     def __init__(
         self,
@@ -273,6 +276,8 @@ class Trigger:
         multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
         created_at: int,
         ignore_commands: bool = False,
+        ignore_edits: bool = False,
+        ocr_search: bool = False,
     ):
         self.name = name
         self.regex = re.compile(regex)
@@ -287,6 +292,8 @@ class Trigger:
         self.multi_payload = multi_payload
         self.created_at = created_at
         self.ignore_commands = ignore_commands
+        self.ignore_edits = ignore_edits
+        self.ocr_search = ocr_search
 
     def __str__(self):
         return self.name
@@ -305,7 +312,9 @@ class Trigger:
             "cooldown": self.cooldown,
             "multi_payload": self.multi_payload,
             "created_at": self.created_at,
-            "ignore_commands": self.ignore_commands
+            "ignore_commands": self.ignore_commands,
+            "ignore_edits": self.ignore_edits,
+            "ocr_search": self.ocr_search,
         }
 
     @classmethod
@@ -314,6 +323,8 @@ class Trigger:
         multi_payload: List[MultiResponse] = []
         created_at: int = 0
         ignore_commands = False
+        ignore_edits = False
+        ocr_search = False
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -326,6 +337,10 @@ class Trigger:
             created_at = data["created_at"]
         if "ignore_commands" in data:
             ignore_commands = data["ignore_commands"]
+        if "ignore_edits" in data:
+            ignore_edits = data["ignore_edits"]
+        if "ocr_search" in data:
+            ocr_search = data["ocr_search"]
         return cls(
             data["name"],
             data["regex"],
@@ -340,4 +355,6 @@ class Trigger:
             multi_payload,
             created_at,
             ignore_commands,
+            ignore_edits,
+            ocr_search,
         )
