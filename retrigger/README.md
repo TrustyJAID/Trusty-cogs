@@ -257,7 +257,7 @@ Set which events to record in the modlog. ReTrigger has a built in modlog setup 
  - **removeroles** Toggle custom add role messages in the modlog.
  - **settings** Show the current modlog settings for this server.
 
-F.A.Q.
+## F.A.Q.
 
 __Can ReTrigger perform different actions if a user triggers it enough times?__
  - No. This is better suited for an entirely separate cog. This one is highly complex as it is and meant more as a versatile trigger system not automatic moderation although it can still be used as an automatic moderation tool.
