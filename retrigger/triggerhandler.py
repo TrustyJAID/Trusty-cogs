@@ -37,6 +37,7 @@ try:
     ALLOW_RESIZE = True
 except ImportError:
     ALLOW_RESIZE = False
+    ALLOW_OCR = False
 
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
