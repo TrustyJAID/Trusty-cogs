@@ -145,7 +145,8 @@ class ServerStats(commands.Cog):
             "VERIFIED": _("Verified"),
             "NEWS": _("News Channel"),
             "ANIMATED_ICON": _("Animated Server Icon"),
-            "BANNER": _("Server Banner")
+            "BANNER": _("Server Banner"),
+            "LURKABLE": _("Lurkable")
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -229,7 +230,10 @@ class ServerStats(commands.Cog):
         if guild.features:
             em.add_field(
                 name=_("Special features:"),
-                value="".join(f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n" for x in guild.features)
+                value="".join(
+                    f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n"
+                    for x in guild.features if x in format_kwargs
+                    )
             )
         if "VERIFIED" in guild.features:
             em.set_author(
