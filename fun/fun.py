@@ -315,8 +315,10 @@ class Fun(commands.Cog):
                 msg_id = message
         else:
             try:
+                msg_id = await channel.fetch_message(msg_id)
+            except AttributeError:
                 msg_id = await channel.get_message(msg_id)
-            except:
+            except discord.errors.NotFound:
                 await ctx.send("Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5)
                 return
 
