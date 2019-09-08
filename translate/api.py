@@ -256,10 +256,10 @@ class GoogleTranslateAPI:
         guild = channel.guild
         user = guild.get_member(payload.user_id)
         try:
-            message = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            message = await channel.get_message(id=payload.message_id)
-            return
+            try:
+                message = await channel.fetch_message(id=payload.message_id)
+            except AttributeError:
+                message = await channel.get_message(id=payload.message_id)
         except discord.errors.NotFound:
             return
         if user.bot:
