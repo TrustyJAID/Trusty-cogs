@@ -770,7 +770,7 @@ class Starboard(commands.Cog):
                 msg = await channel.fetch_message(id=payload.message_id)
             except AttributeError:
                 msg = await channel.get_message(id=payload.message_id)
-        except discord.errors.NotFound:
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         starboards = await self.config.guild(guild).starboards()
         for name, s_board in starboards.items():
@@ -790,7 +790,7 @@ class Starboard(commands.Cog):
                 msg = await channel.fetch_message(id=payload.message_id)
             except AttributeError:
                 msg = await channel.get_message(id=payload.message_id)
-        except discord.errors.NotFound:
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         member = guild.get_member(payload.user_id)
         if not await self.config.guild(guild).starboards() or member.bot:
