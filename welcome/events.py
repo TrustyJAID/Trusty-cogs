@@ -157,7 +157,10 @@ class Events:
                 else:
                     await channel.send(embed=em)
             else:
-                await channel.send(await self.convert_parms(member, guild, bot_welcome))
+                try:
+                    await channel.send(await self.convert_parms(member, guild, bot_welcome))
+                except discord.Forbidden:
+                    return
 
     async def get_welcome_channel(self, member, guild):
         # grab the welcome channel
@@ -263,7 +266,10 @@ class Events:
                 else:
                     await channel.send(embed=em)
             else:
-                await channel.send(await self.convert_parms(member, guild, msg))
+                try:
+                    await channel.send(await self.convert_parms(member, guild, msg))
+                except discord.Forbidden:
+                    return
 
     def speak_permissions(self, guild, channel):
         if channel is None:
