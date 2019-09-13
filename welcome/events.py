@@ -141,11 +141,12 @@ class Events:
             try:
                 role = guild.get_role(bot_role)
                 await member.add_roles(role)
-            except Exception as e:
-                log.info(e)
-                log.info(_("welcome.py: unable to add  a role. ") + str(bot_role) + str(member))
+            except Exception:
+                log.error(
+                    _("welcome.py: unable to add  a role. ") + f"{bot_role} {member}", exc_info=True
+                )
             else:
-                log.info(
+                log.debug(
                     _("welcome.py: added ") + str(role) + _(" role to ") + _("bot, ") + str(member)
                 )
         if bot_welcome:
@@ -162,16 +163,21 @@ class Events:
     async def get_welcome_channel(self, member, guild):
         # grab the welcome channel
         # guild_settings = await self.config.guild(guild).guild_settings()
-        channel = self.bot.get_channel(await self.config.guild(guild).CHANNEL())
+        channel = guild.get_channel(await self.config.guild(guild).CHANNEL())
+        only_whisper = await self.config.guild(guild).WHISPER() is True
         if channel is None:  # complain even if only whisper
-            log.info(
-                _("welcome.py: Channel not found. It was most likely deleted. User joined: ")
-                + str(member)
-            )
-            return
+            if not only_whisper:
+                log.info(
+                    _("welcome.py: Channel not found. It was most likely deleted. User joined: ")
+                    + str(member)
+                )
+                return
+            else:
+                # We will not complain here since some people only want the bot to whisper at times
+                return
         # we can stop here
 
-        if not self.speak_permissions(guild, channel):
+        if not guild.me.permissions_in(channel).send_messages:
             log.info(_("Permissions Error. User that joined: ") + "{0}".format(member))
             log.info(
                 _("Bot doesn't have permissions to send messages to ")
@@ -206,6 +212,8 @@ class Events:
                         )
                         + str(member)
                     )
+                except Exception:
+                    log.error("error sending member join message", exc_info=True)
         if only_whisper:
             return
         if is_embed and channel.permissions_for(guild.me).embed_links:
