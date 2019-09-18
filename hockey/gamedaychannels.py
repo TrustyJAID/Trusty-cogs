@@ -74,6 +74,8 @@ class GameDayChannels:
         """
         config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
         guild_data = await config.guild(guild).all()
+        if "category" not in guild_data:
+            return
         category = bot.get_channel(guild_data["category"])
         if category is None:
             # Return none if there's no category to create the channel

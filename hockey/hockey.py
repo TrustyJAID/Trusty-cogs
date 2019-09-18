@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -200,9 +200,9 @@ class Hockey(commands.Cog):
         if len(pickems) == 0:
             return
         try:
-            msg = await channel.get_message(id=payload.message_id)
-        except AttributeError:
             msg = await channel.fetch_message(id=payload.message_id)
+        except AttributeError:
+            msg = await channel.get_message(id=payload.message_id)
         except discord.errors.NotFound:
             return
         user = guild.get_member(payload.user_id)
@@ -318,11 +318,11 @@ class Hockey(commands.Cog):
                 else:
                     standings_chn = standings_channel.name
                 try:
-                    standings_msg = await standings_channel.get_message(
+                    standings_msg = await standings_channel.fetch_message(
                         await self.config.guild(guild).standings_msg()
                     )
                 except AttributeError:
-                    standings_msg = await standings_channel.fetch_message(
+                    standings_msg = await standings_channel.get_message(
                         await self.config.guild(guild).standings_msg()
                     )
                 except discord.errors.NotFound:
@@ -504,6 +504,7 @@ class Hockey(commands.Cog):
         await ctx.send(msg)
 
     @gdc.command(name="setup")
+    @commands.guild_only()
     async def gdc_setup(
         self,
         ctx,
@@ -522,11 +523,12 @@ class Hockey(commands.Cog):
             must be either `True` or `False` and a category must be provided
         """
         guild = ctx.message.guild
-        if guild is None:
-            await ctx.send("This needs to be done in a server.")
-            return
-        if category is None:
-            category = guild.get_channel(ctx.message.channel.category_id)
+        if category is None and ctx.channel.category is not None:
+            category = guild.get_channel(ctx.channel.category_id)
+        else:
+            return await ctx.send(
+                _("You must specify a channel category for game day channels to be created under.")
+            )
         if not category.permissions_for(guild.me).manage_channels:
             await ctx.send(_("I don't have manage channels permission!"))
             return
