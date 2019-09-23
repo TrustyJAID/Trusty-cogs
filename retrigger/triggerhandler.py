@@ -282,7 +282,10 @@ class TriggerHandler:
             trigger = await Trigger.from_json(triggers)
             author = ctx.guild.get_member(trigger.author)
             if not author:
-                author = await self.bot.get_user_info(trigger.author)
+                try:
+                    author = await self.bot.fetch_user(trigger.author)
+                except AttributeError:
+                    author = await self.bot.get_user_info(trigger.author)
             blacklist = []
             for y in trigger.blacklist:
                 try:
@@ -487,9 +490,9 @@ class TriggerHandler:
         try:
             channel = self.bot.get_channel(int(payload.data["channel_id"]))
             try:
-                message = await channel.get_message(int(payload.data["id"]))
-            except AttributeError:
                 message = await channel.fetch_message(int(payload.data["id"]))
+            except AttributeError:
+                message = await channel.get_message(int(payload.data["id"]))
         except discord.errors.Forbidden:
             log.debug(_("I don't have permission to read channel history"))
             return
