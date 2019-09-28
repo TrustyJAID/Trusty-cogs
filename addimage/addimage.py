@@ -167,7 +167,7 @@ class AddImage(commands.Cog):
         if not await self.check_ignored_channel(message):
             return
         ignore_global = await self.config.guild(guild).ignore_global()
-        if alias in [x["command_name"] for x in await self.config.images()] and not ignore_global:
+        if alias in [x["command_name"] for x in await self.config.images()] and ignore_global:
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias)
