@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.4.2"
+    __version__ = "2.5.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -68,6 +68,8 @@ class Hockey(commands.Cog):
             "team_rules": "",
             "pickems": [],
             "leaderboard": {},
+            "pickems_category": None,
+            "pickems_channels": []
         }
         default_channel = {"team": [], "to_delete": False}
 
@@ -919,6 +921,38 @@ class Hockey(commands.Cog):
                     await new_msg.add_reaction(game.home_emoji[2:-1])
                 except Exception:
                     log.debug("Error adding reactions")
+
+    @hockeyset_commands.command(name="autopickems")
+    @checks.admin_or_permissions(manage_channels=True)
+    async def setup_auto_pickems(self, ctx, category: discord.CategoryChannel = None):
+        """
+            Sets up automatically created pickems channels every week.
+
+            `[category]` the channel category where pickems channels will be created.
+        """
+
+        if category is None and not ctx.channel.category:
+            return await ctx.send(_("A channel category is required."))
+        elif category is None and ctx.channel.category is not None:
+            category = ctx.channel.category
+        else:
+            pass
+        if not category.permissions_for(ctx.me).manage_channels:
+            await ctx.send(_("I don't have manage channels permission!"))
+            return
+
+        await self.config.guild(ctx.guild).pickems_category.set(category.id)
+        await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
+        await ctx.send(_("I will now automatically create pickems pages every Sunday."))
+
+    @hockeyset_commands.command(name="toggleautopickems")
+    @checks.admin_or_permissions(manage_channels=True)
+    async def toggle_auto_pickems(self, ctx):
+        """
+            Turn off automatic pickems page creation
+        """
+        await self.config.guild(ctx.guild).pickems_category.set(None)
+        await ctx.tick()
 
     async def post_leaderboard(self, ctx, leaderboard_type):
         """

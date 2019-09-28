@@ -1,9 +1,11 @@
+import discord
 from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
-from datetime import datetime
+from datetime import datetime, timedelta
 from .constants import TEAMS
 from .helper import hockey_config
 from redbot.core.i18n import Translator
 from redbot.core import Config
+import asyncio
 import logging
 
 
@@ -173,16 +175,111 @@ class Pickems:
     async def reset_weekly(bot):
         # Reset the weekly leaderboard for all servers
         config = hockey_config()
+        pickems_channels_to_delete = []
+        guilds_to_make_new_pickems = []
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(id=guild_id)
             if guild is None:
                 continue
+            if await config.guild(guild).pickems_category():
+                guilds_to_make_new_pickems.append(guild)
             leaderboard = await config.guild(guild).leaderboard()
+            pickems_channels_to_delete += await config.guild(guild).pickems_channels()
             if leaderboard is None:
                 leaderboard = {}
             for user in leaderboard:
                 leaderboard[str(user)]["weekly"] = 0
             await config.guild(guild).leaderboard.set(leaderboard)
+        await Pickems.delete_pickems_channels(bot, pickems_channels_to_delete)
+
+    @staticmethod
+    async def create_weekly_pickems_pages(bot, guilds, game_obj):
+        config = hockey_config()
+        save_data = {}
+        today = datetime.now()
+        new_day = timedelta(days=1)
+        count = 0
+        channels = []
+
+        async def create_pickems_channel(name, guild):
+            msg = _(
+                "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
+                "  Vote for who you think will win!  You get one point for each correct prediction."
+                "  We will be tracking points over the course "
+                "of the season and will be rewarding weekly,"
+                " worst and full-season winners!**\n\n"
+                "- Click the reaction for the team you think will win the day's match-up.\n"
+                "- Anyone who votes for both teams will have their "
+                "vote removed and will receive no points!\n\n\n\n"
+            )
+            category = bot.get_channel(await config.guild(guild).pickems_category())
+            if not category:
+                return
+            try:
+                new_chn = await guild.create_text_channel(name, category=category)
+            except discord.errors.Forbidden:
+                await config.guild(guild).pickems_category.set(None)
+                return None
+            await new_chn.send(msg)
+            return new_chn
+
+        async def create_pickems_game_msg(channel, game):
+            new_msg = await channel.send(
+                "__**{} {}**__ @ __**{} {}**__".format(
+                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
+                )
+            )
+            # Create new pickems object for the game
+            await Pickems.create_pickem_object(guild, new_msg, channel, game)
+            if channel.permissions_for(guild.me).add_reactions:
+                try:
+                    await new_msg.add_reaction(game.away_emoji[2:-1])
+                    await new_msg.add_reaction(game.home_emoji[2:-1])
+                except Exception:
+                    log.debug("Error adding reactions")
+
+        while True:
+            chn_name = _("pickems-{month}-{day}").format(
+                month=today.month, day=today.day
+            )
+            new_channel_tasks = []
+            game_msg_tasks = []
+            for guild in guilds:
+                new_channel_tasks.append(create_pickems_channel(chn_name, guild))
+            data = await asyncio.gather(*new_channel_tasks)
+            for new_channel in data:
+                if new_channel.guild.id not in save_data:
+                    save_data[new_channel.guild.id] = [new_channel.id]
+                else:
+                    save_data[new_channel.guild.id].append(new_channel.id)
+
+            games_list = await game_obj.get_games(None, today, today)
+
+            for game in games_list:
+                for channel in data:
+                    game_msg_tasks.append(create_pickems_game_msg(channel, game))
+            await asyncio.gather(*game_msg_tasks)
+            today = today + new_day
+            count += 1
+            if today.weekday() == 6 or count == 7:
+                # just incase we end up in an infinite loop somehow
+                # can never be too careful with async coding
+                break
+        for guild_id, channels in save_data.items():
+            guild = bot.get_guild(guild_id)
+            await config.guild(guild).pickems_channels.set(channels)
+
+
+    @staticmethod
+    async def delete_pickems_channels(bot, channels):
+        for channel_id in channels:
+            channel = bot.get_channel(channel_id)
+            if not channel:
+                continue
+            try:
+                await channel.delete()
+            except:
+                pass
 
     @staticmethod
     async def tally_leaderboard(bot):
