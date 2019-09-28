@@ -176,13 +176,10 @@ class Pickems:
         # Reset the weekly leaderboard for all servers
         config = hockey_config()
         pickems_channels_to_delete = []
-        guilds_to_make_new_pickems = []
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(id=guild_id)
             if guild is None:
                 continue
-            if await config.guild(guild).pickems_category():
-                guilds_to_make_new_pickems.append(guild)
             leaderboard = await config.guild(guild).leaderboard()
             pickems_channels_to_delete += await config.guild(guild).pickems_channels()
             if leaderboard is None:

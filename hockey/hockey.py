@@ -177,6 +177,12 @@ class Hockey(commands.Cog):
                     await Pickems.reset_weekly(self.bot)
                 except Exception:
                     log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
+                guilds_to_make_new_pickems = []
+                for guild_id in await self.config.all_guilds():
+                    guild = self.bot.get_guild(guild_id)
+                    if await self.config.guild(guild).pickems_category():
+                        guilds_to_make_new_pickems.append(guild)
+                await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception:
