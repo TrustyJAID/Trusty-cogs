@@ -103,7 +103,7 @@ class TarotReading(commands.Cog):
                 if msg.lower() in self.tarot_cards[cards]["card_name"].lower():
                     card = self.tarot_cards[cards]
             if card is None:
-                await self.bot.say("That card does not exist!")
+                await ctx.send("That card does not exist!")
                 return
 
         embed = discord.Embed(
