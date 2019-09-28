@@ -676,45 +676,45 @@ class TriggerHandler:
             "Retrigger encountered an error in {guild} with trigger {trigger} "
         ).format(guild=guild.name, trigger=trigger.name)
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
-            async with channel.typing():
-                path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-                task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
-                new_task = self.bot.loop.run_in_executor(None, task)
-                try:
-                    file: discord.File = await asyncio.wait_for(new_task, timeout=60)
-                except asyncio.TimeoutError:
-                    pass
-                try:
-                    await channel.send(file=file)
-                except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
-                except Exception:
-                    log.error(error_in, exc_info=True)
+            await channel.trigger_typing()
+            path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+            task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
+            new_task = self.bot.loop.run_in_executor(None, task)
+            try:
+                file: discord.File = await asyncio.wait_for(new_task, timeout=60)
+            except asyncio.TimeoutError:
+                pass
+            try:
+                await channel.send(file=file)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
+            except Exception:
+                log.error(error_in, exc_info=True)
         if "text" in trigger.response_type and own_permissions.send_messages:
-            async with channel.typing():
-                if trigger.multi_payload:
-                    text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
-                else:
-                    text_response = str(trigger.text)
-                response = await self.convert_parms(message, text_response, trigger.regex)
-                try:
-                    await channel.send(response)
-                except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
-                except Exception:
-                    log.error(error_in, exc_info=True)
+            await channel.trigger_typing()
+            if trigger.multi_payload:
+                text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+            else:
+                text_response = str(trigger.text)
+            response = await self.convert_parms(message, text_response, trigger.regex)
+            try:
+                await channel.send(response)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
+            except Exception:
+                log.error(error_in, exc_info=True)
         if "randtext" in trigger.response_type and own_permissions.send_messages:
-            async with channel.typing():
-                rand_text_response: str = random.choice(trigger.text)
-                crand_text_response = await self.convert_parms(
-                    message, rand_text_response, trigger.regex
-                )
-                try:
-                    await channel.send(crand_text_response)
-                except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
-                except Exception:
-                    log.error(error_in, exc_info=True)
+            await channel.trigger_typing()
+            rand_text_response: str = random.choice(trigger.text)
+            crand_text_response = await self.convert_parms(
+                message, rand_text_response, trigger.regex
+            )
+            try:
+                await channel.send(crand_text_response)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
+            except Exception:
+                log.error(error_in, exc_info=True)
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
                 dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
@@ -789,34 +789,34 @@ class TriggerHandler:
                 except Exception:
                     log.error(error_in, exc_info=True)
         if "image" in trigger.response_type and own_permissions.attach_files:
-            async with channel.typing():
-                path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-                file = discord.File(path)
-                image_text_response = trigger.text
-                if image_text_response:
-                    image_text_response = await self.convert_parms(
-                        message, image_text_response, trigger.regex
-                    )
-                try:
-                    await channel.send(image_text_response, file=file)
-                except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
-                except Exception:
-                    log.error(error_in, exc_info=True)
+            await channel.trigger_typing()
+            path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
+            file = discord.File(path)
+            image_text_response = trigger.text
+            if image_text_response:
+                image_text_response = await self.convert_parms(
+                    message, image_text_response, trigger.regex
+                )
+            try:
+                await channel.send(image_text_response, file=file)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
+            except Exception:
+                log.error(error_in, exc_info=True)
         if "randimage" in trigger.response_type and own_permissions.attach_files:
-            async with channel.typing():
-                image = random.choice(trigger.image)
-                path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
-                file = discord.File(path)
-                rimage_text_response = trigger.text
-                if rimage_text_response:
-                    text_response = await self.convert_parms(message, response, trigger.regex)
-                try:
-                    await channel.send(rimage_text_response, file=file)
-                except discord.errors.Forbidden:
-                    log.debug(error_in, exc_info=True)
-                except Exception:
-                    log.error(error_in, exc_info=True)
+            await channel.trigger_typing()
+            image = random.choice(trigger.image)
+            path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
+            file = discord.File(path)
+            rimage_text_response = trigger.text
+            if rimage_text_response:
+                text_response = await self.convert_parms(message, response, trigger.regex)
+            try:
+                await channel.send(rimage_text_response, file=file)
+            except discord.errors.Forbidden:
+                log.debug(error_in, exc_info=True)
+            except Exception:
+                log.error(error_in, exc_info=True)
         if "command" in trigger.response_type:
             if trigger.multi_payload:
                 command_response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
