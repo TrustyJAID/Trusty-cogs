@@ -120,6 +120,7 @@ class ServerStats(commands.Cog):
             "vip-amsterdam": _("__VIP__ Amsterdam") + " :flag_nl:",
             "eu-west": _("EU West") + " :flag_eu:",
             "eu-central": _("EU Central") + " :flag_eu:",
+            "europe": _("Europe") + " :flag_eu:",
             "london": _("London") + " :flag_gb:",
             "frankfurt": _("Frankfurt") + " :flag_de:",
             "amsterdam": _("Amsterdam") + " :flag_nl:",
