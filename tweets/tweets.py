@@ -184,13 +184,15 @@ class Tweets(commands.Cog):
             url=post_url,
             timestamp=status.created_at,
         )
+        em.set_footer(text="@" + username)
         if hasattr(status, "retweeted_status"):
             em.set_author(
-                name=status.user.name + " Retweeted",
+                name=status.user.name + " Retweeted " + status.retweeted_status.user.name,
                 url=post_url,
                 icon_url=status.user.profile_image_url,
             )
             status = status.retweeted_status
+            em.set_footer(text=f"@{username} RT @{status.user.screen_name}")
             if hasattr(status, "extended_entities"):
                 em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
             if hasattr(status, "extended_tweet"):
@@ -232,10 +234,10 @@ class Tweets(commands.Cog):
                     value=reply_text
                 )
             except IndexError:
-                log.error(_("Error grabbing in reply to tweet."), exc_info=True)
+                log.debug(_("Error grabbing in reply to tweet."), exc_info=True)
 
         em.description = text.replace("&amp;", "\n\n")
-        em.set_footer(text="@" + username)
+
         return em
 
     @listener()
