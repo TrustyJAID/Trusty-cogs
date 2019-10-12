@@ -63,14 +63,16 @@ class Pickems:
                     if choice == self.away_team:
                         emoji = self.away_emoji
                     raise VotingHasEndedError(_("You have voted for ") + f"<:{emoji}>")
-                if choice != team_choice:
-                    if (user, choice) in self.votes:
-                        self.votes.remove((user, choice))
-                    if (user, team_choice) in self.votes:
-                        # Redundancy so we don't end up with duplicate votes
-                        self.votes.remove((user, team_choice))
-                    self.votes.append((user_id, team_choice))
-                    raise UserHasVotedError("{} {}".format(team, team_choice))
+                user_vote = choice
+                break
+        if user_voted and user_vote != team_choice:
+            if (user, self.home_team) in self.votes:
+                self.votes.remove((user, self.home_team))
+            if (user, self.away_team) in self.votes:
+                self.votes.remove((user, self.away_team))
+            raise UserHasVotedError("{} {}".format(team, team_choice))
+            self.votes.append((user_id, team_choice))
+
         if time_now > self.game_start and not user_voted:
             raise VotingHasEndedError(_("You did not vote on this game!"))
         if not user_voted and team_choice is not None:
@@ -181,13 +183,19 @@ class Pickems:
             if guild is None:
                 continue
             leaderboard = await config.guild(guild).leaderboard()
-            pickems_channels_to_delete += await config.guild(guild).pickems_channels()
+            try:
+                pickems_channels_to_delete += await config.guild(guild).pickems_channels()
+            except Exception:
+                log.error(_("Error adding channels to delete"), exc_info=True)
             if leaderboard is None:
                 leaderboard = {}
             for user in leaderboard:
                 leaderboard[str(user)]["weekly"] = 0
             await config.guild(guild).leaderboard.set(leaderboard)
-        await Pickems.delete_pickems_channels(bot, pickems_channels_to_delete)
+        try:
+            await Pickems.delete_pickems_channels(bot, pickems_channels_to_delete)
+        except Exception:
+            log.error(_("Error deletin pickems Channels"), exc_info=True)
 
     @staticmethod
     async def create_weekly_pickems_pages(bot, guilds, game_obj):
@@ -275,8 +283,10 @@ class Pickems:
                 continue
             try:
                 await channel.delete()
-            except:
+            except discord.errors.Forbidden:
                 pass
+            except Exception:
+                log.error(_("Error deleting old pickems channels"), exc_info=True)
 
     @staticmethod
     async def tally_leaderboard(bot):

@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -177,12 +177,15 @@ class Hockey(commands.Cog):
                     await Pickems.reset_weekly(self.bot)
                 except Exception:
                     log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
-                guilds_to_make_new_pickems = []
-                for guild_id in await self.config.all_guilds():
-                    guild = self.bot.get_guild(guild_id)
-                    if await self.config.guild(guild).pickems_category():
-                        guilds_to_make_new_pickems.append(guild)
-                await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+                try:
+                    guilds_to_make_new_pickems = []
+                    for guild_id in await self.config.all_guilds():
+                        guild = self.bot.get_guild(guild_id)
+                        if await self.config.guild(guild).pickems_category():
+                            guilds_to_make_new_pickems.append(guild)
+                    await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+                except Exception:
+                    log.error(_("Error creating new weekly pickems pages"))
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception:

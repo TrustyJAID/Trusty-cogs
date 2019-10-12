@@ -215,16 +215,17 @@ class Goal:
                 return
             for channel_id, message_id in old_msgs:
                 channel = bot.get_channel(id=int(channel_id))
-                try:
+                if channel:
                     try:
-                        message = await channel.fetch_message(message_id)
-                    except AttributeError:
-                        message = await channel.get_message(message_id)
-                    if message is not None:
-                        await message.delete()
-                except Exception:
-                    log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
-                    pass
+                        try:
+                            message = await channel.fetch_message(message_id)
+                        except AttributeError:
+                            message = await channel.get_message(message_id)
+                        if message is not None:
+                            await message.delete()
+                    except Exception:
+                        log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
+                        pass
             try:
                 team_list.remove(team_data)
                 del team_data["goal_id"][goal]
