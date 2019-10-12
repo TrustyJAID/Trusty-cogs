@@ -126,6 +126,9 @@ class HockeyStandings(Converter):
 async def check_to_post(channel, post_state):
     config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
     channel_teams = await config.channel(channel).team()
+    if channel_teams is None:
+        await config.channel(channel).team.set([])
+        return False
     should_post = False
     for team in channel_teams:
         if team in post_state:
