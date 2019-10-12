@@ -3,7 +3,7 @@ import asyncio
 import logging
 from io import BytesIO
 from redbot.core import Config, checks, commands
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import escape, pagify
 from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
 import tweepy as tw
@@ -236,7 +236,7 @@ class Tweets(commands.Cog):
             except IndexError:
                 log.debug(_("Error grabbing in reply to tweet."), exc_info=True)
 
-        em.description = text.replace("&amp;", "\n\n")
+        em.description = escape(text.replace("&amp;", "\n\n"), formatting=True)
 
         return em
 
