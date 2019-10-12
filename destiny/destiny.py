@@ -9,6 +9,7 @@ from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.chat_formatting import pagify
 
 from .errors import Destiny2APIError, Destiny2MissingManifest
 from .converter import DestinyActivity, StatsPage
@@ -29,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.2.3"
+    __version__ = "1.3.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -114,7 +115,17 @@ class Destiny(DestinyAPI, commands.Cog):
             if not (item["equippable"]):
                 continue
             embed = discord.Embed()
-            embed.description = item["displayProperties"]["description"]
+            description = item["displayProperties"]["description"]
+            if "loreHash" in item:
+                lore = await self.get_definition("DestinyLoreDefinition", [item["loreHash"]])
+                description += _("\n\n Lore: \n\n") + lore[0]["displayProperties"]["description"]
+            count = 0
+            for page in pagify(description, page_length=1024):
+                if count == 0:
+                    embed.description = page
+                else:
+                    embed.add_field(name=_("Lore Continued"), value=page)
+                count += 1
             embed.title = item["itemTypeAndTierDisplayName"]
             name = item["displayProperties"]["name"]
             icon_url = IMAGE_URL + item["displayProperties"]["icon"]
@@ -136,7 +147,7 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -165,7 +176,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         title_name = t["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
                         title_desc = t["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                    except:
+                    except KeyError:
                         pass
             embed = discord.Embed(title=info)
             embed.set_author(name=user.display_name, icon_url=user.avatar_url)
@@ -188,6 +199,39 @@ class Destiny(DestinyAPI, commands.Cog):
             embeds.append(embed)
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
+    @search.command()
+    @commands.bot_has_permissions(embed_links=True)
+    async def lore(self, ctx: commands.Context, entry: str = None):
+        """
+            Find Destiny Lore
+        """
+        if not await self.config.manifest_version():
+            return await ctx.send(_("The manifest needs to be downloaded for this to work."))
+        data = await self.get_entities("DestinyLoreDefinition")
+        lore = []
+        for entry_hash, entries in data.items():
+            em = discord.Embed(title=entries["displayProperties"]["name"])
+            description = entries["displayProperties"]["description"]
+            if len(description) < 2048:
+                em.description = entries["displayProperties"]["description"]
+            elif len(description) > 2048 and len(description) < 6000:
+                em.description = description[:2048]
+                new_desc = description[:2048]
+                parts = [new_desc[i:i+1024] for i in range(0, len(new_desc), 1024)]
+                for i in parts:
+                    em.add_field(name=_("Continued"), value=i)
+
+            if entries["displayProperties"]["hasIcon"]:
+                icon = entries["displayProperties"]["icon"]
+                em.set_thumbnail(url=f"{IMAGE_URL}{icon}")
+            lore.append(em)
+        if entry:
+            for t in lore:
+                if entry.lower() in str(t.title).lower():
+                    print(t.title)
+                    lore.insert(0, lore.pop(lore.index(t)))
+        await menu(ctx, lore, DEFAULT_CONTROLS)
+
     @destiny.command(aliases=["xûr"])
     @commands.bot_has_permissions(embed_links=True)
     async def xur(self, ctx: commands.Context, full: bool = False):
@@ -200,7 +244,7 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         try:
             chars = await self.get_characters(ctx.author)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -280,7 +324,7 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         try:
             chars = await self.get_characters(ctx.author)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -291,7 +335,7 @@ class Destiny(DestinyAPI, commands.Cog):
             log.debug(char_id)
             try:
                 eververse = await self.get_vendor(ctx.author, char_id, "3361454721")
-            except Destiny2APIError as e:
+            except Destiny2APIError:
                 log.error("I can't seem to see the eververse at the moment", exc_info=True)
                 await ctx.send(_("I can't access the eververse at the moment."))
                 return
@@ -331,7 +375,7 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -361,7 +405,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         title_name = t["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
                         title_desc = t["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                    except:
+                    except KeyError:
                         pass
                 log.debug("User has a title")
                 pass
@@ -488,7 +532,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -618,7 +662,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     data = data[stat_type]["allTime"]
                     embed = await self.build_stat_embed_char_gambit(user, char, data, stat_type)
                     embeds.append(embed)
-            except Exception as e:
+            except Exception:
                 log.error(
                     f"User {user.id} had an issue generating stats for character {char_id}",
                     exc_info=True,
@@ -777,7 +821,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)

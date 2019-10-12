@@ -25,6 +25,16 @@ BASE_URL = "https://www.bungie.net/Platform"
 IMAGE_URL = "https://www.bungie.net"
 AUTH_URL = "https://www.bungie.net/en/oauth/authorize"
 TOKEN_URL = "https://www.bungie.net/platform/app/oauth/token/"
+BUNGIE_MEMBERSHIP_TYPES = {
+                    0: "None",
+                    1: "Xbox",
+                    2: "Playstation",
+                    3: "Steam",
+                    4: "Blizzard",
+                    5: "Stadia",
+                    10: "Demon",
+                    254: "BungieNext"
+                }
 
 
 _ = Translator("Destiny", __file__)
@@ -405,10 +415,17 @@ class DestinyAPI:
                 name = datas["displayName"]
                 await self.config.user(ctx.author).account.set(datas)
             else:
-                bungie_membership_types = {1: "Xbox", 2: "Playstation", 4: "Blizzard"}
                 name = data["destinyMemberships"][0]["displayName"]
-                platform = bungie_membership_types[data["destinyMemberships"][0]["membershipType"]]
+                platform = BUNGIE_MEMBERSHIP_TYPES[data["destinyMemberships"][0]["membershipType"]]
                 await self.config.user(ctx.author).account.set(data["destinyMemberships"][0])
+            await ctx.send(
+                _("Account set to {name} {platform}").format(name=name, platform=platform)
+            )
+        if await self.config.user(ctx.author).account.membershipType() == 4:
+            data = await self.get_user_profile(ctx.author)
+            datas, platform = await self.pick_account(ctx, data["destinyMemberships"])
+            name = datas["displayName"]
+            await self.config.user(ctx.author).account.set(datas)
             await ctx.send(
                 _("Account set to {name} {platform}").format(name=name, platform=platform)
             )
@@ -423,10 +440,9 @@ class DestinyAPI:
             "There are multiple destiny memberships "
             "available, which one would you like to use?\n"
         )
-        bungie_membership_types = {1: "Xbox", 2: "Playstation", 4: "Blizzard"}
         count = 1
         for membership in memberships:
-            platform = bungie_membership_types[membership["membershipType"]]
+            platform = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
             account_name = membership["displayName"]
             msg += f"**{count}. {account_name} {platform}**\n"
             count += 1
@@ -440,7 +456,7 @@ class DestinyAPI:
         except asyncio.TimeoutError:
             return
         membership = memberships[int(msg.content) - 1]
-        membership_name = bungie_membership_types[membership["membershipType"]]
+        membership_name = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
         return (membership, membership_name)
 
     async def get_manifest(self):
