@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.4.1"
+    __version__ = "2.5.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -68,6 +68,8 @@ class Hockey(commands.Cog):
             "team_rules": "",
             "pickems": [],
             "leaderboard": {},
+            "pickems_category": None,
+            "pickems_channels": []
         }
         default_channel = {"team": [], "to_delete": False}
 
@@ -175,6 +177,15 @@ class Hockey(commands.Cog):
                     await Pickems.reset_weekly(self.bot)
                 except Exception:
                     log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
+                try:
+                    guilds_to_make_new_pickems = []
+                    for guild_id in await self.config.all_guilds():
+                        guild = self.bot.get_guild(guild_id)
+                        if await self.config.guild(guild).pickems_category():
+                            guilds_to_make_new_pickems.append(guild)
+                    await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+                except Exception:
+                    log.error(_("Error creating new weekly pickems pages"))
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception:
@@ -200,9 +211,9 @@ class Hockey(commands.Cog):
         if len(pickems) == 0:
             return
         try:
-            msg = await channel.get_message(id=payload.message_id)
-        except AttributeError:
             msg = await channel.fetch_message(id=payload.message_id)
+        except AttributeError:
+            msg = await channel.get_message(id=payload.message_id)
         except discord.errors.NotFound:
             return
         user = guild.get_member(payload.user_id)
@@ -318,11 +329,11 @@ class Hockey(commands.Cog):
                 else:
                     standings_chn = standings_channel.name
                 try:
-                    standings_msg = await standings_channel.get_message(
+                    standings_msg = await standings_channel.fetch_message(
                         await self.config.guild(guild).standings_msg()
                     )
                 except AttributeError:
-                    standings_msg = await standings_channel.fetch_message(
+                    standings_msg = await standings_channel.get_message(
                         await self.config.guild(guild).standings_msg()
                     )
                 except discord.errors.NotFound:
@@ -504,6 +515,7 @@ class Hockey(commands.Cog):
         await ctx.send(msg)
 
     @gdc.command(name="setup")
+    @commands.guild_only()
     async def gdc_setup(
         self,
         ctx,
@@ -522,11 +534,12 @@ class Hockey(commands.Cog):
             must be either `True` or `False` and a category must be provided
         """
         guild = ctx.message.guild
-        if guild is None:
-            await ctx.send("This needs to be done in a server.")
-            return
-        if category is None:
-            category = guild.get_channel(ctx.message.channel.category_id)
+        if category is None and ctx.channel.category is not None:
+            category = guild.get_channel(ctx.channel.category_id)
+        else:
+            return await ctx.send(
+                _("You must specify a channel category for game day channels to be created under.")
+            )
         if not category.permissions_for(guild.me).manage_channels:
             await ctx.send(_("I don't have manage channels permission!"))
             return
@@ -917,6 +930,38 @@ class Hockey(commands.Cog):
                     await new_msg.add_reaction(game.home_emoji[2:-1])
                 except Exception:
                     log.debug("Error adding reactions")
+
+    @hockeyset_commands.command(name="autopickems")
+    @checks.admin_or_permissions(manage_channels=True)
+    async def setup_auto_pickems(self, ctx, category: discord.CategoryChannel = None):
+        """
+            Sets up automatically created pickems channels every week.
+
+            `[category]` the channel category where pickems channels will be created.
+        """
+
+        if category is None and not ctx.channel.category:
+            return await ctx.send(_("A channel category is required."))
+        elif category is None and ctx.channel.category is not None:
+            category = ctx.channel.category
+        else:
+            pass
+        if not category.permissions_for(ctx.me).manage_channels:
+            await ctx.send(_("I don't have manage channels permission!"))
+            return
+
+        await self.config.guild(ctx.guild).pickems_category.set(category.id)
+        await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
+        await ctx.send(_("I will now automatically create pickems pages every Sunday."))
+
+    @hockeyset_commands.command(name="toggleautopickems")
+    @checks.admin_or_permissions(manage_channels=True)
+    async def toggle_auto_pickems(self, ctx):
+        """
+            Turn off automatic pickems page creation
+        """
+        await self.config.guild(ctx.guild).pickems_category.set(None)
+        await ctx.tick()
 
     async def post_leaderboard(self, ctx, leaderboard_type):
         """

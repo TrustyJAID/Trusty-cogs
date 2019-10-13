@@ -425,7 +425,7 @@ class Welcome(Events, commands.Cog):
         if choice is None:
             guild_settings = not guild_settings
         elif choice.lower() not in options:
-            await ctx.send_help()
+            await ctx.send(_("You must select either `off`, `only`, or `both`."))
             return
         else:
             guild_settings = options[choice.lower()]

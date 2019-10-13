@@ -5,6 +5,7 @@ import asyncio
 import time
 import re
 
+from typing import cast
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -76,6 +77,35 @@ class GoogleTranslateAPI:
             self.cache = {"translations": []}
             await asyncio.sleep(600)
 
+    async def check_bw_list(self, message: discord.Message, member: discord.Member) -> bool:
+        can_run = True
+        author: discord.Member = cast(discord.Member, member)
+        whitelist = await self.config.guild(message.guild).whitelist()
+        blacklist = await self.config.guild(message.guild).blacklist()
+        if whitelist:
+            can_run = False
+            if message.channel.id in whitelist:
+                can_run = True
+            if author.id in whitelist:
+                can_run = True
+            for role in author.roles:
+                if role.is_default():
+                    continue
+                if role.id in whitelist:
+                    can_run = True
+            return can_run
+        else:
+            if message.channel.id in blacklist:
+                can_run = False
+            if author.id in blacklist:
+                can_run = False
+            for role in author.roles:
+                if role.is_default():
+                    continue
+                if role.id in blacklist:
+                    can_run = False
+        return can_run
+
     async def detect_language(self, text):
         """
             Detect the language from given text
@@ -138,6 +168,8 @@ class GoogleTranslateAPI:
         if not message.guild:
             return
         if message.author.bot:
+            return
+        if not await self.check_bw_list(message, message.author):
             return
         channel = message.channel
         guild = message.guild
@@ -214,6 +246,8 @@ class GoogleTranslateAPI:
         if payload.message_id in self.cache["translations"]:
             return
         channel = self.bot.get_channel(id=payload.channel_id)
+        if not channel:
+            return
         try:
             if channel.recipient:
                 return
@@ -222,15 +256,17 @@ class GoogleTranslateAPI:
         guild = channel.guild
         user = guild.get_member(payload.user_id)
         try:
-            message = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            message = await channel.get_message(id=payload.message_id)
-            return
+            try:
+                message = await channel.fetch_message(id=payload.message_id)
+            except AttributeError:
+                message = await channel.get_message(id=payload.message_id)
         except discord.errors.NotFound:
             return
         if user.bot:
             return
         if await self.config.api_key() is None:
+            return
+        if not await self.check_bw_list(message, user):
             return
         # check_emoji = lambda emoji: emoji in FLAGS
         if not await self.config.guild(guild).reaction():

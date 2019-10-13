@@ -21,7 +21,7 @@ class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -251,9 +251,10 @@ class Starboard(commands.Cog):
         if channel is None:
             channel = ctx.message.channel
         try:
-            msg = await channel.get_message(msg_id)
-        except AttributeError:
-            msg = await ctx.channel.fetch_message(msg_id)
+            try:
+                msg = await channel.get_message(msg_id)
+            except AttributeError:
+                msg = await ctx.channel.fetch_message(msg_id)
         except discord.errors.NotFound:
             error_msg = _("That message doesn't appear to exist in the specified channel.")
             return await ctx.send(error_msg)
@@ -732,10 +733,6 @@ class Starboard(commands.Cog):
         unique_users = []
         for reaction in reactions:
             async for user in reaction.users():
-                # This makes sure that the user cannot add
-                # their own count to the starboard threshold
-                if orig_msg.author.id == user.id:
-                    continue
                 if user.id not in unique_users:
                     unique_users.append(user.id)
         return len(unique_users)
@@ -769,10 +766,11 @@ class Starboard(commands.Cog):
             # DMChannels don't have guilds
             return
         try:
-            msg = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            msg = await channel.get_message(id=payload.message_id)
-        except discord.errors.NotFound:
+            try:
+                msg = await channel.fetch_message(id=payload.message_id)
+            except AttributeError:
+                msg = await channel.get_message(id=payload.message_id)
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         starboards = await self.config.guild(guild).starboards()
         for name, s_board in starboards.items():
@@ -788,10 +786,11 @@ class Starboard(commands.Cog):
             # DMChannels don't have guilds
             return
         try:
-            msg = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            msg = await channel.get_message(id=payload.message_id)
-        except discord.errors.NotFound:
+            try:
+                msg = await channel.fetch_message(id=payload.message_id)
+            except AttributeError:
+                msg = await channel.get_message(id=payload.message_id)
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         member = guild.get_member(payload.user_id)
         if not await self.config.guild(guild).starboards() or member.bot:

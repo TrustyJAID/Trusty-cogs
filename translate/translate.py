@@ -2,9 +2,13 @@ import logging
 
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
+
+from discord.ext.commands.errors import BadArgument
 
 from .api import GoogleTranslateAPI, FlagTranslation
 from .errors import GoogleTranslateAPIError
+from .converters import ChannelUserRole
 
 """
 Translator cog
@@ -30,14 +34,16 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
         Translate messages using Google Translate
     """
-    __version__ = "2.0.1"
+    __version__ = "2.1.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 156434873547, force_registration=True)
         default_guild = {
             "reaction": False,
-            "text": False
+            "text": False,
+            "whitelist": [],
+            "blacklist": []
         }
         default = {
             "api_key": None,
@@ -97,6 +103,143 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             Toggle the bot auto translating
         """
         pass
+
+    @translateset.group()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist(self, ctx: commands.Context):
+        """
+            Set blacklist options for translations
+
+            blacklisting supports channels, users, or roles
+        """
+        pass
+
+    @translateset.group()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist(self, ctx: commands.Context):
+        """
+            Set whitelist options for translations
+
+            whitelisting supports channels, users, or roles
+        """
+        pass
+
+    @whitelist.command(name="add")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_add(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ):
+        """
+            Add a channel, user, or role to translation whitelist
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
+        for obj in channel_user_role:
+            if obj.id not in await self.config.guild(ctx.guild).whitelist():
+                async with self.config.guild(ctx.guild).whitelist() as whitelist:
+                    whitelist.append(obj.id)
+        msg = _("`{list_type}` added to translation whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @whitelist.command(name="remove", aliases=["rem", "del"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_remove(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ):
+        """
+            Remove a channel, user, or role from translation whitelist
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _(
+                    "You must supply 1 or more channels, users, "
+                    "or roles to be removed from the whitelist"
+                )
+            )
+        for obj in channel_user_role:
+            if obj.id in await self.config.guild(ctx.guild).whitelist():
+                async with self.config.guild(ctx.guild).whitelist() as whitelist:
+                    whitelist.remove(obj.id)
+        msg = _("`{list_type}` removed from translation whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @whitelist.command(name="list")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_list(self, ctx: commands.Context):
+        """
+            List Channels, Users, and Roles in the servers translation whitelist.
+        """
+        whitelist = []
+        for _id in await self.config.guild(ctx.guild).whitelist():
+            try:
+                whitelist.append(await ChannelUserRole().convert(ctx, str(_id)))
+            except BadArgument:
+                continue
+        whitelist_s = ", ".join(x.name for x in whitelist)
+        await ctx.send(_("`{whitelisted}` are currently whitelisted.").format(whitelisted=whitelist_s))
+
+    @blacklist.command(name="add")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_add(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ):
+        """
+            Add a channel, user, or role to translation blacklist
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be blacklisted.")
+            )
+        for obj in channel_user_role:
+            if obj.id not in await self.config.guild(ctx.guild).blacklist():
+                async with self.config.guild(ctx.guild).blacklist() as blacklist:
+                    blacklist.append(obj.id)
+        msg = _("`{list_type}` added to translation blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @blacklist.command(name="remove", aliases=["rem", "del"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_remove(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ):
+        """
+            Remove a channel, user, or role from translation blacklist
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _(
+                    "You must supply 1 or more channels, users, "
+                    "or roles to be removed from the blacklist"
+                )
+            )
+        for obj in channel_user_role:
+            if obj.id in await self.config.guild(ctx.guild).blacklist():
+                async with self.config.guild(ctx.guild).blacklist() as blacklist:
+                    blacklist.remove(obj.id)
+        msg = _("`{list_type}` removed from translation blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @blacklist.command(name="list")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_list(self, ctx: commands.Context):
+        """
+            List Channels, Users, and Roles in the servers translation blacklist.
+        """
+        blacklist = []
+        for _id in await self.config.guild(ctx.guild).blacklist():
+            try:
+                blacklist.append(await ChannelUserRole().convert(ctx, str(_id)))
+            except BadArgument:
+                continue
+        blacklist_s = ", ".join(x.name for x in blacklist)
+        await ctx.send(_("`{blacklisted}` are currently blacklisted.").format(blacklisted=blacklist_s))
+
 
     @translateset.command(aliases=["reaction", "reactions"])
     @checks.mod_or_permissions(manage_channels=True)

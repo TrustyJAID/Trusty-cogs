@@ -242,7 +242,7 @@ class Fun(commands.Cog):
 
         msg = list(msg)
         regional_list = [
-            self.regionals[x.lower()] if x.isalnum() or x in ["!", "?"] else x for x in msg
+            self.regionals[x.lower()] if x.lower() in self.regionals else x for x in msg
         ]
         regional_output = "\u200b".join(regional_list)
         await ctx.send(regional_output)
@@ -289,8 +289,8 @@ class Fun(commands.Cog):
             for emoji in emojis:
                 try:
                     await msg_id.add_reaction(emoji)
-                except:
-                    pass
+                except discord.errors.Forbidden:
+                    return
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
@@ -315,8 +315,10 @@ class Fun(commands.Cog):
                 msg_id = message
         else:
             try:
+                msg_id = await channel.fetch_message(msg_id)
+            except AttributeError:
                 msg_id = await channel.get_message(msg_id)
-            except:
+            except discord.errors.NotFound:
                 await ctx.send("Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5)
                 return
 
@@ -384,5 +386,5 @@ class Fun(commands.Cog):
         for i in reactions:
             try:
                 await msg_id.add_reaction(i)
-            except:
-                pass
+            except discord.errors.Forbidden:
+                return

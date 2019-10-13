@@ -11,6 +11,7 @@ from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
+# from redbot.core.utils import menus
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .converters import (
@@ -35,7 +36,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.7.3"
+    __version__ = "2.8.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -93,6 +94,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Setup automatic triggers based on regular expressions
 
             https://regex101.com/ is a good place to test regex
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         pass
 
@@ -263,10 +265,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Set cooldown options for retrigger
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `<time>` is a time in seconds until the trigger will run again
             set a time of 0 or less to remove the cooldown
             `[style=guild]` must be either `guild`, `server`, `channel`, `user`, or `member`
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -300,9 +304,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a channel, user, or role to triggers whitelist
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `[channel_user_role...]` is the channel, user or role to whitelist
             (You can supply more than one of any at a time)
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -329,9 +335,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove a channel, user, or role from triggers whitelist
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `[channel_user_role...]` is the channel, user or role to remove from the whitelist
             (You can supply more than one of any at a time)
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -361,9 +369,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Add a channel, user, or role to triggers blacklist
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `[channel_user_role...]` is the channel, user or role to blacklist
             (You can supply more than one of any at a time)
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -390,9 +400,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove a channel, user, or role from triggers blacklist
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `[channel_user_role...]` is the channel, user or role to remove from the blacklist
             (You can supply more than one of any at a time)
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -422,8 +434,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Edit the regex of a saved trigger.
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `<regex>` The new regex pattern to use.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -437,6 +451,52 @@ class ReTrigger(TriggerHandler, commands.Cog):
         msg = _("Trigger {name} regex changed to ```bf\n{regex}\n```")
         await ctx.send(msg.format(name=trigger.name, regex=regex))
 
+    @_edit.command(name="ocr")
+    @commands.check(lambda ctx: TriggerHandler.ALLOW_OCR)
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_ocr_search(self, ctx: commands.Context, trigger: TriggerExists):
+        """
+            Toggle whether to use Optical Character Recognition to search for text within images.
+
+            <trigger> is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.ocr_search = not trigger.ocr_search
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} OCR Search set to: {ocr_search}")
+        await ctx.send(msg.format(name=trigger.name, ocr_search=trigger.ocr_search))
+
+    @_edit.command(name="edited")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists):
+        """
+            Toggle whether the bot will listen to edited messages as well as on_message for
+            the specified trigger.
+
+            <trigger> is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.ignore_edits = not trigger.ignore_edits
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} ignore edits set to: {ignore_edits}")
+        await ctx.send(msg.format(name=trigger.name, ignore_edits=trigger.ignore_edits))
+
     @_edit.command(name="text", aliases=["msg"])
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_text(
@@ -445,8 +505,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Edit the text of a saved trigger.
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
             `<text>` The new regex pattern to use.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -472,7 +534,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Toggle the trigger ignoring command messages entirely.
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -496,6 +560,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<trigger>` is the name of the trigger.
             `<command>` The new command for the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -528,6 +594,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<trigger>` is the name of the trigger.
             `<roles>` space separated list of roles or ID's to edit on the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -563,6 +631,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<trigger>` is the name of the trigger.
             `<emojis>` The new emojis to be used in the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
@@ -582,7 +652,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command(hidden=True)
     @checks.is_owner()
     async def bypass(self, ctx: commands.Context, bypass: bool):
-        """Bypass patterns being kicked from memory until reload"""
+        """
+            Bypass patterns being kicked from memory until reload
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
         msg = await ctx.send(
             _(
                 "Bypassing this could cause the bot to become unstable or allow "
@@ -605,9 +679,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     async def list(self, ctx: commands.Context, trigger: TriggerExists = None):
         """
-            List information about triggers
+            List information about triggers.
 
-            `[trigger]` if supplied provides information about named trigger
+            `[trigger]` if supplied provides information about named trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         trigger_dict = await self.config.guild(ctx.guild).trigger_list()
         trigger_list = [trigger_dict[name] for name in trigger_dict]
@@ -623,6 +699,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list.insert(0, trigger_list.pop(trigger_list.index(t)))
         triggers = await self.trigger_embed(ctx, trigger_list)
         await menu(ctx, triggers, DEFAULT_CONTROLS)
+        # await menus.PagedMenu.send_and_wait(ctx, pages=triggers)
+        # print("Hello, world.")
 
     @retrigger.command(aliases=["del", "rem", "delete"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -630,7 +708,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Remove a specified trigger
 
-            `<trigger>` is the name of the trigger
+            `<trigger>` is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is Trigger:
             await self.remove_trigger(ctx.guild, trigger.name)
@@ -648,7 +728,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Add a text response trigger
 
             `<name>` name of the trigger
-            `<regex>` the regex that will determine when to respond
+            `<regex>` the regex that will determine when to respond.
             `<text>` response of the trigger
             Text responses utilize regex groups for replacement so you can
             replace a group match in a specific area with `{#}`
@@ -657,6 +737,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -685,6 +770,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -724,6 +811,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -732,6 +824,46 @@ class ReTrigger(TriggerHandler, commands.Cog):
         author = ctx.message.author.id
         new_trigger = Trigger(
             name, regex, ["dm"], author, 0, None, text, [], [], {}, [], ctx.message.id
+        )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
+        self.triggers[ctx.guild.id].append(new_trigger)
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = await new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def dmme(
+        self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
+    ):
+        """
+            Add trigger to DM yourself
+
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `<text>` response of the trigger
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}`
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        guild = ctx.guild
+        author = ctx.message.author.id
+        new_trigger = Trigger(
+            name, regex, ["dmme"], author, 0, None, text, [], [], {}, [], ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -756,6 +888,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -805,6 +939,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -849,6 +985,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -896,6 +1037,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -939,6 +1082,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -970,6 +1115,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1002,6 +1149,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1029,10 +1178,15 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `<command>` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do not add [p] prefix
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1065,9 +1219,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `<command>` the command that will be triggered, do add [p] prefix
+            `<command>` the command that will be triggered, do not add [p] prefix
             Warning: This function can let other users run a command on your behalf,
             use with caution.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         msg = await ctx.send(
             _(
@@ -1123,6 +1279,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1166,6 +1324,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1206,6 +1366,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             See https://regex101.com/ for help building a regex pattern
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(name) != str:
             msg = _("{name} is already a trigger name").format(name=name.name)
@@ -1245,14 +1407,31 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond
-            `[multi_response...]` the actions to perform when the trigger matches
-            multiple responses start with the name of the action which must be one of:
-            dm, text, filter, add_role, remove_role, ban, or kick
-            followed by a `;` if there is a followup response and a space for the next
-            trigger response. If you want to add or remove multiple roles those may be
+            `[multi_response...]` the list of actions the bot will perform
+
+            Multiple responses start with the name of the action which
+            must be one of the listed options below, followed by a `;`
+            if there is a followup response add a space for the next trigger response.
+            If you want to add or remove multiple roles those may be
             followed up with additional `;` separations.
-            e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\" filter`
-            Will attempt to DM the user and delete their message simultaneously.
+            e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\"
+            filter "remove_role;Regular Member" add_role;Timeout`
+            Will attempt to DM the user, delete their message, remove their
+            `@Regular Member` role and add the `@Timeout` role simultaneously.
+
+            Available options:
+            dm
+            dmme
+            remove_role
+            add_role
+            ban
+            kick
+            text
+            filter or delete
+            react
+            command
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         # log.info(multi_response)
         # return

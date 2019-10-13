@@ -120,6 +120,7 @@ class ServerStats(commands.Cog):
             "vip-amsterdam": _("__VIP__ Amsterdam") + " :flag_nl:",
             "eu-west": _("EU West") + " :flag_eu:",
             "eu-central": _("EU Central") + " :flag_eu:",
+            "europe": _("Europe") + " :flag_eu:",
             "london": _("London") + " :flag_gb:",
             "frankfurt": _("Frankfurt") + " :flag_de:",
             "amsterdam": _("Amsterdam") + " :flag_nl:",
@@ -136,14 +137,17 @@ class ServerStats(commands.Cog):
             "southafrica": _("South Africa") + " :flag_za:",
             "india": _("India") + " :flag_in:",
         }
-
         format_kwargs = {
-            "vip": check_feature("VIP_REGIONS"),
-            "van": check_feature("VANITY_URL"),
-            "splash": check_feature("INVITE_SPLASH"),
-            "m_emojis": check_feature("MORE_EMOJI"),
-            "verify": check_feature("VERIFIED"),
-            "partner": check_feature("PARTNERED"),
+            "PARTNERED": _("Discord Partner"),
+            "VIP_REGIONS": _("VIP Regions"),
+            "VANITY_URL": _("Vanity URL"),
+            "INVITE_SPLASH": _("Invite Splash"),
+            "MORE_EMOJI": _("More Emoji"),
+            "VERIFIED": _("Verified"),
+            "NEWS": _("News Channel"),
+            "ANIMATED_ICON": _("Animated Server Icon"),
+            "BANNER": _("Server Banner"),
+            "LURKABLE": _("Lurkable")
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -189,10 +193,10 @@ class ServerStats(commands.Cog):
         colour = guild.roles[-1].colour
 
         em = discord.Embed(description=f"{created_at}\n{joined_on}", colour=colour)
-        em.add_field(name=_("Members :"), value=member_msg)
+        em.add_field(name=_("Members:"), value=member_msg)
         em.add_field(
-            name=_("Channels :"),
-            value=_("💬 Text : **{text}**\n🔊 Voice : **{voice}**").format(
+            name=_("Channels:"),
+            value=_("💬 Text: **{text}**\n🔊 Voice: **{voice}**").format(
                 text=text_channels, voice=voice_channels
             ),
         )
@@ -201,22 +205,22 @@ class ServerStats(commands.Cog):
         except TypeError:
             verification_level = str(guild.verification_level)
         em.add_field(
-            name=_("Utility :"),
+            name=_("Utility:"),
             value=_(
-                "Owner : {owner.mention}\n**{owner}**\nRegion : **{region}**\n"
-                "Verif. level : **{verif}**\nServer ID : **{id}**"
+                "Owner: {owner.mention}\n**{owner}**\nRegion: **{region}**\n"
+                "Verif. level: **{verif}**\nServer ID: **{id}**"
             ).format(
                 owner=guild.owner,
-                region=str(guild.region) if guild.region not in region else region[str(guild.region)],
+                region=str(guild.region) if str(guild.region) not in region else region[str(guild.region)],
                 verif=verification_level,
                 id=guild.id,
             ),
         )
         em.add_field(
-            name=_("Misc :"),
+            name=_("Misc:"),
             value=_(
-                "AFK channel : **{afk_chan}**\nAFK Timeout : **{afk_timeout}sec**\n"
-                "Custom emojis : **{emojis}**\nRoles : **{roles}**"
+                "AFK channel: **{afk_chan}**\nAFK Timeout: **{afk_timeout}sec**\n"
+                "Custom emojis: **{emojis}**\nRoles: **{roles}**"
             ).format(
                 afk_chan=guild.afk_channel,
                 afk_timeout=guild.afk_timeout,
@@ -226,11 +230,11 @@ class ServerStats(commands.Cog):
         )
         if guild.features:
             em.add_field(
-                name=_("Special features :"),
-                value=_(
-                    "{vip} VIP Regions\n{van} Vanity URL\n{splash} Splash Invite\n"
-                    "{m_emojis} More Emojis\n{verify} Verified\n {partner} Partnered"
-                ).format(**format_kwargs),
+                name=_("Special features:"),
+                value="".join(
+                    f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n"
+                    for x in guild.features if x in format_kwargs
+                    )
             )
         if "VERIFIED" in guild.features:
             em.set_author(
@@ -238,9 +242,11 @@ class ServerStats(commands.Cog):
                 icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
             )
         if "PARTNERED" in guild.features:
-            data.set_author(
+            em.set_author(
                 name=guild.name,
-                icon_url="https://www.discordia.me/uploads/icons/partner.png",
+                icon_url="https://www.discordia.me/uploads/icons/partner.png")
+        if "BANNER" in guild.features:
+            em.set_image(url=guild.banner_url)
         if guild.icon_url:
             em.set_author(name=guild.name, url=guild.icon_url)
             em.set_thumbnail(url=guild.icon_url)
@@ -739,22 +745,24 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
-    async def whois(self, ctx, *, member: Union[int, discord.Member, discord.User, None] = None):
+    async def whois(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
         """
             Display servers a user shares with the bot
 
             `member` can be a user ID or mention
         """
-        if not member:
+        if not user_id:
             return await ctx.send(_("You need to supply a user ID for this to work properly."))
-        if type(member) is int:
+        if isinstance(user_id, int):
             try:
-                member = await self.bot.get_user_info(member)
+                member = await self.bot.fetch_user(user_id)
             except AttributeError:
-                member = await self.bot.fetch_user(member)
+                member = await self.bot.get_user_info(user_id)
             except discord.errors.NotFound:
-                await ctx.send(str(member) + _(" doesn't seem to be a discord user."))
+                await ctx.send(str(user_id) + _(" doesn't seem to be a discord user."))
                 return
+        else:
+            member = user_id
         embed = discord.Embed()
         since_created = (ctx.message.created_at - member.created_at).days
         user_created = member.created_at.strftime("%d %b %Y %H:%M")

@@ -13,7 +13,7 @@ if listener is None:  # thanks Sinbad
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -33,7 +33,7 @@ class AdventureAlert(commands.Cog):
 
     @commands.group()
     async def dragonalert(self, ctx):
-        """Set dragon alert roles for adventure"""
+        """Set notifications for dragons appearing in adventure"""
         pass
 
     @dragonalert.command()
@@ -61,9 +61,20 @@ class AdventureAlert(commands.Cog):
                 data.append(ctx.author.id)
             await ctx.tick()
 
+    @dragonalert.command(name="removeuser")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def removeusers(self, ctx, user_id: int):
+        """Remove a specific user ID from dragon alerts"""
+        if user_id in await self.config.guild(ctx.guild).users():
+            async with self.config.guild(ctx.guild).users() as data:
+                data.remove(user_id)
+            await ctx.send(f"{user_id} will no longer receive notifications on dragons.")
+        else:
+            await ctx.send(f"{user_id} is not receiving notifications on dragons.")
+
     @commands.group()
     async def adventurealert(self, ctx):
-        """Set dragon alert roles for adventure"""
+        """Set notifications for all adventures"""
         pass
 
     @adventurealert.command(name="role", aliases=["roles"])
@@ -90,6 +101,17 @@ class AdventureAlert(commands.Cog):
             async with self.config.guild(ctx.guild).adventure_users() as data:
                 data.append(ctx.author.id)
             await ctx.tick()
+
+    @adventurealert.command(name="removeuser")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def adventure_removeusers(self, ctx, user_id: int):
+        """Remove a specific user ID from adventure alerts"""
+        if user_id in await self.config.guild(ctx.guild).adventure_users():
+            async with self.config.guild(ctx.guild).adventure_users() as data:
+                data.remove(user_id)
+            await ctx.send(f"{user_id} will no longer receive notifications on adventures.")
+        else:
+            await ctx.send(f"{user_id} is not receiving notifications on adventures.")
 
     @commands.group()
     async def cartalert(self, ctx):
@@ -121,9 +143,20 @@ class AdventureAlert(commands.Cog):
                 data.append(ctx.author.id)
             await ctx.tick()
 
+    @cartalert.command(name="removeuser")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def cart_removeusers(self, ctx, user_id: int):
+        """Remove a specific user ID from cart alerts"""
+        if user_id in await self.config.guild(ctx.guild).cart_users():
+            async with self.config.guild(ctx.guild).cart_users() as data:
+                data.remove(user_id)
+            await ctx.send(f"{user_id} will no longer receive notifications on adventures.")
+        else:
+            await ctx.send(f"{user_id} is not receiving notifications on adventures.")
+
     @commands.group()
     async def minibossalert(self, ctx):
-        """Set notifications for minibosses"""
+        """Set notifications for minibosses appearing in adventure"""
         pass
 
     @minibossalert.command(name="role", aliases=["roles"])
@@ -150,6 +183,17 @@ class AdventureAlert(commands.Cog):
             async with self.config.guild(ctx.guild).miniboss_users() as data:
                 data.append(ctx.author.id)
             await ctx.tick()
+
+    @minibossalert.command(name="removeuser")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def miniboss_removeusers(self, ctx, user_id: int):
+        """Remove a specific user ID from miniboss alerts"""
+        if user_id in await self.config.guild(ctx.guild).miniboss_users():
+            async with self.config.guild(ctx.guild).miniboss_users() as data:
+                data.remove(user_id)
+            await ctx.send(f"{user_id} will no longer receive notifications on minibosses.")
+        else:
+            await ctx.send(f"{user_id} is not receiving notifications on minibosses.")
 
     @listener()
     async def on_adventure(self, ctx):

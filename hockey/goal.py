@@ -215,16 +215,19 @@ class Goal:
                 return
             for channel_id, message_id in old_msgs:
                 channel = bot.get_channel(id=int(channel_id))
-                try:
+                if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
-                        message = await channel.get_message(message_id)
-                    except AttributeError:
-                        message = await channel.fetch_message(message_id)
-                    if message is not None:
-                        await message.delete()
-                except Exception:
-                    log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
-                    pass
+                        try:
+                            message = await channel.fetch_message(message_id)
+                        except AttributeError:
+                            message = await channel.get_message(message_id)
+                        if message is not None:
+                            await message.delete()
+                    except Exception:
+                        log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
+                        pass
+                else:
+                    log.debug(_("Channel does not have permission to read history"))
             try:
                 team_list.remove(team_data)
                 del team_data["goal_id"][goal]
@@ -257,9 +260,9 @@ class Goal:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
             try:
-                message = await channel.get_message(message_id)
-            except AttributeError:
                 message = await channel.fetch_message(message_id)
+            except AttributeError:
+                message = await channel.get_message(message_id)
             guild = message.guild
             game_day_channels = await self.config.guild(guild).gdc()
             role = None

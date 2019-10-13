@@ -123,15 +123,15 @@ class EventMixin:
             return
 
         if privs == "MOD":
-            mod_role_id = await ctx.bot.db.guild(guild).mod_role()
-            if mod_role_id is not None:
-                role = guild.get_role(mod_role_id).mention + f"\n{privs}"
+            mod_role_list = await ctx.bot.db.guild(guild).mod_role()
+            if mod_role_list != []:
+                role = ", ".join(guild.get_role(mod_role).mention for mod_role in mod_role_list) + f"\n{privs}"
             else:
                 role = _("Not Set\nMOD")
         elif privs == "ADMIN":
-            admin_role_id = await ctx.bot.db.guild(guild).admin_role()
-            if admin_role_id is not None:
-                role = guild.get_role(admin_role_id).mention + f"\n{privs}"
+            admin_role_list = await ctx.bot.db.guild(guild).admin_role()
+            if admin_role_list != []:
+                role = ", ".join(guild.get_role(admin_role).mention for admin_role in admin_role_list) + f"\n{privs}"
             else:
                 role = _("Not Set\nADMIN")
         elif privs == "BOT_OWNER":
@@ -366,7 +366,10 @@ class EventMixin:
             if not possible_link:
                 for code, data in invites.items():
                     try:
-                        invite = await self.bot.get_invite(code)
+                        try:
+                            invite = await self.bot.get_invite(code)
+                        except AttributeError:
+                            invite = await self.bot.fetch_invite(code)
                     except (discord.errors.NotFound, discord.errors.HTTPException, Exception):
                         logger.error("Error getting invite ".format(code))
                         invite = None
@@ -375,7 +378,10 @@ class EventMixin:
                         if (data["max_uses"] - data["uses"]) == 1:
                             # The invite link was on its last uses and subsequently
                             # deleted so we're fairly sure this was the one used
-                            inviter = await self.bot.get_user_info(data["inviter"])
+                            try:
+                                inviter = await self.bot.get_user_info(data["inviter"])
+                            except AttributeError:
+                                inviter = await self.bot.fetch_user(data["inviter"])
                             possible_link = _(
                                 "https://discord.gg/{code}\n" "Invited by: {inviter}"
                             ).format(code=code, inviter=str(inviter))

@@ -30,7 +30,7 @@ class AddImage(commands.Cog):
         temp_folder = cog_data_path(self) / "global"
         temp_folder.mkdir(exist_ok=True, parents=True)
         default_global = {"images": []}
-        default_guild = {"images": []}
+        default_guild = {"images": [], "ignore_global": False}
         self.config = Config.get_conf(self, 16446735546)
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
@@ -166,8 +166,8 @@ class AddImage(commands.Cog):
             return
         if not await self.check_ignored_channel(message):
             return
-
-        if alias in [x["command_name"] for x in await self.config.images()]:
+        ignore_global = await self.config.guild(guild).ignore_global()
+        if alias in [x["command_name"] for x in await self.config.images()] and ignore_global:
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias)
@@ -182,7 +182,7 @@ class AddImage(commands.Cog):
                 except discord.errors.Forbidden:
                     pass
 
-        elif alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
+        if alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias, guild)
@@ -214,6 +214,19 @@ class AddImage(commands.Cog):
             Add an image for the bot to directly upload
         """
         pass
+
+    @addimage.command(name="ignoreglobal")
+    @checks.mod_or_permissions(manage_channels=True)
+    async def ignore_global_commands(self, ctx):
+        """
+            Toggle usage of bot owner set global images on this server
+        """
+        ignore_global = await self.config.guild(ctx.guild).ignore_global()
+        await self.config.guild(ctx.guild).ignore_global.set(not ignore_global)
+        if ignore_global:
+            await ctx.send(_("Ignoring bot owner global images."))
+        else:
+            await ctx.send(_("Bot owner global images enabled."))
 
     @addimage.command(name="list")
     @commands.bot_has_permissions(embed_links=True)

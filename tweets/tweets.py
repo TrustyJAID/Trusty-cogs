@@ -3,11 +3,11 @@ import asyncio
 import logging
 from io import BytesIO
 from redbot.core import Config, checks, commands
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import escape, pagify
 from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
 import tweepy as tw
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 from datetime import datetime
 import functools
 
@@ -184,13 +184,15 @@ class Tweets(commands.Cog):
             url=post_url,
             timestamp=status.created_at,
         )
+        em.set_footer(text="@" + username)
         if hasattr(status, "retweeted_status"):
             em.set_author(
-                name=status.user.name + " Retweeted",
+                name=status.user.name + " Retweeted " + status.retweeted_status.user.name,
                 url=post_url,
                 icon_url=status.user.profile_image_url,
             )
             status = status.retweeted_status
+            em.set_footer(text=f"@{username} RT @{status.user.screen_name}")
             if hasattr(status, "extended_entities"):
                 em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
             if hasattr(status, "extended_tweet"):
@@ -213,8 +215,29 @@ class Tweets(commands.Cog):
                     em.set_image(url=img)
             else:
                 text = status.text
-        em.description = text.replace("&amp;", "\n\n")
-        em.set_footer(text="@" + username)
+        if status.in_reply_to_screen_name:
+            api = await self.authenticate()
+            try:
+                reply = api.statuses_lookup(id_=[status.in_reply_to_status_id])[0]
+                log.debug(reply)
+                in_reply_to = _("In reply to {name} (@{screen_name})").format(
+                    name=reply.user.name,
+                    screen_name=reply.user.screen_name
+                )
+                reply_text = reply.text.replace("&amp;", "\n\n")
+                if hasattr(reply, "extended_tweet"):
+                    reply_text = reply.extended_tweet["full_text"]
+                if hasattr(reply, "extended_entities") and not em.image:
+                    em.set_image(url=reply.extended_entities["media"][0]["media_url_https"])
+                em.add_field(
+                    name=in_reply_to,
+                    value=reply_text
+                )
+            except IndexError:
+                log.debug(_("Error grabbing in reply to tweet."), exc_info=True)
+
+        em.description = escape(text.replace("&amp;", "\n\n"), formatting=True)
+
         return em
 
     @listener()
@@ -431,24 +454,26 @@ class Tweets(commands.Cog):
             await ctx.send(profile_url)
 
     @_tweets.command(name="gettweets")
-    async def get_tweets(self, ctx: commands.context, username: str, count: int = 10):
+    async def get_tweets(
+        self,
+        ctx: commands.context,
+        username: str,
+        count: Optional[int] = 10,
+        replies: bool = True
+    ):
         """
             Display a users tweets as a scrollable message
 
             defaults to 10 tweets
         """
         cnt = count
-        if count > 25:
+        if count and count > 25:
             cnt = 25
         msg_list = []
         api = await self.authenticate()
         try:
             for status in tw.Cursor(api.user_timeline, id=username).items(cnt):
-                if str(status.user.id) in self.accounts:
-                    replies_on = self.accounts[str(status.user.id)]["replies"]
-                else:
-                    replies_on = False
-                if status.in_reply_to_screen_name is not None and not replies_on:
+                if status.in_reply_to_screen_name is not None and not replies:
                     continue
                 msg_list.append(status)
         except tw.TweepError as e:
