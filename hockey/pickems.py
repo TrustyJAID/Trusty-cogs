@@ -195,7 +195,7 @@ class Pickems:
         try:
             await Pickems.delete_pickems_channels(bot, pickems_channels_to_delete)
         except Exception:
-            log.error(_("Error deletin pickems Channels"), exc_info=True)
+            log.error(_("Error deleting pickems Channels"), exc_info=True)
 
     @staticmethod
     async def create_weekly_pickems_pages(bot, guilds, game_obj):
@@ -274,9 +274,9 @@ class Pickems:
             guild = bot.get_guild(guild_id)
             await config.guild(guild).pickems_channels.set(channels)
 
-
     @staticmethod
     async def delete_pickems_channels(bot, channels):
+        log.debug("Deleting pickems channels")
         for channel_id in channels:
             channel = bot.get_channel(channel_id)
             if not channel:

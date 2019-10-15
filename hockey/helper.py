@@ -160,6 +160,11 @@ async def get_team(team):
     config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
     return_team = None
     team_list = await config.teams()
+    if team_list is None:
+        team_list = []
+        team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
+        team_list.append(team_entry.to_json())
+        await config.teams.set(team_list)
     for teams in team_list:
         if team == teams["team_name"]:
             return_team = team

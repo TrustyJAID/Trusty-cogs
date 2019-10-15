@@ -10,7 +10,7 @@
     "description" : "Gather hockey information from nhl.com and display in discord.",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available. If you want the emojis to work please ask <@218773382617890828> to add your bot to his server hosting the emojis.",
+    "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",
     "min_python_version" : [
         3,
         6,
