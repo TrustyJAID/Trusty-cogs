@@ -86,8 +86,8 @@ class ServerStats(commands.Cog):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has joined a server!\n "
-            "That's **{num}** servers now!\n"
-            "That's a total of **{users}** users !\n"
+            "That's **{num:,}** servers now!\n"
+            "That's a total of **{users:,}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
         ).format(
@@ -112,7 +112,14 @@ class ServerStats(commands.Cog):
         def check_feature(feature):
             return "\N{WHITE HEAVY CHECK MARK}" if feature in guild.features else "\N{CROSS MARK}"
 
-        verif = {0: "0 - None", 1: "1 - Low", 2: "2 - Medium", 3: "3 - Hard", 4: "4 - Extreme"}
+
+        verif = {
+            "none": _("0 - None"),
+            "low": _("1 - Low"),
+            "medium": _("2 - Medium"),
+            "high": _("3 - Hard"),
+            "extreme": _("4 - Extreme"),
+        }
 
         region = {
             "vip-us-east": _("__VIP__ US East") + " :flag_us:",
@@ -159,7 +166,7 @@ class ServerStats(commands.Cog):
             "🎥": lambda x: x.activity == discord.Streaming,
             "📱": lambda x: x.is_on_mobile(),
         }
-        member_msg = _("Total Users: **{total}**\n").format(total=len(guild.members))
+        member_msg = _("Total Users: **{total:,}**\n").format(total=guild.member_count)
         count = 1
         for k, v in online_stats.items():
 
@@ -169,7 +176,7 @@ class ServerStats(commands.Cog):
                 print(e)
                 continue
             else:
-                member_msg += f"{k} **{num}** " + ("\n" if count % 2 == 0 else "")
+                member_msg += f"{k} **{num:,}** " + ("\n" if count % 2 == 0 else "")
             count += 1
         text_channels = len([x for x in guild.text_channels])
         voice_channels = len([x for x in guild.voice_channels])
@@ -200,10 +207,6 @@ class ServerStats(commands.Cog):
                 text=text_channels, voice=voice_channels
             ),
         )
-        try:
-            verification_level = verif[int(guild.verification_level)]
-        except TypeError:
-            verification_level = str(guild.verification_level)
         em.add_field(
             name=_("Utility:"),
             value=_(
@@ -212,7 +215,7 @@ class ServerStats(commands.Cog):
             ).format(
                 owner=guild.owner,
                 region=str(guild.region) if str(guild.region) not in region else region[str(guild.region)],
-                verif=verification_level,
+                verif=verif[str(guild.verification_level)],
                 id=guild.id,
             ),
         )
@@ -270,8 +273,8 @@ class ServerStats(commands.Cog):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has left a server!\n "
-            "That's **{num}** servers now!\n"
-            "That's a total of **{users}** users !\n"
+            "That's **{num:,}** servers now!\n"
+            "That's a total of **{users:,}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
         ).format(
@@ -826,7 +829,7 @@ class ServerStats(commands.Cog):
         """
             Lists servers by number of users and shows number of users
         """
-        guilds = sorted(list(self.bot.guilds), key=lambda s: len(s.members), reverse=True)
+        guilds = sorted(list(self.bot.guilds), key=lambda s: s.member_count, reverse=True)
         msg = ""
         msg_list = []
         count = 0
@@ -835,8 +838,7 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-                await asyncio.sleep(0.1)
-            msg += f"{server.name}: {len(server.members)}\n"
+            msg += f"{server.name}: `{server.member_count}`\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
@@ -1186,7 +1188,7 @@ class ServerStats(commands.Cog):
         """
         if not guild:
             guild = ctx.guild
-        await ctx.send("{} has {} members.".format(guild.name, len(guild.members)))
+        await ctx.send("{} has {} members.".format(guild.name, guild.member_count))
 
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
