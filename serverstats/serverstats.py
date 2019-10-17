@@ -838,7 +838,7 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{server.name}: `{server.member_count}`\n"
+            msg += f"{server.name}: `{server.member_count:,}`\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
@@ -858,8 +858,7 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-                await asyncio.sleep(0.1)
-            msg += f"{server.name}: {len(server.members)}\n"
+            msg += f"{server.name}: {server.member_count:,}\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
@@ -1188,7 +1187,7 @@ class ServerStats(commands.Cog):
         """
         if not guild:
             guild = ctx.guild
-        await ctx.send("{} has {} members.".format(guild.name, guild.member_count))
+        await ctx.send("{} has {:,} members.".format(guild.name, guild.member_count))
 
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
