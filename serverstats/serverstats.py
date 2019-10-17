@@ -858,7 +858,7 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{server.name}: {server.member_count:,}\n"
+            msg += f"{server.name}: `{server.member_count:,}`\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
