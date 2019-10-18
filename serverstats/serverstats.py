@@ -1466,5 +1466,7 @@ class ServerStats(commands.Cog):
             em.set_footer(text="Page {} of {}".format(count, len(x)))
             count += 1
             emoji_embeds.append(em)
-
-        await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
+        try:
+            await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
+        except IndexError:
+            await ctx.send("This guild need emojis to use this command.")
