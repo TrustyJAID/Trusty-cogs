@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.5.3"
+    __version__ = "2.5.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -91,8 +91,13 @@ class Hockey(commands.Cog):
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Hockey"):
             # await self.refactor_data()
-            async with self.session.get(BASE_URL + "/api/v1/schedule") as resp:
-                data = await resp.json()
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(BASE_URL + "/api/v1/schedule") as resp:
+                        data = await resp.json()
+            except Exception:
+                log.debug(_("Error grabbing the schedule for today."), exc_info=True)
+                data = {"dates": []}
             if data["dates"] != []:
                 games = [
                     game["link"]
@@ -114,8 +119,9 @@ class Hockey(commands.Cog):
                 for link in games:
                     if not self.TEST_LOOP:
                         try:
-                            async with self.session.get(BASE_URL + link) as resp:
-                                data = await resp.json()
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(BASE_URL + link) as resp:
+                                    data = await resp.json()
                         except Exception:
                             log.error(_("Error grabbing game data: "), exc_info=True)
                             continue
