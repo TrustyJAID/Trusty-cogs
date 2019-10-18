@@ -9,6 +9,7 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
@@ -1035,32 +1036,92 @@ class EventMixin:
         embed = discord.Embed(description="", timestamp=time, colour=discord.Colour.gold())
         embed.set_author(name=_("Updated Server Emojis"), icon_url=guild.icon_url)
         msg = _("Updated Server Emojis") + "\n"
-        before_str = [str(e.name) for e in before]
-        after_str = [str(e.name) for e in after]
-        b = set(before_str)
-        a = set(after_str)
-        added_emoji = [list(a - b)][0]
-        removed_emoji = [list(b - a)][0]
-        changed_emoji = [list(set([e.name for e in after]) - set([e.name for e in before]))][0]
+        b = set(before)
+        a = set(after)
+        # discord.Emoji uses id for hashing so we use set difference to get added/removed emoji
+        try:
+            added_emoji = (a - b).pop()
+        except KeyError:
+            added_emoji = None
+        try:
+            removed_emoji = (b - a).pop()
+        except KeyError:
+            removed_emoji = None
+        # changed emojis have their name and/or allowed roles changed while keeping id unchanged
+        if added_emoji is not None:
+            to_iter = before + (added_emoji,)
+        else:
+            to_iter = before
+        changed_emoji = set((e, e.name, tuple(e.roles)) for e in after)
+        changed_emoji.difference_update((e, e.name, tuple(e.roles)) for e in to_iter)
+        try:
+            changed_emoji = changed_emoji.pop()[0]
+        except KeyError:
+            changed_emoji = None
+        else:
+            for old_emoji in before:
+                if old_emoji.id == changed_emoji.id:
+                    break
+            else:
+                # this shouldn't happen but it's here just in case
+                changed_emoji = None
         action = None
-        for emoji in removed_emoji:
-            new_msg = f"`{emoji}`" + _(" Removed from the guild\n")
+        if removed_emoji is not None:
+            new_msg = f"`{removed_emoji}` (ID: {removed_emoji.id})" + _(
+                " Removed from the guild\n"
+            )
             msg += new_msg
             embed.description += new_msg
             action = discord.AuditLogAction.emoji_delete
-        for emoji in added_emoji:
-            new_msg = f"{emoji} `{emoji}`" + _(" Added to the guild\n")
+        elif added_emoji is not None:
+            new_msg = f"{added_emoji} `{added_emoji}`" + _(" Added to the guild\n")
             msg += new_msg
             embed.description += new_msg
             action = discord.AuditLogAction.emoji_create
-        for emoji in changed_emoji:
-            for emojis in after:
-                if emojis.name == emoji:
-                    e = emojis
-            new_msg = f"{e} `{e}`" + _(" Emoji changed\n")
+        elif changed_emoji is not None:
+            new_msg = f"{changed_emoji} `{changed_emoji}`"
+            if old_emoji.name != changed_emoji.name:
+                new_msg += (
+                    _(" Renamed from ") + old_emoji.name + _(" to ") + f"{changed_emoji.name}\n"
+                )
+                # emoji_update shows only for renames and not for role restriction updates
+                action = discord.AuditLogAction.emoji_update
             msg += new_msg
             embed.description += new_msg
-            action = discord.AuditLogAction.emoji_update
+            if old_emoji.roles != changed_emoji.roles:
+                if not changed_emoji.roles:
+                    new_msg = _(" Changed to unrestricted.\n")
+                    msg += new_msg
+                    embed.description += new_msg
+                elif not old_emoji.roles:
+                    msg += (
+                        _(" Restricted to roles: ")
+                        + humanize_list(
+                            [f"{role.name} ({role.id})" for role in changed_emoji.roles]
+                        )
+                        + "\n"
+                    )
+                    embed.description += (
+                        _(" Restricted to roles: ") + humanize_list(
+                            [role.mention for role in changed_emoji.roles]
+                        )
+                    )
+                else:
+                    msg += (
+                        _(" Role restriction changed from ")
+                        + humanize_list([f"{role.name} ({role.id})" for role in old_emoji.roles])
+                        + _(" to ")
+                        + humanize_list(
+                            [f"{role.name} ({role.id})" for role in changed_emoji.roles]
+                        )
+                        + "\n"
+                    )
+                    embed.description += (
+                        _(" Role restriction changed from ")
+                        + humanize_list([role.mention for role in old_emoji.roles])
+                        + _(" to ")
+                        + humanize_list([role.mention for role in changed_emoji.roles])
+                    )
         perp = None
         reason = None
 
