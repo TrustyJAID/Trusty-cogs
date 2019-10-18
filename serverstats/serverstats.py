@@ -1467,5 +1467,7 @@ class ServerStats(commands.Cog):
             em.set_footer(text="Page {} of {}".format(count, len(x)))
             count += 1
             emoji_embeds.append(em)
-
-        await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
+        if len(emoji_embeds) == 0:
+            await ctx.send(_("There are no emojis on {guild}.").format(guild=guild.name))
+        else:
+            await menu(ctx, emoji_embeds, DEFAULT_CONTROLS)
