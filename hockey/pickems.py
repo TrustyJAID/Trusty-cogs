@@ -184,7 +184,9 @@ class Pickems:
                 continue
             leaderboard = await config.guild(guild).leaderboard()
             try:
-                pickems_channels_to_delete += await config.guild(guild).pickems_channels()
+                current_guild_pickem_channels = await config.guild(guild).pickems_channels()
+                if current_guild_pickem_channels:
+                    pickems_channels_to_delete += current_guild_pickem_channels
             except Exception:
                 log.error(_("Error adding channels to delete"), exc_info=True)
             if leaderboard is None:
