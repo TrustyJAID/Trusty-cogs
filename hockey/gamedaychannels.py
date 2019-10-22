@@ -158,7 +158,8 @@ class GameDayChannels:
         """
         config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
         channels = await config.guild(guild).gdc()
-
+        if channels is None:
+            channels = []
         for channel in channels:
             chn = bot.get_channel(channel)
             if chn is None:
