@@ -146,6 +146,11 @@ class Goal:
     async def actually_post_goal(self, channel, goal_embed, goal_text):
         try:
             guild = channel.guild
+            if not channel.permissions_for(guild.me).send_messages:
+                log.debug(_("No permission to send messages in {channel} ({id})").format(
+                        channel=channel, id=channel.id
+                    ))
+                return
             game_day_channels = await self.config.guild(guild).gdc()
             # Don't want to ping people in the game day channels
             can_embed = channel.permissions_for(guild.me).embed_links

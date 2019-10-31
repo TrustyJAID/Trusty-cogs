@@ -14,7 +14,7 @@ class Fenrir(commands.Cog):
         Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -23,10 +23,10 @@ class Fenrir(commands.Cog):
         self.bans = []
         self.mutes = []
         self.feedback = {}
-        # default_guild = {"kicks": [], "bans":[]}
+        default_guild = {"mute_role": None}
 
-        # self.config = Config.get_conf(self, 228492507124596736)
-        # self.config.register_guild(**default_guild)
+        self.config = Config.get_conf(self, 228492507124596736)
+        self.config.register_guild(**default_guild)
 
     @commands.command()
     @checks.admin_or_permissions(kick_members=True)
@@ -37,6 +37,21 @@ class Fenrir(commands.Cog):
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
         self.kicks.append(msg.id)
+
+    @commands.command()
+    @checks.admin_or_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def fenrirset(self, ctx, *, role: discord.Role = None):
+        """
+        Sets the mute role for fenrirmute to work
+
+        if no role is provided it will disable the command
+        """
+        if role:
+            await self.config.guild(ctx.guild).mute_role.set(role.id)
+        else:
+            await self.config.guild(ctx.guild).mute_role.set(role)
+        await ctx.tick()
 
     @commands.command()
     @checks.admin_or_permissions(ban_members=True)
@@ -51,9 +66,10 @@ class Fenrir(commands.Cog):
     @commands.command()
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
-    @commands.check(lambda ctx: ctx.guild.id == 236313384100954113)
     async def fenrirmute(self, ctx):
         """Create a reaction emoji to mute users"""
+        if not await self.config.guild(ctx.guild).mute_role():
+            return await ctx.send("No mute role has been setup on this server.")
         msg = await ctx.send("React to this message to be muted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
@@ -124,7 +140,7 @@ class Fenrir(commands.Cog):
             if await self.is_mod_or_admin(member):
                 return
             try:
-                r = guild.get_role(241943133003317249)
+                r = guild.get_role(await self.config.guild(guild).mute_role())
                 await member.add_roles(r, reason="They asked for it.")
             except Exception:
                 return

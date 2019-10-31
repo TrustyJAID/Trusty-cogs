@@ -502,6 +502,11 @@ class Game:
 
     async def actually_post_state(self, channel, state_embed, state_text):
         guild = channel.guild
+        if not channel.permissions_for(guild.me).send_messages:
+            log.debug(_("No permission to send messages in {channel} ({id})").format(
+                        channel=channel, id=channel.id
+                    ))
+            return
         game_day_channels = await self.config.guild(guild).gdc()
         can_embed = channel.permissions_for(guild.me).embed_links
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
@@ -669,6 +674,11 @@ class Game:
         await asyncio.gather(*tasks)
 
     async def post_game_start(self, channel, msg):
+        if not channel.permissions_for(channel.guild.me).send_messages:
+            log.debug(_("No permission to send messages in {channel} ({id})").format(
+                        channel=channel, id=channel.id
+                    ))
+            return
         try:
             await channel.send(msg)
         except Exception:
