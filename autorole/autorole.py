@@ -162,22 +162,22 @@ class Autorole(commands.Cog):
             channel = guild.get_channel(ch_id)
             chn_name = channel.name if channel is not None else "None"
             chn_mention = channel.mention if channel is not None else "None"
-            role_name = []
+            role_name_str = ", ".join(role.mention for role in guild.roles if role.id in roles)
+            if not role_name_str:
+                role_name_str = "None"
             if ctx.channel.permissions_for(ctx.me).embed_links:
-                role_name_str = ", ".join(role.mention for role in guild.roles if role.id in roles)
                 embed = discord.Embed(colour=await self.get_colour(guild))
                 embed.set_author(name=_("Autorole settings for ") + guild.name)
                 embed.add_field(name=_("Current autorole state: "), value=str(enabled))
-                embed.add_field(name=_("Current Roles: "), value=role_name_str)
+                embed.add_field(name=_("Current Roles: "), value=str(role_name_str))
                 if msg:
-                    embed.add_field(name=_("Agreement message: "), value=msg)
+                    embed.add_field(name=_("Agreement message: "), value=str(msg))
                 if key:
-                    embed.add_field(name=_("Agreement key: "), value=key)
+                    embed.add_field(name=_("Agreement key: "), value=str(key))
                 if channel:
-                    embed.add_field(name=_("Agreement channel: "), value=chn_mention)
+                    embed.add_field(name=_("Agreement channel: "), value=str(chn_mention))
                 await ctx.send(embed=embed)
             else:
-                role_name_str = ", ".join(role.name for role in guild.roles if role.id in roles)
                 send_msg = (
                     "```"
                     + _("Current autorole state: ")
