@@ -309,7 +309,7 @@ TEAMS = {
         "emoji": "TampaBayLightning:381568942054834196",
         "home": "#002868",
         "id": 14,
-        "invite": "https://discord.gg/jJVwXVd",
+        "invite": "https://discord.gg/WjNvprr",
         "logo": "https://nhl.bamcontent.com/images/photos/281723320/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=UjbdFKsHD_M",
         "timezone": "US/Eastern",

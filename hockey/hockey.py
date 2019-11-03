@@ -4,7 +4,7 @@ import asyncio
 import json
 import yaml
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from io import BytesIO
 from urllib.parse import quote
 from redbot.core import commands, checks, Config
@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.5.6"
+    __version__ = "2.5.7"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -187,11 +187,13 @@ class Hockey(commands.Cog):
                     guilds_to_make_new_pickems = []
                     for guild_id in await self.config.all_guilds():
                         guild = self.bot.get_guild(guild_id)
+                        if guild is None:
+                            continue
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
                     await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
                 except Exception:
-                    log.error(_("Error creating new weekly pickems pages"))
+                    log.error(_("Error creating new weekly pickems pages"), exc_info=True)
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception:
@@ -1171,6 +1173,23 @@ class Hockey(commands.Cog):
         """
         await Pickems.tally_leaderboard(self.bot)
         await ctx.send(_("Leaderboard tallying complete."))
+
+    @hockeyset_commands.command(hidden=True)
+    @checks.is_owner()
+    async def remove_old_pickems(self, ctx, year: int, month: int, day: int):
+        """
+            Remove pickems objects created before a specified date.
+        """
+        start = date(year, month, day)
+        good_list = []
+        for guild_id in await self.config.all_guilds():
+            g = self.bot.get_guild(guild_id)
+            pickems = [Pickems.from_json(p) for p in await self.config.guild(g).pickems()]
+            for p in pickems:
+                if p.game_start > start:
+                    good_list.append(p)
+            await self.config.guild(g).pickems.set([p.to_json() for p in good_list])
+        await ctx.send(_("All old pickems objects deleted."))
 
     @hockeyset_commands.command(hidden=True)
     @checks.is_owner()

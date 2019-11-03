@@ -264,8 +264,8 @@ class Pickems:
 
             for game in games_list:
                 for channel in data:
-                    game_msg_tasks.append(create_pickems_game_msg(channel, game))
-            await asyncio.gather(*game_msg_tasks)
+                    await create_pickems_game_msg(channel, game)
+            # await asyncio.gather(*game_msg_tasks)
             today = today + new_day
             count += 1
             if today.weekday() == 6 or count == 7:
