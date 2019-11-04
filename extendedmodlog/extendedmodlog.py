@@ -43,7 +43,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -54,10 +54,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def initialize(self):
         all_data = await self.config.all_guilds()
         for guild_id, data in all_data.items():
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                await self.config._clear_scope(Config.GUILD, str(guild_id))
-                continue
+            guild = discord.Object(id=guild_id)
             for entry in inv_settings.keys():
                 setting = data[entry]
                 # print(type(setting))
