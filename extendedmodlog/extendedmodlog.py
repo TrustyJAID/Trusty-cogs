@@ -43,7 +43,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.1.2"
+    __version__ = "2.1.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -613,7 +613,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await self.config.guild(ctx.guild).commands_used.channel.set(channel)
         await ctx.tick()
 
-    @_modlog.group()
+    @_modlog.command()
     async def ignore(self, ctx, channel: discord.TextChannel = None):
         """
             Ignore a channel from message delete/edit events and bot commands
@@ -632,7 +632,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         else:
             await ctx.send(channel.mention + _(" is already being ignored."))
 
-    @_modlog.group()
+    @_modlog.command()
     async def unignore(self, ctx, channel: discord.TextChannel = None):
         """
             Unignore a channel from message delete/edit events and bot commands
