@@ -501,7 +501,7 @@ class ServerStats(commands.Cog):
                 "message", check=lambda m: m.author == ctx.message.author, timeout=30
             )
         except asyncio.TimeoutError:
-            await msg.edit(content=_("I Guess not."))
+            await ctx.send(_("I Guess not."))
             return None
         if "exit" in msg.content:
             return None
