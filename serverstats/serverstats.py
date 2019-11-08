@@ -581,7 +581,10 @@ class ServerStats(commands.Cog):
                 msg += "Page {} of {}".format(count, len(x))
                 count += 1
                 msg_list.append(msg)
-        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+        if msg_list != []:
+            await menu(ctx, msg_list, DEFAULT_CONTROLS)
+        else:
+            await ctx.send(_("No one was found to be inactive in this time."))
 
     @pruneroles.command()
     @checks.mod_or_permissions(kick_members=True)
