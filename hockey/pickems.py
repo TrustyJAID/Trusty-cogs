@@ -237,8 +237,8 @@ class Pickems:
                 )
             )
             # Create new pickems object for the game
-            await Pickems.create_pickem_object(guild, new_msg, channel, game)
-            if channel.permissions_for(guild.me).add_reactions:
+            await Pickems.create_pickem_object(channel.guild, new_msg, channel, game)
+            if channel.permissions_for(channel.guild.me).add_reactions:
                 try:
                     await new_msg.add_reaction(game.away_emoji[2:-1])
                     await new_msg.add_reaction(game.home_emoji[2:-1])
@@ -274,6 +274,8 @@ class Pickems:
                 break
         for guild_id, channels in save_data.items():
             guild = bot.get_guild(guild_id)
+            if not guild:
+                continue
             await config.guild(guild).pickems_channels.set(channels)
 
     @staticmethod
