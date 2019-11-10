@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.6.0"
+    __version__ = "2.6.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -81,6 +81,7 @@ class Hockey(commands.Cog):
         self.TEST_LOOP = False  # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
+        self.save_pickems = True
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information
@@ -193,8 +194,9 @@ class Hockey(commands.Cog):
                             continue
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
+
                     await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
-                    await self.initialize_pickems()
+
                 except Exception:
                     log.error(_("Error creating new weekly pickems pages"), exc_info=True)
             try:
@@ -219,11 +221,24 @@ class Hockey(commands.Cog):
 
     async def save_pickems_data(self):
         await self.bot.wait_until_ready()
-        while self is self.bot.get_cog("Hockey"):
+        while self.save_pickems:
             for guild_id, pickems in self.all_pickems.items():
                 guild_obj = discord.Object(id=int(guild_id))
                 data = [p.to_json() for p in pickems]
-                await self.config.guild(guild_obj).pickems.set(data)
+                saved_data = await self.config.guild(guild_obj).pickems()
+                good_list = []
+                for o_p in saved_data:
+                    op_in_p = False
+                    for p in data:
+                        if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
+                            good_list.append(p)
+                            op_in_p = True
+                    if not op_in_p:
+                        log.debug("adding new pickems to memory")
+                        good_list.append(o_p)
+
+                await self.config.guild(guild_obj).pickems.set(good_list)
+                self.all_pickems = [Pickems.from_json(p) for p in good_list]
             await asyncio.sleep(60)
 
     @listener()
@@ -955,6 +970,7 @@ class Hockey(commands.Cog):
                 )
             )
             # Create new pickems object for the game
+
             await Pickems.create_pickem_object(ctx.guild, new_msg, ctx.channel, game)
             if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
                 try:
@@ -984,6 +1000,7 @@ class Hockey(commands.Cog):
             return
 
         await self.config.guild(ctx.guild).pickems_category.set(category.id)
+
         await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
         await self.initialize_pickems()
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
@@ -1468,6 +1485,8 @@ class Hockey(commands.Cog):
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()
         if getattr(self, "pickems_save_loop", None) is not None:
+            log.debug("canceling pickems save loop")
+            self.save_pickems = False
             self.pickems_save_loop.cancel()
 
     __del__ = cog_unload

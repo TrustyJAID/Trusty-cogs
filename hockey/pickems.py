@@ -158,12 +158,17 @@ class Pickems:
                     "winner": None,
                 }
             )
+            log.debug("creating new pickems")
+            await config.guild(guild).pickems.set(pickems)
+            return True
         else:
             pickems.remove(old_pickem)
             old_pickem["message"].append(message.id)
             old_pickem["channel"].append(channel.id)
             pickems.append(old_pickem)
-        await config.guild(guild).pickems.set(pickems)
+            await config.guild(guild).pickems.set(pickems)
+            log.debug("using old pickems")
+            return False
 
     @staticmethod
     async def reset_weekly(bot):
@@ -192,60 +197,62 @@ class Pickems:
             log.error(_("Error deleting pickems Channels"), exc_info=True)
 
     @staticmethod
+    async def create_pickems_channel(bot, name, guild):
+        msg = _(
+            "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
+            "  Vote for who you think will win!  You get one point for each correct prediction."
+            "  We will be tracking points over the course "
+            "of the season and will be rewarding weekly,"
+            " worst and full-season winners!**\n\n"
+            "- Click the reaction for the team you think will win the day's match-up.\n"
+            "- Anyone who votes for both teams will have their "
+            "vote removed and will receive no points!\n\n\n\n"
+        )
+        config = hockey_config()
+        category = bot.get_channel(await config.guild(guild).pickems_category())
+        if not category:
+            return
+        try:
+            new_chn = await guild.create_text_channel(name, category=category)
+        except discord.errors.Forbidden:
+            await config.guild(guild).pickems_category.set(None)
+            return None
+        await new_chn.send(msg)
+        return new_chn
+
+    @staticmethod
+    async def create_pickems_game_msg(channel, game):
+        new_msg = await channel.send(
+            "__**{} {}**__ @ __**{} {}**__".format(
+                game.away_emoji, game.away_team, game.home_emoji, game.home_team
+            )
+        )
+        # Create new pickems object for the game
+        await Pickems.create_pickem_object(channel.guild, new_msg, channel, game)
+        if channel.permissions_for(channel.guild.me).add_reactions:
+            try:
+                await new_msg.add_reaction(game.away_emoji[2:-1])
+                await new_msg.add_reaction(game.home_emoji[2:-1])
+            except Exception:
+                log.debug("Error adding reactions")
+
+    @staticmethod
     async def create_weekly_pickems_pages(bot, guilds, game_obj):
         config = hockey_config()
         save_data = {}
         today = datetime.now()
         new_day = timedelta(days=1)
         count = 0
-        channels = []
-
-        async def create_pickems_channel(name, guild):
-            msg = _(
-                "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
-                "  Vote for who you think will win!  You get one point for each correct prediction."
-                "  We will be tracking points over the course "
-                "of the season and will be rewarding weekly,"
-                " worst and full-season winners!**\n\n"
-                "- Click the reaction for the team you think will win the day's match-up.\n"
-                "- Anyone who votes for both teams will have their "
-                "vote removed and will receive no points!\n\n\n\n"
-            )
-            category = bot.get_channel(await config.guild(guild).pickems_category())
-            if not category:
-                return
-            try:
-                new_chn = await guild.create_text_channel(name, category=category)
-            except discord.errors.Forbidden:
-                await config.guild(guild).pickems_category.set(None)
-                return None
-            await new_chn.send(msg)
-            return new_chn
-
-        async def create_pickems_game_msg(channel, game):
-            new_msg = await channel.send(
-                "__**{} {}**__ @ __**{} {}**__".format(
-                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
-                )
-            )
-            # Create new pickems object for the game
-            await Pickems.create_pickem_object(channel.guild, new_msg, channel, game)
-            if channel.permissions_for(channel.guild.me).add_reactions:
-                try:
-                    await new_msg.add_reaction(game.away_emoji[2:-1])
-                    await new_msg.add_reaction(game.home_emoji[2:-1])
-                except Exception:
-                    log.debug("Error adding reactions")
 
         while True:
             chn_name = _("pickems-{month}-{day}").format(
                 month=today.month, day=today.day
             )
-            new_channel_tasks = []
-            game_msg_tasks = []
+            data = []
             for guild in guilds:
-                new_channel_tasks.append(create_pickems_channel(chn_name, guild))
-            data = await asyncio.gather(*new_channel_tasks)
+                new_chn = await Pickems.create_pickems_channel(bot, chn_name, guild)
+                data.append(new_chn)
+
             for new_channel in data:
                 if new_channel.guild.id not in save_data:
                     save_data[new_channel.guild.id] = [new_channel.id]
@@ -256,7 +263,9 @@ class Pickems:
 
             for game in games_list:
                 for channel in data:
-                    await create_pickems_game_msg(channel, game)
+                    if channel:
+                        await Pickems.create_pickems_game_msg(channel, game)
+                        await asyncio.sleep(0.1)
             # await asyncio.gather(*game_msg_tasks)
             today = today + new_day
             count += 1
