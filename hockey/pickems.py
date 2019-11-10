@@ -25,7 +25,7 @@ class Pickems:
         game_start: str,
         home_team: str,
         away_team: str,
-        votes: list,
+        votes: dict,
         winner: str = None,
     ):
         super().__init__()
@@ -53,30 +53,22 @@ class Pickems:
             team_choice = self.away_team
         if team_choice is None:
             raise NotAValidTeamError()
-        user_voted = False
-        for user, choice in self.votes:
-            if user_id == user:
-                user_voted = True
-                if time_now > self.game_start:
-                    if choice == self.home_team:
-                        emoji = self.home_emoji
-                    if choice == self.away_team:
-                        emoji = self.away_emoji
-                    raise VotingHasEndedError(_("You have voted for ") + f"<:{emoji}>")
-                user_vote = choice
-                break
-        if user_voted and user_vote != team_choice:
-            if (user, self.home_team) in self.votes:
-                self.votes.remove((user, self.home_team))
-            if (user, self.away_team) in self.votes:
-                self.votes.remove((user, self.away_team))
-            raise UserHasVotedError("{} {}".format(team, team_choice))
-            self.votes.append((user_id, team_choice))
-
-        if time_now > self.game_start and not user_voted:
+        if str(user_id) in self.votes:
+            choice = self.votes[str(user_id)]
+            if time_now > self.game_start:
+                if choice == self.home_team:
+                    emoji = self.home_emoji
+                if choice == self.away_team:
+                    emoji = self.away_emoji
+                raise VotingHasEndedError(_("You have voted for ") + f"<:{emoji}>")
+            else:
+                if choice != team_choice:
+                    self.votes[str(user_id)] = team_choice
+                    raise UserHasVotedError("{} {}".format(team, team_choice))
+        if time_now > self.game_start:
             raise VotingHasEndedError(_("You did not vote on this game!"))
-        if not user_voted and team_choice is not None:
-            self.votes.append((user_id, team_choice))
+        if str(user_id) not in self.votes:
+            self.votes[str(user_id)] = team_choice
 
     async def set_pickem_winner(self, game):
         """
@@ -162,7 +154,7 @@ class Pickems:
                     "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "home_team": game.home_team,
                     "away_team": game.away_team,
-                    "votes": [],
+                    "votes": {},
                     "winner": None,
                 }
             )
@@ -313,7 +305,7 @@ class Pickems:
                         leaderboard = await config.guild(guild).leaderboard()
                         if leaderboard is None:
                             leaderboard = {}
-                        for user, choice in pickems.votes:
+                        for user, choice in pickems.votes.items():
                             if str(user) not in leaderboard:
                                 leaderboard[str(user)] = {"season": 0, "weekly": 0, "total": 0}
                             if choice == pickems.winner:

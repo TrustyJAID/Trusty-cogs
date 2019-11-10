@@ -1,5 +1,7 @@
 from .hockey import Hockey
 
 
-def setup(bot):
-    bot.add_cog(Hockey(bot))
+async def setup(bot):
+    cog = Hockey(bot)
+    await cog.initialize_pickems()
+    bot.add_cog(cog)

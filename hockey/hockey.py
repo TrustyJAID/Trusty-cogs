@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.5.8"
+    __version__ = "2.6.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -79,6 +79,8 @@ class Hockey(commands.Cog):
         self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False  # used to test a continuous loop of a single game data
+        self.all_pickems = {}
+        self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information
@@ -192,6 +194,7 @@ class Hockey(commands.Cog):
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
                     await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+                    await self.initialize_pickems()
                 except Exception:
                     log.error(_("Error creating new weekly pickems pages"), exc_info=True)
             try:
@@ -204,6 +207,25 @@ class Hockey(commands.Cog):
             await GameDayChannels.check_new_gdc(self.bot)
             await self.config.created_gdc.set(True)
 
+    async def initialize_pickems(self):
+        data = await self.config.all_guilds()
+        for guild_id in data:
+            guild_obj = discord.Object(id=guild_id)
+            pickems_list = await self.config.guild(guild_obj).pickems()
+            if pickems_list is None:
+                continue
+            pickems = [Pickems.from_json(p) for p in pickems_list]
+            self.all_pickems[str(guild_id)] = pickems
+
+    async def save_pickems_data(self):
+        await self.bot.wait_until_ready()
+        while self is self.bot.get_cog("Hockey"):
+            for guild_id, pickems in self.all_pickems.items():
+                guild_obj = discord.Object(id=int(guild_id))
+                data = [p.to_json() for p in pickems]
+                await self.config.guild(guild_obj).pickems.set(data)
+            await asyncio.sleep(60)
+
     @listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
@@ -211,13 +233,15 @@ class Hockey(commands.Cog):
             guild = channel.guild
         except Exception:
             return
-        pickems_list = await self.config.guild(guild).pickems()
+        if str(guild.id) not in self.all_pickems:
+            return
+        # pickems_list = await self.config.guild(guild).pickems()
 
-        if pickems_list is None:
-            return
-        pickems = [Pickems.from_json(p) for p in pickems_list]
-        if len(pickems) == 0:
-            return
+        # if pickems_list is None:
+            # return
+        # pickems = [Pickems.from_json(p) for p in pickems_list]
+        # if len(pickems) == 0:
+            # return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
         except AttributeError:
@@ -229,7 +253,7 @@ class Hockey(commands.Cog):
         if user.bot:
             return
         is_pickems_vote = False
-        for pickem in pickems:
+        for pickem in self.all_pickems[str(guild.id)]:
             if msg.id in pickem.message:
                 is_pickems_vote = True
                 reply_message = ""
@@ -244,7 +268,7 @@ class Hockey(commands.Cog):
                             else pickem.away_emoji
                         )
                         await msg.remove_reaction(emoji, user)
-                    reply_message = _("You have already voted! Changing vote to) ") + str(team)
+                    reply_message = _("You have already voted! Changing vote to: ") + str(team)
                 except VotingHasEndedError as error_msg:
                     if msg.channel.permissions_for(msg.guild.me).manage_messages:
                         await msg.remove_reaction(payload.emoji, user)
@@ -258,9 +282,9 @@ class Hockey(commands.Cog):
                         await user.send(reply_message)
                     except Exception:
                         pass
-        if is_pickems_vote:
-            pickems_list = [p.to_json() for p in pickems]
-            await self.config.guild(guild).pickems.set(pickems_list)
+        # if is_pickems_vote:
+            # pickems_list = [p.to_json() for p in pickems]
+            # await self.config.guild(guild).pickems.set(pickems_list)
 
     async def change_custom_emojis(self, attachments):
         """
@@ -938,6 +962,7 @@ class Hockey(commands.Cog):
                     await new_msg.add_reaction(game.home_emoji[2:-1])
                 except Exception:
                     log.debug("Error adding reactions")
+        await self.initialize_pickems()
 
     @hockeyset_commands.command(name="autopickems")
     @checks.admin_or_permissions(manage_channels=True)
@@ -960,6 +985,7 @@ class Hockey(commands.Cog):
 
         await self.config.guild(ctx.guild).pickems_category.set(category.id)
         await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
+        await self.initialize_pickems()
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
     @hockeyset_commands.command(name="toggleautopickems")
@@ -1430,10 +1456,19 @@ class Hockey(commands.Cog):
         await self.config.guild(ctx.guild).leaderboard.set({})
         await ctx.send(_("Server leaderboard reset."))
 
+    async def save_pickems_unload(self):
+        for guild_id, pickems in self.all_pickems.items():
+            guild_obj = discord.Object(id=int(guild_id))
+            data = [p.to_json() for p in pickems]
+            await self.config.guild(guild_obj).pickems.set(data)
+
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
+        self.bot.loop.create_task(self.save_pickems_unload())
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()
+        if getattr(self, "pickems_save_loop", None) is not None:
+            self.pickems_save_loop.cancel()
 
     __del__ = cog_unload
     __unload = cog_unload
