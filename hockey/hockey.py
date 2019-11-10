@@ -238,7 +238,7 @@ class Hockey(commands.Cog):
                         good_list.append(o_p)
 
                 await self.config.guild(guild_obj).pickems.set(good_list)
-                self.all_pickems = [Pickems.from_json(p) for p in good_list]
+                self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
             await asyncio.sleep(60)
 
     @listener()
