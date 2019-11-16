@@ -498,7 +498,7 @@ class Game:
             if preview is None:
                 continue
             else:
-                await Pickems.create_pickem_object(preview[0].guild, preview[1], preview[0], self)
+                await Pickems.create_pickem_object(bot, preview[0].guild, preview[1], preview[0], self)
 
     async def actually_post_state(self, channel, state_embed, state_text):
         guild = channel.guild

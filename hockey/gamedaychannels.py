@@ -52,6 +52,9 @@ class GameDayChannels:
                     cur_channels = await config.guild(guild).gdc()
                     if cur_channels:
                         cur_channel = bot.get_channel(cur_channels[0])
+                    else:
+                        cur_channel = None
+                        # this is dumb but eh
                 except Exception:
                     log.error("Error checking new GDC", exc_info=True)
                     cur_channel = None

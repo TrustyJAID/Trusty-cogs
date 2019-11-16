@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.6.1"
+    __version__ = "2.7.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -216,7 +216,10 @@ class Hockey(commands.Cog):
             pickems_list = await self.config.guild(guild_obj).pickems()
             if pickems_list is None:
                 continue
-            pickems = [Pickems.from_json(p) for p in pickems_list]
+            if type(pickems_list) is list:
+                continue
+            # pickems = [Pickems.from_json(p) for p in pickems_list]
+            pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}
             self.all_pickems[str(guild_id)] = pickems
 
     async def save_pickems_data(self):
@@ -224,21 +227,24 @@ class Hockey(commands.Cog):
         while self.save_pickems:
             for guild_id, pickems in self.all_pickems.items():
                 guild_obj = discord.Object(id=int(guild_id))
-                data = [p.to_json() for p in pickems]
-                saved_data = await self.config.guild(guild_obj).pickems()
-                good_list = []
-                for o_p in saved_data:
-                    op_in_p = False
-                    for p in data:
-                        if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
-                            good_list.append(p)
-                            op_in_p = True
-                    if not op_in_p:
-                        log.debug("adding new pickems to memory")
-                        good_list.append(o_p)
+                # data = [p.to_json() for p in pickems]
+                # saved_data = await self.config.guild(guild_obj).pickems()
+                # good_list = []
+                # for o_p in saved_data:
+                    # op_in_p = False
+                    # for p in data:
+                        # if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
+                            # good_list.append(p)
+                            # op_in_p = True
+                    # if not op_in_p:
+                        # log.debug("adding new pickems to memory")
+                        # good_list.append(o_p)
 
-                await self.config.guild(guild_obj).pickems.set(good_list)
-                self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
+                # await self.config.guild(guild_obj).pickems.set(good_list)
+                # self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
+                await self.config.guild(guild_obj).pickems.set(
+                    {name: p.to_json() for name, p in pickems.items()}
+                )
             await asyncio.sleep(60)
 
     @listener()
@@ -268,7 +274,7 @@ class Hockey(commands.Cog):
         if user.bot:
             return
         is_pickems_vote = False
-        for pickem in self.all_pickems[str(guild.id)]:
+        for name, pickem in self.all_pickems[str(guild.id)].items():
             if msg.id in pickem.message:
                 is_pickems_vote = True
                 reply_message = ""
@@ -1476,8 +1482,24 @@ class Hockey(commands.Cog):
     async def save_pickems_unload(self):
         for guild_id, pickems in self.all_pickems.items():
             guild_obj = discord.Object(id=int(guild_id))
-            data = [p.to_json() for p in pickems]
-            await self.config.guild(guild_obj).pickems.set(data)
+            # data = [p.to_json() for p in pickems]
+            # saved_data = await self.config.guild(guild_obj).pickems()
+            # good_list = []
+            # for o_p in saved_data:
+                # op_in_p = False
+                # for p in data:
+                    # if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
+                        # good_list.append(p)
+                        # op_in_p = True
+                # if not op_in_p:
+                    # log.debug("adding new pickems to memory")
+                    # good_list.append(o_p)
+
+            # await self.config.guild(guild_obj).pickems.set(good_list)
+            # self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
+            await self.config.guild(guild_obj).pickems.set(
+                {name: p.to_json() for name, p in pickems.items()}
+            )
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
