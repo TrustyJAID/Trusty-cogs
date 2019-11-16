@@ -30,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -147,8 +147,8 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError:
-            # log.debug(e)
+        except Destiny2APIError as e:
+            log.error(e, exc_info=True)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return

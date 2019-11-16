@@ -121,6 +121,7 @@ class DestinyAPI:
                     else:
                         return data
                 else:
+                    await self.config.user(user).oauth.clear()
                     raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
 
     async def get_o_auth(self, ctx):
@@ -171,7 +172,8 @@ class DestinyAPI:
             return header
         try:
             await self.check_expired_token(user)
-        except Destiny2RefreshTokenError:
+        except Destiny2RefreshTokenError as e:
+            log.error(e, exc_info=True)
             raise
         access_token = await self.config.user(user).oauth.access_token()
         token_type = await self.config.user(user).oauth.token_type()
@@ -229,7 +231,8 @@ class DestinyAPI:
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception as e:
+            log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
         params = {"components": "200,204,205,300,302,304"}
         platform = await self.config.user(user).account.membershipType()
