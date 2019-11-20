@@ -508,17 +508,18 @@ class Tweets(commands.Cog):
     async def tweets_cleanup(self, ctx: commands.context):
         """Searches for unavailable channels and removes posting in those channels"""
         account_list = await self.config.accounts()
-        for account in account_list:
+        to_delete = []
+        for user_id, account in account_list.items():
             for channel in account["channel"]:
                 chn = self.bot.get_channel(channel)
-                if chn is None:
+                if chn is None or not chn.permissions_for(ctx.me).send_messages:
                     log.debug("Removing channel {}".format(channel))
-                    account_list.remove(account)
                     account["channel"].remove(channel)
-                    account_list.append(account)
             if len(account["channel"]) == 0:
                 log.debug("Removing account {}".format(account["twitter_name"]))
-                account_list.remove(account)
+                to_delete.append(user_id)
+        for user_id in to_delete:
+            del account_list[user_id]
         await self.config.accounts.set(account_list)
 
     @_autotweet.command(name="restart")
