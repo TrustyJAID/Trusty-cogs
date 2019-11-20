@@ -259,7 +259,7 @@ class NotSoBot(commands.Cog):
             "lang": "python",
             "expire": "0",
         }
-        with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:
             async with session.post("https://spit.mixtape.moe/api/create", data=payload) as r:
                 url = await r.text()
                 await ctx.send("Uploaded to paste, URL: <{0}>".format(url))
