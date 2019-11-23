@@ -345,16 +345,24 @@ class GoogleTranslateAPI:
             return True
         elif guild is None:
             return True
-        guild_settings = self.bot.db.guild(guild)
-        local_blacklist = await guild_settings.blacklist()
-        local_whitelist = await guild_settings.whitelist()
+        try:
+            guild_settings = self.bot.db.guild(guild)
+            local_blacklist = await guild_settings.blacklist()
+            local_whitelist = await guild_settings.whitelist()
 
-        _ids = [r.id for r in author.roles if not r.is_default()]
-        _ids.append(author.id)
-        if local_whitelist:
-            return any(i in local_whitelist for i in _ids)
+            _ids = [r.id for r in author.roles if not r.is_default()]
+            _ids.append(author.id)
+            if local_whitelist:
+                return any(i in local_whitelist for i in _ids)
 
-        return not any(i in local_blacklist for i in _ids)
+            return not any(i in local_blacklist for i in _ids)
+        except AttributeError:
+            return await self.bot.allowed_by_whitelist_blacklist(
+                author,
+                who_id=author.id,
+                guild_id=guild.id,
+                role_ids=[r.id for r in author.roles]
+            )
 
     async def global_perms(self, author):
         """Check the user is/isn't globally whitelisted/blacklisted.
@@ -362,12 +370,14 @@ class GoogleTranslateAPI:
         """
         if await self.bot.is_owner(author):
             return True
+        try:
+            whitelist = await self.bot.db.whitelist()
+            if whitelist:
+                return author.id in whitelist
 
-        whitelist = await self.bot.db.whitelist()
-        if whitelist:
-            return author.id in whitelist
-
-        return author.id not in await self.bot.db.blacklist()
+            return author.id not in await self.bot.db.blacklist()
+        except AttributeError:
+            return await self.bot.allowed_by_whitelist_blacklist(author)
 
     async def check_ignored_channel(self, message):
         """
