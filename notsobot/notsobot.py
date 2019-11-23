@@ -914,6 +914,15 @@ class NotSoBot(commands.Cog):
                 msg += s
         await ctx.send(msg)
 
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
+
     @commands.command(aliases=["toe", "analyze"])
     async def tone(self, ctx, *, text: str):
         """Analyze Tone in Text"""
@@ -938,7 +947,7 @@ class NotSoBot(commands.Cog):
                     for t in sentence["tones"]
                 )
         try:
-            em = discord.Embed(colour=await self.bot.db.color())
+            em = discord.Embed(colour=await self.get_colour(ctx.channel))
             em.add_field(name="Emotions", value=emotions_msg)
             if sentence_msg != "":
                 em.add_field(name="Sentences", value=sentence_msg)
