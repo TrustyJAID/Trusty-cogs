@@ -143,7 +143,7 @@ class GameDayChannels:
             preview_msg = await new_chn.send(await next_game.game_state_text())
 
         # Create new pickems object for the game
-        await Pickems.create_pickem_object(guild, preview_msg, new_chn, next_game)
+        await Pickems.create_pickem_object(bot, guild, preview_msg, new_chn, next_game)
 
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()

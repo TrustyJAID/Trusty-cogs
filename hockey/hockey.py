@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.7.0"
+    __version__ = "2.7.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -132,7 +132,11 @@ class Hockey(commands.Cog):
                         games_playing = False
                         with open(str(__file__)[:-9] + "testgame.json", "r") as infile:
                             data = json.loads(infile.read())
-                    game = await Game.from_json(data)
+                    try:
+                        game = await Game.from_json(data)
+                    except Exception:
+                        log.error(_("Error creating game object from json."), exc_info=True)
+                        continue
                     try:
                         await self.check_new_day()
                         await game.check_game_state(self.bot)
@@ -350,6 +354,15 @@ class Hockey(commands.Cog):
             break
         return msg
 
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
+
     ##############################################################################
     # Here are all the bot commands
 
@@ -416,7 +429,7 @@ class Hockey(commands.Cog):
                         channels += f"#{chn.name}{is_gdc}: {teams}\n"
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=guild.name + _(" Hockey Settings"))
-                em.colour = await self.bot.db.color()
+                em.colour = await self.get_colour(ctx.channel)
                 em.description = channels
                 em.add_field(
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
@@ -495,7 +508,7 @@ class Hockey(commands.Cog):
                 await ctx.send(msg)
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=_("GDC settings for ") + guild.name)
-                em.colour = await self.bot.db.color()
+                em.colour = await self.get_colour(ctx.channel)
                 em.add_field(name=_("Create Game Day Channels"), value=str(create_channels))
                 em.add_field(name=_("Delete Game Day Channels"), value=str(delete_gdc))
                 em.add_field(name=_("Team"), value=str(team))

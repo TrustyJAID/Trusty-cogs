@@ -87,7 +87,7 @@ class Goal:
         else:
             strength = " "
         empty_net = data["result"]["emptyNet"] if "emptyNet" in data["result"] else False
-        player_id = "ID" + str(scorer_id[0])
+        player_id = f"ID{scorer_id[0]}" if scorer_id != [] else None
         if player_id in players:
             jersey_no = players[player_id]["jerseyNumber"]
         else:
@@ -96,7 +96,7 @@ class Goal:
         return cls(
             data["result"]["eventCode"],
             data["team"]["name"],
-            scorer_id[0],
+            scorer_id[0] if scorer_id != [] else None,
             jersey_no,
             data["result"]["description"],
             data["about"]["period"],
