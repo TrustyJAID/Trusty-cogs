@@ -374,11 +374,14 @@ class Tweets(commands.Cog):
             return
         await ctx.send(_("Tweet sent!"))
 
-    async def get_colour(self, guild):
-        if await self.bot.db.guild(guild).use_bot_color():
-            return guild.me.colour
-        else:
-            return await self.bot.db.color()
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
 
     @_tweets.command(name="trends")
     async def trends(self, ctx, *, location: str = "United States"):
@@ -401,7 +404,7 @@ class Tweets(commands.Cog):
             await ctx.send("{} Is not a correct location!".format(location))
             return
         trends = api.trends_place(country_id["woeid"])[0]["trends"]
-        em = discord.Embed(colour=await self.get_colour(ctx.guild), title=country_id["name"])
+        em = discord.Embed(colour=await self.get_colour(ctx.channel), title=country_id["name"])
         msg = ""
         for trend in trends[:25]:
             # trend = trends[0]["trends"][i]
@@ -625,7 +628,7 @@ class Tweets(commands.Cog):
         # accounts = [x for x in await self.config.accounts()]
         embed = discord.Embed(
             title="Twitter accounts posting in {}".format(guild.name),
-            colour=await self.get_colour(ctx.guild),
+            colour=await self.get_colour(ctx.channel),
             # description=account_list[:-2],
             timestamp=ctx.message.created_at,
         )
