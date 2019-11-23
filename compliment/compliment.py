@@ -136,15 +136,15 @@ class Compliment(commands.Cog):
             `user` the user you would like to compliment
         """
         msg = " "
-        if user != None:
+        if user is not None:
 
             if user.id == self.bot.user.id:
                 user = ctx.message.author
                 msg = [
-                    _(" Hey, I appreciate the compliment! :smile:"),
+                    _("Hey, I appreciate the compliment! :smile:"),
                     _("No ***YOU'RE*** awesome! :smile:"),
                 ]
-                await ctx.send(user.mention + choice(msg))
+                await ctx.send(f"{user.mention} {choice(msg)}")
 
             else:
                 await ctx.send(user.mention + msg + choice(compliments))
