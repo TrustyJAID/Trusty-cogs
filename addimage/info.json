@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Add image for the bot to directly upload similar to alias.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "This cog will create folders to save and delete images added locally. [p]addimage to add an image to the guild. Owner can add global bot images. ",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

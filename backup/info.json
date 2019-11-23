@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Backup all channel messages on a server. Ensure all saved messages are stored on an encrypted drive!",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "This cog will create folders to save server backups locally. Warning: Ensure all backups are used for personal use or data gathering. User messages are still owned by the original author. All externally saved data must be stored on an encrypted drive.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

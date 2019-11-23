@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Get notified of new twitch followers and get basic profile info.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Setup a channel for new twitch follower notifications!",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

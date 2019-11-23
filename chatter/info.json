@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Talk to your bot and build a unique dataset for conversations!",
     "disabled" : true,
     "hidden" : true,
     "install_msg" : "Talk to your bot and have it learn how to talk in conversations! Recommended you unload the cleverbot cog before running.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

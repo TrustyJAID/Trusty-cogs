@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Gathers stats from Runescape API endpoints.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "gathers runescape stats and information.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

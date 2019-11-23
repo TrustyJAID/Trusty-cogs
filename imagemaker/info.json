@@ -5,15 +5,12 @@
         "Bruno Lemos (isnowillegal.com)",
         "Jo\u00e3o Pedro (isnowillegal.com)"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Show how you really feel. Make someone beautiful. Make something illegal",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. This cog may cause issues with the bot restarting, in your console try `apt install python3-opencv` to install opencv-python instead. Type `[p]help ImageMaker` to see available commands.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

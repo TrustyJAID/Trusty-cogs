@@ -4,15 +4,12 @@
         "JennJenn",
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Compliment people in a creative way",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Usage: `[p]compliment <user>`",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

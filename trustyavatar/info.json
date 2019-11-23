@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Hardcoded custom avatar and statuses for TrustyBot",
-    "disabled" : true,
+    "disabled" : false,
     "hidden" : true,
     "install_msg" : "You probably don't want to use this cog. If you do use this and modify it, changing the interval puts your bot at risk of rate limiting.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

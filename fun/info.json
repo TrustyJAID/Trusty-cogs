@@ -3,15 +3,12 @@
         "Appu",
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "All sorts of commands that users may find fun or useful",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Type `[p]help` to see all the commands.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

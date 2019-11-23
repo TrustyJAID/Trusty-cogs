@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Get your Tarot reading done!",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Usage: `[p]tarot life` `[p]tarot reading` `[p]tarot card`",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

@@ -3,15 +3,12 @@
         "Lunar Dust",
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Automatically apply a role to new users",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "autorole",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

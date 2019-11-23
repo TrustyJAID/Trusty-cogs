@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Gatehr Qanon posts from 8chan",
     "disabled" : true,
     "hidden" : true,
     "install_msg" : "This cog will create a folder and save some files locally. Do `[p]qchannel` to setup a channel for new posts.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

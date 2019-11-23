@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Gather hockey information from nhl.com and display in discord.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

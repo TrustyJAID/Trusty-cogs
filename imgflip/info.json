@@ -3,15 +3,12 @@
         "Twentysix",
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Recreation of Red v1 meme generator",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Recreation of Red v1 meme generator cog!",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,

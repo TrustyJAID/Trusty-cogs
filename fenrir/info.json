@@ -2,15 +2,12 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Create reaction messages to kick or ban users!",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Give users the option to ban or kick themselves via reactions. Works with Insult and Compliment cogs if installed.\n\n WARNING: This will trigger on any emojis reacted to the message to add more chaos so be cautious.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
         6,
@@ -24,7 +21,6 @@
     "required_cogs" : [],
     "requirements" : [],
     "short" : "Give users the option to kick, ban, or insult themselves via reactions.",
-    "tags" : [
-    ],
+    "tags" : [],
     "type" : "COG"
 }

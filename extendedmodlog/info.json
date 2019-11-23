@@ -3,11 +3,12 @@
         "RePulsR",
         "TrustyJAID"
     ],
-    "bot_version" : "3.1.3",
     "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Please ensure that the modlog cog is loaded for this cog to work. The channel is set via `[p]modlogset modlog #channel`.",
+    "max_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.3",
     "min_python_version" : [
         3,
         6,
