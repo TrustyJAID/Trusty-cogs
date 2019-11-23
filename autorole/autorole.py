@@ -51,11 +51,14 @@ class Autorole(commands.Cog):
         else:
             print(m + _("\n I also don't have permission to speak in #") + channel.name)
 
-    async def get_colour(self, guild):
-        if await self.bot.db.guild(guild).use_bot_color():
-            return guild.me.colour
-        else:
-            return await self.bot.db.color()
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
 
     @listener()
     async def on_message(self, message):
@@ -166,7 +169,7 @@ class Autorole(commands.Cog):
             if not role_name_str:
                 role_name_str = "None"
             if ctx.channel.permissions_for(ctx.me).embed_links:
-                embed = discord.Embed(colour=await self.get_colour(guild))
+                embed = discord.Embed(colour=await self.get_colour(ctx.channel))
                 embed.set_author(name=_("Autorole settings for ") + guild.name)
                 embed.add_field(name=_("Current autorole state: "), value=str(enabled))
                 embed.add_field(name=_("Current Roles: "), value=str(role_name_str))
