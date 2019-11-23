@@ -13,20 +13,20 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 
 | Name | Status/Version | Description (Click to see full status)
 | --- | --- | --- |
-| Hockey | **2.4.0** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
+| Hockey | **2.7.1** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
 | Notsobot | **Release**| <details><summary>Working cog for many of NotSoBot's commands.</summary> Has lots of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
-| ReTrigger | **2.6.5** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
+| ReTrigger | **2.8.4** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | Spoiler | **Beta**| <details><summary>Post spoiler messages in chat and react to the message to view the spoilers. </summary></details> |
-| ExtendedModLog | **2.1.0**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
+| ExtendedModLog | **2.1.4**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
 | Badges | **Release** | <details><summary>Create your own badge with your discord info.</summary> Includes templates for fake CIA, NSA, FBI, Discord, and every NHL hockey team. Requirements: pillow</details> |
 | Tweets | **Release** | <details><summary>A modified version of Palmtree5's twitter cog. </summary>Utilizes twitter streams to setup a twitter channel to post user tweets. Requirements: tweepy</details> |
-| Translate | **2.0.0** | <details><summary>Add flag emojis to messages to translate to that language or translate messages by command.</summary> (Uses Google Translate and may incur some fees) </details> |
+| Translate | **2.1.1** | <details><summary>Add flag emojis to messages to translate to that language or translate messages by command.</summary> (Uses Google Translate and may incur some fees) </details> |
 | AddImage | **Release** | <details><summary>Allows you to add images to be posted on command.</summary> Stores the image in the bot folder then uploads the image directly. Owners may add images globally.</details> |
 | Emojireact | **Release** | <details><summary>Have your bot react to emojis in messages with the emoji! </summary></details> |
 | Faces | **Release** | <details><summary>Find your own Japanese style emoji face courtesy of the CIA. </summary></details> |
 | REKT | **Release** |  <details><summary>Display a random list of funny rekt messages. </summary></details> |
 | Weather | **Release** | <details><summary>check the current weather in many cities around the world including in Kelvin. </details> |
-| Starboad | **Release** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
+| Starboad | **2.1.3** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
 | Imgflip | **Release** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
 | Imagemaker | **Release** | <details><summary>A cog to paste avatars onto images like beautiful and pepe.</summary> Requirements: pillow, opencv-python, and numpy</details> |
 | Conversions | **Release** | <details><summary>Currency, crypto, and stocks commands. </summary></details> |
