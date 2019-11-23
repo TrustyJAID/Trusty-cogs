@@ -98,16 +98,24 @@ class AddImage(commands.Cog):
             return True
         elif message.guild is None:
             return True
-        guild_settings = self.bot.db.guild(message.guild)
-        local_blacklist = await guild_settings.blacklist()
-        local_whitelist = await guild_settings.whitelist()
+        try:
+            guild_settings = self.bot.db.guild(message.guild)
+            local_blacklist = await guild_settings.blacklist()
+            local_whitelist = await guild_settings.whitelist()
 
-        _ids = [r.id for r in message.author.roles if not r.is_default()]
-        _ids.append(message.author.id)
-        if local_whitelist:
-            return any(i in local_whitelist for i in _ids)
+            _ids = [r.id for r in message.author.roles if not r.is_default()]
+            _ids.append(message.author.id)
+            if local_whitelist:
+                return any(i in local_whitelist for i in _ids)
 
-        return not any(i in local_blacklist for i in _ids)
+            return not any(i in local_blacklist for i in _ids)
+        except AttributeError:
+            return await self.bot.allowed_by_whitelist_blacklist(
+                message.author,
+                who_id=message.author.id,
+                guild_id=message.guild.id,
+                role_ids=[r.id for r in message.author.roles]
+            )
 
     async def global_perms(self, message):
         """Check the user is/isn't globally whitelisted/blacklisted.
@@ -115,12 +123,14 @@ class AddImage(commands.Cog):
         """
         if await self.bot.is_owner(message.author):
             return True
+        try:
+            whitelist = await self.bot.db.whitelist()
+            if whitelist:
+                return message.author.id in whitelist
 
-        whitelist = await self.bot.db.whitelist()
-        if whitelist:
-            return message.author.id in whitelist
-
-        return message.author.id not in await self.bot.db.blacklist()
+            return message.author.id not in await self.bot.db.blacklist()
+        except AttributeError:
+            return await self.bot.allowed_by_whitelist_blacklist(message.author)
 
     async def check_ignored_channel(self, message):
         """
