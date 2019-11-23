@@ -56,11 +56,14 @@ class EventMixin:
         self.config: Config
         self.bot: Red
 
-    async def get_colour(self, guild):
-        if await self.bot.db.guild(guild).use_bot_color():
-            return guild.me.colour
-        else:
-            return await self.bot.db.color()
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
 
     async def member_can_run(self, ctx):
         """Check if a user can run a command.
@@ -124,13 +127,19 @@ class EventMixin:
             return
 
         if privs == "MOD":
-            mod_role_list = await ctx.bot.db.guild(guild).mod_role()
+            try:
+                mod_role_list = await ctx.bot.db.guild(guild).mod_role()
+            except AttributeError:
+                mod_role_list = await ctx.bot.get_mod_roles(guild)
             if mod_role_list != []:
                 role = ", ".join(guild.get_role(mod_role).mention for mod_role in mod_role_list) + f"\n{privs}"
             else:
                 role = _("Not Set\nMOD")
         elif privs == "ADMIN":
-            admin_role_list = await ctx.bot.db.guild(guild).admin_role()
+            try:
+                admin_role_list = await ctx.bot.db.guild(guild).admin_role()
+            except AttributeError:
+                admin_role_list = await ctx.bot.get_admin_roles(guild)
             if admin_role_list != []:
                 role = ", ".join(guild.get_role(admin_role).mention for admin_role in admin_role_list) + f"\n{privs}"
             else:
@@ -155,7 +164,7 @@ class EventMixin:
             embed = discord.Embed(
                 title=infomessage,
                 description=message.content,
-                colour=await self.get_colour(guild),
+                colour=await self.get_colour(channel),
                 timestamp=time,
             )
             embed.add_field(name=_("Channel"), value=message.channel.mention)

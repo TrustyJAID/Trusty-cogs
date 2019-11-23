@@ -43,7 +43,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.1.3"
+    __version__ = "2.1.4"
 
     def __init__(self, bot):
         self.bot = bot
