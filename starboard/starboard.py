@@ -21,7 +21,7 @@ class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """
-    __version__ = "2.1.2"
+    __version__ = "2.1.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -40,7 +40,7 @@ class Starboard(commands.Cog):
         if ctx.invoked_subcommand is None:
             guild = ctx.guild
             if await self.config.guild(guild).starboards():
-                embed = discord.Embed(colour=await self.get_colour(guild))
+                embed = discord.Embed(colour=await self.get_colour(ctx.channel))
                 embed.title = _("Starboard settings for ") + guild.name
                 text_msg = ""
                 s_boards = await self.config.guild(guild).starboards()
@@ -646,11 +646,14 @@ class Starboard(commands.Cog):
         else:
             return starboard
 
-    async def get_colour(self, guild):
-        if await self.bot.db.guild(guild).use_bot_color():
-            return guild.me.colour
-        else:
-            return await self.bot.db.color()
+    async def get_colour(self, channel):
+        try:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
 
     async def get_starboard_from_emoji(self, guild: discord.Guild, emoji: str):
         starboards = await self.config.guild(guild).starboards()
@@ -682,7 +685,7 @@ class Starboard(commands.Cog):
             if starboard.colour in ["user", "member", "author"]:
                 em.color = author.colour
             elif starboard.colour == "bot":
-                em.color = await self.get_colour(guild)
+                em.color = await self.get_colour(channel)
             else:
                 em.color = discord.Colour(starboard.colour)
             em.description = msg.content
