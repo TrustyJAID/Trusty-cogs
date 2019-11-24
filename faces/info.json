@@ -6,7 +6,7 @@
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Find what your face is like!",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,

@@ -10,7 +10,7 @@
     "disabled" : false,
     "hidden" : true,
     "install_msg" : "Separate loadable dev functions instead of `--dev` startup command",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,

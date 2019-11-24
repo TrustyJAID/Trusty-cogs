@@ -6,7 +6,7 @@
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Use `[p]destiny` to see available commands. Note: This cog will download ~160 MB of data to more efficiently search for item names.",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,

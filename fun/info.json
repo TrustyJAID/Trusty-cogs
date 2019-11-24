@@ -7,7 +7,7 @@
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Type `[p]help` to see all the commands.",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,

@@ -6,7 +6,7 @@
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "This cog comes with a bundled data folder containing fonts. Type [p]badges to see what badges are available!",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,

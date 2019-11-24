@@ -6,7 +6,7 @@
     "disabled" : true,
     "hidden" : true,
     "install_msg" : "This cog will create a folder and save some files locally. Do `[p]qchannel` to setup a channel for new posts.",
-    "max_bot_version" : "3.0.0",
+    "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
         3,
