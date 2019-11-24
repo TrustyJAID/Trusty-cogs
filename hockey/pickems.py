@@ -26,6 +26,7 @@ class Pickems:
         home_team: str,
         away_team: str,
         votes: dict,
+        name: str,
         winner: str = None,
     ):
         super().__init__()
@@ -42,6 +43,7 @@ class Pickems:
             TEAMS[away_team]["emoji"] if away_team in TEAMS else "nhl:496510372828807178"
         )
         self.winner = winner
+        self.name = name
 
     def add_vote(self, user_id, team):
         time_now = datetime.utcnow()
@@ -70,6 +72,10 @@ class Pickems:
         if str(user_id) not in self.votes:
             self.votes[str(user_id)] = team_choice
 
+    @staticmethod
+    def pickems_name(game):
+        return f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
+
     async def set_pickem_winner(self, game):
         """
             Sets the pickem object winner from game object
@@ -97,10 +103,7 @@ class Pickems:
                 pickems = []
             if new_name in pickems:
                 return_pickems.append(pickems[new_name])
-            # for name, p in pickems.items():
-                # if p.home_team == game.home_team and p.away_team == game.away_team:
-                    # if p.game_start == game.game_start:
-                        # return_pickems.append(p)
+
         return return_pickems
 
     @staticmethod
@@ -112,35 +115,10 @@ class Pickems:
                 continue
             # pickems = await config.guild(guild).pickems()
             if pickems is None:
-                pickems = []
-            for name, p in pickems.items():
-                if p.home_team == game.home_team and p.away_team == game.away_team:
-                    if p.game_start == game.game_start:
-                        p.set_pickem_winner(game)
-
-        # pickem_obj = await Pickems.find_pickems_object(bot, game)
-        # if len(pickem_obj) == 0:
-            # return
-        # config = hockey_config()
-        # for pickem in pickem_obj:
-            # for channel in pickem.channel:
-                # chn = bot.get_channel(channel)
-                # if chn is None:
-                    # continue
-                # if pickem.winner is not None:
-                    # continue
-                # p_data = await config.guild(chn.guild).pickems()
-                # try:
-                    # p_data.remove(pickem.to_json())
-                # except ValueError:
-                    # log.error(
-                        # "pickems object doesn't exist in the list :thonk: "
-                        # + pickem.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
-                    # )
-                    # continue
-                # await pickem.set_pickem_winner(game)
-                # p_data.append(pickem.to_json())
-                # await config.guild(chn.guild).pickems.set(p_data)
+                pickems = {}
+            pickem_name = Pickems.pickems_name(game)
+            if pickem_name in pickems:
+                pickems[pickem_name].set_winner(game)
 
     @staticmethod
     async def create_pickem_object(bot, guild, message, channel, game):
@@ -150,7 +128,7 @@ class Pickems:
         """
         # config = hockey_config()
         pickems = bot.get_cog("Hockey").all_pickems.get(str(guild.id), None)
-        new_name = f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
+        new_name = Pickems.pickems_name(game)
         if type(pickems) is list:
             pickems = {}
         if pickems is None:
@@ -178,10 +156,11 @@ class Pickems:
                     "home_team": game.home_team,
                     "away_team": game.away_team,
                     "votes": {},
+                    "name": new_name,
                     "winner": None,
                 })
 
-            bot.get_cog("Hockey").all_pickems[str((guild.id))] = pickems
+            bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             log.debug("creating new pickems")
             # await config.guild(guild).pickems.set(pickems)
             return True
@@ -192,7 +171,7 @@ class Pickems:
             old_pickem.message.append(message.id)
             old_pickem.channel.append(message.id)
             pickems[old_name] = old_pickem
-            bot.get_cog("Hockey").all_pickems[str((guild.id))] = pickems
+            bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             # await config.guild(guild).pickems.set(pickems)
             log.debug("using old pickems")
             return False
@@ -281,6 +260,8 @@ class Pickems:
                 data.append(new_chn)
 
             for new_channel in data:
+                if new_channel is None:
+                    continue
                 if new_channel.guild.id not in save_data:
                     save_data[new_channel.guild.id] = [new_channel.id]
                 else:

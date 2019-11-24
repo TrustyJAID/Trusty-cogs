@@ -76,9 +76,12 @@ class Goal:
 
     @classmethod
     async def from_json(cls, data: dict, players: dict):
-        scorer_id = [
-            p["player"]["id"] for p in data["players"] if p["playerType"] in ["Scorer", "Shooter"]
-        ]
+        scorer_id = []
+        if "players" in data:
+            scorer_id = [
+                p["player"]["id"] for p in data["players"] if p["playerType"] in ["Scorer", "Shooter"]
+            ]
+
         if "strength" in data["result"]:
             str_dat = data["result"]["strength"]["name"]
             strength = "Even Strength" if str_dat == "Even" else str_dat

@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.7.1"
+    __version__ = "2.7.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -532,7 +532,8 @@ class Hockey(commands.Cog):
         """
             Creates the next gdc for the server
         """
-
+        if not await self.config.guild(ctx.guild).gdc_team():
+            return await ctx.send(_("No team was setup for game day channels in this server."))
         if await self.config.guild(ctx.guild).create_channels():
             await GameDayChannels.create_gdc(self.bot, ctx.guild)
         await ctx.send(_("Game day channels created."))
