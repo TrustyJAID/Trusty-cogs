@@ -191,7 +191,18 @@ class Events:
         channel = await self.get_welcome_channel(member, guild)
         msg = rand_choice(await self.config.guild(guild).GREETING())
         is_embed = await self.config.guild(guild).EMBED()
+        delete_after = await self.config.guild(guild).DELETE_AFTER_GREETING()
+        save_msg = None
 
+        if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
+            old_id = await self.config.guild(guild).LAST_GREETING()
+            try:
+                old_msg = await channel.fetch_message(old_id)
+                await old_msg.delete()
+            except discord.errors.NotFound:
+                pass
+            except discord.errors.Forbidden:
+                await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
         # whisper the user if needed
         if not await self.config.guild(guild).GROUPED():
             if await self.config.guild(guild).WHISPER():
@@ -220,15 +231,26 @@ class Events:
             em = await self.make_embed(member, guild, msg)
             if await self.config.guild(guild).EMBED_DATA.mention():
                 if await self.config.guild(guild).GROUPED():
-                    await channel.send(
-                        humanize_list([m.mention for m in member]), embed=em, delete_after=60
+                    save_msg = await channel.send(
+                        humanize_list([m.mention for m in member]),
+                        embed=em,
+                        delete_after=delete_after
                     )
                 else:
-                    await channel.send(member.mention, embed=em)
+                    save_msg = await channel.send(
+                        member.mention,
+                        embed=em,
+                        delete_after=delete_after
+                    )
             else:
-                await channel.send(embed=em)
+                save_msg = await channel.send(embed=em, delete_after=delete_after)
         else:
-            await channel.send(await self.convert_parms(member, guild, msg))
+            save_msg = await channel.send(
+                await self.convert_parms(member, guild, msg),
+                delete_after=delete_after
+            )
+        if save_msg:
+            await self.config.guild(guild).LAST_GREETING.set(save_msg.id)
 
     @listener()
     async def on_member_remove(self, member):
@@ -247,6 +269,8 @@ class Events:
         bot_welcome = member.bot and await self.config.guild(guild).BOTS_MSG()
         msg = bot_welcome or rand_choice(await self.config.guild(guild).GOODBYE())
         is_embed = await self.config.guild(guild).EMBED()
+        delete_after = await self.config.guild(guild).DELETE_AFTER_GOODBYE()
+        save_msg = None
 
         # grab the welcome channel
         # guild_settings = await self.config.guild(guild).guild_settings()
@@ -259,6 +283,16 @@ class Events:
             )
             return
         # we can stop here
+        if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
+            old_id = await self.config.guild(guild).LAST_GREETING()
+            try:
+                old_msg = await channel.fetch_message(old_id)
+                await old_msg.delete()
+            except discord.errors.NotFound:
+                log.debug(_("Message not found for deletion."))
+                pass
+            except discord.errors.Forbidden:
+                await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
 
         if not channel.permissions_for(guild.me).send_messages:
             log.info(_("Permissions Error in {guild}"))
@@ -267,11 +301,15 @@ class Events:
             if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg)
                 if await self.config.guild(guild).EMBED_DATA.mention():
-                    await channel.send(member.mention, embed=em)
+                    save_msg = await channel.send(member.mention, embed=em, delete_after=delete_after)
                 else:
-                    await channel.send(embed=em)
+                    save_msg = await channel.send(embed=em, delete_after=delete_after)
             else:
-                await channel.send(await self.convert_parms(member, guild, msg))
+                save_msg = await channel.send(
+                    await self.convert_parms(member, guild, msg),
+                    delete_after=delete_after)
+        if save_msg:
+            await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
 
     def speak_permissions(self, guild, channel):
         if channel is None:

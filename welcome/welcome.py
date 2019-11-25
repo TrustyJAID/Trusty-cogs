@@ -24,6 +24,12 @@ default_settings = {
     "BOTS_MSG": None,
     "BOTS_ROLE": None,
     "EMBED": False,
+    "DELETE_PREVIOUS_GREETING": False,
+    "DELETE_AFTER_GREETING": None,
+    "DELETE_PREVIOUS_GOODBYE": False,
+    "DELETE_AFTER_GOODBYE": None,
+    "LAST_GREETING": None,
+    "LAST_GOODBYE": None,
     "EMBED_DATA": {
         "title": None,
         "colour": 0,
@@ -81,6 +87,10 @@ class Welcome(Events, commands.Cog):
                 "CHANNEL": _("Channel "),
                 "LEAVE_ON": _("Goodbyes On "),
                 "LEAVE_CHANNEL": _("Leaving Channel "),
+                "DELETE_PREVIOUS_GREETING": _("Previous greeting deleted "),
+                "DELETE_PREVIOUS_GOODBYE": _("Previous goodbye deleted "),
+                "DELETE_AFTER_GREETING": _("Greeting deleted after "),
+                "DELETE_AFTER_GOODBYE": _("Goodbye deleted after "),
                 "WHISPER": _("Whisper "),
                 "BOTS_MSG": _("Bots message "),
                 "BOTS_ROLE": _("Bots role "),
@@ -221,6 +231,45 @@ class Welcome(Events, commands.Cog):
             await ctx.send(_("I will no longer welcome new users."))
         await self.config.guild(guild).ON.set(guild_settings)
 
+    @welcomeset_greeting.command(name="deleteprevious")
+    async def welcomeset_greeting_delete_previous(self, ctx):
+        """
+            Turns on/off deleting the previous welcome message when a user joins
+        """
+        guild = ctx.message.guild
+        guild_settings = await self.config.guild(guild).DELETE_PREVIOUS_GREETING()
+        guild_settings = not guild_settings
+        if guild_settings:
+            await ctx.send(
+                _("I will now delete the previous welcome message when a new user joins.")
+            )
+            # await self.send_testing_msg(ctx)
+        else:
+            await ctx.send(
+                _("I will stop deleing the previous welcome messageg when a new user joins.")
+            )
+        await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(guild_settings)
+
+    @welcomeset_greeting.command(name="deleteafter")
+    async def welcomeset_greeting_delete_after(self, ctx, delete_after: int = None):
+        """
+            Set the time after which a welcome message is deleted in seconds.
+
+            Providing no input will set the bot to not delete after any time.
+        """
+        if delete_after:
+            await ctx.send(
+                _("I will now delete welcome messages after {time} seconds.").format(
+                    time=delete_after
+                )
+            )
+            # await self.send_testing_msg(ctx)
+        else:
+            await ctx.send(
+                _("I will not delete welcome messages after a set time.")
+            )
+        await self.config.guild(ctx.guild).DELETE_AFTER_GREETING.set(delete_after)
+
     @welcomeset_greeting.command(name="channel")
     async def welcomeset_greeting_channel(self, ctx, channel: discord.TextChannel):
         """
@@ -354,6 +403,45 @@ class Welcome(Events, commands.Cog):
         msg = _("I will now send goodbye messages to {channel}").format(channel=channel.mention)
         await ctx.send(msg)
         await self.send_testing_msg(ctx, leave=True)
+
+    @welcomeset_goodbye.command(name="deleteprevious")
+    async def welcomeset_goodbye_delete_previous(self, ctx):
+        """
+            Turns on/off deleting the previous welcome message when a user joins
+        """
+        guild = ctx.message.guild
+        guild_settings = await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE()
+        guild_settings = not guild_settings
+        if guild_settings:
+            await ctx.send(
+                _("I will now delete the previous goodbye message when user leaves.")
+            )
+            # await self.send_testing_msg(ctx)
+        else:
+            await ctx.send(
+                _("I will stop deleing the previous goodbye messageg when a user leaves.")
+            )
+        await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(guild_settings)
+
+    @welcomeset_goodbye.command(name="deleteafter")
+    async def welcomeset_goodbye_delete_after(self, ctx, delete_after: int = None):
+        """
+            Set the time after which a welcome message is deleted in seconds.
+
+            Providing no input will set the bot to not delete after any time.
+        """
+        if delete_after:
+            await ctx.send(
+                _("I will now delete goodbye messages after {time} seconds.").format(
+                    time=delete_after
+                )
+            )
+            # await self.send_testing_msg(ctx)
+        else:
+            await ctx.send(
+                _("I will not delete welcome messages after a set time.")
+            )
+        await self.config.guild(ctx.guild).DELETE_AFTER_GOODBYE.set(delete_after)
 
     @welcomeset_goodbye.command(name="test")
     async def welcomeset_goodbye_test(self, ctx):
