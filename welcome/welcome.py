@@ -1,6 +1,7 @@
 import re
 import asyncio
 import logging
+from datetime import datetime
 
 import discord
 
@@ -24,6 +25,7 @@ default_settings = {
     "BOTS_MSG": None,
     "BOTS_ROLE": None,
     "EMBED": False,
+    "JOINED_TODAY": False,
     "DELETE_PREVIOUS_GREETING": False,
     "DELETE_AFTER_GREETING": None,
     "DELETE_PREVIOUS_GOODBYE": False,
@@ -61,6 +63,7 @@ class Welcome(Events, commands.Cog):
         self.config.register_guild(**default_settings)
         self.group_check = bot.loop.create_task(self.group_welcome())
         self.joined = {}
+        self.today_count = {"now": datetime.now()}
 
     async def group_welcome(self):
         await self.bot.wait_until_ready()
@@ -249,6 +252,27 @@ class Welcome(Events, commands.Cog):
                 _("I will stop deleing the previous welcome messageg when a new user joins.")
             )
         await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(guild_settings)
+
+    @welcomeset_greeting.command(name="count")
+    async def welcomeset_greeting_count(self, ctx):
+        """
+            Turns on/off showing how many users join each day.
+
+            This resets 24 hours after the cog was loaded.
+        """
+        guild = ctx.message.guild
+        guild_settings = await self.config.guild(guild).JOINED_TODAY()
+        guild_settings = not guild_settings
+        if guild_settings:
+            await ctx.send(
+                _("I will now show how many people join the server each day.")
+            )
+            # await self.send_testing_msg(ctx)
+        else:
+            await ctx.send(
+                _("I will stop showing how many people join the server each day.")
+            )
+        await self.config.guild(guild).JOINED_TODAY.set(guild_settings)
 
     @welcomeset_greeting.command(name="deleteafter")
     async def welcomeset_greeting_delete_after(self, ctx, delete_after: int = None):

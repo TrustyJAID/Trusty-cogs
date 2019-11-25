@@ -30,6 +30,7 @@ class Events:
         self.bot: Red
         self.config: Config
         self.joined: dict
+        self.today_count: dict
 
     @staticmethod
     def transform_arg(result, attr, obj) -> str:
@@ -63,6 +64,13 @@ class Events:
                         param = params[0]
             log.debug(param)
             raw_response = raw_response.replace("{" + result[0] + "}", param)
+        if await self.config.guild(guild).JOINED_TODAY():
+            raw_response = _(
+                "{raw_response}\n\n\n{count} users joined today!"
+            ).format(
+                raw_response=raw_response,
+                count=self.today_count[guild.id]
+            )
         return raw_response
 
     async def make_embed(
@@ -126,6 +134,16 @@ class Events:
             return await self.bot_welcome(member, guild)
         if guild.id not in self.joined:
             self.joined[guild.id] = []
+
+        if (datetime.now() - self.today_count["now"]).days >= 1:
+            self.today_count = {"now": datetime.now()}
+            # reset the daily count when a user joins the following day or when the cog is reloaded
+
+        if guild.id not in self.today_count:
+            self.today_count[guild.id] = 1
+        else:
+            self.today_count[guild.id] += 1
+
         if await self.config.guild(guild).GROUPED() and member not in self.joined[guild.id]:
             log.debug("member joined")
             return self.joined[guild.id].append(member)
@@ -196,13 +214,14 @@ class Events:
 
         if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
             old_id = await self.config.guild(guild).LAST_GREETING()
-            try:
-                old_msg = await channel.fetch_message(old_id)
-                await old_msg.delete()
-            except discord.errors.NotFound:
-                pass
-            except discord.errors.Forbidden:
-                await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
+            if channel is not None:
+                try:
+                    old_msg = await channel.fetch_message(old_id)
+                    await old_msg.delete()
+                except discord.errors.NotFound:
+                    pass
+                except discord.errors.Forbidden:
+                    await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
         # whisper the user if needed
         if not await self.config.guild(guild).GROUPED():
             if await self.config.guild(guild).WHISPER():
@@ -249,7 +268,7 @@ class Events:
                 await self.convert_parms(member, guild, msg),
                 delete_after=delete_after
             )
-        if save_msg:
+        if save_msg is not None:
             await self.config.guild(guild).LAST_GREETING.set(save_msg.id)
 
     @listener()
@@ -283,16 +302,17 @@ class Events:
             )
             return
         # we can stop here
-        if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
-            old_id = await self.config.guild(guild).LAST_GREETING()
-            try:
-                old_msg = await channel.fetch_message(old_id)
-                await old_msg.delete()
-            except discord.errors.NotFound:
-                log.debug(_("Message not found for deletion."))
-                pass
-            except discord.errors.Forbidden:
-                await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
+        if await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE():
+            old_id = await self.config.guild(guild).LAST_GOODBYE()
+            if channel is not None:
+                try:
+                    old_msg = await channel.fetch_message(old_id)
+                    await old_msg.delete()
+                except discord.errors.NotFound:
+                    log.debug(_("Message not found for deletion."))
+                    pass
+                except discord.errors.Forbidden:
+                    await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(False)
 
         if not channel.permissions_for(guild.me).send_messages:
             log.info(_("Permissions Error in {guild}"))
@@ -308,7 +328,7 @@ class Events:
                 save_msg = await channel.send(
                     await self.convert_parms(member, guild, msg),
                     delete_after=delete_after)
-        if save_msg:
+        if save_msg is not None:
             await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
 
     def speak_permissions(self, guild, channel):
