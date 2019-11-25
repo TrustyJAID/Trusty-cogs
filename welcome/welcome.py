@@ -250,7 +250,7 @@ class Welcome(Events, commands.Cog):
             # await self.send_testing_msg(ctx)
         else:
             await ctx.send(
-                _("I will stop deleing the previous welcome messageg when a new user joins.")
+                _("I will stop deleting the previous welcome message when a new user joins.")
             )
         await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(guild_settings)
 
@@ -444,7 +444,7 @@ class Welcome(Events, commands.Cog):
             # await self.send_testing_msg(ctx)
         else:
             await ctx.send(
-                _("I will stop deleing the previous goodbye messageg when a user leaves.")
+                _("I will stop deleting the previous goodbye message when a user leaves.")
             )
         await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(guild_settings)
 

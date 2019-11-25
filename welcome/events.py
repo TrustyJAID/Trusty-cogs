@@ -220,7 +220,7 @@ class Events:
 
         if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
             old_id = await self.config.guild(guild).LAST_GREETING()
-            if channel is not None:
+            if channel is not None and old_id is not None:
                 try:
                     old_msg = await channel.fetch_message(old_id)
                     await old_msg.delete()
@@ -310,7 +310,7 @@ class Events:
         # we can stop here
         if await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE():
             old_id = await self.config.guild(guild).LAST_GOODBYE()
-            if channel is not None:
+            if channel is not None and old_id is not None:
                 try:
                     old_msg = await channel.fetch_message(old_id)
                     await old_msg.delete()
