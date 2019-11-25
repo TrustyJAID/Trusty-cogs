@@ -160,6 +160,7 @@ class Welcome(Events, commands.Cog):
 
         {0} is user
         {1} is guild
+        {count} can be used to display number of users who have joined today.
         Default is set to:
             Welcome {0.name} to {1.name}!
 
@@ -591,6 +592,10 @@ class Welcome(Events, commands.Cog):
     async def title(self, ctx, *, title: str = ""):
         """
         Set the embed title
+
+        {0} is user
+        {1} is guild
+        {count} can be used to display number of users who have joined today.
         """
         await self.config.guild(ctx.guild).EMBED_DATA.title.set(title[:256])
         await ctx.tick()
@@ -599,6 +604,10 @@ class Welcome(Events, commands.Cog):
     async def footer(self, ctx, *, footer: str = ""):
         """
         Set the embed footer
+
+        {0} is user
+        {1} is guild
+        {count} can be used to display number of users who have joined today.
         """
         await self.config.guild(ctx.guild).EMBED_DATA.footer.set(footer[:256])
         await ctx.tick()
@@ -737,6 +746,8 @@ class Welcome(Events, commands.Cog):
     async def mention(self, ctx):
         """
         Toggle mentioning the user when they join
+
+        This will add a mention outside the embed so they actually get the mention.
         """
         cur_setting = await self.config.guild(ctx.guild).EMBED_DATA.mention()
         await self.config.guild(ctx.guild).EMBED_DATA.mention.set(not cur_setting)

@@ -43,10 +43,13 @@ class Events:
             return raw_result
         return str(getattr(obj, attr, raw_result))
 
-    async def convert_parms(self, member, guild, msg):
+    async def convert_parms(self, member, guild, msg, is_welcome):
         results = RE_POS.findall(msg)
         log.debug(results)
         raw_response = msg
+        user_count = self.today_count[guild.id] if guild.id in self.today_count else 1
+        raw_response = raw_response.replace("{count}", str(user_count))
+
         for result in results:
             log.debug(result)
             if int(result[1]) == 1:
@@ -64,12 +67,12 @@ class Events:
                         param = params[0]
             log.debug(param)
             raw_response = raw_response.replace("{" + result[0] + "}", param)
-        if await self.config.guild(guild).JOINED_TODAY():
+        if await self.config.guild(guild).JOINED_TODAY() and is_welcome:
             raw_response = _(
                 "{raw_response}\n\n\n{count} users joined today!"
             ).format(
                 raw_response=raw_response,
-                count=self.today_count[guild.id]
+                count=user_count
             )
         return raw_response
 
@@ -78,18 +81,21 @@ class Events:
         member: Union[discord.Member, List[discord.Member]],
         guild: discord.Guild,
         msg: str,
+        is_welcome: bool
     ):
         EMBED_DATA = await self.config.guild(guild).EMBED_DATA()
-        converted_msg = await self.convert_parms(member, guild, msg)
+        converted_msg = await self.convert_parms(member, guild, msg, is_welcome)
         em = discord.Embed(description=converted_msg)
         if isinstance(member, discord.Member):
             em.set_thumbnail(url=member.avatar_url_as(format="png"))
         if EMBED_DATA["colour"]:
             em.colour = EMBED_DATA["colour"]
         if EMBED_DATA["title"]:
-            em.title = await self.convert_parms(member, guild, EMBED_DATA["title"])
+            em.title = await self.convert_parms(member, guild, EMBED_DATA["title"], False)
         if EMBED_DATA["footer"]:
-            em.set_footer(text=await self.convert_parms(member, guild, EMBED_DATA["footer"]))
+            em.set_footer(
+                text=await self.convert_parms(member, guild, EMBED_DATA["footer"], False)
+            )
         if EMBED_DATA["thumbnail"]:
             url = EMBED_DATA["thumbnail"]
             if url == "guild":
@@ -170,13 +176,13 @@ class Events:
         if bot_welcome:
             # finally, welcome them
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, msg)
+                em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     await channel.send(member.mention, embed=em)
                 else:
                     await channel.send(embed=em)
             else:
-                await channel.send(await self.convert_parms(member, guild, bot_welcome))
+                await channel.send(await self.convert_parms(member, guild, bot_welcome, False))
 
     async def get_welcome_channel(self, member, guild):
         # grab the welcome channel
@@ -227,13 +233,13 @@ class Events:
             if await self.config.guild(guild).WHISPER():
                 try:
                     if is_embed:
-                        em = await self.make_embed(member, guild, msg)
+                        em = await self.make_embed(member, guild, msg, False)
                         if await self.config.guild(guild).EMBED_DATA.mention():
                             await member.send(member.mention, embed=em)
                         else:
                             await member.send(embed=em)
                     else:
-                        await member.send(await self.convert_parms(member, guild, msg))
+                        await member.send(await self.convert_parms(member, guild, msg, False))
                 except discord.errors.Forbidden:
                     log.info(
                         _(
@@ -247,7 +253,7 @@ class Events:
         if only_whisper:
             return
         if is_embed and channel.permissions_for(guild.me).embed_links:
-            em = await self.make_embed(member, guild, msg)
+            em = await self.make_embed(member, guild, msg, True)
             if await self.config.guild(guild).EMBED_DATA.mention():
                 if await self.config.guild(guild).GROUPED():
                     save_msg = await channel.send(
@@ -265,7 +271,7 @@ class Events:
                 save_msg = await channel.send(embed=em, delete_after=delete_after)
         else:
             save_msg = await channel.send(
-                await self.convert_parms(member, guild, msg),
+                await self.convert_parms(member, guild, msg, True),
                 delete_after=delete_after
             )
         if save_msg is not None:
@@ -319,14 +325,14 @@ class Events:
             return
         elif not member.bot:
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, msg)
+                em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     save_msg = await channel.send(member.mention, embed=em, delete_after=delete_after)
                 else:
                     save_msg = await channel.send(embed=em, delete_after=delete_after)
             else:
                 save_msg = await channel.send(
-                    await self.convert_parms(member, guild, msg),
+                    await self.convert_parms(member, guild, msg, False),
                     delete_after=delete_after)
         if save_msg is not None:
             await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
@@ -342,6 +348,7 @@ class Events:
         guild_settings = await self.config.guild(guild).get_raw()
         # log.info(guild_settings)
         channel = guild.get_channel(guild_settings["CHANNEL"])
+        send_count = not leave
         if leave:
             channel = guild.get_channel(guild_settings["LEAVE_CHANNEL"])
         rand_msg = msg or rand_choice(guild_settings["GREETING"])
@@ -362,10 +369,13 @@ class Events:
             await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if not bot and guild_settings["WHISPER"]:
             if is_embed:
-                em = await self.make_embed(member, guild, rand_msg)
+                em = await self.make_embed(member, guild, rand_msg, False)
                 await ctx.author.send(embed=em, delete_after=60)
             else:
-                await ctx.author.send(await self.convert_parms(member, guild, rand_msg), delete_after=60)
+                await ctx.author.send(
+                    await self.convert_parms(member, guild, rand_msg, False),
+                    delete_after=60
+                )
             if guild_settings["WHISPER"] != "BOTH":
                 return
         if bot or whisper_settings is not True:
@@ -374,7 +384,7 @@ class Events:
             if guild_settings["GROUPED"]:
                 member = [ctx.author, ctx.me]
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, rand_msg)
+                em = await self.make_embed(member, guild, rand_msg, send_count)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     if guild_settings["GROUPED"]:
                         await channel.send(
@@ -386,5 +396,5 @@ class Events:
                     await channel.send(embed=em, delete_after=60)
             else:
                 await channel.send(
-                    await self.convert_parms(member, guild, rand_msg), delete_after=60
+                    await self.convert_parms(member, guild, rand_msg, send_count), delete_after=60
                 )
