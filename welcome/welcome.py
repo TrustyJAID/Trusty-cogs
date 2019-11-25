@@ -63,7 +63,7 @@ class Welcome(Events, commands.Cog):
         self.config.register_guild(**default_settings)
         self.group_check = bot.loop.create_task(self.group_welcome())
         self.joined = {}
-        self.today_count = {"now": datetime.now()}
+        self.today_count = {"now": datetime.utcnow()}
 
     async def group_welcome(self):
         await self.bot.wait_until_ready()

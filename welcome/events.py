@@ -141,8 +141,8 @@ class Events:
         if guild.id not in self.joined:
             self.joined[guild.id] = []
 
-        if (datetime.now() - self.today_count["now"]).days >= 1:
-            self.today_count = {"now": datetime.now()}
+        if datetime.utcnow().date() > self.today_count["now"].date():
+            self.today_count = {"now": datetime.utcnow()}
             # reset the daily count when a user joins the following day or when the cog is reloaded
 
         if guild.id not in self.today_count:
