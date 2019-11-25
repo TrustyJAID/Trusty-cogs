@@ -118,7 +118,7 @@ class Pickems:
                 pickems = {}
             pickem_name = Pickems.pickems_name(game)
             if pickem_name in pickems:
-                pickems[pickem_name].set_winner(game)
+                pickems[pickem_name].set_pickem_winner(game)
 
     @staticmethod
     async def create_pickem_object(bot, guild, message, channel, game):
