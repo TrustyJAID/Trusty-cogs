@@ -778,50 +778,30 @@ class ServerStats(commands.Cog):
         embed.colour = await ctx.embed_colour()
         embed.set_author(name=f"{member} ({member.id})", icon_url=member.avatar_url)
         if await self.bot.is_owner(ctx.author):
-            guild_list = []
-            for guild in self.bot.guilds:
-                members = [member.id for member in guild.members]
-                if member.id in members:
-                    guild_list.append(guild)
-            if guild_list != []:
-                msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
-                embed_list = ""
-                for guild in guild_list:
-                    m = guild.get_member(member.id)
-                    msg += f"{m.nick if m.nick else ''} in __{guild.name}__ ({guild.id})\n"
-                    embed_list += f"{m.nick if m.nick else ''} in __{guild.name}__ ({guild.id})\n"
-                if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for page in pagify(embed_list, ["\n"], shorten_by=1000):
-                        embed.add_field(name=_("Shared Servers"), value=page)
-                    await ctx.send(embed=embed)
-                else:
-                    for page in pagify(msg, ["\n"], shorten_by=1000):
-                        await ctx.send(page)
-            else:
-                if ctx.channel.permissions_for(ctx.me).embed_links:
-                    await ctx.send(embed=embed)
-                else:
-                    msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
-                    await ctx.send(msg)
+            guild_list = [m for m in self.bot.get_all_members() if m.id == member.id]
         else:
-            guild_list = []
-            for guild in self.bot.guilds:
-                members = [member.id for member in guild.members]
-                if member.id in members and ctx.author.id in members:
-                    guild_list.append(guild)
-            if guild_list != []:
-                msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
-                embed_list = ""
-                for guild in guild_list:
-                    msg += f"__{guild.name}__ ({guild.id})\n"
-                    embed_list += f"__{guild.name}__ ({guild.id})\n"
-                if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for page in pagify(embed_list, ["\n"], shorten_by=1000):
-                        embed.add_field(name=_("Shared Servers"), value=page)
-                    await ctx.send(embed=embed)
-                else:
-                    for page in pagify(msg, ["\n"], shorten_by=1000):
-                        await ctx.send(page)
+            guild_list = [
+                m for m in self.bot.get_all_members()
+                if m.id == member.id and ctx.author in m.guild.members
+            ]
+
+        if guild_list != []:
+            msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
+            embed_list = ""
+            for m in guild_list:
+                # m = guild.get_member(member.id)
+                msg += f"{m.nick if m.nick else ''} in __{m.guild.name}__ ({m.guild.id})\n"
+                embed_list += f"{m.nick if m.nick else ''} in __{m.guild.name}__ ({m.guild.id})\n"
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                for page in pagify(embed_list, ["\n"], shorten_by=1000):
+                    embed.add_field(name=_("Shared Servers"), value=page)
+                await ctx.send(embed=embed)
+            else:
+                for page in pagify(msg, ["\n"], shorten_by=1000):
+                    await ctx.send(page)
+        else:
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                await ctx.send(embed=embed)
             else:
                 msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                 await ctx.send(msg)
