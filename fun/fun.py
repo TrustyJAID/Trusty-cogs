@@ -386,5 +386,5 @@ class Fun(commands.Cog):
         for i in reactions:
             try:
                 await msg_id.add_reaction(i)
-            except discord.errors.Forbidden:
+            except (discord.errors.Forbidden, discord.errors.HTTPException):
                 return
