@@ -228,7 +228,7 @@ class Standings:
             if team == post_standings[-1]:
                 new_dict[team.division] += "\nFrom: https://www.nhl.com/standings"
         for div in new_dict:
-            em.add_field(name=f"{div} Division", value=new_dict[div])
+            em.add_field(name=f"{div} Division", value=new_dict[div], inline=False)
         em.set_author(
             name="NHL Standings",
             url="https://www.nhl.com/standings",
