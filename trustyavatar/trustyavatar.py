@@ -2,6 +2,7 @@ import discord
 import asyncio
 import aiohttp
 import functools
+import logging
 import sys
 
 from redbot.core import commands, checks, Config
@@ -12,6 +13,7 @@ from io import BytesIO
 from typing import Union, Optional
 
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+log = logging.getLogger("red.trusty-cogs.ServerStats")
 
 if listener is None:  # thanks Sinbad
     def listener(name=None):
@@ -308,7 +310,7 @@ class TrustyAvatar(commands.Cog):
         activity = None
         status = None
         if date.month == 12 and date.day <= 25:
-            url = status["xmas"]
+            url = new_status["xmas"]
             activity = discord.Activity(name="Merry Christmas!", type=discord.ActivityType.playing)
             status = discord.Status.online
         elif (date.month == 12 and date.day >= 30) or (date.month == 1 and date.day == 1):
@@ -345,12 +347,14 @@ class TrustyAvatar(commands.Cog):
             if await self.config.streaming():
                 if is_streaming:
                     await self.change_activity(None, owner.activity)
+                    log.debug("Changing to owner is streaming status.")
             if await self.config.status() and not is_streaming:
                 # we don't want to override the streaming status if the owner is streaming
                 await self.change_activity(status, activity)
+                log.debug("Changing to random status.")
             if await self.config.avatar():
                 await self.change_avatar(url)
-                print("changing avatar to {}".format(new_avatar))
+                log.debug("changing avatar to {}".format(new_avatar))
             await asyncio.sleep(randint(1800, 3600))
 
     def cog_unload(self):
