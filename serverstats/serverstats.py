@@ -344,10 +344,16 @@ class ServerStats(commands.Cog):
         em = discord.Embed(
             description=msg, colour=await ctx.embed_colour(), timestamp=ctx.message.created_at
         )
-        em.set_author(
-            name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-            icon_url=ctx.me.avatar_url,
-        )
+        if ctx.guild:
+            em.set_author(
+                name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
+                icon_url=ctx.me.avatar_url,
+            )
+        else:
+            em.set_author(
+                name=f"{ctx.me}",
+                icon_url=ctx.me.avatar_url,
+            )
         em.set_thumbnail(url=ctx.me.avatar_url)
         if ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(embed=em)
