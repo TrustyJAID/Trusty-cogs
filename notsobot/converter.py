@@ -37,20 +37,20 @@ class ImageFinder(Converter):
             for mention in mentions:
                 user = ctx.guild.get_member(int(mention.group(1)))
                 if user.is_avatar_animated():
-                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif")))
+                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif", size=2048)))
                     urls.append(url.group(1))
                 else:
-                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png")))
+                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png", size=2048)))
                     urls.append(url.group(1))
         if not urls and ids:
             for possible_id in ids:
                 user = ctx.guild.get_member(int(possible_id.group(0)))
                 if user:
                     if user.is_avatar_animated():
-                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif")))
+                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif", size=2048)))
                         urls.append(url.group(1))
                     else:
-                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png")))
+                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png", size=2048)))
                         urls.append(url.group(1))
         if attachments:
             for attachment in attachments:
