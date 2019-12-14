@@ -505,7 +505,7 @@ class EventMixin:
                     break
         if channel.permissions_for(guild.me).embed_links:
             embed = discord.Embed(
-                description=member.mention, colour=discord.Colour.dark_green(), timestamp=time
+                description=member.mention, colour=discord.Colour.dark_red(), timestamp=time
             )
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
             if perp:
