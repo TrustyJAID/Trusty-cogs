@@ -301,6 +301,8 @@ class EventMixin:
         if guild_id is None:
             return
         guild = self.bot.get_guild(guild_id)
+        if guild.id not in self.settings:
+            return
         # settings = await self.config.guild(guild).message_delete()
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"] or not settings["bulk_enabled"]:
