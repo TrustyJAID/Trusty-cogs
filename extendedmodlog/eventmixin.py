@@ -350,7 +350,7 @@ class EventMixin:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
                     # Let's remove missing guilds
-                    await self.config.clear_scope(Config.GUILD, str(guild_id))
+                    await self.config._clear_scope(Config.GUILD, str(guild_id))
                 if self.settings[guild_id]["user_join"]["enabled"]:
                     await self.save_invite_links(guild)
             await asyncio.sleep(300)
