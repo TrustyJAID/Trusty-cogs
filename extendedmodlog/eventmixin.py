@@ -55,6 +55,7 @@ class EventMixin:
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
+        self.settings: dict
 
     async def get_colour(self, channel):
         try:
@@ -90,7 +91,8 @@ class EventMixin:
 
     async def modlog_channel(self, guild: discord.Guild, event: str):
         channel = None
-        settings = await self.config.guild(guild).get_raw(event)
+        # settings = await self.config.guild(guild).get_raw(event)
+        settings = self.settings[guild.id].get(event)
         if settings["channel"]:
             channel = guild.get_channel(settings["channel"])
         if channel is None:
@@ -105,10 +107,16 @@ class EventMixin:
         guild = ctx.guild
         if guild is None:
             return
-        if not await self.config.guild(guild).commands_used.enabled():
+        if guild.id not in self.settings:
             return
-        if ctx.channel.id in await self.config.guild(guild).ignored_channels():
+        if not self.settings[guild.id]["commands_used"]["enabled"]:
             return
+        # if not await self.config.guild(guild).commands_used.enabled():
+            # return
+        if ctx.channel.id in self.settings[guild.id]["ignored_channels"]:
+            return
+        # if ctx.channel.id in await self.config.guild(guild).ignored_channels():
+            # return
         try:
             channel = await self.modlog_channel(guild, "commands_used")
         except RuntimeError:
@@ -122,9 +130,12 @@ class EventMixin:
             privs = self.bot.get_command(command).requires.privilege_level.name
         except Exception:
             return
-        if privs not in await self.config.guild(guild).commands_used.privs():
+        if privs not in self.settings[guild.id]["commands_used"]["privs"]:
             logger.debug(f"command not in list {privs}")
             return
+        # if privs not in await self.config.guild(guild).commands_used.privs():
+            # logger.debug(f"command not in list {privs}")
+            # return
 
         if privs == "MOD":
             try:
@@ -185,11 +196,14 @@ class EventMixin:
         if guild_id is None:
             return
         guild = self.bot.get_guild(guild_id)
-        settings = await self.config.guild(guild).message_delete()
+        if guild.id not in self.settings:
+            return
+        # settings = await self.config.guild(guild).message_delete()
+        settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
             return
         channel_id = payload.channel_id
-        if channel_id in await self.config.guild(guild).ignored_channels():
+        if channel_id in self.settings[guild.id]["ignored_channels"]:
             return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
@@ -221,10 +235,13 @@ class EventMixin:
         guild = message.guild
         if guild is None:
             return
-        settings = await self.config.guild(guild).message_delete()
+        if guild.id not in self.settings:
+            return
+        # settings = await self.config.guild(guild).message_delete()
+        settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
             return
-        if message.channel.id in await self.config.guild(guild).ignored_channels():
+        if message.channel.id in self.settings[guild.id]["ignored_channels"]:
             return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
@@ -284,11 +301,12 @@ class EventMixin:
         if guild_id is None:
             return
         guild = self.bot.get_guild(guild_id)
-        settings = await self.config.guild(guild).message_delete()
+        # settings = await self.config.guild(guild).message_delete()
+        settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
         channel_id = payload.channel_id
-        if channel_id in await self.config.guild(guild).ignored_channels():
+        if channel_id in self.settings[guild.id]["ignored_channels"]:
             return
         message_channel = guild.get_channel(channel_id)
         try:
@@ -326,12 +344,12 @@ class EventMixin:
         """Check every 5 minutes for updates to the invite links"""
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("ExtendedModLog"):
-            for guild_id in await self.config.all_guilds():
+            for guild_id in self.settings:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
                     # Let's remove missing guilds
                     await self.config.clear_scope(Config.GUILD, str(guild_id))
-                if await self.config.guild(guild).user_join.enabled():
+                if self.settings[guild_id]["user_join"]["enabled"]:
                     await self.save_invite_links(guild)
             await asyncio.sleep(300)
 
@@ -357,7 +375,8 @@ class EventMixin:
 
     async def get_invite_link(self, guild):
         manage_guild = guild.me.guild_permissions.manage_guild
-        invites = await self.config.guild(guild).invite_links()
+        # invites = await self.config.guild(guild).invite_links()
+        invites = self.settings[guild.id]["invite_links"]
         possible_link = ""
         check_logs = manage_guild and guild.me.guild_permissions.view_audit_log
         if manage_guild and "VANITY_URL" in guild.features:
@@ -409,9 +428,12 @@ class EventMixin:
     @listener()
     async def on_member_join(self, member):
         guild = member.guild
-
-        if not await self.config.guild(guild).user_join.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["user_join"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).user_join.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "user_join")
         except RuntimeError:
@@ -457,9 +479,12 @@ class EventMixin:
     @listener()
     async def on_member_remove(self, member):
         guild = member.guild
-
-        if not await self.config.guild(guild).user_left.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["user_left"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).user_left.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "user_left")
         except RuntimeError:
@@ -551,8 +576,12 @@ class EventMixin:
     @listener()
     async def on_guild_channel_create(self, new_channel):
         guild = new_channel.guild
-        if not await self.config.guild(guild).channel_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["channel_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).channel_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
@@ -599,8 +628,12 @@ class EventMixin:
     @listener()
     async def on_guild_channel_delete(self, old_channel):
         guild = old_channel.guild
-        if not await self.config.guild(guild).channel_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["channel_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).channel_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
@@ -647,8 +680,12 @@ class EventMixin:
     @listener()
     async def on_guild_channel_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).channel_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["channel_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).channel_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
@@ -778,8 +815,12 @@ class EventMixin:
     @listener()
     async def on_guild_role_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).role_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["role_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).role_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
@@ -845,8 +886,12 @@ class EventMixin:
     @listener()
     async def on_guild_role_create(self, role):
         guild = role.guild
-        if not await self.config.guild(guild).role_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["role_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).role_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
@@ -885,8 +930,12 @@ class EventMixin:
     @listener()
     async def on_guild_role_delete(self, role):
         guild = role.guild
-        if not await self.config.guild(guild).role_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["role_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).role_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
@@ -927,12 +976,15 @@ class EventMixin:
         guild = before.guild
         if guild is None:
             return
-        settings = await self.config.guild(guild).message_edit()
+        if guild.id not in self.settings:
+            return
+        # settings = await self.config.guild(guild).message_edit()
+        settings = self.settings[guild.id]["message_edit"]
         if not settings["enabled"]:
             return
         if before.author.bot and not settings["bots"]:
             return
-        if before.channel.id in await self.config.guild(guild).ignored_channels():
+        if before.channel.id in self.settings[guild.id]["ignored_channels"]:
             return
         if before.content == after.content:
             return
@@ -974,8 +1026,12 @@ class EventMixin:
     @listener()
     async def on_guild_update(self, before, after):
         guild = after
-        if not await self.config.guild(guild).guild_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["guild_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).guild_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "guild_change")
         except RuntimeError:
@@ -1031,8 +1087,12 @@ class EventMixin:
 
     @listener()
     async def on_guild_emojis_update(self, guild, before, after):
-        if not await self.config.guild(guild).emoji_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["emoji_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).emoji_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "emoji_change")
         except RuntimeError:
@@ -1155,8 +1215,12 @@ class EventMixin:
     @listener()
     async def on_voice_state_update(self, member, before, after):
         guild = member.guild
-        if not await self.config.guild(guild).voice_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["voice_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).voice_change.enabled():
+            # return
         if member.bot:
             return
         try:
@@ -1238,8 +1302,12 @@ class EventMixin:
     @listener()
     async def on_member_update(self, before, after):
         guild = before.guild
-        if not await self.config.guild(guild).user_change.enabled():
+        if guild.id not in self.settings:
             return
+        if not self.settings[guild.id]["user_change"]["enabled"]:
+            return
+        # if not await self.config.guild(guild).user_change.enabled():
+            # return
         try:
             channel = await self.modlog_channel(guild, "user_change")
         except RuntimeError:

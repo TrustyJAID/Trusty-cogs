@@ -17,7 +17,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Notsobot | **Release**| <details><summary>Working cog for many of NotSoBot's commands.</summary> Has lots of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
 | ReTrigger | **2.8.4** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | Spoiler | **Beta**| <details><summary>Post spoiler messages in chat and react to the message to view the spoilers. </summary></details> |
-| ExtendedModLog | **2.1.4**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
+| ExtendedModLog | **2.2.0**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
 | Badges | **Release** | <details><summary>Create your own badge with your discord info.</summary> Includes templates for fake CIA, NSA, FBI, Discord, and every NHL hockey team. Requirements: pillow</details> |
 | Tweets | **Release** | <details><summary>A modified version of Palmtree5's twitter cog. </summary>Utilizes twitter streams to setup a twitter channel to post user tweets. Requirements: tweepy</details> |
 | Translate | **2.1.1** | <details><summary>Add flag emojis to messages to translate to that language or translate messages by command.</summary> (Uses Google Translate and may incur some fees) </details> |
