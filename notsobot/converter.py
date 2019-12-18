@@ -3,7 +3,7 @@ import re
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
-IMAGE_LINKS = re.compile(r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg))")
+IMAGE_LINKS = re.compile(r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)")
 EMOJI_REGEX = re.compile(r"(<(a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
 MENTION_REGEX = re.compile(r"<@!?([0-9]+)>")
 ID_REGEX = re.compile(r"[0-9]{17,}")
@@ -37,20 +37,20 @@ class ImageFinder(Converter):
             for mention in mentions:
                 user = ctx.guild.get_member(int(mention.group(1)))
                 if user.is_avatar_animated():
-                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif", size=2048)))
+                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif")))
                     urls.append(url.group(1))
                 else:
-                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png", size=2048)))
+                    url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png")))
                     urls.append(url.group(1))
         if not urls and ids:
             for possible_id in ids:
                 user = ctx.guild.get_member(int(possible_id.group(0)))
                 if user:
                     if user.is_avatar_animated():
-                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif", size=2048)))
+                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="gif")))
                         urls.append(url.group(1))
                     else:
-                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png", size=2048)))
+                        url = IMAGE_LINKS.search(str(user.avatar_url_as(format="png")))
                         urls.append(url.group(1))
         if attachments:
             for attachment in attachments:
