@@ -69,7 +69,7 @@ class Events:
             raw_response = raw_response.replace("{" + result[0] + "}", param)
         if await self.config.guild(guild).JOINED_TODAY() and is_welcome:
             raw_response = _(
-                "{raw_response}\n\n\n{count} users joined today!"
+                "{raw_response}\n\n{count} users joined today!"
             ).format(
                 raw_response=raw_response,
                 count=user_count
