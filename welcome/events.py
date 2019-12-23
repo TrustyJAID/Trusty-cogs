@@ -10,6 +10,7 @@ from typing import List, Union, Pattern
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.common_filters import filter_mass_mentions
 from redbot.core.i18n import Translator, cog_i18n
 
 
@@ -182,7 +183,7 @@ class Events:
                 else:
                     await channel.send(embed=em)
             else:
-                await channel.send(await self.convert_parms(member, guild, bot_welcome, False))
+                await channel.send(filter_mass_mentions(await self.convert_parms(member, guild, bot_welcome, False)))
 
     async def get_welcome_channel(self, member, guild):
         # grab the welcome channel
@@ -271,7 +272,7 @@ class Events:
                 save_msg = await channel.send(embed=em, delete_after=delete_after)
         else:
             save_msg = await channel.send(
-                await self.convert_parms(member, guild, msg, True),
+                filter_mass_mentions(await self.convert_parms(member, guild, msg, True)),
                 delete_after=delete_after
             )
         if save_msg is not None:
@@ -332,8 +333,9 @@ class Events:
                     save_msg = await channel.send(embed=em, delete_after=delete_after)
             else:
                 save_msg = await channel.send(
-                    await self.convert_parms(member, guild, msg, False),
-                    delete_after=delete_after)
+                    filter_mass_mentions(await self.convert_parms(member, guild, msg, False)),
+                    delete_after=delete_after
+                )
         if save_msg is not None:
             await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
 
@@ -396,5 +398,6 @@ class Events:
                     await channel.send(embed=em, delete_after=60)
             else:
                 await channel.send(
-                    await self.convert_parms(member, guild, rand_msg, send_count), delete_after=60
+                    filter_mass_mentions(await self.convert_parms(member, guild, rand_msg, send_count)),
+                    delete_after=60,
                 )
