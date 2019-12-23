@@ -9,6 +9,7 @@ from typing import cast
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
+from redbot.core.utils.common_filters import filter_mass_mentions
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
@@ -209,7 +210,7 @@ class GoogleTranslateAPI:
         if target == original_lang:
             return
         try:
-            translated_text = await self.translate_text(original_lang, target, to_translate)
+            translated_text = filter_mass_mentions(await self.translate_text(original_lang, target, to_translate))
         except GoogleTranslateAPIError:
             return
         if not translated_text:
@@ -260,7 +261,7 @@ class GoogleTranslateAPI:
                 message = await channel.fetch_message(id=payload.message_id)
             except AttributeError:
                 message = await channel.get_message(id=payload.message_id)
-        except discord.errors.NotFound:
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         if user.bot:
             return
@@ -307,7 +308,7 @@ class GoogleTranslateAPI:
         if target == original_lang:
             return
         try:
-            translated_text = await self.translate_text(original_lang, target, to_translate)
+            translated_text = filter_mass_mentions(await self.translate_text(original_lang, target, to_translate))
         except Exception:
             return
         if not translated_text:
