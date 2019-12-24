@@ -3,6 +3,7 @@ import discord
 from redbot.core import commands, checks, Config, modlog
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.i18n import Translator, cog_i18n
+from typing import Union
 
 from .eventmixin import EventMixin, CommandPrivs, EventChooser
 
@@ -54,7 +55,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.3.0"
+    __version__ = "2.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -79,7 +80,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
                     all_data[guild_id][entry]["colour"] = None
                     setting["colour"] = None
                     await self.config.guild(guild).set_raw(entry, value=setting)
-                if entry not in setting:
+                if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
                     await self.config.guild(guild).set_raw(entry, value=inv_settings[entry])
         self.settings = all_data
@@ -787,12 +788,15 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await ctx.tick()
 
     @_modlog.command()
-    async def ignore(self, ctx, channel: discord.TextChannel = None):
+    async def ignore(
+        self,
+        ctx,
+        channel: Union[discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel]
+    ):
         """
             Ignore a channel from message delete/edit events and bot commands
 
-            `channel` the channel to ignore message delete/edit events
-            defaults to current channel
+            `channel` the channel or category to ignore events in
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -804,17 +808,20 @@ class ExtendedModLog(EventMixin, commands.Cog):
             cur_ignored.append(channel.id)
             await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
-            await ctx.send(_(" Now ignoring messages edited and deleted in ") + channel.mention)
+            await ctx.send(_(" Now ignoring events in ") + channel.mention)
         else:
             await ctx.send(channel.mention + _(" is already being ignored."))
 
     @_modlog.command()
-    async def unignore(self, ctx, channel: discord.TextChannel = None):
+    async def unignore(
+        self,
+        ctx,
+        channel: Union[discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel]
+    ):
         """
             Unignore a channel from message delete/edit events and bot commands
 
             `channel` the channel to unignore message delete/edit events
-            defaults to current channel
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -826,7 +833,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             cur_ignored.remove(channel.id)
             await self.config.guild(guild).ignored_channels.set(cur_ignored)
             self.settings[guild.id]["ignored_channels"] = cur_ignored
-            await ctx.send(_(" now tracking edited and deleted messages in ") + channel.mention)
+            await ctx.send(_(" Now tracking events in ") + channel.mention)
         else:
             await ctx.send(channel.mention + _(" is not being ignored."))
 

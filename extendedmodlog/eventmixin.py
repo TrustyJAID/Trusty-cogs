@@ -122,6 +122,14 @@ class EventMixin:
             colour = discord.Colour(self.settings[guild.id][event_type]["colour"])
         return colour
 
+    async def is_ignored_channel(self, guild, channel):
+        ignored_channels = self.settings[guild.id]["ignored_channels"]
+        if channel.id in ignored_channels:
+            return True
+        if channel.category and channel.category.id in ignored_channels:
+            return True
+        return False
+
     async def member_can_run(self, ctx):
         """Check if a user can run a command.
         This will take the current context into account, such as the
@@ -169,7 +177,7 @@ class EventMixin:
             return
         # if not await self.config.guild(guild).commands_used.enabled():
             # return
-        if ctx.channel.id in self.settings[guild.id]["ignored_channels"]:
+        if await self.is_ignored_channel(ctx.guild, ctx.channel):
             return
         # if ctx.channel.id in await self.config.guild(guild).ignored_channels():
             # return
@@ -259,11 +267,11 @@ class EventMixin:
         if not settings["enabled"]:
             return
         channel_id = payload.channel_id
-        if channel_id in self.settings[guild.id]["ignored_channels"]:
-            return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
+            return
+        if await self.is_ignored_channel(guild, guild.get_channel(channel_id)):
             return
         message = payload.cached_message
         if message is None:
@@ -298,7 +306,7 @@ class EventMixin:
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
             return
-        if message.channel.id in self.settings[guild.id]["ignored_channels"]:
+        if await self.is_ignored_channel(guild, message.channel):
             return
         try:
             channel = await self.modlog_channel(guild, "message_delete")
@@ -367,12 +375,12 @@ class EventMixin:
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
         channel_id = payload.channel_id
-        if channel_id in self.settings[guild.id]["ignored_channels"]:
-            return
         message_channel = guild.get_channel(channel_id)
         try:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
+            return
+        if await self.is_ignored_channel(guild, message_channel):
             return
         message_amount = len(payload.message_ids)
         if channel.permissions_for(guild.me).embed_links:
@@ -410,7 +418,8 @@ class EventMixin:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
                     # Let's remove missing guilds
-                    await self.config._clear_scope(Config.GUILD, str(guild_id))
+                    # await self.config._clear_scope(Config.GUILD, str(guild_id))
+                    continue
                 if self.settings[guild_id]["user_join"]["enabled"]:
                     await self.save_invite_links(guild)
             await asyncio.sleep(300)
@@ -646,6 +655,8 @@ class EventMixin:
             return
         # if not await self.config.guild(guild).channel_change.enabled():
             # return
+        if await self.is_ignored_channel(guild, new_channel):
+            return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
@@ -700,6 +711,8 @@ class EventMixin:
             return
         # if not await self.config.guild(guild).channel_change.enabled():
             # return
+        if await self.is_ignored_channel(guild, old_channel):
+            return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
@@ -1058,13 +1071,13 @@ class EventMixin:
             return
         if before.author.bot and not settings["bots"]:
             return
-        if before.channel.id in self.settings[guild.id]["ignored_channels"]:
-            return
         if before.content == after.content:
             return
         try:
             channel = await self.modlog_channel(guild, "message_edit")
         except RuntimeError:
+            return
+        if await self.is_ignored_channel(guild, after.message.channel):
             return
         if channel is None:
             return
@@ -1308,6 +1321,13 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "voice_change")
         except RuntimeError:
             return
+        if after.channel is not None:
+            if await self.is_ignored_channel(guild, after.channel):
+                return
+        if before.channel is not None:
+            if await self.is_ignored_channel(guild, before.channel):
+                return
+
         if channel is None:
             return
         time = datetime.datetime.utcnow()
