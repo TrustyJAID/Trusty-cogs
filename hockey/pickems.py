@@ -84,6 +84,7 @@ class Pickems:
             self.winner = self.home_team
         if game.away_score > game.home_score:
             self.winner = self.away_team
+        return self
 
     @staticmethod
     async def find_pickems_object(bot, game):
@@ -118,7 +119,9 @@ class Pickems:
                 pickems = {}
             pickem_name = Pickems.pickems_name(game)
             if pickem_name in pickems:
-                pickems[pickem_name].set_pickem_winner(game)
+                old_pickem = bot.get_cog("Hockey").all_pickems[str(guild_id)][pickem_name]
+                new_pickem = await old_pickem.set_pickem_winner(game)
+                bot.get_cog("Hockey").all_pickems[str(guild_id)][pickem_name] = new_pickem
 
     @staticmethod
     async def create_pickem_object(bot, guild, message, channel, game):

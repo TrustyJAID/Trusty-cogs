@@ -43,7 +43,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.7.3"
+    __version__ = "2.7.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -1271,6 +1271,22 @@ class Hockey(commands.Cog):
             for game in games:
                 await Pickems.set_guild_pickem_winner(self.bot, game)
         await ctx.send(_("Pickems winners set."))
+
+    @hockeyset_commands.command(hidden=True)
+    @checks.is_owner()
+    async def fix_all_pickems(self, ctx):
+        """
+            Fixes winner on all current pickems objects if possible
+        """
+        oldest = datetime.now()
+        for guild_id, pickems in self.all_pickems.items():
+            for name, p in pickems.items():
+                if p.game_start < oldest:
+                    oldest = p.game_start
+        games = await Game.get_games(None, oldest, datetime.now())
+        for game in games:
+            await Pickems.set_guild_pickem_winner(self.bot, game)
+        await ctx.send(_("All pickems winners set."))
 
     @gdc.command(hidden=True, name="test")
     @checks.is_owner()
