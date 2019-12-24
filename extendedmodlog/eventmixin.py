@@ -99,7 +99,10 @@ class EventMixin:
             return await self.bot.get_embed_colour(channel)
 
     async def get_event_colour(self, guild, event_type, changed_object=None):
-
+        if guild.text_channels:
+            cmd_colour = await self.get_colour(guild.text_channels[0])
+        else:
+            cmd_colour = discord.colour.red()
         defaults = {
             "message_edit": discord.Colour.orange(),
             "message_delete": discord.Colour.dark_red(),
@@ -115,7 +118,7 @@ class EventMixin:
             "channel_delete": discord.Colour.dark_teal(),
             "guild_change": discord.Colour.blurple(),
             "emoji_change": discord.Colour.gold(),
-            "commands_used": await self.bot.get_embed_colour(guild),
+            "commands_used": cmd_colour,
         }
         colour = defaults[event_type]
         if self.settings[guild.id][event_type]["colour"] is not None:
