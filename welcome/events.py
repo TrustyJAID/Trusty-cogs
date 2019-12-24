@@ -346,6 +346,9 @@ class Events:
 
     async def send_testing_msg(self, ctx, bot=False, msg=None, leave=False):
         # log.info(leave)
+        default_greeting = "Welcome {0.name} to {1.name}!"
+        default_goodbye = "See you later {0.name}!"
+        default_bot_msg = "Hello {0.name}, fellow bot!"
         guild = ctx.message.guild
         guild_settings = await self.config.guild(guild).get_raw()
         # log.info(guild_settings)
@@ -358,6 +361,12 @@ class Events:
             rand_msg = msg or rand_choice(guild_settings["GOODBYE"])
         if bot:
             rand_msg = guild_settings["BOTS_MSG"]
+        if rand_msg is None and msg is None:
+            rand_msg = default_greeting
+        if rand_msg is None and bot:
+            rand_msg = default_bot_msg
+        if rand_msg is None and leave:
+            rand_msg = default_goodbye
         is_embed = guild_settings["EMBED"]
         member = ctx.message.author
         whisper_settings = guild_settings["WHISPER"]

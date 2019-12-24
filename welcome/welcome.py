@@ -13,6 +13,7 @@ from .events import Events
 
 default_greeting = "Welcome {0.name} to {1.name}!"
 default_goodbye = "See you later {0.name}!"
+default_bot_msg = "Hello {0.name}, fellow bot!"
 default_settings = {
     "GREETING": [default_greeting],
     "ON": False,
@@ -22,7 +23,7 @@ default_settings = {
     "GOODBYE": [default_goodbye],
     "CHANNEL": None,
     "WHISPER": False,
-    "BOTS_MSG": None,
+    "BOTS_MSG": [default_bot_msg],
     "BOTS_ROLE": None,
     "EMBED": False,
     "JOINED_TODAY": False,
