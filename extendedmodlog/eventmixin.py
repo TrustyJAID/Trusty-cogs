@@ -46,6 +46,38 @@ class CommandPrivs(Converter):
         return result
 
 
+class EventChooser(Converter):
+    """
+        Converter for command privliges
+    """
+    async def convert(self, ctx, argument):
+        options = [
+            "message_edit",
+            "message_delete",
+            "user_change",
+            "role_change",
+            "role_create",
+            "role_delete",
+            "voice_change",
+            "user_join",
+            "user_left",
+            "channel_change",
+            "channel_create",
+            "channel_delete",
+            "guild_change",
+            "emoji_change",
+            "commands_used"
+        ]
+        result = None
+        if argument.lower() in options:
+            result = argument.lower()
+        if not result:
+            raise BadArgument(
+                _("`{arg}` is not an available event option.").format(arg=argument)
+            )
+        return result
+
+
 @cog_i18n(_)
 class EventMixin:
     """
@@ -65,6 +97,30 @@ class EventMixin:
                 return await self.bot.db.color()
         except AttributeError:
             return await self.bot.get_embed_colour(channel)
+
+    async def get_event_colour(self, guild, event_type, changed_object=None):
+
+        defaults = {
+            "message_edit": discord.Colour.orange(),
+            "message_delete": discord.Colour.dark_red(),
+            "user_change": discord.Colour.greyple(),
+            "role_change": changed_object.colour if changed_object else discord.Colour.blue(),
+            "role_create": discord.Colour.blue(),
+            "role_delete": discord.Colour.dark_blue(),
+            "voice_change": discord.Colour.magenta(),
+            "user_join": discord.Colour.green(),
+            "user_left": discord.Colour.dark_green(),
+            "channel_change": discord.Colour.teal(),
+            "channel_create": discord.Colour.teal(),
+            "channel_delete": discord.Colour.dark_teal(),
+            "guild_change": discord.Colour.blurple(),
+            "emoji_change": discord.Colour.gold(),
+            "commands_used": await self.bot.get_embed_colour(guild),
+        }
+        colour = defaults[event_type]
+        if self.settings[guild.id][event_type]["colour"] is not None:
+            colour = discord.Colour(self.settings[guild.id][event_type]["colour"])
+        return colour
 
     async def member_can_run(self, ctx):
         """Check if a user can run a command.
@@ -93,7 +149,7 @@ class EventMixin:
         channel = None
         # settings = await self.config.guild(guild).get_raw(event)
         settings = self.settings[guild.id].get(event)
-        if settings["channel"]:
+        if "channel" in settings and settings["channel"]:
             channel = guild.get_channel(settings["channel"])
         if channel is None:
             try:
@@ -216,7 +272,8 @@ class EventMixin:
             message_channel = guild.get_channel(channel_id)
             if channel.permissions_for(guild.me).embed_links:
                 embed = discord.Embed(
-                    description=_("*Message's content unknown.*"), colour=discord.Colour.dark_red()
+                    description=_("*Message's content unknown.*"),
+                    colour=await self.get_event_colour(guild, "message_delete")
                 )
                 embed.add_field(name=_("Channel"), value=message_channel.mention)
                 embed.set_author(name=_("Deleted Message"))
@@ -275,7 +332,9 @@ class EventMixin:
             infomessage = str(perp) + _(" Deleted a message ") + _(" in ") + message.channel.name
         if channel.permissions_for(guild.me).embed_links:
             embed = discord.Embed(
-                description=message.content, colour=discord.Colour.dark_red(), timestamp=time
+                description=message.content,
+                colour=await self.get_event_colour(guild, "message_delete"),
+                timestamp=time
             )
 
             embed.add_field(name=_("Channel"), value=message.channel.mention)
@@ -318,7 +377,8 @@ class EventMixin:
         message_amount = len(payload.message_ids)
         if channel.permissions_for(guild.me).embed_links:
             embed = discord.Embed(
-                description=message_channel.mention, colour=discord.Colour.dark_red()
+                description=message_channel.mention,
+                colour=await self.get_event_colour(guild, "message_delete")
             )
             embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon_url)
             embed.add_field(name=_("Channel"), value=message_channel.mention)
@@ -453,7 +513,7 @@ class EventMixin:
             name = member
             embed = discord.Embed(
                 description=member.mention,
-                colour=discord.Colour.green(),
+                colour=await self.get_event_colour(guild, "user_join"),
                 timestamp=member.joined_at,
             )
             embed.add_field(name=_("Total Users:"), value=str(users))
@@ -505,7 +565,9 @@ class EventMixin:
                     break
         if channel.permissions_for(guild.me).embed_links:
             embed = discord.Embed(
-                description=member.mention, colour=discord.Colour.dark_green(), timestamp=time
+                description=member.mention,
+                colour=await self.get_event_colour(guild, "user_left"),
+                timestamp=time
             )
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
             if perp:
@@ -593,7 +655,9 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=new_channel.mention, timestamp=time, colour=discord.Colour.teal()
+            description=new_channel.mention,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "channel_change")
         )
         embed.set_author(name=_("Channel Created ") + str(new_channel.id))
         msg = _("Channel Created ") + str(new_channel.id) + "\n"
@@ -645,7 +709,9 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=old_channel.name, timestamp=time, colour=discord.Colour.dark_teal()
+            description=old_channel.name,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "channel_delete")
         )
         embed.set_author(name=_("Channel Deleted ") + str(old_channel.id))
         msg = _("Channel Deleted ") + str(old_channel.id) + "\n"
@@ -697,7 +763,9 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=after.mention, timestamp=time, colour=discord.Colour.teal()
+            description=after.mention,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "channel_create")
         )
         embed.set_author(name=_("Updated channel ") + str(before.id))
         msg = _("Updated channel ") + str(before.id) + "\n"
@@ -824,7 +892,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change")
+            channel = await self.modlog_channel(guild, "role_change", after)
         except RuntimeError:
             return
         if channel is None:
@@ -895,7 +963,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change")
+            channel = await self.modlog_channel(guild, "role_change", role)
         except RuntimeError:
             return
         if channel is None:
@@ -913,7 +981,9 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=role.mention, colour=discord.Colour.blue(), timestamp=time
+            description=role.mention,
+            colour=await self.get_event_colour(guild, "role_create"),
+            timestamp=time
         )
         embed.set_author(name=_("Role created ") + str(role.id), icon_url=guild.icon_url)
         msg = _("Role created ") + str(role.id) + "\n"
@@ -939,7 +1009,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change")
+            channel = await self.modlog_channel(guild, "role_change", role)
         except RuntimeError:
             return
         if channel is None:
@@ -957,7 +1027,9 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=role.name, timestamp=time, colour=discord.Colour.dark_blue()
+            description=role.name,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "role_delete")
         )
         embed.set_author(name=_("Role deleted ") + str(role.id))
         msg = _("Role deleted ") + str(role.id) + "\n"
@@ -1003,7 +1075,7 @@ class EventMixin:
             name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             embed = discord.Embed(
                 description=before.content,
-                colour=discord.Colour.orange(),
+                colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
             jump_url = f"[Click to see new message]({after.jump_url})"
@@ -1042,7 +1114,10 @@ class EventMixin:
             return
 
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(timestamp=time, colour=discord.Colour.blurple())
+        embed = discord.Embed(
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "guild_change")
+        )
         embed.set_author(name=_("Updated Guild ") + str(before.id), icon_url=guild.icon_url)
         embed.set_thumbnail(url=guild.icon_url)
         msg = _("Updated Guild ") + str(before.id) + "\n"
@@ -1104,7 +1179,11 @@ class EventMixin:
         perp = None
 
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description="", timestamp=time, colour=discord.Colour.gold())
+        embed = discord.Embed(
+            description="",
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "emoji_change")
+        )
         embed.set_author(name=_("Updated Server Emojis"), icon_url=guild.icon_url)
         msg = _("Updated Server Emojis") + "\n"
         b = set(before)
@@ -1233,7 +1312,9 @@ class EventMixin:
             return
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            timestamp=time, icon_url=guild.icon_url, colour=discord.Colour.magenta()
+            timestamp=time,
+            icon_url=guild.icon_url,
+            colour=await self.get_event_colour(guild, "voice_change")
         )
         msg = f"{member} " + _("Updated Voice State") + "\n"
         embed.set_author(name=msg)
@@ -1318,7 +1399,10 @@ class EventMixin:
             return
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(timestamp=time, colour=discord.Colour.greyple())
+        embed = discord.Embed(
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "user_change")
+        )
         msg = f"{before.name}#{before.discriminator} " + _("Updated") + "\n"
         org_len = len(msg)
         embed.set_author(name=msg, icon_url=before.avatar_url)

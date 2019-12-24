@@ -4,10 +4,15 @@ from redbot.core import commands, checks, Config, modlog
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 
-from .eventmixin import EventMixin, CommandPrivs
+from .eventmixin import EventMixin, CommandPrivs, EventChooser
 
 inv_settings = {
-    "message_edit": {"enabled": False, "channel": None, "bots": False},
+    "message_edit": {
+        "enabled": False,
+        "channel": None,
+        "bots": False,
+        "colour": None,
+    },
     "message_delete": {
         "enabled": False,
         "channel": None,
@@ -15,19 +20,25 @@ inv_settings = {
         "bulk_enabled": False,
         "bulk_individual": False,
         "cached_only": True,
+        "colour": None,
     },
-    "user_change": {"enabled": False, "channel": None},
-    "role_change": {"enabled": False, "channel": None},
-    "voice_change": {"enabled": False, "channel": None},
-    "user_join": {"enabled": False, "channel": None},
-    "user_left": {"enabled": False, "channel": None},
-    "channel_change": {"enabled": False, "channel": None},
-    "guild_change": {"enabled": False, "channel": None},
-    "emoji_change": {"enabled": False, "channel": None},
+    "user_change": {"enabled": False, "channel": None, "colour": None},
+    "role_change": {"enabled": False, "channel": None, "colour": None},
+    "role_create": {"colour": None},
+    "role_delete": {"colour": None},
+    "voice_change": {"enabled": False, "channel": None, "colour": None},
+    "user_join": {"enabled": False, "channel": None, "colour": None},
+    "user_left": {"enabled": False, "channel": None, "colour": None},
+    "channel_change": {"enabled": False, "channel": None, "colour": None},
+    "channel_create": {"colour": None},
+    "channel_delete": {"colour": None},
+    "guild_change": {"enabled": False, "channel": None, "colour": None},
+    "emoji_change": {"enabled": False, "channel": None, "colour": None},
     "commands_used": {
         "enabled": False,
         "channel": None,
         "privs": ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"],
+        "colour": None,
     },
     "ignored_channels": [],
     "invite_links": {},
@@ -43,7 +54,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.2.0"
+    __version__ = "2.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -64,6 +75,13 @@ class ExtendedModLog(EventMixin, commands.Cog):
                     if entry == "commands_used":
                         new_data["privs"] = ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]
                     await self.config.guild(guild).set_raw(entry, value=new_data)
+                if entry not in ["ignored_channels", "invite_links"] and "colour" not in setting:
+                    all_data[guild_id][entry]["colour"] = None
+                    setting["colour"] = None
+                    await self.config.guild(guild).set_raw(entry, value=setting)
+                if entry not in setting:
+                    all_data[guild_id][entry] = inv_settings[entry]
+                    await self.config.guild(guild).set_raw(entry, value=inv_settings[entry])
         self.settings = all_data
 
     async def modlog_settings(self, ctx):
@@ -139,6 +157,43 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await self.config.guild(ctx.message.guild).set(inv_settings)
         if ctx.invoked_subcommand is None:
             await self.modlog_settings(ctx)
+
+    @_modlog.command(name="colour", aliases=["color"])
+    async def _set_event_colours(self, ctx, event: EventChooser, *, colour: discord.Colour = None):
+        """
+            Set custom colours for modlog events.
+
+            `colour` must be a hex code or a [built colour.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
+            Providing no `colour` will reset back to default.
+
+            `event` must be one of the following options:
+                `message_edit`
+                `message_delete`
+                `user_change`
+                `role_change`
+                `role_create`
+                `role_delete`
+                `voice_change`
+                `user_join`
+                `user_left`
+                `channel_change`
+                `channel_create`
+                `channel_delete`
+                `guild_change`
+                `emoji_change`
+                `commands_used`
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        if colour:
+            new_colour = colour.value
+        else:
+            new_colour = colour
+        self.settings[ctx.guild.id][event]["colour"] = new_colour
+        await self.config.guild(ctx.guild).set_raw(event, value=self.settings[ctx.guild.id][event])
+        await ctx.send(
+            _("{event} has been set to {colour}").format(event=event, colour=str(colour))
+        )
 
     @_modlog.command(name="all", aliaes=["all_settings", "toggle_all"])
     async def _toggle_all_logs(self, ctx, set_to: bool):
