@@ -923,41 +923,6 @@ class NotSoBot(commands.Cog):
         except AttributeError:
             return await self.bot.get_embed_colour(channel)
 
-    @commands.command(aliases=["toe", "analyze"])
-    async def tone(self, ctx, *, text: str):
-        """Analyze Tone in Text"""
-        payload = {"text": text}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:46.0) Gecko/20100101 Firefox/46.0.2 Waterfox/46.0.2"
-        }
-        async with self.session.post(
-            "https://tone-analyzer-demo.ng.bluemix.net/api/tone", data=payload, headers=headers
-        ) as r:
-            load = await r.json()
-        emotions_msg = "\n".join(
-            "{}: {}".format(t["tone_name"], t["score"]) for t in load["document_tone"]["tones"]
-        )
-        sentence_msg = ""
-        if "sentences_msg" in load:
-            for sentence in load["sentences_tone"]:
-                sentence_msg += "".join(
-                    "# Sentence {}\n{}: {}\n".format(
-                        sentence["sentence_id"] + 1, t["tone_name"], t["score"]
-                    )
-                    for t in sentence["tones"]
-                )
-        try:
-            em = discord.Embed(colour=await self.get_colour(ctx.channel))
-            em.add_field(name="Emotions", value=emotions_msg)
-            if sentence_msg != "":
-                em.add_field(name="Sentences", value=sentence_msg)
-            await ctx.send(embed=em)
-        except Exception:
-            full_msg = "\n**Emotions**" + code.format(emotions_msg)
-            if sentence_msg != "":
-                full_msg += "**Sentence Style**" + code.format(sentence_msg)
-            await ctx.send(full_msg)
-
     @commands.command(aliases=["text2img", "texttoimage", "text2image"])
     async def tti(self, ctx, *, txt: str):
         """Generate an image of text"""
