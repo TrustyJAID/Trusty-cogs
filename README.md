@@ -13,7 +13,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 
 | Name | Status/Version | Description (Click to see full status)
 | --- | --- | --- |
-| Hockey | **2.7.1** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
+| Hockey | **2.7.5** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
 | Notsobot | **Release**| <details><summary>Working cog for many of NotSoBot's commands.</summary> Has lots of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
 | ReTrigger | **2.8.4** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | Spoiler | **Beta**| <details><summary>Post spoiler messages in chat and react to the message to view the spoilers. </summary></details> |

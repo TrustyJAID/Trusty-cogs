@@ -313,7 +313,7 @@ class Pickems:
         config = hockey_config()
 
         for guild_id, pickem_list in bot.get_cog("Hockey").all_pickems.items():
-            guild = bot.get_guild(id=guild_id)
+            guild = bot.get_guild(id=int(guild_id))
             if guild is None:
                 continue
             try:
@@ -339,8 +339,8 @@ class Pickems:
                         await config.guild(guild).leaderboard.set(leaderboard)
                 for name in to_remove:
                     try:
-                        del bot.get_cog("Hockey").all_pickems[name]
-                    except Exception as e:
+                        del bot.get_cog("Hockey").all_pickems[str(guild_id)][name]
+                    except Exception:
                         log.error("Error removing pickems from memory", exc_info=True)
                 # await config.guild(guild).pickems.set(
                     # [p.to_json() for p in pickem_list if p.winner is None]
