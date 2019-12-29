@@ -1080,7 +1080,7 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "message_edit")
         except RuntimeError:
             return
-        if await self.is_ignored_channel(guild, after.message.channel):
+        if await self.is_ignored_channel(guild, after.channel):
             return
         if channel is None:
             return
