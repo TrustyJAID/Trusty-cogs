@@ -24,7 +24,6 @@ class ImageFinder(Converter):
         urls = []
         if matches:
             for match in matches:
-                print(match.group(1))
                 urls.append(match.group(1))
         if emojis:
             for emoji in emojis:
