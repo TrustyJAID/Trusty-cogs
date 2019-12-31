@@ -550,11 +550,11 @@ class NotSoBot(commands.Cog):
         if urls is None:
             urls = [ctx.author.avatar_url_as(format="png")]
         avatar = urls[0]
-        path = str(bundled_data_path(self)) + "/" + self.random(True)
+        path = str(bundled_data_path(self) / self.random(True))
         path2 = path[:-3] + "gif"
         async with ctx.typing():
             await self.download(str(avatar), path)
-            t_path = str(bundled_data_path(self)) + "/zDAY2yo.jpg"
+            t_path = str(bundled_data_path(self) / "zDAY2yo.jpg")
             await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
             await self.run_process(
                 [
