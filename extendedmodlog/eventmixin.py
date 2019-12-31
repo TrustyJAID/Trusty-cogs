@@ -669,11 +669,11 @@ class EventMixin:
         embed_links = channel.permissions_for(guild.me).embed_links
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=new_channel.mention,
+            description=f"{new_channel.mention} {new_channel.name}",
             timestamp=time,
             colour=await self.get_event_colour(guild, "channel_change")
         )
-        embed.set_author(name=_("Channel Created ") + str(new_channel.id))
+        embed.set_author(name=_("Channel Created ") + f"{new_channel.name} ({new_channel.id})")
         msg = _("Channel Created ") + str(new_channel.id) + "\n"
         perp = None
         reason = None
