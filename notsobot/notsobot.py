@@ -235,13 +235,13 @@ class NotSoBot(commands.Cog):
             await exit_future
             if response:
                 data = bytes(protocol.output)
-                return data.decode("ascii").rstrip()
-            return True
+                return True, data.decode("ascii").rstrip()
+            return True, None
         except asyncio.TimeoutError:
-            return False
+            return False, None
         except Exception:
             log.error("Error running process", exc_info=True)
-            return False
+            return False, None
         finally:
             if transport:
                 transport.close()
@@ -270,7 +270,7 @@ class NotSoBot(commands.Cog):
             i.format = "png"
             i.alpha_channel = True
             if i.size >= (3000, 3000):
-                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None
+                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None, 0
             exif.update(
                 {count: (k[5:], v) for k, v in i.metadata.items() if k.startswith("exif:")}
             )
@@ -460,7 +460,11 @@ class NotSoBot(commands.Cog):
                     gif_dir + "%d_{0}.png".format(rand),
                     gifout,
                 ]
-            await self.run_process(args, True)
+            worked, response = await self.run_process(args, True)
+            if not worked:
+                return await ctx.send(
+                    "`Error in command 'gmagik'. Check your console or logs for details.`"
+                )
             file_size = os.path.getsize(gifout)
             file = discord.File(gifout, filename="gmagik.gif")
             await self.safe_send(ctx, None, file, file_size)
@@ -480,10 +484,19 @@ class NotSoBot(commands.Cog):
         text: str = "Caption",
         color: str = "white",
         size: int = 40,
-        x: float = None,
-        y: float = None,
+        x: int = 0,
+        y: int = 0,
     ):
-        """Add caption to an image\n .caption text image_url"""
+        """
+            Add caption to an image
+
+            `<urls>` are the image urls or users or previous images in chat to add a caption to.
+            `<text>` is the text to caption on the image.
+            `<color>` is the color of the text.
+            `<size>` is the size of the text
+            `<x>` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
+            `<y>` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.
+        """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
@@ -500,34 +513,27 @@ class NotSoBot(commands.Cog):
             font_path = str(bundled_data_path(self)) + "/arial.ttf"
             color = wand.color.Color(color)
             font = wand.font.Font(path=font_path, size=size, color=color)
+            if x > 100:
+                x = 100
+            if x < 0:
+                x = 0
+            if y > 100:
+                y = 100
+            if y < 0:
+                y = 0
 
             def make_caption_image(b, text, color, font, x, y, is_gif):
                 img = wand.image.Image(file=b)
                 final = BytesIO()
                 i = img.clone()
-                if x is None:
-                    x = None
-                    y = int(i.height / 10)
-                if x and x > 250:
-                    x = x / 2
-                if y and y > 250:
-                    y = y / 2
-                if x and x > 500:
-                    x = x / 4
-                if y and y > 500:
-                    y = y / 4
+                x = int(i.height*(x*0.01))
+                y = int(i.width*(y*0.01))
                 if not is_gif:
-                    if x:
-                        i.caption(str(text), left=x, top=y, font=font, gravity="center")
-                    else:
-                        i.caption(str(text), top=y, font=font, gravity="center")
+                    i.caption(str(text), left=x, top=y, font=font)
                 else:
                     with wand.image.Image() as new_image:
                         for frame in img.sequence:
-                            if x:
-                                frame.caption(str(text), left=x, top=y, font=font, gravity="center")
-                            else:
-                                frame.caption(str(text), top=y, font=font, gravity="center")
+                            frame.caption(str(text), left=x, top=y, font=font)
                             new_image.sequence.append(frame)
                         new_image.save(file=final)
                 i.save(file=final)
@@ -556,8 +562,7 @@ class NotSoBot(commands.Cog):
             await self.download(str(avatar), path)
             t_path = str(bundled_data_path(self) / "zDAY2yo.jpg")
             await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
-            await self.run_process(
-                [
+            args = [
                     "convert",
                     "canvas:none",
                     "-size",
@@ -602,7 +607,11 @@ class NotSoBot(commands.Cog):
                     "2",
                     path2,
                 ]
-            )
+            worked, response = await self.run_process(args, True)
+            if not worked:
+                return await ctx.send(
+                    "`Error in command 'triggered'. Check your console or logs for details.`"
+                )
             file = discord.File(path2, filename="/triggered.gif")
             file_size = os.path.getsize(path2)
             await self.safe_send(ctx, None, file, file_size)
@@ -1205,7 +1214,11 @@ class NotSoBot(commands.Cog):
                 "-90",
                 path,
             ]
-            await self.run_process(args)
+            worked, response = await self.run_process(args, True)
+            if not worked:
+                return await ctx.send(
+                    "`Error in command 'glitch2'. Check your console or logs for details.`"
+                )
             file = discord.File(path, filename="glitch2.png")
             file_size = os.path.getsize(path)
             await self.safe_send(ctx, None, file, file_size)
