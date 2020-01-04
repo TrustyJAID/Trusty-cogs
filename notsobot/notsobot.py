@@ -1106,7 +1106,8 @@ class NotSoBot(commands.Cog):
                             with wand.image.Image(file=wmm) as new_img:
                                 for frame in new_img.sequence:
                                     with img.clone() as clone:
-                                        clone = clone.convert("gif")
+                                        clone = clone.sequence[0]
+                                        # we only care about the first frame of the gif in this case
                                         clone.transform(resize="65536@")
                                         final_x = int(clone.height*(x*0.01))
                                         final_y = int(clone.width*(y*0.01))
