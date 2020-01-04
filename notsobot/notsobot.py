@@ -25,7 +25,7 @@ from redbot.core import commands
 from pyfiglet import figlet_format
 from urllib.parse import quote
 import uuid
-from typing import Optional
+from typing import Optional, Union
 import logging
 
 from redbot.core.data_manager import bundled_data_path, cog_data_path
@@ -490,12 +490,12 @@ class NotSoBot(commands.Cog):
         """
             Add caption to an image
 
-            `<urls>` are the image urls or users or previous images in chat to add a caption to.
-            `<text>` is the text to caption on the image.
-            `<color>` is the color of the text.
-            `<size>` is the size of the text
-            `<x>` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
-            `<y>` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.
+            `[urls]` are the image urls or users or previous images in chat to add a caption to.
+            `[text=Caption]` is the text to caption on the image.
+            `[color=white]` is the color of the text.
+            `[size=40]` is the size of the text
+            `[x=0]` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
+            `[y=0]` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.
         """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
@@ -523,20 +523,21 @@ class NotSoBot(commands.Cog):
                 y = 0
 
             def make_caption_image(b, text, color, font, x, y, is_gif):
-                img = wand.image.Image(file=b)
                 final = BytesIO()
-                i = img.clone()
-                x = int(i.height*(x*0.01))
-                y = int(i.width*(y*0.01))
-                if not is_gif:
-                    i.caption(str(text), left=x, top=y, font=font)
-                else:
-                    with wand.image.Image() as new_image:
-                        for frame in img.sequence:
-                            frame.caption(str(text), left=x, top=y, font=font)
-                            new_image.sequence.append(frame)
-                        new_image.save(file=final)
-                i.save(file=final)
+                with wand.image.Image(file=b) as img:
+
+                    i = img.clone()
+                    x = int(i.height*(x*0.01))
+                    y = int(i.width*(y*0.01))
+                    if not is_gif:
+                        i.caption(str(text), left=x, top=y, font=font)
+                    else:
+                        with wand.image.Image() as new_image:
+                            for frame in img.sequence:
+                                frame.caption(str(text), left=x, top=y, font=font)
+                                new_image.sequence.append(frame)
+                            new_image.save(file=final)
+                    i.save(file=final)
                 file_size = final.tell()
                 final.seek(0)
                 filename = f"caption.{'png' if not is_gif else 'gif'}"
@@ -573,6 +574,8 @@ class NotSoBot(commands.Cog):
                     'image over -60,-60 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
+                    "-dispose",
+                    "background",
                     "(",
                     "canvas:none",
                     "-size",
@@ -590,6 +593,8 @@ class NotSoBot(commands.Cog):
                     'image over -50,-45 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
+                    "-dispose",
+                    "background",
                     ")",
                     "(",
                     "canvas:none",
@@ -599,6 +604,8 @@ class NotSoBot(commands.Cog):
                     'image over -45,-65 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
+                    "-dispose",
+                    "background",
                     ")",
                     "-layers",
                     "Optimize",
@@ -608,6 +615,7 @@ class NotSoBot(commands.Cog):
                     path2,
                 ]
             worked, response = await self.run_process(args, True)
+            log.info(response)
             if not worked:
                 return await ctx.send(
                     "`Error in command 'triggered'. Check your console or logs for details.`"
@@ -1004,12 +1012,42 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["wm"])
     @commands.bot_has_permissions(attach_files=True)
-    async def watermark(self, ctx, urls: ImageFinder = None, mark: str = None):
-        """Add a watermark to an image"""
+    async def watermark(
+        self,
+        ctx,
+        urls: ImageFinder = None,
+        mark: str = None,
+        x: int = 0,
+        y: int = 0,
+        transparency: Union[int, float] = 0
+    ):
+        """
+            Add a watermark to an image
+
+            `[urls]` are the image urls or users or previous images in chat to add a watermark to.
+            `[mark]` is the image to use as the watermark. By default the brazzers icon is used.
+            `[x=0]` is the height the watermark will be at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
+            `[y=0]` is the width the watermark will be at between 0 and 100% where 0 is the left and 100 is the right of the image.
+            `[transparency=0]` is a value from 0 to 100 which determines the percentage the watermark will be transparent.
+        """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         async with ctx.typing():
+            if x > 100:
+                x = 100
+            if x < 0:
+                x = 0
+            if y > 100:
+                y = 100
+            if y < 0:
+                y = 0
+            if transparency > 1 and transparency < 100:
+                transparency = transparency * 0.01
+            if transparency < 0:
+                transparency = 0
+            if transparency > 100:
+                transparency = 1
             b, mime = await self.bytes_download(url)
             is_gif = mime in self.gif_mimes
             if mime not in self.image_mimes + self.gif_mimes:
@@ -1017,33 +1055,68 @@ class NotSoBot(commands.Cog):
             if mark == "brazzers" or mark is None:
                 wmm, mime = await self.bytes_download("https://i.imgur.com/YAb1RMZ.png")
                 wmm.name = "watermark.png"
+                wm_gif = False
             else:
                 wmm, mime = await self.bytes_download(mark)
-                if mime not in self.image_mimes:
-                    return await ctx.send("The Watermark must be a valid image, not a gif.")
+                wm_gif = mime in self.gif_mimes
+                wmm.name = "watermark.png"
+                if wm_gif:
+                    wmm.name = "watermark.gif"
 
-            def add_watermark(b, wmm, is_gif=False):
+            def add_watermark(b, wmm, x, y, transparency, is_gif=False, wm_gif=False):
                 final = BytesIO()
-                if not is_gif:
-                    with wand.image.Image(file=b) as img:
-                        with wand.image.Image(file=wmm) as wm:
-                            img.watermark(image=wm, left=0, top=0)
-                        img.save(file=final)
-                else:
-                    wm = wand.image.Image(file=wmm)
-                    with wand.image.Image() as new_image:
-                        with wand.image.Image(file=b) as img:
-                            for frame in img.sequence:
-                                frame.watermark(image=wm, left=0, top=0)
-                                new_image.sequence.append(frame)
-                        new_image.save(file=final)
+                with wand.image.Image(file=b) as img:
+                    x = int(img.height*(x*0.01))
+                    y = int(img.width*(y*0.01))
+
+                    if not is_gif and not wm_gif:
+                        log.info("There are no gifs")
+                        with img.clone() as new_img:
+                            with wand.image.Image(file=wmm) as wm:
+                                new_img.watermark(
+                                    image=wm, left=x, top=y, transparency=transparency
+                                )
+                            new_img.save(file=final)
+
+                    elif is_gif and not wm_gif:
+                        log.info("The base image is a gif")
+                        wm = wand.image.Image(file=wmm)
+                        with wand.image.Image() as new_image:
+                            with img.clone() as new_img:
+                                for frame in new_img.sequence:
+                                    frame.watermark(
+                                        image=wm, left=x, top=y, transparency=transparency
+                                    )
+                                    new_image.sequence.append(frame)
+                            new_image.save(file=final)
+
+                    else:
+                        log.info("The mark is a gif")
+
+                        with wand.image.Image() as new_image:
+                            with wand.image.Image(file=wmm) as new_img:
+                                for frame in new_img.sequence:
+                                    with img.clone() as clone:
+                                        clone = clone.convert("gif")
+                                        clone.watermark(
+                                            image=frame, left=x, top=y, transparency=transparency
+                                        )
+                                        new_image.sequence.append(clone)
+                                        new_image.dispose = "background"
+                                        with new_image.sequence[-1] as new_frame:
+                                            new_frame.delay = frame.delay
+
+                            new_image.save(file=final)
 
                 size = final.tell()
                 final.seek(0)
-                filename = f"watermark.{'png' if not is_gif else 'gif'}"
+                filename = f"watermark.{'gif' if is_gif or wm_gif else 'png'}"
                 return discord.File(final, filename=filename), size
 
-            file, file_size = await ctx.bot.loop.run_in_executor(None, add_watermark, b, wmm, is_gif)
+            file, file_size = await ctx.bot.loop.run_in_executor(
+                None, add_watermark, b, wmm, x, y, transparency, is_gif, wm_gif
+            )
+            log.info(file.filename)
             await self.safe_send(ctx, None, file, file_size)
 
     def do_glitch(self, b, amount, seed, iterations):
