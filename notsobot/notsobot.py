@@ -1066,40 +1066,55 @@ class NotSoBot(commands.Cog):
             def add_watermark(b, wmm, x, y, transparency, is_gif=False, wm_gif=False):
                 final = BytesIO()
                 with wand.image.Image(file=b) as img:
-                    x = int(img.height*(x*0.01))
-                    y = int(img.width*(y*0.01))
 
                     if not is_gif and not wm_gif:
-                        log.info("There are no gifs")
+                        log.debug("There are no gifs")
                         with img.clone() as new_img:
+                            new_img.transform(resize="65536@")
+                            final_x = int(new_img.height*(x*0.01))
+                            final_y = int(new_img.width*(y*0.01))
                             with wand.image.Image(file=wmm) as wm:
                                 new_img.watermark(
-                                    image=wm, left=x, top=y, transparency=transparency
+                                    image=wm,
+                                    left=final_x,
+                                    top=final_y,
+                                    transparency=transparency
                                 )
                             new_img.save(file=final)
 
                     elif is_gif and not wm_gif:
-                        log.info("The base image is a gif")
+                        log.debug("The base image is a gif")
                         wm = wand.image.Image(file=wmm)
                         with wand.image.Image() as new_image:
                             with img.clone() as new_img:
                                 for frame in new_img.sequence:
+                                    frame.transform(resize="65536@")
+                                    final_x = int(frame.height*(x*0.01))
+                                    final_y = int(frame.width*(y*0.01))
                                     frame.watermark(
-                                        image=wm, left=x, top=y, transparency=transparency
+                                        image=wm,
+                                        left=final_x,
+                                        top=final_y,
+                                        transparency=transparency
                                     )
                                     new_image.sequence.append(frame)
                             new_image.save(file=final)
 
                     else:
-                        log.info("The mark is a gif")
-
+                        log.debug("The mark is a gif")
                         with wand.image.Image() as new_image:
                             with wand.image.Image(file=wmm) as new_img:
                                 for frame in new_img.sequence:
                                     with img.clone() as clone:
                                         clone = clone.convert("gif")
+                                        clone.transform(resize="65536@")
+                                        final_x = int(clone.height*(x*0.01))
+                                        final_y = int(clone.width*(y*0.01))
                                         clone.watermark(
-                                            image=frame, left=x, top=y, transparency=transparency
+                                            image=frame,
+                                            left=final_x,
+                                            top=final_y,
+                                            transparency=transparency
                                         )
                                         new_image.sequence.append(clone)
                                         new_image.dispose = "background"
@@ -1116,7 +1131,6 @@ class NotSoBot(commands.Cog):
             file, file_size = await ctx.bot.loop.run_in_executor(
                 None, add_watermark, b, wmm, x, y, transparency, is_gif, wm_gif
             )
-            log.info(file.filename)
             await self.safe_send(ctx, None, file, file_size)
 
     def do_glitch(self, b, amount, seed, iterations):
