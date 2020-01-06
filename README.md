@@ -26,7 +26,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Faces | **Release** | <details><summary>Find your own Japanese style emoji face courtesy of the CIA. </summary></details> |
 | REKT | **Release** |  <details><summary>Display a random list of funny rekt messages. </summary></details> |
 | Weather | **Release** | <details><summary>check the current weather in many cities around the world including in Kelvin. </details> |
-| Starboad | **2.1.3** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
+| Starboad | **2.1.4** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
 | Imgflip | **Release** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
 | Imagemaker | **Release** | <details><summary>A cog to paste avatars onto images like beautiful and pepe.</summary> Requirements: pillow, opencv-python, and numpy</details> |
 | Conversions | **Release** | <details><summary>Currency, crypto, and stocks commands. </summary></details> |

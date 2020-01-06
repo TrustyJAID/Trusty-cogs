@@ -21,7 +21,7 @@ class Starboard(commands.Cog):
     """
         Create a starboard to *pin* those special comments
     """
-    __version__ = "2.1.3"
+    __version__ = "2.1.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -796,7 +796,9 @@ class Starboard(commands.Cog):
         except (discord.errors.NotFound, discord.Forbidden):
             return
         member = guild.get_member(payload.user_id)
-        if not await self.config.guild(guild).starboards() or member.bot:
+        if not await self.config.guild(guild).starboards():
+            return
+        if member and member.bot:
             return
         try:
             starboard = await self.get_starboard_from_emoji(guild, str(payload.emoji))
