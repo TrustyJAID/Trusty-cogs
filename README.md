@@ -15,7 +15,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | --- | --- | --- |
 | Hockey | **2.7.5** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
 | Notsobot | **Release**| <details><summary>Working cog for many of NotSoBot's commands.</summary> Has lots of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
-| ReTrigger | **2.8.4** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
+| ReTrigger | **2.8.6** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | Spoiler | **Beta**| <details><summary>Post spoiler messages in chat and react to the message to view the spoilers. </summary></details> |
 | ExtendedModLog | **2.4.3**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
 | Badges | **Release** | <details><summary>Create your own badge with your discord info.</summary> Includes templates for fake CIA, NSA, FBI, Discord, and every NHL hockey team. Requirements: pillow</details> |

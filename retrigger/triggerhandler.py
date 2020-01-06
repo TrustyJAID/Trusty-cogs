@@ -552,8 +552,10 @@ class TriggerHandler:
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
-            if is_command and trigger.ignore_commands:
+            log.debug(f"Checking trigger {trigger.name}")
+            if is_command and not trigger.ignore_commands:
                 continue
+
             if any(t for t in trigger.response_type if t in auto_mod):
                 if await autoimmune(message):
                     print_msg = _(
@@ -597,28 +599,14 @@ class TriggerHandler:
                     ).format(author=author)
                     log.debug(print_msg + trigger.name)
                     continue
-                if is_command:
-                    continue
             content = message.content
-            if trigger.ocr_search and ALLOW_OCR:
-                for attachment in message.attachments:
-                    temp = BytesIO()
-                    await attachment.save(temp)
-                    temp.seek(0)
-                    content += pytesseract.image_to_string(Image.open(temp))
-                good_image_url = IMAGE_REGEX.findall(message.content)
-                for link in good_image_url:
-                    temp = BytesIO()
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(link) as resp:
-                            data = await resp.read()
-                            temp.write(data)
-                            temp.seek(0)
-                    content += pytesseract.image_to_string(Image.open(temp))
             if "delete" in trigger.response_type and trigger.text:
                 content = (
                     message.content + " " + " ".join(f.filename for f in message.attachments)
                 )
+
+            if trigger.ocr_search and ALLOW_OCR:
+                content += await self.get_image_text(message)
 
             search = await self.safe_regex_search(guild, trigger, content)
             if not search[0]:
@@ -630,6 +618,34 @@ class TriggerHandler:
                 trigger.count += 1
                 await self.perform_trigger(message, trigger, search[1])
                 return
+
+    async def get_image_text(self, message: discord.Message) -> str:
+        """
+            This function is built to asynchronously search images for text using pytesseract
+
+            It takes a discord message and searches for valid image links and all attachments on the message
+            then runs them through pytesseract. All contents from pytesseract are returned as a string.
+        """
+        content = " "
+        for attachment in message.attachments:
+            temp = BytesIO()
+            await attachment.save(temp)
+            temp.seek(0)
+            task = functools.partial(pytesseract.image_to_string, Image.open(temp))
+            new_task = self.bot.loop.run_in_executor(None, task)
+            content += await asyncio.wait_for(new_task, timeout=5)
+        good_image_url = IMAGE_REGEX.findall(message.content)
+        for link in good_image_url:
+            temp = BytesIO()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(link) as resp:
+                    data = await resp.read()
+                    temp.write(data)
+                    temp.seek(0)
+            task = functools.partial(pytesseract.image_to_string, Image.open(temp))
+            new_task = self.bot.loop.run_in_executor(None, task)
+            content += await asyncio.wait_for(new_task, timeout=5)
+        return content
 
     async def safe_regex_search(self, guild: discord.Guild, trigger: Trigger, content: str):
         """
@@ -936,10 +952,10 @@ class TriggerHandler:
         self, message: discord.Message, raw_response: str, regex_replace: Pattern
     ) -> str:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
-        ctx = await self.bot.get_context(message)
+        # ctx = await self.bot.get_context(message)
         results = RE_CTX.findall(raw_response)
         for result in results:
-            param = await self.transform_parameter(result, ctx.message)
+            param = await self.transform_parameter(result, message)
             raw_response = raw_response.replace("{" + result + "}", param)
         results = RE_POS.findall(raw_response)
         if results:
