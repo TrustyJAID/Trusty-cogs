@@ -908,7 +908,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change", after)
+            channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
         if channel is None:
@@ -979,7 +979,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change", role)
+            channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
         if channel is None:
@@ -1025,7 +1025,7 @@ class EventMixin:
         # if not await self.config.guild(guild).role_change.enabled():
             # return
         try:
-            channel = await self.modlog_channel(guild, "role_change", role)
+            channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
         if channel is None:
