@@ -1,7 +1,7 @@
 import discord
 import re
 
-from typing import List
+from typing import List, Tuple
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -20,7 +20,7 @@ class Event:
     def __init__(
         self,
         hoster: discord.Member,
-        members: List[discord.Member],
+        members: List[Tuple[discord.Member, str]],
         event: str,
         approver: discord.Member = None,
         message: discord.Message = None,
@@ -44,7 +44,7 @@ class Event:
             message = None
         return cls(
             guild.get_member(data["hoster"]),
-            [guild.get_member(m) for m in data["members"]],
+            [(guild.get_member(m), p_class) for m, p_class in data["members"]],
             data["event"],
             guild.get_member(data["approver"]),
             message,
@@ -54,7 +54,7 @@ class Event:
     def to_json(self):
         return {
             "hoster": self.hoster.id,
-            "members": [m.id for m in self.members],
+            "members": [(m.id, p_class) for m, p_class in self.members],
             "event": self.event,
             "approver": self.approver.id if self.approver else None,
             "message": self.message.id if self.message else None,
