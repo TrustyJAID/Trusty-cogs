@@ -2,7 +2,6 @@ from datetime import datetime
 import aiohttp
 import discord
 from .constants import BASE_URL, TEAMS
-from .helper import hockey_config
 import logging
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
@@ -142,7 +141,7 @@ class Standings:
             run when new games for the day is updated
         """
         log.debug("Updating Standings.")
-        config = hockey_config()
+        config = bot.get_cog("Hockey").config
         all_guilds = await config.all_guilds()
         for guilds in all_guilds:
             guild = bot.get_guild(guilds)

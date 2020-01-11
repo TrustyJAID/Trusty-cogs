@@ -31,7 +31,7 @@ class GameDayChannels:
 
     @staticmethod
     async def check_new_gdc(bot):
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+        config = bot.get_cog("Hockey").config
         game_list = await Game.get_games()  # Do this once so we don't spam the api
         for guilds in await config.all_guilds():
             guild = bot.get_guild(guilds)
@@ -76,7 +76,7 @@ class GameDayChannels:
             if no game object is passed it looks for the set team for the guild
             returns None if not setup
         """
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+        config = bot.get_cog("Hockey").config
         guild_data = await config.guild(guild).all()
         if "category" not in guild_data:
             return
@@ -116,6 +116,8 @@ class GameDayChannels:
         await config.channel(new_chn).team.set([team])
         # delete_gdc = await config.guild(guild).delete_gdc()
         await config.channel(new_chn).to_delete.set(guild_data["delete_gdc"])
+        if "gdc_state_updates" in guild_data:
+            await config.channel(new_chn).game_states.set(guild_data["gdc_state_updates"])
 
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
@@ -159,7 +161,7 @@ class GameDayChannels:
         """
             Deletes all game day channels in a given guild
         """
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+        config = bot.get_cog("Hockey").config
         channels = await config.guild(guild).gdc()
         if channels is None:
             channels = []

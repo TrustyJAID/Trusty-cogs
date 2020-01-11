@@ -22,10 +22,6 @@ def get_season():
         return (now.year, now.year + 1)
 
 
-def hockey_config():
-    return Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
-
-
 def utc_to_local(utc_dt, new_timezone="US/Eastern"):
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
@@ -123,16 +119,31 @@ class HockeyStandings(Converter):
         return result
 
 
-async def check_to_post(channel, post_state):
-    config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+class HockeyStates(Converter):
+    """
+    Converter for valid Hockey states to pick from
+
+        This is used to determine what game states the bot should post.
+    """
+
+    async def convert(self, ctx, argument):
+        state_list = ["preview", "live", "final", "goal"]
+        if argument.lower() not in state_list:
+            raise BadArgument('"{}" is not a valid game state.'.format(argument))
+        return argument.title()
+
+
+async def check_to_post(bot, channel, post_state, game_state):
+    config = bot.get_cog("Hockey").config
     channel_teams = await config.channel(channel).team()
     if channel_teams is None:
         await config.channel(channel).team.set([])
         return False
     should_post = False
-    for team in channel_teams:
-        if team in post_state:
-            should_post = True
+    if game_state in await config.channel(channel).game_states():
+        for team in channel_teams:
+            if team in post_state:
+                should_post = True
     return should_post
 
 
@@ -156,8 +167,8 @@ async def get_team_role(guild, home_team, away_team):
     return home_role, away_role
 
 
-async def get_team(team):
-    config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+async def get_team(bot, team):
+    config = bot.get_cog("Hockey").config
     return_team = None
     team_list = await config.teams()
     if team_list is None:
@@ -174,7 +185,7 @@ async def get_team(team):
         return_team = TeamEntry("Null", team, 0, [], {}, [], "")
         team_list.append(return_team.to_json())
         await config.teams.set(team_list)
-        return await get_team(team)
+        return await get_team(bot, team)
 
 
 async def check_valid_team(team_name, standings=False):

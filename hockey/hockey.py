@@ -4,15 +4,20 @@ import asyncio
 import json
 import yaml
 import logging
-from datetime import datetime, timedelta, date
+
 from io import BytesIO
+from typing import Union
+from datetime import datetime, timedelta, date
 from urllib.parse import quote
 from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
+
+
 from .teamentry import TeamEntry
 from .menu import hockey_menu
 from .embeds import make_rules_embed
-from .helper import HockeyStandings, HockeyTeams, get_season
+from .helper import HockeyStandings, HockeyTeams, get_season, HockeyStates
 from .errors import UserHasVotedError, VotingHasEndedError, NotAValidTeamError, InvalidFileError
 from .game import Game
 from .pickems import Pickems
@@ -43,7 +48,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.7.5"
+    __version__ = "2.8.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -69,14 +74,21 @@ class Hockey(commands.Cog):
             "pickems": [],
             "leaderboard": {},
             "pickems_category": None,
-            "pickems_channels": []
+            "pickems_channels": [],
+            "game_state_notifications": False,
+            "goal_notifications": False,
+            "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
         }
-        default_channel = {"team": [], "to_delete": False}
+        default_channel = {
+            "team": [],
+            "game_states": ["Preview", "Live", "Final", "Goal"],
+            "to_delete": False
+        }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
         self.config.register_global(**default_global, force_registration=True)
         self.config.register_guild(**default_guild, force_registration=True)
-        self.config.register_channel(**default_channel)
+        self.config.register_channel(**default_channel, force_registration=True)
         self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False  # used to test a continuous loop of a single game data
         self.all_pickems = {}
@@ -231,21 +243,6 @@ class Hockey(commands.Cog):
         while self.save_pickems:
             for guild_id, pickems in self.all_pickems.items():
                 guild_obj = discord.Object(id=int(guild_id))
-                # data = [p.to_json() for p in pickems]
-                # saved_data = await self.config.guild(guild_obj).pickems()
-                # good_list = []
-                # for o_p in saved_data:
-                    # op_in_p = False
-                    # for p in data:
-                        # if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
-                            # good_list.append(p)
-                            # op_in_p = True
-                    # if not op_in_p:
-                        # log.debug("adding new pickems to memory")
-                        # good_list.append(o_p)
-
-                # await self.config.guild(guild_obj).pickems.set(good_list)
-                # self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
                 await self.config.guild(guild_obj).pickems.set(
                     {name: p.to_json() for name, p in pickems.items()}
                 )
@@ -260,13 +257,6 @@ class Hockey(commands.Cog):
             return
         if str(guild.id) not in self.all_pickems:
             return
-        # pickems_list = await self.config.guild(guild).pickems()
-
-        # if pickems_list is None:
-            # return
-        # pickems = [Pickems.from_json(p) for p in pickems_list]
-        # if len(pickems) == 0:
-            # return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
         except AttributeError:
@@ -307,9 +297,6 @@ class Hockey(commands.Cog):
                         await user.send(reply_message)
                     except Exception:
                         pass
-        # if is_pickems_vote:
-            # pickems_list = [p.to_json() for p in pickems]
-            # await self.config.guild(guild).pickems.set(pickems_list)
 
     async def change_custom_emojis(self, attachments):
         """
@@ -389,6 +376,8 @@ class Hockey(commands.Cog):
                 _("On") if await self.config.guild(guild).post_standings() else _("Off")
             )
             gdc_channels = await self.config.guild(guild).gdc()
+            if gdc_channels is None:
+                gdc_channels = []
             if standings_channel is not None:
                 if ctx.channel.permissions_for(guild.me).embed_links:
                     standings_chn = standings_channel.mention
@@ -423,10 +412,18 @@ class Hockey(commands.Cog):
                 if chn is not None:
                     teams = ", ".join(t for t in await self.config.channel(chn).team())
                     is_gdc = "(GDC)" if chn.id in gdc_channels else ""
-                    if ctx.channel.permissions_for(guild.me).embed_links:
-                        channels += f"{chn.mention}{is_gdc}: {teams}\n"
-                    else:
-                        channels += f"#{chn.name}{is_gdc}: {teams}\n"
+                    game_states = await self.config.channel(chn).game_states()
+                    if len(game_states) != 4:
+                        channels += (
+                            f"{chn.mention}{is_gdc}: {teams}\n"
+                            + _("Game Sates: ")
+                            + ", ".join(s for s in game_states)
+                        )
+
+            notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
+                    game_start=await self.config.guild(guild).game_state_notifications(),
+                    goals=await self.config.guild(guild).goal_notifications()
+                )
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=guild.name + _(" Hockey Settings"))
                 em.colour = await self.get_colour(ctx.channel)
@@ -434,12 +431,18 @@ class Hockey(commands.Cog):
                 em.add_field(
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
+                em.add_field(
+                        name=_("Notifications"),
+                        value=notification_settings
+                    )
                 await ctx.send(embed=em)
             else:
                 msg = (
                     f"```\n{guild.name} "
                     + _("Hockey Settings\n")
                     + f"{channels}\n"
+                    + _("Notifications")
+                    + notification_settings
                     + _("Standings Settings")
                     + "\n#{standings_chn}: {standings_msg}"
                 )
@@ -470,6 +473,7 @@ class Hockey(commands.Cog):
             channels = await self.config.guild(guild).gdc()
             category = self.bot.get_channel(await self.config.guild(guild).category())
             delete_gdc = await self.config.guild(guild).delete_gdc()
+            game_states = await self.config.guild(guild).gdc_state_updates()
             if category is not None:
                 category = category.name
             if channels is not None:
@@ -501,8 +505,10 @@ class Hockey(commands.Cog):
                     + _("Team:")
                     + team
                     + "\n"
-                    + _("Current Channels:")
+                    + _("Current Channels: ")
                     + created_channels
+                    + _("Default Game States: ")
+                    + humanize_list(game_states)
                     + "```"
                 )
                 await ctx.send(msg)
@@ -513,6 +519,7 @@ class Hockey(commands.Cog):
                 em.add_field(name=_("Delete Game Day Channels"), value=str(delete_gdc))
                 em.add_field(name=_("Team"), value=str(team))
                 em.add_field(name=_("Current Channels"), value=created_channels)
+                em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
                 await ctx.send(embed=em)
 
     #######################################################################
@@ -526,6 +533,25 @@ class Hockey(commands.Cog):
         if await self.config.guild(ctx.guild).create_channels():
             await GameDayChannels.delete_gdc(self.bot, ctx.guild)
         await ctx.send(_("Game day channels deleted."))
+
+    @gdc.command(name="defaultstate")
+    async def gdc_default_game_state(self, ctx, *state: HockeyStates):
+        """
+            Set the default game state updates for Game Day Channels.
+
+            `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.
+
+            `preview` updates are the pre-game notifications 60, 30, and 10 minutes before the game starts.
+            `live` are the period start notifications.
+            `final` is the final game update including 3 stars.
+            `goal` is all the goal updates.
+        """
+        await self.config.guild(ctx.guild).gdc_state_updates.set(list(set(state)))
+        await ctx.send(
+            _("GDC game updates set to {states}").format(
+                states=humanize_list(list(set(state)))
+            )
+        )
 
     @gdc.command(name="create")
     async def gdc_create(self, ctx):
@@ -671,6 +697,40 @@ class Hockey(commands.Cog):
         )
         await ctx.send(msg)
 
+    @hockeyset_commands.command(name="goalnotifications")
+    @checks.mod_or_permissions(manage_roles=True)
+    async def set_goal_notification_style(self, ctx, style: Union[bool, str]):
+        """
+            Set the servers goal notification style. Options are:
+
+            `True` - The bot will try to find correct role names for each team and mention that role.
+            Server permissions can override this.
+            `False` - The bot will not post any mention for roles.
+            `Auto` - The bot will automatically adjust the roles permission for the notification and then remove it after.
+        """
+        if isinstance(style, str):
+            if style.lower() != "auto":
+                return await ctx.send(_("That is not a valid style."))
+        await self.config.guild(ctx.guild).goal_notifications.set(style)
+        await ctx.tick()
+
+    @hockeyset_commands.command(name="gamenotifications")
+    @checks.mod_or_permissions(manage_roles=True)
+    async def set_game_start_notification_style(self, ctx, style: Union[bool, str]):
+        """
+            Set the servers game start notification style. Options are:
+
+            `True` - The bot will try to find correct role names for each team and mention that role.
+            Server permissions can override this.
+            `False` - The bot will not post any mention for roles.
+            `Auto` - The bot will automatically adjust the roles permission for the notification and then remove it after.
+        """
+        if isinstance(style, str):
+            if style.lower() != "auto":
+                return await ctx.send(_("That is not a valid style."))
+        await self.config.guild(ctx.guild).game_state_notifications.set(style)
+        await ctx.tick()
+
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
     async def post_standings(self, ctx, standings_type: str, channel: discord.TextChannel = None):
         """
@@ -730,8 +790,41 @@ class Hockey(commands.Cog):
         await self.config.guild(guild).post_standings.set(cur_state)
         await ctx.send(msg)
 
+    @hockeyset_commands.command(name="stateupdates")
+    async def set_game_state_updates(
+        self, ctx, channel: discord.TextChannel, *state: HockeyStates
+    ):
+        """
+            Set what type of game updates to be posted in the designated channel.
+
+            `<channel>` is a text channel for the updates.
+            `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.
+
+            `preview` updates are the pre-game notifications 60, 30, and 10 minutes
+            before the game starts and the pre-game notification at the start of the day.
+
+            Note: This may disable pickems if it is not selected.
+            `live` are the period start notifications.
+            `final` is the final game update including 3 stars.
+            `goal` is all the goal updates.
+        """
+        await self.config.channel(channel).game_states.set(list(set(state)))
+        await ctx.send(
+            _("{channel} game updates set to {states}").format(
+                channel=channel.mention,
+                states=humanize_list(list(set(state)))
+            )
+        )
+        if not await self.config.channel(channel).teams():
+            await ctx.send(
+                _(
+                    "You have not setup any team updates in {channel}. "
+                    "You can do so with `{prefix}hockeyset add`."
+                ).format(channel=channel.mention, prefix=ctx.prefix)
+            )
+
     @hockeyset_commands.command(name="add", aliases=["add_goals"])
-    async def add_goals(self, ctx, team: HockeyTeams, channel: discord.TextChannel = None):
+    async def add_goals(self, ctx, team: HockeyTeams, channel: discord.TextChannel):
         """
             Adds a hockey team goal updates to a channel do 'all' for all teams
 
@@ -1199,7 +1292,7 @@ class Hockey(commands.Cog):
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.send(msg)
 
-    @hockey_commands.command()
+    @hockey_commands.command(hidden=True)
     @checks.is_owner()
     async def getgoals(self, ctx):
         """
@@ -1479,16 +1572,13 @@ class Hockey(commands.Cog):
         else:
             return
 
-    @hockeyset_commands.command()
+    @hockeyset_commands.command(hidden=True)
     @checks.is_owner()
     async def testloop(self, ctx):
         """
             Toggle the test game loop
         """
-        if not self.TEST_LOOP:
-            self.TEST_LOOP = True
-        else:
-            self.TEST_LOOP = False
+        self.TEST_LOOP = not self.TEST_LOOP
         await ctx.send(_("Test loop set to ") + str(self.TEST_LOOP))
 
     @hockeyset_commands.command()
@@ -1512,21 +1602,6 @@ class Hockey(commands.Cog):
     async def save_pickems_unload(self):
         for guild_id, pickems in self.all_pickems.items():
             guild_obj = discord.Object(id=int(guild_id))
-            # data = [p.to_json() for p in pickems]
-            # saved_data = await self.config.guild(guild_obj).pickems()
-            # good_list = []
-            # for o_p in saved_data:
-                # op_in_p = False
-                # for p in data:
-                    # if o_p["home_team"] == p["home_team"] and p["game_start"] == o_p["game_start"]:
-                        # good_list.append(p)
-                        # op_in_p = True
-                # if not op_in_p:
-                    # log.debug("adding new pickems to memory")
-                    # good_list.append(o_p)
-
-            # await self.config.guild(guild_obj).pickems.set(good_list)
-            # self.all_pickems[str(guild_id)] = [Pickems.from_json(p) for p in good_list]
             await self.config.guild(guild_obj).pickems.set(
                 {name: p.to_json() for name, p in pickems.items()}
             )

@@ -2,9 +2,7 @@ import discord
 from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
 from datetime import datetime, timedelta
 from .constants import TEAMS
-from .helper import hockey_config
 from redbot.core.i18n import Translator
-from redbot.core import Config
 import asyncio
 import logging
 
@@ -91,15 +89,12 @@ class Pickems:
         """
             Returns a list of all pickems on the bot for that game
         """
-        # config = hockey_config()
         return_pickems = []
         new_name = f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
         for guild_id, pickems in bot.get_cog("Hockey").all_pickems.items():
             guild = bot.get_guild(int(guild_id))
             if guild is None:
-                # await config._clear_scope(Config.GUILD, str(guild_id))
                 continue
-            # pickems = await config.guild(guild).pickems()
             if pickems is None:
                 pickems = []
             if new_name in pickems:
@@ -112,9 +107,7 @@ class Pickems:
         for guild_id, pickems in bot.get_cog("Hockey").all_pickems.items():
             guild = bot.get_guild(int(guild_id))
             if guild is None:
-                # await config._clear_scope(Config.GUILD, str(guild_id))
                 continue
-            # pickems = await config.guild(guild).pickems()
             if pickems is None:
                 pickems = {}
             pickem_name = Pickems.pickems_name(game)
@@ -129,7 +122,6 @@ class Pickems:
             Checks to see if a pickem object is already created for the game
             if not it creates one or adds the message, channel to the current ones
         """
-        # config = hockey_config()
         pickems = bot.get_cog("Hockey").all_pickems.get(str(guild.id), None)
         new_name = Pickems.pickems_name(game)
         if type(pickems) is list:
@@ -145,11 +137,6 @@ class Pickems:
                     log.debug(_("Pickem already exists, adding channel"))
                     old_pickem = p
                     old_name = name
-            # if p["home_team"] == game.home_team and p["away_team"] == game.away_team:
-                # if p["game_start"] == game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"):
-                    # Only use the old one if the date is the same and the same teams are playing
-                    # log.debug(_("Pickem already exists, adding channel"))
-                    # old_pickem = p
 
         if old_pickem is None:
             pickems[new_name] = Pickems.from_json({
@@ -165,7 +152,6 @@ class Pickems:
 
             bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             log.debug("creating new pickems")
-            # await config.guild(guild).pickems.set(pickems)
             return True
         else:
             del pickems[old_name]
@@ -175,14 +161,13 @@ class Pickems:
             old_pickem.channel.append(message.id)
             pickems[old_name] = old_pickem
             bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
-            # await config.guild(guild).pickems.set(pickems)
             log.debug("using old pickems")
             return False
 
     @staticmethod
     async def reset_weekly(bot):
         # Reset the weekly leaderboard for all servers
-        config = hockey_config()
+        config = bot.get_cog("Hockey").config
         pickems_channels_to_delete = []
         for guild_id in await config.all_guilds():
             guild = bot.get_guild(id=guild_id)
@@ -217,7 +202,7 @@ class Pickems:
             "- Anyone who votes for both teams will have their "
             "vote removed and will receive no points!\n\n\n\n"
         )
-        config = hockey_config()
+        config = bot.get_cog("Hockey").config
         category = bot.get_channel(await config.guild(guild).pickems_category())
         if not category:
             return
@@ -247,7 +232,7 @@ class Pickems:
 
     @staticmethod
     async def create_weekly_pickems_pages(bot, guilds, game_obj):
-        config = hockey_config()
+        config = bot.get_cog("Hockey").config
         save_data = {}
         today = datetime.now()
         new_day = timedelta(days=1)
@@ -310,7 +295,7 @@ class Pickems:
             This should be where the pickems is removed and tallies are added
             to the leaderboard
         """
-        config = hockey_config()
+        config = bot.get_cog("Hockey").config
 
         for guild_id, pickem_list in bot.get_cog("Hockey").all_pickems.items():
             guild = bot.get_guild(id=int(guild_id))
