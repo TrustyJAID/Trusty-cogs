@@ -77,15 +77,15 @@ class GameDayChannels:
             returns None if not setup
         """
         config = bot.get_cog("Hockey").config
-        guild_data = await config.guild(guild).all()
-        if "category" not in guild_data:
+        category_id = await config.guild(guild).category()
+        if not category_id:
             return
-        category = bot.get_channel(guild_data["category"])
+        category = bot.get_channel(category_id)
         if category is None:
             # Return none if there's no category to create the channel
             return
         if game_data is None:
-            team = guild_data["gdc_team"]
+            team = await config.guild(guild).gdc_team()
 
             next_games = await Game.get_games_list(team, datetime.now())
             if next_games != []:
@@ -106,18 +106,15 @@ class GameDayChannels:
             log.error("Error creating channels in {}".format(guild.name), exc_info=True)
             return
         # cur_channels = await config.guild(guild).gdc()
-        if "gdc" not in guild_data:
-            guild_data["gdc"] = []
-        if guild_data["gdc"] is None:
-            guild_data["gdc"] = []
-        guild_data["gdc"].append(new_chn.id)
-        await config.guild(guild).gdc.set(guild_data["gdc"])
+        current_gdc = await config.guild(guild).gdc()
+        current_gdc.append(new_chn.id)
+        await config.guild(guild).gdc.set(current_gdc)
         # await config.guild(guild).create_channels.set(True)
         await config.channel(new_chn).team.set([team])
-        # delete_gdc = await config.guild(guild).delete_gdc()
-        await config.channel(new_chn).to_delete.set(guild_data["delete_gdc"])
-        if "gdc_state_updates" in guild_data:
-            await config.channel(new_chn).game_states.set(guild_data["gdc_state_updates"])
+        delete_gdc = await config.guild(guild).delete_gdc()
+        await config.channel(new_chn).to_delete.set(delete_gdc)
+        gdc_state_updates = await config.guild(guild).gdc_state_updates()
+        await config.channel(new_chn).game_states.set(gdc_state_updates)
 
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")

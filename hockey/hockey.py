@@ -48,7 +48,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.8.0"
+    __version__ = "2.8.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -639,6 +639,7 @@ class Hockey(commands.Cog):
         await self.config.guild(guild).category.set(category.id)
         await self.config.guild(guild).gdc_team.set(team)
         await self.config.guild(guild).delete_gdc.set(delete_gdc)
+        await self.config.guild(guild).create_channels.set(True)
         if team.lower() != "all":
             await GameDayChannels.create_gdc(self.bot, guild)
         else:
