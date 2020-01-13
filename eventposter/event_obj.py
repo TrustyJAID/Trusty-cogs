@@ -36,12 +36,16 @@ class Event:
     @classmethod
     async def from_json(cls, data: dict, guild: discord.Guild):
         channel = guild.get_channel(data["channel"])
+        message = None
+        if not channel:
+            return None
         try:
             message = await channel.get_message(data["message"])
         except AttributeError:
             message = await channel.fetch_message(data["message"])
-        except discord.errors.Forbidden:
-            message = None
+        except Exception:
+            # Return None if we can't find the original events
+            return None
         return cls(
             guild.get_member(data["hoster"]),
             [(guild.get_member(m), p_class) for m, p_class in data["members"]],

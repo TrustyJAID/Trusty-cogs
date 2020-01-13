@@ -21,7 +21,7 @@ if listener is None:  # thanks Sinbad
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -51,6 +51,8 @@ class EventPoster(commands.Cog):
                     event = await Event.from_json(event_data, guild)
                 except (TypeError, KeyError, discord.errors.Forbidden):
                     continue
+                if event is None:
+                    return
                 self.event_cache[str(guild_id)] = {}
                 self.event_cache[str(guild_id)][str(event.message.id)] = event
 
@@ -128,9 +130,15 @@ class EventPoster(commands.Cog):
             With custom keyword links setup this will add an image to the events thumbnail
             after being approved by an admin.
         """
-        if not await self.config.guild(ctx.guild).approval_channel():
+        approval_channel = ctx.guild.get_channel(
+            await self.config.guild(ctx.guild).approval_channel()
+        )
+        announcement_channel = ctx.guild.get_channel(
+            await self.config.guild(ctx.guild).announcement_channel()
+        )
+        if not approval_channel:
             return await ctx.send("No admin channel has been setup on this server.")
-        if not await self.config.guild(ctx.guild).announcement_channel():
+        if not announcement_channel:
             return await ctx.send("No announcement channel has been setup on this server.")
         if str(ctx.author.id) in await self.config.guild(ctx.guild).events():
             if not await self.check_clear_event(ctx):
@@ -140,22 +148,18 @@ class EventPoster(commands.Cog):
         member_list = []
         for member in members:
             member_list.append((member, await self.config.member(member).player_class()))
-        channel = self.bot.get_channel(await self.config.guild(ctx.guild).approval_channel())
         event = Event(ctx.author, list(member_list), description)
         em = await self.make_event_embed(ctx, event)
-        admin_msg = await channel.send(embed=em)
+        admin_msg = await approval_channel.send(embed=em)
         start_adding_reactions(admin_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
         pred = ReactionPredicate.yes_or_no(admin_msg)
         reaction, user = await ctx.bot.wait_for("reaction_add", check=pred)
         if pred.result:
             ping = await self.config.guild(ctx.guild).ping()
-            new_channel = self.bot.get_channel(
-                await self.config.guild(ctx.guild).announcement_channel()
-            )
             event.approver = user
-            event.channel = new_channel
+            event.channel = announcement_channel
             em.set_footer(text=f"Approved by {user}", icon_url=user.avatar_url)
-            posted_message = await new_channel.send(ping, embed=em)
+            posted_message = await announcement_channel.send(ping, embed=em)
             event.message = posted_message
             async with self.config.guild(ctx.guild).events() as cur_events:
                 cur_events[str(event.hoster.id)] = event.to_json()
