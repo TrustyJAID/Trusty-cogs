@@ -6,6 +6,7 @@ from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import escape, pagify
 from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
+from html import unescape
 import tweepy as tw
 from typing import Tuple, Any, Optional
 from datetime import datetime
@@ -224,7 +225,7 @@ class Tweets(commands.Cog):
                     name=reply.user.name,
                     screen_name=reply.user.screen_name
                 )
-                reply_text = reply.text.replace("&amp;", "\n\n")
+                reply_text = unescape(reply.text)
                 if hasattr(reply, "extended_tweet"):
                     reply_text = reply.extended_tweet["full_text"]
                 if hasattr(reply, "extended_entities") and not em.image:
@@ -236,7 +237,7 @@ class Tweets(commands.Cog):
             except IndexError:
                 log.debug(_("Error grabbing in reply to tweet."), exc_info=True)
 
-        em.description = escape(text.replace("&amp;", "\n\n"), formatting=True)
+        em.description = escape(unescape(text), formatting=True)
 
         return em
 
@@ -516,12 +517,12 @@ class Tweets(commands.Cog):
                 chn = self.bot.get_channel(channel)
                 if chn is None or not chn.permissions_for(ctx.me).send_messages:
                     log.debug("Removing channel {}".format(channel))
-                    account["channel"].remove(channel)
-            if len(account["channel"]) == 0:
+                    self.accounts[user_id]["channel"].remove(channel)
+            if len(self.accounts[user_id]["channel"]) == 0:
                 log.debug("Removing account {}".format(account["twitter_name"]))
                 to_delete.append(user_id)
-        for user_id in to_delete:
-            del self.accounts[user_id]
+        for u_id in to_delete:
+            del self.accounts[u_id]
         await self.config.accounts.set(self.accounts)
 
     @_autotweet.command(name="restart")
