@@ -36,7 +36,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.8.7"
+    __version__ = "2.8.8"
 
     def __init__(self, bot):
         self.bot = bot
@@ -915,7 +915,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
-
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         new_trigger = Trigger(
             name, regex, ["image"], author, 0, filename, None, [], [], {}, [], ctx.message.id
         )
@@ -1001,13 +1004,20 @@ class ReTrigger(TriggerHandler, commands.Cog):
             filename = await self.save_image_location(attachment_url, guild)
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
-
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         new_trigger = Trigger(
             name, regex, ["image"], author, 0, filename, text, [], [], {}, [], ctx.message.id
         )
@@ -1048,15 +1058,26 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if ctx.message.attachments != []:
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
                 return
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
-
+            if not filename:
+                return await ctx.send(
+                    _("That is not a valid file link.")
+                )
         new_trigger = Trigger(
             name, regex, ["resize"], author, 0, filename, None, [], [], {}, [], ctx.message.id
         )

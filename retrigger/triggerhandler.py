@@ -46,8 +46,7 @@ _ = Translator("ReTrigger", __file__)
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4))")
-IMAGE_REGEX: Pattern = re.compile(r"(?:(?:https?):\/\/)?[\w/\-?=%.]+\.[(?:png|jpg|jpeg)]+")
-MENTION_REGEX: Pattern = re.compile(r"(\@here|\@everyone)")
+IMAGE_REGEX: Pattern = re.compile(r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg)+")
 
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
@@ -725,9 +724,8 @@ class TriggerHandler:
             else:
                 text_response = str(trigger.text)
             response = await self.convert_parms(message, text_response, trigger.regex)
-            if not channel.permissions_for(author).mention_everyone:
-                for match in MENTION_REGEX.findall(response):
-                    response = response.replace(match, match[1:])
+            if response and not channel.permissions_for(author).mention_everyone:
+                response = escape(response, mass_mentions=True)
             try:
                 await channel.send(response)
             except discord.errors.Forbidden:
@@ -741,9 +739,8 @@ class TriggerHandler:
             crand_text_response = await self.convert_parms(
                 message, rand_text_response, trigger.regex
             )
-            if not channel.permissions_for(author).mention_everyone:
-                for match in MENTION_REGEX.findall(crand_text_response):
-                    crand_text_response = response.replace(match, match[1:])
+            if crand_text_response and not channel.permissions_for(author).mention_everyone:
+                crand_text_response = escape(crand_text_response, mass_mentions=True)
             try:
                 await channel.send(crand_text_response)
             except discord.errors.Forbidden:
@@ -760,9 +757,8 @@ class TriggerHandler:
                 image_text_response = await self.convert_parms(
                     message, image_text_response, trigger.regex
                 )
-            if not channel.permissions_for(author).mention_everyone:
-                for match in MENTION_REGEX.findall(image_text_response):
-                    image_text_response = response.replace(match, match[1:])
+            if image_text_response and not channel.permissions_for(author).mention_everyone:
+                image_text_response = escape(image_text_response, mass_mentions=True)
             try:
                 await channel.send(image_text_response, file=file)
             except discord.errors.Forbidden:
@@ -777,10 +773,12 @@ class TriggerHandler:
             file = discord.File(path)
             rimage_text_response = trigger.text
             if rimage_text_response:
-                text_response = await self.convert_parms(message, response, trigger.regex)
-            if not channel.permissions_for(author).mention_everyone:
-                for match in MENTION_REGEX.findall(rimage_text_response):
-                    rimage_text_response = response.replace(match, match[1:])
+                rimage_text_response = await self.convert_parms(
+                    message, rimage_text_response, trigger.regex
+                )
+
+            if rimage_text_response and not channel.permissions_for(author).mention_everyone:
+                rimage_text_response = escape(rimage_text_response, mass_mentions=True)
             try:
                 await channel.send(rimage_text_response, file=file)
             except discord.errors.Forbidden:
