@@ -220,14 +220,14 @@ class Tweets(commands.Cog):
             api = await self.authenticate()
             try:
                 reply = api.statuses_lookup(id_=[status.in_reply_to_status_id])[0]
-                log.debug(reply)
+                # log.debug(reply)
                 in_reply_to = _("In reply to {name} (@{screen_name})").format(
                     name=reply.user.name,
                     screen_name=reply.user.screen_name
                 )
                 reply_text = unescape(reply.text)
                 if hasattr(reply, "extended_tweet"):
-                    reply_text = reply.extended_tweet["full_text"]
+                    reply_text = unescape(reply.extended_tweet["full_text"])
                 if hasattr(reply, "extended_entities") and not em.image:
                     em.set_image(url=reply.extended_entities["media"][0]["media_url_https"])
                 em.add_field(
