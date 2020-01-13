@@ -282,10 +282,11 @@ class Badges(commands.Cog):
         msg = ", ".join(badge["badge_name"] for badge in global_badges)
 
         em = discord.Embed()
-        if await self.bot.db.guild(guild).use_bot_color():
-            em.colour = guild.me.colour
-        else:
-            em.colour = await self.bot.db.color()
+        try:
+            em.colour = await self.bot.get_embed_colour()
+        except Exception:
+            # To allow older bots to still function.
+            pass
         # for badge in await self.config.badges():
         em.add_field(name=_("Global Badges"), value=msg)
         if guild_badges != []:
