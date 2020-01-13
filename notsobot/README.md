@@ -22,5 +22,3 @@ cd ImageMagick-*
 make
 sudo make install
 ```
-
-## Testing for Orels1

@@ -1,7 +1,6 @@
 import discord
 import aiohttp
 import logging
-import re
 
 from redbot.core import commands
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
