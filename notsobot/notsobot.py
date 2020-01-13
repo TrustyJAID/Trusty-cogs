@@ -216,12 +216,12 @@ class NotSoBot(commands.Cog):
                     b.seek(0)
                     return b, mime
                 else:
-                    return False
+                    return False, False
         except asyncio.TimeoutError:
-            return False
+            return False, False
         except Exception:
             log.error("Error downloading to bytes", exc_info=True)
-            return False
+            return False, False
 
     async def run_process(self, code, response=False):
         try:
