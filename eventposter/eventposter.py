@@ -21,7 +21,7 @@ if listener is None:  # thanks Sinbad
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -292,7 +292,13 @@ class EventPoster(commands.Cog):
     async def make_event_embed(self, ctx, event):
         em = discord.Embed(title=event.event)
         em.set_author(name=f"{event.hoster} is hosting", icon_url=event.hoster.avatar_url)
-        em.description = f"To join this event type `{ctx.prefix}join {event.hoster}`"
+        try:
+            prefixes = await self.bot.get_valid_prefix(ctx.guild)
+            prefix = prefixes[0]
+        except AttributeError:
+            prefixes = await self.bot.get_prefixes(event.message)
+            prefix = prefixes[0]
+        em.description = f"To join this event type `{prefix}join {event.hoster}`"
         for i, member in enumerate(event.members):
             player_class = ""
             if member[1]:
