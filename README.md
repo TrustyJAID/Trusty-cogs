@@ -15,7 +15,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | --- | --- | --- |
 | Hockey | **2.8.2** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary> If you would like to use the built in emoljis, ask me (TrustyJAID#0001) on discord to add your bot to my server hosting the emojis used in this cog. There is also a command to set your own custom emojis.</details>|
 | Notsobot | **Release**| <details><summary>Working cog for many of NotSoBot's commands.</summary> Has lots of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
-| ReTrigger | **2.8.8** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
+| ReTrigger | **2.8.9** | <details><summary>Trigger events based on regex!</summary>Note: This repo requires pillow to allow resizing of images.</details> |
 | Spoiler | **Beta**| <details><summary>Post spoiler messages in chat and react to the message to view the spoilers. </summary></details> |
 | ExtendedModLog | **2.5.0**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
 | EventPoster | **1.3.3**| <details><summary>Create announcements to host and plan events. </summary>This cog allows any member of the server the opportunity to host an event and organize who is joining said event. Excellent for coordinating and looking for groups to do boss raids, hunt for secrets or any number of things.</details> |
@@ -27,7 +27,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Faces | **Release** | <details><summary>Find your own Japanese style emoji face courtesy of the CIA. </summary></details> |
 | REKT | **Release** |  <details><summary>Display a random list of funny rekt messages. </summary></details> |
 | Weather | **Release** | <details><summary>check the current weather in many cities around the world including in Kelvin. </details> |
-| Starboad | **2.1.4** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
+| Starboard | **2.1.4** | <details><summary>Create a starboard channel with custom emojis. </summary></details> |
 | Imgflip | **Release** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
 | Imagemaker | **Release** | <details><summary>A cog to paste avatars onto images like beautiful and pepe.</summary> Requirements: pillow, opencv-python, and numpy</details> |
 | Conversions | **Release** | <details><summary>Currency, crypto, and stocks commands. </summary></details> |

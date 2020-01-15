@@ -5,6 +5,15 @@ ReTrigger is a highly versatile cog that allows server moderators and administra
  - `\b` meaning word boundaries usually used at the beginning and end of the word or sentence to avoid triggering on `testing` when you only want `test`. (e.g. regex of `\bhello, world\b` will __only__ trigger if someone says exactly `hello, world` and not `hello, worlds`.)
  - `(?i)` at the beginning of the regex will ignore cases in the search so `test`, `Test`, and `TEST` are treated the same.
  - Groups can be utilized to pick specific parts of the pattern to be used later. Groups look like `(^I wanna be )([^.]*)` where everything inside the `()` brackets are a group. Groups are numbered 0 and up where 0 is the full pattern, 1 would be `I wanna be` and 2 would be `[^.]*]`. In this example anything after the words `I wanna be` is captured and can then be used in the response of the trigger by using `{2}` to signify group 2.
+ - More useful special characters:
+    - `^` signifies the start of a string.
+    - `$` signifies the end of a string.
+    - `?` 0 or 1 of the previous character or group.
+    - `+` 1 or more of the previous character or group.
+    - `*` 0 or more of the previous character or group.
+    - `.` any character other than newline.
+    - `|` **or** statement meaning this **or** that.
+
 
 ## Basic Commands
 ### **text**

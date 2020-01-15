@@ -33,14 +33,17 @@ _ = Translator("ReTrigger", __file__)
 class ReTrigger(TriggerHandler, commands.Cog):
     """
         Trigger bot events using regular expressions
+
+        https://regex101.com/ is a good place to test regex
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
     """
 
     __author__ = "TrustyJAID"
-    __version__ = "2.8.8"
+    __version__ = "2.8.9"
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, 964565433247)
+        self.config = Config.get_conf(self, 964565433247, force_registration=True)
         default_guild = {
             "trigger_list": {},
             "allow_multiple": False,
@@ -53,10 +56,19 @@ class ReTrigger(TriggerHandler, commands.Cog):
             "bypass": False,
         }
         self.config.register_guild(**default_guild)
+        self.config.register_global(trigger_timeout=1)
         self.re_pool = Pool(maxtasksperchild=2)
         self.triggers = {}
         self.save_triggers = self.bot.loop.create_task(self.save_loop())
         self.__unload = self.cog_unload
+        self.trigger_timeout = 1
+
+    def format_help_for_context(self, ctx: commands.Context):
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\nCog Version: {self.__version__}"
 
     def cog_unload(self):
         log.debug("Closing process pools.")
@@ -65,6 +77,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.save_triggers.cancel()
 
     async def initialize(self):
+        self.trigger_timeout = await self.config.trigger_timeout()
         data = await self.config.all_guilds()
         for guild, settings in data.items():
             self.triggers[guild] = []
@@ -651,30 +664,76 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.command(hidden=True)
     @checks.is_owner()
+    async def timeout(self, ctx: commands.Context, timeout: int):
+        """
+            Set the timeout period for searching triggers
+
+            `<timeout>` is number of seconds until regex searching is kicked out.
+        """
+        if timeout > 1:
+            msg = await ctx.send(
+                _(
+                    "Increasing this could cause the bot to become unstable or allow "
+                    "bad regex patterns to continue to exist causing slow downs and "
+                    "even fatal crashes on the bot. Do you wish to continue?"
+                )
+            )
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                return await ctx.send(_("Not changing regex timeout time."))
+            if pred.result:
+                await self.config.trigger_timeout.set(timeout)
+                self.trigger_timeout = timeout
+                await ctx.tick()
+            else:
+                await ctx.send(_("Not changing regex timeout time."))
+        elif timeout > 10:
+            return await ctx.send(
+                _("{timeout} seconds is too long, you may want to look at `{prefix}retrigger bypass`").format(
+                        timeout=timeout,
+                        prefix=ctx.clean_prefix
+                    )
+            )
+        else:
+            if timeout < 1:
+                timeout = 1
+            await self.config.trigger_timeout.set(timeout)
+            self.trigger_timeout = timeout
+            await ctx.send(_("Regex search timeout set to {timeout}").format(timeout=timeout))
+
+    @retrigger.command(hidden=True)
+    @checks.is_owner()
     async def bypass(self, ctx: commands.Context, bypass: bool):
         """
             Bypass patterns being kicked from memory until reload
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        msg = await ctx.send(
-            _(
-                "Bypassing this could cause the bot to become unstable or allow "
-                "bad regex patterns to continue to exist causing slow downs and "
-                "even fatal crashes on the bot. Do you wish to continue?"
+        if bypass:
+            msg = await ctx.send(
+                _(
+                    "Bypassing this could cause the bot to become unstable or allow "
+                    "bad regex patterns to continue to exist causing slow downs and "
+                    "even fatal crashes on the bot. Do you wish to continue?"
+                )
             )
-        )
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
-        except asyncio.TimeoutError:
-            return await ctx.send(_("Not bypassing regex pattern filtering."))
-        if pred.result:
-            await self.config.guild(ctx.guild).bypass.set(bypass)
-            await ctx.tick()
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, user=ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                return await ctx.send(_("Not bypassing regex pattern filtering."))
+            if pred.result:
+                await self.config.guild(ctx.guild).bypass.set(bypass)
+                await ctx.tick()
+            else:
+                await ctx.send(_("Not bypassing regex pattern filtering."))
         else:
-            await ctx.send(_("Not bypassing regex pattern filtering."))
+            await self.config.guild(ctx.guild).bypass.set(bypass)
+            await ctx.send(_("Safe Regex search bypass re-enabled."))
 
     @retrigger.command()
     async def list(self, ctx: commands.Context, trigger: TriggerExists = None):

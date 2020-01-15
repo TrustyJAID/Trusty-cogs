@@ -64,6 +64,7 @@ class TriggerHandler:
     bot: Red
     re_pool: Pool
     triggers: Dict[int, List[Trigger]]
+    trigger_timeout: int
     ALLOW_RESIZE: bool = ALLOW_RESIZE
     ALLOW_OCR: bool = ALLOW_OCR
 
@@ -72,6 +73,7 @@ class TriggerHandler:
         self.bot: Red
         self.re_pool: Pool
         self.triggers: Dict[int, List[Trigger]]
+        self.trigger_timeout: int
         self.ALLOW_RESIZE = ALLOW_RESIZE
         self.ALLOW_OCR = ALLOW_OCR
 
@@ -661,9 +663,9 @@ class TriggerHandler:
             return (True, trigger.regex.findall(content))
         try:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))
-            task = functools.partial(process.get, timeout=1)
+            task = functools.partial(process.get, timeout=self.trigger_timeout)
             new_task = self.bot.loop.run_in_executor(None, task)
-            search = await asyncio.wait_for(new_task, timeout=5)
+            search = await asyncio.wait_for(new_task, timeout=self.trigger_timeout + 5)
         except TimeoutError:
             error_msg = (
                 "ReTrigger: regex process took too long. Removing from memory "
