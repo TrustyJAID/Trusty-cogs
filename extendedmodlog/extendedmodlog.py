@@ -23,7 +23,7 @@ inv_settings = {
         "cached_only": True,
         "colour": None,
     },
-    "user_change": {"enabled": False, "channel": None, "colour": None},
+    "user_change": {"enabled": False, "channel": None, "colour": None, "bots": True},
     "role_change": {"enabled": False, "channel": None, "colour": None},
     "role_create": {"colour": None},
     "role_delete": {"colour": None},
@@ -55,7 +55,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.4.5"
+    __version__ = "2.5.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -76,13 +76,21 @@ class ExtendedModLog(EventMixin, commands.Cog):
                     if entry == "commands_used":
                         new_data["privs"] = ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]
                     await self.config.guild(guild).set_raw(entry, value=new_data)
-                if entry not in ["ignored_channels", "invite_links"] and "colour" not in setting:
-                    all_data[guild_id][entry]["colour"] = None
-                    setting["colour"] = None
-                    await self.config.guild(guild).set_raw(entry, value=setting)
+                if entry not in ["ignored_channels", "invite_links"]:
+                    if "colour" not in all_data[guild_id][entry]:
+                        all_data[guild_id][entry]["colour"] = None
+                        setting["colour"] = None
+                        await self.config.guild(guild).set_raw(entry, value=setting)
+                    if entry == "user_change" and "bots" not in all_data[guild_id][entry]:
+                        all_data[guild_id][entry]["bots"] = True
+                        await self.config.guild(guild).set_raw(
+                            entry, value=all_data[guild_id][entry]
+                        )
                 if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
                     await self.config.guild(guild).set_raw(entry, value=inv_settings[entry])
+
+
         self.settings = all_data
 
     async def modlog_settings(self, ctx):
@@ -604,6 +612,21 @@ class ExtendedModLog(EventMixin, commands.Cog):
         await self.config.guild(ctx.guild).user_change.channel.set(channel)
         self.settings[ctx.guild.id]["user_change"]["channel"] = channel
         await ctx.tick()
+
+    @_user.command(name="bots")
+    async def _user_bot_logging(self, ctx):
+        """
+            Toggle bots from being logged in user updates
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["bots"]
+        self.settings[ctx.guild.id]["user_change"]["bots"] = not setting
+        await self.config.guild(ctx.guild).user_change.bots.set(not setting)
+        if setting:
+            await ctx.send(_("Bots will no longer be tracked in user change logs."))
+        else:
+            await ctx.send(_("Bots will be tracked in user change logs."))
 
     @_modlog.group(name="roles", aliases=["role"])
     async def _roles(self, ctx):

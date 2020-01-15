@@ -1414,6 +1414,8 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_change"]["enabled"]:
             return
+        if not self.settings[guild.id]["user_change"]["bots"] and after.bot:
+            return
         # if not await self.config.guild(guild).user_change.enabled():
             # return
         try:
