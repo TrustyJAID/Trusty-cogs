@@ -6,6 +6,7 @@ from typing import Union, Optional
 from redbot.core import commands, checks, Config
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.chat_formatting import pagify
 
 from .event_obj import Event, ValidImage
 
@@ -21,7 +22,7 @@ if listener is None:  # thanks Sinbad
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.3.3"
+    __version__ = "1.4.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -33,14 +34,24 @@ class EventPoster(commands.Cog):
             "ping": "",
             "events": {},
             "custom_links": {},
+            "default_max": None,
             "auto_end_events": False
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_user)
         self.event_cache = {}
+        self.bot.loop.create_task(self.initialize())
+
+    def format_help_for_context(self, ctx: commands.Context):
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def initialize(self):
+        await self.bot.wait_until_ready()
         for guild_id in await self.config.all_guilds():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
@@ -92,6 +103,8 @@ class EventPoster(commands.Cog):
         event_members = [m[0] for m in event.members]
         if user in event_members:
             return
+        if event.max_slots and len(event_members) >= event.max_slots:
+            return
         if not player_class:
             player_class = await self.config.member(user).player_class()
         event.members.append((user, player_class))
@@ -120,12 +133,18 @@ class EventPoster(commands.Cog):
     @commands.command(name="event")
     @commands.guild_only()
     async def make_event(
-        self, ctx: commands.Context, members: commands.Greedy[discord.Member], *, description: str
+        self,
+        ctx: commands.Context,
+        members: commands.Greedy[discord.Member],
+        max_slots: Optional[int] = None,
+        *,
+        description: str
     ):
         """
             Create an event
 
             `[members...]` Add members already in the event you want to host.
+            `[max_slots=None]` Specify maximum number of Slots the event can have, default is no limit.
             `<description>` provide a description for the event you're hosting.
             With custom keyword links setup this will add an image to the events thumbnail
             after being approved by an admin.
@@ -148,7 +167,12 @@ class EventPoster(commands.Cog):
         member_list = []
         for member in members:
             member_list.append((member, await self.config.member(member).player_class()))
-        event = Event(ctx.author, list(member_list), description)
+
+        if not max_slots:
+
+            max_slots = await self.config.guild(ctx.guild).default_max()
+            log.debug(f"using default {max_slots}")
+        event = Event(ctx.author, list(member_list), description, max_slots)
         em = await self.make_event_embed(ctx, event)
         admin_msg = await approval_channel.send(embed=em)
         start_adding_reactions(admin_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
@@ -298,14 +322,24 @@ class EventPoster(commands.Cog):
         except AttributeError:
             prefixes = await self.bot.get_prefix(ctx.message)
             prefix = prefixes[0]
-        em.description = f"To join this event type `{prefix}join {event.hoster}`"
+        max_slots_msg = ""
+        if event.max_slots:
+            slots = event.max_slots - len(event.members)
+            if slots < 0:
+                slots = 0
+            max_slots_msg = f"**{slots} slots available.**"
+        em.description = (
+            f"To join this event type `{prefix}join {event.hoster}`"
+            f"\n\n{max_slots_msg}"
+        )
+        player_list = ""
         for i, member in enumerate(event.members):
             player_class = ""
             if member[1]:
                 player_class = f" - {member[1]}"
-            em.add_field(
-                name=f"Slot {i+1}", value=f"{member[0].mention}{player_class}", inline=False
-            )
+            player_list += f"**Slot {i+1}**\n{member[0].mention}{player_class}\n"
+        for page in pagify(player_list, shorten_by=1024):
+            em.add_field(name="Attendees", value=page)
         if event.approver:
             em.set_footer(text=f"Approved by {event.approver}", icon_url=event.approver.avatar_url)
         thumbnails = await self.config.guild(ctx.guild).custom_links()
@@ -340,6 +374,22 @@ class EventPoster(commands.Cog):
         await ctx.send(
             "Your player class has been set to {player_class}".format(
                 player_class=player_class
+            )
+        )
+
+    @event_settings.command(name="defaultmax", aliases=["max"])
+    @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def set_default_max_slots(self, ctx, default_max: Optional[int] = None):
+        """
+            Set's the servers default maximum slots
+
+            This can be useful for defining the maximum number of slots allowed for an event.
+        """
+        await self.config.guild(ctx.guild).default_max.set(default_max)
+        await ctx.send(
+            "Default maximum slots for events set to {default_max} slots.".format(
+                default_max=default_max
             )
         )
 

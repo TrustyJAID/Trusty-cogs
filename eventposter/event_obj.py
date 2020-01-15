@@ -1,7 +1,7 @@
 import discord
 import re
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -13,6 +13,7 @@ class Event:
     hoster: discord.Member
     members: List[discord.Member]
     event: str
+    max_slots: Optional[int]
     approver: discord.Member
     message: discord.Message
     channel: discord.TextChannel
@@ -22,13 +23,15 @@ class Event:
         hoster: discord.Member,
         members: List[Tuple[discord.Member, str]],
         event: str,
+        max_slots: Optional[int],
         approver: discord.Member = None,
         message: discord.Message = None,
-        channel: discord.TextChannel = None
+        channel: discord.TextChannel = None,
     ):
         self.hoster = hoster
         self.members = members
         self.event = event
+        self.max_slots = max_slots
         self.approver = approver
         self.message = message
         self.channel = channel
@@ -46,10 +49,15 @@ class Event:
         except Exception:
             # Return None if we can't find the original events
             return None
+
+        max_slots = None
+        if "max_slots" in data:
+            max_slots = data["max_slots"]
         return cls(
             guild.get_member(data["hoster"]),
             [(guild.get_member(m), p_class) for m, p_class in data["members"]],
             data["event"],
+            max_slots,
             guild.get_member(data["approver"]),
             message,
             channel
@@ -60,6 +68,7 @@ class Event:
             "hoster": self.hoster.id,
             "members": [(m.id, p_class) for m, p_class in self.members],
             "event": self.event,
+            "max_slots": self.max_slots,
             "approver": self.approver.id if self.approver else None,
             "message": self.message.id if self.message else None,
             "channel": self.channel.id if self.channel else None
