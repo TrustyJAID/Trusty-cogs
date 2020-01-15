@@ -48,7 +48,7 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.8.1"
+    __version__ = "2.8.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -816,7 +816,7 @@ class Hockey(commands.Cog):
                 states=humanize_list(list(set(state)))
             )
         )
-        if not await self.config.channel(channel).teams():
+        if not await self.config.channel(channel).team():
             await ctx.send(
                 _(
                     "You have not setup any team updates in {channel}. "
