@@ -210,7 +210,8 @@ class EventMixin:
             except AttributeError:
                 mod_role_list = await ctx.bot.get_mod_roles(guild)
             if mod_role_list != []:
-                role = ", ".join(guild.get_role(mod_role).mention for mod_role in mod_role_list) + f"\n{privs}"
+                good_mod_roles = [guild.get_role(mr) for mr in mod_role_list]
+                role = ", ".join(r.mention for r in good_mod_roles if r is not None) + f"\n{privs}"
             else:
                 role = _("Not Set\nMOD")
         elif privs == "ADMIN":
@@ -219,7 +220,8 @@ class EventMixin:
             except AttributeError:
                 admin_role_list = await ctx.bot.get_admin_roles(guild)
             if admin_role_list != []:
-                role = ", ".join(guild.get_role(admin_role).mention for admin_role in admin_role_list) + f"\n{privs}"
+                good_admin_roles = [guild.get_role(ar) for ar in admin_role_list]
+                role = ", ".join(r.mention for r in good_admin_roles if r is not None) + f"\n{privs}"
             else:
                 role = _("Not Set\nADMIN")
         elif privs == "BOT_OWNER":
