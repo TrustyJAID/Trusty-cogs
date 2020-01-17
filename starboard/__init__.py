@@ -1,5 +1,7 @@
 from .starboard import Starboard
 
 
-def setup(bot):
-    bot.add_cog(Starboard(bot))
+async def setup(bot):
+    cog = Starboard(bot)
+    await cog.initialize()
+    bot.add_cog(cog)
