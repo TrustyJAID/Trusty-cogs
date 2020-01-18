@@ -3,7 +3,7 @@ from redbot.core import commands
 import datetime
 import aiohttp
 import re
-from typing import Optional
+from typing import Optional, Union
 
 
 class Conversions(commands.Cog):
@@ -12,11 +12,27 @@ class Conversions(commands.Cog):
         rare metals, stocks, and converts to different currencies
     """
 
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.0.0"
+
     def __init__(self, bot):
         self.bot = bot
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     @commands.command(aliases=["bitcoin", "BTC"])
-    async def btc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
+    async def btc(
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             converts from BTC to a given currency.
 
@@ -35,7 +51,13 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ethereum", "ETH"])
-    async def eth(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
+    async def eth(
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             converts from ETH to a given currency.
 
@@ -54,7 +76,13 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["litecoin", "LTC"])
-    async def ltc(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
+    async def ltc(
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             converts from LTC to a given currency.
 
@@ -73,7 +101,13 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["monero", "XMR"])
-    async def xmr(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
+    async def xmr(
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             converts from XMR to a given currency.
 
@@ -92,7 +126,13 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["bitcoin-cash", "BCH"])
-    async def bch(self, ctx, ammount: Optional[float] = 1.0, currency="USD", full: bool = True):
+    async def bch(
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             converts from BCH to a given currency.
 
@@ -110,7 +150,7 @@ class Conversions(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
-    async def checkcoins(self, base):
+    async def checkcoins(self, base: str) -> Optional[str]:
         link = "https://api.coinmarketcap.com/v2/ticker/"
         async with aiohttp.ClientSession() as session:
             async with session.get(link) as resp:
@@ -124,7 +164,7 @@ class Conversions(commands.Cog):
         return None
 
     @commands.command()
-    async def multicoin(self, ctx, *, coins=None):
+    async def multicoin(self, ctx: commands.Context, *, coins: str = Optional[None]) -> None:
         """
             Gets the current USD value for a list of coins
 
@@ -162,8 +202,13 @@ class Conversions(commands.Cog):
 
     @commands.command()
     async def crypto(
-        self, ctx, coin, ammount: Optional[float] = 1.0, currency="USD", full: bool = True
-    ):
+        self,
+        ctx: commands.Context,
+        coin: str,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> None:
         """
             Displays the latest information about a specified crypto currency
 
@@ -182,12 +227,19 @@ class Conversions(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
-    async def crypto_embed(self, ctx, coin, ammount=1.0, currency="USD", full=True):
+    async def crypto_embed(
+        self,
+        ctx: commands.Context,
+        coin: str,
+        ammount: float = 1.0,
+        currency: str = "USD",
+        full: bool = True,
+    ) -> Optional[Union[str, discord.Embed]]:
         """Creates the embed for the crypto currency"""
         coin_data = await self.checkcoins(coin)
         if coin_data is None:
             await ctx.send("{} is not in my list of currencies!".format(coin))
-            return
+            return None
         coin_colour = {
             "Bitcoin": discord.Colour.gold(),
             "Bitcoin Cash": discord.Colour.orange(),
@@ -204,9 +256,10 @@ class Conversions(commands.Cog):
         coin_url = "https://coinmarketcap.com/currencies/{}".format(coin_data["id"])
         if currency.upper() != "USD":
             conversionrate = await self.conversionrate("USD", currency.upper())
-            price = conversionrate * price
-            market_cap = conversionrate * market_cap
-            volume_24h = conversionrate * volume_24h
+            if conversionrate:
+                price = conversionrate * price
+                market_cap = conversionrate * market_cap
+                volume_24h = conversionrate * volume_24h
         msg = "{0} {3} is **{1:,.2f} {2}**".format(
             ammount, price, currency.upper(), coin_data["symbol"]
         )
@@ -259,7 +312,7 @@ class Conversions(commands.Cog):
             return embed
 
     @commands.command()
-    async def gold(self, ctx, ammount: Optional[int] = 1, currency="USD"):
+    async def gold(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
         """
             Converts gold in ounces to a given currency.
 
@@ -283,7 +336,7 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def silver(self, ctx, ammount: Optional[int] = 1, currency="USD"):
+    async def silver(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
         """
             Converts silver in ounces to a given currency.
 
@@ -311,7 +364,7 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def platinum(self, ctx, ammount: Optional[int] = 1, currency="USD"):
+    async def platinum(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
         """
             Converts platinum in ounces to a given currency.
 
@@ -337,7 +390,7 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ticker"])
-    async def stock(self, ctx, ticker, currency="USD"):
+    async def stock(self, ctx: commands.Context, ticker: str, currency: str = "USD") -> None:
         """
             Gets current ticker symbol price.
 
@@ -364,8 +417,12 @@ class Conversions(commands.Cog):
 
     @commands.command(aliases=["currency"])
     async def convertcurrency(
-        self, ctx, ammount: Optional[float] = 1.0, currency1="USD", currency2="GBP"
-    ):
+        self,
+        ctx: commands.Context,
+        ammount: float = 1.0,
+        currency1: str = "USD",
+        currency2: str = "GBP",
+    ) -> None:
         """
             Converts a value between 2 different currencies
 
@@ -381,7 +438,7 @@ class Conversions(commands.Cog):
         conversion = conversion * ammount
         await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
 
-    async def conversionrate(self, currency1, currency2):
+    async def conversionrate(self, currency1: str, currency2: str) -> Optional[float]:
         """Function to convert different currencies"""
         params = {"base": currency1, "symbols": currency2}
         CONVERSIONRATES = "https://api.exchangeratesapi.io/latest"
