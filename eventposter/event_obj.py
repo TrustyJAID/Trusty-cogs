@@ -1,7 +1,7 @@
 import discord
 import re
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, cast
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -11,12 +11,12 @@ IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
 
 class Event:
     hoster: discord.Member
-    members: List[discord.Member]
+    members: List[Tuple[discord.Member, str]]
     event: str
     max_slots: Optional[int]
-    approver: discord.Member
-    message: discord.Message
-    channel: discord.TextChannel
+    approver: Optional[discord.Member]
+    message: Optional[discord.Message]
+    channel: Optional[discord.TextChannel]
 
     def __init__(
         self,
@@ -24,9 +24,9 @@ class Event:
         members: List[Tuple[discord.Member, str]],
         event: str,
         max_slots: Optional[int],
-        approver: discord.Member = None,
-        message: discord.Message = None,
-        channel: discord.TextChannel = None,
+        approver: Optional[discord.Member] = None,
+        message: Optional[discord.Message] = None,
+        channel: Optional[discord.TextChannel] = None,
     ):
         self.hoster = hoster
         self.members = members
@@ -38,24 +38,33 @@ class Event:
 
     @classmethod
     async def from_json(cls, data: dict, guild: discord.Guild):
-        channel = guild.get_channel(data["channel"])
+        channel = cast(discord.TextChannel, guild.get_channel(data["channel"]))
         message = None
         if not channel:
             return None
         try:
-            message = await channel.get_message(data["message"])
-        except AttributeError:
             message = await channel.fetch_message(data["message"])
+        except AttributeError:
+            message = await channel.get_message(data["message"])  # type: ignore
         except Exception:
             # Return None if we can't find the original events
             return None
+        hoster = guild.get_member(data["hoster"])
+        if not hoster:
+            return None
+        members = []
+        for m, p_class in data["members"]:
+            mem = guild.get_member(m)
+            if not mem:
+                continue
+            members.append((mem, p_class))
 
         max_slots = None
         if "max_slots" in data:
             max_slots = data["max_slots"]
         return cls(
-            guild.get_member(data["hoster"]),
-            [(guild.get_member(m), p_class) for m, p_class in data["members"]],
+            hoster,
+            members,
             data["event"],
             max_slots,
             guild.get_member(data["approver"]),

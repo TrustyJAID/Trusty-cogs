@@ -15,6 +15,7 @@ log = logging.getLogger("red.trusty-cogs.EventPoster")
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -22,7 +23,7 @@ if listener is None:  # thanks Sinbad
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -35,7 +36,7 @@ class EventPoster(commands.Cog):
             "events": {},
             "custom_links": {},
             "default_max": None,
-            "auto_end_events": False
+            "auto_end_events": False,
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
@@ -50,7 +51,7 @@ class EventPoster(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         await self.bot.wait_until_ready()
         for guild_id in await self.config.all_guilds():
             guild = self.bot.get_guild(int(guild_id))
@@ -68,7 +69,7 @@ class EventPoster(commands.Cog):
                 self.event_cache[str(guild_id)][str(event.message.id)] = event
 
     @listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """
             Checks for reactions to the event
         """
@@ -99,7 +100,7 @@ class EventPoster(commands.Cog):
 
     async def add_user_to_event(
         self, user: discord.Member, event: Event, player_class: Optional[str] = ""
-    ):
+    ) -> None:
         event_members = [m[0] for m in event.members]
         if user in event_members:
             return
@@ -116,7 +117,7 @@ class EventPoster(commands.Cog):
         self.event_cache[str(ctx.guild.id)][str(event.message.id)] = event
         return
 
-    async def remove_user_from_event(self, user: discord.Member, event: Event):
+    async def remove_user_from_event(self, user: discord.Member, event: Event) -> None:
         event_members = [m[0] for m in event.members]
         if user not in event_members:
             return
@@ -138,8 +139,8 @@ class EventPoster(commands.Cog):
         members: commands.Greedy[discord.Member],
         max_slots: Optional[int] = None,
         *,
-        description: str
-    ):
+        description: str,
+    ) -> None:
         """
             Create an event
 
@@ -202,7 +203,7 @@ class EventPoster(commands.Cog):
     @commands.command(name="clearevent", aliases=["endevent"])
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def clear_event(self, ctx, clear: bool = False):
+    async def clear_event(self, ctx: commands.Context, clear: bool = False) -> None:
         """
             Delete a stored event so you can create more
 
@@ -231,7 +232,7 @@ class EventPoster(commands.Cog):
     @commands.command(name="showevent")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def show_event(self, ctx, member: discord.Member = None):
+    async def show_event(self, ctx: commands.Context, member: discord.Member = None) -> None:
         """Show current event being run by a member"""
         if not member:
             member = ctx.author
@@ -250,7 +251,9 @@ class EventPoster(commands.Cog):
 
     @commands.command(name="join")
     @commands.guild_only()
-    async def join_event(self, ctx, player_class: Optional[str] = "", *, hoster: discord.Member):
+    async def join_event(
+        self, ctx: commands.Context, player_class: Optional[str] = "", *, hoster: discord.Member
+    ) -> None:
         """Join an event being hosted"""
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             return await ctx.send("That user is not currently hosting any events.")
@@ -264,7 +267,7 @@ class EventPoster(commands.Cog):
 
     @commands.command(name="leaveevent")
     @commands.guild_only()
-    async def leave_event(self, ctx, hoster: discord.Member):
+    async def leave_event(self, ctx: commands.Context, hoster: discord.Member) -> None:
         """Leave an event being hosted"""
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             return await ctx.send("That user is not currently hosting any events.")
@@ -278,7 +281,9 @@ class EventPoster(commands.Cog):
 
     @commands.command(name="removefromevent")
     @commands.guild_only()
-    async def remove_from_event(self, ctx, member: discord.Member, hoster: discord.Member = None):
+    async def remove_from_event(
+        self, ctx: commands.Context, member: discord.Member, hoster: discord.Member = None
+    ) -> None:
         """
             Remove a user from an event you're hosting
 
@@ -313,7 +318,7 @@ class EventPoster(commands.Cog):
             return True
         return False
 
-    async def make_event_embed(self, ctx, event):
+    async def make_event_embed(self, ctx: commands.Context, event: Event) -> discord.Embed:
         em = discord.Embed(title=event.event)
         em.set_author(name=f"{event.hoster} is hosting", icon_url=event.hoster.avatar_url)
         try:
@@ -329,8 +334,7 @@ class EventPoster(commands.Cog):
                 slots = 0
             max_slots_msg = f"**{slots} slots available.**"
         em.description = (
-            f"To join this event type `{prefix}join {event.hoster}`"
-            f"\n\n{max_slots_msg}"
+            f"To join this event type `{prefix}join {event.hoster}`" f"\n\n{max_slots_msg}"
         )
         player_list = ""
         for i, member in enumerate(event.members):
@@ -348,7 +352,7 @@ class EventPoster(commands.Cog):
                 em.set_thumbnail(url=link)
         return em
 
-    async def check_clear_event(self, ctx):
+    async def check_clear_event(self, ctx: commands.Context) -> bool:
         msg = await ctx.send("You already have an event running, would you like to cancel it?")
         start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
         pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -357,13 +361,13 @@ class EventPoster(commands.Cog):
 
     @commands.group(name="eventset")
     @commands.guild_only()
-    async def event_settings(self, ctx: commands.Context):
+    async def event_settings(self, ctx: commands.Context) -> None:
         """Manage server specific settings for events"""
         pass
 
     @event_settings.command(name="playerclass")
     @commands.guild_only()
-    async def set_default_player_class(self, ctx, *, player_class: str):
+    async def set_default_player_class(self, ctx: commands.Context, *, player_class: str) -> None:
         """
             Set's the users default player class.
 
@@ -372,15 +376,15 @@ class EventPoster(commands.Cog):
         """
         await self.config.member(ctx.author).player_class.set(player_class)
         await ctx.send(
-            "Your player class has been set to {player_class}".format(
-                player_class=player_class
-            )
+            "Your player class has been set to {player_class}".format(player_class=player_class)
         )
 
     @event_settings.command(name="defaultmax", aliases=["max"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
-    async def set_default_max_slots(self, ctx, default_max: Optional[int] = None):
+    async def set_default_max_slots(
+        self, ctx: commands.Context, default_max: Optional[int] = None
+    ) -> None:
         """
             Set's the servers default maximum slots
 
@@ -396,7 +400,9 @@ class EventPoster(commands.Cog):
     @event_settings.command(name="channel")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
-    async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
+    async def set_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel = None
+    ) -> None:
         """Set the Announcement channel for events"""
         if channel and not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send("I require `Embed Links` permission to use that channel.")
@@ -411,7 +417,7 @@ class EventPoster(commands.Cog):
     @commands.guild_only()
     async def set_approval_channel(
         self, ctx: commands.Context, channel: discord.TextChannel = None
-    ):
+    ) -> None:
         """Set the admin approval channel"""
         if channel and not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send("I require `Embed Links` permission to use that channel.")
@@ -426,7 +432,7 @@ class EventPoster(commands.Cog):
     @event_settings.command(name="links")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
-    async def set_custom_link(self, ctx: commands.Context, keyword: str, link: ValidImage):
+    async def set_custom_link(self, ctx: commands.Context, keyword: str, link: ValidImage) -> None:
         """
             Set the custom thumbnail for events
 
@@ -442,7 +448,7 @@ class EventPoster(commands.Cog):
     @event_settings.command(name="ping")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
-    async def set_ping(self, ctx: commands.Context, *roles: Union[discord.Role, str]):
+    async def set_ping(self, ctx: commands.Context, *roles: Union[discord.Role, str]) -> None:
         """
             Set the ping to use when an event is announced
 
