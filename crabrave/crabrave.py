@@ -27,11 +27,20 @@ class CrabRave(commands.Cog):
     """
         Create your very own crab rave
     """
+    __author__ = ["DankMemer Team", "TrustyJAID"]
+    __version__ = "1.0.0"
 
     def __init__(self, bot):
         self.bot = bot
 
-    async def check_video_file(self):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def check_video_file(self) -> bool:
         if not (cog_data_path(self) / "template.mp4").is_file():
             try:
                 async with aiohttp.ClientSession() as session:
@@ -44,7 +53,7 @@ class CrabRave(commands.Cog):
                 return False
         return True
 
-    async def check_font_file(self):
+    async def check_font_file(self) -> bool:
         if not (cog_data_path(self) / "Verdana.ttf").is_file():
             try:
                 async with aiohttp.ClientSession() as session:
@@ -60,7 +69,7 @@ class CrabRave(commands.Cog):
     @commands.command(aliases=["crabrave"])
     @commands.cooldown(1, 10, commands.BucketType.guild)
     @checks.bot_has_permissions(attach_files=True)
-    async def crab(self, ctx, *, text: str):
+    async def crab(self, ctx: commands.Context, *, text: str) -> None:
         """Make crab rave videos
 
             There must be exactly 1 `,` to split the message
@@ -95,7 +104,7 @@ class CrabRave(commands.Cog):
         except Exception:
             log.error("Error deleting crabrave video", exc_info=True)
 
-    def make_crab(self, t, u_id):
+    def make_crab(self, t: str, u_id: int) -> bool:
         """Non blocking crab rave video generation from DankMemer bot
 
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
