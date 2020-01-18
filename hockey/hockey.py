@@ -49,7 +49,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
     __version__ = "2.8.2"
-    __author__ = "TrustyJAID"
+    __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
         self.bot = bot
@@ -94,6 +94,13 @@ class Hockey(commands.Cog):
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information
