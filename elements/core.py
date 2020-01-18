@@ -63,7 +63,7 @@ class MeasurementConverter(Converter):
 class Elements(commands.Cog):
     """Display information from the periodic table of elements"""
 
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
