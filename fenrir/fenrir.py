@@ -1,5 +1,6 @@
 import discord
 
+from redbot.core.bot import Red
 from redbot.core import Config, checks, commands
 
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
@@ -14,24 +15,31 @@ class Fenrir(commands.Cog):
         Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.1"
-    __author__ = "TrustyJAID"
+    __version__ = "1.0.2"
+    __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
-        self.bot = bot
-        self.kicks = []
-        self.bans = []
-        self.mutes = []
-        self.feedback = {}
-        default_guild = {"mute_role": None}
+        self.bot: Red = bot
+        self.kicks: list = []
+        self.bans: list = []
+        self.mutes: list = []
+        self.feedback: dict = {}
+        default_guild: dict = {"mute_role": None}
 
-        self.config = Config.get_conf(self, 228492507124596736)
+        self.config: Config = Config.get_conf(self, 228492507124596736)
         self.config.register_guild(**default_guild)
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     @commands.command()
     @checks.admin_or_permissions(kick_members=True)
     @commands.guild_only()
-    async def fenrirkick(self, ctx):
+    async def fenrirkick(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to kick users"""
         msg = await ctx.send("React to this message to be kicked!")
         await msg.add_reaction("✅")
@@ -41,7 +49,7 @@ class Fenrir(commands.Cog):
     @commands.command()
     @checks.admin_or_permissions(manage_roles=True)
     @commands.guild_only()
-    async def fenrirset(self, ctx, *, role: discord.Role = None):
+    async def fenrirset(self, ctx: commands.Context, *, role: discord.Role = None) -> None:
         """
         Sets the mute role for fenrirmute to work
 
@@ -56,7 +64,7 @@ class Fenrir(commands.Cog):
     @commands.command()
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
-    async def fenrirban(self, ctx):
+    async def fenrirban(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to ban users"""
         msg = await ctx.send("React to this message to be banned!")
         await msg.add_reaction("✅")
@@ -66,7 +74,7 @@ class Fenrir(commands.Cog):
     @commands.command()
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
-    async def fenrirmute(self, ctx):
+    async def fenrirmute(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to mute users"""
         if not await self.config.guild(ctx.guild).mute_role():
             return await ctx.send("No mute role has been setup on this server.")
@@ -79,14 +87,14 @@ class Fenrir(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     @commands.check(lambda ctx: ctx.bot.get_cog("Insult"))
-    async def fenrirfeedback(self, ctx):
+    async def fenrirfeedback(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to insult users"""
         msg = await ctx.send("React to this message to be insulted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
         self.feedback[msg.id] = []
 
-    async def is_mod_or_admin(self, member: discord.Member):
+    async def is_mod_or_admin(self, member: discord.Member) -> bool:
         guild = member.guild
         if member == guild.owner:
             return True
@@ -101,7 +109,7 @@ class Fenrir(commands.Cog):
         return False
 
     @listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         try:
             guild = self.bot.get_guild(payload.guild_id)
         except Exception as e:
