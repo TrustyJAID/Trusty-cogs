@@ -1,20 +1,25 @@
 import discord
-from redbot.core import commands, Config
-from redbot.core.i18n import Translator, cog_i18n
 import aiohttp
-import os
-from PIL import Image, ImageColor, ImageFont, ImageDraw
-from PIL import ImageSequence
-from .barcode import generate, ImageWriter
-from redbot.core.data_manager import bundled_data_path
-from io import BytesIO
-from .templates import blank_template
-from .badge_entry import Badge
+import logging
 import sys
 import functools
 import asyncio
 
+from io import BytesIO
+from PIL import Image, ImageFont, ImageDraw
+from PIL import ImageSequence
+from typing import Union, cast, Optional
+
+from .barcode import generate, ImageWriter
+from .templates import blank_template
+from .badge_entry import Badge
+
+from redbot.core import commands, Config
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.data_manager import bundled_data_path
+
 _ = Translator("Badges", __file__)
+log = logging.getLogger("red.Trusty-cogs.badges")
 
 
 @cog_i18n(_)
@@ -22,6 +27,8 @@ class Badges(commands.Cog):
     """
         Create fun fake badges based on your discord profile
     """
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -30,9 +37,15 @@ class Badges(commands.Cog):
         default_global = {"badges": blank_template}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
 
-    def remove_white_barcode(self, img):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    def remove_white_barcode(self, img: Image) -> Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -47,7 +60,7 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    def invert_barcode(self, img):
+    def invert_barcode(self, img: Image) -> Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")
         datas = img.getdata()
@@ -62,13 +75,16 @@ class Badges(commands.Cog):
         img.putdata(newData)
         return img
 
-    async def dl_image(self, url: str):
+    async def dl_image(self, url: str) -> BytesIO:
         """Download bytes like object of user avatar"""
-        async with self.session.get(str(url)) as resp:
-            test = await resp.read()
-            return BytesIO(test)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(str(url)) as resp:
+                test = await resp.read()
+                return BytesIO(test)
 
-    def make_template(self, user, badge, template):
+    def make_template(
+        self, user: Union[discord.User, discord.Member], badge: Badge, template: Image
+    ) -> Image:
         """Build the base template before determining animated or not"""
         if hasattr(user, "roles"):
             department = (
@@ -91,7 +107,7 @@ class Badges(commands.Cog):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
-        temp_barcode = generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
+        generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)
         fill = (0, 0, 0)  # text colour fill
@@ -134,7 +150,7 @@ class Badges(commands.Cog):
             draw.text((60, 585), str(user.created_at), fill=fill, font=font2)
         return template
 
-    def make_animated_gif(self, template, avatar):
+    def make_animated_gif(self, template: Image, avatar: BytesIO) -> BytesIO:
         """Create animated badge from gif avatar"""
         gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
         img_list = []
@@ -161,7 +177,7 @@ class Badges(commands.Cog):
                 break
         return temp
 
-    def make_badge(self, template, avatar):
+    def make_badge(self, template: Image, avatar: Image):
         """Create basic badge from regular avatar"""
         watermark = avatar.convert("RGBA")
         watermark.putalpha(128)
@@ -206,7 +222,7 @@ class Badges(commands.Cog):
         temp.seek(0)
         return temp
 
-    async def get_badge(self, badge_name, guild=None):
+    async def get_badge(self, badge_name: str, guild: Optional[discord.Guild] = None) -> Badge:
         if guild is None:
             guild_badges = []
         else:
@@ -219,7 +235,7 @@ class Badges(commands.Cog):
         return to_return
 
     @commands.command(aliases=["badge"])
-    async def badges(self, ctx, *, badge):
+    async def badges(self, ctx: commands.Context, *, badge: str) -> None:
         """
             Creates a fun fake badge based on your discord profile
 
@@ -246,7 +262,7 @@ class Badges(commands.Cog):
             await ctx.send(files=[image])
 
     @commands.command(aliases=["gbadge"])
-    async def gbadges(self, ctx, *, badge):
+    async def gbadges(self, ctx: commands.Context, *, badge: str) -> None:
         """
             Creates a fun fake gif badge based on your discord profile
             this only works if you have a gif avatar
@@ -272,7 +288,7 @@ class Badges(commands.Cog):
             await ctx.send(file=image)
 
     @commands.command()
-    async def listbadges(self, ctx):
+    async def listbadges(self, ctx: commands.Context) -> None:
         """
             List the available badges that can be created
         """
@@ -293,6 +309,3 @@ class Badges(commands.Cog):
             badges = ", ".join(badge["badge_name"] for badge in guild_badges)
             em.add_field(name=_("Global Badges"), value=badges)
         await ctx.send(embed=em)
-
-    def __unload(self):
-        self.bot.loop.create_task(self.session.close())
