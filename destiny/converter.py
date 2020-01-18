@@ -3,6 +3,7 @@ import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
+from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -15,9 +16,8 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 class DestinyActivity(Converter):
     """Returns the correct history code if provided a named one"""
 
-    async def convert(self, ctx, argument):
-        bot = ctx.bot
-        possible_results = {
+    async def convert(self, ctx: commands.Context, argument: str) -> int:
+        possible_results: dict = {
             "all": {"code": 0, "alt": ["none"]},
             "story": {"code": 2, "alt": []},
             "strike": {"code": 3, "alt": []},
@@ -99,8 +99,7 @@ class DestinyActivity(Converter):
 class StatsPage(Converter):
     """Returns a tuple of strings of the correct stats page type to use"""
 
-    async def convert(self, ctx, argument):
-        bot = ctx.bot
+    async def convert(self, ctx: commands.Context, argument: str) -> str:
         possible_results = {
             "allpvp": {"code": "allPvP", "alt": ["pvp"]},
             "patrol": {"code": "patrol", "alt": []},
