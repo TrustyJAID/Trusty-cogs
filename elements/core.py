@@ -8,6 +8,8 @@ from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
+from typing import List, Tuple
+
 from mendeleev import element as ELEMENTS
 
 from .data import IMAGES, LATTICES, UNITS
@@ -18,7 +20,7 @@ log = logging.getLogger("red.trusty-cogs.elements")
 class ElementConverter(Converter):
     """Converts a given argument to an element object"""
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str) -> ELEMENTS:
         result = None
         if argument.isdigit():
             if int(argument) > 118 or int(argument) < 1:
@@ -37,7 +39,7 @@ class ElementConverter(Converter):
 class MeasurementConverter(Converter):
     """Converts a given measurement type into usable strings"""
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str) -> List[Tuple[str, str, str]]:
         result = []
         if argument.lower() in UNITS:
             result.append(
@@ -67,8 +69,15 @@ class Elements(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     @staticmethod
-    def get_lattice_string(element):
+    def get_lattice_string(element: ELEMENTS) -> str:
         if element.lattice_structure:
             name, link = LATTICES[element.lattice_structure]
             return "[{}]({})".format(name, link)
@@ -76,7 +85,7 @@ class Elements(commands.Cog):
             return ""
 
     @staticmethod
-    def get_xray_wavelength(element):
+    def get_xray_wavelength(element: ELEMENTS) -> str:
         try:
             ka = 1239.84 / (
                 13.6057 * ((element.atomic_number - 1) ** 2) * ((1 / 1 ** 2) - (1 / 2 ** 2))
@@ -111,8 +120,11 @@ class Elements(commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
     async def element(
-        self, ctx, element: ElementConverter, measurement: MeasurementConverter = None
-    ):
+        self,
+        ctx: commands.Context,
+        element: ElementConverter,
+        measurement: MeasurementConverter = None,
+    ) -> None:
         """
             Display information about an element
 
@@ -120,8 +132,8 @@ class Elements(commands.Cog):
             `measurement` can be any of the Elements data listed here
             https://mendeleev.readthedocs.io/en/stable/data.html#electronegativities
         """
-        if measurement is None:
-            await ctx.send(embed=await self.element_embed(element))
+        if not measurement:
+            return await ctx.send(embed=await self.element_embed(element))
         else:
             msg = f"{element.name}: "
             for m in measurement:
@@ -138,7 +150,7 @@ class Elements(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def elements(self, ctx, *elements: ElementConverter):
+    async def elements(self, ctx: commands.Context, *elements: ElementConverter) -> None:
         """
             Display information about multiple elements
 
@@ -151,12 +163,12 @@ class Elements(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def ptable(self, ctx):
+    async def ptable(self, ctx: commands.Context) -> None:
         """Display a menu of all elements"""
         embeds = [await self.element_embed(ELEMENTS(e)) for e in range(1, 119)]
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
-    async def element_embed(self, element):
+    async def element_embed(self, element: ELEMENTS) -> discord.Embed:
         embed = discord.Embed()
         embed_title = (
             f"[{element.name} ({element.symbol})"
@@ -164,10 +176,9 @@ class Elements(commands.Cog):
         )
         embed.description = ("{embed_title}\n\n{desc}\n\n{sources}\n\n{uses}").format(
             embed_title=embed_title,
-            name=element.name,
             desc=element.description,
             sources=element.sources,
-            uses=element.uses
+            uses=element.uses,
         )
         if element.name in IMAGES:
             embed.set_thumbnail(url=IMAGES[element.name]["image"])

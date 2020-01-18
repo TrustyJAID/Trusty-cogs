@@ -5,7 +5,7 @@
     "description" : "Get a plethora of information about elements on the periodic table",
     "disabled" : false,
     "hidden" : false,
-    "install_msg" : "Do `[p]element <name|number|symbol>` to see info about the element. do `[p]ptable` to get a menu of all elements on the periodic table.",
+    "install_msg" : "Do `[p]element <name|number|symbol>` to see info about the element. do `[p]ptable` to get a menu of all elements on the periodic table. NOTE: The mendeleev package is not currently installable on windows.",
     "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.0.0",
     "min_python_version" : [
