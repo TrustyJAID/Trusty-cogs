@@ -4,7 +4,10 @@
         "Toby",
         "Will",
         "Michael",
-        "Eslyium"
+        "Eslyium",
+        "Preda",
+        "TrustyJAID",
+        "NeuroAssassin"
     ],
     "description" : "Cog loadable dev commands, replaces mock with legacy sudo command",
     "disabled" : false,
