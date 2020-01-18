@@ -3,10 +3,12 @@ from random import choice
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 
+from typing import List
+
 
 _ = Translator("Compliment", __file__)
 
-compliments = [
+compliments: List[str] = [
     _("Your smile is contagious."),
     _("You look great today."),
     _("You're a smart cookie."),
@@ -125,26 +127,35 @@ compliments = [
 class Compliment(commands.Cog):
     """Compliment users because there's too many insults"""
 
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.0.0"
+
     def __init__(self, bot):
         self.bot = bot
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     @commands.command()
-    async def compliment(self, ctx, user: discord.Member = None):
+    async def compliment(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
             Compliment the user
 
             `user` the user you would like to compliment
         """
         msg = " "
-        if user is not None:
-
+        if user:
             if user.id == self.bot.user.id:
                 user = ctx.message.author
-                msg = [
+                bot_msg: List[str] = [
                     _("Hey, I appreciate the compliment! :smile:"),
                     _("No ***YOU'RE*** awesome! :smile:"),
                 ]
-                await ctx.send(f"{user.mention} {choice(msg)}")
+                await ctx.send(f"{ctx.author.mention} {choice(bot_msg)}")
 
             else:
                 await ctx.send(user.mention + msg + choice(compliments))
