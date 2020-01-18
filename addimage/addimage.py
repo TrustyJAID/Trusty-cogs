@@ -1,19 +1,26 @@
 import random
-import aiohttp
 import discord
 import asyncio
+import logging
+import string
+import os
+
+from pathlib import Path
+from typing import Optional, cast
+
 from redbot.core import commands, checks, Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
-import os
-import string
+
 from redbot.core.i18n import Translator, cog_i18n
 
 
 _ = Translator("AddImage", __file__)
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
+log = logging.getLogger("red.Trusty-cogs.addimage")
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -24,9 +31,11 @@ class AddImage(commands.Cog):
         Add images the bot can upload
     """
 
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.3.0"
+
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         temp_folder = cog_data_path(self) / "global"
         temp_folder.mkdir(exist_ok=True, parents=True)
         default_global = {"images": []}
@@ -35,7 +44,14 @@ class AddImage(commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
-    async def initialize(self):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def initialize(self) -> None:
         guilds = await self.config.all_guilds()
         for guild_id, data in guilds.items():
             guild = self.bot.get_guild(guild_id)
@@ -49,7 +65,7 @@ class AddImage(commands.Cog):
             for image in images:
                 image["file_loc"] = image["file_loc"].split("/")[-1]
 
-    async def first_word(self, msg):
+    async def first_word(self, msg: str) -> str:
         return msg.split(" ")[0].lower()
 
     async def get_prefix(self, message: discord.Message) -> str:
@@ -61,25 +77,29 @@ class AddImage(commands.Cog):
         :param message: Message object
         :return:
         """
+        try:
+            guild = message.guild
+        except AttributeError:
+            guild = None
         content = message.content
-        prefix_list = await self.bot.command_prefix(self.bot, message)
-        prefixes = sorted(prefix_list, key=lambda pfx: len(pfx), reverse=True)
+
+        prefixes = await self.bot.get_valid_prefixes(guild)
         for p in prefixes:
             if content.startswith(p):
                 return p
         raise ValueError(_("No prefix found."))
 
-    async def part_of_existing_command(self, alias):
+    async def part_of_existing_command(self, alias: str) -> bool:
         """Command or alias"""
         command = self.bot.get_command(alias)
         return command is not None
 
-    async def make_guild_folder(self, directory):
+    async def make_guild_folder(self, directory: Path) -> None:
         if not directory.is_dir():
             print("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
-    async def get_image(self, alias, guild=None) -> dict:
+    async def get_image(self, alias: str, guild: Optional[discord.Guild] = None) -> dict:
         if guild is None:
             for image in await self.config.images():
                 if image["command_name"].lower() == alias.lower():
@@ -89,8 +109,9 @@ class AddImage(commands.Cog):
                 # print(image)
                 if image["command_name"].lower() == alias.lower():
                     return image
+        return {}
 
-    async def local_perms(self, message):
+    async def local_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't locally whitelisted/blacklisted.
             https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
@@ -98,47 +119,48 @@ class AddImage(commands.Cog):
             return True
         elif message.guild is None:
             return True
+        author = cast(discord.Member, message.author)
         try:
+            return await self.bot.allowed_by_whitelist_blacklist(
+                message.author,
+                who_id=message.author.id,
+                guild_id=message.guild.id,
+                role_ids=[r.id for r in author.roles],
+            )
+        except AttributeError:
             guild_settings = self.bot.db.guild(message.guild)
             local_blacklist = await guild_settings.blacklist()
             local_whitelist = await guild_settings.whitelist()
 
-            _ids = [r.id for r in message.author.roles if not r.is_default()]
+            _ids = [r.id for r in author.roles if not r.is_default()]
             _ids.append(message.author.id)
             if local_whitelist:
                 return any(i in local_whitelist for i in _ids)
 
             return not any(i in local_blacklist for i in _ids)
-        except AttributeError:
-            return await self.bot.allowed_by_whitelist_blacklist(
-                message.author,
-                who_id=message.author.id,
-                guild_id=message.guild.id,
-                role_ids=[r.id for r in message.author.roles]
-            )
 
-    async def global_perms(self, message):
+    async def global_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't globally whitelisted/blacklisted.
             https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
         if await self.bot.is_owner(message.author):
             return True
         try:
+            return await self.bot.allowed_by_whitelist_blacklist(message.author)
+        except AttributeError:
             whitelist = await self.bot.db.whitelist()
             if whitelist:
                 return message.author.id in whitelist
 
             return message.author.id not in await self.bot.db.blacklist()
-        except AttributeError:
-            return await self.bot.allowed_by_whitelist_blacklist(message.author)
 
-    async def check_ignored_channel(self, message):
+    async def check_ignored_channel(self, message: discord.Message) -> bool:
         """
         https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273
         """
-        channel = message.channel
-        guild = channel.guild
-        author = message.author
+        channel = cast(discord.TextChannel, message.channel)
+        guild = cast(discord.Guild, channel.guild)
+        author = cast(discord.Member, message.author)
         mod = self.bot.get_cog("Mod")
         if mod is None:
             return True
@@ -169,7 +191,7 @@ class AddImage(commands.Cog):
             return
         if message.author.bot:
             return
-        alias = await self.first_word(msg[len(prefix):])
+        alias = await self.first_word(msg[len(prefix) :])
         if not await self.local_perms(message):
             return
         if not await self.global_perms(message):
@@ -177,7 +199,7 @@ class AddImage(commands.Cog):
         if not await self.check_ignored_channel(message):
             return
         ignore_global = await self.config.guild(guild).ignore_global()
-        if alias in [x["command_name"] for x in await self.config.images()] and ignore_global:
+        if alias in [x["command_name"] for x in await self.config.images()] and not ignore_global:
             if channel.permissions_for(channel.guild.me).attach_files:
                 await channel.trigger_typing()
                 image = await self.get_image(alias)
@@ -190,6 +212,7 @@ class AddImage(commands.Cog):
                 try:
                     await channel.send(files=[file])
                 except discord.errors.Forbidden:
+                    log.error(_("Error sending image"))
                     pass
 
         if alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
@@ -205,9 +228,10 @@ class AddImage(commands.Cog):
                 try:
                     await channel.send(files=[file])
                 except discord.errors.Forbidden:
+                    log.error(_("Error sending image"))
                     pass
 
-    async def check_command_exists(self, command, guild):
+    async def check_command_exists(self, command: str, guild: discord.Guild) -> bool:
         if command in [x["command_name"] for x in await self.config.guild(guild).images()]:
             return True
         elif await self.part_of_existing_command(command):
@@ -219,7 +243,7 @@ class AddImage(commands.Cog):
 
     @commands.group()
     @commands.guild_only()
-    async def addimage(self, ctx):
+    async def addimage(self, ctx: commands.Context) -> None:
         """
             Add an image for the bot to directly upload
         """
@@ -227,20 +251,22 @@ class AddImage(commands.Cog):
 
     @addimage.command(name="ignoreglobal")
     @checks.mod_or_permissions(manage_channels=True)
-    async def ignore_global_commands(self, ctx):
+    async def ignore_global_commands(self, ctx: commands.Context) -> None:
         """
             Toggle usage of bot owner set global images on this server
         """
         ignore_global = await self.config.guild(ctx.guild).ignore_global()
         await self.config.guild(ctx.guild).ignore_global.set(not ignore_global)
         if ignore_global:
-            await ctx.send(_("Ignoring bot owner global images."))
-        else:
             await ctx.send(_("Bot owner global images enabled."))
+        else:
+            await ctx.send(_("Ignoring bot owner global images."))
 
     @addimage.command(name="list")
     @commands.bot_has_permissions(embed_links=True)
-    async def listimages(self, ctx, image_loc="guild", server_id: discord.Guild = None):
+    async def listimages(
+        self, ctx: commands.Context, image_loc="guild", server_id: discord.Guild = None
+    ) -> None:
         """
             List images added to bot
         """
@@ -254,9 +280,9 @@ class AddImage(commands.Cog):
             image_list = await self.config.guild(guild).images()
 
         if image_list == []:
-            await ctx.send(_("I does not have any images saved!"))
+            await ctx.send(_("I do not have any images saved!"))
             return
-        post_list = [image_list[i: i + 25] for i in range(0, len(image_list), 25)]
+        post_list = [image_list[i : i + 25] for i in range(0, len(image_list), 25)]
         images = []
         for post in post_list:
             em = discord.Embed(timestamp=ctx.message.created_at)
@@ -277,7 +303,7 @@ class AddImage(commands.Cog):
 
     @addimage.command()
     @checks.is_owner()
-    async def clear_global(self, ctx):
+    async def clear_global(self, ctx: commands.Context) -> None:
         """
             Clears the full set of images stored globally
         """
@@ -286,12 +312,12 @@ class AddImage(commands.Cog):
         for file in os.listdir(str(directory)):
             try:
                 os.remove(str(directory / file))
-            except Exception as e:
-                print(e)
+            except Exception:
+                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
 
     @addimage.command()
     @checks.mod_or_permissions(manage_channels=True)
-    async def clear_images(self, ctx):
+    async def clear_images(self, ctx: commands.Context) -> None:
         """
             Clear all the images stored for the current server
         """
@@ -300,12 +326,31 @@ class AddImage(commands.Cog):
         for file in os.listdir(str(directory)):
             try:
                 os.remove(str(directory / file))
-            except Exception as e:
-                print(e)
+            except Exception:
+                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
+        await ctx.tick()
+
+    @addimage.command()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def clean_deleted_images(self, ctx: commands.Context) -> None:
+        """
+            Cleanup deleted images that are not supposed to be saved anymore
+        """
+        images = await self.config.guild(ctx.guild).images()
+        directory = cog_data_path(self) / str(ctx.guild.id)
+        saved = os.listdir(str(directory))
+        for file in images:
+            if file["image_loc"] in saved:
+                continue
+            try:
+                os.remove(str(directory / file))
+            except Exception:
+                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
+        await ctx.tick()
 
     @addimage.command(name="delete", aliases=["remove", "rem", "del"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def remimage(self, ctx, name: str):
+    async def remimage(self, ctx: commands.Context, name: str) -> None:
         """
             Remove a selected images
 
@@ -323,15 +368,18 @@ class AddImage(commands.Cog):
         image = await self.get_image(name, guild)
         all_imgs.remove(image)
         try:
-            os.remove(image.file_loc)
+            os.remove(cog_data_path(self) / str(guild.id) / image["file_loc"])
         except Exception:
+            log.error(
+                _("Error deleting image {image}").format(image=image["file_loc"]), exc_info=True
+            )
             pass
         await self.config.guild(guild).images.set(all_imgs)
         await ctx.send(name + _(" has been deleted from this guild!"))
 
     @checks.is_owner()
     @addimage.command(hidden=True, name="deleteglobal", aliases=["dg", "delglobal"])
-    async def rem_image_global(self, ctx, name: str):
+    async def rem_image_global(self, ctx: commands.Context, name: str) -> None:
         """
             Remove a selected images
 
@@ -348,13 +396,18 @@ class AddImage(commands.Cog):
         image = await self.get_image(name)
         all_imgs.remove(image)
         try:
-            os.remove(image.file_loc)
+            os.remove(cog_data_path(self) / "global" / image["file_loc"])
         except Exception:
+            log.error(
+                _("Error deleting image {image}").format(image=image["file_loc"]), exc_info=True
+            )
             pass
         await self.config.images.set(all_imgs)
         await ctx.send(name + _(" has been deleted globally!"))
 
-    async def save_image_location(self, msg, name, guild=None):
+    async def save_image_location(
+        self, msg: discord.Message, name: str, guild: Optional[discord.Guild] = None
+    ) -> None:
         seed = "".join(random.sample(string.ascii_uppercase + string.digits, k=5))
         filename = "{}-{}".format(seed, msg.attachments[0].filename)
         if guild is not None:
@@ -382,11 +435,13 @@ class AddImage(commands.Cog):
         else:
             await self.config.images.set(cur_images)
 
-    async def wait_for_image(self, ctx):
+    async def wait_for_image(self, ctx: commands.Context) -> Optional[discord.Message]:
         msg = None
         while msg is None:
-            def check(m: discord.Member):
+
+            def check(m: discord.Message):
                 return m.author == ctx.author and (m.attachments or "exit" in m.content)
+
             try:
                 msg = await self.bot.wait_for("message", check=check, timeout=60)
             except asyncio.TimeoutError:
@@ -400,16 +455,13 @@ class AddImage(commands.Cog):
     @addimage.command(name="add")
     @checks.mod_or_permissions(manage_channels=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def add_image_guild(self, ctx, name: str):
+    async def add_image_guild(self, ctx: commands.Context, name: str) -> None:
         """
             Add an image to direct upload on this server
 
             `name` the command name used to post the image
         """
         guild = ctx.message.guild
-        if name.lower() == "global":
-            msg = _("global is not a valid command name! Try something else.")
-            return await ctx.send(msg)
         if await self.check_command_exists(name, guild):
             msg = name + _(" is already in the list, try another!")
             return await ctx.send(msg)
@@ -428,8 +480,8 @@ class AddImage(commands.Cog):
             await self.save_image_location(ctx.message, name, guild)
 
     @checks.is_owner()
-    @addimage.command(hidden=True, name="addglobal")
-    async def add_image_global(self, ctx, name: str):
+    @addimage.command(name="addglobal")
+    async def add_image_global(self, ctx: commands.Context, name: str) -> None:
         """
             Add an image to direct upload globally
 
@@ -437,9 +489,6 @@ class AddImage(commands.Cog):
         """
         guild = ctx.message.guild
         msg = ctx.message
-        if name.lower() == "global":
-            msg = _("global is not a valid command name! Try something else.")
-            return await ctx.send(msg)
         if await self.check_command_exists(name, guild):
             msg = name + _(" is already in the list, try another!")
             return await ctx.send(msg)
@@ -456,8 +505,3 @@ class AddImage(commands.Cog):
             await ctx.send(name + _(" has been added to my files!"))
         else:
             await self.save_image_location(ctx.message, name)
-
-    def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
-
-    __unload = cog_unload
