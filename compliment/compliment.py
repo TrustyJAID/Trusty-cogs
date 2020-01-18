@@ -127,7 +127,7 @@ compliments: List[str] = [
 class Compliment(commands.Cog):
     """Compliment users because there's too many insults"""
 
-    __author__ = ["TrustyJAID"]
+    __author__ = ["Airen", "JennJenn", "TrustyJAID"]
     __version__ = "1.0.0"
 
     def __init__(self, bot):
