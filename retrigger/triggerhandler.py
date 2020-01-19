@@ -11,7 +11,7 @@ import re
 from io import BytesIO
 from copy import copy
 from datetime import datetime
-from typing import List, Union, Pattern, cast, Dict
+from typing import List, Union, Pattern, cast, Dict, Tuple, Any
 
 from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
@@ -28,8 +28,10 @@ from .converters import Trigger, ChannelUserRole
 
 try:
     from PIL import Image
+
     try:
         import pytesseract
+
         ALLOW_OCR = True
     except ImportError:
         ALLOW_OCR = False
@@ -51,6 +53,7 @@ IMAGE_REGEX: Pattern = re.compile(r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jp
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -77,7 +80,7 @@ class TriggerHandler:
         self.ALLOW_RESIZE = ALLOW_RESIZE
         self.ALLOW_OCR = ALLOW_OCR
 
-    async def remove_trigger_from_cache(self, guild: discord.Guild, trigger: Trigger):
+    async def remove_trigger_from_cache(self, guild: discord.Guild, trigger: Trigger) -> None:
         try:
             for t in self.triggers[guild.id]:
                 if t.name == trigger.name:
@@ -87,7 +90,7 @@ class TriggerHandler:
             log.info("Trigger can't be removed :blobthinking:")
             pass
 
-    async def can_edit(self, author: discord.Member, trigger: Trigger):
+    async def can_edit(self, author: discord.Member, trigger: Trigger) -> bool:
         """Chekcs to see if the member is allowed to edit the trigger"""
         if trigger.author == author.id:
             return True
@@ -122,7 +125,7 @@ class TriggerHandler:
                 message.author,
                 who_id=message.author.id,
                 guild_id=message.guild.id,
-                role_ids=[r.id for r in message.author.roles]
+                role_ids=[r.id for r in message.author.roles],
             )
 
     async def global_perms(self, message: discord.Message) -> bool:
@@ -179,7 +182,7 @@ class TriggerHandler:
             return True
         return False
 
-    async def make_guild_folder(self, directory):
+    async def make_guild_folder(self, directory) -> None:
         if not directory.is_dir():
             log.info("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
@@ -251,7 +254,7 @@ class TriggerHandler:
                         pass
         return files
 
-    async def wait_for_multiple_responses(self, ctx: commands.Context):
+    async def wait_for_multiple_responses(self, ctx: commands.Context) -> List[discord.Message]:
         msg_text = _(
             "Please enter your desired phrase to be used for this trigger."
             "Type `exit` to stop adding responses."
@@ -484,7 +487,7 @@ class TriggerHandler:
         return is_command
 
     @listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         if message.guild is None:
             return
         if message.author.bot:
@@ -492,7 +495,7 @@ class TriggerHandler:
         await self.check_triggers(message, False)
 
     @listener()
-    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         if "content" not in payload.data:
             return
         if "guild_id" not in payload.data:
@@ -517,7 +520,7 @@ class TriggerHandler:
             return
         await self.check_triggers(message, True)
 
-    async def check_triggers(self, message: discord.Message, edit: bool):
+    async def check_triggers(self, message: discord.Message, edit: bool) -> None:
         """
             This is where we iterate through the triggers and perform the
             search. This does all the permission checks and cooldown checks
@@ -560,9 +563,9 @@ class TriggerHandler:
 
             if any(t for t in trigger.response_type if t in auto_mod):
                 if await autoimmune(message):
-                    print_msg = _(
-                        "ReTrigger: {author} is immune from automated actions "
-                    ).format(author=author)
+                    print_msg = _("ReTrigger: {author} is immune from automated actions ").format(
+                        author=author
+                    )
                     log.debug(print_msg + trigger.name)
                     continue
             if "delete" in trigger.response_type:
@@ -603,9 +606,7 @@ class TriggerHandler:
                     continue
             content = message.content
             if "delete" in trigger.response_type and trigger.text:
-                content = (
-                    message.content + " " + " ".join(f.filename for f in message.attachments)
-                )
+                content = message.content + " " + " ".join(f.filename for f in message.attachments)
 
             if trigger.ocr_search and ALLOW_OCR:
                 content += await self.get_image_text(message)
@@ -649,7 +650,9 @@ class TriggerHandler:
             content += await asyncio.wait_for(new_task, timeout=5)
         return content
 
-    async def safe_regex_search(self, guild: discord.Guild, trigger: Trigger, content: str):
+    async def safe_regex_search(
+        self, guild: discord.Guild, trigger: Trigger, content: str
+    ) -> Tuple[bool, list]:
         """
             Mostly safe regex search to prevent reDOS from user defined regex patterns
 
@@ -692,7 +695,7 @@ class TriggerHandler:
         else:
             return (True, search)
 
-    async def perform_trigger(self, message: discord.Message, trigger: Trigger, find: List[str]):
+    async def perform_trigger(self, message: discord.Message, trigger: Trigger, find: List[str]) -> None:
 
         guild: discord.Guild = cast(discord.Guild, message.guild)
         channel: discord.TextChannel = cast(discord.TextChannel, message.channel)
@@ -700,9 +703,9 @@ class TriggerHandler:
         reason = _("Trigger response: {trigger}").format(trigger=trigger.name)
         own_permissions = channel.permissions_for(guild.me)
 
-        error_in = _(
-            "Retrigger encountered an error in {guild} with trigger {trigger} "
-        ).format(guild=guild.name, trigger=trigger.name)
+        error_in = _("Retrigger encountered an error in {guild} with trigger {trigger} ").format(
+            guild=guild.name, trigger=trigger.name
+        )
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
             await channel.trigger_typing()
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
@@ -997,7 +1000,7 @@ class TriggerHandler:
         Internals are ignored
         """
         raw_result = "{" + result + "}"
-        objects = {
+        objects: Dict[str, Any] = {
             "message": message,
             "author": message.author,
             "channel": message.channel,
@@ -1018,7 +1021,7 @@ class TriggerHandler:
 
     async def modlog_action(
         self, message: discord.Message, trigger: Trigger, find: List[str], action: str
-    ):
+    ) -> None:
         modlogs = await self.config.guild(message.guild).modlog()
         guild: discord.Guild = cast(discord.Guild, message.guild)
         author: discord.Member = cast(discord.Member, message.author)

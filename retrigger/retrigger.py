@@ -38,8 +38,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
     """
 
-    __author__ = "TrustyJAID"
-    __version__ = "2.8.9"
+    __author__ = ["TrustyJAID"]
+    __version__ = "2.9.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -68,7 +68,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\nCog Version: {self.__version__}"
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     def cog_unload(self):
         log.debug("Closing process pools.")
@@ -102,7 +102,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @commands.group()
     @commands.guild_only()
-    async def retrigger(self, ctx: commands.Context):
+    async def retrigger(self, ctx: commands.Context) -> None:
         """
             Setup automatic triggers based on regular expressions
 
@@ -113,7 +113,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
-    async def blacklist(self, ctx: commands.Context):
+    async def blacklist(self, ctx: commands.Context) -> None:
         """
             Set blacklist options for retrigger
 
@@ -123,7 +123,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
-    async def whitelist(self, ctx: commands.Context):
+    async def whitelist(self, ctx: commands.Context) -> None:
         """
             Set whitelist options for retrigger
 
@@ -133,7 +133,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.group(name="modlog")
     @checks.mod_or_permissions(manage_channels=True)
-    async def _modlog(self, ctx: commands.Context):
+    async def _modlog(self, ctx: commands.Context) -> None:
         """
             Set which events to record in the modlog.
         """
@@ -141,7 +141,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.group(name="edit")
     @checks.mod_or_permissions(manage_channels=True)
-    async def _edit(self, ctx: commands.Context):
+    async def _edit(self, ctx: commands.Context) -> None:
         """
             Edit various settings in a set trigger.
 
@@ -152,7 +152,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         pass
 
     @_modlog.command(name="settings", aliases=["list"])
-    async def modlog_settings(self, ctx: commands.Context):
+    async def modlog_settings(self, ctx: commands.Context) -> None:
         """
             Show the current modlog settings for this server.
         """
@@ -172,7 +172,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_modlog.command(name="bans", aliases=["ban"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog_bans(self, ctx: commands.Context):
+    async def modlog_bans(self, ctx: commands.Context) -> None:
         """
             Toggle custom ban messages in the modlog
         """
@@ -187,7 +187,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_modlog.command(name="kicks", aliases=["kick"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog_kicks(self, ctx: commands.Context):
+    async def modlog_kicks(self, ctx: commands.Context) -> None:
         """
             Toggle custom kick messages in the modlog
         """
@@ -202,7 +202,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_modlog.command(name="filter", aliases=["delete", "filters", "deletes"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog_filter(self, ctx: commands.Context):
+    async def modlog_filter(self, ctx: commands.Context) -> None:
         """
             Toggle custom filter messages in the modlog
         """
@@ -217,7 +217,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_modlog.command(name="addroles", aliases=["addrole"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog_addroles(self, ctx: commands.Context):
+    async def modlog_addroles(self, ctx: commands.Context) -> None:
         """
             Toggle custom add role messages in the modlog
         """
@@ -232,7 +232,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_modlog.command(name="removeroles", aliases=["removerole", "remrole", "rolerem"])
     @checks.mod_or_permissions(manage_channels=True)
-    async def modlog_removeroles(self, ctx: commands.Context):
+    async def modlog_removeroles(self, ctx: commands.Context) -> None:
         """
             Toggle custom add role messages in the modlog
         """
@@ -249,7 +249,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     async def modlog_channel(
         self, ctx: commands.Context, channel: Union[discord.TextChannel, str, None]
-    ):
+    ) -> None:
         """
             Set the modlog channel for filtered words
 
@@ -274,7 +274,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def cooldown(
         self, ctx: commands.Context, trigger: TriggerExists, time: int, style="guild"
-    ):
+    ) -> None:
         """
             Set cooldown options for retrigger
 
@@ -313,7 +313,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist_add(
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
-    ):
+    ) -> None:
         """
             Add a channel, user, or role to triggers whitelist
 
@@ -344,7 +344,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist_remove(
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
-    ):
+    ) -> None:
         """
             Remove a channel, user, or role from triggers whitelist
 
@@ -378,7 +378,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_add(
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
-    ):
+    ) -> None:
         """
             Add a channel, user, or role to triggers blacklist
 
@@ -409,7 +409,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_remove(
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
-    ):
+    ) -> None:
         """
             Remove a channel, user, or role from triggers blacklist
 
@@ -443,7 +443,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_regex(
         self, ctx: commands.Context, trigger: TriggerExists, *, regex: ValidRegex
-    ):
+    ) -> None:
         """
             Edit the regex of a saved trigger.
 
@@ -467,7 +467,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @_edit.command(name="ocr")
     @commands.check(lambda ctx: TriggerHandler.ALLOW_OCR)
     @checks.mod_or_permissions(manage_messages=True)
-    async def toggle_ocr_search(self, ctx: commands.Context, trigger: TriggerExists):
+    async def toggle_ocr_search(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
             Toggle whether to use Optical Character Recognition to search for text within images.
 
@@ -489,7 +489,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="edited")
     @checks.mod_or_permissions(manage_messages=True)
-    async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists):
+    async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
             Toggle whether the bot will listen to edited messages as well as on_message for
             the specified trigger.
@@ -514,7 +514,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_text(
         self, ctx: commands.Context, trigger: TriggerExists, *, text: str
-    ):
+    ) -> None:
         """
             Edit the text of a saved trigger.
 
@@ -543,7 +543,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_ignore_commands(
         self, ctx: commands.Context, trigger: TriggerExists
-    ):
+    ) -> None:
         """
             Toggle the trigger ignoring command messages entirely.
 
@@ -567,7 +567,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_command(
         self, ctx: commands.Context, trigger: TriggerExists, *, command: str
-    ):
+    ) -> None:
         """
             Edit the text of a saved trigger.
 
@@ -601,7 +601,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_roles=True)
     async def edit_roles(
         self, ctx: commands.Context, trigger: TriggerExists, *roles: discord.Role
-    ):
+    ) -> None:
         """
             Edit the added or removed roles of a saved trigger.
 
@@ -638,7 +638,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_reactions(
         self, ctx: commands.Context, trigger: TriggerExists, *emojis: ValidEmoji
-    ):
+    ) -> None:
         """
             Edit the emoji reactions of a saved trigger.
 
@@ -664,7 +664,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.command(hidden=True)
     @checks.is_owner()
-    async def timeout(self, ctx: commands.Context, timeout: int):
+    async def timeout(self, ctx: commands.Context, timeout: int) -> None:
         """
             Set the timeout period for searching triggers
 
@@ -706,7 +706,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.command(hidden=True)
     @checks.is_owner()
-    async def bypass(self, ctx: commands.Context, bypass: bool):
+    async def bypass(self, ctx: commands.Context, bypass: bool) -> None:
         """
             Bypass patterns being kicked from memory until reload
 
@@ -736,7 +736,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             await ctx.send(_("Safe Regex search bypass re-enabled."))
 
     @retrigger.command()
-    async def list(self, ctx: commands.Context, trigger: TriggerExists = None):
+    async def list(self, ctx: commands.Context, trigger: TriggerExists = None) -> None:
         """
             List information about triggers.
 
@@ -763,7 +763,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.command(aliases=["del", "rem", "delete"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def remove(self, ctx: commands.Context, trigger: TriggerExists):
+    async def remove(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
             Remove a specified trigger
 
@@ -782,7 +782,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def text(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
-    ):
+    ) -> None:
         """
             Add a text response trigger
 
@@ -820,7 +820,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @retrigger.command(aliases=["randomtext", "rtext"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def random(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex):
+    async def random(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex) -> None:
         """
             Add a random text response trigger
 
@@ -856,7 +856,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def dm(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
-    ):
+    ) -> None:
         """
             Add a dm response trigger
 
@@ -896,7 +896,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def dmme(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
-    ):
+    ) -> None:
         """
             Add trigger to DM yourself
 
@@ -937,7 +937,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     async def image(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, image_url: str = None
-    ):
+    ) -> None:
         """
             Add an image/file response trigger
 
@@ -992,7 +992,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command(aliases=["randimage", "randimg", "rimage", "rimg"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def randomimage(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex):
+    async def randomimage(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex) -> None:
         """
             Add a random image/file response trigger
 
@@ -1032,7 +1032,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         regex: ValidRegex,
         text: str,
         image_url: str = None,
-    ):
+    ) -> None:
         """
             Add an image/file response with text trigger
 
@@ -1094,7 +1094,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @commands.check(lambda ctx: TriggerHandler.ALLOW_RESIZE)
     async def resize(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, image_url: str = None
-    ):
+    ) -> None:
         """
             Add an image to resize in response to a trigger
             this will attempt to resize the image based on length of matching regex
@@ -1151,7 +1151,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx: commands.Context, name: TriggerExists, regex: str):
+    async def ban(self, ctx: commands.Context, name: TriggerExists, regex: str) -> None:
         """
             Add a trigger to ban users for saying specific things found with regex
             This respects hierarchy so ensure the bot role is lower in the list
@@ -1184,7 +1184,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx: commands.Context, name: TriggerExists, regex: str):
+    async def kick(self, ctx: commands.Context, name: TriggerExists, regex: str) -> None:
         """
             Add a trigger to kick users for saying specific things found with regex
             This respects hierarchy so ensure the bot role is lower in the list
@@ -1219,7 +1219,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def react(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *emojis: ValidEmoji
-    ):
+    ) -> None:
         """
             Add a reaction trigger
 
@@ -1252,7 +1252,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def command(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, command: str
-    ):
+    ) -> None:
         """
             Add a command trigger
 
@@ -1293,7 +1293,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @checks.admin_or_permissions(administrator=True)
     async def mock(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, command: str
-    ):
+    ) -> None:
         """
             Add a trigger for command as if you used the command
 
@@ -1350,7 +1350,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         check_filenames: Optional[bool] = False,
         *,
         regex: str,
-    ):
+    ) -> None:
         """
             Add a trigger to delete a message
 
@@ -1394,7 +1394,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     async def addrole(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *roles: discord.Role
-    ):
+    ) -> None:
         """
             Add a trigger to add a role
 
@@ -1436,7 +1436,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     async def removerole(
         self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *roles: discord.Role
-    ):
+    ) -> None:
         """
             Add a trigger to remove a role
 
@@ -1481,7 +1481,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         name: TriggerExists,
         regex: ValidRegex,
         *multi_response: MultiResponse,
-    ):
+    ) -> None:
         """
             Add a multiple response trigger
 
