@@ -16,12 +16,16 @@ listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatib
 log = logging.getLogger("red.trusty-cogs.ServerStats")
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
 
 class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
+
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -94,21 +98,28 @@ class TrustyAvatar(commands.Cog):
             },
         }
 
-    async def dl_image(self, url: str):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def dl_image(self, url: str) -> BytesIO:
         """Download bytes like object of user avatar"""
         async with aiohttp.ClientSession() as session:
             async with session.get(str(url)) as resp:
                 test = await resp.read()
                 return BytesIO(test)
 
-    def replace_colour(self, img, to_colour):
+    def replace_colour(self, img: Image, to_colour: tuple) -> BytesIO:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = Image.open(img)
         img = img.convert("RGBA")
         datas = img.getdata()
-        reds = [94, 221, 170]
-        greens = [123, 227, 185]
-        blues = [75, 217, 160]
+        # reds = [94, 221, 170]
+        # greens = [123, 227, 185]
+        # blues = [75, 217, 160]
         newData = []
         for item in datas:
             # if item[0] in [94] and item[1] in [123] and item[2] in [75]:
@@ -124,7 +135,9 @@ class TrustyAvatar(commands.Cog):
         temp.seek(0)
         return temp
 
-    def make_new_avatar(self, author_avatar, choice_avatar, is_gif):
+    def make_new_avatar(
+        self, author_avatar: BytesIO, choice_avatar: BytesIO, is_gif: bool
+    ) -> Optional[BytesIO]:
         avatar = Image.open(author_avatar)
         new_avatar = Image.open(choice_avatar)
         new_avatar = new_avatar.convert("RGBA")
@@ -132,8 +145,8 @@ class TrustyAvatar(commands.Cog):
             gif_list = [frame.copy() for frame in ImageSequence.Iterator(avatar)]
             img_list = []
             for frame in gif_list:
-                temp2 = Image.new("RGBA",frame.size)
-                temp2.paste(frame, (0,0))
+                temp2 = Image.new("RGBA", frame.size)
+                temp2.paste(frame, (0, 0))
                 w, h = frame.size
                 new_avatar = new_avatar.resize((w, h))
                 temp2.paste(new_avatar, (0, 0), new_avatar)
@@ -157,12 +170,12 @@ class TrustyAvatar(commands.Cog):
             temp.name = "trustyavatar.png"
         if temp:
             temp.seek(0)
-            return temp
+        return temp
 
     @commands.command(aliases=["ta"])
     async def trustyavatar(
         self,
-        ctx,
+        ctx: commands.Context,
         style: Optional[Union[discord.Member, discord.Colour]] = None,
         face: Optional[str] = None,
         is_gif: bool = False,
@@ -213,7 +226,9 @@ class TrustyAvatar(commands.Cog):
             except asyncio.TimeoutError:
                 return
         embed = discord.Embed(colour=author.colour, description="TrustyAvatar")
-        embed.set_author(name="{} - {}".format(author, author.display_name), icon_url=author.avatar_url)
+        embed.set_author(
+            name="{} - {}".format(author, author.display_name), icon_url=author.avatar_url
+        )
         embed.set_image(url="attachment://trustyavatar.png")
         image = discord.File(file, "trustyavatar.png")
         if is_gif:
@@ -223,14 +238,14 @@ class TrustyAvatar(commands.Cog):
 
     @commands.group(aliases=["taset"])
     @checks.is_owner()
-    async def trustyavatarset(self, ctx):
+    async def trustyavatarset(self, ctx: commands.Context):
         """
             Commands for overriding aspects of the bots avatar changes
         """
         pass
 
     @trustyavatarset.command()
-    async def set(self, ctx, *, name: str):
+    async def set(self, ctx: commands.Context, *, name: str):
         """
             Manually change preset options
 
@@ -246,7 +261,7 @@ class TrustyAvatar(commands.Cog):
         await ctx.tick()
 
     @trustyavatarset.command()
-    async def status(self, ctx):
+    async def status(self, ctx: commands.Context):
         """
             Toggle status automatic changing
         """
@@ -255,7 +270,7 @@ class TrustyAvatar(commands.Cog):
         await ctx.send("Status override set to " + str(not is_override))
 
     @trustyavatarset.command()
-    async def avatar(self, ctx):
+    async def avatar(self, ctx: commands.Context):
         """
             Toggle avatar automatic changing
         """
@@ -264,7 +279,7 @@ class TrustyAvatar(commands.Cog):
         await ctx.send("Avatar override set to " + str(not is_override))
 
     @trustyavatarset.command()
-    async def streaming(self, ctx):
+    async def streaming(self, ctx: commands.Context):
         """
             Toggle owner streaming sync
         """
@@ -273,7 +288,7 @@ class TrustyAvatar(commands.Cog):
         await ctx.send("Streaming sync set to " + str(not is_streaming))
 
     @listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         """This essentially syncs streaming status with the bot owner"""
         if before.id != self.bot.owner_id:
             return
@@ -282,7 +297,7 @@ class TrustyAvatar(commands.Cog):
         if type(after.activity) == discord.ActivityType.streaming:
             await self.bot.change_presence(activity=after.activity)
 
-    async def change_avatar(self, url: str):
+    async def change_avatar(self, url: str) -> None:
         now = datetime.now().timestamp()
         last = await self.config.last_avatar()
         if (now - last) > 1800:
@@ -296,11 +311,13 @@ class TrustyAvatar(commands.Cog):
                 print(e)
             await self.config.last_avatar.set(now)
 
-    async def change_activity(self, status: discord.Status, activity: discord.ActivityType):
+    async def change_activity(
+        self, status: Optional[discord.Status], activity: discord.ActivityType
+    ) -> None:
         try:
             await self.bot.change_presence(status=status, activity=activity)
-        except Exception as e:
-            print(e)
+        except Exception:
+            log.error("Error updating presence", exc_info=True)
 
     async def get_activity(self, new_status: dict) -> tuple:
         """
@@ -325,17 +342,18 @@ class TrustyAvatar(commands.Cog):
             status = new_status["status"]
         return status, activity, url
 
-    async def get_bot_owner(self):
+    async def get_bot_owner(self) -> discord.Member:
         """
             Probably somewhat expensive once we start scaling
             Hopefully we can get owner as a member object easier in the future
             without hard coding a server to search for the owner of the bot
         """
-        for member in self.bot.get_all_members():
-            if member.id == self.bot.owner_id:
-                return member
+        for members in self.bot.get_all_members():
+            if members.id == self.bot.owner_id:
+                member = members
+        return member
 
-    async def maybe_change_avatar(self):
+    async def maybe_change_avatar(self) -> None:
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("TrustyAvatar"):
 
