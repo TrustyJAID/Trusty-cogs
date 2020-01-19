@@ -8,12 +8,13 @@ import logging
 from io import BytesIO
 from redbot.core import commands
 from redbot.core import checks, Config
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, cast
 
 from .converters import FuzzyMember, GuildConverter, ChannelConverter
 
@@ -23,6 +24,7 @@ log = logging.getLogger("red.trusty-cogs.ServerStats")
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -34,15 +36,25 @@ class ServerStats(commands.Cog):
         A lot of commands are bot owner only
     """
 
+    __author__ = ["TrustyJAID", "Preda"]
+    __version__ = "1.4.0"
+
     def __init__(self, bot):
-        self.bot = bot
-        default_global = {"join_channel": None}
-        self.config = Config.get_conf(self, 54853421465543)
+        self.bot: Red = bot
+        default_global: dict = {"join_channel": None}
+        self.config: Config = Config.get_conf(self, 54853421465543)
         self.config.register_global(**default_global)
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def avatar(self, ctx, *members: FuzzyMember):
+    async def avatar(self, ctx: commands.Context, *members: FuzzyMember):
         """
             Display a users avatar in chat
         """
@@ -61,12 +73,12 @@ class ServerStats(commands.Cog):
             em.set_image(url=url)
             try:
                 em.set_author(
-                    name=f"{member} {f'~ {member.nick}' if member.nick else ''}", icon_url=url, url=url
+                    name=f"{member} {f'~ {member.nick}' if member.nick else ''}",
+                    icon_url=url,
+                    url=url,
                 )
             except AttributeError:
-                em.set_author(
-                    name=f"{member}", icon_url=url, url=url
-                )
+                em.set_author(name=f"{member}", icon_url=url, url=url)
             embed_list.append(em)
         if not embed_list:
             await ctx.send(_("That user does not appear to exist on this server."))
@@ -104,14 +116,13 @@ class ServerStats(commands.Cog):
         except Exception:
             log.error(f"Error creating guild embed for new guild ID {guild.id}", exc_info=True)
 
-    async def guild_embed(self, guild):
+    async def guild_embed(self, guild: discord.Guild) -> discord.Embed:
         """
             Builds the guild embed information used throughout the cog
         """
 
-        def check_feature(feature):
+        def check_feature(feature: str) -> str:
             return "\N{WHITE HEAVY CHECK MARK}" if feature in guild.features else "\N{CROSS MARK}"
-
 
         verif = {
             "none": _("0 - None"),
@@ -154,7 +165,7 @@ class ServerStats(commands.Cog):
             "NEWS": _("News Channel"),
             "ANIMATED_ICON": _("Animated Server Icon"),
             "BANNER": _("Server Banner"),
-            "LURKABLE": _("Lurkable")
+            "LURKABLE": _("Lurkable"),
         }
         online_stats = {
             _("Humans: "): lambda x: not x.bot,
@@ -214,7 +225,9 @@ class ServerStats(commands.Cog):
                 "Verif. level: **{verif}**\nServer ID: **{id}**"
             ).format(
                 owner=guild.owner,
-                region=str(guild.region) if str(guild.region) not in region else region[str(guild.region)],
+                region=str(guild.region)
+                if str(guild.region) not in region
+                else region[str(guild.region)],
                 verif=verif[str(guild.verification_level)],
                 id=guild.id,
             ),
@@ -236,8 +249,9 @@ class ServerStats(commands.Cog):
                 name=_("Special features:"),
                 value="".join(
                     f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n"
-                    for x in guild.features if x in format_kwargs
-                    )
+                    for x in guild.features
+                    if x in format_kwargs
+                ),
             )
         if "VERIFIED" in guild.features:
             em.set_author(
@@ -246,13 +260,13 @@ class ServerStats(commands.Cog):
             )
         if "PARTNERED" in guild.features:
             em.set_author(
-                name=guild.name,
-                icon_url="https://www.discordia.me/uploads/icons/partner.png")
+                name=guild.name, icon_url="https://www.discordia.me/uploads/icons/partner.png"
+            )
         if "BANNER" in guild.features:
-            em.set_image(url=guild.banner_url)
+            em.set_image(url=str(guild.banner_url))
         if guild.icon_url:
-            em.set_author(name=guild.name, url=guild.icon_url)
-            em.set_thumbnail(url=guild.icon_url)
+            em.set_author(name=guild.name, url=str(guild.icon_url))
+            em.set_thumbnail(url=str(guild.icon_url))
         else:
             em.set_author(
                 name=guild.name,
@@ -264,7 +278,7 @@ class ServerStats(commands.Cog):
         return em
 
     @listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
         """Build and send a message containing serverinfo when the bot leaves a server"""
         channel_id = await self.config.join_channel()
         if channel_id is None:
@@ -292,20 +306,23 @@ class ServerStats(commands.Cog):
             log.error(f"Error creating guild embed for old guild ID {guild.id}", exc_info=True)
 
     @commands.command()
-    async def emoji(self, ctx, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
+    async def emoji(
+        self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]
+    ) -> None:
         """
             Post a large size emojis in chat
         """
         await ctx.channel.trigger_typing()
-        if type(emoji) in [discord.emoji.PartialEmoji, discord.Emoji]:
-            ext = "gif" if emoji.animated else "png"
-            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=emoji.id, ext=ext)
-            filename = "{name}.{ext}".format(name=emoji.name, ext=ext)
+        if type(emoji) in [discord.PartialEmoji, discord.Emoji]:
+            d_emoji = cast(discord.Emoji, emoji)
+            ext = "gif" if d_emoji.animated else "png"
+            url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=d_emoji.id, ext=ext)
+            filename = "{name}.{ext}".format(name=d_emoji.name, ext=ext)
         else:
             try:
                 """https://github.com/glasnt/emojificate/blob/master/emojificate/filter.py"""
                 cdn_fmt = "https://twemoji.maxcdn.com/2/72x72/{codepoint:x}.png"
-                url = cdn_fmt.format(codepoint=ord(emoji))
+                url = cdn_fmt.format(codepoint=ord(str(emoji)))
                 filename = "emoji.png"
             except TypeError:
                 await ctx.send(_("That doesn't appear to be a valid emoji"))
@@ -321,7 +338,7 @@ class ServerStats(commands.Cog):
         await ctx.send(file=file)
 
     @commands.command()
-    async def botstats(self, ctx):
+    async def botstats(self, ctx: commands.Context) -> None:
         """Display stats about the bot"""
         servers = len(ctx.bot.guilds)
         members = set()
@@ -351,8 +368,7 @@ class ServerStats(commands.Cog):
             )
         else:
             em.set_author(
-                name=f"{ctx.me}",
-                icon_url=ctx.me.avatar_url,
+                name=f"{ctx.me}", icon_url=ctx.me.avatar_url,
             )
         em.set_thumbnail(url=ctx.me.avatar_url)
         if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -363,7 +379,9 @@ class ServerStats(commands.Cog):
     @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def topic(self, ctx, channel: Optional[discord.TextChannel], *, topic: str = ""):
+    async def topic(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, topic: str = ""
+    ) -> None:
         """
             Sets a specified channels topic
 
@@ -387,14 +405,16 @@ class ServerStats(commands.Cog):
     @commands.group()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channeledit(self, ctx):
+    async def channeledit(self, ctx: commands.Context) -> None:
         """Modify channel options"""
         pass
 
     @channeledit.command(name="name")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_name(self, ctx, channel: Optional[ChannelConverter], *, name: str):
+    async def channel_name(
+        self, ctx: commands.Context, channel: Optional[ChannelConverter], *, name: str
+    ) -> None:
         """Edit a channels name"""
         if not channel:
             channel = ctx.channel
@@ -406,7 +426,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="position")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_position(self, ctx, channel: Optional[ChannelConverter], position: int):
+    async def channel_position(
+        self, ctx: commands.Context, channel: Optional[ChannelConverter], position: int
+    ) -> None:
         """Edit a channels position"""
         if not channel:
             channel = ctx.channel
@@ -422,7 +444,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="sync")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_sync(self, ctx, channel: Optional[ChannelConverter], toggle: bool):
+    async def channel_sync(
+        self, ctx: commands.Context, channel: Optional[ChannelConverter], toggle: bool
+    ) -> None:
         """Set whether or not to sync permissions with the channels Category"""
         if not channel:
             channel = ctx.channel
@@ -434,7 +458,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="nsfw")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_nsfw(self, ctx, toggle: bool, channel: discord.TextChannel = None):
+    async def channel_nsfw(
+        self, ctx: commands.Context, toggle: bool, channel: discord.TextChannel = None
+    ) -> None:
         """Set whether or not a channel is NSFW"""
         if not channel:
             channel = ctx.channel
@@ -446,7 +472,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="topic")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_topic(self, ctx, channel: Optional[discord.TextChannel], *, topic: str):
+    async def channel_topic(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, topic: str
+    ) -> None:
         """Edit a channels topic"""
         if not channel:
             channel = ctx.channel
@@ -458,7 +486,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="bitrate")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_bitrate(self, ctx, channel: discord.VoiceChannel, bitrate: int):
+    async def channel_bitrate(
+        self, ctx: commands.Context, channel: discord.VoiceChannel, bitrate: int
+    ) -> None:
         """Edit a voice channels bitrate"""
         try:
             await channel.edit(
@@ -477,7 +507,9 @@ class ServerStats(commands.Cog):
     @channeledit.command(name="userlimit")
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
-    async def channel_userlimit(self, ctx, channel: discord.VoiceChannel, limit: int):
+    async def channel_userlimit(
+        self, ctx: commands.Context, channel: discord.VoiceChannel, limit: int
+    ) -> None:
         """Edit a voice channels user limit"""
         try:
             await channel.edit(
@@ -493,7 +525,7 @@ class ServerStats(commands.Cog):
             return
         await ctx.tick()
 
-    async def ask_for_invite(self, ctx):
+    async def ask_for_invite(self, ctx: commands.Context) -> Optional[str]:
         """
             Ask the user to provide an invite link
             if reinvite is True
@@ -515,8 +547,11 @@ class ServerStats(commands.Cog):
             return msg.content
 
     async def get_members_since(
-        self, ctx, days: int, role: Union[discord.Role, Tuple[discord.Role], None]
-    ):
+        self,
+        ctx: commands.Context,
+        days: int,
+        role: Union[discord.Role, Tuple[discord.Role], None],
+    ) -> List[discord.Member]:
         now = datetime.datetime.utcnow()
         after = now - datetime.timedelta(days=days)
         member_list = []
@@ -540,7 +575,7 @@ class ServerStats(commands.Cog):
 
     @commands.group()
     @checks.bot_has_permissions(add_reactions=True)
-    async def pruneroles(self, ctx):
+    async def pruneroles(self, ctx: commands.Context) -> None:
         """
             Perform various actions on users who haven't spoken in x days
 
@@ -550,7 +585,7 @@ class ServerStats(commands.Cog):
         pass
 
     @pruneroles.command()
-    async def list(self, ctx, days: int, role: discord.Role = None):
+    async def list(self, ctx: commands.Context, days: int, role: discord.Role = None) -> None:
         """
             List the users who have not talked in x days
         """
@@ -595,7 +630,9 @@ class ServerStats(commands.Cog):
     @pruneroles.command()
     @checks.mod_or_permissions(kick_members=True)
     @checks.bot_has_permissions(kick_members=True, add_reactions=True)
-    async def kick(self, ctx, days: int, role: discord.Role = None, reinvite: bool = True):
+    async def kick(
+        self, ctx: commands.Context, days: int, role: discord.Role = None, reinvite: bool = True
+    ) -> None:
         """
             Kick users from the server who have been inactive for x days
 
@@ -641,7 +678,7 @@ class ServerStats(commands.Cog):
     @pruneroles.command()
     @checks.mod_or_permissions(manage_roles=True)
     @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
-    async def add(self, ctx, days: int, *new_roles: discord.Role):
+    async def add(self, ctx: commands.Context, days: int, *new_roles: discord.Role) -> None:
         """
             Give roles to users who haven't spoken in x days
 
@@ -680,7 +717,7 @@ class ServerStats(commands.Cog):
     @pruneroles.command()
     @checks.mod_or_permissions(manage_roles=True)
     @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
-    async def remove(self, ctx, days: int, *removed_roles: discord.Role):
+    async def remove(self, ctx: commands.Context, days: int, *removed_roles: discord.Role) -> None:
         """
             Remove roles from users who haven't spoken in x days
 
@@ -721,7 +758,9 @@ class ServerStats(commands.Cog):
     @commands.command()
     @checks.is_owner()
     @commands.bot_has_permissions(embed_links=True)
-    async def setguildjoin(self, ctx, channel: discord.TextChannel = None):
+    async def setguildjoin(
+        self, ctx: commands.Context, channel: discord.TextChannel = None
+    ) -> None:
         """
             Set a channel to see new servers the bot is joining
         """
@@ -733,7 +772,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @checks.is_owner()
-    async def removeguildjoin(self, ctx):
+    async def removeguildjoin(self, ctx: commands.Context) -> None:
         """
             Stop bots join/leave server messages
         """
@@ -742,7 +781,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    async def checkcheater(self, ctx, user_id: int):
+    async def checkcheater(self, ctx: commands.Context, user_id: int) -> None:
         """
             Checks for possible cheaters abusing the global bank and server powers
         """
@@ -757,7 +796,9 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Not a cheater"))
 
     @commands.command(hidden=True)
-    async def whois(self, ctx, *, user_id: Union[int, discord.Member, discord.User]):
+    async def whois(
+        self, ctx: commands.Context, *, user_id: Union[int, discord.Member, discord.User]
+    ) -> None:
         """
             Display servers a user shares with the bot
 
@@ -787,7 +828,8 @@ class ServerStats(commands.Cog):
             guild_list = [m for m in self.bot.get_all_members() if m.id == member.id]
         else:
             guild_list = [
-                m for m in self.bot.get_all_members()
+                m
+                for m in self.bot.get_all_members()
                 if m.id == member.id and ctx.author in m.guild.members
             ]
 
@@ -814,7 +856,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    async def topservers(self, ctx):
+    async def topservers(self, ctx: commands.Context) -> None:
         """
             Lists servers by number of users and shows number of users
         """
@@ -834,7 +876,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    async def newservers(self, ctx):
+    async def newservers(self, ctx: commands.Context) -> None:
         """
             Lists servers by when the bot was added to the server
         """
@@ -855,12 +897,12 @@ class ServerStats(commands.Cog):
     @commands.group()
     @checks.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
-    async def guildedit(self, ctx):
+    async def guildedit(self, ctx: commands.Context) -> None:
         """Edit various guild settings"""
         pass
 
     @guildedit.command(name="name")
-    async def guild_name(self, ctx, *, name: str):
+    async def guild_name(self, ctx: commands.Context, *, name: str):
         """
         Change the server name
         """
@@ -872,7 +914,7 @@ class ServerStats(commands.Cog):
             pass
 
     @guildedit.command(name="verificationlevel", aliases=["verification"])
-    async def verifivation_level(self, ctx, *, level: str):
+    async def verifivation_level(self, ctx: commands.Context, *, level: str) -> None:
         """
             Modify the guilds verification level
 
@@ -900,7 +942,9 @@ class ServerStats(commands.Cog):
             pass
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
-    async def system_channel(self, ctx, channel: discord.TextChannel = None):
+    async def system_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel = None
+    ) -> None:
         """
         Change the system channel
 
@@ -914,7 +958,9 @@ class ServerStats(commands.Cog):
             pass
 
     @guildedit.command(name="afkchannel")
-    async def afk_channel(self, ctx, channel: discord.VoiceChannel = None):
+    async def afk_channel(
+        self, ctx: commands.Context, channel: discord.VoiceChannel = None
+    ) -> None:
         """
         Change the servers AFK voice channel
 
@@ -928,7 +974,7 @@ class ServerStats(commands.Cog):
             pass
 
     @guildedit.command(name="afktimeout")
-    async def afk_timeout(self, ctx, timeout: int):
+    async def afk_timeout(self, ctx: commands.Context, timeout: int) -> None:
         """
         Change the servers AFK timeout
 
@@ -946,7 +992,9 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def topmembers(self, ctx, number: Optional[int] = 10, guild: GuildConverter = None):
+    async def topmembers(
+        self, ctx: commands.Context, number: int = 10, guild: GuildConverter = None
+    ) -> None:
         """
             Lists top members on the server by join date
 
@@ -995,7 +1043,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @checks.is_owner()
-    async def listchannels(self, ctx, *, guild: GuildConverter = None):
+    async def listchannels(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
             Lists channels and their position and ID for a server
 
@@ -1021,12 +1069,12 @@ class ServerStats(commands.Cog):
 
     async def guild_menu(
         self,
-        ctx,
+        ctx: commands.Context,
         post_list: List[discord.Guild],
         message: discord.Message = None,
         page=0,
         timeout: int = 30,
-    ):
+    ) -> None:
         """menu control logic for this taken from
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         guild = post_list[page]
@@ -1094,7 +1142,7 @@ class ServerStats(commands.Cog):
                 return await message.delete()
 
     @staticmethod
-    async def confirm_leave_guild(ctx, guild):
+    async def confirm_leave_guild(ctx: commands.Context, guild) -> None:
         await ctx.send(
             _("Are you sure you want to leave {guild}? (reply yes or no)").format(guild=guild.name)
         )
@@ -1110,7 +1158,7 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Okay, not leaving {guild}.").format(guild=guild.name))
 
     @staticmethod
-    async def get_guild_invite(guild: discord.Guild, max_age: int = 86400):
+    async def get_guild_invite(guild: discord.Guild, max_age: int = 86400) -> None:
         """Handles the reinvite logic for getting an invite
         to send the newly unbanned user
         :returns: :class:`Invite`
@@ -1150,7 +1198,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def getguild(self, ctx, *, guild: GuildConverter = None):
+    async def getguild(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
             Display info about servers the bot is on
 
@@ -1168,7 +1216,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
-    async def nummembers(self, ctx, *, guild: GuildConverter = None):
+    async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
             Display number of users on a server
 
@@ -1180,7 +1228,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def getroles(self, ctx, *, guild: GuildConverter = None):
+    async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
             Displays all roles their ID and number of members in order of
             hierarchy
@@ -1217,7 +1265,9 @@ class ServerStats(commands.Cog):
 
     @commands.command(name="getreactions", aliases=["getreaction"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def get_reactions(self, ctx, message_id: int, channel: discord.TextChannel = None):
+    async def get_reactions(
+        self, ctx: commands.Context, message_id: int, channel: discord.TextChannel = None
+    ) -> None:
         """
             Gets a list of all reactions from specified message and displays the user ID,
             Username, and Discriminator and the emoji name.
@@ -1248,8 +1298,8 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True)
     async def server_stats(
-        self, ctx, limit: Optional[int] = None, *, guild: GuildConverter = None
-    ):
+        self, ctx: commands.Context, limit: Optional[int] = None, *, guild: GuildConverter = None
+    ) -> None:
         """
             Gets total messages on the server and displays each channel
             separately as well as the user who has posted the most in each channel
@@ -1355,8 +1405,11 @@ class ServerStats(commands.Cog):
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def channel_stats(
-        self, ctx, limit: Optional[int] = None, channel: discord.TextChannel = None
-    ):
+        self,
+        ctx: commands.Context,
+        limit: Optional[int] = None,
+        channel: discord.TextChannel = None,
+    ) -> None:
         """
             Gets total messages in a specific channel as well as the user who
             has posted the most in that channel
@@ -1415,8 +1468,12 @@ class ServerStats(commands.Cog):
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
     async def guildemojis(
-        self, ctx, id_emojis: Optional[bool] = False, *, guild: GuildConverter = None
-    ):
+        self,
+        ctx: commands.Context,
+        id_emojis: Optional[bool] = False,
+        *,
+        guild: GuildConverter = None,
+    ) -> None:
         """
             Display all server emojis in a menu that can be scrolled through
 

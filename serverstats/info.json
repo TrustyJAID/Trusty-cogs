@@ -1,6 +1,7 @@
 {
     "author" : [
-        "TrustyJAID"
+        "TrustyJAID",
+        "Preda"
     ],
     "description" : "Get information about servers the bot is on.",
     "disabled" : false,
