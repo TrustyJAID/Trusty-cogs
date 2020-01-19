@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from redbot.core.bot import Red
 from redbot.core import commands, Config, checks
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator, cog_i18n, get_locale
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.predicates import MessagePredicate
 
@@ -487,7 +487,7 @@ class DestinyAPI:
         except Destiny2MissingAPITokens:
             return
         manifest_data = await self.request_url(f"{BASE_URL}/Destiny2/Manifest/", headers=headers)
-        locale = await self.bot.db.locale()
+        locale = get_locale()
         if locale in manifest_data:
             manifest = manifest_data["jsonWorldContentPaths"][locale]
         elif locale[:-3] in manifest_data:
