@@ -1,4 +1,4 @@
-card_list = {
+card_list: dict = {
     "1": {
         "card_meaning": "Inspiration, power, creation, beginnings, potential",
         "card_name": "Ace of Wands",

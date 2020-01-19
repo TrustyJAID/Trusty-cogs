@@ -1,34 +1,41 @@
 import discord
 from redbot.core import commands
 from . import tarot_cards
-import aiohttp
-import json
 import random
 from random import sample
 from random import choice
-import time
+from typing import Optional
 
 
 class TarotReading(commands.Cog):
     """
         Post information about tarot cards and readings
     """
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.0.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.tarot_cards = tarot_cards.card_list
 
-    def get_colour(self):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    def get_colour(self) -> int:
         colour = "".join([choice("0123456789ABCDEF") for x in range(6)])
         return int(colour, 16)
 
     @commands.group()
-    async def tarot(self, ctx):
+    async def tarot(self, ctx: commands.Context) -> None:
         """Receive a tarot reading"""
         pass
 
     @tarot.command(name="life")
-    async def _life(self, ctx, user: discord.Member = None):
+    async def _life(self, ctx: commands.Context, user: Optional[discord.Member] = None) -> None:
         """Unique reading based on your discord user ID. Doesn't change."""
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
         if user is None:
@@ -58,7 +65,7 @@ class TarotReading(commands.Cog):
         await ctx.send(embed=embed)
 
     @tarot.command(name="reading")
-    async def _reading(self, ctx, user: discord.Member = None):
+    async def _reading(self, ctx: commands.Context, user: Optional[discord.Member] = None) -> None:
         """Unique reading as of this very moment."""
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
         if user is None:
@@ -86,7 +93,7 @@ class TarotReading(commands.Cog):
         await ctx.send(embed=embed)
 
     @tarot.command(name="card")
-    async def _card(self, ctx, *, msg=None):
+    async def _card(self, ctx: commands.Context, *, msg: Optional[str] = None) -> None:
         """Random card or choose a card based on number or name."""
         user = ctx.message.author
         # msg = message.content
