@@ -293,7 +293,7 @@ class Dev(commands.Cog):
 
     @commands.command()
     @checks.is_owner()
-    async def mock(self, ctx, user: discord.Member, *, command):
+    async def sudo(self, ctx, user: discord.Member, *, command):
         """Mock another user invoking a command.
 
         The prefix must not be entered.
