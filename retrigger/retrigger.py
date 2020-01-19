@@ -63,7 +63,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.__unload = self.cog_unload
         self.trigger_timeout = 1
 
-    def format_help_for_context(self, ctx: commands.Context):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
         """
             Thanks Sinbad!
         """

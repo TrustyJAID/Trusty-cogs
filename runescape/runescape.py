@@ -28,7 +28,7 @@ class Runescape(commands.Cog):
         default: dict = {"rsn": ""}
         self.config.register_user(**default)
 
-    def format_help_for_context(self, ctx: commands.Context):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
         """
             Thanks Sinbad!
         """
