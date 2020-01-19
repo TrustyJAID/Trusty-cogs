@@ -5,6 +5,7 @@ from discord.ext.commands.converter import IDConverter
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from discord.ext.commands.errors import BadArgument
+from typing import Union
 
 _ = Translator("Translate", __file__)
 
@@ -18,7 +19,9 @@ class ChannelUserRole(IDConverter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx: commands.Context, argument: str):
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> Union[discord.TextChannel, discord.Role, discord.Member]:
         guild = ctx.guild
         result = None
         id_match = self._get_id_match(argument)

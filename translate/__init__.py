@@ -1,6 +1,7 @@
 from .translate import Translate
 
 
-def setup(bot):
-    n = Translate(bot)
-    bot.add_cog(n)
+async def setup(bot):
+    cog = Translate(bot)
+    await cog.init()
+    bot.add_cog(cog)
