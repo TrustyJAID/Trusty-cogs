@@ -1,11 +1,12 @@
 import discord
-from redbot.core import commands, checks
+from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from random import choice
+from typing import List
 
 _ = Translator("Rekt", __file__)
 
-rektlist = [
+rektlist: List[str] = [
     _("☑ Rekt"),
     _("☑ Tyrannosaurus Rekt"),
     _("☑ sudo apt-get Rekt"),
@@ -96,16 +97,24 @@ class Rekt(commands.Cog):
     """
         Post embed with random rekt messages
     """
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.0.0"
 
     def __init__(self, bot):
         self.bot = bot
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     @commands.command()
     @commands.cooldown(1, 60, commands.BucketType.guild)
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def rekt(self, ctx):
+    async def rekt(self, ctx: commands.Context):
         """Post embed with random rekt messages"""
-        user = ctx.message.author.id
         rektemoji = ["\u2611", "\U0001F1F7", "\U0001F1EA", "\U0001F1F0", "\U0001F1F9"]
         embed = discord.Embed(colour=discord.Colour.blue())
         embed.add_field(name=_("NOT REKT"), value=_("⬜ Not Rekt"), inline=True)
