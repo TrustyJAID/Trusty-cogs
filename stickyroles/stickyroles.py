@@ -1,9 +1,7 @@
 import discord
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
-from collections import defaultdict
 
-default = {"sticky_roles": [], "to_reapply": {}}
 
 _ = Translator("StickyRoles", __file__)
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
@@ -15,24 +13,34 @@ if listener is None:  # thanks Sinbad
 
 @cog_i18n(_)
 class StickyRoles(commands.Cog):
-    """Reapplies specific roles on join. Rewritten for V3 from
-    https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py"""
+    """
+        Reapplies specific roles on join. Rewritten for V3 from
+
+        https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py
+    """
+    __author__ = ["Twentysix", "TrustyJAID"]
+    __version__ = "2.0.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1358454876)
-        self.config.register_guild(**default)
-        # db = dataIO.load_json("data/stickyroles/stickyroles.json")
-        # self.db = defaultdict(lambda: default.copy(), db)
+        self.config.register_guild(sticky_roles=[], to_reapply={})
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     @commands.group(aliases=["stickyrole"])
     @checks.admin()
-    async def stickyroles(self, ctx):
+    async def stickyroles(self, ctx: commands.Context) -> None:
         """Adds / removes roles to be reapplied on join"""
         pass
 
     @stickyroles.command()
-    async def add(self, ctx, *, role: discord.Role):
+    async def add(self, ctx: commands.Context, *, role: discord.Role) -> None:
         """Adds role to be reapplied on join"""
         guild = ctx.message.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
@@ -52,7 +60,7 @@ class StickyRoles(commands.Cog):
         await ctx.send(_("That role will now be reapplied on join."))
 
     @stickyroles.command()
-    async def remove(self, ctx, *, role: discord.Role):
+    async def remove(self, ctx: commands.Context, *, role: discord.Role) -> None:
         """Removes role to be reapplied on join"""
         guild = ctx.message.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
@@ -64,7 +72,7 @@ class StickyRoles(commands.Cog):
         await ctx.send(_("That role won't be reapplied on join."))
 
     @stickyroles.command()
-    async def clear(self, ctx):
+    async def clear(self, ctx: commands.Context) -> None:
         """Removes all sticky roles"""
         guild = ctx.message.guild
         await self.config.guild(guild).sticky_roles.set([])
@@ -72,7 +80,7 @@ class StickyRoles(commands.Cog):
         await ctx.send(_("All sticky roles have been removed."))
 
     @stickyroles.command(name="list")
-    async def _list(self, ctx):
+    async def _list(self, ctx: commands.Context):
         """Lists sticky roles"""
         guild = ctx.message.guild
         roles = await self.config.guild(guild).sticky_roles()
@@ -85,7 +93,7 @@ class StickyRoles(commands.Cog):
             await ctx.send(msg)
 
     @listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.guild(guild).to_reapply()
@@ -105,7 +113,7 @@ class StickyRoles(commands.Cog):
             await self.config.guild(guild).to_reapply.set(to_reapply)
 
     @listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.guild(guild).to_reapply()
