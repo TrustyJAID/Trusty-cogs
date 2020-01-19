@@ -57,7 +57,7 @@ class Starboard(StarboardEvents, commands.Cog):
         """
 
     @starboard.command(name="info")
-    async def starboard_info(self, ctx: commands.Context):
+    async def starboard_info(self, ctx: commands.Context) -> None:
         """
             Display info on starboards setup on the server.
         """
@@ -524,7 +524,7 @@ class Starboard(StarboardEvents, commands.Cog):
             `<colour>` The colour to use for the starboard embed
             This can be a hexcode or integer for colour or `author/member/user` to use
             the original posters colour or `bot` to use the bots colour.
-            Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/rewrite/api.html#discord.Colour)
+            Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/latest/api.html#colour)
         """
         guild = ctx.guild
         if isinstance(colour, str):
