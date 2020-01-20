@@ -84,6 +84,7 @@ class GoogleTranslateAPI:
             await asyncio.sleep(600)
 
     async def _get_google_api_key(self) -> None:
+        key = {}
         if not self._key:
             try:
                 key = await self.bot.get_shared_api_tokens("google_translate")
