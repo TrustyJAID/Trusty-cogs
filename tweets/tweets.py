@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from .tweet_entry import TweetEntry
 from html import unescape
 import tweepy as tw
-from typing import Tuple, Any, Optional
+from typing import Tuple, Any, Optional, List
 from datetime import datetime
 import functools
 
@@ -63,7 +63,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -398,7 +398,12 @@ class Tweets(commands.Cog):
             default is `United States`
         """
         api = await self.authenticate()
-        location_list = api.trends_available()
+        try:
+            fake_task = functools.partial(api.trends_available)
+            task = self.bot.loop.run_in_executor(None, fake_task)
+            location_list = await asyncio.wait_for(task, timeout=10)
+        except asyncio.TimeoutError:
+            return await ctx.send(_("Timed out getting twitter trends."))
         country_id = None
         location_names = []
         for locations in location_list:
@@ -408,10 +413,16 @@ class Tweets(commands.Cog):
         if country_id is None:
             await ctx.send("{} Is not a correct location!".format(location))
             return
-        trends = api.trends_place(country_id["woeid"])[0]["trends"]
+        try:
+            fake_task = functools.partial(api.trends_place, country_id["woeid"])
+            task = self.bot.loop.run_in_executor(None, fake_task)
+            trends = await asyncio.wait_for(task, timeout=10)
+        except asyncio.TimeoutError:
+            return await ctx.send(_("Timed out getting twitter trends."))
         em = discord.Embed(colour=await self.get_colour(ctx.channel), title=country_id["name"])
         msg = ""
-        for trend in trends[:25]:
+        trends = trends[0]["trends"]
+        for trend in trends:
             # trend = trends[0]["trends"][i]
             if trend["tweet_volume"] is not None:
                 msg += "{}. [{}]({}) Volume: {}\n".format(
@@ -421,21 +432,41 @@ class Tweets(commands.Cog):
                 msg += "{}. [{}]({})\n".format(
                     trends.index(trend) + 1, trend["name"], trend["url"]
                 )
-        em.description = msg[:2000]
+        count = 0
+        for page in pagify(msg[:5980], shorten_by=1024):
+            if count == 0:
+                em.description = page
+            else:
+                em.add_field(name=_("Trends (continued)"), value=page)
+            count += 1
         em.timestamp = datetime.utcnow()
         if ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(embed=em)
         else:
             await ctx.send("```\n{}```".format(msg[:1990]))
 
+    async def get_twitter_user(self, username: str) -> tw.User:
+        try:
+            api = await self.authenticate()
+            fake_task = functools.partial(api.get_user, username)
+            task = self.bot.loop.run_in_executor(None, fake_task)
+            user = await asyncio.wait_for(task, timeout=10)
+        except asyncio.TimeoutError:
+            raise
+        except tw.error.TweepError:
+            raise
+        return user
+
     @_tweets.command(name="getuser")
     async def get_user(self, ctx: commands.context, username: str) -> None:
         """Get info about the specified user"""
         try:
-            api = await self.authenticate()
-            user = api.get_user(username)
-        except tw.error.TweepError as e:
-            await ctx.send(e)
+            user = await self.get_twitter_user(username)
+        except asyncio.TimeoutError:
+            await ctx.send(_("Looking up the user timed out."))
+            return
+        except tw.error.TweepError:
+            await ctx.send(_("{username} could not be found.").format(username=username))
             return
         profile_url = "https://twitter.com/" + user.screen_name
         description = str(user.description)
@@ -461,6 +492,22 @@ class Tweets(commands.Cog):
         else:
             await ctx.send(profile_url)
 
+    def _get_twitter_statuses(
+        self, api: tw.API, username: str, count: int, replies: bool
+    ) -> List[tw.Status]:
+        cnt = count
+        if count and count > 25:
+            cnt = 25
+        msg_list = []
+        try:
+            for status in tw.Cursor(api.user_timeline, id=username).items(cnt):
+                if status.in_reply_to_screen_name is not None and not replies:
+                    continue
+                msg_list.append(status)
+        except tw.TweepError:
+            raise
+        return msg_list
+
     @_tweets.command(name="gettweets")
     async def get_tweets(
         self, ctx: commands.context, username: str, count: Optional[int] = 10, replies: bool = True
@@ -470,16 +517,21 @@ class Tweets(commands.Cog):
 
             defaults to 10 tweets
         """
-        cnt = count
-        if count and count > 25:
-            cnt = 25
         msg_list = []
         api = await self.authenticate()
         try:
-            for status in tw.Cursor(api.user_timeline, id=username).items(cnt):
-                if status.in_reply_to_screen_name is not None and not replies:
-                    continue
-                msg_list.append(status)
+            fake_task = functools.partial(
+                self._get_twitter_statuses,
+                api=api,
+                username=username,
+                count=count,
+                replies=replies,
+            )
+            task = self.bot.loop.run_in_executor(None, fake_task)
+            msg_list = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            msg = _("Timedout getting tweet list")
+            await ctx.send(msg)
         except tw.TweepError as e:
             msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
             await ctx.send(msg)
@@ -498,7 +550,9 @@ class Tweets(commands.Cog):
 
     @_autotweet.command(name="error")
     @checks.is_owner()
-    async def _error(self, ctx: commands.context, channel: Optional[discord.TextChannel] = None) -> None:
+    async def _error(
+        self, ctx: commands.context, channel: Optional[discord.TextChannel] = None
+    ) -> None:
         """Set an error channel for tweet stream error updates"""
         if not channel:
             save_channel = ctx.channel.id
@@ -576,13 +630,16 @@ class Tweets(commands.Cog):
             `username` needs to be the @handle for the twitter username
             `channel` has to be a valid server channel, defaults to the current channel
         """
-        api = await self.authenticate()
         user_id = None
         screen_name = None
         try:
-            for status in tw.Cursor(api.user_timeline, id=username).items(1):
-                user_id = status.user.id
-                screen_name = status.user.screen_name
+            user = await self.get_twitter_user(username)
+            user_id = user.id
+            screen_name = user.screen_name
+        except asyncio.TimeoutError:
+            msg = _("Looking up user timed out")
+            await ctx.send(msg)
+            return
         except tw.TweepError as e:
             msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
             log.error(msg, exc_info=True)
@@ -642,7 +699,9 @@ class Tweets(commands.Cog):
                 embed.add_field(name=channel.name, value=account_list[:-2])
         await ctx.send(embed=embed)
 
-    async def add_account(self, channel: discord.TextChannel, user_id: int, screen_name: str) -> bool:
+    async def add_account(
+        self, channel: discord.TextChannel, user_id: int, screen_name: str
+    ) -> bool:
         """
             Adds a twitter account to the specified channel.
             Returns False if it is already in the channel.
@@ -663,6 +722,17 @@ class Tweets(commands.Cog):
             await self.config.accounts.set(self.accounts)
         return True
 
+    def get_tweet_list(self, api: tw.API, owner: str, list_name: str) -> List[int]:
+        cursor = -1
+        list_members: list = []
+        member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
+        while len(list_members) < member_count:
+            member_list = api.list_members(owner_screen_name=owner, slug=list_name, cursor=cursor)
+            for member in member_list[0]:
+                list_members.append(member)
+            cursor = member_list[1][-1]
+        return list_members
+
     @_autotweet.command(name="addlist")
     async def add_list(
         self,
@@ -681,17 +751,15 @@ class Tweets(commands.Cog):
         """
         api = await self.authenticate()
         try:
-            cursor = -1
-            list_members: list = []
-            member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
-            while len(list_members) < member_count:
-                member_list = api.list_members(
-                    owner_screen_name=owner, slug=list_name, cursor=cursor
-                )
-                for member in member_list[0]:
-                    list_members.append(member)
-                cursor = member_list[1][-1]
-
+            fake_task = functools.partial(
+                self.get_tweet_list, api=api, owner=owner, list_name=list_name
+            )
+            task = await ctx.bot.loop.run_in_executor(None, fake_task)
+            list_members = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            msg = _("Adding that tweet list took too long.")
+            log.error(msg, exc_info=True)
+            await ctx.send(msg)
         except Exception:
             log.error("Error adding list", exc_info=True)
             msg = _("That `owner` and `list_name` " "don't appear to be available")
@@ -755,16 +823,15 @@ class Tweets(commands.Cog):
         """
         api = await self.authenticate()
         try:
-            cursor = -1
-            list_members: list = []
-            member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
-            while len(list_members) < member_count:
-                member_list = api.list_members(
-                    owner_screen_name=owner, slug=list_name, cursor=cursor
-                )
-                for member in member_list[0]:
-                    list_members.append(member)
-                cursor = member_list[1][-1]
+            fake_task = functools.partial(
+                self.get_tweet_list, api=api, owner=owner, list_name=list_name
+            )
+            task = await ctx.bot.loop.run_in_executor(None, fake_task)
+            list_members = await asyncio.wait_for(task, timeout=30)
+        except asyncio.TimeoutError:
+            msg = _("Adding that tweet list took too long.")
+            log.error(msg, exc_info=True)
+            await ctx.send(msg)
         except Exception:
             msg = _("That `owner` and `list_name` " "don't appear to be available")
             await ctx.send(msg)
@@ -814,7 +881,9 @@ class Tweets(commands.Cog):
         return True
 
     @_autotweet.command(name="del", aliases=["delete", "rem", "remove"])
-    async def _del(self, ctx, username: str, channel: Optional[discord.TextChannel] = None) -> None:
+    async def _del(
+        self, ctx, username: str, channel: Optional[discord.TextChannel] = None
+    ) -> None:
         """
             Removes a twitter username to the specified channel
 
