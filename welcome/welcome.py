@@ -130,17 +130,17 @@ class Welcome(Events, commands.Cog):
                         if chan is not None:
                             msg += f"**{name}**: {chan.mention}\n"
                         else:
-                            msg += f"**{name}**:" + _("None") + "\n"
+                            msg += f"**{name}**:" + _(" None") + "\n"
                         continue
                     if attr == "BOTS_ROLE":
                         role = guild.get_role(guild_settings["BOTS_ROLE"])
                         if role is not None:
-                            msg += f"**{name}**:  {role.mention}\n"
+                            msg += f"**{name}**: {role.mention}\n"
                         else:
-                            msg += f"**{name}**:" + _("None") + "\n"
+                            msg += f"**{name}**:" + _(" None") + "\n"
                         continue
                     else:
-                        msg += f"**{name}**:  {guild_settings[attr]}\n"
+                        msg += f"**{name}**: {guild_settings[attr]}\n"
                 embed.description = msg
                 await ctx.send(embed=embed)
 
