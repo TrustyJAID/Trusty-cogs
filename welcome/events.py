@@ -5,11 +5,11 @@ import discord
 
 from random import choice as rand_choice
 from datetime import datetime
-from typing import List, Union, Pattern
+from typing import List, Union, Pattern, Optional, cast
 
 from redbot.core import commands, Config
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.common_filters import filter_mass_mentions
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -21,6 +21,7 @@ log = logging.getLogger("red.trusty-cogs.Welcome")
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -34,7 +35,7 @@ class Events:
         self.today_count: dict
 
     @staticmethod
-    def transform_arg(result, attr, obj) -> str:
+    def transform_arg(result: str, attr: str, obj: Union[discord.Guild, discord.Member]) -> str:
         attr = attr[1:]  # strip initial dot
         if not attr:
             return str(obj)
@@ -44,7 +45,13 @@ class Events:
             return raw_result
         return str(getattr(obj, attr, raw_result))
 
-    async def convert_parms(self, member, guild, msg, is_welcome):
+    async def convert_parms(
+        self,
+        member: Union[discord.Member, List[discord.Member]],
+        guild: discord.Guild,
+        msg: str,
+        is_welcome: bool,
+    ) -> str:
         results = RE_POS.findall(msg)
         log.debug(results)
         raw_response = msg
@@ -69,11 +76,8 @@ class Events:
             log.debug(param)
             raw_response = raw_response.replace("{" + result[0] + "}", param)
         if await self.config.guild(guild).JOINED_TODAY() and is_welcome:
-            raw_response = _(
-                "{raw_response}\n\n{count} users joined today!"
-            ).format(
-                raw_response=raw_response,
-                count=user_count
+            raw_response = _("{raw_response}\n\n{count} users joined today!").format(
+                raw_response=raw_response, count=user_count
             )
         return raw_response
 
@@ -82,8 +86,8 @@ class Events:
         member: Union[discord.Member, List[discord.Member]],
         guild: discord.Guild,
         msg: str,
-        is_welcome: bool
-    ):
+        is_welcome: bool,
+    ) -> discord.Embed:
         EMBED_DATA = await self.config.guild(guild).EMBED_DATA()
         converted_msg = await self.convert_parms(member, guild, msg, is_welcome)
         em = discord.Embed(description=converted_msg)
@@ -131,7 +135,7 @@ class Events:
         return em
 
     @listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if not await self.config.guild(guild).ON():
             return
@@ -156,7 +160,7 @@ class Events:
             return self.joined[guild.id].append(member)
         await self.send_member_join(member, guild)
 
-    async def bot_welcome(self, member, guild):
+    async def bot_welcome(self, member: discord.Member, guild: discord.Guild):
         bot_welcome = await self.config.guild(guild).BOTS_MSG()
         bot_role = await self.config.guild(guild).BOTS_ROLE()
         msg = bot_welcome or rand_choice(await self.config.guild(guild).GREETING())
@@ -164,11 +168,12 @@ class Events:
         is_embed = await self.config.guild(guild).EMBED()
         if bot_role:
             try:
-                role = guild.get_role(bot_role)
-                await member.add_roles(role)
+                role = cast(discord.abc.Snowflake, guild.get_role(bot_role))
+                await member.add_roles(role, reason=_("Automatic Bot Role"))
             except Exception:
                 log.error(
-                    _("welcome.py: unable to add  a role. ") + f"{bot_role} {member}", exc_info=True
+                    _("welcome.py: unable to add  a role. ") + f"{bot_role} {member}",
+                    exc_info=True,
                 )
             else:
                 log.debug(
@@ -176,6 +181,8 @@ class Events:
                 )
         if bot_welcome:
             # finally, welcome them
+            if not channel:
+                return
             if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
@@ -183,12 +190,19 @@ class Events:
                 else:
                     await channel.send(embed=em)
             else:
-                await channel.send(filter_mass_mentions(await self.convert_parms(member, guild, bot_welcome, False)))
+                await channel.send(
+                    filter_mass_mentions(
+                        await self.convert_parms(member, guild, bot_welcome, False)
+                    )
+                )
 
-    async def get_welcome_channel(self, member, guild):
+    async def get_welcome_channel(
+        self, member: Union[discord.Member, List[discord.Member]], guild: discord.Guild
+    ) -> Optional[discord.TextChannel]:
         # grab the welcome channel
         # guild_settings = await self.config.guild(guild).guild_settings()
-        channel = guild.get_channel(await self.config.guild(guild).CHANNEL())
+        c_id = await self.config.guild(guild).CHANNEL()
+        channel = cast(discord.TextChannel, guild.get_channel(c_id))
         only_whisper = await self.config.guild(guild).WHISPER() is True
         if channel is None:  # complain even if only whisper
             if not only_whisper:
@@ -196,10 +210,10 @@ class Events:
                     _("welcome.py: Channel not found. It was most likely deleted. User joined: ")
                     + str(member)
                 )
-                return
+                return None
             else:
                 # We will not complain here since some people only want the bot to whisper at times
-                return
+                return None
         # we can stop here
 
         if not guild.me.permissions_in(channel).send_messages:
@@ -208,10 +222,12 @@ class Events:
                 _("Bot doesn't have permissions to send messages to ")
                 + "{0.name}'s #{1.name} channel".format(guild, channel)
             )
-            return
+            return None
         return channel
 
-    async def send_member_join(self, member, guild):
+    async def send_member_join(
+        self, member: Union[discord.Member, List[discord.Member]], guild: discord.Guild
+    ) -> None:
         only_whisper = await self.config.guild(guild).WHISPER() is True
         channel = await self.get_welcome_channel(member, guild)
         msg = rand_choice(await self.config.guild(guild).GREETING())
@@ -236,11 +252,11 @@ class Events:
                     if is_embed:
                         em = await self.make_embed(member, guild, msg, False)
                         if await self.config.guild(guild).EMBED_DATA.mention():
-                            await member.send(member.mention, embed=em)
+                            await member.send(member.mention, embed=em)  # type: ignore
                         else:
-                            await member.send(embed=em)
+                            await member.send(embed=em)  # type: ignore
                     else:
-                        await member.send(await self.convert_parms(member, guild, msg, False))
+                        await member.send(await self.convert_parms(member, guild, msg, False))  # type: ignore
                 except discord.errors.Forbidden:
                     log.info(
                         _(
@@ -253,33 +269,35 @@ class Events:
                     log.error("error sending member join message", exc_info=True)
         if only_whisper:
             return
+        if not channel:
+            return
         if is_embed and channel.permissions_for(guild.me).embed_links:
             em = await self.make_embed(member, guild, msg, True)
             if await self.config.guild(guild).EMBED_DATA.mention():
                 if await self.config.guild(guild).GROUPED():
+                    members = cast(List[discord.Member], member)
                     save_msg = await channel.send(
-                        humanize_list([m.mention for m in member]),
+                        humanize_list([m.mention for m in members]),
                         embed=em,
-                        delete_after=delete_after
+                        delete_after=delete_after,
                     )
                 else:
+                    member = cast(discord.Member, member)
                     save_msg = await channel.send(
-                        member.mention,
-                        embed=em,
-                        delete_after=delete_after
+                        str(member.mention), embed=em, delete_after=delete_after
                     )
             else:
                 save_msg = await channel.send(embed=em, delete_after=delete_after)
         else:
             save_msg = await channel.send(
                 filter_mass_mentions(await self.convert_parms(member, guild, msg, True)),
-                delete_after=delete_after
+                delete_after=delete_after,
             )
         if save_msg is not None:
             await self.config.guild(guild).LAST_GREETING.set(save_msg.id)
 
     @listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
         if not await self.config.guild(guild).LEAVE_ON():
             return
@@ -328,23 +346,22 @@ class Events:
             if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
-                    save_msg = await channel.send(member.mention, embed=em, delete_after=delete_after)
+                    save_msg = await channel.send(
+                        member.mention, embed=em, delete_after=delete_after
+                    )
                 else:
                     save_msg = await channel.send(embed=em, delete_after=delete_after)
             else:
                 save_msg = await channel.send(
                     filter_mass_mentions(await self.convert_parms(member, guild, msg, False)),
-                    delete_after=delete_after
+                    delete_after=delete_after,
                 )
         if save_msg is not None:
             await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
 
-    def speak_permissions(self, guild, channel):
-        if channel is None:
-            return False
-        return guild.me.permissions_in(channel)
-
-    async def send_testing_msg(self, ctx, bot=False, msg=None, leave=False):
+    async def send_testing_msg(
+        self, ctx: commands.Context, bot: bool = False, msg: str = None, leave: bool = False
+    ) -> None:
         # log.info(leave)
         default_greeting = "Welcome {0.name} to {1.name}!"
         default_goodbye = "See you later {0.name}!"
@@ -384,8 +401,7 @@ class Events:
                 await ctx.author.send(embed=em, delete_after=60)
             else:
                 await ctx.author.send(
-                    await self.convert_parms(member, guild, rand_msg, False),
-                    delete_after=60
+                    await self.convert_parms(member, guild, rand_msg, False), delete_after=60
                 )
             if guild_settings["WHISPER"] != "BOTH":
                 return
@@ -407,6 +423,8 @@ class Events:
                     await channel.send(embed=em, delete_after=60)
             else:
                 await channel.send(
-                    filter_mass_mentions(await self.convert_parms(member, guild, rand_msg, send_count)),
+                    filter_mass_mentions(
+                        await self.convert_parms(member, guild, rand_msg, send_count)
+                    ),
                     delete_after=60,
                 )

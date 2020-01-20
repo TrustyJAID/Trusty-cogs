@@ -1,13 +1,15 @@
-import re
+import discord
 import asyncio
 import logging
-from datetime import datetime
+import re
 
-import discord
+from datetime import datetime
+from typing import Optional
 
 from redbot.core import commands, Config, checks
 from redbot.core.utils.chat_formatting import pagify
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.predicates import MessagePredicate
 
 from .events import Events
 
@@ -58,6 +60,9 @@ class Welcome(Events, commands.Cog):
      in the default channel rewritten for V3 from
      https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
+    __author__ = ["irdumb", "TrustyJAID"]
+    __version__ = "2.2.0"
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
@@ -66,7 +71,14 @@ class Welcome(Events, commands.Cog):
         self.joined = {}
         self.today_count = {"now": datetime.utcnow()}
 
-    async def group_welcome(self):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def group_welcome(self) -> None:
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             log.debug("Checking for new welcomes")
@@ -78,7 +90,7 @@ class Welcome(Events, commands.Cog):
     @commands.group()
     @checks.admin_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def welcomeset(self, ctx):
+    async def welcomeset(self, ctx: commands.Context) -> None:
         """Sets welcome module settings"""
         guild = ctx.message.guild
         if ctx.invoked_subcommand is None:
@@ -103,9 +115,7 @@ class Welcome(Events, commands.Cog):
             msg = ""
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 embed = discord.Embed(colour=await ctx.embed_colour())
-                embed.set_author(
-                    name=_("Welcome settings for ") + guild.name
-                )
+                embed.set_author(name=_("Welcome settings for ") + guild.name)
                 # embed.description = "\n".join(g for g in guild_settings["GREETING"])
                 for attr, name in setting_names.items():
                     if attr in ["GREETING", "GOODBYE"]:
@@ -142,20 +152,19 @@ class Welcome(Events, commands.Cog):
                 await ctx.send(msg)
 
     @welcomeset.group(name="greeting", aliases=["welcome"])
-    async def welcomeset_greeting(self, ctx):
+    async def welcomeset_greeting(self, ctx: commands.Context) -> None:
         """
             Manage welcome messages
         """
         pass
 
     @welcomeset_greeting.command(name="grouped")
-    async def welcomeset_greeting_grouped(self, ctx, grouped: bool):
+    async def welcomeset_greeting_grouped(self, ctx: commands.Context, grouped: bool) -> None:
         """Set whether to group welcome messages"""
         await self.config.guild(ctx.guild).GROUPED.set(grouped)
-        await self.send_testing_msg(ctx)
 
     @welcomeset_greeting.command(name="add")
-    async def welcomeset_greeting_add(self, ctx, *, format_msg):
+    async def welcomeset_greeting_add(self, ctx: commands.Context, *, format_msg: str) -> None:
         """
         Adds a welcome message format for the guild to be chosen at random
 
@@ -175,32 +184,26 @@ class Welcome(Events, commands.Cog):
         guild_settings.append(format_msg)
         await self.config.guild(guild).GREETING.set(guild_settings)
         await ctx.send(_("Welcome message added for the guild."))
-        await self.send_testing_msg(ctx, msg=format_msg)
 
     @welcomeset_greeting.command(name="del")
-    async def welcomeset_greeting_del(self, ctx):
+    async def welcomeset_greeting_del(self, ctx: commands.Context) -> None:
         """Removes a welcome message from the random message list
         """
         guild = ctx.message.guild
-        author = ctx.message.author
         guild_settings = await self.config.guild(guild).GREETING()
         msg = _("Choose a welcome message to delete:\n\n")
         for c, m in enumerate(guild_settings):
             msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ["\n", " "], shorten_by=20):
             await ctx.send("```\n{}\n```".format(page))
-        check = (
-            lambda message: message.author == ctx.message.author
-            and message.channel == ctx.message.channel
-        )
+        pred = MessagePredicate.valid_int(ctx)
         try:
-            answer = await self.bot.wait_for("message", check=check, timeout=120)
+            await self.bot.wait_for("message", check=pred, timeout=120)
         except asyncio.TimeoutError:
             return
         try:
-            num = int(answer.content)
-            choice = guild_settings.pop(num)
-        except:
+            choice = guild_settings.pop(pred.result)
+        except Exception:
             await ctx.send(_("That's not a number in the list :/"))
             return
         if not guild_settings:
@@ -209,7 +212,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("**This message was deleted:**\n") + str(choice))
 
     @welcomeset_greeting.command(name="list")
-    async def welcomeset_greeting_list(self, ctx):
+    async def welcomeset_greeting_list(self, ctx: commands.Context) -> None:
         """
             Lists the welcome messages of this guild
         """
@@ -222,7 +225,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send("```\n{}\n```".format(page))
 
     @welcomeset_greeting.command(name="toggle")
-    async def welcomeset_greeting_toggle(self, ctx):
+    async def welcomeset_greeting_toggle(self, ctx: commands.Context) -> None:
         """
             Turns on/off welcoming new users to the guild
         """
@@ -231,13 +234,12 @@ class Welcome(Events, commands.Cog):
         guild_settings = not guild_settings
         if guild_settings:
             await ctx.send(_("I will now welcome new users to the guild."))
-            await self.send_testing_msg(ctx)
         else:
             await ctx.send(_("I will no longer welcome new users."))
         await self.config.guild(guild).ON.set(guild_settings)
 
     @welcomeset_greeting.command(name="deleteprevious")
-    async def welcomeset_greeting_delete_previous(self, ctx):
+    async def welcomeset_greeting_delete_previous(self, ctx: commands.Context) -> None:
         """
             Turns on/off deleting the previous welcome message when a user joins
         """
@@ -248,7 +250,6 @@ class Welcome(Events, commands.Cog):
             await ctx.send(
                 _("I will now delete the previous welcome message when a new user joins.")
             )
-            # await self.send_testing_msg(ctx)
         else:
             await ctx.send(
                 _("I will stop deleting the previous welcome message when a new user joins.")
@@ -256,7 +257,7 @@ class Welcome(Events, commands.Cog):
         await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(guild_settings)
 
     @welcomeset_greeting.command(name="count")
-    async def welcomeset_greeting_count(self, ctx):
+    async def welcomeset_greeting_count(self, ctx: commands.Context) -> None:
         """
             Turns on/off showing how many users join each day.
 
@@ -266,18 +267,15 @@ class Welcome(Events, commands.Cog):
         guild_settings = await self.config.guild(guild).JOINED_TODAY()
         guild_settings = not guild_settings
         if guild_settings:
-            await ctx.send(
-                _("I will now show how many people join the server each day.")
-            )
-            # await self.send_testing_msg(ctx)
+            await ctx.send(_("I will now show how many people join the server each day."))
         else:
-            await ctx.send(
-                _("I will stop showing how many people join the server each day.")
-            )
+            await ctx.send(_("I will stop showing how many people join the server each day."))
         await self.config.guild(guild).JOINED_TODAY.set(guild_settings)
 
     @welcomeset_greeting.command(name="deleteafter")
-    async def welcomeset_greeting_delete_after(self, ctx, delete_after: int = None):
+    async def welcomeset_greeting_delete_after(
+        self, ctx: commands.Context, delete_after: Optional[int] = None
+    ) -> None:
         """
             Set the time after which a welcome message is deleted in seconds.
 
@@ -289,15 +287,14 @@ class Welcome(Events, commands.Cog):
                     time=delete_after
                 )
             )
-            # await self.send_testing_msg(ctx)
         else:
-            await ctx.send(
-                _("I will not delete welcome messages after a set time.")
-            )
+            await ctx.send(_("I will not delete welcome messages after a set time."))
         await self.config.guild(ctx.guild).DELETE_AFTER_GREETING.set(delete_after)
 
     @welcomeset_greeting.command(name="channel")
-    async def welcomeset_greeting_channel(self, ctx, channel: discord.TextChannel):
+    async def welcomeset_greeting_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel
+    ) -> None:
         """
         Sets the channel to send the welcome message
 
@@ -317,22 +314,21 @@ class Welcome(Events, commands.Cog):
         await self.config.guild(guild).CHANNEL.set(guild_settings)
         msg = _("I will now send welcome messages to {channel}").format(channel=channel.mention)
         await channel.send(msg)
-        await self.send_testing_msg(ctx)
 
     @welcomeset_greeting.command()
-    async def test(self, ctx):
+    async def test(self, ctx: commands.Context) -> None:
         """Test the welcome message deleted after 60 seconds"""
         await self.send_testing_msg(ctx)
 
     @welcomeset.group(name="goodbye", aliases=["leave"])
-    async def welcomeset_goodbye(self, ctx):
+    async def welcomeset_goodbye(self, ctx: commands.Context) -> None:
         """
             Manage goodbye messages
         """
         pass
 
     @welcomeset_goodbye.command(name="add")
-    async def welcomeset_goodbye_add(self, ctx, *, format_msg):
+    async def welcomeset_goodbye_add(self, ctx: commands.Context, *, format_msg: str) -> None:
         """
         Adds a goodbye message format for the guild to be chosen at random
 
@@ -351,33 +347,27 @@ class Welcome(Events, commands.Cog):
         guild_settings.append(format_msg)
         await self.config.guild(guild).GOODBYE.set(guild_settings)
         await ctx.send(_("Goodbye message added for the guild."))
-        await self.send_testing_msg(ctx, msg=format_msg, leave=True)
 
     @welcomeset_goodbye.command(name="del")
-    async def welcomeset_goodbye_del(self, ctx):
+    async def welcomeset_goodbye_del(self, ctx: commands.Context) -> None:
         """
         Removes a goodbye message from the random message list
         """
         guild = ctx.message.guild
-        author = ctx.message.author
         guild_settings = await self.config.guild(guild).GOODBYE()
         msg = _("Choose a goodbye message to delete:\n\n")
         for c, m in enumerate(guild_settings):
             msg += "  {}. {}\n".format(c, m)
         for page in pagify(msg, ["\n", " "], shorten_by=20):
             await ctx.send("```\n{}\n```".format(page))
-        check = (
-            lambda message: message.author == ctx.message.author
-            and message.channel == ctx.message.channel
-        )
+        pred = MessagePredicate.valid_int(ctx)
         try:
-            answer = await self.bot.wait_for("message", check=check, timeout=120)
+            await self.bot.wait_for("message", check=pred, timeout=120)
         except asyncio.TimeoutError:
             return
         try:
-            num = int(answer.content)
-            choice = guild_settings.pop(num)
-        except:
+            choice = guild_settings.pop(pred.result)
+        except Exception:
             await ctx.send(_("That's not a number in the list :/"))
             return
         if not guild_settings:
@@ -386,7 +376,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("**This message was deleted:**\n") + str(choice))
 
     @welcomeset_goodbye.command(name="list")
-    async def welcomeset_goodbye_list(self, ctx):
+    async def welcomeset_goodbye_list(self, ctx: commands.Context) -> None:
         """
             Lists the goodbye messages of this guild
         """
@@ -399,7 +389,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send("```\n{}\n```".format(page))
 
     @welcomeset_goodbye.command(name="toggle")
-    async def welcomeset_goodbye_toggle(self, ctx):
+    async def welcomeset_goodbye_toggle(self, ctx: commands.Context) -> None:
         """
             Turns on/off goodbying users who leave to the guild
         """
@@ -408,13 +398,14 @@ class Welcome(Events, commands.Cog):
         guild_settings = not guild_settings
         if guild_settings:
             await ctx.send(_("I will now say goodbye when a member leaves the server."))
-            await self.send_testing_msg(ctx, leave=True)
         else:
             await ctx.send(_("I will no longer say goodbye to members leaving the server."))
         await self.config.guild(guild).LEAVE_ON.set(guild_settings)
 
     @welcomeset_goodbye.command(name="channel")
-    async def welcomeset_goodbye_channel(self, ctx, channel: discord.TextChannel):
+    async def welcomeset_goodbye_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel
+    ) -> None:
         """
         Sets the channel to send the goodbye message
         """
@@ -428,10 +419,9 @@ class Welcome(Events, commands.Cog):
         await self.config.guild(guild).LEAVE_CHANNEL.set(channel.id)
         msg = _("I will now send goodbye messages to {channel}").format(channel=channel.mention)
         await ctx.send(msg)
-        await self.send_testing_msg(ctx, leave=True)
 
     @welcomeset_goodbye.command(name="deleteprevious")
-    async def welcomeset_goodbye_delete_previous(self, ctx):
+    async def welcomeset_goodbye_delete_previous(self, ctx: commands.Context) -> None:
         """
             Turns on/off deleting the previous welcome message when a user joins
         """
@@ -439,10 +429,7 @@ class Welcome(Events, commands.Cog):
         guild_settings = await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE()
         guild_settings = not guild_settings
         if guild_settings:
-            await ctx.send(
-                _("I will now delete the previous goodbye message when user leaves.")
-            )
-            # await self.send_testing_msg(ctx)
+            await ctx.send(_("I will now delete the previous goodbye message when user leaves."))
         else:
             await ctx.send(
                 _("I will stop deleting the previous goodbye message when a user leaves.")
@@ -450,7 +437,9 @@ class Welcome(Events, commands.Cog):
         await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(guild_settings)
 
     @welcomeset_goodbye.command(name="deleteafter")
-    async def welcomeset_goodbye_delete_after(self, ctx, delete_after: int = None):
+    async def welcomeset_goodbye_delete_after(
+        self, ctx: commands.Context, delete_after: Optional[int] = None
+    ) -> None:
         """
             Set the time after which a welcome message is deleted in seconds.
 
@@ -462,32 +451,31 @@ class Welcome(Events, commands.Cog):
                     time=delete_after
                 )
             )
-            # await self.send_testing_msg(ctx)
         else:
-            await ctx.send(
-                _("I will not delete welcome messages after a set time.")
-            )
+            await ctx.send(_("I will not delete welcome messages after a set time."))
         await self.config.guild(ctx.guild).DELETE_AFTER_GOODBYE.set(delete_after)
 
     @welcomeset_goodbye.command(name="test")
-    async def welcomeset_goodbye_test(self, ctx):
+    async def welcomeset_goodbye_test(self, ctx: commands.Context) -> None:
         """Test the goodbye message deleted after 60 seconds"""
         await self.send_testing_msg(ctx, leave=True)
 
     @welcomeset.group(name="bot")
-    async def welcomeset_bot(self, ctx):
+    async def welcomeset_bot(self, ctx: commands.Context) -> None:
         """
             Special welcome for bots
         """
         pass
 
     @welcomeset_bot.command(name="test")
-    async def welcomeset_bot_test(self, ctx):
+    async def welcomeset_bot_test(self, ctx: commands.Context) -> None:
         """Test the bot joining message"""
         await self.send_testing_msg(ctx, bot=True)
 
     @welcomeset_bot.command(name="msg")
-    async def welcomeset_bot_msg(self, ctx, *, format_msg=None):
+    async def welcomeset_bot_msg(
+        self, ctx: commands.Context, *, format_msg: Optional[str] = None
+    ) -> None:
         """Set the welcome msg for bots.
 
         Leave blank to reset to regular user welcome"""
@@ -500,11 +488,12 @@ class Welcome(Events, commands.Cog):
             await ctx.send(msg)
         else:
             await ctx.send(_("Bot welcome message set for the guild."))
-            await self.send_testing_msg(ctx, bot=True, msg=format_msg)
 
     # TODO: Check if have permissions
     @welcomeset_bot.command(name="role")
-    async def welcomeset_bot_role(self, ctx, *, role: discord.Role = None):
+    async def welcomeset_bot_role(
+        self, ctx: commands.Context, *, role: Optional[discord.Role] = None
+    ) -> None:
         """
         Set the role to put bots in when they join.
 
@@ -523,7 +512,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(msg)
 
     @welcomeset.command()
-    async def whisper(self, ctx, choice: str = None):
+    async def whisper(self, ctx: commands.Context, choice: Optional[str] = None) -> None:
         """Sets whether or not a DM is sent to the new user
 
         Options:
@@ -558,14 +547,14 @@ class Welcome(Events, commands.Cog):
         await self.send_testing_msg(ctx)
 
     @welcomeset.group(name="embed")
-    async def _embed(self, ctx):
+    async def _embed(self, ctx: commands.Context) -> None:
         """
         Set various embed options
         """
         pass
 
     @_embed.command()
-    async def toggle(self, ctx):
+    async def toggle(self, ctx: commands.Context) -> None:
         """
         Toggle embed messages
         """
@@ -577,10 +566,9 @@ class Welcome(Events, commands.Cog):
         else:
             verb = _("on")
         await ctx.send(_("Welcome embeds turned {verb}").format(verb=verb))
-        await self.send_testing_msg(ctx)
 
     @_embed.command(aliases=["color"])
-    async def colour(self, ctx, colour: discord.Colour):
+    async def colour(self, ctx: commands.Context, colour: discord.Colour) -> None:
         """
         Set the embed colour
 
@@ -590,7 +578,7 @@ class Welcome(Events, commands.Cog):
         await ctx.tick()
 
     @_embed.command()
-    async def title(self, ctx, *, title: str = ""):
+    async def title(self, ctx: commands.Context, *, title: str = "") -> None:
         """
         Set the embed title
 
@@ -602,7 +590,7 @@ class Welcome(Events, commands.Cog):
         await ctx.tick()
 
     @_embed.command()
-    async def footer(self, ctx, *, footer: str = ""):
+    async def footer(self, ctx: commands.Context, *, footer: str = "") -> None:
         """
         Set the embed footer
 
@@ -614,7 +602,7 @@ class Welcome(Events, commands.Cog):
         await ctx.tick()
 
     @_embed.command()
-    async def thumbnail(self, ctx, link: str = None):
+    async def thumbnail(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed thumbnail image
 
@@ -648,7 +636,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send(_("Thumbnail cleared."))
 
     @_embed.command()
-    async def icon(self, ctx, link: str = None):
+    async def icon(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed icon image
 
@@ -682,7 +670,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send(_("Icon cleared."))
 
     @_embed.command()
-    async def image(self, ctx, link: str = None):
+    async def image(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed image link
 
@@ -716,7 +704,7 @@ class Welcome(Events, commands.Cog):
             await ctx.send(_("Image cleared."))
 
     @_embed.command()
-    async def timestamp(self, ctx):
+    async def timestamp(self, ctx: commands.Context) -> None:
         """
         Toggle the timestamp in embeds
         """
@@ -729,7 +717,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("Timestamps turned {verb}").format(verb=verb))
 
     @_embed.command()
-    async def author(self, ctx):
+    async def author(self, ctx: commands.Context) -> None:
         """
         Toggle the author field being filled in the embed
 
@@ -744,7 +732,7 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("Author field turned {verb}").format(verb=verb))
 
     @_embed.command()
-    async def mention(self, ctx):
+    async def mention(self, ctx: commands.Context) -> None:
         """
         Toggle mentioning the user when they join
 
