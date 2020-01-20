@@ -15,7 +15,7 @@ class Fun(commands.Cog):
         RedBot V3 conversion of Appu's Fun cog
     """
     __author__ = ["Appu", "TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -205,20 +205,20 @@ class Fun(commands.Cog):
             char_count = react_me.count(char)
             if char_count > 1:  # there's a duplicate of this letter:
                 if (
-                    len(Fun.emoji_dict[char]) >= char_count
+                    len(self.emoji_dict[char]) >= char_count
                 ):  # if we have enough different ways to say the letter to complete the emoji chain
                     i = 0
                     while (
                         i < char_count
                     ):  # moving goal post necessitates while loop instead of for
-                        if Fun.emoji_dict[char][i] not in react_me:
-                            react_me = react_me.replace(char, Fun.emoji_dict[char][i], 1)
+                        if self.emoji_dict[char][i] not in react_me:
+                            react_me = react_me.replace(char, self.emoji_dict[char][i], 1)
                         else:
                             char_count += 1  # skip this one because it's already been used by another replacement (e.g. circle emoji used to replace O already, then want to replace 0)
                         i += 1
             else:
                 if char_count == 1:
-                    react_me = react_me.replace(char, Fun.emoji_dict[char][0])
+                    react_me = react_me.replace(char, self.emoji_dict[char][0])
         return react_me
 
     @commands.command()
