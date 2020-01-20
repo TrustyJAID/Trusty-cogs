@@ -209,6 +209,8 @@ class StarboardEvents:
             msg = await channel.get_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
+        if guild.id not in self.starboards:
+            return
         # starboards = await self.config.guild(guild).starboards()
         for name, starboard in self.starboards[guild.id].items():
             # starboard = StarboardEntry.from_json(s_board)
