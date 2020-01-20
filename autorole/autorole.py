@@ -176,8 +176,8 @@ class Autorole(commands.Cog):
         """
         pass
 
-    @autorole.command()
-    async def info(self, ctx: commands.Context) -> None:
+    @autorole.command(name="info")
+    async def autorole_info(self, ctx: commands.Context) -> None:
         """
             Display current autorole info
         """
