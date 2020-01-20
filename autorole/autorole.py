@@ -36,7 +36,7 @@ class Autorole(commands.Cog):
     """
 
     __author__ = ["Lunar-Dust", "TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -176,7 +176,7 @@ class Autorole(commands.Cog):
         """
         pass
 
-    @autorole.command()
+    @autorole.command(name="info")
     async def autorole_info(self, ctx: commands.Context) -> None:
         """
             Display current autorole info
