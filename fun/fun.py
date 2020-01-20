@@ -176,8 +176,8 @@ class Fun(commands.Cog):
 
     def generate_text_flip(self):
         for idx, char in enumerate(self.char_list):
-            text_flip[char] = self.alt_char_list[idx]
-            text_flip[self.alt_char_list[idx]] = char
+            self.text_flip[char] = self.alt_char_list[idx]
+            self.text_flip[self.alt_char_list[idx]] = char
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """

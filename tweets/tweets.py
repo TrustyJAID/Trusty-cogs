@@ -352,13 +352,13 @@ class Tweets(commands.Cog):
     # here are all the commands for getting twitter info
 
     @commands.group(name="tweets", aliases=["twitter"])
-    async def _tweets(self, ctx: commands.Contex):
+    async def _tweets(self, ctx: commands.Context):
         """Gets various information from Twitter's API"""
         pass
 
     @_tweets.command(name="send")
     @checks.is_owner()
-    async def send_tweet(self, ctx: commands.Contex, *, message: str) -> None:
+    async def send_tweet(self, ctx: commands.Context, *, message: str) -> None:
         """
             Allows the owner to send tweets through discord
 
@@ -389,7 +389,7 @@ class Tweets(commands.Cog):
             return await self.bot.get_embed_colour(channel)
 
     @_tweets.command(name="trends")
-    async def trends(self, ctx: commands.Contex, *, location: str = "United States") -> None:
+    async def trends(self, ctx: commands.Context, *, location: str = "United States") -> None:
         """
             Gets twitter trends for a given location
 
@@ -842,7 +842,7 @@ class Tweets(commands.Cog):
 
     @commands.group(name="tweetset")
     @checks.admin_or_permissions(manage_guild=True)
-    async def _tweetset(self, ctx: commands.Contex) -> None:
+    async def _tweetset(self, ctx: commands.Context) -> None:
         """Command for setting required access information for the API.
 
         1. Visit https://apps.twitter.com and apply for a developer account.

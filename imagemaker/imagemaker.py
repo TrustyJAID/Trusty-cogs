@@ -656,7 +656,7 @@ class ImageMaker(commands.Cog):
         temp.seek(0)
         return temp
 
-    def rotoscope(self, dst: cv2.Image, warp: cv2.Image, properties: dict) -> cv2.Image:
+    def rotoscope(self, dst, warp, properties: dict):
         if not properties["show"]:
             return dst
 
@@ -714,7 +714,7 @@ class ImageMaker(commands.Cog):
                 return textFont
         return textFont
 
-    def generateText(self, text: str) -> cv2.Image:
+    def generateText(self, text: str):
         # global impact, textFont
 
         txtColor = (20, 20, 20)
@@ -746,6 +746,6 @@ class ImageMaker(commands.Cog):
 
         return cvImage
 
-    def cvImageToPillow(self, cvImage: cv2.Image) -> Image:
+    def cvImageToPillow(self, cvImage) -> Image:
         cvImage = cv2.cvtColor(cvImage, cv2.COLOR_BGR2RGB)
         return Image.fromarray(cvImage)
