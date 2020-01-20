@@ -63,7 +63,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -725,12 +725,8 @@ class Tweets(commands.Cog):
     def get_tweet_list(self, api: tw.API, owner: str, list_name: str) -> List[int]:
         cursor = -1
         list_members: list = []
-        member_count = api.get_list(owner_screen_name=owner, slug=list_name).member_count
-        while len(list_members) < member_count:
-            member_list = api.list_members(owner_screen_name=owner, slug=list_name, cursor=cursor)
-            for member in member_list[0]:
-                list_members.append(member)
-            cursor = member_list[1][-1]
+        for member in tw.Cursor(api.list_members, owner_screen_name=owner, slug=list_name, cursor=cursor).items():
+            list_members.append(member)
         return list_members
 
     @_autotweet.command(name="addlist")
@@ -754,7 +750,7 @@ class Tweets(commands.Cog):
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
             )
-            task = await ctx.bot.loop.run_in_executor(None, fake_task)
+            task = ctx.bot.loop.run_in_executor(None, fake_task)
             list_members = await asyncio.wait_for(task, timeout=30)
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")
