@@ -9,7 +9,7 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, inline
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
@@ -1367,20 +1367,20 @@ class EventMixin:
         if before.channel != after.channel:
             change_type = "channel"
             if before.channel is None:
-                chan_msg = member.mention + _(" has joined ") + after.channel.mention
+                chan_msg = member.mention + _(" has joined ") + inline(after.channel.name)
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             elif after.channel is None:
-                chan_msg = member.mention + _(" has left ") + before.channel.mention
+                chan_msg = member.mention + _(" has left ") + inline(before.channel.name)
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             else:
                 chan_msg = (
                     member.mention
                     + _(" has moved from ")
-                    + before.channel.mention
+                    + inline(before.channel.name)
                     + _(" to ")
-                    + after.channel.mention
+                    + inline(after.channel.name)
                 )
                 msg += chan_msg
                 embed.description = chan_msg
