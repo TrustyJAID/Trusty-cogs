@@ -3,6 +3,8 @@ import datetime
 import aiohttp
 from urllib.parse import urlencode
 
+from typing import Optional
+
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
@@ -13,7 +15,7 @@ _ = Translator("Weather", __file__)
 
 
 class UnitConverter(Converter):
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str) -> Optional[str]:
         new_units = None
         if argument.lower() in ["f", "imperial", "mph"]:
             new_units = "imperial"
@@ -31,6 +33,8 @@ class UnitConverter(Converter):
 @cog_i18n(_)
 class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -39,16 +43,22 @@ class Weather(commands.Cog):
         self.config.register_global(**default)
         self.config.register_guild(**default)
         self.config.register_user(**default)
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.unit = {
             "imperial": {"code": ["i", "f"], "speed": "mph", "temp": " °F"},
             "metric": {"code": ["m", "c"], "speed": "km/h", "temp": " °C"},
             "kelvin": {"code": ["k", "s"], "speed": "km/h", "temp": " K"},
         }
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     @commands.group(name="weather", aliases=["we"], invoke_without_command=True)
     @commands.bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, *, location: str):
+    async def weather(self, ctx: commands.Context, *, location: str) -> None:
         """
             Display weather in a given location
 
@@ -60,7 +70,7 @@ class Weather(commands.Cog):
 
     @weather.command(name="zip")
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_zip(self, ctx, *, zipcode: int):
+    async def weather_by_zip(self, ctx: commands.Context, *, zipcode: int) -> None:
         """
             Display weather in a given location
 
@@ -72,7 +82,7 @@ class Weather(commands.Cog):
 
     @weather.command(name="cityid")
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_cityid(self, ctx, *, cityid: int):
+    async def weather_by_cityid(self, ctx: commands.Context, *, cityid: int) -> None:
         """
             Display weather in a given location
 
@@ -85,7 +95,7 @@ class Weather(commands.Cog):
 
     @weather.command(name="co", aliases=["coords", "coordinates"])
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_coordinates(self, ctx, lat: float, lon: float):
+    async def weather_by_coordinates(self, ctx: commands.Context, lat: float, lon: float) -> None:
         """
             Display weather in a given location
 
@@ -97,13 +107,13 @@ class Weather(commands.Cog):
         await self.get_weather(ctx, lat=lat, lon=lon)
 
     @commands.group(name="weatherset")
-    async def weather_set(self, ctx):
+    async def weather_set(self, ctx: commands.Context) -> None:
         """Set user or guild default units"""
         pass
 
     @weather_set.command(name="guild", aliases=["server"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def set_guild(self, ctx, units: UnitConverter):
+    async def set_guild(self, ctx: commands.Context, units: UnitConverter) -> None:
         """
             Sets the guild default weather units
 
@@ -115,7 +125,7 @@ class Weather(commands.Cog):
 
     @weather_set.command(name="bot")
     @checks.mod_or_permissions(manage_messages=True)
-    async def set_bot(self, ctx, units: UnitConverter):
+    async def set_bot(self, ctx: commands.Context, units: UnitConverter) -> None:
         """
             Sets the bots default weather units
 
@@ -125,7 +135,7 @@ class Weather(commands.Cog):
         await ctx.send(_("Bots default units set to {units}").format(units=str(units)))
 
     @weather_set.command(name="user")
-    async def set_user(self, ctx, units: UnitConverter):
+    async def set_user(self, ctx: commands.Context, units: UnitConverter) -> None:
         """
             Sets the user default weather units
 
@@ -141,8 +151,15 @@ class Weather(commands.Cog):
         )
 
     async def get_weather(
-        self, ctx, *, location=None, zipcode=None, cityid=None, lat=None, lon=None
-    ):
+        self,
+        ctx: commands.Context,
+        *,
+        location: Optional[str] = None,
+        zipcode: Optional[int] = None,
+        cityid: Optional[int] = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None
+    ) -> None:
         guild = ctx.message.guild
         author = ctx.message.author
         bot_units = await self.config.units()
@@ -161,17 +178,18 @@ class Weather(commands.Cog):
         if units == "kelvin":
             params["units"] = "metric"
         if zipcode:
-            params["zip"] = zipcode
+            params["zip"] = str(zipcode)
         elif cityid:
-            params["id"] = cityid
+            params["id"] = str(cityid)
         elif lon and lat:
-            params["lat"] = lat
-            params["lon"] = lon
+            params["lat"] = str(lat)
+            params["lon"] = str(lon)
         else:
-            params["q"] = location
+            params["q"] = str(location)
         url = "https://api.openweathermap.org/data/2.5/weather?{0}".format(urlencode(params))
-        async with self.session.get(url) as resp:
-            data = await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                data = await resp.json()
         try:
             if data["message"] == "city not found":
                 await ctx.send("City not found.")
@@ -193,8 +211,12 @@ class Weather(commands.Cog):
             currenttemp = abs(currenttemp - 273.15)
             mintemp = abs(maxtemp - 273.15)
             maxtemp = abs(maxtemp - 273.15)
-        sunrise = datetime.datetime.utcfromtimestamp(data["sys"]["sunrise"] + data["timezone"]).strftime("%H:%M")
-        sunset = datetime.datetime.utcfromtimestamp(data["sys"]["sunset"] + data["timezone"]).strftime("%H:%M")
+        sunrise = datetime.datetime.utcfromtimestamp(
+            data["sys"]["sunrise"] + data["timezone"]
+        ).strftime("%H:%M")
+        sunset = datetime.datetime.utcfromtimestamp(
+            data["sys"]["sunset"] + data["timezone"]
+        ).strftime("%H:%M")
         embed = discord.Embed(colour=discord.Colour.blue())
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
@@ -224,8 +246,3 @@ class Weather(commands.Cog):
         embed.add_field(name=_("\N{SUNSET OVER BUILDINGS} **Sunset**"), value=sunset)
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
         await ctx.send(embed=embed)
-
-    def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
-
-    __unload = cog_unload
