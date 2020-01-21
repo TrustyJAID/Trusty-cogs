@@ -1025,8 +1025,8 @@ class TriggerHandler:
                 # with modlogset
                 try:
                     modlog_channel = await modlog.get_modlog_channel(guild)
-                except Exception:
-                    log.error("Error getting modlog channel", exc_info=True)
+                except RuntimeError:
+                    log.debug("Error getting modlog channel", exc_info=True)
                     # Return early if no modlog channel exists
                     return
             else:

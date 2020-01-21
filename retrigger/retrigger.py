@@ -7,7 +7,7 @@ from multiprocessing.pool import Pool
 from typing import Union, Optional
 
 
-from redbot.core import commands, checks, Config
+from redbot.core import commands, checks, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
@@ -39,7 +39,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.9.0"
+    __version__ = "2.9.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -264,6 +264,14 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 channel = None
             elif channel in ["default"]:
                 channel = "default"
+                try:
+                    channel = await modlog.get_modlog_channel()
+                except RuntimeError:
+                    msg = _(
+                        "No modlog channel has been setup yet. "
+                        "Do `[p]modlogset modlog #channel` to setup the default modlog channel"
+                    )
+                    return await ctx.send(msg)
             else:
                 await ctx.send(_('Channel "{channel}" not found.').format(channel=channel))
                 return
