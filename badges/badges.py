@@ -28,7 +28,7 @@ class Badges(commands.Cog):
         Create fun fake badges based on your discord profile
     """
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -292,20 +292,14 @@ class Badges(commands.Cog):
         """
             List the available badges that can be created
         """
-        guild = ctx.message.guild
+        # guild = ctx.message.guild
         global_badges = await self.config.badges()
-        guild_badges = await self.config.guild(guild).badges()
-        msg = ", ".join(badge["badge_name"] for badge in global_badges)
+        # guild_badges = await self.config.guild(guild).badges()
+        msg = _("__Global Badges__\n")
+        msg += ", ".join(badge["badge_name"] for badge in global_badges)
 
-        em = discord.Embed()
-        try:
-            em.colour = await self.bot.get_embed_colour()
-        except Exception:
-            # To allow older bots to still function.
-            pass
         # for badge in await self.config.badges():
-        em.add_field(name=_("Global Badges"), value=msg)
-        if guild_badges != []:
-            badges = ", ".join(badge["badge_name"] for badge in guild_badges)
-            em.add_field(name=_("Global Badges"), value=badges)
-        await ctx.send(embed=em)
+        # if guild_badges != []:
+        # badges = ", ".join(badge["badge_name"] for badge in guild_badges)
+        # em.add_field(name=_("Global Badges"), value=badges)
+        await ctx.maybe_send_embed(msg)
