@@ -22,7 +22,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.2.1"
+    __version__ = "2.2.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -216,13 +216,13 @@ class Starboard(StarboardEvents, commands.Cog):
             error_msg = _("Starboard {name} isn't enabled.").format(name=starboard.name)
             await ctx.send(error_msg)
             return
-        if not await self.check_roles(starboard, ctx.message.author):
+        if not await self._check_roles(starboard, ctx.message.author):
             error_msg = _(
                 "One of your roles is blacklisted or you don't have the whitelisted role."
             )
             await ctx.send(error_msg)
             return
-        if not await self.check_channel(starboard, channel):
+        if not await self._check_channel(starboard, channel):
             error_msg = _("This channel is either blacklisted or not in the whitelisted channels.")
             await ctx.send(error_msg)
             return
@@ -240,7 +240,7 @@ class Starboard(StarboardEvents, commands.Cog):
                 await msg_edit.edit(content=count_msg)
                 return
 
-        em = await self.build_embed(guild, msg, starboard)
+        em = await self._build_embed(guild, msg, starboard)
         count_msg = f"{starboard.emoji} **#{count}**"
         post_msg = await star_channel.send(count_msg, embed=em)
         star_message = StarboardMessage(
