@@ -564,6 +564,7 @@ class NotSoBot(commands.Cog):
             t_path = str(bundled_data_path(self) / "zDAY2yo.jpg")
             await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
             args = [
+                    "magick",
                     "convert",
                     "canvas:none",
                     "-size",
@@ -574,8 +575,6 @@ class NotSoBot(commands.Cog):
                     'image over -60,-60 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
-                    "-dispose",
-                    "background",
                     "(",
                     "canvas:none",
                     "-size",
@@ -593,8 +592,6 @@ class NotSoBot(commands.Cog):
                     'image over -50,-45 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
-                    "-dispose",
-                    "background",
                     ")",
                     "(",
                     "canvas:none",
@@ -604,15 +601,13 @@ class NotSoBot(commands.Cog):
                     'image over -45,-65 640,640 "{0}"'.format(path),
                     "-draw",
                     'image over 0,586 0,0 "{0}"'.format(t_path),
-                    "-dispose",
-                    "background",
                     ")",
                     "-layers",
                     "Optimize",
                     "-set",
                     "delay",
                     "2",
-                    path2,
+                    path2
                 ]
             worked, response = await self.run_process(args, True)
             log.info(response)
@@ -1212,9 +1207,10 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         async with ctx.typing():
-            path = str(bundled_data_path(self)) + "/" + self.random(True)
+            path = str(bundled_data_path(self) / self.random(True))
             await self.download(url, path)
             args = [
+                "magick",
                 "convert",
                 "(",
                 path,
