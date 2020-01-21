@@ -3,9 +3,7 @@
 import asyncio
 import aiohttp
 import discord
-import os
 import sys
-import glob
 import re
 import random
 import wand
@@ -25,7 +23,7 @@ from redbot.core import commands
 from pyfiglet import figlet_format
 from urllib.parse import quote
 import uuid
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 import logging
 
 from redbot.core.data_manager import bundled_data_path, cog_data_path
@@ -97,6 +95,9 @@ class NotSoBot(commands.Cog):
         Rewrite of many NotSoBot commands to work on RedBot V3
     """
 
+    __author__ = ["NotSoSuper", "TrustyJAID"]
+    __version__ = "2.4.0"
+
     def __init__(self, bot):
         self.bot = bot
         self.image_cache = {}
@@ -153,6 +154,13 @@ class NotSoBot(commands.Cog):
         self.image_mimes = ["image/png", "image/pjpeg", "image/jpeg", "image/x-icon"]
         self.gif_mimes = ["image/gif"]
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
     def random(self, image=False, ext: str = "png"):
         h = str(uuid.uuid4().hex)
         if image:
@@ -173,7 +181,7 @@ class NotSoBot(commands.Cog):
     async def truncate(self, channel, msg):
         if len(msg) == 0:
             return
-        split = [msg[i: i + 1999] for i in range(0, len(msg), 1999)]
+        split = [msg[i : i + 1999] for i in range(0, len(msg), 1999)]
         try:
             for s in split:
                 await channel.send(s)
@@ -222,29 +230,6 @@ class NotSoBot(commands.Cog):
         except Exception:
             log.error("Error downloading to bytes", exc_info=True)
             return False, False
-
-    async def run_process(self, code, response=False):
-        try:
-            transport = None
-            loop = self.bot.loop
-            exit_future = asyncio.Future(loop=loop)
-            create = loop.subprocess_exec(
-                lambda: DataProtocol(exit_future), *code, stdin=None, stderr=None
-            )
-            transport, protocol = await asyncio.wait_for(create, timeout=30)
-            await exit_future
-            if response:
-                data = bytes(protocol.output)
-                return True, data.decode("ascii").rstrip()
-            return True, None
-        except asyncio.TimeoutError:
-            return False, None
-        except Exception:
-            log.error("Error running process", exc_info=True)
-            return False, None
-        finally:
-            if transport:
-                transport.close()
 
     async def gist(self, ctx, idk, content: str):
         payload = {
@@ -329,150 +314,99 @@ class NotSoBot(commands.Cog):
             file = discord.File(final, filename="magik.png")
             await self.safe_send(ctx, content_msg, file, file_size)
 
-    def do_gmagik(self, is_owner, gif, gif_dir, rand, is_gif):
-        try:
-            try:
-                frame = PIL.Image.open(gif)
-            except Exception:
-                return ":warning: Invalid Gif."
-            if frame.size >= (3000, 3000):
-                os.remove(gif)
-                return ":warning: `GIF resolution exceeds maximum >= (3000, 3000).`"
-            if is_gif:
-                nframes = 0
-                while frame:
-                    frame.save("{0}/{1}_{2}.png".format(gif_dir, nframes, rand), "GIF")
-                    nframes += 1
-                    try:
-                        frame.seek(nframes)
-                    except EOFError:
-                        break
-                imgs = glob.glob(gif_dir + "*_{0}.png".format(rand))
-                if (len(imgs) > 150) and not is_owner:
-                    for image in imgs:
-                        os.remove(image)
-                    os.remove(gif)
-                    return ":warning: `GIF has too many frames (>= 150 Frames).`"
-                for image in imgs:
-                    try:
-                        im = wand.image.Image(filename=image)
-                    except Exception:
-                        log.error("Error running gmagik", exc_info=True)
-                        continue
-                    i = im.clone()
-                    i.transform(resize="800x800>")
-                    i.liquid_rescale(
-                        width=int(i.width * 0.5), height=int(i.height * 0.5), delta_x=1, rigidity=0
-                    )
-                    i.liquid_rescale(
-                        width=int(i.width * 1.5), height=int(i.height * 1.5), delta_x=2, rigidity=0
-                    )
-                    i.resize(i.width, i.height)
-                    i.save(filename=image)
-                return True
-            else:
-                frame.save("{0}/{1}_{2}.png".format(gif_dir, 0, rand), "GIF")
-                for x in range(0, 30):
-                    try:
-                        im = wand.image.Image(filename="{0}/{1}_{2}.png".format(gif_dir, x, rand))
-                    except Exception:
-                        log.error("Error running gmagik", exc_info=True)
-                        continue
-                    i = im.clone()
-                    i.transform(resize="800x800>")
-                    i.liquid_rescale(
-                        width=int(i.width * 0.75),
-                        height=int(i.height * 0.75),
-                        delta_x=1,
-                        rigidity=0,
-                    )
-                    i.liquid_rescale(
-                        width=int(i.width * 1.25),
-                        height=int(i.height * 1.25),
-                        delta_x=2,
-                        rigidity=0,
-                    )
-                    i.resize(i.width, i.height)
-                    i.save(filename="{0}/{1}_{2}.png".format(gif_dir, x + 1, rand))
-                return True
-        except Exception:
-            log.error("Error processing gmagik", exc_info=True)
+    def do_gmagik(self, is_owner, image, frame_delay, is_gif):
+        final = BytesIO()
+        if is_gif:
+            with wand.image.Image() as new_image:
+                with wand.image.Image(file=image) as img:
+                    for change in img.sequence:
+                        change.transform(resize="512x512>")
+                        change.liquid_rescale(
+                            width=int(change.width * 0.5),
+                            height=int(change.height * 0.5),
+                            delta_x=1,
+                            rigidity=0,
+                        )
+                        change.liquid_rescale(
+                            width=int(change.width * 1.5),
+                            height=int(change.height * 1.5),
+                            delta_x=2,
+                            rigidity=0,
+                        )
+                        # change.sample(200, 200)
+                        # i.save(filename=image)
+                        new_image.sequence.append(change)
+                    # for i in range(len(img.sequence)):
+                        # with img.sequence[i] as change:
+                new_image.format = "gif"
+                new_image.dispose = "background"
+                new_image.type = "optimize"
+                new_image.save(file=final)
+                file_size = final.tell()
+                final.seek(0)
+            return discord.File(final, filename="gmagik.gif"), file_size
+        else:
+            # frame.save("{0}/{1}_{2}.png".format(gif_dir, 0, rand), "GIF")
+            with wand.image.Image() as new_image:
+                with wand.image.Image(file=image) as img:
+                    for x in range(0, 30):
+                        if x == 0:
+                            i = img.clone().convert("gif")
+                        i.transform(resize="512x512>")
+                        i.liquid_rescale(
+                            width=int(i.width * 0.75),
+                            height=int(i.height * 0.75),
+                            delta_x=1,
+                            rigidity=0,
+                        )
+                        i.liquid_rescale(
+                            width=int(i.width * 1.25),
+                            height=int(i.height * 1.25),
+                            delta_x=2,
+                            rigidity=0,
+                        )
+                        i.resize(img.width, img.height)
+                        new_image.sequence.append(i)
+                for frame in new_image.sequence:
+                    frame.delay = frame_delay
+                new_image.save(file=final)
+                file_size = final.tell()
+                final.seek(0)
+            return discord.File(final, filename="gmagik.gif"), file_size
 
     @commands.command()
     @commands.cooldown(1, 20, commands.BucketType.guild)
     @commands.bot_has_permissions(attach_files=True)
-    async def gmagik(self, ctx, urls: ImageFinder = None, framerate: int = None):
+    async def gmagik(self, ctx, urls: ImageFinder = None, frame_delay: int = 1):
         """Attempt to do magik on a gif"""
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
-        gif_dir = str(bundled_data_path(self)) + "/gif/"
-        if not os.path.exists(gif_dir):
-            os.makedirs(gif_dir)
-        x = await ctx.message.channel.send(
-            "ok, processing (this might take a while for big gifs)"
-        )
-        rand = self.random()
-        gifin = gif_dir + "1_{0}.gif".format(rand)
-        gifout = gif_dir + "2_{0}.gif".format(rand)
+        # gif_dir = str(bundled_data_path(self)) + "/gif/"
+        # if not os.path.exists(gif_dir):
+        # os.makedirs(gif_dir)
+        x = await ctx.message.channel.send("ok, processing (this might take a while for big gifs)")
+        # rand = self.random()
+        # gifin = gif_dir + "1_{0}.gif".format(rand)
+        # gifout = gif_dir + "2_{0}.gif".format(rand)
         async with ctx.typing():
-            mime = await self.download(url, gifin)
+            if frame_delay > 60:
+                frame_delay = 60
+            elif frame_delay < 0:
+                frame_delay = 1
+            b, mime = await self.bytes_download(url)
             check = mime in self.gif_mimes
             is_owner = await ctx.bot.is_owner(ctx.author)
             try:
-                result = await self.bot.loop.run_in_executor(
-                    None, self.do_gmagik, is_owner, gifin, gif_dir, rand, check
+                file, file_size = await self.bot.loop.run_in_executor(
+                    None, self.do_gmagik, is_owner, b, frame_delay, check
                 )
+
             except Exception:
                 log.error("Error running gmagik", exc_info=True)
                 await ctx.send(":warning: Gmagik failed...")
                 return
-            if type(result) == str:
-                await ctx.send(result)
-                return
-            if framerate:
-                if framerate > 60:
-                    framerate = 60
-                elif framerate < 0:
-                    framerate = 20
-                else:
-                    framerate = framerate
-                args = [
-                    "ffmpeg",
-                    "-y",
-                    "-nostats",
-                    "-loglevel",
-                    "0",
-                    "-i",
-                    gif_dir + "%d_{0}.png".format(rand),
-                    "-r",
-                    framerate,
-                    gifout,
-                ]
-            else:
-                args = [
-                    "ffmpeg",
-                    "-y",
-                    "-nostats",
-                    "-loglevel",
-                    "0",
-                    "-i",
-                    gif_dir + "%d_{0}.png".format(rand),
-                    gifout,
-                ]
-            worked, response = await self.run_process(args, True)
-            if not worked:
-                return await ctx.send(
-                    "`Error in command 'gmagik'. Check your console or logs for details.`"
-                )
-            file_size = os.path.getsize(gifout)
-            file = discord.File(gifout, filename="gmagik.gif")
             await self.safe_send(ctx, None, file, file_size)
-            # await ctx.send(file=file)
-            for image in glob.glob(gif_dir + "*_{0}.png".format(rand)):
-                os.remove(image)
-            os.remove(gifin)
-            os.remove(gifout)
             await x.delete()
 
     @commands.command()
@@ -527,8 +461,8 @@ class NotSoBot(commands.Cog):
                 with wand.image.Image(file=b) as img:
 
                     i = img.clone()
-                    x = int(i.height*(x*0.01))
-                    y = int(i.width*(y*0.01))
+                    x = int(i.height * (x * 0.01))
+                    y = int(i.width * (y * 0.01))
                     if not is_gif:
                         i.caption(str(text), left=x, top=y, font=font)
                     else:
@@ -549,6 +483,48 @@ class NotSoBot(commands.Cog):
             )
             await ctx.send(file=file)
 
+    def trigger_image(self, path: BytesIO, t_path: BytesIO) -> Tuple[discord.File, int]:
+        final = BytesIO()
+        with wand.image.Image(width=512, height=680) as img:
+            img.format = "gif"
+            img.dispose = "background"
+            img.type = "optimize"
+            with wand.image.Image(file=path) as top_img:
+                top_img.transform(resize="640x640!")
+                with wand.image.Image(file=t_path) as trigger:
+                    with wand.image.Image(width=512, height=660) as temp_img:
+                        i = top_img.clone()
+                        t = trigger.clone()
+                        temp_img.composite(i, -60, -60)
+                        temp_img.composite(t, 0, 572)
+                        img.composite(temp_img)
+                    with wand.image.Image(width=512, height=660) as temp_img:
+                        i = top_img.clone()
+                        t = trigger.clone()
+                        temp_img.composite(i, -45, -50)
+                        temp_img.composite(t, 0, 572)
+                        img.sequence.append(temp_img)
+                    with wand.image.Image(width=512, height=660) as temp_img:
+                        i = top_img.clone()
+                        t = trigger.clone()
+                        temp_img.composite(i, -50, -45)
+                        temp_img.composite(t, 0, 572)
+                        img.sequence.append(temp_img)
+                    with wand.image.Image(width=512, height=660) as temp_img:
+                        i = top_img.clone()
+                        t = trigger.clone()
+                        temp_img.composite(i, -45, -65)
+                        temp_img.composite(t, 0, 572)
+                        img.sequence.append(temp_img)
+            # img.optimize_layers()
+            # img.optimize_transparency()
+            for frame in img.sequence:
+                frame.delay = 2
+            img.save(file=final)
+        file_size = final.tell()
+        final.seek(0)
+        return discord.File(final, filename="triggered.gif"), file_size
+
     @commands.command()
     @commands.cooldown(1, 5)
     @commands.bot_has_permissions(attach_files=True)
@@ -560,66 +536,18 @@ class NotSoBot(commands.Cog):
         path = str(bundled_data_path(self) / self.random(True))
         path2 = path[:-3] + "gif"
         async with ctx.typing():
-            await self.download(str(avatar), path)
-            t_path = str(bundled_data_path(self) / "zDAY2yo.jpg")
-            await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
-            args = [
-                    "magick",
-                    "convert",
-                    "canvas:none",
-                    "-size",
-                    "512x680!",
-                    "-resize",
-                    "512x680!",
-                    "-draw",
-                    'image over -60,-60 640,640 "{0}"'.format(path),
-                    "-draw",
-                    'image over 0,586 0,0 "{0}"'.format(t_path),
-                    "(",
-                    "canvas:none",
-                    "-size",
-                    "512x680!",
-                    "-draw",
-                    'image over -45,-50 640,640 "{0}"'.format(path),
-                    "-draw",
-                    'image over 0,586 0,0 "{0}"'.format(t_path),
-                    ")",
-                    "(",
-                    "canvas:none",
-                    "-size",
-                    "512x680!",
-                    "-draw",
-                    'image over -50,-45 640,640 "{0}"'.format(path),
-                    "-draw",
-                    'image over 0,586 0,0 "{0}"'.format(t_path),
-                    ")",
-                    "(",
-                    "canvas:none",
-                    "-size",
-                    "512x680!",
-                    "-draw",
-                    'image over -45,-65 640,640 "{0}"'.format(path),
-                    "-draw",
-                    'image over 0,586 0,0 "{0}"'.format(t_path),
-                    ")",
-                    "-layers",
-                    "Optimize",
-                    "-set",
-                    "delay",
-                    "2",
-                    path2
-                ]
-            worked, response = await self.run_process(args, True)
-            log.info(response)
-            if not worked:
-                return await ctx.send(
-                    "`Error in command 'triggered'. Check your console or logs for details.`"
-                )
-            file = discord.File(path2, filename="/triggered.gif")
-            file_size = os.path.getsize(path2)
+            # await self.download(str(avatar), path)
+            # t_path = str(bundled_data_path(self) / "zDAY2yo.jpg")
+            # await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
+            img, mime = await self.bytes_download(str(avatar))
+            trig, mime = await self.bytes_download("https://i.imgur.com/zDAY2yo.jpg")
+            try:
+                # fake_task = functools.partial(self.trigger_image, path=img, t_path=trig)
+                task = ctx.bot.loop.run_in_executor(None, self.trigger_image, img, trig)
+                file, file_size = await asyncio.wait_for(task, timeout=15)
+            except asyncio.TimeoutError:
+                return await ctx.send("Error creating trigger image")
             await self.safe_send(ctx, None, file, file_size)
-            os.remove(path)
-            os.remove(path2)
 
     @commands.command(aliases=["aes"])
     @commands.bot_has_permissions(attach_files=True)
@@ -679,9 +607,7 @@ class NotSoBot(commands.Cog):
             await self.safe_send(ctx, msg, file, file_size)
 
     def generate_ascii(self, image):
-        font = PIL.ImageFont.truetype(
-            str(cog_data_path(self)) + "/FreeMonoBold.ttf", 15
-        )
+        font = PIL.ImageFont.truetype(str(cog_data_path(self)) + "/FreeMonoBold.ttf", 15)
         image_width, image_height = image.size
         aalib_screen_width = int(image_width / 24.9) * 10
         aalib_screen_height = int(image_height / 41.39) * 10
@@ -702,14 +628,14 @@ class NotSoBot(commands.Cog):
 
     async def check_font_file(self):
         try:
-            PIL.ImageFont.truetype(cog_data_path(self)/"FreeMonoBold.ttf", 15)
+            PIL.ImageFont.truetype(cog_data_path(self) / "FreeMonoBold.ttf", 15)
         except Exception:
             async with self.session.get(
                 "https://github.com/opensourcedesign/fonts"
                 "/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf"
             ) as resp:
                 data = await resp.read()
-            with open(cog_data_path(self)/"FreeMonoBold.ttf", "wb") as save_file:
+            with open(cog_data_path(self) / "FreeMonoBold.ttf", "wb") as save_file:
                 save_file.write(data)
 
     @commands.command()
@@ -953,6 +879,7 @@ class NotSoBot(commands.Cog):
                 file_size = final.tell()
                 final.seek(0)
                 return discord.File(final, filename="needsmorejpeg.jpg"), file_size
+
             file, file_size = await ctx.bot.loop.run_in_executor(None, make_jpeg, b)
             await self.safe_send(ctx, None, file, file_size)
 
@@ -1014,7 +941,7 @@ class NotSoBot(commands.Cog):
         mark: str = None,
         x: int = 0,
         y: int = 0,
-        transparency: Union[int, float] = 0
+        transparency: Union[int, float] = 0,
     ):
         """
             Add a watermark to an image
@@ -1066,14 +993,11 @@ class NotSoBot(commands.Cog):
                         log.debug("There are no gifs")
                         with img.clone() as new_img:
                             new_img.transform(resize="65536@")
-                            final_x = int(new_img.height*(x*0.01))
-                            final_y = int(new_img.width*(y*0.01))
+                            final_x = int(new_img.height * (x * 0.01))
+                            final_y = int(new_img.width * (y * 0.01))
                             with wand.image.Image(file=wmm) as wm:
                                 new_img.watermark(
-                                    image=wm,
-                                    left=final_x,
-                                    top=final_y,
-                                    transparency=transparency
+                                    image=wm, left=final_x, top=final_y, transparency=transparency
                                 )
                             new_img.save(file=final)
 
@@ -1084,13 +1008,13 @@ class NotSoBot(commands.Cog):
                             with img.clone() as new_img:
                                 for frame in new_img.sequence:
                                     frame.transform(resize="65536@")
-                                    final_x = int(frame.height*(x*0.01))
-                                    final_y = int(frame.width*(y*0.01))
+                                    final_x = int(frame.height * (x * 0.01))
+                                    final_y = int(frame.width * (y * 0.01))
                                     frame.watermark(
                                         image=wm,
                                         left=final_x,
                                         top=final_y,
-                                        transparency=transparency
+                                        transparency=transparency,
                                     )
                                     new_image.sequence.append(frame)
                             new_image.save(file=final)
@@ -1108,13 +1032,13 @@ class NotSoBot(commands.Cog):
                                             clone = clone.convert("gif")
 
                                         clone.transform(resize="65536@")
-                                        final_x = int(clone.height*(x*0.01))
-                                        final_y = int(clone.width*(y*0.01))
+                                        final_x = int(clone.height * (x * 0.01))
+                                        final_y = int(clone.width * (y * 0.01))
                                         clone.watermark(
                                             image=frame,
                                             left=final_x,
                                             top=final_y,
-                                            transparency=transparency
+                                            transparency=transparency,
                                         )
                                         new_image.sequence.append(clone)
                                         new_image.dispose = "background"
@@ -1199,119 +1123,6 @@ class NotSoBot(commands.Cog):
                 file = discord.File(final, filename="glitch.gif")
                 await self.safe_send(ctx, None, file, final.tell())
 
-    @commands.command()
-    @commands.bot_has_permissions(attach_files=True)
-    async def glitch2(self, ctx, urls: ImageFinder = None):
-        """Glitch a jpegs"""
-        if urls is None:
-            urls = await ImageFinder().search_for_images(ctx)
-        url = urls[0]
-        async with ctx.typing():
-            path = str(bundled_data_path(self) / self.random(True))
-            await self.download(url, path)
-            args = [
-                "magick",
-                "convert",
-                "(",
-                path,
-                "-resize",
-                "1024x1024>",
-                ")",
-                "-alpha",
-                "on",
-                "(",
-                "-clone",
-                "0",
-                "-channel",
-                "RGB",
-                "-separate",
-                "-channel",
-                "A",
-                "-fx",
-                "0",
-                "-compose",
-                "CopyOpacity",
-                "-composite",
-                ")",
-                "(",
-                "-clone",
-                "0",
-                "-roll",
-                "+5",
-                "-channel",
-                "R",
-                "-fx",
-                "0",
-                "-channel",
-                "A",
-                "-evaluate",
-                "multiply",
-                ".3",
-                ")",
-                "(",
-                "-clone",
-                "0",
-                "-roll",
-                "-5",
-                "-channel",
-                "G",
-                "-fx",
-                "0",
-                "-channel",
-                "A",
-                "-evaluate",
-                "multiply",
-                ".3",
-                ")",
-                "(",
-                "-clone",
-                "0",
-                "-roll",
-                "+0+5",
-                "-channel",
-                "B",
-                "-fx",
-                "0",
-                "-channel",
-                "A",
-                "-evaluate",
-                "multiply",
-                ".3",
-                ")",
-                "(",
-                "-clone",
-                "0",
-                "-channel",
-                "A",
-                "-fx",
-                "0",
-                ")",
-                "-delete",
-                "0",
-                "-background",
-                "none",
-                "-compose",
-                "SrcOver",
-                "-layers",
-                "merge",
-                "-rotate",
-                "90",
-                "-wave",
-                "1x5",
-                "-rotate",
-                "-90",
-                path,
-            ]
-            worked, response = await self.run_process(args, True)
-            if not worked:
-                return await ctx.send(
-                    "`Error in command 'glitch2'. Check your console or logs for details.`"
-                )
-            file = discord.File(path, filename="glitch2.png")
-            file_size = os.path.getsize(path)
-            await self.safe_send(ctx, None, file, file_size)
-            os.remove(path)
-
     @commands.command(aliases=["pixel"])
     @commands.bot_has_permissions(attach_files=True)
     async def pixelate(self, ctx, urls: ImageFinder = None, pixels=None, scale_msg=None):
@@ -1338,12 +1149,8 @@ class NotSoBot(commands.Cog):
     def make_pixel(self, b, pixels, scale_msg):
         bg = (0, 0, 0)
         img = PIL.Image.open(b)
-        img = img.resize(
-            (int(img.size[0] / pixels), int(img.size[1] / pixels)), PIL.Image.NEAREST
-        )
-        img = img.resize(
-            (int(img.size[0] * pixels), int(img.size[1] * pixels)), PIL.Image.NEAREST
-        )
+        img = img.resize((int(img.size[0] / pixels), int(img.size[1] / pixels)), PIL.Image.NEAREST)
+        img = img.resize((int(img.size[0] * pixels), int(img.size[1] * pixels)), PIL.Image.NEAREST)
         load = img.load()
         for i in range(0, img.size[0], pixels):
             for j in range(0, img.size[1], pixels):
@@ -1359,7 +1166,7 @@ class NotSoBot(commands.Cog):
     async def do_retro(self, text, bcg):
         if "|" not in text:
             if len(text) >= 15:
-                text = [text[i: i + 15] for i in range(0, len(text), 15)]
+                text = [text[i : i + 15] for i in range(0, len(text), 15)]
             else:
                 split = text.split()
                 if len(split) == 1:
@@ -1642,6 +1449,7 @@ class NotSoBot(commands.Cog):
                 file_size = final.tell()
                 final.seek(0)
                 return discord.File(final, filename="flop.png"), file_size
+
             file, file_size = await ctx.bot.loop.run_in_executor(None, flop_img, b)
             await self.safe_send(ctx, None, file, file_size)
 
@@ -1663,6 +1471,7 @@ class NotSoBot(commands.Cog):
                 file_size = final.tell()
                 final.seek(0)
                 return discord.File(final, filename="flop.png"), file_size
+
             file, file_size = await ctx.bot.loop.run_in_executor(None, invert_img, b)
             await self.safe_send(ctx, None, file, file_size)
 
@@ -1686,6 +1495,7 @@ class NotSoBot(commands.Cog):
                 file_size = final.tell()
                 final.seek(0)
                 return discord.File(final, filename="rotate.png"), file_size
+
             file, file_size = await ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
             await self.safe_send(ctx, f"Rotated: `{degrees}°`", file, file_size)
 
