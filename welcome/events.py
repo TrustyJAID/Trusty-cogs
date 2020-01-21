@@ -18,12 +18,6 @@ RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 _ = Translator("Welcome", __file__)
 log = logging.getLogger("red.trusty-cogs.Welcome")
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
 
 
 @cog_i18n(_)
@@ -134,7 +128,7 @@ class Events:
             em.set_author(name=str(member), icon_url=member.avatar_url)
         return em
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if not await self.config.guild(guild).ON():
@@ -296,7 +290,7 @@ class Events:
         if save_msg is not None:
             await self.config.guild(guild).LAST_GREETING.set(save_msg.id)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
         if not await self.config.guild(guild).LEAVE_ON():

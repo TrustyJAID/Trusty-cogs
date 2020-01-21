@@ -12,13 +12,6 @@ from .event_obj import Event, ValidImage
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
-
 
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
@@ -68,7 +61,7 @@ class EventPoster(commands.Cog):
                 self.event_cache[str(guild_id)] = {}
                 self.event_cache[str(guild_id)][str(event.message.id)] = event
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """
             Checks for reactions to the event

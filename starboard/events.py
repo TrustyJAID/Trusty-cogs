@@ -13,13 +13,6 @@ from .starboard_entry import StarboardEntry
 _ = Translator("Starboard", __file__)
 log = logging.getLogger("red.trusty-cogs.Starboard")
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
-
 
 @cog_i18n(_)
 class StarboardEvents:
@@ -187,15 +180,15 @@ class StarboardEvents:
             return True
         return False
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         await self._update_stars(payload)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
         await self._update_stars(payload)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent) -> None:
         channel = self.bot.get_channel(id=payload.channel_id)
         try:

@@ -12,13 +12,7 @@ from PIL import Image, ImageSequence
 from io import BytesIO
 from typing import Union, Optional
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 log = logging.getLogger("red.trusty-cogs.ServerStats")
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
 
 
 class TrustyAvatar(commands.Cog):
@@ -287,7 +281,7 @@ class TrustyAvatar(commands.Cog):
         await self.config.streaming.set(not is_streaming)
         await ctx.send("Streaming sync set to " + str(not is_streaming))
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         """This essentially syncs streaming status with the bot owner"""
         if before.id != self.bot.owner_id:

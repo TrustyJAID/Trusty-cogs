@@ -7,10 +7,10 @@
     "hidden" : false,
     "install_msg" : "Make sure you're running the latest version of adventure from https://github.com/aikaterna/gobcog",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "AdventureAlert",

@@ -50,13 +50,6 @@ RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
 LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4))")
 IMAGE_REGEX: Pattern = re.compile(r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg)+")
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
-
 
 class TriggerHandler:
     """
@@ -486,7 +479,7 @@ class TriggerHandler:
                     is_command = True
         return is_command
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         if message.guild is None:
             return
@@ -494,7 +487,7 @@ class TriggerHandler:
             return
         await self.check_triggers(message, False)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         if "content" not in payload.data:
             return

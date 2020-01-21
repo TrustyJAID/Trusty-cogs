@@ -10,10 +10,10 @@
     "hidden" : false,
     "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. This cog may cause issues with the bot restarting, in your console try `apt install python3-opencv` to install opencv-python instead. Type `[p]help ImageMaker` to see available commands.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "Imagemaker",

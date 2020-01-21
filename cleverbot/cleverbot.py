@@ -20,12 +20,6 @@ log = logging.getLogger("red.trusty-cogs.Cleverbot")
 
 _ = Translator("ReTrigger", __file__)
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
-
 
 @cog_i18n(_)
 class Cleverbot(CleverbotAPI, commands.Cog):
@@ -183,7 +177,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         else:
             await ctx.send(response)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         guild = message.guild
         ctx = await self.bot.get_context(message)

@@ -3,12 +3,6 @@ import discord
 from redbot.core.bot import Red
 from redbot.core import Config, checks, commands
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
-
 
 class Fenrir(commands.Cog):
     """
@@ -108,7 +102,7 @@ class Fenrir(commands.Cog):
             return True
         return False
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         try:
             guild = self.bot.get_guild(payload.guild_id)

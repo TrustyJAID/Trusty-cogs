@@ -23,12 +23,6 @@ _ = Translator("Translate", __file__)
 log = logging.getLogger("red.trusty-cogs.Translate")
 
 FLAG_REGEX = re.compile(r"|".join(rf"{re.escape(f)}" for f in FLAGS.keys()))
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
 
 
 class FlagTranslation(Converter):
@@ -189,7 +183,7 @@ class GoogleTranslateAPI:
             translated_text: str = data["data"]["translations"][0]["translatedText"]
         return translated_text
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         """
             Translates the message based off reactions
@@ -224,7 +218,7 @@ class GoogleTranslateAPI:
             return
         await self.translate_message(message, flag.group())
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """
             Translates the message based off reactions
@@ -407,7 +401,7 @@ class GoogleTranslateAPI:
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_red_api_tokens_update(
         self, service_name: str, api_tokens: Mapping[str, str]
     ) -> None:

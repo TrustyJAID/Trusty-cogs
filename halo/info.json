@@ -3,14 +3,14 @@
         "TrustyJAID"
     ],
     "description" : "Gathers information from the Halo API and posts it on discord.",
-    "disabled" : false,
-    "hidden" : false,
+    "disabled" : true,
+    "hidden" : true,
     "install_msg" : "Set your API key from https://developer.haloapi.com and access different stats from Halo 5 and Halo Wars 2.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "Halo",

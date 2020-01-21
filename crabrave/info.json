@@ -8,10 +8,10 @@
     "hidden" : false,
     "install_msg" : "This cog requires FFMPEG and moviepy (https://github.com/Zulko/moviepy) to work, please install that before trying. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "CrabRave",

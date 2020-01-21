@@ -8,10 +8,10 @@
     "hidden" : false,
     "install_msg" : "The command group is `[p]stickyroles`. Remember that role names are case sensitive. If a user with the roles you specified with `[p]stickyroles add` leaves the server and comes back those roles will be reapplied to them. Make sure that Red has appropriate permissions.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "stickyroles",

@@ -36,11 +36,6 @@ except ImportError:
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
 
 
 @cog_i18n(_)
@@ -255,7 +250,7 @@ class Hockey(commands.Cog):
                 )
             await asyncio.sleep(60)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(id=payload.channel_id)
         try:

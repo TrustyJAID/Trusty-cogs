@@ -3,18 +3,12 @@ import discord
 from redbot.core import commands, checks, Config
 from redbot.core.utils.chat_formatting import pagify
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
-
 
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
 
     __version__ = "1.1.1"
-    __author__ = "TrustyJAID"
+    __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
         self.bot = bot
@@ -30,6 +24,13 @@ class AdventureAlert(commands.Cog):
         }
         self.config = Config.get_conf(self, 154497072148643840, force_registration=True)
         self.config.register_guild(**default_guild)
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     @commands.group()
     async def dragonalert(self, ctx):
@@ -195,7 +196,7 @@ class AdventureAlert(commands.Cog):
         else:
             await ctx.send(f"{user_id} is not receiving notifications on minibosses.")
 
-    @listener()
+    @commands.Cog.listener()
     async def on_adventure(self, ctx):
         roles = ", ".join(
             f"<@&{rid}>" for rid in await self.config.guild(ctx.guild).adventure_roles()
@@ -211,7 +212,7 @@ class AdventureAlert(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(page)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_adventure_boss(self, ctx):
         roles = ", ".join(
             f"<@&{rid}>" for rid in await self.config.guild(ctx.guild).roles()
@@ -227,7 +228,7 @@ class AdventureAlert(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(page)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_adventure_miniboss(self, ctx):
         roles = ", ".join(
             f"<@&{rid}>" for rid in await self.config.guild(ctx.guild).miniboss_roles()
@@ -243,7 +244,7 @@ class AdventureAlert(commands.Cog):
             for page in pagify(msg):
                 await ctx.send(page)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_adventure_cart(self, ctx):
         roles = ", ".join(
             f"<@&{rid}>" for rid in await self.config.guild(ctx.guild).cart_roles()

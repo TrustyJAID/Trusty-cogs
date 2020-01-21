@@ -78,7 +78,7 @@ class Autorole(commands.Cog):
         except AttributeError:
             return await self.bot.get_embed_colour(channel)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         guild = message.guild
         if not guild:
@@ -156,7 +156,7 @@ class Autorole(commands.Cog):
         for role in roles:
             await member.add_roles(role, reason=_("Joined the server"))
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if await self.config.guild(guild).ENABLED():

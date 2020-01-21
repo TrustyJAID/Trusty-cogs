@@ -4,11 +4,6 @@ from redbot.core.i18n import Translator, cog_i18n
 
 
 _ = Translator("StickyRoles", __file__)
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
 
 
 @cog_i18n(_)
@@ -92,7 +87,7 @@ class StickyRoles(commands.Cog):
             msg = _("No sticky roles. Add some with ") + "`{}stickyroles add`".format(ctx.prefix)
             await ctx.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()
@@ -112,7 +107,7 @@ class StickyRoles(commands.Cog):
         if save:
             await self.config.guild(guild).to_reapply.set(to_reapply)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         guild = member.guild
         sticky_roles = await self.config.guild(guild).sticky_roles()

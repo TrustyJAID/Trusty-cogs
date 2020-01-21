@@ -9,12 +9,6 @@ _ = Translator("EmojiReactions", __file__)
 EMOJI = re.compile(r"(<?(a)?:([0-9a-zA-Z]+):([0-9]+)?>?)")
 UNICODE_RE = re.compile("|".join(rf"{re.escape(w)}" for w in UNICODE_EMOJI.keys()))
 
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
-
 
 @cog_i18n(_)
 class EmojiReactions(commands.Cog):
@@ -95,7 +89,7 @@ class EmojiReactions(commands.Cog):
             msg = _("Okay, I will react to messages " "containing all emojis!")
             await ctx.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message):
         channel = message.channel
         emoji_list = []

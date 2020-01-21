@@ -16,13 +16,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 
 _ = Translator("AddImage", __file__)
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 log = logging.getLogger("red.Trusty-cogs.addimage")
-
-if listener is None:  # thanks Sinbad
-
-    def listener(name=None):
-        return lambda x: x
 
 
 @cog_i18n(_)
@@ -177,7 +171,7 @@ class AddImage(commands.Cog):
         chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message(self, message):
         if len(message.content) < 2 or message.guild is None:
             return

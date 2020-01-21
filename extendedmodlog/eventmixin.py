@@ -13,13 +13,6 @@ from redbot.core.utils.chat_formatting import humanize_list, inline
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-below_red31 = False
-
-if listener is None:  # thanks Sinbad
-    below_red31 = True
-    def listener(name=None):
-        return lambda x: x
 
 
 class CommandPrivs(Converter):
@@ -169,7 +162,7 @@ class EventMixin:
                 raise RuntimeError("No Modlog set")
         return channel
 
-    @listener()
+    @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context):
         guild = ctx.guild
         if guild is None:
@@ -367,7 +360,7 @@ class EventMixin:
             clean_msg = f"{infomessage}\n`{message.clean_content}`"
             await channel.send(clean_msg[:2000])
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         guild_id = payload.guild_id
         if guild_id is None:
@@ -404,7 +397,7 @@ class EventMixin:
                 + _("messages deleted.")
             )
             await channel.send(infomessage)
-        if not below_red31 and settings["bulk_individual"]:
+        if settings["bulk_individual"]:
             for message in payload.cached_messages:
                 payload = discord.RawMessageDeleteEvent(
                     {"id": message.id, "channel_id": channel_id, "guild_id": guild_id}
@@ -501,7 +494,7 @@ class EventMixin:
                     break
         return possible_link
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
         if guild.id not in self.settings:
@@ -552,7 +545,7 @@ class EventMixin:
             )
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         guild = member.guild
         if guild.id not in self.settings:
@@ -651,7 +644,7 @@ class EventMixin:
                 continue
         return p_msg
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_channel_create(self, new_channel):
         guild = new_channel.guild
         if guild.id not in self.settings:
@@ -707,7 +700,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_channel_delete(self, old_channel):
         guild = old_channel.guild
         if guild.id not in self.settings:
@@ -763,7 +756,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         guild = before.guild
         if guild.id not in self.settings:
@@ -900,7 +893,7 @@ class EventMixin:
                 p_msg += f"{p} Set to {change}\n"
         return p_msg
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
         guild = before.guild
         if guild.id not in self.settings:
@@ -971,7 +964,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_role_create(self, role):
         guild = role.guild
         if guild.id not in self.settings:
@@ -1017,7 +1010,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
         guild = role.guild
         if guild.id not in self.settings:
@@ -1063,7 +1056,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         guild = before.guild
         if guild is None:
@@ -1115,7 +1108,7 @@ class EventMixin:
             )
             await channel.send(msg[:2000])
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_update(self, before, after):
         guild = after
         if guild.id not in self.settings:
@@ -1180,7 +1173,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_guild_emojis_update(self, guild, before, after):
         if guild.id not in self.settings:
             return
@@ -1311,7 +1304,7 @@ class EventMixin:
         else:
             await channel.send(msg)
 
-    @listener()
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         guild = member.guild
         if guild.id not in self.settings:
@@ -1407,7 +1400,7 @@ class EventMixin:
         else:
             await channel.send(msg.replace(member.mention, str(member)))
 
-    @listener()
+    @commands.Cog.listener()
     async def on_member_update(self, before, after):
         guild = before.guild
         if guild.id not in self.settings:
