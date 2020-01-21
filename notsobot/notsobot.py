@@ -1207,9 +1207,10 @@ class NotSoBot(commands.Cog):
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         async with ctx.typing():
-            path = str(bundled_data_path(self)) + "/" + self.random(True)
+            path = str(bundled_data_path(self) / self.random(True))
             await self.download(url, path)
             args = [
+                "magick",
                 "convert",
                 "(",
                 path,
