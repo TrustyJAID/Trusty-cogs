@@ -251,7 +251,7 @@ class EventMixin:
             clean_msg = f"{infomessage}\n`{message.clean_content}`"
             await channel.send(clean_msg[:2000])
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="on_raw_message_delete")
     async def on_raw_message_delete_listener(self, payload, *, check_audit_log=True):
         # custom name of method used, because this is only supported in Red 3.1+
         guild_id = payload.guild_id
