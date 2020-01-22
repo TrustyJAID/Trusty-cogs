@@ -8,7 +8,7 @@ class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def __init__(self, bot):
         self.bot = bot

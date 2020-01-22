@@ -77,7 +77,7 @@ class GoogleTranslateAPI:
             self.cache["translations"] = []
             await asyncio.sleep(600)
 
-    async def _get_google_api_key(self) -> None:
+    async def _get_google_api_key(self) -> Optional[str]:
         key = {}
         if not self._key:
             try:
@@ -85,7 +85,8 @@ class GoogleTranslateAPI:
             except AttributeError:
                 # Red 3.1 support
                 key = await self.bot.db.api_tokens.get_raw("google_translate", default={})
-        self._key = key.get("api_key")
+            self._key = key.get("api_key")
+        return self._key
 
     async def _bw_list_cache_update(self, guild: discord.Guild) -> None:
         self.cache["guild_blacklist"][guild.id] = await self.config.guild(guild).blacklist()
