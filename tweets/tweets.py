@@ -57,7 +57,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.4.2"
+    __version__ = "2.5.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -73,9 +73,11 @@ class Tweets(commands.Cog):
             "error_channel": None,
         }
         self.config.register_global(**default_global)
+        self.config.register_channel(custom_embeds=True)
         self.mystream = None
         self.twitter_loop = bot.loop.create_task(self.start_stream())
         self.accounts = {}
+        self.regular_embed_channels = []
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -92,6 +94,10 @@ class Tweets(commands.Cog):
             await self.config.accounts.set(self.accounts)
         else:
             self.accounts = await self.config.accounts()
+        embed_channels = await self.config.all_channels()
+        for c_id, settings in embed_channels.items():
+            if not settings["custom_embeds"]:
+                self.regular_embed_channels.append(c_id)
 
     ###################################################################
     # Here is all the logic for handling tweets and tweet creation
@@ -256,15 +262,25 @@ class Tweets(commands.Cog):
             if channel_send is None:
                 await self.del_account(channel, user_id, username)
                 continue
-            tasks.append(self.post_tweet_status(channel_send, em, status))
+            use_embed = channel_send.id in self.regular_embed_channels
+            tasks.append(self.post_tweet_status(channel_send, em, status, use_embed))
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    async def post_tweet_status(self, channel_send, em, status):
+    async def post_tweet_status(
+        self,
+        channel_send: discord.TextChannel,
+        em: discord.Embed,
+        status: tw.Status,
+        use_custom_embed: bool = True,
+    ):
         username = status.user.screen_name
         post_url = f"https://twitter.com/{status.user.screen_name}/status/{status.id}"
         try:
             if channel_send.permissions_for(channel_send.guild.me).embed_links:
-                await channel_send.send(post_url, embed=em)
+                if use_custom_embed:
+                    await channel_send.send(post_url, embed=em)
+                else:
+                    await channel_send.send(post_url)
             elif channel_send.permissions_for(channel_send.guild.me).manage_webhooks:
                 webhook = None
                 for hook in await channel_send.webhooks():
@@ -273,7 +289,10 @@ class Tweets(commands.Cog):
                 if webhook is None:
                     webhook = await channel_send.create_webhook(name=channel_send.guild.me.name)
                 avatar = status.user.profile_image_url
-                await webhook.send(post_url, username=username, avatar_url=avatar, embed=em)
+                if use_custom_embed:
+                    await webhook.send(post_url, username=username, avatar_url=avatar, embed=em)
+                else:
+                    await webhook.send(post_url, username=username, avatar_url=avatar)
             else:
                 await channel_send.send(post_url)
         except Exception:
@@ -293,7 +312,10 @@ class Tweets(commands.Cog):
         s = post_list[page]
         em = None
         if ctx.channel.permissions_for(ctx.me).embed_links:
-            em = await self.build_tweet_embed(s)
+            if ctx.channel.id not in self.regular_embed_channels:
+                em = await self.build_tweet_embed(s)
+            else:
+                em = None
 
         post_url = "https://twitter.com/{}/status/{}".format(s.user.screen_name, s.id)
         if not message:
@@ -573,6 +595,29 @@ class Tweets(commands.Cog):
             del self.accounts[u_id]
         await self.config.accounts.set(self.accounts)
 
+    @_autotweet.command(name="embeds")
+    async def set_custom_embeds(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
+        """
+            Set a channel to use custom embeds for tweets or discords automatic ones.
+
+            (default is enabled for custom embeds)
+        """
+        current = await self.config.channel(channel).custom_embeds()
+        if current:
+            await self.config.channel(channel).custom_embeds.set(not current)
+            await ctx.send(
+                _("Custom embeds have been disabled in {channel}").format(channel=channel.mention)
+            )
+            if channel.id not in self.regular_embed_channels:
+                self.regular_embed_channels.append(channel.id)
+        else:
+            await self.config.channel(channel).clear()
+            await ctx.send(
+                _("Custom embeds have been enabled in {channel}").format(channel=channel.mention)
+            )
+            if channel.id in self.regular_embed_channels:
+                self.regular_embed_channels.remove(channel.id)
+
     @_autotweet.command(name="restart")
     async def restart_stream(self, ctx: commands.context) -> None:
         """Restarts the twitter stream if any issues occur."""
@@ -719,7 +764,9 @@ class Tweets(commands.Cog):
     def get_tweet_list(self, api: tw.API, owner: str, list_name: str) -> List[int]:
         cursor = -1
         list_members: list = []
-        for member in tw.Cursor(api.list_members, owner_screen_name=owner, slug=list_name, cursor=cursor).items():
+        for member in tw.Cursor(
+            api.list_members, owner_screen_name=owner, slug=list_name, cursor=cursor
+        ).items():
             list_members.append(member)
         return list_members
 
