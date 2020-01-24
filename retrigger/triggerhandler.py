@@ -550,7 +550,7 @@ class TriggerHandler:
                 continue
             if allowed_trigger and (is_auto_mod and is_mod):
                 continue
-            log.debug(f"Checking trigger {trigger.name}")
+            # log.debug(f"Checking trigger {trigger.name}")
             if is_command and not trigger.ignore_commands:
                 continue
 
@@ -655,7 +655,7 @@ class TriggerHandler:
             warning and remove the trigger from trying to run again.
         """
         if await self.config.guild(guild).bypass():
-            log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
+            # log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
             return (True, trigger.regex.findall(content))
         try:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))

@@ -1,4 +1,5 @@
 import discord
+import logging
 
 from redbot.core import commands, checks, Config, modlog
 from redbot.core.utils.chat_formatting import humanize_list
@@ -46,6 +47,7 @@ inv_settings = {
 }
 
 _ = Translator("ExtendedModLog", __file__)
+logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
 
 
 @cog_i18n(_)
@@ -55,7 +57,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.5.2"
+    __version__ = "2.5.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -68,28 +70,21 @@ class ExtendedModLog(EventMixin, commands.Cog):
         all_data = await self.config.all_guilds()
         for guild_id, data in all_data.items():
             guild = discord.Object(id=guild_id)
-            for entry in inv_settings.keys():
-                setting = data[entry]
-                # print(type(setting))
-                if type(setting) == bool:
-                    new_data = {"enabled": setting, "channel": None}
-                    if entry == "commands_used":
-                        new_data["privs"] = ["MOD", "ADMIN", "BOT_OWNER", "GUILD_OWNER"]
-                    await self.config.guild(guild).set_raw(entry, value=new_data)
-                if entry not in ["ignored_channels", "invite_links"]:
-                    if "colour" not in all_data[guild_id][entry]:
-                        all_data[guild_id][entry]["colour"] = None
-                        setting["colour"] = None
-                        await self.config.guild(guild).set_raw(entry, value=setting)
-                    if entry == "user_change" and "bots" not in all_data[guild_id][entry]:
-                        all_data[guild_id][entry]["bots"] = True
-                        await self.config.guild(guild).set_raw(
-                            entry, value=all_data[guild_id][entry]
-                        )
+            for entry, default in inv_settings.items():
                 if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
                     await self.config.guild(guild).set_raw(entry, value=inv_settings[entry])
+                if type(default) == dict:
 
+                    for key, _default in inv_settings[entry].items():
+                        try:
+                            if key not in all_data[guild_id][entry]:
+                                all_data[guild_id][entry] = _default
+                        except TypeError:
+                            # del all_data[guild_id][entry]
+                            logger.error("Somehow your dict was invalid.")
+                            continue
+                    await self.config.guild(guild).set(all_data[guild_id])
 
         self.settings = all_data
 

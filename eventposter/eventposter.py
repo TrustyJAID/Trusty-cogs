@@ -67,7 +67,7 @@ class EventPoster(commands.Cog):
             Checks for reactions to the event
         """
         if str(payload.emoji) not in ReactionPredicate.YES_OR_NO_EMOJIS:
-            log.debug("Not a valid yes or no emoji")
+            # log.debug("Not a valid yes or no emoji")
             return
         if str(payload.guild_id) not in self.event_cache:
             return
@@ -78,10 +78,10 @@ class EventPoster(commands.Cog):
         user = guild.get_member(payload.user_id)
         event = self.event_cache[str(payload.guild_id)][str(payload.message_id)]
         if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-            log.debug("Adding user to event")
+            # log.debug("Adding user to event")
             await self.add_user_to_event(user, event)
         if str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
-            log.debug("Removing user from event")
+            # log.debug("Removing user from event")
             if user == event.hoster:
                 async with self.config.guild(guild).events() as events:
                     event = await Event.from_json(events[str(user.id)], guild)
@@ -165,7 +165,7 @@ class EventPoster(commands.Cog):
         if not max_slots:
 
             max_slots = await self.config.guild(ctx.guild).default_max()
-            log.debug(f"using default {max_slots}")
+            # log.debug(f"using default {max_slots}")
         event = Event(ctx.author, list(member_list), description, max_slots)
         em = await self.make_event_embed(ctx, event)
         admin_msg = await approval_channel.send(embed=em)
