@@ -57,7 +57,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.5.4"
+    __version__ = "2.5.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -77,6 +77,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 if type(default) == dict:
 
                     for key, _default in inv_settings[entry].items():
+                        if not isinstance(all_data[guild_id][entry], dict):
+                            all_data[guild_id][entry] = default
                         try:
                             if key not in all_data[guild_id][entry]:
                                 all_data[guild_id][entry][key] = _default
