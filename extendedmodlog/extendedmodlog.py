@@ -57,7 +57,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Works with core modlogset channel
     """
 
-    __version__ = "2.5.3"
+    __version__ = "2.5.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -79,7 +79,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
                     for key, _default in inv_settings[entry].items():
                         try:
                             if key not in all_data[guild_id][entry]:
-                                all_data[guild_id][entry] = _default
+                                all_data[guild_id][entry][key] = _default
                         except TypeError:
                             # del all_data[guild_id][entry]
                             logger.error("Somehow your dict was invalid.")
