@@ -58,8 +58,8 @@ class EventChooser(Converter):
             "guild_change",
             "emoji_change",
             "commands_used",
-            "invite_create",
-            "invite_delete",
+            "invite_created",
+            "invite_deleted",
         ]
         result = None
         if argument.lower() in options:
