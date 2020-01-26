@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.6.0"
+    __version__ = "2.7.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -85,6 +85,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
             "guild_change": _("Guild changes"),
             "emoji_change": _("Emoji changes"),
             "commands_used": _("Mod/Admin Commands"),
+            "invite_create": _("Invite created"),
+            "invite_delete": _("Invite deleted")
         }
         msg = _("Setting for {guild}\n Modlog Channel {channel}\n\n").format(
             guild=guild.name, channel=modlog_channel
@@ -166,6 +168,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -207,6 +213,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -247,6 +257,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -292,6 +306,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -331,6 +349,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -368,6 +390,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `guild_change`
                 `emoji_change`
                 `commands_used`
+
+                **Requires Red 3.3 and discord.py 1.3**
+                `invite_create`
+                `invite_delete`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
