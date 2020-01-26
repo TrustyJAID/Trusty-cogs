@@ -327,7 +327,7 @@ class EventMixin:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
-            and self.settings[guild.id]["user_change"]["embed"]
+            and self.settings[guild.id]["message_delete"]["embed"]
         )
         time = message.created_at
         perp = None
@@ -342,7 +342,7 @@ class EventMixin:
         author = message.author
         if perp is None:
             infomessage = _(
-                "{emoji} `{time}` A message from {author}(`{a_id}`) was deleted in {channel}"
+                "{emoji} `{time}` A message from **{author}** (`{a_id}`) was deleted in {channel}"
             ).format(
                 emoji=settings["emoji"],
                 time=time.strftime("%H:%M:%S"),
@@ -352,7 +352,8 @@ class EventMixin:
             )
         else:
             infomessage = _(
-                "{emoji} `{time}` {perp} deleted a message from {author} (`{a_id}`) in {channel}"
+                "{emoji} `{time}` {perp} deleted a message from "
+                "**{author}** (`{a_id}`) in {channel}"
             ).format(
                 emoji=settings["emoji"],
                 time=time.strftime("%H:%M:%S"),
@@ -547,7 +548,7 @@ class EventMixin:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
-            and self.settings[guild.id]["user_change"]["embed"]
+            and self.settings[guild.id]["user_join"]["embed"]
         )
         time = datetime.datetime.utcnow()
         users = len(guild.members)
@@ -642,9 +643,9 @@ class EventMixin:
         else:
             time = datetime.datetime.utcnow()
             msg = _(
-                "{emoji} `{time}` **{member}**(`{m_id}`) " "left the guild. Total members: {users}"
+                "{emoji} `{time}` **{member}**(`{m_id}`) left the guild. Total members: {users}"
             ).format(
-                emoji=self.settings[guild.id]["user_leave"]["emoji"],
+                emoji=self.settings[guild.id]["user_left"]["emoji"],
                 time=time.strftime("%H:%M:%S"),
                 member=member,
                 m_id=member.id,
@@ -655,7 +656,7 @@ class EventMixin:
                     "{emoji} `{time}` **{member}**(`{m_id}`) "
                     "was kicked by {perp}. Total members: {users}"
                 ).format(
-                    emoji=self.settings[guild.id]["user_leave"]["emoji"],
+                    emoji=self.settings[guild.id]["user_left"]["emoji"],
                     time=time.strftime("%H:%M:%S"),
                     member=member,
                     m_id=member.id,
@@ -822,7 +823,7 @@ class EventMixin:
             time=time.strftime("%H:%M:%S"),
             chan_type=channel_type,
             perp_msg=perp_msg,
-            channel=f"{old_channel.name} ({old_channel.id})",
+            channel=f"#{old_channel.name} ({old_channel.id})",
         )
         if embed_links:
             await channel.send(embed=embed)
@@ -1016,7 +1017,7 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description=after.mention, colour=after.colour, timestamp=time)
-        msg = _("{emoji} `{time}` Updated role {role}\n").format(
+        msg = _("{emoji} `{time}` Updated role **{role}**\n").format(
             emoji=self.settings[guild.id]["role_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=before.name,
@@ -1101,7 +1102,7 @@ class EventMixin:
             timestamp=time,
         )
         embed.set_author(
-            name=_("Role created {role} ({r_id})").format(role=role.name, r_id=role.id)
+            name=_("Role created **{role}** (`{r_id}`)").format(role=role.name, r_id=role.id)
         )
         msg = _("{emoji} `{time}` Role created {role}\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
@@ -1154,8 +1155,10 @@ class EventMixin:
             timestamp=time,
             colour=await self.get_event_colour(guild, "role_delete"),
         )
-        embed.set_author(name=_("Role deleted {role} ({r_id})").format(role=role.name, r_id=role.id))
-        msg = _("{emoji} `{time}` Role deleted {role}\n").format(
+        embed.set_author(
+            name=_("Role deleted **{role}** (`{r_id}`)").format(role=role.name, r_id=role.id)
+        )
+        msg = _("{emoji} `{time}` Role deleted **{role}**\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=role.name,
@@ -1479,7 +1482,7 @@ class EventMixin:
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "voice_change"),
         )
-        msg = _("{emoji} `{time}` Updated Voice State for {member} (`{m_id}`)").format(
+        msg = _("{emoji} `{time}` Updated Voice State for **{member}** (`{m_id}`)").format(
             emoji=self.settings[guild.id]["voice_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             member=member,
@@ -1577,7 +1580,7 @@ class EventMixin:
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "user_change")
         )
-        msg = _("{emoji} `{time}` Member updated {member} (`{m_id}`)").format(
+        msg = _("{emoji} `{time}` Member updated **{member}** (`{m_id}`)\n").format(
             emoji=self.settings[guild.id]["user_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             member=before,
