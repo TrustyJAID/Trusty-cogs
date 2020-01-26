@@ -1219,7 +1219,7 @@ class EventMixin:
                 "{emoji} `{time}` **{author}** (`{a_id}`) edited a message "
                 "in {channel}.\nBefore:\n> {before}\nAfter:\n> {after}"
             ).format(
-                emoji=self.settings["message_edit"]["emoji"],
+                emoji=self.settings[guild.id]["message_edit"]["emoji"],
                 time=time.strftime(fmt),
                 author=before.author,
                 a_id=before.author.id,
@@ -1480,7 +1480,7 @@ class EventMixin:
             timestamp=time, colour=await self.get_event_colour(guild, "voice_change"),
         )
         msg = _("{emoji} `{time}` Updated Voice State for {member} (`{m_id}`)").format(
-            emoji=self.settings["voice_change"]["emoji"],
+            emoji=self.settings[guild.id]["voice_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             member=member,
             m_id=member.id,
