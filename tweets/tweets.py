@@ -57,7 +57,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -262,7 +262,12 @@ class Tweets(commands.Cog):
             if channel_send is None:
                 await self.del_account(channel, user_id, username)
                 continue
-            use_embed = channel_send.id in self.regular_embed_channels
+            chan_perms = channel_send.permissions_for(channel_send.guild.me)
+            if not chan_perms.send_messages and not chan_perms.manage_webhooks:
+                # remove channels we don't have permission to send in
+                await self.del_account(channel, user_id, username)
+                continue
+            use_embed = channel_send.id not in self.regular_embed_channels
             tasks.append(self.post_tweet_status(channel_send, em, status, use_embed))
         await asyncio.gather(*tasks, return_exceptions=True)
 
