@@ -31,7 +31,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1147,6 +1147,12 @@ class ServerStats(commands.Cog):
                 await ctx.send(_("Leaving {guild}.").format(guild=guild.name))
                 await guild.leave()
             except Exception:
+                log.error(
+                    _("I couldn't leave {guild} ({g_id}).").format(
+                        guild=guild.name, g_id=guild.id
+                    ),
+                    exc_info=True,
+                )
                 await ctx.send(_("I couldn't leave {guild}.").format(guild=guild.name))
         else:
             await ctx.send(_("Okay, not leaving {guild}.").format(guild=guild.name))
