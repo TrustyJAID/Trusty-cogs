@@ -16,7 +16,7 @@ log = logging.getLogger("red.trusty-cogs.EventPoster")
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.4.1"
+    __version__ = "1.4.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -396,14 +396,23 @@ class EventPoster(commands.Cog):
     async def set_channel(
         self, ctx: commands.Context, channel: discord.TextChannel = None
     ) -> None:
-        """Set the Announcement channel for events"""
+        """
+            Set the Announcement channel for events
+
+            Providing no channel will clear the channel.
+        """
         if channel and not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send("I require `Embed Links` permission to use that channel.")
         save_channel = None
+        reply = "Announcement channel "
         if channel:
             save_channel = channel.id
-        await self.config.guild(ctx.guild).announcement_channel.set(save_channel)
-        await ctx.tick()
+            reply += "set to {chan}".format(chan=channel.mention)
+            await self.config.guild(ctx.guild).announcement_channel.set(save_channel)
+        else:
+            reply += "cleared."
+            await self.config.guild(ctx.guild).announcement_channel.clear()
+        await ctx.send(reply)
 
     @event_settings.command(name="approvalchannel")
     @checks.mod_or_permissions(manage_messages=True)
@@ -411,16 +420,26 @@ class EventPoster(commands.Cog):
     async def set_approval_channel(
         self, ctx: commands.Context, channel: discord.TextChannel = None
     ) -> None:
-        """Set the admin approval channel"""
+        """
+            Set the admin approval channel
+
+            Providing no channel will clear the channel.
+        """
         if channel and not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send("I require `Embed Links` permission to use that channel.")
         if channel and not channel.permissions_for(ctx.me).add_reactions:
             return await ctx.send("I require `Add Reactions` permission to use that channel.")
         save_channel = None
+        reply = "Admin approval channel "
         if channel:
             save_channel = channel.id
-        await self.config.guild(ctx.guild).approval_channel.set(save_channel)
-        await ctx.tick()
+            reply += "set to {chan}.".format(chan=channel.mention)
+            await self.config.guild(ctx.guild).approval_channel.set(save_channel)
+        else:
+            await self.config.guild(ctx.guild).approval_channel.clear()
+            reply += "cleared."
+
+        await ctx.send(reply)
 
     @event_settings.command(name="links")
     @checks.mod_or_permissions(manage_messages=True)
