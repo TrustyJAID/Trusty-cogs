@@ -21,6 +21,6 @@
     "required_cogs" : [],
     "requirements" : [],
     "short" : "ExtendedModLog, track changes made in the server.",
-    "tags" : [],
+    "tags" : ["mod", "logs", "modlogs"],
     "type" : "COG"
 }
