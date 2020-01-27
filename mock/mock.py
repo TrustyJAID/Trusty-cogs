@@ -8,7 +8,7 @@ class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -78,7 +78,7 @@ class Mock(commands.Cog):
             result = await self.cap_change(total_msg)
             author = msg
         else:
-            result = await self.cap_change(str(msg))
+            result = await self.cap_change(str(search_msg.content))
             author = ctx.message.author
         time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
