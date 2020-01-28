@@ -113,7 +113,7 @@ class EventMixin:
             "emoji_change": discord.Colour.gold(),
             "commands_used": cmd_colour,
             "invite_create": discord.Colour.blurple(),
-            "invite_delete": discord.Colour.blurple()
+            "invite_delete": discord.Colour.blurple(),
         }
         colour = defaults[event_type]
         if self.settings[guild.id][event_type]["colour"] is not None:
@@ -254,7 +254,9 @@ class EventMixin:
             embed.add_field(name=_("Can Run"), value=str(can_run))
             embed.add_field(name=_("Required Role"), value=role)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
-            author_title = name + _(" - Used a Command")
+            author_title = _("{member} ({m_id})- Used a Command").format(
+                member=message.author, m_id=message.author.id
+            )
             embed.set_author(name=author_title, icon_url=message.author.avatar_url)
             await channel.send(embed=embed)
         else:
@@ -379,7 +381,8 @@ class EventMixin:
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
-                name=str(author) + _(" - Deleted Message"), icon_url=str(message.author.avatar_url)
+                name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
+                icon_url=str(message.author.avatar_url),
             )
             await channel.send(embed=embed)
         else:
@@ -560,7 +563,6 @@ class EventMixin:
 
         possible_link = await self.get_invite_link(guild)
         if embed_links:
-            name = member
             embed = discord.Embed(
                 description=member.mention,
                 colour=await self.get_event_colour(guild, "user_join"),
@@ -570,7 +572,9 @@ class EventMixin:
             embed.add_field(name=_("Account created on:"), value=created_on)
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
-                name=name.display_name + _(" has joined the guild"),
+                name=_("{member} ({m_id}) has joined the guild").format(
+                    member=member, m_id=member.id
+                ),
                 url=member.avatar_url,
                 icon_url=member.avatar_url,
             )
@@ -634,7 +638,9 @@ class EventMixin:
                 embed.add_field(name=_("Reason"), value=str(reason))
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
-                name=str(member) + _(" has left the guild"),
+                name=_("{member} ({m_id}) has left the guild").format(
+                    member=member, m_id=member.id
+                ),
                 url=member.avatar_url,
                 icon_url=member.avatar_url,
             )
@@ -735,7 +741,9 @@ class EventMixin:
             colour=await self.get_event_colour(guild, "channel_create"),
         )
         embed.set_author(
-            name=channel_type + _(" Channel Created ") + f"{new_channel.name} ({new_channel.id})"
+            name=_("{chan_type} Channel Created {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=new_channel.name, chan_id=new_channel.id
+            )
         )
         # msg = _("Channel Created ") + str(new_channel.id) + "\n"
         perp = None
@@ -798,7 +806,9 @@ class EventMixin:
             colour=await self.get_event_colour(guild, "channel_delete"),
         )
         embed.set_author(
-            name=channel_type + _(" Channel Deleted ") + f"{old_channel.name} ({old_channel.id}"
+            name=_("{chan_type} Channel Deleted {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=old_channel.name, chan_id=old_channel.id
+            )
         )
         perp = None
         reason = None
@@ -859,8 +869,9 @@ class EventMixin:
             colour=await self.get_event_colour(guild, "channel_create"),
         )
         embed.set_author(
-            name=channel_type
-            + _(" Channel Updated {channel} ({c_id})").format(channel=before.name, c_id=before.id)
+            name=_("{chan_type} Channel Updated {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=before.name, chan_id=before.id
+            )
         )
         msg = _("{emoji} `{time}` Updated channel {channel}\n").format(
             emoji=self.settings[guild.id]["channel_change"]["emoji"],
@@ -1102,7 +1113,7 @@ class EventMixin:
             timestamp=time,
         )
         embed.set_author(
-            name=_("Role created **{role}** (`{r_id}`)").format(role=role.name, r_id=role.id)
+            name=_("Role created {role} ({r_id})").format(role=role.name, r_id=role.id)
         )
         msg = _("{emoji} `{time}` Role created {role}\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
@@ -1156,7 +1167,7 @@ class EventMixin:
             colour=await self.get_event_colour(guild, "role_delete"),
         )
         embed.set_author(
-            name=_("Role deleted **{role}** (`{r_id}`)").format(role=role.name, r_id=role.id)
+            name=_("Role deleted {role} ({r_id})").format(role=role.name, r_id=role.id)
         )
         msg = _("{emoji} `{time}` Role deleted **{role}**\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
@@ -1205,7 +1216,6 @@ class EventMixin:
         fmt = "%H:%M:%S"
         if embed_links:
             name = before.author
-            name = " ~ ".join((name.name, name.nick)) if name.nick else name.name
             embed = discord.Embed(
                 description=before.content,
                 colour=await self.get_event_colour(guild, "message_edit"),
@@ -1215,7 +1225,12 @@ class EventMixin:
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
-            embed.set_author(name=name + _(" - Edited Message"), icon_url=before.author.avatar_url)
+            embed.set_author(
+                name=_("{member} ({m_id}) - Edited Message").format(
+                    member=before.author, m_id=before.author.id
+                ),
+                icon_url=str(before.author.avatar_url),
+            )
             await channel.send(embed=embed)
         else:
             msg = _(
@@ -1255,7 +1270,7 @@ class EventMixin:
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "guild_change")
         )
-        embed.set_author(name=_("Updated Guild ") + str(before.id), icon_url=str(guild.icon_url))
+        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon_url))
         embed.set_thumbnail(url=str(guild.icon_url))
         msg = _("{emoji} `{time}` Guild updated\n").format(
             emoji=self.settings[guild.id]["guild_change"]["emoji"], time=time.strftime("%H:%M:%S"),
@@ -1488,7 +1503,9 @@ class EventMixin:
             member=member,
             m_id=member.id,
         )
-        embed.set_author(name=msg)
+        embed.set_author(
+            name=_("{member} ({m_id}) Voice State Update").format(member=member, m_id=member.id)
+        )
         change_type = None
         worth_updating = False
         if before.deaf != after.deaf:
@@ -1586,8 +1603,8 @@ class EventMixin:
             member=before,
             m_id=before.id,
         )
-        org_len = len(msg)
-        embed.set_author(name=msg, icon_url=before.avatar_url)
+        emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
+        embed.set_author(name=emb_msg, icon_url=before.avatar_url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
         reason = None
@@ -1666,15 +1683,14 @@ class EventMixin:
             "code": _("Code:"),
             "inviter": _("Inviter:"),
             "channel": _("Channel:"),
-            "max_uses": _("Max Uses:")
+            "max_uses": _("Max Uses:"),
         }
         msg = _("{emoji} `{time}` Invite created ").format(
             emoji=self.settings[guild.id]["invite_create"]["emoji"],
-            time=invite.created_at.strftime("%H:%M:%S")
+            time=invite.created_at.strftime("%H:%M:%S"),
         )
         embed = discord.Embed(
-            title=_("Invite Created"),
-            colour=await self.get_event_colour(guild, "invite_create")
+            title=_("Invite Created"), colour=await self.get_event_colour(guild, "invite_create")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
@@ -1713,15 +1729,14 @@ class EventMixin:
             "inviter": _("Inviter: "),
             "channel": _("Channel: "),
             "max_uses": _("Max Uses: "),
-            "uses": _("Used: ")
+            "uses": _("Used: "),
         }
         msg = _("{emoji} `{time}` Invite deleted ").format(
             emoji=self.settings[guild.id]["invite_delete"]["emoji"],
-            time=invite.created_at.strftime("%H:%M:%S")
+            time=invite.created_at.strftime("%H:%M:%S"),
         )
         embed = discord.Embed(
-            title=_("Invite Deleted"),
-            colour=await self.get_event_colour(guild, "invite_delete")
+            title=_("Invite Deleted"), colour=await self.get_event_colour(guild, "invite_delete")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
