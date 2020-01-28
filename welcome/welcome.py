@@ -81,7 +81,7 @@ class Welcome(Events, commands.Cog):
     async def group_welcome(self) -> None:
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            log.debug("Checking for new welcomes")
+            # log.debug("Checking for new welcomes")
             for guild_id, members in self.joined.items():
                 await self.send_member_join(members, self.bot.get_guild(guild_id))
             self.joined = {}

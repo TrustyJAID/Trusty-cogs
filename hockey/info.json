@@ -2,7 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "description" : "Gather hockey information from nhl.com and display in discord.",
+    "description" : "A cog to gather hockey scores, schedules, player data and more!",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",

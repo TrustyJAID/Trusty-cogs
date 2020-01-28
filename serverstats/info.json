@@ -3,7 +3,7 @@
         "TrustyJAID",
         "Preda"
     ],
-    "description" : "Get information about servers the bot is on.",
+    "description" : "A plethora of potentially useful commands for any bot owner. Includes a way to track the bot joining new servers, find cheaters on global economies, get user avatars and even larger emojis.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Use `[p]setguildjoin` to set a channel to see all new servers the bot is added to and some information about them.",
@@ -25,7 +25,7 @@
         "pytz",
         "python-dateutil"
     ],
-    "short" : "Get various stats about servers the bot is on.",
+    "short" : "A plethora of potentially useful commands for any bot owner.",
     "tags" : [
         "stats"
     ],

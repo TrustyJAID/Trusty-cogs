@@ -2,7 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "description" : "Get your Tarot reading done!",
+    "description" : "Find your tarot reading, your life reading, or pull a random tarot card!",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Usage: `[p]tarot life` `[p]tarot reading` `[p]tarot card`",

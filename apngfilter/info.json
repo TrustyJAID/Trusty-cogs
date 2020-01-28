@@ -4,7 +4,7 @@
         "Sinbad",
         "Soulrift"
     ],
-    "description" : "Toggle APNG message automatic deletion.",
+    "description" : "Automatically filter animated PNG's.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Do `[p]apngfilter` to toggle servers automatically deleting APNG files.",
@@ -21,7 +21,7 @@
     ],
     "required_cogs" : [],
     "requirements" : [],
-    "short" : "Toggle APNG message automatic deletion.",
+    "short" : "Automatically filter animated PNG's.",
     "tags" : [
         "utility"
     ],

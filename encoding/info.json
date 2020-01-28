@@ -2,7 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "description" : "DNA and binary encoding/decoding and hashing of messages",
+    "description" : "Encode messages into various types of encoding. Encoding types include: DNA, binary, Caeser cipher, hex, base 64, character, and braille.",
     "disabled" : false,
     "hidden" : false,
     "install_msg" : "Do `[p]encode`, `[p]decode` or `[p]help hash` to see available commands.",
@@ -17,7 +17,7 @@
     "permissions" : [],
     "required_cogs" : [],
     "requirements" : [],
-    "short" : "Encode or decode different ways.",
+    "short" : "Encode messages into various types of encoding.",
     "tags" : [
         "encoding",
         "rot",
