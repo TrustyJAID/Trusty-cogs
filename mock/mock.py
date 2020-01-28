@@ -8,7 +8,7 @@ class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -60,11 +60,10 @@ class Mock(commands.Cog):
                 return
             except discord.errors.Forbidden:
                 return
-        elif msg is None:
-            async for message in send_channel.history(limit=2):
-                search_msg = message
-            author = search_msg.author
-        if type(msg) is discord.Message:
+        elif type(msg) is str:
+            result = await self.cap_change(str(msg))
+            author = ctx.message.author
+        elif type(msg) is discord.Message:
             result = await self.cap_change(search_msg.content)
             if result == "" and len(search_msg.embeds) != 0:
                 if search_msg.embeds[0].description != discord.Embed.Empty:
@@ -78,8 +77,10 @@ class Mock(commands.Cog):
             result = await self.cap_change(total_msg)
             author = msg
         else:
-            result = await self.cap_change(str(search_msg.content))
-            author = ctx.message.author
+            async for message in send_channel.history(limit=2):
+                search_msg = message
+            author = search_msg.author
+            result = await self.cap_change(search_msg.content)
         time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
         embed.colour = author.colour if hasattr(author, "colour") else discord.Colour.default()
