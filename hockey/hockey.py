@@ -44,7 +44,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.3"
+    __version__ = "2.8.4"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1119,7 +1119,7 @@ class Hockey(commands.Cog):
         async with self.pickems_save_lock:
             log.debug("Locking save")
             await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
-            await self.initialize_pickems()
+            # await self.initialize_pickems()
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
     @hockeyset_commands.command(name="toggleautopickems")

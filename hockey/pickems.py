@@ -154,13 +154,13 @@ class Pickems:
             log.debug("creating new pickems")
             return True
         else:
-            del pickems[old_name]
+            # del pickems[old_name]
             # old_pickem["message"].append(message.id)
             # old_pickem["channel"].append(channel.id)
             old_pickem.message.append(message.id)
             old_pickem.channel.append(message.id)
             pickems[old_name] = old_pickem
-            bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
+            # bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             log.debug("using old pickems")
             return False
 
