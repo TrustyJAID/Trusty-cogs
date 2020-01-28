@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.7.4"
+    __version__ = "2.7.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -170,8 +170,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -215,8 +215,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -259,8 +259,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -308,8 +308,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -351,8 +351,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
@@ -392,8 +392,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `commands_used`
 
                 **Requires Red 3.3 and discord.py 1.3**
-                `invite_create`
-                `invite_delete`
+                `invite_created`
+                `invite_deleted`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
