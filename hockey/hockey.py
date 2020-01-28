@@ -43,7 +43,8 @@ class Hockey(commands.Cog):
     """
         Gather information and post goal updates for NHL hockey teams
     """
-    __version__ = "2.8.2"
+
+    __version__ = "2.8.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -77,7 +78,7 @@ class Hockey(commands.Cog):
         default_channel = {
             "team": [],
             "game_states": ["Preview", "Live", "Final", "Goal"],
-            "to_delete": False
+            "to_delete": False,
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
@@ -89,6 +90,7 @@ class Hockey(commands.Cog):
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
+        self.pickems_save_lock = asyncio.Lock()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -212,8 +214,10 @@ class Hockey(commands.Cog):
                             continue
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
-
-                    await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+                    async with self.pickems_save_lock:
+                        await Pickems.create_weekly_pickems_pages(
+                            self.bot, guilds_to_make_new_pickems, Game
+                        )
 
                 except Exception:
                     log.error(_("Error creating new weekly pickems pages"), exc_info=True)
@@ -245,9 +249,11 @@ class Hockey(commands.Cog):
         while self.save_pickems:
             for guild_id, pickems in self.all_pickems.items():
                 guild_obj = discord.Object(id=int(guild_id))
-                await self.config.guild(guild_obj).pickems.set(
-                    {name: p.to_json() for name, p in pickems.items()}
-                )
+                async with self.pickems_save_lock:
+                    log.debug("Saving pickems data")
+                    await self.config.guild(guild_obj).pickems.set(
+                        {name: p.to_json() for name, p in pickems.items()}
+                    )
             await asyncio.sleep(60)
 
     @commands.Cog.listener()
@@ -423,9 +429,9 @@ class Hockey(commands.Cog):
                         )
 
             notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
-                    game_start=await self.config.guild(guild).game_state_notifications(),
-                    goals=await self.config.guild(guild).goal_notifications()
-                )
+                game_start=await self.config.guild(guild).game_state_notifications(),
+                goals=await self.config.guild(guild).goal_notifications(),
+            )
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=guild.name + _(" Hockey Settings"))
                 em.colour = await self.get_colour(ctx.channel)
@@ -433,10 +439,7 @@ class Hockey(commands.Cog):
                 em.add_field(
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
-                em.add_field(
-                        name=_("Notifications"),
-                        value=notification_settings
-                    )
+                em.add_field(name=_("Notifications"), value=notification_settings)
                 await ctx.send(embed=em)
             else:
                 msg = (
@@ -550,9 +553,7 @@ class Hockey(commands.Cog):
         """
         await self.config.guild(ctx.guild).gdc_state_updates.set(list(set(state)))
         await ctx.send(
-            _("GDC game updates set to {states}").format(
-                states=humanize_list(list(set(state)))
-            )
+            _("GDC game updates set to {states}").format(states=humanize_list(list(set(state))))
         )
 
     @gdc.command(name="create")
@@ -814,8 +815,7 @@ class Hockey(commands.Cog):
         await self.config.channel(channel).game_states.set(list(set(state)))
         await ctx.send(
             _("{channel} game updates set to {states}").format(
-                channel=channel.mention,
-                states=humanize_list(list(set(state)))
+                channel=channel.mention, states=humanize_list(list(set(state)))
             )
         )
         if not await self.config.channel(channel).team():
@@ -1116,9 +1116,10 @@ class Hockey(commands.Cog):
             return
 
         await self.config.guild(ctx.guild).pickems_category.set(category.id)
-
-        await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
-        await self.initialize_pickems()
+        async with self.pickems_save_lock:
+            log.debug("Locking save")
+            await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
+            await self.initialize_pickems()
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
     @hockeyset_commands.command(name="toggleautopickems")
@@ -1175,7 +1176,7 @@ class Hockey(commands.Cog):
                     f"#{count}. {member_mention}: {losses}/{total} incorrect ({percent:.4}%)\n"
                 )
             count += 1
-        leaderboard_list = [msg_list[i: i + 10] for i in range(0, len(msg_list), 10)]
+        leaderboard_list = [msg_list[i : i + 10] for i in range(0, len(msg_list), 10)]
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
