@@ -40,7 +40,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Tarot | **1.0.0** | <details><summary>Find your tarot reading, your life reading, or pull a random tarot card!</summary> Search for specific tarot cards. </details> |
 | APNGFilter | **1.0.1** | <details><summary>Automatically filter animated PNG's.</summary>Also works with linked animated PNG's.</details> |
 | CrabRave | **1.0.0** | <details><summary>Create your very own Crab Rave videos with custom text!</summary>This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.</details> |
-| Fenrir | **1.0.2** | <details><summary>Create reaction messages to kick or ban users!</summary>https://tenor.com/view/order66-gif-9116581</details> |
+| Fenrir | **1.0.3** | <details><summary>Create reaction messages to kick or ban users!</summary>https://tenor.com/view/order66-gif-9116581</details> |
 | Elements | **1.0.2** | <details><summary>Get a plethora of information about elements on the periodic table.</summary>Do `[p]element <name|number|symbol>` to see info about the element. do `[p]ptable` to get a menu of all elements on the periodic table. NOTE: The mendeleev package is not currently installable on windows.</details> |
 | Twitch | **1.1.0** | <details><summary>Get notified of new twitch followers and get basic profile info.</summary></details> |
 

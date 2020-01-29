@@ -9,7 +9,7 @@ class Fenrir(commands.Cog):
         Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -130,7 +130,7 @@ class Fenrir(commands.Cog):
             if await self.is_mod_or_admin(member):
                 return
             try:
-                await member.ban(reason="They asked for it.")
+                await member.ban(reason="They asked for it.", delete_message_days=0)
             except Exception:
                 return
         if payload.message_id in self.mutes:
@@ -155,15 +155,21 @@ class Fenrir(commands.Cog):
             if member.bot:
                 return
             channel = guild.get_channel(payload.channel_id)
-            msg = await channel.get_message(payload.message_id)
+            try:
+                msg = await channel.fetch_message(payload.message_id)
+            except AttributeError:
+                msg = await channel.get_message(payload.message_id)
+            except Exception:
+                return
             ctx = await self.bot.get_context(msg)
             if await self.is_mod_or_admin(member) or str(payload.emoji) == "🐶":
                 try:
-                    compliment = self.bot.get_cog("Compliment").compliment
+                    compliment = self.bot.get_command("compliment")
                 except AttributeError:
-                    compliment = self.bot.get_cog("Insult").insult
-                await ctx.invoke(compliment, user=member)
+                    compliment = self.bot.get_command("insult")
+                if compliment:
+                    await ctx.invoke(compliment, user=member)
             else:
-                insult = self.bot.get_cog("Insult").insult
+                insult = self.bot.get_command("insult")
                 await ctx.invoke(insult, user=member)
             self.feedback[payload.message_id].append(member.id)
