@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.7.5"
+    __version__ = "2.7.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -173,6 +173,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         if colour:
@@ -218,6 +220,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
@@ -262,6 +266,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         if isinstance(emoji, str):
@@ -311,6 +317,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
@@ -354,6 +362,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
@@ -395,6 +405,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
                 `invite_created`
                 `invite_deleted`
         """
+        if len(events) == 0:
+            return await ctx.send(_("You must provide which events should be included."))
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
