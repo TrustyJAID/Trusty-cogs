@@ -3,7 +3,7 @@ from redbot.core import commands
 import datetime
 import aiohttp
 import re
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 
 class Conversions(commands.Cog):
@@ -13,7 +13,7 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -125,6 +125,13 @@ class Conversions(commands.Cog):
         else:
             await ctx.send(embed=embed)
 
+    async def get_header(self) -> Optional[Dict[str, str]]:
+        api_key = (await self.bot.get_shared_api_tokens("coinmarketcap")).get("api_key")
+        if api_key:
+            return {"X-CMC_PRO_API_KEY": api_key}
+        else:
+            return None
+
     @commands.command(aliases=["bitcoin-cash", "BCH"])
     async def bch(
         self,
@@ -153,7 +160,7 @@ class Conversions(commands.Cog):
     async def checkcoins(self, base: str) -> Optional[str]:
         link = "https://api.coinmarketcap.com/v2/ticker/"
         async with aiohttp.ClientSession() as session:
-            async with session.get(link) as resp:
+            async with session.get(link, headers=await self.get_header()) as resp:
                 data = await resp.json()
         for coin in data["data"]:
             if (
@@ -174,7 +181,7 @@ class Conversions(commands.Cog):
         coin_list = []
         if coins is None:
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://api.coinmarketcap.com/v2/ticker/") as resp:
+                async with session.get("https://api.coinmarketcap.com/v2/ticker/", headers=await self.get_header()) as resp:
                     data = await resp.json()
             for coin in data["data"]:
                 coin_list.append(data["data"][coin])
@@ -319,9 +326,12 @@ class Conversions(commands.Cog):
             `ammount` must be a number of ounces to convert defaults to 1 ounce
             `[currency]` must be a valid currency defaults to USD
         """
-        GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
+        GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key="
+        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
+        if not api_key:
+            return await ctx.send("The bot owner needs to supply an API key for this to work.")
         async with aiohttp.ClientSession() as session:
-            async with session.get(GOLD.format(currency.upper())) as resp:
+            async with session.get(GOLD.format(currency.upper(), api_key)) as resp:
                 data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         msg = "{0} oz of Gold is {1:,.2f} {2}".format(ammount, price, currency.upper())
@@ -344,10 +354,13 @@ class Conversions(commands.Cog):
             `[currency]` must be a valid currency defaults to USD
         """
         SILVER = (
-            "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key=EKvr5W-sJUFVSevcpk4v"
+            "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key={}"
         )
+        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
+        if not api_key:
+            return await ctx.send("The bot owner needs to supply an API key for this to work.")
         async with aiohttp.ClientSession() as session:
-            async with session.get(SILVER) as resp:
+            async with session.get(SILVER.format(api_key)) as resp:
                 data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         if currency != "USD":
@@ -371,9 +384,12 @@ class Conversions(commands.Cog):
             `[ammount]` must be a number of ounces to convert defaults to 1 ounce
             `[currency]` must be a valid currency defaults to USD
         """
-        PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key=EKvr5W-sJUFVSevcpk4v"
+        PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key={}"
+        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
+        if not api_key:
+            return await ctx.send("The bot owner needs to supply an API key for this to work.")
         async with aiohttp.ClientSession() as session:
-            async with session.get(PLATINUM) as resp:
+            async with session.get(PLATINUM.format(api_key)) as resp:
                 data = await resp.json()
         price = (data["dataset"]["data"][0][1]) * ammount
         if currency != "USD":
@@ -397,23 +413,41 @@ class Conversions(commands.Cog):
             `<ticker>` is the ticker symbol you want to look up
             `[currency]` is the currency you want to convert to defaults to USD
         """
-        stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key=EKvr5W-sJUFVSevcpk4v"
+        stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key={}"
+        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
+        if not api_key:
+            return await ctx.send("The bot owner needs to supply an API key for this to work.")
         async with aiohttp.ClientSession() as session:
-            async with session.get(stock.format(ticker.upper())) as resp:
+            async with session.get(stock.format(ticker.upper(), api_key)) as resp:
                 data = await resp.json()
         if "quandl_error" in data:
             return await ctx.send(data["quandl_error"]["message"])
-        convertrate = 1
+        convertrate: float = 1.0
         if currency != "USD":
-            convertrate = self.conversionrate("USD", currency.upper())
+            maybe_convert = await self.conversionrate("USD", currency.upper())
+            if maybe_convert:
+                convertrate = maybe_convert
         price = (data["dataset"]["data"][0][1]) * convertrate
         msg = "{0} is {1:,.2f} {2}".format(ticker.upper(), price, currency.upper())
-        embed = discord.Embed(descirption="Stock Price", colour=discord.Colour.lighter_grey())
+        embed = discord.Embed(description="Stock Price", colour=discord.Colour.lighter_grey())
         embed.add_field(name=ticker.upper(), value=msg)
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(msg)
         else:
             await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.is_owner()
+    async def stockapi(self, ctx: commands.Context) -> None:
+        """
+            Instructions for how to setup the stock API
+        """
+        msg = (
+            "1. Go to https://www.quandl.com/ sign up for an account.\n"
+            "2. In account settings grab your API Key and enter it with:\n"
+            f"`{ctx.prefix}set api quandl api_key YOUR_KEY_HERE`"
+        )
+        await ctx.maybe_send_embed(msg)
 
     @commands.command(aliases=["currency"])
     async def convertcurrency(
