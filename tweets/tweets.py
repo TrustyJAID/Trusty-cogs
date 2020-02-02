@@ -57,7 +57,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -75,7 +75,8 @@ class Tweets(commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_channel(custom_embeds=True)
         self.mystream = None
-        self.twitter_loop = bot.loop.create_task(self.start_stream())
+        self.run_stream = True
+        self.twitter_loop = self.bot.loop.create_task(self.start_stream())
         self.accounts = {}
         self.regular_embed_channels = []
 
@@ -107,32 +108,29 @@ class Tweets(commands.Cog):
         api = None
         base_sleep = 300
         count = 1
-        while self is self.bot.get_cog("Tweets"):
+        while self.run_stream:
             if not await self.config.api.consumer_key():
                 # Don't run the loop until tokens are set
                 await asyncio.sleep(base_sleep)
                 continue
-            tweet_list = list(await self.config.accounts())
+            tweet_list = list(self.accounts)
             if not tweet_list:
                 await asyncio.sleep(base_sleep)
                 continue
             if not api:
                 api = await self.authenticate()
-            try:
-                if not getattr(self.mystream, "running"):
-                    count += 1
-                    await self._start_stream(tweet_list, api)
-            except AttributeError:
-                try:
-                    await self._start_stream(tweet_list, api)
-                except Exception:
-                    pass
+            if self.mystream is None:
+                await self._start_stream(tweet_list, api)
+            elif self.mystream and not getattr(self.mystream, "running"):
+                count += 1
+                await self._start_stream(tweet_list, api)
+            log.debug(f"tweets waiting {base_sleep * count} seconds.")
             await asyncio.sleep(base_sleep * count)
 
     async def _start_stream(self, tweet_list: list, api: tw.API) -> None:
         try:
             stream_start = TweetListener(api, self.bot)
-            self.mystream = tw.Stream(api.auth, stream_start, chunk_size=1024, timeout=900.0)
+            self.mystream = tw.Stream(api.auth, stream_start, daemon=True)
             fake_task = functools.partial(self.mystream.filter, follow=tweet_list, is_async=True)
             task = self.bot.loop.run_in_executor(None, fake_task)
             try:
@@ -981,8 +979,17 @@ class Tweets(commands.Cog):
         await ctx.send(_("Set the access credentials!"))
 
     def cog_unload(self):
-        if self.mystream is not None:
-            self.mystream.disconnect()
+        log.debug("Unloading tweets...")
         self.twitter_loop.cancel()
+        log.debug("Twitter restart loop canceled.")
+        self.run_stream = False
+        if self.mystream is not None:
+            log.debug("Twitter stream is running, trying to stop.")
+            self.mystream.disconnect()
+            self.mystream = None
+            log.debug("Twitter stream disconnected.")
+        log.debug("Tweets unloaded.")
 
     __unload = cog_unload
+
+    __del__ = cog_unload
