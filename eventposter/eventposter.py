@@ -16,7 +16,7 @@ log = logging.getLogger("red.trusty-cogs.EventPoster")
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.4.2"
+    __version__ = "1.4.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -76,6 +76,8 @@ class EventPoster(commands.Cog):
 
         guild = self.bot.get_guild(payload.guild_id)
         user = guild.get_member(payload.user_id)
+        if user.bot:
+            return
         event = self.event_cache[str(payload.guild_id)][str(payload.message_id)]
         if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
             # log.debug("Adding user to event")
