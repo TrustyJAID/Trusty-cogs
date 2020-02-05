@@ -112,8 +112,8 @@ class EventMixin:
             "guild_change": discord.Colour.blurple(),
             "emoji_change": discord.Colour.gold(),
             "commands_used": cmd_colour,
-            "invite_create": discord.Colour.blurple(),
-            "invite_delete": discord.Colour.blurple(),
+            "invite_created": discord.Colour.blurple(),
+            "invite_deleted": discord.Colour.blurple(),
         }
         colour = defaults[event_type]
         if self.settings[guild.id][event_type]["colour"] is not None:
@@ -1669,15 +1669,15 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
-        if not self.settings[guild.id]["invite_create"]["enabled"]:
+        if not self.settings[guild.id]["invite_created"]["enabled"]:
             return
         try:
-            channel = await self.modlog_channel(guild, "invite_create")
+            channel = await self.modlog_channel(guild, "invite_created")
         except RuntimeError:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
-            and self.settings[guild.id]["invite_create"]["embed"]
+            and self.settings[guild.id]["invite_created"]["embed"]
         )
         invite_attrs = {
             "code": _("Code:"),
@@ -1686,11 +1686,11 @@ class EventMixin:
             "max_uses": _("Max Uses:"),
         }
         msg = _("{emoji} `{time}` Invite created ").format(
-            emoji=self.settings[guild.id]["invite_create"]["emoji"],
+            emoji=self.settings[guild.id]["invite_created"]["emoji"],
             time=invite.created_at.strftime("%H:%M:%S"),
         )
         embed = discord.Embed(
-            title=_("Invite Created"), colour=await self.get_event_colour(guild, "invite_create")
+            title=_("Invite Created"), colour=await self.get_event_colour(guild, "invite_created")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
@@ -1714,15 +1714,15 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
-        if not self.settings[guild.id]["invite_delete"]["enabled"]:
+        if not self.settings[guild.id]["invite_deleted"]["enabled"]:
             return
         try:
-            channel = await self.modlog_channel(guild, "invite_delete")
+            channel = await self.modlog_channel(guild, "invite_deleted")
         except RuntimeError:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
-            and self.settings[guild.id]["invite_delete"]["embed"]
+            and self.settings[guild.id]["invite_deleted"]["embed"]
         )
         invite_attrs = {
             "code": _("Code: "),
@@ -1732,11 +1732,11 @@ class EventMixin:
             "uses": _("Used: "),
         }
         msg = _("{emoji} `{time}` Invite deleted ").format(
-            emoji=self.settings[guild.id]["invite_delete"]["emoji"],
+            emoji=self.settings[guild.id]["invite_deleted"]["emoji"],
             time=invite.created_at.strftime("%H:%M:%S"),
         )
         embed = discord.Embed(
-            title=_("Invite Deleted"), colour=await self.get_event_colour(guild, "invite_delete")
+            title=_("Invite Deleted"), colour=await self.get_event_colour(guild, "invite_deleted")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
