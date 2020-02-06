@@ -153,7 +153,6 @@ class EventMixin:
 
     async def modlog_channel(self, guild: discord.Guild, event: str) -> discord.TextChannel:
         channel = None
-        # settings = await self.config.guild(guild).get_raw(event)
         settings = self.settings[guild.id].get(event)
         if "channel" in settings and settings["channel"]:
             channel = guild.get_channel(settings["channel"])
@@ -162,6 +161,8 @@ class EventMixin:
                 channel = await modlog.get_modlog_channel(guild)
             except RuntimeError:
                 raise RuntimeError("No Modlog set")
+        if not channel.permissions_for(guild.me).send_messages:
+            raise RuntimeError("No permission to send messages in channel")
         return channel
 
     @commands.Cog.listener()
@@ -173,12 +174,8 @@ class EventMixin:
             return
         if not self.settings[guild.id]["commands_used"]["enabled"]:
             return
-        # if not await self.config.guild(guild).commands_used.enabled():
-        # return
         if await self.is_ignored_channel(ctx.guild, ctx.channel):
             return
-        # if ctx.channel.id in await self.config.guild(guild).ignored_channels():
-        # return
         try:
             channel = await self.modlog_channel(guild, "commands_used")
         except RuntimeError:
@@ -198,9 +195,6 @@ class EventMixin:
         if privs not in self.settings[guild.id]["commands_used"]["privs"]:
             logger.debug(f"command not in list {privs}")
             return
-        # if privs not in await self.config.guild(guild).commands_used.privs():
-        # logger.debug(f"command not in list {privs}")
-        # return
 
         if privs == "MOD":
             try:
@@ -242,10 +236,7 @@ class EventMixin:
             com=message.content,
         )
         if embed_links:
-            name = f"{message.author.name}#{message.author.discriminator}"
-
             embed = discord.Embed(
-                title=infomessage,
                 description=message.content,
                 colour=await self.get_colour(channel),
                 timestamp=time,
@@ -399,7 +390,6 @@ class EventMixin:
         guild = self.bot.get_guild(guild_id)
         if guild.id not in self.settings:
             return
-        # settings = await self.config.guild(guild).message_delete()
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
@@ -453,8 +443,6 @@ class EventMixin:
             for guild_id in self.settings:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
-                    # Let's remove missing guilds
-                    # await self.config._clear_scope(Config.GUILD, str(guild_id))
                     continue
                 if self.settings[guild_id]["user_join"]["enabled"]:
                     await self.save_invite_links(guild)
@@ -603,13 +591,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_left"]["enabled"]:
             return
-        # if not await self.config.guild(guild).user_left.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "user_left")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -719,15 +703,11 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_create"]["enabled"]:
             return
-        # if not await self.config.guild(guild).channel_change.enabled():
-        # return
         if await self.is_ignored_channel(guild, new_channel):
             return
         try:
             channel = await self.modlog_channel(guild, "channel_create")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -784,15 +764,11 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_delete"]["enabled"]:
             return
-        # if not await self.config.guild(guild).channel_change.enabled():
-        # return
         if await self.is_ignored_channel(guild, old_channel):
             return
         try:
             channel = await self.modlog_channel(guild, "channel_delete")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -849,13 +825,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_change"]["enabled"]:
             return
-        # if not await self.config.guild(guild).channel_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -1004,13 +976,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["role_change"]["enabled"]:
             return
-        # if not await self.config.guild(guild).role_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         perp = None
         reason = None
@@ -1084,13 +1052,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["role_create"]["enabled"]:
             return
-        # if not await self.config.guild(guild).role_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         perp = None
         reason = None
@@ -1138,13 +1102,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["role_delete"]["enabled"]:
             return
-        # if not await self.config.guild(guild).role_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         perp = None
         reason = None
@@ -1192,7 +1152,6 @@ class EventMixin:
             return
         if guild.id not in self.settings:
             return
-        # settings = await self.config.guild(guild).message_edit()
         settings = self.settings[guild.id]["message_edit"]
         if not settings["enabled"]:
             return
@@ -1206,8 +1165,6 @@ class EventMixin:
             return
         if await self.is_ignored_channel(guild, after.channel):
             return
-        if channel is None:
-            return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_edit"]["embed"]
@@ -1215,7 +1172,6 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
         if embed_links:
-            name = before.author
             embed = discord.Embed(
                 description=before.content,
                 colour=await self.get_event_colour(guild, "message_edit"),
@@ -1254,13 +1210,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["guild_change"]["enabled"]:
             return
-        # if not await self.config.guild(guild).guild_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "guild_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -1328,13 +1280,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["emoji_change"]["enabled"]:
             return
-        # if not await self.config.guild(guild).emoji_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "emoji_change")
         except RuntimeError:
-            return
-        if channel is None:
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
@@ -1472,8 +1420,6 @@ class EventMixin:
             return
         if not self.settings[guild.id]["voice_change"]["enabled"]:
             return
-        # if not await self.config.guild(guild).voice_change.enabled():
-        # return
         if member.bot:
             return
         try:
@@ -1486,9 +1432,6 @@ class EventMixin:
         if before.channel is not None:
             if await self.is_ignored_channel(guild, before.channel):
                 return
-
-        if channel is None:
-            return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["voice_change"]["embed"]
@@ -1583,8 +1526,6 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_change"]["bots"] and after.bot:
             return
-        # if not await self.config.guild(guild).user_change.enabled():
-        # return
         try:
             channel = await self.modlog_channel(guild, "user_change")
         except RuntimeError:
@@ -1610,6 +1551,8 @@ class EventMixin:
         reason = None
         worth_sending = False
         for attr, name in member_updates.items():
+            if attr == "nick" and not self.settings[guild.id]["user_change"]["nicknames"]:
+                continue
             before_attr = getattr(before, attr)
             after_attr = getattr(after, attr)
             if before_attr != after_attr:

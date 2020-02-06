@@ -23,6 +23,7 @@ inv_settings = {
         "channel": None,
         "colour": None,
         "bots": True,
+        "nicknames": True,
         "emoji": "\N{MAN}\N{ZERO WIDTH JOINER}\N{WRENCH}",
         "embed": True,
     },

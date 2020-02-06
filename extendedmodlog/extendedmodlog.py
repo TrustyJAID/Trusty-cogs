@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.7.7"
+    __version__ = "2.8.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -78,7 +78,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             "role_delete": _("Role deleted"),
             "voice_change": _("Voice changes"),
             "user_join": _("User join"),
-            "user_left": _("Member left"),
+            "user_left": _("User left"),
             "channel_change": _("Channel changes"),
             "channel_create": _("Channel created"),
             "channel_delete": _("Channel deleted"),
@@ -558,6 +558,21 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await ctx.send(_("Bots will no longer be tracked in user change logs."))
         else:
             await ctx.send(_("Bots will be tracked in user change logs."))
+
+    @_modlog.command(name="nickname", aliases=["nicknames"])
+    async def _user_nickname_logging(self, ctx: commands.Context) -> None:
+        """
+            Toggle nickname updates for user changes
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["user_change"]["nicknames"]
+        self.settings[ctx.guild.id]["user_change"]["nicknames"] = not setting
+        await self.config.guild(ctx.guild).user_change.nicknames.set(not setting)
+        if setting:
+            await ctx.send(_("Nicknames will no longer be tracked in user change logs."))
+        else:
+            await ctx.send(_("Nicknames will be tracked in user change logs."))
 
     @_modlog.command(name="commandlevel", aliases=["commandslevel"])
     async def _command_level(self, ctx: commands.Context, *level: CommandPrivs) -> None:
