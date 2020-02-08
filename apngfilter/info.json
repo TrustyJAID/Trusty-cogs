@@ -19,7 +19,7 @@
     "permissions" : [
         "manage_messages"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Automatically filter animated PNG's.",
     "tags" : [

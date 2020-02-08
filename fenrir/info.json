@@ -18,7 +18,7 @@
         "ban_members",
         "kick_members"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Give users the option to kick, ban, or insult themselves via reactions.",
     "tags" : [],

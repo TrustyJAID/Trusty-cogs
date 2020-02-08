@@ -16,7 +16,7 @@
     ],
     "name" : "imgflip",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Recreation of Red v1 meme generator",
     "tags" : [

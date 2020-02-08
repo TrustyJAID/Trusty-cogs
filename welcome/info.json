@@ -16,7 +16,7 @@
     ],
     "name" : "welcome",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Welcome new users to the server",
     "tags" : [

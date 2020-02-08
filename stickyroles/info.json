@@ -18,7 +18,7 @@
     "permissions" : [
         "manage_roles"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Reapplies specific roles on join",
     "tags" : [

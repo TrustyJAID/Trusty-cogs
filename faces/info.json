@@ -15,7 +15,7 @@
     ],
     "name" : "Faces",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "General commands",
     "tags" : [],

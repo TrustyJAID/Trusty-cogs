@@ -17,7 +17,7 @@
     "permissions" : [
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Get basic twitch account information.",
     "tags" : [

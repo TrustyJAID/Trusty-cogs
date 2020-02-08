@@ -15,7 +15,7 @@
     ],
     "name" : "Covfefe",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Despite the negative press, covfefe",
     "tags" : [],

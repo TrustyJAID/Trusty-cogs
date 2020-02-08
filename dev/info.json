@@ -22,7 +22,7 @@
     ],
     "name" : "Dev",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Developer commands",
     "tags" : [],

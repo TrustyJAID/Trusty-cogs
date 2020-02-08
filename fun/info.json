@@ -18,7 +18,7 @@
     "permissions" : [
         "add_reactions"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Various fun commands like react, textflip, and regional",
     "tags" : [],

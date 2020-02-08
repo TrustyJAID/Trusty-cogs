@@ -15,7 +15,7 @@
     ],
     "name" : "encoding",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Encode messages into various types of encoding.",
     "tags" : [

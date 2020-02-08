@@ -16,9 +16,11 @@
     ],
     "name" : "Cleverbot",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Talk with Cleverbot!",
-    "tags" : ["cleverbot"],
+    "tags" : [
+        "cleverbot"
+    ],
     "type" : "COG"
 }

@@ -20,7 +20,7 @@
     "permissions" : [
         "attach_files"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "pillow",
         "opencv-python",

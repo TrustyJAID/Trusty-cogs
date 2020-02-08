@@ -19,7 +19,7 @@
         "manage_messages",
         "manage_channels"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "pytz"
     ],

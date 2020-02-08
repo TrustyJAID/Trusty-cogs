@@ -15,7 +15,7 @@
     ],
     "name" : "Chatterbot",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "chatterbot"
     ],

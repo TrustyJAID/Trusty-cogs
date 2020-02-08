@@ -19,7 +19,7 @@
         "read_message_history",
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "unidecode",
         "pytz",

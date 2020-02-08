@@ -16,7 +16,7 @@
     ],
     "name" : "translate",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Translate messages using google translate!",
     "tags" : [

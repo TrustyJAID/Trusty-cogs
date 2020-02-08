@@ -17,7 +17,7 @@
     "permissions" : [
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Starboard",
     "tags" : [

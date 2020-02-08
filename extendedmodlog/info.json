@@ -18,9 +18,13 @@
     "permissions" : [
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "ExtendedModLog, track changes made in the server.",
-    "tags" : ["mod", "logs", "modlogs"],
+    "tags" : [
+        "mod",
+        "logs",
+        "modlogs"
+    ],
     "type" : "COG"
 }

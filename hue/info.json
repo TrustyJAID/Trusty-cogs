@@ -15,7 +15,7 @@
     ],
     "name" : "Hue",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Control your philips hue lights with redbot!",
     "tags" : [],

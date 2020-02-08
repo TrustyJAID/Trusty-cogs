@@ -15,7 +15,7 @@
     ],
     "name" : "Gabai",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "Gab.ai information",
     "tags" : [

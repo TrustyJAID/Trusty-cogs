@@ -15,7 +15,7 @@
     ],
     "name" : "Trustybot",
     "permissions" : [],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
     "short" : "",
     "tags" : [],
