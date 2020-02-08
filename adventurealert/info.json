@@ -15,9 +15,9 @@
     ],
     "name" : "AdventureAlert",
     "permissions" : [],
-    "required_cogs" : [
-        "adventure"
-    ],
+    "required_cogs" : {
+        "adventure":"https://github.com/aikaterna/gobcog/"
+    },
     "requirements" : [],
     "short" : "Receive notifications from adventure activities!",
     "tags" : [
