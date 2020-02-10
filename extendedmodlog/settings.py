@@ -97,7 +97,13 @@ inv_settings = {
         "emoji": "\N{HAMMER AND WRENCH}\N{VARIATION SELECTOR-16}",
         "embed": True,
     },
-    "emoji_change": {"enabled": False, "channel": None, "colour": None, "emoji": ""},
+    "emoji_change": {
+        "enabled": False,
+        "channel": None,
+        "colour": None,
+        "emoji": "",
+        "embed": True,
+    },
     "commands_used": {
         "enabled": False,
         "channel": None,
