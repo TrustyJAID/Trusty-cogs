@@ -273,7 +273,7 @@ TEAMS = {
         "emoji": "PittsburghPenguins:664662906000113664",
         "home": "#FCB514",
         "id": 5,
-        "invite": "https://discord.gg/nZ2vuWj",
+        "invite": "https://discord.gg/FkAUtvs",
         "logo": "https://nhl.bamcontent.com/images/photos/281726648/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=lDw7GqD_xro",
         "timezone": "US/Eastern",
