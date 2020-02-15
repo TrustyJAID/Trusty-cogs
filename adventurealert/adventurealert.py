@@ -1,8 +1,13 @@
 import discord
 
+from redbot import VersionInfo, version_info
 from redbot.core import commands, checks, Config
 from redbot.core.utils.chat_formatting import pagify, humanize_list
 
+if version_info < VersionInfo.from_str("3.3.2"):
+    SANITIZE_ROLES_KWARG = {}
+else:
+    SANITIZE_ROLES_KWARG = {"sanitize_roles": False}
 
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
@@ -254,7 +259,7 @@ class AdventureAlert(commands.Cog):
                 "An adventure has started, come join!"
             )
             for page in pagify(msg):
-                await ctx.send(page)
+                await ctx.send(page, **SANITIZE_ROLES_KWARG)
 
     @commands.Cog.listener()
     async def on_adventure_boss(self, ctx: commands.Context) -> None:
@@ -273,7 +278,7 @@ class AdventureAlert(commands.Cog):
                 "An adventure has started, come join!"
             )
             for page in pagify(msg):
-                await ctx.send(page)
+                await ctx.send(page, **SANITIZE_ROLES_KWARG)
 
     @commands.Cog.listener()
     async def on_adventure_miniboss(self, ctx: commands.Context) -> None:
@@ -292,7 +297,7 @@ class AdventureAlert(commands.Cog):
                 "An adventure has started, come join!"
             )
             for page in pagify(msg):
-                await ctx.send(page)
+                await ctx.send(page, **SANITIZE_ROLES_KWARG)
 
     @commands.Cog.listener()
     async def on_adventure_cart(self, ctx: commands.Context) -> None:
@@ -311,4 +316,4 @@ class AdventureAlert(commands.Cog):
                 "An adventure has started, come join!"
             )
             for page in pagify(msg):
-                await ctx.send(page)
+                await ctx.send(page, **SANITIZE_ROLES_KWARG)
