@@ -24,8 +24,9 @@ class Twitch(TwitchAPI, commands.Cog):
     """
         Get twitch user information and post when a user gets new followers
     """
+
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -60,16 +61,12 @@ class Twitch(TwitchAPI, commands.Cog):
         if not central_key:
             try:
                 await self.bot.set_shared_api_tokens(
-                    "twitch",
-                    client_id=keys["client_id"],
-                    client_secret=keys["client_secret"],
-                    )
+                    "twitch", client_id=keys["client_id"], client_secret=keys["client_secret"],
+                )
             except AttributeError:
                 await self.bot.db.api_tokens.set_raw(
-                    "twitch", value={
-                        "client_id": keys["client_id"],
-                        "client_secret": keys["client_secret"]
-                    }
+                    "twitch",
+                    value={"client_id": keys["client_id"], "client_secret": keys["client_secret"]},
                 )
         await self.config.api_key.clear()
 
@@ -95,36 +92,78 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).embed_links:
+            return await ctx.send(f"I don't have embed links permission in {channel.mention}")
+        await ctx.trigger_typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
             await ctx.send(e)
             return
-        cur_accounts = await self.config.twitch_accounts()
-        user_data = await self.check_account_added(cur_accounts, profile)
-        if user_data is None:
-            followers, total = await self.get_all_followers(profile.id)
-            user_data = {
-                "id": profile.id,
-                "login": profile.login,
-                "display_name": profile.display_name,
-                "followers": followers,
-                "total_followers": total,
-                "channels": [channel.id],
-            }
+        async with self.config.twitch_accounts() as cur_accounts:
+            user_data = await self.check_account_added(cur_accounts, profile)
+            if user_data is None:
+                try:
+                    followers, total = await self.get_all_followers(profile.id)
+                except TwitchError as e:
+                    return await ctx.send(e)
+                user_data = {
+                    "id": profile.id,
+                    "login": profile.login,
+                    "display_name": profile.display_name,
+                    "followers": followers,
+                    "total_followers": total,
+                    "channels": [channel.id],
+                }
 
-            cur_accounts.append(user_data)
-            await self.config.twitch_accounts.set(cur_accounts)
-        else:
-            cur_accounts.remove(user_data)
-            user_data["channels"].append(channel.id)
-            cur_accounts.append(user_data)
-            await self.config.twitch_accounts.set(cur_accounts)
-        await ctx.send(
-            "{} has been setup for twitch follow notifications in {}".format(
-                profile.display_name, channel.mention
+                cur_accounts.append(user_data)
+            else:
+                cur_accounts.remove(user_data)
+                user_data["channels"].append(channel.id)
+                cur_accounts.append(user_data)
+            await ctx.send(
+                "{} has been setup for twitch follow notifications in {}".format(
+                    profile.display_name, channel.mention
+                )
             )
-        )
+
+    @twitchhelp.command(name="testfollow")
+    @checks.admin_or_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def followtest(
+        self,
+        ctx: commands.Context,
+        twitch_name: str,
+        channel: Optional[discord.TextChannel] = None,
+    ) -> None:
+        """
+            Test channel for automatic follow notifications
+        """
+        if channel is None:
+            channel = ctx.channel
+        await ctx.trigger_typing()
+        try:
+            profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
+        except TwitchError as e:
+            await ctx.send(e)
+            return
+        try:
+            followers, total = await self.get_all_followers(profile.id)
+        except TwitchError as e:
+            return await ctx.send(e)
+        try:
+            follower = await self.get_profile_from_id(int(followers[0]))
+        except Exception:
+            return
+        em = await self.make_follow_embed(profile, follower, total)
+        if channel.permissions_for(channel.guild.me).embed_links:
+            await channel.send(embed=em)
+        else:
+            text_msg = (
+                f"{profile.display_name} has just "
+                f"followed {account.display_name}!"
+            )
+            await channel.send(text_msg)
 
     @twitchhelp.command(name="remfollow", aliases=["remove", "delete", "del"])
     @checks.admin_or_permissions(manage_channels=True)
@@ -138,21 +177,14 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
+        await ctx.trigger_typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
             return await ctx.send(e)
-        cur_accounts = await self.config.twitch_accounts()
-        user_data = await self.check_account_added(cur_accounts, profile)
-        if user_data is None:
-            await ctx.send(
-                "{} is not currently posting follow notifications in {}".format(
-                    profile.login, channel.mention
-                )
-            )
-            return
-        else:
-            if channel.id not in user_data["channels"]:
+        async with self.config.twitch_accounts() as cur_accounts:
+            user_data = await self.check_account_added(cur_accounts, profile)
+            if user_data is None:
                 await ctx.send(
                     "{} is not currently posting follow notifications in {}".format(
                         profile.login, channel.mention
@@ -160,36 +192,47 @@ class Twitch(TwitchAPI, commands.Cog):
                 )
                 return
             else:
-                cur_accounts.remove(user_data)
-                user_data["channels"].remove(channel.id)
-                if len(user_data["channels"]) == 0:
-                    # We don't need to be checking if there's no channels to post in
-                    await self.config.twitch_accounts.set(cur_accounts)
+                if channel.id not in user_data["channels"]:
+                    await ctx.send(
+                        "{} is not currently posting follow notifications in {}".format(
+                            profile.login, channel.mention
+                        )
+                    )
+                    return
                 else:
-                    cur_accounts.append(user_data)
-                    await self.config.twitch_accounts.set(cur_accounts)
-        await ctx.send(
-            "Done, {}'s new followers won't be posted in {} anymore.".format(
-                profile.login, channel.mention
+                    user_data["channels"].remove(channel.id)
+                    if len(user_data["channels"]) == 0:
+                        # We don't need to be checking if there's no channels to post in
+                        cur_accounts.remove(user_data)
+            await ctx.send(
+                "Done, {}'s new followers won't be posted in {} anymore.".format(
+                    profile.login, channel.mention
+                )
             )
-        )
 
     @twitchhelp.command(name="set")
     async def twitch_set(self, ctx: commands.Context, twitch_name: str) -> None:
         """
             Sets the twitch user info for individual users to make commands easier
         """
-        profile = await self.get_profile_from_name(twitch_name)
+        await ctx.trigger_typing()
+        try:
+            profile = await self.get_profile_from_name(twitch_name)
+        except TwitchError as e:
+            return await ctx.send(e)
         await self.config.user(ctx.author).id.set(profile.id)
         await self.config.user(ctx.author).login.set(profile.login)
         await self.config.user(ctx.author).display_name.set(profile.display_name)
         await ctx.send("{} set for you.".format(profile.display_name))
 
     @twitchhelp.command(name="follows", aliases=["followers"])
-    async def get_user_follows(self, ctx: commands.Context, twitch_name: Optional[str] = None) -> None:
+    async def get_user_follows(
+        self, ctx: commands.Context, twitch_name: Optional[str] = None
+    ) -> None:
         """
             Get latest Twitch followers
         """
+        await ctx.trigger_typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -206,6 +249,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
             Shows basic Twitch profile information
         """
+        await ctx.trigger_typing()
         try:
             profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
         except TwitchError as e:
@@ -314,7 +358,7 @@ class Twitch(TwitchAPI, commands.Cog):
             "3. `{prefix}set api twitch client_id,YOUR_CLIENT_ID_HERE client_secret,YOUR_CLIENT_SECRET_HERE`\n\n"
             "**Note:** client_secret is only necessary if you have more than 3000 followers"
             "or you expect to be making more than 30 calls per minute to the API"
-            ).format(prefix=ctx.clean_prefix)
+        ).format(prefix=ctx.clean_prefix)
         await ctx.maybe_send_embed(msg)
 
     def cog_unload(self):

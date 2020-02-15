@@ -5,6 +5,7 @@ import time
 import logging
 
 from typing import Tuple, Optional, List
+from datetime import datetime
 
 from redbot.core.bot import Red
 from redbot.core import Config, commands
@@ -68,6 +69,7 @@ class TwitchAPI:
                 # Calculate wait time and add 0.1s to the wait time to allow Twitch to reset
                 # their counter
                 wait_time = reset_time - current_time + 0.1
+                log.debug(wait_time)
                 await asyncio.sleep(wait_time)
 
     async def oauth_check(self) -> None:
@@ -81,11 +83,19 @@ class TwitchAPI:
         access_token = await self.config.access_token()
         if access_token == {}:
             # Attempts to acquire an app access token
+            scope = [
+                "analytics:read:extensions",
+                "analytics:read:games",
+                "bits:read",
+                "clips:edit",
+                "user:edit",
+                "user:edit:broadcast",
+            ]
             params = {
                 "client_id": client_id,
                 "client_secret": client_secret,
                 "grant_type": "client_credentials",
-                "scope": "analytics:read:extensions analytics:read:games bits:read clips:edit user:edit user:edit:broadcast",
+                "scope": " ".join(s for s in scope),
             }
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, params=params) as resp:
@@ -113,18 +123,21 @@ class TwitchAPI:
         header = await self.get_header()
         await self.wait_for_rate_limit_reset()
         async with aiohttp.ClientSession() as session:
-            resp = await session.get(url, headers=header)
-        remaining = resp.headers.get("Ratelimit-Remaining")
-        if remaining:
-            self.rate_limit_remaining = int(remaining)
-        reset = resp.headers.get("Ratelimit-Reset")
-        if reset:
-            self.rate_limit_resets.add(int(reset))
+            async with session.get(
+                url, headers=header, timeout=aiohttp.ClientTimeout(total=None)
+            ) as resp:
+                remaining = resp.headers.get("Ratelimit-Remaining")
+                if remaining:
+                    self.rate_limit_remaining = int(remaining)
+                reset = resp.headers.get("Ratelimit-Reset")
+                if reset:
+                    self.rate_limit_resets.add(int(reset))
 
-        if resp.status == 429:
-            return await self.get_response(url)
+                if resp.status == 429:
+                    log.info("Trying again")
+                    return await self.get_response(url)
 
-        return await resp.json()
+                return await resp.json()
 
     #####################################################################################
 
@@ -134,7 +147,7 @@ class TwitchAPI:
         em.description = profile.description
         url = "https://twitch.tv/{}".format(profile.login)
         em.set_author(
-            name="{}".format(profile.display_name), url=url, icon_url=profile.profile_image_url
+            name=profile.display_name, url=url, icon_url=profile.profile_image_url
         )
         em.set_image(url=profile.offline_image_url)
         em.set_thumbnail(url=profile.profile_image_url)
@@ -142,41 +155,33 @@ class TwitchAPI:
         em.set_footer(text=footer_text, icon_url=profile.profile_image_url)
         return em
 
-    async def make_follow_embed(self, profile: TwitchProfile, total_followers: int):
+    async def make_follow_embed(
+        self, account: TwitchProfile, profile: TwitchProfile, total_followers: int
+    ):
         # makes the embed for a twitch profile
         em = discord.Embed(colour=int("6441A4", 16))
         url = "https://twitch.tv/{}".format(profile.login)
-        em.description = "[{}]({}) has just followed!".format(profile.display_name, url)
+        em.description = f"{profile.description}\n\n{url}"[:2048]
         em.set_author(
-            name="{} has just followed!".format(profile.display_name),
+            name=f"{profile.display_name} has just followed {account.display_name}!",
             url=url,
             icon_url=profile.profile_image_url,
         )
-        # em.set_image(url=profile.offline_image_url)
+        em.set_image(url=profile.offline_image_url)
+        em.add_field(name="Viewer count", value=str(profile.view_count))
         em.set_thumbnail(url=profile.profile_image_url)
-        footer_text = "{} followers".format(total_followers)
-        em.set_footer(text=footer_text, icon_url=profile.profile_image_url)
+        footer_text = f"{account.display_name} has {total_followers} followers"
+        em.timestamp = datetime.utcnow()
+        em.set_footer(text=footer_text, icon_url=account.profile_image_url)
         return em
 
     async def get_all_followers(self, user_id: str) -> Tuple[list, dict]:
-        # Get's all of a users current followers
+        # Get's first 100 users following user_id
         url = "{}/users/follows?to_id={}&first=100".format(BASE_URL, user_id)
         data = await self.get_response(url)
         follows = [x["from_id"] for x in data["data"]]
         total = data["total"]
-        print("{} of {}".format(len(follows), total))
-        count = 0
-        while len(follows) < total:
-            count += 1
-            cursor = data["pagination"]["cursor"]
-            data = await self.get_response(url + "&after=" + cursor)
-            for user in data["data"]:
-                if user["from_id"] not in follows:
-                    follows.append(user["from_id"])
-            print("{} of {}".format(len(follows), total))
-            if count == (int(total / 100) + (total % 100 > 0)):
-                # Break the loop if we've gone over the total we could theoretically get
-                break
+        log.debug(f"{len(follows)} of {total}")
         return follows, total
 
     async def get_profile_from_name(self, twitch_name: str) -> TwitchProfile:
@@ -187,7 +192,7 @@ class TwitchAPI:
         url = "{}/users?id={}".format(BASE_URL, twitch_id)
         return TwitchProfile.from_json(await self.get_response(url))
 
-    async def get_new_followers(self, user_id: str) -> Tuple[List[TwitchProfile], int]:
+    async def get_new_followers(self, user_id: str) -> Tuple[List[TwitchFollower], int]:
         # Gets the last 100 followers from twitch
         url = "{}/users/follows?to_id={}&first=100".format(BASE_URL, user_id)
         data = await self.get_response(url)
@@ -202,8 +207,8 @@ class TwitchAPI:
             # Search for twitch login name
             try:
                 profile = await self.get_profile_from_name(twitch_name)
-            except Exception as e:
-                print(e)
+            except Exception:
+                log.error("{} is not a valid Twitch username".format(twitch_name))
                 raise TwitchError("{} is not a valid Twitch username".format(twitch_name))
         else:
             # User has set their twitch ID on the bot
@@ -230,6 +235,7 @@ class TwitchAPI:
         while self is self.bot.get_cog("Twitch"):
             check_accounts = await self.config.twitch_accounts()
             for account in check_accounts:
+                followed = await self.get_profile_from_id(account["id"])
                 followers, total = await self.get_new_followers(account["id"])
                 for follow in reversed(followers):
                     if follow.from_id not in account["followers"]:
@@ -240,13 +246,22 @@ class TwitchAPI:
                                 f"Error getting twitch profile {follow.from_id}", exc_info=True
                             )
                         log.info(
-                            "{} Followed! You have {} followers now.".format(profile.login, total)
+                            f"{profile.login} Followed! {followed.display_name} "
+                            f"has {total} followers now."
                         )
-                        em = await self.make_follow_embed(profile, total)
+                        em = await self.make_follow_embed(followed, profile, total)
                         for channel_id in account["channels"]:
                             channel = self.bot.get_channel(id=channel_id)
-                            if channel and channel.permissions_for(channel.guild.me).embed_links:
+                            if not channel:
+                                continue
+                            if channel.permissions_for(channel.guild.me).embed_links:
                                 await channel.send(embed=em)
+                            else:
+                                text_msg = (
+                                    f"{profile.display_name} has just "
+                                    f"followed {account.display_name}!"
+                                )
+                                await channel.send(text_msg)
                         check_accounts.remove(account)
                         account["followers"].append(follow.from_id)
                         check_accounts.append(account)
