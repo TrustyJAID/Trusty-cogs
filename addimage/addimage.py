@@ -26,7 +26,7 @@ class AddImage(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -76,8 +76,12 @@ class AddImage(commands.Cog):
         except AttributeError:
             guild = None
         content = message.content
-
-        prefixes = await self.bot.get_valid_prefixes(guild)
+        try:
+            prefixes = await self.bot.get_valid_prefixes(guild)
+        except AttributeError:
+            # Red 3.1 support
+            prefix_list = await self.bot.command_prefix(self.bot, message)
+            prefixes = sorted(prefix_list, key=lambda pfx: len(pfx), reverse=True)
         for p in prefixes:
             if content.startswith(p):
                 return p
