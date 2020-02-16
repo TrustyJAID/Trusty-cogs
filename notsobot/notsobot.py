@@ -9,12 +9,7 @@ import random
 import wand
 import wand.color
 import wand.drawing
-import PIL
-import PIL.Image
-import PIL.ImageFont
-import PIL.ImageOps
-import PIL.ImageDraw
-from PIL import ImageSequence
+from PIL import Image, ImageFont, ImageOps, ImageDraw, ImageSequence
 import numpy as np
 import jpglitch
 from .vw import macintoshplus
@@ -25,6 +20,7 @@ from urllib.parse import quote
 import uuid
 from typing import Optional, Union, Tuple
 import logging
+import textwrap
 
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
@@ -96,7 +92,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -150,7 +146,6 @@ class NotSoBot(commands.Cog):
         self.retro_regex = re.compile(
             r"((https)(\:\/\/|)?u2\.photofunia\.com\/.\/results\/.\/.\/.*(\.jpg\?download))"
         )
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.image_mimes = ["image/png", "image/pjpeg", "image/jpeg", "image/x-icon"]
         self.gif_mimes = ["image/gif"]
 
@@ -169,12 +164,13 @@ class NotSoBot(commands.Cog):
 
     async def get_text(self, url: str):
         try:
-            async with self.session.get(url) as resp:
-                try:
-                    text = await resp.text()
-                    return text
-                except Exception:
-                    return False
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    try:
+                        text = await resp.text()
+                        return text
+                    except Exception:
+                        return False
         except asyncio.TimeoutError:
             return False
 
@@ -205,26 +201,28 @@ class NotSoBot(commands.Cog):
 
     async def download(self, url: str, path: str):
         try:
-            async with self.session.get(url) as resp:
-                if resp.status == 200:
-                    data = await resp.read()
-                    with open(path, "wb") as f:
-                        f.write(data)
-                    return resp.headers.get("Content-type", "").lower()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        data = await resp.read()
+                        with open(path, "wb") as f:
+                            f.write(data)
+                        return resp.headers.get("Content-type", "").lower()
         except asyncio.TimeoutError:
             return False
 
     async def bytes_download(self, url: str):
         try:
-            async with self.session.get(url) as resp:
-                if resp.status == 200:
-                    data = await resp.read()
-                    mime = resp.headers.get("Content-type", "").lower()
-                    b = BytesIO(data)
-                    b.seek(0)
-                    return b, mime
-                else:
-                    return False, False
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        data = await resp.read()
+                        mime = resp.headers.get("Content-type", "").lower()
+                        b = BytesIO(data)
+                        b.seek(0)
+                        return b, mime
+                    else:
+                        return False, False
         except asyncio.TimeoutError:
             return False, False
         except Exception:
@@ -337,7 +335,7 @@ class NotSoBot(commands.Cog):
                         # i.save(filename=image)
                         new_image.sequence.append(change)
                     # for i in range(len(img.sequence)):
-                        # with img.sequence[i] as change:
+                    # with img.sequence[i] as change:
                 new_image.format = "gif"
                 new_image.dispose = "background"
                 new_image.type = "optimize"
@@ -564,13 +562,13 @@ class NotSoBot(commands.Cog):
 
     def do_ascii(self, text):
         try:
-            i = PIL.Image.new("RGB", (2000, 1000))
-            img = PIL.ImageDraw.Draw(i)
+            i = Image.new("RGB", (2000, 1000))
+            img = ImageDraw.Draw(i)
             txt = figlet_format(text, font="starwars")
             img.text((20, 20), figlet_format(text, font="starwars"), fill=(0, 255, 0))
             text_width, text_height = img.textsize(figlet_format(text, font="starwars"))
-            imgs = PIL.Image.new("RGB", (text_width + 30, text_height))
-            ii = PIL.ImageDraw.Draw(imgs)
+            imgs = Image.new("RGB", (text_width + 30, text_height))
+            ii = ImageDraw.Draw(imgs)
             ii.text((20, 20), figlet_format(text, font="starwars"), fill=(0, 255, 0))
             text_width, text_height = ii.textsize(figlet_format(text, font="starwars"))
             final = BytesIO()
@@ -607,7 +605,7 @@ class NotSoBot(commands.Cog):
             await self.safe_send(ctx, msg, file, file_size)
 
     def generate_ascii(self, image):
-        font = PIL.ImageFont.truetype(str(cog_data_path(self)) + "/FreeMonoBold.ttf", 15)
+        font = ImageFont.truetype(str(cog_data_path(self)) + "/FreeMonoBold.ttf", 15)
         image_width, image_height = image.size
         aalib_screen_width = int(image_width / 24.9) * 10
         aalib_screen_height = int(image_height / 41.39) * 10
@@ -618,25 +616,26 @@ class NotSoBot(commands.Cog):
         y = 0
         how_many_rows = len(screen.render().splitlines())
         new_img_width, font_size = font.getsize(screen.render().splitlines()[0])
-        img = PIL.Image.new("RGBA", (new_img_width, how_many_rows * 15), (255, 255, 255))
-        draw = PIL.ImageDraw.Draw(img)
+        img = Image.new("RGBA", (new_img_width, how_many_rows * 15), (255, 255, 255))
+        draw = ImageDraw.Draw(img)
         for lines in screen.render().splitlines():
             draw.text((0, y), lines, (0, 0, 0), font=font)
             y += 15
-        imagefit = PIL.ImageOps.fit(img, (image_width, image_height), PIL.Image.ANTIALIAS)
+        imagefit = ImageOps.fit(img, (image_width, image_height), Image.ANTIALIAS)
         return imagefit
 
     async def check_font_file(self):
         try:
-            PIL.ImageFont.truetype(cog_data_path(self) / "FreeMonoBold.ttf", 15)
+            ImageFont.truetype(cog_data_path(self) / "FreeMonoBold.ttf", 15)
         except Exception:
-            async with self.session.get(
-                "https://github.com/opensourcedesign/fonts"
-                "/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf"
-            ) as resp:
-                data = await resp.read()
-            with open(cog_data_path(self) / "FreeMonoBold.ttf", "wb") as save_file:
-                save_file.write(data)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "https://github.com/opensourcedesign/fonts"
+                    "/raw/master/gnu-freefont_freemono/FreeMonoBold.ttf"
+                ) as resp:
+                    data = await resp.read()
+                with open(cog_data_path(self) / "FreeMonoBold.ttf", "wb") as save_file:
+                    save_file.write(data)
 
     @commands.command()
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -657,7 +656,7 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            im = PIL.Image.open(b)
+            im = Image.open(b)
             img = await self.bot.loop.run_in_executor(None, self.generate_ascii, im)
             final = BytesIO()
             img.save(final, "png")
@@ -672,7 +671,7 @@ class NotSoBot(commands.Cog):
         temp = BytesIO()
         try:
             try:
-                image = PIL.Image.open(b)
+                image = Image.open(b)
                 gif_list = [frame.copy() for frame in ImageSequence.Iterator(image)]
             except IOError:
                 return ":warning: Cannot load gif."
@@ -733,32 +732,44 @@ class NotSoBot(commands.Cog):
             name = ctx.message.author.name
         if len(ctx.message.mentions) >= 1:
             name = ctx.message.mentions[0].name
-        if text:
-            if len(text) > 22:
-                one = text[:22]
-                two = text[22:]
-                url = "http://www.tombstonebuilder.com/generate.php?top1=R.I.P&top3={0}&top4={1}&top5={2}".format(
-                    name, one, two
-                ).replace(
-                    " ", "%20"
-                )
-            else:
-                url = "http://www.tombstonebuilder.com/generate.php?top1=R.I.P&top3={0}&top4={1}".format(
-                    name, text
-                ).replace(
-                    " ", "%20"
-                )
+        b, mime = await self.bytes_download("https://i.imgur.com/xNWxZHn.jpg")
+        if not text:
+            text = f"{name}'s\n Hopes and dreams"
         else:
-            if name[-1].lower() != "s":
-                name += "'s"
-            url = "http://www.tombstonebuilder.com/generate.php?top1=R.I.P&top3={0}&top4=Hopes and Dreams".format(
-                name
-            ).replace(
-                " ", "%20"
+            text = f"{name}\n{text}"
+        if not b:
+            return
+
+        def make_rip(image, text):
+            img = Image.open(image).convert("RGB")
+            draw = ImageDraw.Draw(img)
+            font_path = str(bundled_data_path(self)) + "/arial.ttf"
+            font1 = ImageFont.truetype(font_path, 35)
+            text = "\n".join(line for line in textwrap.wrap(text, width=15))
+            w, h = draw.multiline_textsize(text, font=font1)
+            draw.multiline_text(
+                (((400 - w) / 2) - 1, 50), text, fill=(50, 50, 50), font=font1, align="center"
             )
-        b, mime = await self.bytes_download(url)
-        file = discord.File(b, filename="rip.png")
-        await ctx.send(file=file)
+            draw.multiline_text(
+                (((400 - w) / 2) + 1, 50), text, fill=(50, 50, 50), font=font1, align="center"
+            )
+            draw.multiline_text(
+                (((400 - w) / 2), 49), text, fill=(50, 50, 50), font=font1, align="center"
+            )
+            draw.multiline_text(
+                (((400 - w) / 2), 51), text, fill=(50, 50, 50), font=font1, align="center"
+            )
+            draw.multiline_text(
+                ((400 - w) / 2, 50), text, fill=(105, 105, 105), font=font1, align="center"
+            )
+            final = BytesIO()
+            img.save(final, "JPEG")
+            file_size = final.tell()
+            final.seek(0)
+            return discord.File(final, filename="rip.jpg"), file_size
+
+        file, file_size = await ctx.bot.loop.run_in_executor(None, make_rip, b, text)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.cooldown(1, 5)
@@ -783,7 +794,7 @@ class NotSoBot(commands.Cog):
                     await ctx.send(":no_entry: Image `{0}` is invalid!".format(str(count)))
                     continue
                 list_im.append(b)
-            imgs = [PIL.Image.open(i).convert("RGBA") for i in list_im]
+            imgs = [Image.open(i).convert("RGBA") for i in list_im]
             if vertical:
                 # Vertical
                 max_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[1][1]
@@ -792,7 +803,7 @@ class NotSoBot(commands.Cog):
                 # Horizontal
                 min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
                 imgs_comb = np.hstack((np.asarray(i.resize(min_shape)) for i in imgs))
-            imgs_comb = PIL.Image.fromarray(imgs_comb)
+            imgs_comb = Image.fromarray(imgs_comb)
             final = BytesIO()
             imgs_comb.save(final, "png")
             file_size = final.tell()
@@ -873,7 +884,7 @@ class NotSoBot(commands.Cog):
                 return
 
             def make_jpeg(b):
-                img = PIL.Image.open(b).convert("RGB")
+                img = Image.open(b).convert("RGB")
                 final = BytesIO()
                 img.save(final, "JPEG", quality=quality)
                 file_size = final.tell()
@@ -884,7 +895,7 @@ class NotSoBot(commands.Cog):
             await self.safe_send(ctx, None, file, file_size)
 
     def do_vw(self, b, txt):
-        im = PIL.Image.open(b)
+        im = Image.open(b)
         k = random.randint(0, 100)
         im = macintoshplus.draw_method1(k, txt, im)
         final = BytesIO()
@@ -1058,7 +1069,7 @@ class NotSoBot(commands.Cog):
             await self.safe_send(ctx, None, file, file_size)
 
     def do_glitch(self, b, amount, seed, iterations):
-        img = PIL.Image.open(b)
+        img = Image.open(b)
         img = img.convert("RGB")
         b = BytesIO()
         img.save(b, format="JPEG")
@@ -1148,9 +1159,9 @@ class NotSoBot(commands.Cog):
 
     def make_pixel(self, b, pixels, scale_msg):
         bg = (0, 0, 0)
-        img = PIL.Image.open(b)
-        img = img.resize((int(img.size[0] / pixels), int(img.size[1] / pixels)), PIL.Image.NEAREST)
-        img = img.resize((int(img.size[0] * pixels), int(img.size[1] * pixels)), PIL.Image.NEAREST)
+        img = Image.open(b)
+        img = img.resize((int(img.size[0] / pixels), int(img.size[1] / pixels)), Image.NEAREST)
+        img = img.resize((int(img.size[0] * pixels), int(img.size[1] * pixels)), Image.NEAREST)
         load = img.load()
         for i in range(0, img.size[0], pixels):
             for j in range(0, img.size[1], pixels):
@@ -1192,10 +1203,13 @@ class NotSoBot(commands.Cog):
             payload.add_field("text" + str(count), s.replace("'", '"'))
             count += 1
         try:
-            async with self.session.post(
-                "https://photofunia.com/effects/retro-wave?guild=3", data=payload, headers=headers
-            ) as r:
-                txt = await r.text()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "https://photofunia.com/effects/retro-wave?guild=3",
+                    data=payload,
+                    headers=headers,
+                ) as r:
+                    txt = await r.text()
         except Exception:
             return
         match = self.retro_regex.findall(txt)
@@ -1256,10 +1270,10 @@ class NotSoBot(commands.Cog):
         f.seek(0)
         f2.seek(0)
         list_im = [f2, f]
-        imgs = [PIL.ImageOps.mirror(PIL.Image.open(i).convert("RGBA")) for i in list_im]
+        imgs = [ImageOps.mirror(Image.open(i).convert("RGBA")) for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
         imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
-        imgs_comb = PIL.Image.fromarray(imgs_comb)
+        imgs_comb = Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
         file_size = final.tell()
@@ -1298,10 +1312,10 @@ class NotSoBot(commands.Cog):
         f.seek(0)
         f2.seek(0)
         list_im = [f2, f]
-        imgs = [PIL.ImageOps.mirror(PIL.Image.open(i).convert("RGBA")) for i in list_im]
+        imgs = [ImageOps.mirror(Image.open(i).convert("RGBA")) for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
         imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
-        imgs_comb = PIL.Image.fromarray(imgs_comb)
+        imgs_comb = Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
         file_size = final.tell()
@@ -1340,10 +1354,10 @@ class NotSoBot(commands.Cog):
         f.seek(0)
         f2.seek(0)
         list_im = [f, f2]
-        imgs = [PIL.Image.open(i).convert("RGBA") for i in list_im]
+        imgs = [Image.open(i).convert("RGBA") for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
         imgs_comb = np.vstack([np.asarray(i.resize(min_shape)) for i in imgs])
-        imgs_comb = PIL.Image.fromarray(imgs_comb)
+        imgs_comb = Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
         file_size = final.tell()
@@ -1382,10 +1396,10 @@ class NotSoBot(commands.Cog):
         f.seek(0)
         f2.seek(0)
         list_im = [f, f2]
-        imgs = [PIL.Image.open(i).convert("RGBA") for i in list_im]
+        imgs = [Image.open(i).convert("RGBA") for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
         imgs_comb = np.vstack([np.asarray(i.resize(min_shape)) for i in imgs])
-        imgs_comb = PIL.Image.fromarray(imgs_comb)
+        imgs_comb = Image.fromarray(imgs_comb)
         final = BytesIO()
         imgs_comb.save(final, "png")
         file_size = final.tell()
@@ -1420,8 +1434,8 @@ class NotSoBot(commands.Cog):
             b, mime = await self.bytes_download(url)
 
             def flip_img(b):
-                img = PIL.Image.open(b)
-                img = PIL.ImageOps.flip(img)
+                img = Image.open(b)
+                img = ImageOps.flip(img)
                 final = BytesIO()
                 img.save(final, "png")
                 file_size = final.tell()
@@ -1442,8 +1456,8 @@ class NotSoBot(commands.Cog):
             b, mime = await self.bytes_download(url)
 
             def flop_img(b):
-                img = PIL.Image.open(b)
-                img = PIL.ImageOps.mirror(img)
+                img = Image.open(b)
+                img = ImageOps.mirror(img)
                 final = BytesIO()
                 img.save(final, "png")
                 file_size = final.tell()
@@ -1464,8 +1478,8 @@ class NotSoBot(commands.Cog):
             b, mime = await self.bytes_download(url)
 
             def invert_img(b):
-                img = PIL.Image.open(b).convert("RGB")
-                img = PIL.ImageOps.invert(img)
+                img = Image.open(b).convert("RGB")
+                img = ImageOps.invert(img)
                 final = BytesIO()
                 img.save(final, "png")
                 file_size = final.tell()
@@ -1488,7 +1502,7 @@ class NotSoBot(commands.Cog):
                 return await ctx.send("That's not a valid image to rotate.")
 
             def rotate_img(b, degrees):
-                img = PIL.Image.open(b).convert("RGBA")
+                img = Image.open(b).convert("RGBA")
                 img = img.rotate(int(degrees))
                 final = BytesIO()
                 img.save(final, "png")
@@ -1498,8 +1512,3 @@ class NotSoBot(commands.Cog):
 
             file, file_size = await ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
             await self.safe_send(ctx, f"Rotated: `{degrees}°`", file, file_size)
-
-    def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
-
-    __unload = cog_unload
