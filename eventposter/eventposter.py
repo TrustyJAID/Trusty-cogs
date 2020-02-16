@@ -6,17 +6,23 @@ from typing import Union, Optional
 from redbot.core import commands, checks, Config
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, humanize_list
 
 from .event_obj import Event, ValidImage
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
+EVENT_EMOJIS = [
+    "\N{WHITE HEAVY CHECK MARK}",
+    "\N{NEGATIVE SQUARED CROSS MARK}",
+    "\N{WHITE QUESTION MARK ORNAMENT}"
+]
+
 
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.4.3"
+    __version__ = "1.5.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -66,7 +72,7 @@ class EventPoster(commands.Cog):
         """
             Checks for reactions to the event
         """
-        if str(payload.emoji) not in ReactionPredicate.YES_OR_NO_EMOJIS:
+        if str(payload.emoji) not in EVENT_EMOJIS:
             # log.debug("Not a valid yes or no emoji")
             return
         if str(payload.guild_id) not in self.event_cache:
@@ -80,16 +86,43 @@ class EventPoster(commands.Cog):
             return
         event = self.event_cache[str(payload.guild_id)][str(payload.message_id)]
         if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-            # log.debug("Adding user to event")
             await self.add_user_to_event(user, event)
+        if str(payload.emoji) == "\N{WHITE QUESTION MARK ORNAMENT}":
+            await self.add_user_to_maybe(user, event)
         if str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
-            # log.debug("Removing user from event")
             if user == event.hoster:
                 async with self.config.guild(guild).events() as events:
                     event = await Event.from_json(events[str(user.id)], guild)
                     await event.message.edit(content="This event has ended.")
                     del events[str(user.id)]
                     del self.event_cache[str(guild.id)][str(event.message.id)]
+                return
+            await self.remove_user_from_event(user, event)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        """
+            Checks for reactions to the event
+        """
+        if str(payload.emoji) not in EVENT_EMOJIS:
+            # log.debug("Not a valid yes or no emoji")
+            return
+        if str(payload.guild_id) not in self.event_cache:
+            return
+        if str(payload.message_id) not in self.event_cache[str(payload.guild_id)]:
+            return
+
+        guild = self.bot.get_guild(payload.guild_id)
+        user = guild.get_member(payload.user_id)
+        if user.bot:
+            return
+        event = self.event_cache[str(payload.guild_id)][str(payload.message_id)]
+        if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
+            if user == event.hoster:
+                return
+            await self.remove_user_from_event(user, event)
+        if str(payload.emoji) == "\N{WHITE QUESTION MARK ORNAMENT}":
+            if user == event.hoster:
                 return
             await self.remove_user_from_event(user, event)
 
@@ -104,6 +137,27 @@ class EventPoster(commands.Cog):
         if not player_class:
             player_class = await self.config.member(user).player_class()
         event.members.append((user, player_class))
+        if user in event.maybe:
+            event.maybe.remove(user)
+        ctx = await self.bot.get_context(event.message)
+        em = await self.make_event_embed(ctx, event)
+        await event.message.edit(embed=em)
+        async with self.config.guild(ctx.guild).events() as cur_events:
+            cur_events[str(event.hoster.id)] = event.to_json()
+        self.event_cache[str(ctx.guild.id)][str(event.message.id)] = event
+        return
+
+    async def add_user_to_maybe(
+        self, user: discord.Member, event: Event, player_class: Optional[str] = ""
+    ) -> None:
+        event_members = [m[0] for m in event.members]
+        if user in event.maybe:
+            return
+        event.maybe.append(user)
+        if user in event_members:
+            if not player_class:
+                player_class = await self.config.member(user).player_class()
+            event.members.remove((user, player_class))
         ctx = await self.bot.get_context(event.message)
         em = await self.make_event_embed(ctx, event)
         await event.message.edit(embed=em)
@@ -114,17 +168,24 @@ class EventPoster(commands.Cog):
 
     async def remove_user_from_event(self, user: discord.Member, event: Event) -> None:
         event_members = [m[0] for m in event.members]
-        if user not in event_members:
-            return
-        for member, player_class in event.members:
-            if member == user:
-                event.members.remove((member, player_class))
-        ctx = await self.bot.get_context(event.message)
-        em = await self.make_event_embed(ctx, event)
-        await event.message.edit(embed=em)
-        async with self.config.guild(ctx.guild).events() as cur_events:
-            cur_events[str(event.hoster.id)] = event.to_json()
-        self.event_cache[str(ctx.guild.id)][str(event.message.id)] = event
+        if user in event_members:
+            for member, player_class in event.members:
+                if member == user:
+                    event.members.remove((member, player_class))
+            ctx = await self.bot.get_context(event.message)
+            em = await self.make_event_embed(ctx, event)
+            await event.message.edit(embed=em)
+            async with self.config.guild(ctx.guild).events() as cur_events:
+                cur_events[str(event.hoster.id)] = event.to_json()
+            self.event_cache[str(ctx.guild.id)][str(event.message.id)] = event
+        if user in event.maybe:
+            event.maybe.remove(user)
+            ctx = await self.bot.get_context(event.message)
+            em = await self.make_event_embed(ctx, event)
+            await event.message.edit(embed=em)
+            async with self.config.guild(ctx.guild).events() as cur_events:
+                cur_events[str(event.hoster.id)] = event.to_json()
+            self.event_cache[str(ctx.guild.id)][str(event.message.id)] = event
 
     @commands.command(name="event")
     @commands.guild_only()
@@ -187,7 +248,7 @@ class EventPoster(commands.Cog):
                 self.event_cache[str(ctx.guild.id)] = {}
             self.event_cache[str(ctx.guild.id)][str(posted_message.id)] = event
             try:
-                start_adding_reactions(posted_message, ReactionPredicate.YES_OR_NO_EMOJIS)
+                start_adding_reactions(posted_message, EVENT_EMOJIS)
             except discord.errors.Forbidden:
                 pass
         else:
@@ -339,6 +400,8 @@ class EventPoster(commands.Cog):
             player_list += f"**Slot {i+1}**\n{member[0].mention}{player_class}\n"
         for page in pagify(player_list, shorten_by=1024):
             em.add_field(name="Attendees", value=page)
+        if event.maybe and len(em.fields) < 25:
+            em.add_field(name="Maybe", value=humanize_list([m.mention for m in event.maybe]))
         if event.approver:
             em.set_footer(text=f"Approved by {event.approver}", icon_url=event.approver.avatar_url)
         thumbnails = await self.config.guild(ctx.guild).custom_links()

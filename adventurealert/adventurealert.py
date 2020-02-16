@@ -9,6 +9,7 @@ if version_info < VersionInfo.from_str("3.3.2"):
 else:
     SANITIZE_ROLES_KWARG = {"sanitize_roles": False}
 
+
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
 

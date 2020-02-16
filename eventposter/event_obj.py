@@ -17,6 +17,7 @@ class Event:
     approver: Optional[discord.Member]
     message: Optional[discord.Message]
     channel: Optional[discord.TextChannel]
+    maybe: Optional[List[discord.Member]]
 
     def __init__(
         self,
@@ -27,6 +28,7 @@ class Event:
         approver: Optional[discord.Member] = None,
         message: Optional[discord.Message] = None,
         channel: Optional[discord.TextChannel] = None,
+        maybe: List[discord.Member] = []
     ):
         self.hoster = hoster
         self.members = members
@@ -35,6 +37,7 @@ class Event:
         self.approver = approver
         self.message = message
         self.channel = channel
+        self.maybe = maybe
 
     @classmethod
     async def from_json(cls, data: dict, guild: discord.Guild):
@@ -62,6 +65,13 @@ class Event:
         max_slots = None
         if "max_slots" in data:
             max_slots = data["max_slots"]
+        maybe = []
+        if "maybe" in data:
+            for m in data["maybe"]:
+                mem = guild.get_member(m)
+                if not mem:
+                    continue
+                maybe.append(mem)
         return cls(
             hoster,
             members,
@@ -69,7 +79,8 @@ class Event:
             max_slots,
             guild.get_member(data["approver"]),
             message,
-            channel
+            channel,
+            maybe
         )
 
     def to_json(self):
@@ -80,7 +91,8 @@ class Event:
             "max_slots": self.max_slots,
             "approver": self.approver.id if self.approver else None,
             "message": self.message.id if self.message else None,
-            "channel": self.channel.id if self.channel else None
+            "channel": self.channel.id if self.channel else None,
+            "maybe": [m.id for m in self.maybe]
         }
 
 
