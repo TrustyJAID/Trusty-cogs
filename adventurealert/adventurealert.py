@@ -13,7 +13,7 @@ else:
 class AdventureAlert(commands.Cog):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -230,7 +230,7 @@ class AdventureAlert(commands.Cog):
         if cur_setting:
             await ctx.send("Removed from miniboss alerts across all shared servers.")
         else:
-            await ctx.send("Added to cart miniboss across all shared servers.")
+            await ctx.send("Added to miniboss alerts across all shared servers.")
 
     @minibossalert.command(name="removeuser")
     @checks.mod_or_permissions(manage_messages=True)
