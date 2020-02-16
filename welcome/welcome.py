@@ -25,7 +25,7 @@ default_settings = {
     "GOODBYE": [default_goodbye],
     "CHANNEL": None,
     "WHISPER": False,
-    "BOTS_MSG": [default_bot_msg],
+    "BOTS_MSG": default_bot_msg,
     "BOTS_ROLE": None,
     "EMBED": False,
     "JOINED_TODAY": False,
