@@ -22,7 +22,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.8.1"
+    __version__ = "2.8.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -136,7 +136,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
             Toggle various extended modlog notifications
 
-            Requires the channel to be setup with `[p]modlogset modlog #channel` first
+            Requires the channel to be setup with `[p]modlogset modlog #channel`
+            Or can be sent to separate channels with `[p]modlog channel #channel event_name`
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
