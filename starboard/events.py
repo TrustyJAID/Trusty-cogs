@@ -72,6 +72,10 @@ class StarboardEvents:
             for role in starboard.whitelist_role:
                 if role in user_roles:
                     return True
+            return False
+            # Since we'd normally return True
+            # if there is a whitelist we want to ensure only whitelisted
+            # roles can starboard something
         elif starboard.blacklist_role:
             for role in starboard.blacklist_role:
                 if role in user_roles:
