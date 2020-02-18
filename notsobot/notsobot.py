@@ -92,7 +92,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -298,6 +298,9 @@ class NotSoBot(commands.Cog):
         msg = await ctx.message.channel.send("ok, processing")
         async with ctx.typing():
             b, mime = await self.bytes_download(urls[0])
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             final, content_msg, file_size = await self.bot.loop.run_in_executor(
                 None, self.do_magik, scale, b
             )
@@ -393,6 +396,9 @@ class NotSoBot(commands.Cog):
             elif frame_delay < 0:
                 frame_delay = 1
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             check = mime in self.gif_mimes
             is_owner = await ctx.bot.is_owner(ctx.author)
             try:
@@ -441,6 +447,9 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
             xx = await ctx.message.channel.send("ok, processing")
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             is_gif = mime in self.gif_mimes
             font_path = str(bundled_data_path(self)) + "/arial.ttf"
             color = wand.color.Color(color)
@@ -539,6 +548,9 @@ class NotSoBot(commands.Cog):
             # await self.download("https://i.imgur.com/zDAY2yo.jpg", t_path)
             img, mime = await self.bytes_download(str(avatar))
             trig, mime = await self.bytes_download("https://i.imgur.com/zDAY2yo.jpg")
+            if img is False or trig is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             try:
                 # fake_task = functools.partial(self.trigger_image, path=img, t_path=trig)
                 task = ctx.bot.loop.run_in_executor(None, self.trigger_image, img, trig)
@@ -710,6 +722,9 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
 
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             result = self.bot.loop.run_in_executor(None, self.do_gascii, b)
             try:
                 result = await asyncio.wait_for(result, timeout=60)
@@ -733,6 +748,9 @@ class NotSoBot(commands.Cog):
         if len(ctx.message.mentions) >= 1:
             name = ctx.message.mentions[0].name
         b, mime = await self.bytes_download("https://i.imgur.com/xNWxZHn.jpg")
+        if b is False:
+            await ctx.send(":warning: **Command download function failed...**")
+            return
         if not text:
             text = f"{name}'s\n Hopes and dreams"
         else:
@@ -843,6 +861,9 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
             r = await self.get_text(api)
             b, mime = await self.bytes_download(r)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             file = discord.File(b, filename="tti.png")
             await ctx.send(file=file)
 
@@ -856,6 +877,9 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
             r = await self.get_text(api)
             b, mime = await self.bytes_download(r)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             file = discord.File(b, filename="tti.png")
             await ctx.send(file=file)
 
@@ -915,6 +939,9 @@ class NotSoBot(commands.Cog):
         if txt is None:
             txt = "vapor wave"
         b, mime = await self.bytes_download(url)
+        if b is False:
+            await ctx.send(":warning: **Command download function failed...**")
+            return
         try:
             final, file_size = await self.bot.loop.run_in_executor(None, self.do_vw, b, txt)
         except Exception:
@@ -930,6 +957,9 @@ class NotSoBot(commands.Cog):
             ctx.message.author.name, txt
         )
         b, mime = await self.bytes_download(api)
+        if b is False:
+            await ctx.send(":warning: **Command download function failed...**")
+            return
         i = 0
         while sys.getsizeof(b) == 88 and i != 10:
             b, mime = await self.bytes_download(api)
@@ -995,6 +1025,9 @@ class NotSoBot(commands.Cog):
                 wmm.name = "watermark.png"
                 if wm_gif:
                     wmm.name = "watermark.gif"
+            if wmm is False or b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
 
             def add_watermark(b, wmm, x, y, transparency, is_gif=False, wm_gif=False):
                 final = BytesIO()
@@ -1122,6 +1155,9 @@ class NotSoBot(commands.Cog):
                 seed = random.randint(1, 20)
             b, mime = await self.bytes_download(url)
             gif = mime in self.gif_mimes
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
             if not gif:
                 final, file_size = await self.bot.loop.run_in_executor(
                     None, self.do_glitch, b, amount, seed, iterations
@@ -1432,6 +1468,9 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
 
             def flip_img(b):
                 img = Image.open(b)
@@ -1454,6 +1493,9 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
 
             def flop_img(b):
                 img = Image.open(b)
@@ -1476,6 +1518,9 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
+            if b is False:
+                await ctx.send(":warning: **Command download function failed...**")
+                return
 
             def invert_img(b):
                 img = Image.open(b).convert("RGB")
