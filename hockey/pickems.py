@@ -208,21 +208,28 @@ class Pickems:
             return
         try:
             new_chn = await guild.create_text_channel(name, category=category)
+            await new_chn.send(msg)
         except discord.errors.Forbidden:
             await config.guild(guild).pickems_category.set(None)
             return None
-        await new_chn.send(msg)
         return new_chn
 
     @staticmethod
     async def create_pickems_game_msg(bot, channel, game):
-        new_msg = await channel.send(
-            "__**{} {}**__ @ __**{} {}**__".format(
-                game.away_emoji, game.away_team, game.home_emoji, game.home_team
+        try:
+            new_msg = await channel.send(
+                "__**{} {}**__ @ __**{} {}**__".format(
+                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
+                )
             )
-        )
+        except Exception:
+            log.error("Error sending messages in pickems channel.")
+            return
         # Create new pickems object for the game
-        await Pickems.create_pickem_object(bot, channel.guild, new_msg, channel, game)
+        try:
+            await Pickems.create_pickem_object(bot, channel.guild, new_msg, channel, game)
+        except Exception as e:
+            log.error("Error creating pickems Object.", exc_info=e)
         if channel.permissions_for(channel.guild.me).add_reactions:
             try:
                 await new_msg.add_reaction(game.away_emoji[2:-1])

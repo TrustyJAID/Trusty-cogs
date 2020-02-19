@@ -44,7 +44,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.4"
+    __version__ = "2.8.5"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1130,6 +1130,26 @@ class Hockey(commands.Cog):
         """
         await self.config.guild(ctx.guild).pickems_category.set(None)
         await ctx.tick()
+
+    @hockeyset_commands.command(name="resetpickemsweekly", hidden=True)
+    @checks.is_owner()
+    async def reset_weekly_pickems_data(self, ctx: commands.Context):
+        """
+            Force reset all pickems data for the week
+        """
+        await Pickems.reset_weekly(self.bot)
+        guilds_to_make_new_pickems = []
+        for guild_id in await self.config.all_guilds():
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                continue
+            if await self.config.guild(guild).pickems_category():
+                guilds_to_make_new_pickems.append(guild)
+        async with self.pickems_save_lock:
+            await Pickems.create_weekly_pickems_pages(
+                self.bot, guilds_to_make_new_pickems, Game
+            )
+        await ctx.send("Finished resetting all pickems data.")
 
     async def post_leaderboard(self, ctx, leaderboard_type):
         """
