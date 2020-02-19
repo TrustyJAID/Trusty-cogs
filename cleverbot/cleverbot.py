@@ -29,7 +29,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
 
     """
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
     def __init__(self, bot):
         self.bot = bot

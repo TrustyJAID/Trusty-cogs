@@ -85,7 +85,12 @@ class CleverbotAPI:
             async with session.get(API_URL, params=payload) as r:
                 # print(r.status)
                 if r.status == 200:
-                    data = await r.json()
+                    try:
+                        data = await r.json()
+                    except UnicodeDecodeError:
+                        data = await r.json(encoding="latin-1")
+                    except Exception:
+                        raise APIError("Error decoding cleverbot respose.")
                     self.instances[str(author.id)] = data["cs"]  # Preserves conversation status
                 elif r.status == 401:
                     log.error("Cleverbot.com Invalid Credentials")
