@@ -36,7 +36,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -74,8 +74,8 @@ class AdventureAlert(
         """
         global_settings = await self.config.user(ctx.author).all()
         msg = ""
-        if any(v for k,v in global_settings.items()):
-            msg += _("Global Notifications: {g_set}\n").format(
+        if any(v for k, v in global_settings.items()):
+            msg += _("__**Global Notifications**__: {g_set}\n\n").format(
                 g_set=humanize_list([k.title() for k, v in global_settings.items() if v])
             )
         all_data: dict = {
