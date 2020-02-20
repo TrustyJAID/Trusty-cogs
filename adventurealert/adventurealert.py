@@ -36,7 +36,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -99,9 +99,10 @@ class AdventureAlert(
                 all_data["cart_servers"][0].append(guild.name)
         for k, v in all_data.items():
             if v[0]:
-                msg += f"{v[1]}: {humanize_list(v[0])}\n"
+                msg += f"__**{v[1]}**__: {humanize_list(v[0])}\n\n"
         if msg:
-            await ctx.maybe_send_embed(msg)
+            for line in pagify(msg):
+                await ctx.maybe_send_embed(line)
         else:
             await ctx.maybe_send_embed(_("You do not have any adventure notifications set."))
 

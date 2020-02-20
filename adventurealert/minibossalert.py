@@ -20,7 +20,7 @@ class MinibossAlert(MixinMeta):
     @minibossalert.command(name="role", aliases=["roles"])
     @checks.mod_or_permissions(manage_roles=True)
     async def miniboss_role(self, ctx: commands.Context, *, role: discord.Role) -> None:
-        """Add or remove a role to be pinged when the cart appears"""
+        """Add or remove a role to be pinged when the miniboss appears"""
         if role.id in await self.config.guild(ctx.guild).miniboss_roles():
             async with self.config.guild(ctx.guild).miniboss_roles() as data:
                 data.remove(role.id)
@@ -53,8 +53,8 @@ class MinibossAlert(MixinMeta):
     @minibossalert.command(name="global")
     async def miniboss_global(self, ctx: commands.Context) -> None:
         """Toggle miniboss notifications in all shared servers"""
-        cur_setting = await self.config.user(ctx.author).cart()
-        await self.config.user(ctx.author).cart.set(not cur_setting)
+        cur_setting = await self.config.user(ctx.author).miniboss()
+        await self.config.user(ctx.author).miniboss.set(not cur_setting)
         if cur_setting:
             await ctx.send(_("Removed from miniboss alerts across all shared servers."))
         else:
