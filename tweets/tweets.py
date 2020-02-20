@@ -57,7 +57,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.5.2"
+    __version__ = "2.5.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -528,6 +528,7 @@ class Tweets(commands.Cog):
         return msg_list
 
     @_tweets.command(name="gettweets")
+    @checks.bot_has_permissions(add_reactions=True)
     async def get_tweets(
         self, ctx: commands.context, username: str, count: Optional[int] = 10, replies: bool = True
     ) -> None:
@@ -799,11 +800,11 @@ class Tweets(commands.Cog):
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")
             log.error(msg, exc_info=True)
-            await ctx.send(msg)
+            return await ctx.send(msg)
         except Exception:
             log.error("Error adding list", exc_info=True)
             msg = _("That `owner` and `list_name` " "don't appear to be available")
-            await ctx.send(msg)
+            return await ctx.send(msg)
         if channel is None:
             channel = ctx.message.channel
         if not channel.permissions_for(ctx.guild.me).send_messages:
@@ -871,7 +872,7 @@ class Tweets(commands.Cog):
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")
             log.error(msg, exc_info=True)
-            await ctx.send(msg)
+            return await ctx.send(msg)
         except Exception:
             msg = _("That `owner` and `list_name` " "don't appear to be available")
             await ctx.send(msg)
