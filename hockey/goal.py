@@ -305,19 +305,32 @@ class Goal:
         except Exception:
             log.error(_("Could not edit goal in "))
 
-    async def get_shootout_display(self, game_goals):
+    async def get_shootout_display(self, game):
         """
             Gets a string for the shootout display
         """
-        msg = ""
-        score = "☑\n"
-        miss = "❌\n"
-        for goal in game_goals:
+        home_msg = ""
+        away_msg = ""
+        score = "☑ {scorer}\n"
+        miss = "❌ {scorer}\n"
+        for goal in game.home_goals:
+            scorer = ""
+            scorer_num = ""
+            if f"ID{goal.scorer_id}" in game.players:
+                scorer = game.players[f"ID{goal.scorer_id}"]["person"]["fullName"]
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
-                msg += miss
+                home_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":
-                msg += score
-        return msg
+                home_msg += score.format(scorer=scorer)
+        for goal in game.away_goals:
+            scorer = ""
+            if f"ID{goal.scorer_id}" in game.players:
+                scorer = game.players[f"ID{goal.scorer_id}"]["person"]["fullName"]
+            if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
+                away_msg += miss.format(scorer=scorer)
+            if goal.event in ["Goal"] and goal.period_ord == "SO":
+                away_msg += score.format(scorer=scorer)
+        return home_msg, away_msg
 
     async def goal_post_embed(self, game):
         """
@@ -377,8 +390,7 @@ class Goal:
             else:
                 em = discord.Embed(description=self.description, colour=colour)
                 em.set_author(name=title, url=url, icon_url=logo)
-            home_msg = await self.get_shootout_display(game.home_goals)
-            away_msg = await self.get_shootout_display(game.away_goals)
+            home_msg, away_msg = await self.get_shootout_display(game)
             em.add_field(name=game.home_team, value=home_msg)
             em.add_field(name=game.away_team, value=away_msg)
             em.set_footer(
@@ -406,8 +418,7 @@ class Goal:
                 + ")"
             )
         else:
-            home_msg = await self.get_shootout_display(game.home_goals)
-            away_msg = await self.get_shootout_display(game.away_goals)
+            home_msg, away_msg = await self.get_shootout_display(game)
             text = (
                 f"{game.home_emoji} {game.home_team}: {home_msg}\n"
                 f"{game.away_emoji} {game.away_team}: {away_msg}\n "

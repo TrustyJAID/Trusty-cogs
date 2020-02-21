@@ -45,6 +45,7 @@ class Game:
         first_star: str,
         second_star: str,
         third_star: str,
+        players: dict = None,
     ):
         super().__init__()
         self.game_state = game_state
@@ -87,6 +88,7 @@ class Game:
         self.first_star = first_star
         self.second_star = second_star
         self.third_star = third_star
+        self.players = players
 
     def to_json(self) -> dict:
         return {
@@ -283,21 +285,7 @@ class Game:
                     if len(list_goals[ordinal]) <= 5 and goal_msg != "":
                         em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024])
                 if len(so_goals) != 0:
-                    home_msg = ""
-                    away_msg = ""
-                    score = "☑\n"
-                    miss = "❌\n"
-                    for goal in so_goals:
-                        if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
-                            if goal.team_name == self.home_team:
-                                home_msg += miss
-                            else:
-                                away_msg += miss
-                        if goal.event in ["Goal"] and goal.period_ord == "SO":
-                            if goal.team_name == self.home_team:
-                                home_msg += score
-                            else:
-                                away_msg += score
+                    home_msg, away_msg = await self.goals[0].get_shootout_display(self)
                     em.add_field(name=f"{self.home_team}" + _(" Shootout"), value=home_msg)
                     em.add_field(name=f"{self.away_team}" + _(" Shootout"), value=away_msg)
             if self.first_star is not None:
@@ -777,4 +765,5 @@ class Game:
             first_star,
             second_star,
             third_star,
+            players
         )
