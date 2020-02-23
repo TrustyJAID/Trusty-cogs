@@ -10,7 +10,7 @@ from .bossalert import BossAlert
 from .minibossalert import MinibossAlert
 from .cartalert import CartAlert
 
-if version_info < VersionInfo.from_str("3.3.2"):
+if version_info < VersionInfo.from_str("3.4.0"):
     SANITIZE_ROLES_KWARG = {}
 else:
     SANITIZE_ROLES_KWARG = {"sanitize_roles": False}
