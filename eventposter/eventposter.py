@@ -15,14 +15,14 @@ log = logging.getLogger("red.trusty-cogs.EventPoster")
 EVENT_EMOJIS = [
     "\N{WHITE HEAVY CHECK MARK}",
     "\N{NEGATIVE SQUARED CROSS MARK}",
-    "\N{WHITE QUESTION MARK ORNAMENT}"
+    "\N{WHITE QUESTION MARK ORNAMENT}",
 ]
 
 
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -425,17 +425,24 @@ class EventPoster(commands.Cog):
 
     @event_settings.command(name="playerclass")
     @commands.guild_only()
-    async def set_default_player_class(self, ctx: commands.Context, *, player_class: str) -> None:
+    async def set_default_player_class(
+        self, ctx: commands.Context, *, player_class: str = ""
+    ) -> None:
         """
-            Set's the users default player class.
+            Set's the users default player class. If nothing is provided this will be rest.
 
             If the user has set this and does not provide a `player_class` in the join command,
             this setting will be used.
         """
         await self.config.member(ctx.author).player_class.set(player_class)
-        await ctx.send(
-            "Your player class has been set to {player_class}".format(player_class=player_class)
-        )
+        if player_class:
+            await ctx.send(
+                "Your player class has been set to {player_class}".format(
+                    player_class=player_class
+                )
+            )
+        else:
+            await ctx.send("Your player class has been reset.")
 
     @event_settings.command(name="defaultmax", aliases=["max"])
     @checks.mod_or_permissions(manage_messages=True)
