@@ -10,11 +10,6 @@ from .bossalert import BossAlert
 from .minibossalert import MinibossAlert
 from .cartalert import CartAlert
 
-if version_info < VersionInfo.from_str("3.3.2"):
-    SANITIZE_ROLES_KWARG = {}
-else:
-    SANITIZE_ROLES_KWARG = {"sanitize_roles": False}
-
 _ = Translator("AdventureAlert", __file__)
 
 
@@ -36,7 +31,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -53,7 +48,7 @@ class AdventureAlert(
             miniboss_roles=[],
         )
         self.config.register_user(adventure=False, miniboss=False, dragon=False, cart=False)
-        self.sanitize = SANITIZE_ROLES_KWARG
+        self.sanitize = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
