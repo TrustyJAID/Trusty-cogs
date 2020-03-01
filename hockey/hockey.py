@@ -44,7 +44,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.6"
+    __version__ = "2.8.7"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -524,6 +524,8 @@ class Hockey(commands.Cog):
                 em.add_field(name=_("Delete Game Day Channels"), value=str(delete_gdc))
                 em.add_field(name=_("Team"), value=str(team))
                 em.add_field(name=_("Current Channels"), value=created_channels)
+                if not game_states:
+                    game_states = ["None"]
                 em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
                 await ctx.send(embed=em)
 
@@ -552,9 +554,12 @@ class Hockey(commands.Cog):
             `goal` is all the goal updates.
         """
         await self.config.guild(ctx.guild).gdc_state_updates.set(list(set(state)))
-        await ctx.send(
-            _("GDC game updates set to {states}").format(states=humanize_list(list(set(state))))
-        )
+        if state:
+            await ctx.send(
+                _("GDC game updates set to {states}").format(states=humanize_list(list(set(state))))
+            )
+        else:
+            await ctx.send(_("GDC game updates not set"))
 
     @gdc.command(name="create")
     async def gdc_create(self, ctx):
