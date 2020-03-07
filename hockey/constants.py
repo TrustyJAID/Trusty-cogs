@@ -261,7 +261,7 @@ TEAMS = {
         "emoji": "PhiladelphiaFlyers:664662903118626844",
         "home": "#F74902",
         "id": 4,
-        "invite": "https://discord.gg/U5PdQaA",
+        "invite": "https://discord.gg/WwG2MFf",
         "logo": "https://nhl.bamcontent.com/images/photos/281726640/256x256/cut.png",
         "team_url": "http://www.philadelphiaflyers.com",
         "timezone": "US/Eastern",
