@@ -1,6 +1,7 @@
 from .conversions import Conversions
 
 
-def setup(bot):
+async def setup(bot):
     n = Conversions(bot)
     bot.add_cog(n)
+    await n.init()

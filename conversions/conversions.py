@@ -1,8 +1,10 @@
 import discord
-from redbot.core import commands
 import datetime
 import aiohttp
+import asyncio
 import re
+
+from redbot.core import commands, Config
 from typing import Optional, Union, Dict
 
 
@@ -13,10 +15,13 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
+        self.config = Config.get_conf(self, identifier=239232811662311425)
+        self.config.register_global(version="0.0.0")
+        self._ready = asyncio.Event()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -24,6 +29,26 @@ class Conversions(commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def cog_before_invoke(self, ctx: commands.Context) -> None:
+        await self._ready.wait()
+
+    async def init(self):
+        await self.bot.wait_until_ready()
+        if await self.config.version() < "1.1.0":
+            prefixes = await self.bot.get_valid_prefixes()
+            prefix = re.sub(rf"<@!?{self.bot.user.id}>", f"@{self.bot.user.name}", prefixes[0])
+            msg = (
+                "The Conversions cog is now using a couple of API's "
+                "that require API keys. Please use `{prefix}stockapi` "
+                "to continue using the stock, gold, etc. commands. "
+                "Please use `{prefix}cryptoapi` to continue using "
+                "the cryptocurrency commands."
+            ).format(prefix=prefix)
+            self.bot.loop.create_task(self.bot.send_to_owners(msg))
+            await self.config.version.set(self.__version__)
+        self._ready.set()
+
 
     @commands.command(aliases=["bitcoin", "BTC"])
     async def btc(
@@ -45,6 +70,8 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, "BTC", ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, "BTC", ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
@@ -70,6 +97,8 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, "ETH", ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, "ETH", ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
@@ -95,6 +124,8 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, "LTC", ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, "LTC", ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
@@ -120,6 +151,8 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, "XMR", ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, "XMR", ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
@@ -152,26 +185,27 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, "BCH", ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, "BCH", ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
             await ctx.send(embed=embed)
 
-    async def checkcoins(self, base: str) -> Optional[str]:
-        link = "https://api.coinmarketcap.com/v2/ticker/"
+    async def checkcoins(self, base: str) -> dict:
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
         async with aiohttp.ClientSession() as session:
-            async with session.get(link, headers=await self.get_header()) as resp:
+            async with session.get(url, headers=await self.get_header()) as resp:
                 data = await resp.json()
+                if resp.status in [400, 401, 403, 429, 500]:
+                    return data
         for coin in data["data"]:
-            if (
-                base.upper() == data["data"][coin]["symbol"].upper()
-                or base.lower() == data["data"][coin]["name"].lower()
-            ):
-                return data["data"][coin]
-        return None
+            if base.upper() == coin["symbol"].upper() or base.lower() == coin["name"].lower():
+                return coin
+        return {}
 
     @commands.command()
-    async def multicoin(self, ctx: commands.Context, *, coins: str = Optional[None]) -> None:
+    async def multicoin(self, ctx: commands.Context, *, coins: Optional[str] = None) -> None:
         """
             Gets the current USD value for a list of coins
 
@@ -181,10 +215,28 @@ class Conversions(commands.Cog):
         coin_list = []
         if coins is None:
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://api.coinmarketcap.com/v2/ticker/", headers=await self.get_header()) as resp:
+                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+                async with session.get(url, headers=await self.get_header()) as resp:
                     data = await resp.json()
+                    if resp.status in [400, 403, 429, 500]:
+                        await ctx.send(
+                            "Something went wrong, the error code is "
+                            "{code}\n`{error_message}`".format(
+                                code=resp.status, error_message=data["error_message"]
+                            )
+                        )
+                        return
+                    if resp.status == 401:
+                        await ctx.send(
+                            "The bot owner has not set an API key. "
+                            "Please use `{prefix}cryptoapi` to see "
+                            "how to create and setup an API key.".format(
+                                prefix=ctx.clean_prefix
+                            )
+                        )
+                        return
             for coin in data["data"]:
-                coin_list.append(data["data"][coin])
+                coin_list.append(coin)
         else:
             coins = re.split(r"\W+", coins)
             for coin in coins:
@@ -194,7 +246,7 @@ class Conversions(commands.Cog):
             for coin in coin_list[:25]:
                 if coin is not None:
                     msg = "1 {0} is {1:,.2f} USD".format(
-                        coin["symbol"], float(coin["quotes"]["USD"]["price"])
+                        coin["symbol"], float(coin["quote"]["USD"]["price"])
                     )
                     embed.add_field(name=coin["name"], value=msg)
             await ctx.send(embed=embed)
@@ -229,6 +281,8 @@ class Conversions(commands.Cog):
             embed = await self.crypto_embed(ctx, coin, ammount, currency, full)
         else:
             embed = await self.crypto_embed(ctx, coin, ammount, currency, False)
+        if not embed:
+            return
         if type(embed) is str:
             await ctx.send(embed)
         else:
@@ -244,7 +298,26 @@ class Conversions(commands.Cog):
     ) -> Optional[Union[str, discord.Embed]]:
         """Creates the embed for the crypto currency"""
         coin_data = await self.checkcoins(coin)
-        if coin_data is None:
+        if "status" in coin_data:
+            status = coin_data["status"]
+            if status["error_code"] in [1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011]:
+                await ctx.send(
+                    "Something went wrong, the error code is "
+                    "{code}\n`{error_message}`".format(
+                        code=coin["error_code"], error_message=coin["error_message"]
+                    )
+                )
+                return None
+            if status["error_code"] in [1001, 1002]:
+                await ctx.send(
+                    "The bot owner has not set an API key. "
+                    "Please use `{prefix}cryptoapi` to see "
+                    "how to create and setup an API key.".format(
+                        prefix=ctx.clean_prefix
+                    )
+                )
+                return None
+        if coin_data == {}:
             await ctx.send("{} is not in my list of currencies!".format(coin))
             return None
         coin_colour = {
@@ -254,9 +327,9 @@ class Conversions(commands.Cog):
             "Litecoin": discord.Colour.dark_grey(),
             "Monero": discord.Colour.orange(),
         }
-        price = float(coin_data["quotes"]["USD"]["price"]) * ammount
-        market_cap = float(coin_data["quotes"]["USD"]["market_cap"])
-        volume_24h = float(coin_data["quotes"]["USD"]["volume_24h"])
+        price = float(coin_data["quote"]["USD"]["price"]) * ammount
+        market_cap = float(coin_data["quote"]["USD"]["market_cap"])
+        volume_24h = float(coin_data["quote"]["USD"]["volume_24h"])
         coin_image = "https://s2.coinmarketcap.com/static/img/coins/128x128/{}.png".format(
             coin_data["id"]
         )
@@ -275,18 +348,20 @@ class Conversions(commands.Cog):
             embed.colour = coin_colour[coin_data["name"]]
         embed.set_footer(text="As of")
         embed.set_author(name=coin_data["name"], url=coin_url, icon_url=coin_image)
-        embed.timestamp = datetime.datetime.utcfromtimestamp(int(coin_data["last_updated"]))
+        embed.timestamp = datetime.datetime.strptime(
+            coin_data["last_updated"], "%Y-%m-%dT%H:%M:%S.000Z"
+        )
         if full:
-            hour_1 = coin_data["quotes"]["USD"]["percent_change_1h"]
-            hour_24 = coin_data["quotes"]["USD"]["percent_change_24h"]
-            days_7 = coin_data["quotes"]["USD"]["percent_change_7d"]
+            hour_1 = coin_data["quote"]["USD"]["percent_change_1h"]
+            hour_24 = coin_data["quote"]["USD"]["percent_change_24h"]
+            days_7 = coin_data["quote"]["USD"]["percent_change_7d"]
             hour_1_emoji = "🔼" if hour_1 >= 0 else "🔽"
             hour_24_emoji = "🔼" if hour_24 >= 0 else "🔽"
             days_7_emoji = "🔼" if days_7 >= 0 else "🔽"
             available_supply = "{0:,.2f}".format(coin_data["circulating_supply"])
             try:
                 max_supply = "{0:,.2f}".format(coin_data["max_supply"])
-            except KeyError:
+            except (KeyError, TypeError):
                 max_supply = "\N{INFINITY}"
             total_supply = "{0:,.2f}".format(coin_data["total_supply"])
             embed.set_thumbnail(url=coin_image)
@@ -353,9 +428,7 @@ class Conversions(commands.Cog):
             `[ammount]` must be a number of ounces to convert defaults to 1 ounce
             `[currency]` must be a valid currency defaults to USD
         """
-        SILVER = (
-            "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key={}"
-        )
+        SILVER = "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key={}"
         api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
         if not api_key:
             return await ctx.send("The bot owner needs to supply an API key for this to work.")
@@ -377,7 +450,9 @@ class Conversions(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def platinum(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
+    async def platinum(
+        self, ctx: commands.Context, ammount: int = 1, currency: str = "USD"
+    ) -> None:
         """
             Converts platinum in ounces to a given currency.
 
@@ -435,6 +510,19 @@ class Conversions(commands.Cog):
             await ctx.send(msg)
         else:
             await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.is_owner()
+    async def cryptoapi(self, ctx: commands.Context) -> None:
+        """
+            Instructions for how to setup the stock API
+        """
+        msg = (
+            "1. Go to https://coinmarketcap.com/api/ sign up for an account.\n"
+            "2. In Dashboard / Overview grab your API Key and enter it with:\n"
+            f"`{ctx.prefix}set api coinmarketcap api_key YOUR_KEY_HERE`"
+        )
+        await ctx.maybe_send_embed(msg)
 
     @commands.command()
     @commands.is_owner()
