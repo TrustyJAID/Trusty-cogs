@@ -22,7 +22,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.2.3"
+    __version__ = "2.2.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -246,8 +246,8 @@ class Starboard(StarboardEvents, commands.Cog):
         star_message = StarboardMessage(
             msg.id, channel.id, post_msg.id, star_channel.id, msg.author.id
         )
-        if star_message not in self.starboard[ctx.guild.id][starboard.name].messages:
-            self.starboard[ctx.guild.id][starboard.name].messages.append(star_message.to_json())
+        if star_message not in self.starboards[ctx.guild.id][starboard.name].messages:
+            self.starboards[ctx.guild.id][starboard.name].messages.append(star_message.to_json())
         await self._save_starboards(guild)
 
     @starboard.group()
