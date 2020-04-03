@@ -22,3 +22,38 @@ cd ImageMagick-*
 make
 sudo make install
 ```
+
+## Installing ImageMagick on Windows
+These instructions are specifically for installing ImageMagick for bots hosted on windows computers. 
+
+1. Go to [this link](http://www.imagemagick.org/download/binaries/) and click the first link on that page to begin downloading ImageMagick.
+
+2. When the download finishes, run the downloaded file and click `accept` on the "License Agreement".
+
+3. Click `next` on the "Information" screen.
+
+4. The default install location should be something like `C:\Program Files\ImageMagick-6.9.11`. **Remember what it is set to.** It will be needed for a later step. You might want to copy it somewhere so you can remember it. When you are ready, click `next`.
+
+5. Click `next` on the "Select Start Menu Folder" screen.
+
+6. In the "Select Additional Tasks" screen, ensure that the following 3 options are checked:  
+- Add application directory to your system path  
+- Install FFmpeg  
+- Install development headers and libraries for C and C++  
+then click `next`.
+
+7. Click `install` to begin the installation.
+
+8. When the installation finishes, click `next` and then `finish`.
+
+9. Head to `<datapath>\cogs\Downloader\lib\moviepy`, replacing `<datapath>` with your bot's data path. Your data path can be found by running the command `[p]datapath`.
+
+10. Shut down your bot.
+
+11. Open the file `config_defaults.py`.
+
+12. Replace the last line in that file `IMAGEMAGICK_BINARY = os.getenv('IMAGEMAGICK_BINARY', 'auto-detect')` with `IMAGEMAGICK_BINARY = r"<INSTALL_LOCATION>\convert.exe"`, replacing `<INSTALL_LOCATION>` with the install location from step 4.
+
+13. Save and close the file.
+
+14. Start up your bot. `[p]crabrave` should now be working.
