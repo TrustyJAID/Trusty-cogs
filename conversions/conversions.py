@@ -2,10 +2,13 @@ import discord
 import datetime
 import aiohttp
 import asyncio
+import logging
 import re
 
 from redbot.core import commands, Config
 from typing import Optional, Union, Dict
+
+log = logging.getLogger("red.trusty-cogs.conversions")
 
 
 class Conversions(commands.Cog):
@@ -15,12 +18,13 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=239232811662311425)
         self.config.register_global(version="0.0.0")
+        self.bot.loop.create_task(self.init())
         self._ready = asyncio.Event()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -35,20 +39,23 @@ class Conversions(commands.Cog):
 
     async def init(self):
         await self.bot.wait_until_ready()
-        if await self.config.version() < "1.1.0":
-            prefixes = await self.bot.get_valid_prefixes()
-            prefix = re.sub(rf"<@!?{self.bot.user.id}>", f"@{self.bot.user.name}", prefixes[0])
-            msg = (
-                "The Conversions cog is now using a couple of API's "
-                "that require API keys. Please use `{prefix}stockapi` "
-                "to continue using the stock, gold, etc. commands. "
-                "Please use `{prefix}cryptoapi` to continue using "
-                "the cryptocurrency commands."
-            ).format(prefix=prefix)
-            self.bot.loop.create_task(self.bot.send_to_owners(msg))
-            await self.config.version.set(self.__version__)
-        self._ready.set()
-
+        try:
+            if await self.config.version() < "1.1.0":
+                prefixes = await self.bot.get_valid_prefixes()
+                prefix = re.sub(rf"<@!?{self.bot.user.id}>", f"@{self.bot.user.name}", prefixes[0])
+                msg = (
+                    "The Conversions cog is now using a couple of API's "
+                    "that require API keys. Please use `{prefix}stockapi` "
+                    "to continue using the stock, gold, etc. commands. "
+                    "Please use `{prefix}cryptoapi` to continue using "
+                    "the cryptocurrency commands."
+                ).format(prefix=prefix)
+                self.bot.loop.create_task(self.bot.send_to_owners(msg))
+                await self.config.version.set("1.1.0")
+        except Exception:
+            log.exception("There was an exception loading the cog.", exec_info=True)
+        else:
+            self._ready.set()
 
     @commands.command(aliases=["bitcoin", "BTC"])
     async def btc(
