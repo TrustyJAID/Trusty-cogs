@@ -212,6 +212,8 @@ class StarboardEvents:
         for name, starboard in self.starboards[guild.id].items():
             # starboard = StarboardEntry.from_json(s_board)
             star_channel = self.bot.get_channel(starboard.channel)
+            if not star_channel:
+                continue
             await self._loop_messages(payload, starboard, star_channel, msg)
 
     async def _update_stars(self, payload: discord.RawReactionActionEvent) -> None:
@@ -285,7 +287,10 @@ class StarboardEvents:
         star_channel: discord.TextChannel,
         message: discord.Message,
     ):
-        guild = star_channel.guild
+        try:
+            guild = star_channel.guild
+        except AttributeError:
+            return
         for messages in (StarboardMessage.from_json(m) for m in starboard.messages):
             same_message = messages.original_message == message.id
             same_channel = messages.original_channel == payload.channel_id
