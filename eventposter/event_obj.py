@@ -19,25 +19,19 @@ class Event:
     channel: Optional[discord.TextChannel]
     maybe: Optional[List[discord.Member]]
 
-    def __init__(
-        self,
-        hoster: discord.Member,
-        members: List[Tuple[discord.Member, str]],
-        event: str,
-        max_slots: Optional[int],
-        approver: Optional[discord.Member] = None,
-        message: Optional[discord.Message] = None,
-        channel: Optional[discord.TextChannel] = None,
-        maybe: List[discord.Member] = []
-    ):
-        self.hoster = hoster
-        self.members = members
-        self.event = event
-        self.max_slots = max_slots
-        self.approver = approver
-        self.message = message
-        self.channel = channel
-        self.maybe = maybe
+    def __init__(self, **kwargs):
+        self.hoster = kwargs.get("hoster")
+        self.members = kwargs.get("members")
+        self.event = kwargs.get("event")
+        self.max_slots = kwargs.get("max_slots")
+        self.approver = kwargs.get("approver")
+        self.message = kwargs.get("message")
+        self.channel = kwargs.get("channel")
+        self.maybe = kwargs.get("maybe", [])
+
+    def __str__(self):
+        """used for debugging event information"""
+        return (f"{self.hoster}\n{self.members}\n{self.event}\n{self.max_slots}\n{self.maybe}")
 
     @classmethod
     async def from_json(cls, data: dict, guild: discord.Guild):
@@ -73,14 +67,14 @@ class Event:
                     continue
                 maybe.append(mem)
         return cls(
-            hoster,
-            members,
-            data["event"],
-            max_slots,
-            guild.get_member(data["approver"]),
-            message,
-            channel,
-            maybe
+            hoster=hoster,
+            members=members,
+            event=data["event"],
+            max_slots=max_slots,
+            approver=guild.get_member(data["approver"]),
+            message=message,
+            channel=channel,
+            maybe=maybe
         )
 
     def to_json(self):

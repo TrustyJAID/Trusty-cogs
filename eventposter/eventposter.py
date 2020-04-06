@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -229,7 +229,12 @@ class EventPoster(commands.Cog):
 
             max_slots = await self.config.guild(ctx.guild).default_max()
             # log.debug(f"using default {max_slots}")
-        event = Event(ctx.author, list(member_list), description, max_slots)
+        event = Event(
+            hoster=ctx.author,
+            members=list(member_list),
+            event=description,
+            max_slots=max_slots
+        )
         em = await self.make_event_embed(ctx, event)
         admin_msg = await approval_channel.send(embed=em)
         start_adding_reactions(admin_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
