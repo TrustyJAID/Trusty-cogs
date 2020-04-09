@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -64,7 +64,8 @@ class EventPoster(commands.Cog):
                     continue
                 if event is None:
                     return
-                self.event_cache[str(guild_id)] = {}
+                if str(guild_id) not in self.event_cache:
+                    self.event_cache[str(guild_id)] = {}
                 self.event_cache[str(guild_id)][str(event.message.id)] = event
 
     @commands.Cog.listener()
