@@ -237,9 +237,7 @@ class EventMixin:
         )
         if embed_links:
             embed = discord.Embed(
-                description=message.content,
-                colour=await self.get_colour(channel),
-                timestamp=time,
+                description=message.content, colour=await self.get_colour(channel), timestamp=time,
             )
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Can Run"), value=str(can_run))
@@ -1628,12 +1626,16 @@ class EventMixin:
             "channel": _("Channel:"),
             "max_uses": _("Max Uses:"),
         }
+        try:
+            invite_time = invite.created_at.strftime("%H:%M:%S")
+        except AttributeError:
+            invite_time = datetime.datetime.utcnow().strftime("%H:%M:%S")
         msg = _("{emoji} `{time}` Invite created ").format(
-            emoji=self.settings[guild.id]["invite_created"]["emoji"],
-            time=invite.created_at.strftime("%H:%M:%S"),
+            emoji=self.settings[guild.id]["invite_created"]["emoji"], time=invite_time,
         )
         embed = discord.Embed(
-            title=_("Invite Created"), colour=await self.get_event_colour(guild, "invite_created")
+            title=_("Invite Created"),
+            colour=await self.get_event_colour(guild, "invite_created")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
@@ -1674,12 +1676,16 @@ class EventMixin:
             "max_uses": _("Max Uses: "),
             "uses": _("Used: "),
         }
+        try:
+            invite_time = invite.created_at.strftime("%H:%M:%S")
+        except AttributeError:
+            invite_time = datetime.datetime.utcnow().strftime("%H:%M:%S")
         msg = _("{emoji} `{time}` Invite deleted ").format(
-            emoji=self.settings[guild.id]["invite_deleted"]["emoji"],
-            time=invite.created_at.strftime("%H:%M:%S"),
+            emoji=self.settings[guild.id]["invite_deleted"]["emoji"], time=invite_time,
         )
         embed = discord.Embed(
-            title=_("Invite Deleted"), colour=await self.get_event_colour(guild, "invite_deleted")
+            title=_("Invite Deleted"),
+            colour=await self.get_event_colour(guild, "invite_deleted")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
