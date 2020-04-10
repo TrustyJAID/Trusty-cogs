@@ -34,7 +34,7 @@ class UnitConverter(Converter):
 class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -70,7 +70,7 @@ class Weather(commands.Cog):
 
     @weather.command(name="zip")
     @commands.bot_has_permissions(embed_links=True)
-    async def weather_by_zip(self, ctx: commands.Context, *, zipcode: int) -> None:
+    async def weather_by_zip(self, ctx: commands.Context, *, zipcode: str) -> None:
         """
             Display weather in a given location
 
@@ -155,7 +155,7 @@ class Weather(commands.Cog):
         ctx: commands.Context,
         *,
         location: Optional[str] = None,
-        zipcode: Optional[int] = None,
+        zipcode: Optional[str] = None,
         cityid: Optional[int] = None,
         lat: Optional[float] = None,
         lon: Optional[float] = None
