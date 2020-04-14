@@ -286,7 +286,7 @@ class EventPoster(commands.Cog):
                 embed=em,
             )
         async with self.config.guild(ctx.guild).events() as events:
-            event = await Event.from_json(events[ctx.author.id], ctx.guild)
+            event = await Event.from_json(events[str(ctx.author.id)], ctx.guild)
             await event.message.edit(content="This event has ended.")
             del events[str(ctx.author.id)]
             del self.event_cache[ctx.guild.id][event.message.id]
