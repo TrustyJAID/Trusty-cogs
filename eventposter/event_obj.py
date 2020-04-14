@@ -50,8 +50,13 @@ class Event:
         if not hoster:
             return None
         members = []
-        for m, p_class in data["members"]:
-            mem = guild.get_member(m)
+        for m in data["members"]:
+            if isinstance(m, tuple) or isinstance(m, list):
+                mem = guild.get_member(m[0])
+                p_class = m[1]
+            else:
+                mem = guild.get_member(m)
+                p_class = None
             if not mem:
                 continue
             members.append((mem, p_class))
