@@ -17,7 +17,7 @@ from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator
 from redbot.core.data_manager import cog_data_path
-from redbot.core.utils.chat_formatting import humanize_list, box, escape
+from redbot.core.utils.chat_formatting import humanize_list, box, escape, pagify
 
 from discord.ext.commands.errors import BadArgument
 
@@ -286,9 +286,13 @@ class TriggerHandler:
         msg_list = []
         embeds = ctx.channel.permissions_for(ctx.me).embed_links
         page = 1
+        good = "\N{WHITE HEAVY CHECK MARK}"
+        bad = "\N{CROSS MARK}"
         for triggers in trigger_list:
             trigger = await Trigger.from_json(triggers)
             author = ctx.guild.get_member(trigger.author)
+            active_triggers = [t.name for t in self.triggers[ctx.guild.id]]
+            log.info(active_triggers)
             if not author:
                 try:
                     author = await self.bot.fetch_user(trigger.author)
@@ -314,23 +318,30 @@ class TriggerHandler:
                 whitelist_s = ", ".join(x.mention for x in whitelist)
             else:
                 whitelist_s = ", ".join(x.name for x in whitelist)
-            responses = ", ".join(r for r in trigger.response_type)
+            responses = humanize_list(trigger.response_type)
+
             info = _(
-                "Name: **{name}** \n"
-                "Author: {author}\n"
-                "Count: **{count}**\n"
-                "Response: **{response}**\n"
+                "__Name__: **{name}** \n"
+                "__Active__: **{enabled}**\n"
+                "__Author__: {author}\n"
+                "__Count__: **{count}**\n"
+                "__Response__: **{response}**\n"
             )
             if embeds:
                 info = info.format(
                     name=trigger.name,
+                    enabled=good if trigger.name in active_triggers else bad,
                     author=author.mention,
                     count=trigger.count,
                     response=responses,
                 )
             else:
                 info = info.format(
-                    name=trigger.name, author=author.name, count=trigger.count, response=responses
+                    name=trigger.name,
+                    enabled=good if trigger.name in active_triggers else bad,
+                    author=author.name,
+                    count=trigger.count,
+                    response=responses
                 )
             if trigger.ignore_commands:
                 info += _("Ignore commands: **{ignore}**\n").format(ignore=trigger.ignore_commands)
@@ -339,19 +350,25 @@ class TriggerHandler:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
                 else:
                     response = trigger.text
-                info += _("Text: ") + "**{response}**\n".format(response=response)
+                info += _("__Text__: ") + "**{response}**\n".format(response=response)
+            if "rename" in trigger.response_type:
+                if trigger.multi_payload:
+                    response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                else:
+                    response = trigger.text
+                info += _("__Rename__: ") + "**{response}**\n".format(response=response)
             if "dm" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
                 else:
                     response = trigger.text
-                info += _("DM: ") + "**{response}**\n".format(response=response)
+                info += _("__DM__: ") + "**{response}**\n".format(response=response)
             if "command" in trigger.response_type:
                 if trigger.multi_payload:
                     response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
                 else:
                     response = trigger.text
-                info += _("Command: ") + "**{response}**\n".format(response=response)
+                info += _("__Command__: ") + "**{response}**\n".format(response=response)
             if "react" in trigger.response_type:
                 if trigger.multi_payload:
                     emoji_response = [
@@ -361,7 +378,7 @@ class TriggerHandler:
                     emoji_response = trigger.text
                 server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
                 unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
-                info += _("Emojis: ") + server_emojis + unicode_emojis + "\n"
+                info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
             if "add_role" in trigger.response_type:
                 if trigger.multi_payload:
                     role_response = [
@@ -375,7 +392,7 @@ class TriggerHandler:
                 else:
                     roles_list = [r.name for r in roles if r is not None]
                 if roles_list:
-                    info += _("Roles Added: ") + humanize_list(roles_list) + "\n"
+                    info += _("__Roles Added__: ") + humanize_list(roles_list) + "\n"
                 else:
                     info += _("Roles Added: Deleted Roles\n")
             if "remove_role" in trigger.response_type:
@@ -391,13 +408,13 @@ class TriggerHandler:
                 else:
                     roles_list = [r.name for r in roles if r is not None]
                 if roles_list:
-                    info += _("Roles Removed: ") + humanize_list(roles_list) + "\n"
+                    info += _("__Roles Removed__: ") + humanize_list(roles_list) + "\n"
                 else:
-                    info += _("Roles Added: Deleted Roles\n")
+                    info += _("__Roles Added__: Deleted Roles\n")
             if whitelist_s:
-                info += _("Whitelist: ") + whitelist_s + "\n"
+                info += _("__Whitelist__: ") + whitelist_s + "\n"
             if blacklist_s:
-                info += _("Blacklist: ") + blacklist_s + "\n"
+                info += _("__Blacklist__: ") + blacklist_s + "\n"
             if trigger.cooldown:
                 time = trigger.cooldown["time"]
                 style = trigger.cooldown["style"]
@@ -410,12 +427,12 @@ class TriggerHandler:
                 info += _("Message deleted after: {time} seconds.\n").format(
                     time=trigger.delete_after
                 )
-            info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
+
             if embeds:
+                info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
                 em = discord.Embed(
                     timestamp=ctx.message.created_at,
                     colour=await ctx.embed_colour(),
-                    description=info,
                     title=_("Triggers for {guild}").format(guild=ctx.guild.name),
                 )
                 em.set_author(name=author, icon_url=author.avatar_url)
@@ -430,8 +447,17 @@ class TriggerHandler:
                         )
                     )
                     em.timestamp = discord.utils.snowflake_time(trigger.created_at)
+
+                first = True
+                for pages in pagify(info, page_length=1024):
+                    if first:
+                        em.description = pages
+                        first = False
+                    else:
+                        em.add_field(name=_("Trigger info continued"), value=pages)
                 msg_list.append(em)
             else:
+                info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
                 msg_list.append(info)
             page += 1
         return msg_list
@@ -545,6 +571,8 @@ class TriggerHandler:
             # trigger = await Trigger.from_json(trigger_list[triggers])
             # except Exception:
             # continue
+            if not trigger.enabled:
+                continue
             if edit and trigger.ignore_edits:
                 continue
 

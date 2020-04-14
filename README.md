@@ -15,8 +15,8 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | --- | --- | --- |
 | Hockey | **2.8.2** | <details><summary>A cog to gather hockey scores, schedules, player data and more!</summary></details>|
 | Notsobot | **2.4.0**| <details><summary>Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot.</summary> This cog has a lot of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. </details> |
-| ReTrigger | **2.9.1** | <details><summary>Trigger events based on regex!</summary>Note: This cog can become quite resource heavy. Optional features are available if the requirements are present such as pillow for image resizing and pytesseract to scan images for text (OCR).</details> |
-| ExtendedModLog | **2.7.4**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
+| ReTrigger | **2.11.0** | <details><summary>Trigger events based on regex!</summary>Note: This cog can become quite resource heavy. Optional features are available if the requirements are present such as pillow for image resizing and pytesseract to scan images for text (OCR).</details> |
+| ExtendedModLog | **2.8.3**| <details><summary>An in depth extension of RedBot's built in modlog. </summary>Handles message edits, message deletes, mod bot commands, channel updates, server updates, emoji changes and more </details> |
 | EventPoster | **1.4.2**| <details><summary>Allow users to setup and host events to be approved by admins. </summary>This cog allows any member of the server the opportunity to host an event and organize who is joining said event. Excellent for coordinating and looking for groups to do boss raids, hunt for secrets or any number of things.</details> |
 | Badges | **1.1.1** | <details><summary>Create your own badge with your discord info.</summary> Includes templates for fake CIA, NSA, FBI, Discord, and every NHL hockey team. Requirements: pillow</details> |
 | Tweets | **2.5.1** | <details><summary>A modified version of Palmtree5's twitter cog. </summary>Utilizes twitter streams to setup a twitter channel to post user tweets. Requirements: tweepy</details> |
@@ -25,7 +25,7 @@ To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://git
 | Emojireact | **Release** | <details><summary>Have your bot react to emojis in messages with the emoji! </summary></details> |
 | Faces | **Release** | <details><summary>Find your own Japanese style emoji face courtesy of the CIA. </summary></details> |
 | REKT | **1.0.0** |  <details><summary>Display a random list of funny rekt messages. </summary></details> |
-| Weather | **1.2.0** | <details><summary>Check the current weather in many cities around the world including in Kelvin. </details> |
+| Weather | **1.2.1** | <details><summary>Check the current weather in many cities around the world including in Kelvin. </details> |
 | Starboard | **2.2.2** | <details><summary>Create a starboard channel to save those amazing posts! </summary></details> |
 | Imgflip | **2.1.0** | <details><summary>A recreation of the meme generator from red V1. </summary></details> |
 | Imagemaker | **1.5.0** | <details><summary>Show how you really feel. Make someone beautiful. Make something illegal.</summary> Requirements: pillow, opencv-python, and numpy</details> |

@@ -133,6 +133,7 @@ class Trigger:
         self.regex = re.compile(regex)
         self.response_type = response_type
         self.author = author
+        self.enabled = kwargs.get("enabled", True)
         self.count = kwargs.get("count", 0)
         self.image = kwargs.get("image", None)
         self.text = kwargs.get("text", None)
@@ -147,7 +148,93 @@ class Trigger:
         self.delete_after = kwargs.get("delete_after", None)
 
     def __str__(self):
-        return self.name
+        """This is defined moreso for debugging purposes but may prove useful for elaborating
+        what is defined for each trigger individually"""
+        info = _(
+                "__Name__: **{name}** \n"
+                "__Active__: **{enabled}**\n"
+                "__Author__: {author}\n"
+                "__Count__: **{count}**\n"
+                "__Response__: **{response}**\n"
+            ).format(
+                    name=self.name,
+                    enabled=self.enabled,
+                    author=self.author,
+                    count=self.count,
+                    response=self.response_type,
+                )
+        if self.ignore_commands:
+            info += _("Ignore commands: **{ignore}**\n").format(ignore=self.ignore_commands)
+        if "text" in self.response_type:
+            if self.multi_payload:
+                response = "\n".join(t[1] for t in self.multi_payload if t[0] == "text")
+            else:
+                response = self.text
+            info += _("__Text__: ") + "**{response}**\n".format(response=response)
+        if "rename" in self.response_type:
+            if self.multi_payload:
+                response = "\n".join(t[1] for t in self.multi_payload if t[0] == "text")
+            else:
+                response = self.text
+            info += _("__Rename__: ") + "**{response}**\n".format(response=response)
+        if "dm" in self.response_type:
+            if self.multi_payload:
+                response = "\n".join(t[1] for t in self.multi_payload if t[0] == "dm")
+            else:
+                response = self.text
+            info += _("__DM__: ") + "**{response}**\n".format(response=response)
+        if "command" in self.response_type:
+            if self.multi_payload:
+                response = "\n".join(t[1] for t in self.multi_payload if t[0] == "command")
+            else:
+                response = self.text
+            info += _("__Command__: ") + "**{response}**\n".format(response=response)
+        if "react" in self.response_type:
+            if self.multi_payload:
+                emoji_response = [
+                    r for t in self.multi_payload for r in t[1:] if t[0] == "react"
+                ]
+            else:
+                emoji_response = self.text
+            server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
+            unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
+            info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
+        if "add_role" in self.response_type:
+            if self.multi_payload:
+                role_response = [
+                    r for t in self.multi_payload for r in t[1:] if t[0] == "add_role"
+                ]
+            else:
+                role_response = self.text
+            if role_response:
+                info += _("__Roles Added__: ") + role_response + "\n"
+        if "remove_role" in self.response_type:
+            if self.multi_payload:
+                role_response = [
+                    r for t in self.multi_payload for r in t[1:] if t[0] == "remove_role"
+                ]
+            else:
+                role_response = self.text
+            if role_response:
+                info += _("__Roles Removed__: ") + role_response + "\n"
+        if self.whitelist:
+            info += _("__Whitelist__: ") + self.whitelist + "\n"
+        if self.blacklist:
+            info += _("__Blacklist__: ") + self.blacklist + "\n"
+        if self.cooldown:
+            time = self.cooldown["time"]
+            style = self.cooldown["style"]
+            info += _("Cooldown: ") + "**{}s per {}**\n".format(time, style)
+        if self.ocr_search:
+            info += _("OCR: **Enabled**\n")
+        if self.ignore_edits:
+            info += _("Ignoring edits: **Enabled**\n")
+        if self.delete_after:
+            info += _("Message deleted after: {time} seconds.\n").format(
+                time=self.delete_after
+            )
+        info += _("__Regex__: ") + self.regex.pattern
+        return info
 
     async def to_json(self) -> dict:
         return {
@@ -155,6 +242,7 @@ class Trigger:
             "regex": self.regex.pattern,
             "response_type": self.response_type,
             "author": self.author,
+            "enabled": self.enabled,
             "count": self.count,
             "image": self.image,
             "text": self.text,
@@ -178,6 +266,7 @@ class Trigger:
         ignore_edits = False
         ocr_search = False
         delete_after = None
+        enabled = True
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -196,12 +285,15 @@ class Trigger:
             ocr_search = data["ocr_search"]
         if "delete_after" in data:
             delete_after = data["delete_after"]
+        if "enabled" in data:
+            enabled = data["enabled"]
         return cls(
             data["name"],
             data["regex"],
             response_type,
             data["author"],
             count=data["count"],
+            enabled=enabled,
             image=data["image"],
             text=data["text"],
             whitelist=data["whitelist"],

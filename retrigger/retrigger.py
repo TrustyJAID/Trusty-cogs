@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.10.0"
+    __version__ = "2.11.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -84,7 +84,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for guild, settings in data.items():
             self.triggers[guild] = []
             for trigger in settings["trigger_list"].values():
-                self.triggers[guild].append(await Trigger.from_json(trigger))
+                new_trigger = await Trigger.from_json(trigger)
+                if new_trigger.enabled:
+                    self.triggers[guild].append(new_trigger)
 
     async def save_loop(self):
         await self.bot.wait_until_ready()
@@ -667,6 +669,53 @@ class ReTrigger(TriggerHandler, commands.Cog):
         msg = _("Trigger {name} reactions changed to {emojis}")
         emoji_s = [f"<{e}>" for e in emojis if len(e) > 5] + [e for e in emojis if len(e) < 5]
         await ctx.send(msg.format(name=trigger.name, emojis=humanize_list(emoji_s)))
+
+    @retrigger.command(name="enable")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def enable_trigger(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        """
+            Enable a trigger that has been disabled either by command or automatically
+
+            `<trigger>` is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
+        trigger.enabled = True
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} has been enabled.")
+        await ctx.send(msg.format(name=trigger.name))
+
+    @retrigger.command(name="disable")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def disable_trigger(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        """
+            Disable a trigger
+
+            `<trigger>` is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
+        trigger.enabled = False
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        msg = _("Trigger {name} has been disabled.")
+        await ctx.send(msg.format(name=trigger.name))
 
     @retrigger.command(hidden=True)
     @checks.is_owner()
