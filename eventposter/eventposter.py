@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.5"
+    __version__ = "1.5.6"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -276,7 +276,7 @@ class EventPoster(commands.Cog):
             return await ctx.send("You don't have any events running.")
         elif not clear:
             event_data = await self.config.guild(ctx.guild).events()
-            event = await Event.from_json(event_data[ctx.author.id], ctx.guild)
+            event = await Event.from_json(event_data[str(ctx.author.id)], ctx.guild)
             em = await self.make_event_embed(ctx, event)
             return await ctx.send(
                 (
