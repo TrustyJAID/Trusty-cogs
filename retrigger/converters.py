@@ -35,6 +35,7 @@ class MultiResponse(Converter):
             "filter",
             "delete",
             "react",
+            "rename",
             "command",
             "mock",
         ]
@@ -123,40 +124,27 @@ class Trigger:
     ignore_commands: bool
     ignore_edits: bool
     ocr_search: bool
+    delete_after: int
 
     def __init__(
-        self,
-        name: str,
-        regex: str,
-        response_type: list,
-        author: int,
-        count: int,
-        image: Union[List[Union[int, str]], str, None],
-        text: Union[List[Union[int, str]], str, None],
-        whitelist: list,
-        blacklist: list,
-        cooldown: dict,
-        multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]],
-        created_at: int,
-        ignore_commands: bool = False,
-        ignore_edits: bool = False,
-        ocr_search: bool = False,
+        self, name, regex, response_type, author, **kwargs
     ):
         self.name = name
         self.regex = re.compile(regex)
         self.response_type = response_type
         self.author = author
-        self.count = count
-        self.image = image
-        self.text = text
-        self.whitelist = whitelist
-        self.blacklist = blacklist
-        self.cooldown = cooldown
-        self.multi_payload = multi_payload
-        self.created_at = created_at
-        self.ignore_commands = ignore_commands
-        self.ignore_edits = ignore_edits
-        self.ocr_search = ocr_search
+        self.count = kwargs.get("count", 0)
+        self.image = kwargs.get("image", None)
+        self.text = kwargs.get("text", None)
+        self.whitelist = kwargs.get("whitelist", [])
+        self.blacklist = kwargs.get("blacklist", [])
+        self.cooldown = kwargs.get("cooldown", {})
+        self.multi_payload = kwargs.get("multi_payload", [])
+        self.created_at = kwargs.get("created_at", 0)
+        self.ignore_commands = kwargs.get("ignore_commands", False)
+        self.ignore_edits = kwargs.get("ignore_edits", False)
+        self.ocr_search = kwargs.get("ocr_search", False)
+        self.delete_after = kwargs.get("delete_after", None)
 
     def __str__(self):
         return self.name
@@ -178,6 +166,7 @@ class Trigger:
             "ignore_commands": self.ignore_commands,
             "ignore_edits": self.ignore_edits,
             "ocr_search": self.ocr_search,
+            "delete_after": self.delete_after,
         }
 
     @classmethod
@@ -188,6 +177,7 @@ class Trigger:
         ignore_commands = False
         ignore_edits = False
         ocr_search = False
+        delete_after = None
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -204,22 +194,25 @@ class Trigger:
             ignore_edits = data["ignore_edits"]
         if "ocr_search" in data:
             ocr_search = data["ocr_search"]
+        if "delete_after" in data:
+            delete_after = data["delete_after"]
         return cls(
             data["name"],
             data["regex"],
             response_type,
             data["author"],
-            data["count"],
-            data["image"],
-            data["text"],
-            data["whitelist"],
-            data["blacklist"],
-            cooldown,
-            multi_payload,
-            created_at,
-            ignore_commands,
-            ignore_edits,
-            ocr_search,
+            count=data["count"],
+            image=data["image"],
+            text=data["text"],
+            whitelist=data["whitelist"],
+            blacklist=data["blacklist"],
+            cooldown=cooldown,
+            multi_payload=multi_payload,
+            created_at=created_at,
+            delete_after=delete_after,
+            ignore_commands=ignore_commands,
+            ignore_edits=ignore_edits,
+            ocr_search=ocr_search,
         )
 
 

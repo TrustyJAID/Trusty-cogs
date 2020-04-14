@@ -11,8 +11,10 @@ from redbot.core import commands, checks, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
+
 # from redbot.core.utils import menus
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.commands import TimedeltaConverter
 
 from .converters import (
     Trigger,
@@ -39,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.9.1"
+    __version__ = "2.10.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -520,9 +522,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="text", aliases=["msg"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def edit_text(
-        self, ctx: commands.Context, trigger: TriggerExists, *, text: str
-    ) -> None:
+    async def edit_text(self, ctx: commands.Context, trigger: TriggerExists, *, text: str) -> None:
         """
             Edit the text of a saved trigger.
 
@@ -549,9 +549,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="ignorecommands")
     @checks.mod_or_permissions(manage_messages=True)
-    async def edit_ignore_commands(
-        self, ctx: commands.Context, trigger: TriggerExists
-    ) -> None:
+    async def edit_ignore_commands(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
             Toggle the trigger ignoring command messages entirely.
 
@@ -700,10 +698,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 await ctx.send(_("Not changing regex timeout time."))
         elif timeout > 10:
             return await ctx.send(
-                _("{timeout} seconds is too long, you may want to look at `{prefix}retrigger bypass`").format(
-                        timeout=timeout,
-                        prefix=ctx.clean_prefix
-                    )
+                _(
+                    "{timeout} seconds is too long, you may want to look at `{prefix}retrigger bypass`"
+                ).format(timeout=timeout, prefix=ctx.clean_prefix)
             )
         else:
             if timeout < 1:
@@ -789,13 +786,20 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     async def text(
-        self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
+        self,
+        ctx: commands.Context,
+        name: TriggerExists,
+        regex: ValidRegex,
+        delete_after: Optional[TimedeltaConverter] = None,
+        *,
+        text: str,
     ) -> None:
         """
             Add a text response trigger
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond.
+            `[delete_after]` Have the message automatically delete itself after x seconds.
             `<text>` response of the trigger
             Text responses utilize regex groups for replacement so you can
             replace a group match in a specific area with `{#}`
@@ -815,8 +819,21 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
+        if delete_after:
+            if delete_after.total_seconds() > 0:
+                delete_after_seconds = delete_after.total_seconds()
+            if delete_after.total_seconds() < 1:
+                return await ctx.send(_("`delete_after` must be greater than 1 second."))
+        else:
+            delete_after_seconds = None
         new_trigger = Trigger(
-            name, regex, ["text"], author, 0, None, text, [], [], {}, [], ctx.message.id
+            name,
+            regex,
+            ["text"],
+            author,
+            text=text,
+            created_at=ctx.message.id,
+            delete_after=delete_after_seconds,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -850,7 +867,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["randtext"], author, 0, None, text, [], [], {}, [], ctx.message.id
+            name, regex, ["randtext"], author, text=text, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -889,9 +906,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(
-            name, regex, ["dm"], author, 0, None, text, [], [], {}, [], ctx.message.id
-        )
+        new_trigger = Trigger(name, regex, ["dm"], author, text=text, created_at=ctx.message.id)
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -930,7 +945,48 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["dmme"], author, 0, None, text, [], [], {}, [], ctx.message.id
+            name, regex, ["dmme"], author, text=text, created_at=ctx.message.id
+        )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
+        self.triggers[ctx.guild.id].append(new_trigger)
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = await new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_nicknames=True)
+    @checks.bot_has_permissions(manage_nicknames=True)
+    async def rename(
+        self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex, *, text: str
+    ) -> None:
+        """
+            Add trigger to rename users
+
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+            `<text>` new users nickanme
+            Text responses utilize regex groups for replacement so you can
+            replace a group match in a specific area with `{#}`
+            e.g. `[p]retrigger text tracer "(?i)(^I wanna be )([^.]*)" I'm already {2}`
+            will replace the `{2}` in the text with the second capture group.
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+
+            Other parameters are available as well such as `{author.name}`
+            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        guild = ctx.guild
+        author = ctx.message.author.id
+        new_trigger = Trigger(
+            name, regex, ["rename"], author, text=text, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -967,15 +1023,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -983,11 +1035,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["image"], author, 0, filename, None, [], [], {}, [], ctx.message.id
+            name, regex, ["image"], author, image=filename, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1000,7 +1050,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command(aliases=["randimage", "randimg", "rimage", "rimg"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def randomimage(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex) -> None:
+    async def randomimage(
+        self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex
+    ) -> None:
         """
             Add a random image/file response trigger
 
@@ -1020,7 +1072,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         filename = await self.wait_for_multiple_images(ctx)
 
         new_trigger = Trigger(
-            name, regex, ["randimage"], author, 0, filename, None, [], [], {}, [], ctx.message.id
+            name, regex, ["randimage"], author, image=filename, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1072,9 +1124,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -1082,11 +1132,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["image"], author, 0, filename, text, [], [], {}, [], ctx.message.id
+            name, regex, ["image"], author, image=filename, text=text, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1126,15 +1174,11 @@ class ReTrigger(TriggerHandler, commands.Cog):
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -1142,11 +1186,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(
-                    _("That is not a valid file link.")
-                )
+                return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["resize"], author, 0, filename, None, [], [], {}, [], ctx.message.id
+            name, regex, ["resize"], author, image=filename, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1179,7 +1221,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["ban"], author, 0, None, None, [], [], {}, [], ctx.message.id
+            name, regex, ["ban"], author, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1212,7 +1254,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["kick"], author, 0, None, None, [], [], {}, [], ctx.message.id
+            name, regex, ["kick"], author, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1246,7 +1288,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["react"], author, 0, None, emojis, [], [], {}, [], ctx.message.id
+            name, regex, ["react"], author, text=emojis, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1287,7 +1329,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["command"], author, 0, None, command, [], [], {}, [], ctx.message.id
+            name, regex, ["command"], author, text=command, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1338,7 +1380,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["mock"], author, 0, None, command, [], [], {}, [], ctx.message.id
+            name, regex, ["mock"], author, text=command, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1380,14 +1422,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             regex,
             ["delete"],
             author,
-            0,
-            None,
-            check_filenames,
-            [],
-            [],
-            {},
-            [],
-            ctx.message.id,
+            text=check_filenames,
+            created_at=ctx.message.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1429,7 +1465,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["add_role"], author, 0, None, role_ids, [], [], {}, [], ctx.message.id
+            name, regex, ["add_role"], author, text=role_ids, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1471,7 +1507,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["remove_role"], author, 0, None, role_ids, [], [], {}, [], ctx.message.id
+            name, regex, ["remove_role"], author, text=role_ids, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
@@ -1517,6 +1553,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             text
             filter or delete
             react
+            rename
             command
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
@@ -1533,14 +1570,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             regex,
             [i[0] for i in multi_response],
             author,
-            0,
-            None,
-            None,
-            [],
-            [],
-            {},
-            multi_response,
-            ctx.message.id,
+            multi_payload=multi_response,
+            created_at=ctx.message.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []

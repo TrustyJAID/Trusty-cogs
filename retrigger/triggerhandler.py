@@ -406,6 +406,10 @@ class TriggerHandler:
                 info += _("OCR: **Enabled**\n")
             if trigger.ignore_edits:
                 info += _("Ignoring edits: **Enabled**\n")
+            if trigger.delete_after:
+                info += _("Message deleted after: {time} seconds.\n").format(
+                    time=trigger.delete_after
+                )
             info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
             if embeds:
                 em = discord.Embed(
@@ -688,7 +692,9 @@ class TriggerHandler:
         else:
             return (True, search)
 
-    async def perform_trigger(self, message: discord.Message, trigger: Trigger, find: List[str]) -> None:
+    async def perform_trigger(
+        self, message: discord.Message, trigger: Trigger, find: List[str]
+    ) -> None:
 
         guild: discord.Guild = cast(discord.Guild, message.guild)
         channel: discord.TextChannel = cast(discord.TextChannel, message.channel)
@@ -725,7 +731,7 @@ class TriggerHandler:
             if response and not channel.permissions_for(author).mention_everyone:
                 response = escape(response, mass_mentions=True)
             try:
-                await channel.send(response)
+                await channel.send(response, delete_after=trigger.delete_after)
             except discord.errors.Forbidden:
                 log.debug(error_in, exc_info=True)
             except Exception:
@@ -828,6 +834,28 @@ class TriggerHandler:
                 try:
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.NotFound):
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
+
+        if "rename" in trigger.response_type and own_permissions.manage_nicknames:
+            if author == guild.owner:
+                # Don't want to accidentally kick the bot owner
+                # or try to kick the guild owner
+                return
+            if guild.me.top_role > author.top_role:
+                if trigger.multi_payload:
+                    text_response = "\n".join(
+                        t[1] for t in trigger.multi_payload if t[0] == "rename"
+                    )
+                else:
+                    text_response = str(trigger.text)
+                response = await self.convert_parms(message, text_response, trigger.regex)
+                if response and not channel.permissions_for(author).mention_everyone:
+                    response = escape(response, mass_mentions=True)
+                try:
+                    await author.edit(nick=response[:32], reason=reason)
+                except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
                 except Exception:
                     log.error(error_in, exc_info=True)
