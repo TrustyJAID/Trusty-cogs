@@ -10,7 +10,14 @@ from redbot.core import commands
 from redbot.core import checks, Config
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import (
+    bold,
+    escape,
+    humanize_number,
+    humanize_timedelta,
+    inline,
+    pagify,
+)
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
@@ -31,7 +38,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.4.1"
+    __version__ = "1.4.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -92,14 +99,14 @@ class ServerStats(commands.Cog):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has joined a server!\n "
-            "That's **{num:,}** servers now!\n"
-            "That's a total of **{users:,}** users !\n"
+            "That's **{num}** servers now!\n"
+            "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
         ).format(
             bot=channel.guild.me.mention,
-            num=len(self.bot.guilds),
-            users=sum(len(s.members) for s in self.bot.guilds),
+            num=humanize_number(len(self.bot.guilds)),
+            users=humanize_number(sum(len(s.members) for s in self.bot.guilds)),
             since=guild.created_at.strftime("%d %b %Y %H:%M:%S"),
             passed=passed,
         )
@@ -115,160 +122,210 @@ class ServerStats(commands.Cog):
             Builds the guild embed information used throughout the cog
         """
 
-        def check_feature(feature: str) -> str:
-            return "\N{WHITE HEAVY CHECK MARK}" if feature in guild.features else "\N{CROSS MARK}"
+        def _size(num):
+            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+                if abs(num) < 1024.0:
+                    return "{0:.1f}{1}".format(num, unit)
+                num /= 1024.0
+            return "{0:.1f}{1}".format(num, "YB")
 
-        verif = {
-            "none": _("0 - None"),
-            "low": _("1 - Low"),
-            "medium": _("2 - Medium"),
-            "high": _("3 - Hard"),
-            "extreme": _("4 - Extreme"),
-        }
+        def _bitsize(num):
+            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+                if abs(num) < 1000.0:
+                    return "{0:.1f}{1}".format(num, unit)
+                num /= 1000.0
+            return "{0:.1f}{1}".format(num, "YB")
 
-        region = {
-            "vip-us-east": _("__VIP__ US East") + " :flag_us:",
-            "vip-us-west": _("__VIP__ US West") + " :flag_us:",
-            "vip-amsterdam": _("__VIP__ Amsterdam") + " :flag_nl:",
-            "eu-west": _("EU West") + " :flag_eu:",
-            "eu-central": _("EU Central") + " :flag_eu:",
-            "europe": _("Europe") + " :flag_eu:",
-            "london": _("London") + " :flag_gb:",
-            "frankfurt": _("Frankfurt") + " :flag_de:",
-            "amsterdam": _("Amsterdam") + " :flag_nl:",
-            "us-west": _("US West") + " :flag_us:",
-            "us-east": _("US East") + " :flag_us:",
-            "us-south": _("US South") + " :flag_us:",
-            "us-central": _("US Central") + " :flag_us:",
-            "singapore": _("Singapore") + " :flag_sg:",
-            "sydney": _("Sydney") + " :flag_au:",
-            "brazil": _("Brazil") + " :flag_br:",
-            "hongkong": _("Hong Kong") + " :flag_hk:",
-            "russia": _("Russia") + " :flag_ru:",
-            "japan": _("Japan") + " :flag_jp:",
-            "southafrica": _("South Africa") + " :flag_za:",
-            "india": _("India") + " :flag_in:",
-        }
-        format_kwargs = {
-            "PARTNERED": _("Discord Partner"),
-            "VIP_REGIONS": _("VIP Regions"),
-            "VANITY_URL": _("Vanity URL"),
-            "INVITE_SPLASH": _("Invite Splash"),
-            "MORE_EMOJI": _("More Emoji"),
-            "VERIFIED": _("Verified"),
-            "NEWS": _("News Channel"),
-            "ANIMATED_ICON": _("Animated Server Icon"),
-            "BANNER": _("Server Banner"),
-            "LURKABLE": _("Lurkable"),
-        }
-        online_stats = {
-            _("Humans: "): lambda x: not x.bot,
-            _(" • Bots: "): lambda x: x.bot,
-            "📗": lambda x: x.status == discord.Status.online,
-            "📙": lambda x: x.status == discord.Status.idle,
-            "📕": lambda x: x.status == discord.Status.idle,
-            "📓": lambda x: x.status == discord.Status.offline,
-            "🎥": lambda x: x.activity == discord.Streaming,
-            "📱": lambda x: x.is_on_mobile(),
-        }
-        member_msg = _("Total Users: **{total:,}**\n").format(total=guild.member_count)
-        count = 1
-        for k, v in online_stats.items():
-
-            try:
-                num = len([m for m in guild.members if v(m)])
-            except Exception as e:
-                print(e)
-                continue
-            else:
-                member_msg += f"{k} **{num:,}** " + ("\n" if count % 2 == 0 else "")
-            count += 1
-        text_channels = len([x for x in guild.text_channels])
-        voice_channels = len([x for x in guild.voice_channels])
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("Created on **{since}**. " "That's over **{passed}** days ago!").format(
-            since=guild.created_at.strftime("%d %b %Y %H:%M"), passed=passed
+        created_at = _("Created on {date}. That's over {num} days ago!").format(
+            date=bold(guild.created_at.strftime("%d %b %Y %H:%M")),
+            num=bold(humanize_number(passed)),
         )
+        total_users = humanize_number(guild.member_count)
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
             joined_at = datetime.datetime.utcnow()
-
         bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
         since_joined = (datetime.datetime.utcnow() - joined_at).days
-
         joined_on = _(
-            "**{bot_name}** joined this server on **{bot_join}**."
-            " That's over **{since_join}** days ago!"
+            "**{bot_name}** joined this server on **{bot_join}**.\n"
+            "That's over **{since_join}** days ago!"
         ).format(bot_name=self.bot.user.name, bot_join=bot_joined, since_join=since_joined)
-
+        shard = (
+            _("\nShard ID: **{shard_id}/{shard_count}**").format(
+                shard_id=humanize_number(guild.shard_id + 1),
+                shard_count=humanize_number(self.bot.shard_count),
+            )
+            if self.bot.shard_count > 1
+            else ""
+        )
         colour = guild.roles[-1].colour
 
-        em = discord.Embed(description=f"{created_at}\n{joined_on}", colour=colour)
+        online_stats = {
+            _("Humans: "): lambda x: not x.bot,
+            _(" • Bots: "): lambda x: x.bot,
+            "\N{LARGE GREEN CIRCLE}": lambda x: x.status is discord.Status.online,
+            "\N{LARGE ORANGE CIRCLE}": lambda x: x.status is discord.Status.idle,
+            "\N{LARGE RED CIRCLE}": lambda x: x.status is discord.Status.do_not_disturb,
+            "\N{MEDIUM WHITE CIRCLE}": lambda x: x.status is discord.Status.offline,
+            "\N{LARGE PURPLE CIRCLE}": lambda x: (
+                x.activity is not None and x.activity.type is discord.ActivityType.streaming
+            ),
+        }
+        member_msg = _("Total Users: {}\n").format(bold(total_users))
+        count = 1
+        for emoji, value in online_stats.items():
+            try:
+                num = len([m for m in guild.members if value(m)])
+            except Exception as error:
+                print(error)
+                continue
+            else:
+                member_msg += f"{emoji} {bold(humanize_number(num))} " + (
+                    "\n" if count % 2 == 0 else ""
+                )
+            count += 1
+
+        text_channels = len(guild.text_channels)
+        nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
+        voice_channels = len(guild.voice_channels)
+
+        vc_regions = {
+            "vip-us-east": _("__VIP__ US East ") + "\U0001F1FA\U0001F1F8",
+            "vip-us-west": _("__VIP__ US West ") + "\U0001F1FA\U0001F1F8",
+            "vip-amsterdam": _("__VIP__ Amsterdam ") + "\U0001F1F3\U0001F1F1",
+            "eu-west": _("EU West ") + "\U0001F1EA\U0001F1FA",
+            "eu-central": _("EU Central ") + "\U0001F1EA\U0001F1FA",
+            "europe": _("Europe ") + "\U0001F1EA\U0001F1FA",
+            "london": _("London ") + "\U0001F1EC\U0001F1E7",
+            "frankfurt": _("Frankfurt ") + "\U0001F1E9\U0001F1EA",
+            "amsterdam": _("Amsterdam ") + "\U0001F1F3\U0001F1F1",
+            "us-west": _("US West ") + "\U0001F1FA\U0001F1F8",
+            "us-east": _("US East ") + "\U0001F1FA\U0001F1F8",
+            "us-south": _("US South ") + "\U0001F1FA\U0001F1F8",
+            "us-central": _("US Central ") + "\U0001F1FA\U0001F1F8",
+            "singapore": _("Singapore ") + "\U0001F1F8\U0001F1EC",
+            "sydney": _("Sydney ") + "\U0001F1E6\U0001F1FA",
+            "brazil": _("Brazil ") + "\U0001F1E7\U0001F1F7",
+            "hongkong": _("Hong Kong ") + "\U0001F1ED\U0001F1F0",
+            "russia": _("Russia ") + "\U0001F1F7\U0001F1FA",
+            "japan": _("Japan ") + "\U0001F1EF\U0001F1F5",
+            "southafrica": _("South Africa ") + "\U0001F1FF\U0001F1E6",
+            "india": _("India ") + "\U0001F1EE\U0001F1F3",
+            "south-korea": _("South Korea ") + "\U0001f1f0\U0001f1f7",
+        }  # Unicode is needed because bold() is escaping emojis for some reason in this case.
+        verif = {
+            "none": _("0 - None"),
+            "low": _("1 - Low"),
+            "medium": _("2 - Medium"),
+            "high": _("3 - High"),
+            "extreme": _("4 - Extreme"),
+        }
+
+        features = {
+            "PARTNERED": _("Partnered"),
+            "VERIFIED": _("Verified"),
+            "DISCOVERABLE": _("Server Discovery"),
+            "FEATURABLE": _("Featurable"),
+            "PUBLIC": _("Public"),
+            "PUBLIC_DISABLED": _("Public disabled"),
+            "INVITE_SPLASH": _("Splash Invite"),
+            "VIP_REGIONS": _("VIP Voice Servers"),
+            "VANITY_URL": _("Vanity URL"),
+            "MORE_EMOJI": _("More Emojis"),
+            "COMMERCE": _("Commerce"),
+            "LURKABLE": _("Lurkable"),
+            "NEWS": _("News Channels"),
+            "ANIMATED_ICON": _("Animated Icon"),
+            "BANNER": _("Banner Image"),
+            "MEMBER_LIST_DISABLED": _("Member list disabled"),
+        }
+        guild_features_list = [
+            f"✅ {name}" for feature, name in features.items() if feature in guild.features
+        ]
+
+        em = discord.Embed(
+            description=(f"{guild.description}\n\n" if guild.description else "")
+            + f"{created_at}\n{joined_on}",
+            colour=colour,
+        )
+        em.set_author(
+            name=guild.name,
+            icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png"
+            if "VERIFIED" in guild.features
+            else "https://cdn.discordapp.com/emojis/508929941610430464.png"
+            if "PARTNERED" in guild.features
+            else discord.Embed.Empty,
+            url=guild.icon_url
+            if guild.icon_url
+            else "https://cdn.discordapp.com/embed/avatars/1.png",
+        )
+        em.set_thumbnail(
+            url=guild.icon_url
+            if guild.icon_url
+            else "https://cdn.discordapp.com/embed/avatars/1.png"
+        )
         em.add_field(name=_("Members:"), value=member_msg)
         em.add_field(
             name=_("Channels:"),
-            value=_("💬 Text: **{text}**\n🔊 Voice: **{voice}**").format(
-                text=text_channels, voice=voice_channels
+            value=_(
+                "\N{SPEECH BALLOON} Text: {text}\n{nsfw}"
+                "\N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}"
+            ).format(
+                text=bold(humanize_number(text_channels)),
+                nsfw=_("\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {}\n").format(
+                    bold(humanize_number(nsfw_channels))
+                )
+                if nsfw_channels
+                else "",
+                voice=bold(humanize_number(voice_channels)),
             ),
         )
         em.add_field(
             name=_("Utility:"),
             value=_(
-                "Owner: {owner.mention}\n**{owner}**\nRegion: **{region}**\n"
-                "Verif. level: **{verif}**\nServer ID: **{id}**"
+                "Owner: {owner_mention}\n{owner}\nRegion: {region}\nVerif. level: {verif}\nServer ID: {id}{shard}"
             ).format(
-                owner=guild.owner,
-                region=str(guild.region)
-                if str(guild.region) not in region
-                else region[str(guild.region)],
-                verif=verif[str(guild.verification_level)],
-                id=guild.id,
+                owner_mention=bold(str(guild.owner.mention)),
+                owner=bold(str(guild.owner)),
+                region=f"**{vc_regions.get(str(guild.region)) or str(guild.region)}**",
+                verif=bold(verif[str(guild.verification_level)]),
+                id=bold(str(guild.id)),
+                shard=shard,
             ),
+            inline=False,
         )
         em.add_field(
             name=_("Misc:"),
             value=_(
-                "AFK channel: **{afk_chan}**\nAFK Timeout: **{afk_timeout}sec**\n"
-                "Custom emojis: **{emojis}**\nRoles: **{roles}**"
+                "AFK channel: {afk_chan}\nAFK timeout: {afk_timeout}\nCustom emojis: {emojis}\nRoles: {roles}"
             ).format(
-                afk_chan=guild.afk_channel,
-                afk_timeout=guild.afk_timeout,
-                emojis=len(guild.emojis),
-                roles=len(guild.roles),
+                afk_chan=bold(str(guild.afk_channel)) if guild.afk_channel else bold(_("Not set")),
+                afk_timeout=bold(humanize_timedelta(seconds=guild.afk_timeout)),
+                emojis=bold(humanize_number(len(guild.emojis))),
+                roles=bold(humanize_number(len(guild.roles))),
             ),
+            inline=False,
         )
-        if guild.features:
-            em.add_field(
-                name=_("Special features:"),
-                value="".join(
-                    f"\N{WHITE HEAVY CHECK MARK} {format_kwargs[x]}\n"
-                    for x in guild.features
-                    if x in format_kwargs
-                ),
+        if guild_features_list:
+            em.add_field(name=_("Server features:"), value="\n".join(guild_features_list))
+        if guild.premium_tier != 0:
+            nitro_boost = _(
+                "Tier {boostlevel} with {nitroboosters} boosters\n"
+                "File size limit: {filelimit}\n"
+                "Emoji limit: {emojis_limit}\n"
+                "VCs max bitrate: {bitrate}"
+            ).format(
+                boostlevel=bold(str(guild.premium_tier)),
+                nitroboosters=bold(humanize_number(guild.premium_subscription_count)),
+                filelimit=bold(_size(guild.filesize_limit)),
+                emojis_limit=bold(str(guild.emoji_limit)),
+                bitrate=bold(_bitsize(guild.bitrate_limit)),
             )
-        if "VERIFIED" in guild.features:
-            em.set_author(
-                name=guild.name,
-                icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png",
-            )
-        if "PARTNERED" in guild.features:
-            em.set_author(
-                name=guild.name, icon_url="https://www.discordia.me/uploads/icons/partner.png"
-            )
-        if "BANNER" in guild.features:
-            em.set_image(url=str(guild.banner_url))
-        if guild.icon_url:
-            em.set_author(name=guild.name, url=str(guild.icon_url))
-            em.set_thumbnail(url=str(guild.icon_url))
-        else:
-            em.set_author(
-                name=guild.name,
-                url="https://cdn.discordapp.com/attachments/494975386334134273/529843761635786754/Discord-Logo-Black.png",
-            )
-            em.set_thumbnail(
-                url="https://cdn.discordapp.com/attachments/494975386334134273/529843761635786754/Discord-Logo-Black.png"
-            )
+            em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
+        if guild.splash:
+            em.set_image(url=guild.splash_url_as(format="png"))
         return em
 
     @commands.Cog.listener()
@@ -281,14 +338,14 @@ class ServerStats(commands.Cog):
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has left a server!\n "
-            "That's **{num:,}** servers now!\n"
-            "That's a total of **{users:,}** users !\n"
+            "That's **{num}** servers now!\n"
+            "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
             "That's over **{passed}** days ago!"
         ).format(
             bot=channel.guild.me.mention,
-            num=len(self.bot.guilds),
-            users=sum(len(s.members) for s in self.bot.guilds),
+            num=humanize_number(len(self.bot.guilds)),
+            users=humanize_number(sum(len(s.members) for s in self.bot.guilds)),
             since=guild.created_at.strftime("%d %b %Y %H:%M"),
             passed=passed,
         )
@@ -647,7 +704,7 @@ class ServerStats(commands.Cog):
         start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
 
         try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             await ctx.send(_("I guess not."), delete_after=30)
             return
@@ -695,7 +752,7 @@ class ServerStats(commands.Cog):
         start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
 
         try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             await ctx.send(_("I guess not."), delete_after=30)
             return
@@ -736,7 +793,7 @@ class ServerStats(commands.Cog):
         start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
 
         try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             await ctx.send(_("I guess not."), delete_after=30)
             return
@@ -858,12 +915,12 @@ class ServerStats(commands.Cog):
         msg = ""
         msg_list = []
         count = 0
-        for i, server in enumerate(guilds):
+        for _, server in enumerate(guilds):
             if count == 10:
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{server.name}: `{server.member_count:,}`\n"
+            msg += f"{escape(server.name, mass_mentions=True, formatting=True)}: `{humanize_number(server.member_count)}`\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
@@ -878,12 +935,12 @@ class ServerStats(commands.Cog):
         msg = ""
         msg_list = []
         count = 0
-        for i, server in enumerate(guilds):
+        for _, server in enumerate(guilds):
             if count == 10:
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{server.name}: `{server.member_count:,}`\n"
+            msg += f"{escape(server.name, mass_mentions=True, formatting=True)}: `{humanize_number(server.member_count)}`\n"
             count += 1
         msg_list.append(msg)
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
@@ -1086,7 +1143,7 @@ class ServerStats(commands.Cog):
             and react.message.id == message.id
         )
         try:
-            react, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+            react, _ = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
             for e in emojis:
                 try:
@@ -1224,7 +1281,9 @@ class ServerStats(commands.Cog):
         """
         if not guild:
             guild = ctx.guild
-        await ctx.send("{} has {:,} members.".format(guild.name, guild.member_count))
+        await ctx.send(
+            "{} has {} members.".format(guild.name, humanize_number(guild.member_count))
+        )
 
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1311,11 +1370,10 @@ class ServerStats(commands.Cog):
             guild = ctx.guild
         total_msgs = 0
         msg = ""
+        warning_msg = None
         total_contribution = {m: 0 for m in guild.members}
         if limit is None or limit > 1000:
             warning_msg = await ctx.send(_("This might take a while!"))
-        else:
-            warning_msg = None
         async with ctx.channel.typing():
             for chn in guild.channels:
                 channel_msgs = 0
@@ -1334,55 +1392,40 @@ class ServerStats(commands.Cog):
                         channel_contribution[author] += 1
                         total_contribution[author] += 1
                     highest, user = await self.check_highest(channel_contribution)
-                    if guild is ctx.guild:
-                        msg += (
-                            f"{chn.mention}: "
-                            + ("Total Messages:")
-                            + f"**{channel_msgs}** "
-                            + _("most posts by ")
-                            + f"{user.mention} **{highest}**\n"
-                        )
-                    else:
-                        msg += (
-                            f"{chn.mention}: "
-                            + ("Total Messages:")
-                            + f"**{channel_msgs}** "
-                            + _("most posts by ")
-                            + f"{user} **{highest}**\n"
-                        )
-                except discord.errors.Forbidden:
-                    pass
-                except AttributeError:
+                    maybe_guild = (
+                        f"{user.mention if user.id in [member.id for member in ctx.guild.members] else inline(user.name)}: {bold(humanize_number(highest))}\n"
+                        if guild
+                        else f"{user}: {bold(humanize_number(highest))}\n"
+                    )
+                    msg += (
+                        _("**Most posts in {}**\nTotal Messages: ").format(chn.mention)
+                        + bold(humanize_number(channel_msgs))
+                        + _("\nMost posts by {}".format(maybe_guild))
+                    )
+                except (AttributeError, discord.Forbidden):
                     pass
             highest, user = await self.check_highest(total_contribution)
-            if guild is ctx.guild:
-                new_msg = (
-                    f"__{guild.name}__: "
-                    + _("Total Messages:")
-                    + f"**{total_msgs}** "
-                    + _("Most posts by ")
-                    + f"{user.mention} **{highest}**\n{msg}"
-                )
-            else:
-                new_msg = (
-                    f"__{guild.name}__: "
-                    + _("Total Messages:")
-                    + f"**{total_msgs}** "
-                    + _("Most posts by ")
-                    + f"{user} **{highest}**\n{msg}"
-                )
+            new_msg = (
+                _("**Most posts on the server**\nTotal Messages: ")
+                + bold(humanize_number(total_msgs))
+                + _("\nMost posts by ")
+                + f"{user.mention if guild is ctx.guild else user} {bold(humanize_number(highest))}\n\n{msg}"
+            )
 
             x = sorted(total_contribution.items(), key=lambda x: x[1], reverse=True)
             x = [x[i : i + 10] for i in range(0, len(x), 10)]
             msg_list = []
+            pages = 1
             for page in x:
                 if guild is ctx.guild:
-                    members = "\n".join(f"{k.mention}: {v}" for k, v in page)
+                    members = "\n".join(
+                        f"{k.mention if k.id in [member.id for member in ctx.guild.members] else inline(k.name)} {humanize_number(v)}"
+                        for k, v in page
+                    )
                 else:
-                    members = "\n".join(f"{k}: {v}" for k, v in page)
+                    members = "\n".join(f"{k} {humanize_number(v)}" for k, v in page)
                 total = len(members)
                 em = discord.Embed(colour=await ctx.embed_colour())
-                em.title = _("Most posts on the server")
                 em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
                 pg_count = 0
                 for chn_page in pagify(new_msg, ["\n"], page_length=1000):
@@ -1396,10 +1439,14 @@ class ServerStats(commands.Cog):
                     total += len(chn_page)
 
                 em.add_field(name=_("Members List"), value=members)
+                em.set_footer(
+                    text=_("Page {}/{}").format(humanize_number(pages), humanize_number(len(x)))
+                )
+                pages += 1
                 msg_list.append(em)
             if warning_msg:
                 await warning_msg.delete()
-            await menu(ctx, msg_list, DEFAULT_CONTROLS)
+        return await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     @commands.command(name="channelstats")
     @commands.guild_only()
@@ -1424,8 +1471,6 @@ class ServerStats(commands.Cog):
         warning_msg = None
         if limit is None or limit > 1000:
             warning_msg = await ctx.send(_("This might take a while!"))
-        else:
-            warning_msg = None
         async with ctx.channel.typing():
             channel_msgs = 0
             channel_contribution: dict = {}
@@ -1439,31 +1484,43 @@ class ServerStats(commands.Cog):
                     else:
                         channel_contribution[author] += 1
                 highest, user = await self.check_highest(channel_contribution)
+                if not limit:
+                    msg += (
+                        _("**Most posts in {}**\nTotal Messages: ").format(channel.mention)
+                        + f"{bold(humanize_number(channel_msgs))}\n"
+                    )
+                else:
+                    msg += "**Most posts in {channel} for the last {msgs} messages**\n".format(
+                        channel=channel.mention, msgs=humanize_number(limit)
+                    )
                 msg += (
-                    f"{channel.mention}: "
-                    + ("Total Messages:")
-                    + f"**{channel_msgs}** "
-                    + _("most posts by ")
-                    + f"{user.mention} **{highest}**\n"
+                    _("Most posts by ")
+                    + f"{user.mention if user.id in [member.id for member in ctx.guild.members] else inline(user.name)}: **{humanize_number(highest)} "
+                    + _("messages**\n\n")
                 )
-            except discord.errors.Forbidden:
+            except (AttributeError, discord.Forbidden):
                 pass
-            except AttributeError:
-                pass
-        # User get_user_info incase the top posts is by someone no longer
-        # in the guild
-        x = sorted(channel_contribution.items(), key=lambda x: x[1], reverse=True)
-        x = [x[i : i + 10] for i in range(0, len(x), 10)]
-        msg_list = []
-        for page in x:
-            em = discord.Embed(colour=await ctx.embed_colour())
-            em.title = _("Most posts in {channel.name}").format(channel=channel)
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
-            em.description = msg + "\n".join(f"{k.mention}: {v}" for k, v in page)
-            msg_list.append(em)
-        if warning_msg:
-            await warning_msg.delete()
-        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+            # User get_user_info incase the top posts is by someone no longer
+            # in the guild
+            x = sorted(channel_contribution.items(), key=lambda x: x[1], reverse=True)
+            x = [x[i : i + 10] for i in range(0, len(x), 10)]
+            msg_list = []
+            pages = 1
+            for page in x:
+                em = discord.Embed(colour=await ctx.embed_colour())
+                em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+                em.description = msg + "\n".join(
+                    f"{k.mention if k.id in [member.id for member in ctx.guild.members] else inline(k.name)} {humanize_number(v)}"
+                    for k, v in page
+                )
+                em.set_footer(
+                    text=_("Page {}/{}").format(humanize_number(pages), humanize_number(len(x)))
+                )
+                pages += 1
+                msg_list.append(em)
+            if warning_msg:
+                await warning_msg.delete()
+        return await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
