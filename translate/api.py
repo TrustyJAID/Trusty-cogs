@@ -190,6 +190,7 @@ class GoogleTranslateAPI:
             Translates the message based off reactions
             with country flags
         """
+        await self.bot.wait_until_ready()
         if not message.guild:
             return
         if message.author.bot:
@@ -225,7 +226,7 @@ class GoogleTranslateAPI:
             Translates the message based off reactions
             with country flags
         """
-
+        await self.bot.wait_until_ready()
         if payload.message_id in self.cache["translations"]:
             return
         if not await self._get_google_api_key():
