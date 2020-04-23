@@ -38,7 +38,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.4.2"
+    __version__ = "1.4.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -640,6 +640,8 @@ class ServerStats(commands.Cog):
         """
             List the users who have not talked in x days
         """
+        if days < 1:
+            return await ctx.send(_("You must provide a value of more than 0 days."))
         member_list = await self.get_members_since(ctx, days, role)
         x = [member_list[i : i + 10] for i in range(0, len(member_list), 10)]
         msg_list = []
@@ -650,7 +652,9 @@ class ServerStats(commands.Cog):
                 if role:
                     em.add_field(name=_("Role"), value=role.mention)
                 else:
-                    estimate = await ctx.guild.estimate_pruned_members(days=days)
+                    estimate = await ctx.guild.estimate_pruned_members(
+                        days=days if days < 30 else 30
+                    )
                     em.add_field(name=_("Discord Estimate"), value=str(estimate))
                 em.description = "\n".join(m.mention for m in page)
                 em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon_url)
@@ -691,6 +695,8 @@ class ServerStats(commands.Cog):
             `role` is the specified role you would like to kick defaults to everyone
             `reinvite` True/False whether to try to send the user a message before kicking
         """
+        if days < 1:
+            return await ctx.send(_("You must provide a value of more than 0 days."))
         if role is not None and role >= ctx.me.top_role:
             msg = _("That role is higher than my " "role so I cannot kick those members.")
             await ctx.send(msg)
@@ -736,6 +742,8 @@ class ServerStats(commands.Cog):
             `days` is the number of days since last seen talking on the server
             `new_roles` The new roles to apply to a user who is inactive
         """
+        if days < 1:
+            return await ctx.send(_("You must provide a value of more than 0 days."))
         if any([r >= ctx.me.top_role for r in new_roles]):
             msg = _(
                 "At least one of those roles is higher than my "
@@ -776,6 +784,8 @@ class ServerStats(commands.Cog):
             `role` is the specified role you would like to remove roles defaults to everyone
             `removed_roles` the roles to remove from inactive users
         """
+        if days < 1:
+            return await ctx.send(_("You must provide a value of more than 0 days."))
         if any([r >= ctx.me.top_role for r in removed_roles]):
             msg = _(
                 "At least one of those roles is higher than my "
