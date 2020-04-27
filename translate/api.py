@@ -399,8 +399,12 @@ class GoogleTranslateAPI:
         )
         if surpass_ignore:
             return True
-        guild_ignored = await mod.settings.guild(guild).ignored()
-        chann_ignored = await mod.settings.channel(channel).ignored()
+        if hasattr(mod, "settings"):
+            guild_ignored = await mod.settings.guild(guild).ignored()
+            chann_ignored = await mod.settings.channel(channel).ignored()
+        else:
+            guild_ignored = await mod.config.guild(guild).ignored()
+            chann_ignored = await mod.config.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
     @commands.Cog.listener()
