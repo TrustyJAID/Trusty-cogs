@@ -29,13 +29,13 @@ class Cleverbot(CleverbotAPI, commands.Cog):
 
     """
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.0.1"
+    __version__ = "2.1.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 127486454786)
         default_global = {"api": None, "io_user": None, "io_key": None, "allow_dm": False}
-        default_guild = {"channel": None, "toggle": False}
+        default_guild = {"channel": None, "toggle": False, "mention": False}
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.instances = {}
@@ -64,14 +64,27 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_channels=True)
     async def toggle(self, ctx: commands.Context) -> None:
-        """Toggles reply on mention"""
+        """Toggles reply when the bot is mentioned"""
         guild = ctx.message.guild
         if not await self.config.guild(guild).toggle():
             await self.config.guild(guild).toggle.set(True)
-            await ctx.send(_("I will reply on mention."))
+            await ctx.send(_("I will reply when I am mentioned."))
         else:
             await self.config.guild(guild).toggle.set(False)
-            await ctx.send(_("I won't reply on mention anymore."))
+            await ctx.send(_("I won't reply when I am mentioned anymore."))
+
+    @cleverbotset.command()
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def mention(self, ctx: commands.Context) -> None:
+        """Toggles mention on reply"""
+        guild = ctx.message.guild
+        if not await self.config.guild(guild).mention():
+            await self.config.guild(guild).mention.set(True)
+            await ctx.send(_("I will mention on reply."))
+        else:
+            await self.config.guild(guild).mention.set(False)
+            await ctx.send(_("I won't mention on reply."))
 
     @cleverbotset.command()
     @checks.is_owner()
@@ -175,7 +188,10 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             )
             await ctx.send(msg)
         else:
-            await ctx.send(response)
+            if ctx.guild and await self.config.guild(ctx.guild).mention():
+                await ctx.send(f"{author.mention} {response}")
+            else:
+                await ctx.send(response)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -191,7 +207,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             return
 
         msg = message.content
-        to_strip = f"(?m)^(<@!?{guild.me.id}>)"
+        to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
         is_mention = re.findall(to_strip, msg)
         if message.author.id != self.bot.user.id:
 
