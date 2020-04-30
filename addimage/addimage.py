@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import Optional, cast
 
-from redbot.core import commands, checks, Config
+from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
@@ -26,7 +26,7 @@ class AddImage(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -156,6 +156,9 @@ class AddImage(commands.Cog):
         """
         https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273
         """
+        if version_info >= VersionInfo.from_str("3.3.6"):
+            ctx = await self.bot.get_context(message)
+            return await self.bot.ignored_channel_or_guild(ctx)
         channel = cast(discord.TextChannel, message.channel)
         guild = cast(discord.Guild, channel.guild)
         author = cast(discord.Member, message.author)
@@ -171,12 +174,8 @@ class AddImage(commands.Cog):
         )
         if surpass_ignore:
             return True
-        if hasattr(mod, "settings"):
-            guild_ignored = await mod.settings.guild(guild).ignored()
-            chann_ignored = await mod.settings.channel(channel).ignored()
-        else:
-            guild_ignored = await mod.config.guild(guild).ignored()
-            chann_ignored = await mod.config.channel(channel).ignored()
+        guild_ignored = await mod.settings.guild(guild).ignored()
+        chann_ignored = await mod.settings.channel(channel).ignored()
         return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
     @commands.Cog.listener()
