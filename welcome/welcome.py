@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from redbot.core import commands, Config, checks
+from redbot.core import commands, Config, checks, VersionInfo, version_info
 from redbot.core.utils.chat_formatting import pagify
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import MessagePredicate
@@ -61,7 +61,7 @@ class Welcome(Events, commands.Cog):
      https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.2.0"
+    __version__ = "2.2.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -79,7 +79,10 @@ class Welcome(Events, commands.Cog):
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def group_welcome(self) -> None:
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             # log.debug("Checking for new welcomes")
             for guild_id, members in self.joined.items():

@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Optional, List
 
 
+from redbot.core import commands, Config, checks, VersionInfo, version_info
 from redbot.core.bot import Red
-from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n, get_locale
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.predicates import MessagePredicate
@@ -481,7 +481,10 @@ class DestinyAPI:
         """
             Checks if the manifest is up to date and downloads if it's not
         """
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         try:
             headers = await self.build_headers()
         except Destiny2MissingAPITokens:

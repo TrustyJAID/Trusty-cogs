@@ -5,7 +5,7 @@ import functools
 import logging
 import sys
 
-from redbot.core import commands, checks, Config
+from redbot.core import commands, checks, Config, VersionInfo, version_info
 from random import choice, randint
 from datetime import datetime
 from PIL import Image, ImageSequence
@@ -19,7 +19,7 @@ class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -348,7 +348,10 @@ class TrustyAvatar(commands.Cog):
         return member
 
     async def maybe_change_avatar(self) -> None:
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while self is self.bot.get_cog("TrustyAvatar"):
 
             new_avatar = choice([s for s in self.statuses])

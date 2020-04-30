@@ -7,8 +7,8 @@ import logging
 from typing import Tuple, Optional, List
 from datetime import datetime
 
+from redbot.core import Config, commands, VersionInfo, version_info
 from redbot.core.bot import Red
-from redbot.core import Config, commands
 from .twitch_profile import TwitchProfile
 from .twitch_follower import TwitchFollower
 from .errors import TwitchError
@@ -231,7 +231,10 @@ class TwitchAPI:
 
     async def check_for_new_followers(self) -> None:
         # Checks twitch every minute for new followers
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Twitch"):
             check_accounts = await self.config.twitch_accounts()
             for account in check_accounts:

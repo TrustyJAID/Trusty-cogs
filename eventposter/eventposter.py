@@ -3,7 +3,7 @@ import logging
 
 from typing import Union, Optional
 
-from redbot.core import commands, checks, Config
+from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.chat_formatting import pagify, humanize_list
@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.6"
+    __version__ = "1.5.7"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -51,7 +51,10 @@ class EventPoster(commands.Cog):
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def initialize(self) -> None:
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         try:
             for guild_id in await self.config.all_guilds():
                 guild = self.bot.get_guild(int(guild_id))

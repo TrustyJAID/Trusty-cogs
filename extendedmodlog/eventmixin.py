@@ -6,8 +6,8 @@ import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
+from redbot.core import commands, Config, modlog, VersionInfo, version_info
 from redbot.core.bot import Red
-from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, inline, escape
 
@@ -436,7 +436,10 @@ class EventMixin:
 
     async def invite_links_loop(self) -> None:
         """Check every 5 minutes for updates to the invite links"""
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while self is self.bot.get_cog("ExtendedModLog"):
             for guild_id in self.settings:
                 guild = self.bot.get_guild(guild_id)

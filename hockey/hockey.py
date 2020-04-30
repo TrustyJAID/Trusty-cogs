@@ -9,7 +9,8 @@ from io import BytesIO
 from typing import Union
 from datetime import datetime, timedelta, date
 from urllib.parse import quote
-from redbot.core import commands, checks, Config
+
+from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
@@ -44,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.7"
+    __version__ = "2.8.8"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -107,7 +108,10 @@ class Hockey(commands.Cog):
             This loop grabs the current games for the day
             then passes off to other functions as necessary
         """
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Hockey"):
             # await self.refactor_data()
             try:

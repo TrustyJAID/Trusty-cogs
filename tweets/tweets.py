@@ -1,16 +1,21 @@
 import discord
 import asyncio
 import logging
-from io import BytesIO
-from redbot.core import Config, checks, commands
-from redbot.core.utils.chat_formatting import escape, pagify
-from redbot.core.i18n import Translator, cog_i18n
-from .tweet_entry import TweetEntry
-from html import unescape
+import functools
+
 import tweepy as tw
 from typing import Tuple, Any, Optional, List
 from datetime import datetime
-import functools
+from html import unescape
+from io import BytesIO
+
+
+from redbot.core import Config, checks, commands, VersionInfo, version_info
+from redbot.core.utils.chat_formatting import escape, pagify
+from redbot.core.i18n import Translator, cog_i18n
+
+from .tweet_entry import TweetEntry
+
 
 _ = Translator("Tweets", __file__)
 
@@ -57,7 +62,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.5.3"
+    __version__ = "2.5.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -104,7 +109,10 @@ class Tweets(commands.Cog):
     # Here is all the logic for handling tweets and tweet creation
 
     async def start_stream(self) -> None:
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         api = None
         base_sleep = 300
         count = 1

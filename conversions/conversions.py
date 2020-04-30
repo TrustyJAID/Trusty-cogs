@@ -5,7 +5,7 @@ import asyncio
 import logging
 import re
 
-from redbot.core import commands, Config
+from redbot.core import commands, Config, VersionInfo, version_info
 from typing import Optional, Union, Dict
 
 log = logging.getLogger("red.trusty-cogs.conversions")
@@ -18,7 +18,7 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -38,7 +38,10 @@ class Conversions(commands.Cog):
         await self._ready.wait()
 
     async def init(self):
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         try:
             if await self.config.version() < "1.1.0":
                 prefixes = await self.bot.get_valid_prefixes()

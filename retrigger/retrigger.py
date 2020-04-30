@@ -7,7 +7,7 @@ from multiprocessing.pool import Pool
 from typing import Union, Optional
 
 
-from redbot.core import commands, checks, Config, modlog
+from redbot.core import commands, checks, Config, modlog, VersionInfo, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.11.0"
+    __version__ = "2.11.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -89,7 +89,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     self.triggers[guild].append(new_trigger)
 
     async def save_loop(self):
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         while self is self.bot.get_cog("ReTrigger"):
             for guild_id, triggers in self.triggers.items():
                 guild = self.bot.get_guild(guild_id)
