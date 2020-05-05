@@ -11,6 +11,7 @@ import discord
 from redbot.core import checks, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.utils.predicates import MessagePredicate
 
 """
 Notice:
