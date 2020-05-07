@@ -44,6 +44,7 @@ class Profile:
         dungeoneering: dict,
         divination: dict,
         invention: dict,
+        archaeology: dict,
     ):
         super().__init__()
         self.name = name
@@ -86,6 +87,7 @@ class Profile:
         self.dungeoneering = dungeoneering
         self.divination = divination
         self.invention = invention
+        self.archaeology = archaeology
 
     def to_json(self) -> dict:
         return {
@@ -129,6 +131,7 @@ class Profile:
             "dungeoneering": self.dungeoneering,
             "divination": self.divination,
             "invention": self.invention,
+            "archaeology": self.archaeology,
         }
 
     @classmethod
@@ -161,6 +164,7 @@ class Profile:
             "24": "Dungeoneering",
             "25": "Divination",
             "26": "Invention",
+            "27": "Archaeology"
         }
 
         def get_skill(skill_id):
@@ -212,6 +216,7 @@ class Profile:
             get_skill(24),
             get_skill(25),
             get_skill(26),
+            get_skill(27),
         )
 
     @classmethod

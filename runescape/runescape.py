@@ -20,7 +20,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -186,9 +186,12 @@ class Runescape(commands.Cog):
             "Dungeoneering",
             "Divination",
             "Invention",
+            "Archaeology",
         ]
         stats = p.to_json()
         for skill in skills:
+            if skill.lower() not in stats:
+                continue
             level = stats[skill.lower()]["level"]
             xp = stats[skill.lower()]["xp"]
             rank = stats[skill.lower()]["rank"] if "rank" in stats[skill.lower()] else "Unranked"
