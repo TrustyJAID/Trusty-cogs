@@ -8,7 +8,7 @@ class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
 
     def __init__(self, bot):
         self.bot = bot
@@ -49,6 +49,8 @@ class Mock(commands.Cog):
         """
         if not channel:
             send_channel = ctx.channel
+        else:
+            send_channel = channel
         result = ""
         mocker = ctx.message.author
         if type(msg) is int:
