@@ -8,7 +8,7 @@ class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.5"
+    __version__ = "1.0.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -60,15 +60,14 @@ class Mock(commands.Cog):
                 return
             except discord.errors.Forbidden:
                 return
-        elif type(msg) is str:
-            result = await self.cap_change(str(msg))
-            author = ctx.message.author
-        elif type(msg) is discord.Message:
             result = await self.cap_change(search_msg.content)
             if result == "" and len(search_msg.embeds) != 0:
                 if search_msg.embeds[0].description != discord.Embed.Empty:
                     result = await self.cap_change(search_msg.embeds[0].description)
             author = search_msg.author
+        elif type(msg) is str:
+            result = await self.cap_change(str(msg))
+            author = ctx.message.author
         elif type(msg) is discord.Member:
             total_msg = ""
             async for message in send_channel.history(limit=10):
@@ -81,9 +80,12 @@ class Mock(commands.Cog):
                 search_msg = message
             author = search_msg.author
             result = await self.cap_change(search_msg.content)
+            if result == "" and len(search_msg.embeds) != 0:
+                if search_msg.embeds[0].description != discord.Embed.Empty:
+                    result = await self.cap_change(search_msg.embeds[0].description)
         time = ctx.message.created_at
         embed = discord.Embed(description=result, timestamp=time)
-        embed.colour = author.colour if hasattr(author, "colour") else discord.Colour.default()
+        embed.colour = getattr(author, "colour", discord.Colour.default())
         embed.set_author(name=author.display_name, icon_url=author.avatar_url)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
         embed.set_footer(
