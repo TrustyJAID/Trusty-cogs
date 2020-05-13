@@ -9,6 +9,11 @@ from redbot.core.utils.chat_formatting import pagify, humanize_list
 from .bossalert import BossAlert
 from .minibossalert import MinibossAlert
 from .cartalert import CartAlert
+from .ascendedalert import AscendedAlert
+from .transcendedalert import TranscendedAlert
+from .immortalalert import ImmortalAlert
+from .possessedalert import PossessedAlert
+
 
 _ = Translator("AdventureAlert", __file__)
 
@@ -27,11 +32,19 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 @cog_i18n(_)
 class AdventureAlert(
-    BossAlert, MinibossAlert, CartAlert, commands.Cog, metaclass=CompositeMetaClass
+    BossAlert,
+    MinibossAlert,
+    CartAlert,
+    AscendedAlert,
+    TranscendedAlert,
+    ImmortalAlert,
+    PossessedAlert,
+    commands.Cog,
+    metaclass=CompositeMetaClass,
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.3.3"
+    __version__ = "1.4.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -46,8 +59,25 @@ class AdventureAlert(
             cart_roles=[],
             miniboss_users=[],
             miniboss_roles=[],
+            ascended_users=[],
+            ascended_roles=[],
+            transcended_users=[],
+            transcended_roles=[],
+            immortal_users=[],
+            immortal_roles=[],
+            possessed_users=[],
+            possessed_roles=[],
         )
-        self.config.register_user(adventure=False, miniboss=False, dragon=False, cart=False)
+        self.config.register_user(
+            adventure=False,
+            miniboss=False,
+            dragon=False,
+            cart=False,
+            ascended=False,
+            transcended=False,
+            immortal=False,
+            possessed=False,
+        )
         self.sanitize = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -77,7 +107,7 @@ class AdventureAlert(
             "cart_servers": ([], _("Cart Notifications")),
             "adventure_servers": ([], _("Adventure Notifications")),
             "boss_servers": ([], _("Dragon Notifications")),
-            "miniboss_servers": ([], _("Miniboss Notifications"))
+            "miniboss_servers": ([], _("Miniboss Notifications")),
         }
         all_guilds = await self.config.all_guilds()
         for g_id, settings in all_guilds.items():
