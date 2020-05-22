@@ -10,9 +10,12 @@ https://imagemagick.org/script/download.php
 http://docs.wand-py.org/en/0.4.4/guide/install.html#
 
 Install the latest source in Ubuntu with:
-`sudo apt-get install libmagickwand-dev, libaa1-dev, ffmpeg`
+`sudo apt-get install zlib1g-dev libffi-dev git libmagickwand-dev unzip libaa1-dev build-essential tk-dev libncurses5-dev libncursesw5-dev libreadline6-dev libdb5.3-dev libgdbm-dev libsqlite3-dev libssl-dev libbz2-dev libexpat1-dev liblzma-dev ffmpeg imagemagick`
 https://linuxconfig.org/how-to-install-imagemagick-7-on-ubuntu-18-04-linux
 
+
+
+# If the above does not work here's how you can install from source on Ubuntu
 
 ```bash
 wget ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick.tar.gz
@@ -24,7 +27,7 @@ sudo make install
 ```
 
 ## Installing ImageMagick on Windows
-These instructions are specifically for installing ImageMagick for bots hosted on windows computers. 
+These instructions are specifically for installing ImageMagick for bots hosted on windows computers.
 
 1. Go to [this link](http://www.imagemagick.org/download/binaries/) and click the first link on that page to begin downloading ImageMagick.
 
@@ -36,10 +39,10 @@ These instructions are specifically for installing ImageMagick for bots hosted o
 
 5. Click `next` on the "Select Start Menu Folder" screen.
 
-6. In the "Select Additional Tasks" screen, ensure that the following 3 options are checked:  
-- Add application directory to your system path  
-- Install FFmpeg  
-- Install development headers and libraries for C and C++  
+6. In the "Select Additional Tasks" screen, ensure that the following 3 options are checked:
+- Add application directory to your system path
+- Install FFmpeg
+- Install development headers and libraries for C and C++
 then click `next`.
 
 7. Click `install` to begin the installation.
