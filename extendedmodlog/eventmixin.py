@@ -1447,7 +1447,7 @@ class EventMixin:
         )
         embed.set_author(
             name=_("{member}").format(member=member),
-            icon_url=str(member.avatar_url),
+            icon_url=member.avatar_url,
         )
         embed.set_footer(text=_("User ID: ") + str(before.author.id))
         change_type = None
