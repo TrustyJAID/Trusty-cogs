@@ -1545,7 +1545,8 @@ class EventMixin:
             member=before,
             m_id=before.id,
         )
-        emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
+        embed.set_footer(text=_("User ID: ") + str(before.id))
+        emb_msg = _("{member} updated").format(member=before)
         embed.set_author(name=emb_msg, icon_url=before.avatar_url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
