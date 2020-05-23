@@ -287,7 +287,7 @@ class EventMixin:
                     description=_("*Message's content unknown.*"),
                     colour=await self.get_event_colour(guild, "message_delete"),
                 )
-                embed.add_field(name=_("Channel"), value=message_channel.mention)
+                embed.add_field(name=_("Channel"), value=message_channel.mention, inline=False)
                 embed.set_author(name=_("Deleted Message"))
                 await channel.send(embed=embed)
             else:
@@ -355,22 +355,21 @@ class EventMixin:
             )
         if embed_links:
             embed = discord.Embed(
-                description=message.content,
+                description=f"**Message sent by {message.author.mention} deleted in {message_channel.mention}**\nmessage.content",
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
 
-            embed.add_field(name=_("Channel"), value=message_channel.mention)
             if perp:
-                embed.add_field(name=_("Deleted by"), value=perp)
+                embed.add_field(name=_("Deleted by"), value=perp, inline=False)
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 if len(message.attachments) > 1:
                     files = files[:-2]
-                embed.add_field(name=_("Attachments"), value=files)
+                embed.add_field(name=_("Attachments"), value=files, inline=False)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
-                name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
+                name=_("{member}").format(member=author),
                 icon_url=str(message.author.avatar_url),
             )
             await channel.send(embed=embed)
