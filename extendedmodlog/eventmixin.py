@@ -1446,8 +1446,10 @@ class EventMixin:
             m_id=member.id,
         )
         embed.set_author(
-            name=_("{member} ({m_id}) Voice State Update").format(member=member, m_id=member.id)
+            name=_("{member}").format(member=member),
+            icon_url=str(member.avatar_url),
         )
+        embed.set_footer(text=_("User ID: ") + str(before.author.id))
         change_type = None
         worth_updating = False
         if before.deaf != after.deaf:
