@@ -616,6 +616,27 @@ class EventMixin:
                 timestamp=time,
             )
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            
+            # Pretty print the duration spent on guild
+            duration = time - member.joined_at
+            
+            seconds = int(duration)
+            days, seconds = divmod(seconds, 86400)
+            hours, seconds = divmod(seconds, 3600)
+            minutes, seconds = divmod(seconds, 60)
+            
+            if days > 0:
+                pretty_duration = f"{days} days, {hours} hours, {minutes} minutes, {seconds} seconds"
+            elif hours > 0:
+                pretty_duration = f"{hours} hours, {minutes} minutes, {seconds} seconds"
+            elif minutes > 0:
+                pretty_duration = f"{minutes} minutes, {seconds} seconds"
+            else:
+                pretty_duration = f"{seconds} seconds"
+            
+
+            embed.add_field(name=_("Joined: {m_date} ({m_duration} ago)").format(
+                m_date=member.joined_at, m_duration=pretty_duration))
             if perp:
                 embed.add_field(name=_("Kicked"), value=perp.mention)
             if reason:
@@ -1176,7 +1197,7 @@ class EventMixin:
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
-            # jump_url = f"[Click to see new message]({after.jump_url})"
+            #jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("Before:"), value=before.content, inline=False)
             embed.add_field(name=_("After:"), value=after.content, inline=False)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
