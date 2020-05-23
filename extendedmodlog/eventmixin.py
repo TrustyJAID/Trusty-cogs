@@ -1174,17 +1174,17 @@ class EventMixin:
         fmt = "%H:%M:%S"
         if embed_links:
             embed = discord.Embed(
-                description=before.content,
+                description=f"**Message edited in {before.channel.mention}** [Jump to message]({after.jump_url})",
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
-            jump_url = f"[Click to see new message]({after.jump_url})"
-            embed.add_field(name=_("After Message:"), value=jump_url)
-            embed.add_field(name=_("Channel:"), value=before.channel.mention)
+            # jump_url = f"[Click to see new message]({after.jump_url})"
+            embed.add_field(name=_("Before:"), value=before.content, inline=False)
+            embed.add_field(name=_("After:"), value=after.content, inline=False)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
             embed.set_author(
-                name=_("{member} ({m_id}) - Edited Message").format(
-                    member=before.author, m_id=before.author.id
+                name=_("{member}").format(
+                    member=before.author
                 ),
                 icon_url=str(before.author.avatar_url),
             )
