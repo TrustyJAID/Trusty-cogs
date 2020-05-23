@@ -355,7 +355,7 @@ class EventMixin:
             )
         if embed_links:
             embed = discord.Embed(
-                description=f"**Message sent by {message.author.mention} deleted in {message_channel.mention}**\nmessage.content",
+                description=f"**Message sent by {message.author.mention} deleted in {message_channel.mention}**\n{message.content}",
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
