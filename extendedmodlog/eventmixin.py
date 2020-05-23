@@ -617,9 +617,9 @@ class EventMixin:
             )
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
             if perp:
-                embed.add_field(name=_("Kicked"), value=perp.mention)
+                embed.add_field(name=_("Kicked or by:"), value=perp.mention)
             if reason:
-                embed.add_field(name=_("Reason"), value=str(reason))
+                embed.add_field(name=_("Reason:"), value=str(reason))
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
                 name=_("{member} ({m_id}) has left the guild").format(
