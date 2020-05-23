@@ -1447,10 +1447,9 @@ class EventMixin:
         )
         embed.set_author(
             name=_("{member}").format(member=member),
-            url=Embed.Empty,
             icon_url=member.avatar_url,
         )
-        embed.set_footer(text=_("User ID: ") + str(before.author.id))
+        embed.set_footer(text=_("User ID: ") + str(member.id))
         change_type = None
         worth_updating = False
         if before.deaf != after.deaf:
