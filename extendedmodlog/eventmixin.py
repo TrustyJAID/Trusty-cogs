@@ -287,7 +287,7 @@ class EventMixin:
                     description=_("*Message's content unknown.*"),
                     colour=await self.get_event_colour(guild, "message_delete"),
                 )
-                embed.add_field(name=_("Channel"), value=message_channel.mention)
+                embed.add_field(name=_("Channel"), value=message_channel.mention, inline=False)
                 embed.set_author(name=_("Deleted Message"))
                 await channel.send(embed=embed)
             else:
@@ -355,22 +355,21 @@ class EventMixin:
             )
         if embed_links:
             embed = discord.Embed(
-                description=message.content,
+                description=f"**Message sent by {message.author.mention} deleted in {message_channel.mention}**\n{message.content}",
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
 
-            embed.add_field(name=_("Channel"), value=message_channel.mention)
             if perp:
-                embed.add_field(name=_("Deleted by"), value=perp)
+                embed.add_field(name=_("Deleted by"), value=perp, inline=False)
             if message.attachments:
                 files = ", ".join(a.filename for a in message.attachments)
                 if len(message.attachments) > 1:
                     files = files[:-2]
-                embed.add_field(name=_("Attachments"), value=files)
+                embed.add_field(name=_("Attachments"), value=files, inline=False)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
             embed.set_author(
-                name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
+                name=_("{member}").format(member=author),
                 icon_url=str(message.author.avatar_url),
             )
             await channel.send(embed=embed)
@@ -618,9 +617,9 @@ class EventMixin:
             )
             embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
             if perp:
-                embed.add_field(name=_("Kicked"), value=perp.mention)
+                embed.add_field(name=_("Kicked or banned by:"), value=perp.mention)
             if reason:
-                embed.add_field(name=_("Reason"), value=str(reason))
+                embed.add_field(name=_("Reason:"), value=str(reason))
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
                 name=_("{member} ({m_id}) has left the guild").format(
@@ -1123,7 +1122,6 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=role.name,
             timestamp=time,
             colour=await self.get_event_colour(guild, "role_delete"),
         )
@@ -1174,17 +1172,16 @@ class EventMixin:
         fmt = "%H:%M:%S"
         if embed_links:
             embed = discord.Embed(
-                description=before.content,
+                description=f"**Message edited in {before.channel.mention}** [Jump to message]({after.jump_url})",
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
-            jump_url = f"[Click to see new message]({after.jump_url})"
-            embed.add_field(name=_("After Message:"), value=jump_url)
-            embed.add_field(name=_("Channel:"), value=before.channel.mention)
+            embed.add_field(name=_("Before:"), value=before.content, inline=False)
+            embed.add_field(name=_("After:"), value=after.content, inline=False)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
             embed.set_author(
-                name=_("{member} ({m_id}) - Edited Message").format(
-                    member=before.author, m_id=before.author.id
+                name=_("{member}").format(
+                    member=before.author
                 ),
                 icon_url=str(before.author.avatar_url),
             )
@@ -1448,8 +1445,10 @@ class EventMixin:
             m_id=member.id,
         )
         embed.set_author(
-            name=_("{member} ({m_id}) Voice State Update").format(member=member, m_id=member.id)
+            name=_("{member}").format(member=member),
+            icon_url=member.avatar_url,
         )
+        embed.set_footer(text=_("User ID: ") + str(member.id))
         change_type = None
         worth_updating = False
         if before.deaf != after.deaf:
@@ -1545,7 +1544,8 @@ class EventMixin:
             member=before,
             m_id=before.id,
         )
-        emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
+        embed.set_footer(text=_("User ID: ") + str(before.id))
+        emb_msg = _("{member} updated").format(member=before)
         embed.set_author(name=emb_msg, icon_url=before.avatar_url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
