@@ -1122,7 +1122,6 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=role.name,
             timestamp=time,
             colour=await self.get_event_colour(guild, "role_delete"),
         )
