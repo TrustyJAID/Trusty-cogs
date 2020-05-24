@@ -126,9 +126,7 @@ class Trigger:
     ocr_search: bool
     delete_after: int
 
-    def __init__(
-        self, name, regex, response_type, author, **kwargs
-    ):
+    def __init__(self, name, regex, response_type, author, **kwargs):
         self.name = name
         self.regex = re.compile(regex)
         self.response_type = response_type
@@ -151,18 +149,18 @@ class Trigger:
         """This is defined moreso for debugging purposes but may prove useful for elaborating
         what is defined for each trigger individually"""
         info = _(
-                "__Name__: **{name}** \n"
-                "__Active__: **{enabled}**\n"
-                "__Author__: {author}\n"
-                "__Count__: **{count}**\n"
-                "__Response__: **{response}**\n"
-            ).format(
-                    name=self.name,
-                    enabled=self.enabled,
-                    author=self.author,
-                    count=self.count,
-                    response=self.response_type,
-                )
+            "__Name__: **{name}** \n"
+            "__Active__: **{enabled}**\n"
+            "__Author__: {author}\n"
+            "__Count__: **{count}**\n"
+            "__Response__: **{response}**\n"
+        ).format(
+            name=self.name,
+            enabled=self.enabled,
+            author=self.author,
+            count=self.count,
+            response=self.response_type,
+        )
         if self.ignore_commands:
             info += _("Ignore commands: **{ignore}**\n").format(ignore=self.ignore_commands)
         if "text" in self.response_type:
@@ -191,9 +189,7 @@ class Trigger:
             info += _("__Command__: ") + "**{response}**\n".format(response=response)
         if "react" in self.response_type:
             if self.multi_payload:
-                emoji_response = [
-                    r for t in self.multi_payload for r in t[1:] if t[0] == "react"
-                ]
+                emoji_response = [r for t in self.multi_payload for r in t[1:] if t[0] == "react"]
             else:
                 emoji_response = self.text
             server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
@@ -230,9 +226,7 @@ class Trigger:
         if self.ignore_edits:
             info += _("Ignoring edits: **Enabled**\n")
         if self.delete_after:
-            info += _("Message deleted after: {time} seconds.\n").format(
-                time=self.delete_after
-            )
+            info += _("Message deleted after: {time} seconds.\n").format(time=self.delete_after)
         info += _("__Regex__: ") + self.regex.pattern
         return info
 

@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.11.1"
+    __version__ = "2.12.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -532,7 +532,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Edit the text of a saved trigger.
 
             `<trigger>` is the name of the trigger.
-            `<text>` The new regex pattern to use.
+            `<text>` The new text to respond with.
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
@@ -551,6 +551,47 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} text changed to `{text}`")
         await ctx.send(msg.format(name=trigger.name, text=text))
+
+    @_edit.command(name="deleteafter", aliases=["autodelete", "delete"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def edit_delete_after(
+        self,
+        ctx: commands.Context,
+        trigger: TriggerExists,
+        *,
+        delete_after: TimedeltaConverter = None,
+    ) -> None:
+        """
+            Edit the delete_after parameter of a saved text trigger.
+
+            `<trigger>` is the name of the trigger.
+            `<delete_after>` The time until the message is deleted must include units.
+            Example: `[p]retrigger edit deleteafter trigger 2 minutes`
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        if trigger.multi_payload:
+            return await ctx.send(_("You cannot edit multi triggers response."))
+        if "text" not in trigger.response_type:
+            return await ctx.send(_("That trigger cannot be edited this way."))
+        if delete_after:
+            if delete_after.total_seconds() > 0:
+                delete_after_seconds = delete_after.total_seconds()
+            if delete_after.total_seconds() < 1:
+                return await ctx.send(_("`delete_after` must be greater than 1 second."))
+        else:
+            delete_after_seconds = None
+        trigger.delete_after = delete_after_seconds
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} will now delete after `{time}` seconds.")
+        await ctx.send(msg.format(name=trigger.name, time=delete_after_seconds))
 
     @_edit.command(name="ignorecommands")
     @checks.mod_or_permissions(manage_messages=True)
@@ -851,7 +892,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             `<name>` name of the trigger
             `<regex>` the regex that will determine when to respond.
-            `[delete_after]` Have the message automatically delete itself after x seconds.
+            `[delete_after]` Optionally have the text autodelete must include units e.g. 2m.
             `<text>` response of the trigger
             Text responses utilize regex groups for replacement so you can
             replace a group match in a specific area with `{#}`
@@ -996,9 +1037,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(
-            name, regex, ["dmme"], author, text=text, created_at=ctx.message.id
-        )
+        new_trigger = Trigger(name, regex, ["dmme"], author, text=text, created_at=ctx.message.id)
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1272,9 +1311,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(
-            name, regex, ["ban"], author, created_at=ctx.message.id
-        )
+        new_trigger = Trigger(name, regex, ["ban"], author, created_at=ctx.message.id)
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1305,9 +1342,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(
-            name, regex, ["kick"], author, created_at=ctx.message.id
-        )
+        new_trigger = Trigger(name, regex, ["kick"], author, created_at=ctx.message.id)
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1470,12 +1505,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name,
-            regex,
-            ["delete"],
-            author,
-            text=check_filenames,
-            created_at=ctx.message.id,
+            name, regex, ["delete"], author, text=check_filenames, created_at=ctx.message.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
