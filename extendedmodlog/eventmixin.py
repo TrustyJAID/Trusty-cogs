@@ -355,9 +355,12 @@ class EventMixin:
             )
         if embed_links:
             embed = discord.Embed(
-                description=_("**Message sent by {author} deleted in {channel}**\n{content}").format(
-                    author=message.author.mention, channel=message_channel.mention, content=message.content
+                title=_("**Message sent by {username}#{discrim} deleted in #{channel}**").format(
+                    username=message.author.name,
+                    discrim=message.author.discriminator,
+                    channel=message_channel.name
                 ),
+                description=_("{content}").format(content=message.content),
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
@@ -1228,13 +1231,13 @@ class EventMixin:
         fmt = "%H:%M:%S"
         if embed_links:
             embed = discord.Embed(
-                description=_("**Message edited in {channel}**").format(
-                    channel=before.channel.mention
+                title=_("**Message edited in #{channel}**").format(
+                    channel=before.channel.name
                 ),
+                description=_("**Before:** {content}").format(content=before.content),
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
-            embed.add_field(name=_("Before:"), value=before.content, inline=False)
             embed.add_field(name=_("After:"), value=after.jump_url, inline=False)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
             embed.set_author(
