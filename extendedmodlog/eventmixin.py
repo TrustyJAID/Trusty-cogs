@@ -355,7 +355,9 @@ class EventMixin:
             )
         if embed_links:
             embed = discord.Embed(
-                description=f"**Message sent by {message.author.mention} deleted in {message_channel.mention}**\n{message.content}",
+                description=_("**Message sent by {author} deleted in {channel}**\n{content}").format(
+                    author=message.author.mention, channel=message_channel.mention, content=message.content
+                ),
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
@@ -402,15 +404,17 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_delete"]["embed"]
         )
+        time = datetime.datetime.utcnow()
         message_amount = len(payload.message_ids)
         if embed_links:
             embed = discord.Embed(
                 description=message_channel.mention,
                 colour=await self.get_event_colour(guild, "message_delete"),
+                timestamp=time
             )
             embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon_url)
-            embed.add_field(name=_("Channel"), value=message_channel.mention)
-            embed.add_field(name=_("Messages deleted"), value=str(message_amount))
+            embed.add_field(name=_("Channel"), value=message_channel.mention, inline=False)
+            embed.add_field(name=_("Messages deleted"), value=str(message_amount), inline=False)
             await channel.send(embed=embed)
         else:
             infomessage = _(
@@ -552,22 +556,25 @@ class EventMixin:
         possible_link = await self.get_invite_link(guild)
         if embed_links:
             embed = discord.Embed(
-                description=member.mention,
+                title=_("Member joined"),
+                description=_("{member}\ncreated {days}").format(
+                    member=member.mention,
+                    days=created_on
+                ),
                 colour=await self.get_event_colour(guild, "user_join"),
                 timestamp=member.joined_at if member.joined_at else datetime.datetime.utcnow(),
             )
-            embed.add_field(name=_("Total Users:"), value=str(users))
-            embed.add_field(name=_("Account created on:"), value=created_on)
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
-                name=_("{member} ({m_id}) has joined the guild").format(
-                    member=member, m_id=member.id
+                name=_("{member}").format(
+                    member=member
                 ),
                 url=member.avatar_url,
                 icon_url=member.avatar_url,
             )
+            embed.add_field(name=_("Total Users"), value=str(users), inline=False)
             if possible_link:
-                embed.add_field(name=_("Invite Link"), value=possible_link)
+                embed.add_field(name=_("Invite Link"), value=possible_link, inline=False)
             embed.set_thumbnail(url=member.avatar_url)
             await channel.send(embed=embed)
         else:
@@ -602,28 +609,44 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         perp = None
         reason = None
+        action = None
+        
         if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.kick
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == member.id:
-                    perp = log.user
-                    reason = log.reason
-                    break
+            async for log in guild.audit_logs(limit=3, action=action):
+                delta = abs((time - log.created_at).total_seconds())
+                if delta <= 5:
+                    if log.action == discord.AuditLogAction.kick:
+                        action = discord.AuditLogAction.kick
+                        if log.target.id == member.id:
+                            perp = log.user
+                            reason = log.reason
+                            break
+                    if log.action == discord.AuditLogAction.ban:
+                        action = discord.AuditLogAction.ban
+                        if log.target.id == member.id:
+                            perp = log.user
+                            reason = log.reason
+                            break
+
         if embed_links:
             embed = discord.Embed(
+                title=_("Member left"),
                 description=member.mention,
                 colour=await self.get_event_colour(guild, "user_left"),
                 timestamp=time,
             )
-            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)))
+            embed.add_field(name=_("Total Users:"), value=str(len(guild.members)), inline=False)
             if perp:
-                embed.add_field(name=_("Kicked or banned by:"), value=perp.mention)
+                if action == discord.AuditLogAction.kick:
+                    embed.add_field(name=_("Kicked by:"), value=perp.mention, inline=False)
+                elif action == discord.AuditLogAction.ban:
+                    embed.add_field(name=_("Banned by:"), value=perp.mention, inline=False)
             if reason:
                 embed.add_field(name=_("Reason:"), value=str(reason))
             embed.set_footer(text=_("User ID: ") + str(member.id))
             embed.set_author(
-                name=_("{member} ({m_id}) has left the guild").format(
-                    member=member, m_id=member.id
+                name=_("{member}").format(
+                    member=member
                 ),
                 url=member.avatar_url,
                 icon_url=member.avatar_url,
@@ -716,15 +739,15 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         channel_type = str(new_channel.type).title()
         embed = discord.Embed(
-            description=f"{new_channel.mention} {new_channel.name}",
+            description=_("**{chan_type} channel created: {channel}**").format(
+                    chan_type=channel_type, channel=new_channel.mention
+            ),
             timestamp=time,
             colour=await self.get_event_colour(guild, "channel_create"),
         )
-        embed.set_author(
-            name=_("{chan_type} Channel Created {chan_name} ({chan_id})").format(
-                chan_type=channel_type, chan_name=new_channel.name, chan_id=new_channel.id
-            )
-        )
+
+        embed.set_footer(text=_("Channel ID: ") + str(new_channel.id))
+
         # msg = _("Channel Created ") + str(new_channel.id) + "\n"
         perp = None
         reason = None
@@ -738,10 +761,14 @@ class EventMixin:
                     break
 
         perp_msg = ""
-        embed.add_field(name=_("Type"), value=channel_type)
         if perp:
             perp_msg = _("by {perp} (`{perp_id}`)").format(perp=perp, perp_id=perp.id)
-            embed.add_field(name=_("Created by "), value=perp.mention)
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason)
@@ -777,15 +804,14 @@ class EventMixin:
         channel_type = str(old_channel.type).title()
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=old_channel.name,
+            description=_("**{chan_type} channel deleted: {channel}**").format(
+                    chan_type=channel_type, channel=old_channel.name
+                ),
             timestamp=time,
             colour=await self.get_event_colour(guild, "channel_delete"),
         )
-        embed.set_author(
-            name=_("{chan_type} Channel Deleted {chan_name} ({chan_id})").format(
-                chan_type=channel_type, chan_name=old_channel.name, chan_id=old_channel.id
-            )
-        )
+
+        embed.set_footer(text=_("Channel ID: ") + str(old_channel.id))
         perp = None
         reason = None
         if channel.permissions_for(guild.me).view_audit_log:
@@ -797,10 +823,14 @@ class EventMixin:
                         reason = log.reason
                     break
         perp_msg = ""
-        embed.add_field(name=_("Type"), value=channel_type)
         if perp:
             perp_msg = _("by {perp} (`{perp_id}`)").format(perp=perp, perp_id=perp.id)
-            embed.add_field(name=_("Created by "), value=perp.mention)
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason)
@@ -836,15 +866,13 @@ class EventMixin:
         channel_type = str(after.type).title()
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=after.mention,
+            description=_("**{chan_type} channel updated: {channel}**").format(
+                    chan_type=channel_type, channel=after.mention
+            ),
             timestamp=time,
             colour=await self.get_event_colour(guild, "channel_create"),
         )
-        embed.set_author(
-            name=_("{chan_type} Channel Updated {chan_name} ({chan_id})").format(
-                chan_type=channel_type, chan_name=before.name, chan_id=before.id
-            )
-        )
+        embed.set_footer(text=_("Channel ID: ") + str(before.id))
         msg = _("{emoji} `{time}` Updated channel {channel}\n").format(
             emoji=self.settings[guild.id]["channel_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
@@ -919,7 +947,12 @@ class EventMixin:
 
         if perp:
             msg += _("Updated by ") + str(perp) + "\n"
-            embed.add_field(name=_("Updated by "), value=perp.mention)
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason)
@@ -995,21 +1028,33 @@ class EventMixin:
             and self.settings[guild.id]["role_change"]["embed"]
         )
         time = datetime.datetime.utcnow()
-        embed = discord.Embed(description=after.mention, colour=after.colour, timestamp=time)
+        
         msg = _("{emoji} `{time}` Updated role **{role}**\n").format(
             emoji=self.settings[guild.id]["role_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=before.name,
         )
         if after is guild.default_role:
-            embed.set_author(name=_("Updated @everyone role "))
+            embed = discord.Embed(
+                description=_("**Updated @everyone role**"), 
+                colour=after.colour, 
+                timestamp=time
+                )
         else:
-            embed.set_author(
-                name=_("Updated {role} ({r_id}) role ").format(role=before.name, r_id=before.id)
-            )
+            embed = discord.Embed(
+                description=_("**Updated {role} role**").format(role=before.mention), 
+                colour=after.colour, 
+                timestamp=time
+                )
+        embed.set_footer(text=_("Role ID: ") + str(before.id))
         if perp:
             msg += _("Updated by ") + str(perp) + "\n"
-            embed.add_field(name=_("Updated by "), value=perp.mention)
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason)
@@ -1072,20 +1117,25 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            description=role.mention,
+            description=_("**{role} role created**").format(
+                    role=role.mention
+                ),
             colour=await self.get_event_colour(guild, "role_create"),
             timestamp=time,
         )
-        embed.set_author(
-            name=_("Role created {role} ({r_id})").format(role=role.name, r_id=role.id)
-        )
+        embed.set_footer(text=_("Role ID: ") + str(role.id))
         msg = _("{emoji} `{time}` Role created {role}\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=role.name,
         )
         if perp:
-            embed.add_field(name=_("Created by"), value=perp.mention)
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
             msg += _("By ") + str(perp) + "\n"
         if reason:
             msg += _("Reason ") + reason + "\n"
@@ -1122,20 +1172,26 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
+            description=_("**{role} role deleted**").format(
+                role=role.mention
+            ),
             timestamp=time,
             colour=await self.get_event_colour(guild, "role_delete"),
         )
-        embed.set_author(
-            name=_("Role deleted {role} ({r_id})").format(role=role.name, r_id=role.id)
-        )
+        embed.set_footer(text=_("Role ID: ") + str(role.id))
         msg = _("{emoji} `{time}` Role deleted **{role}**\n").format(
             emoji=self.settings[guild.id]["role_create"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=role.name,
         )
         if perp:
-            embed.add_field(name=_("Deleted by"), value=perp.mention)
             msg += _("By ") + str(perp) + "\n"
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason)
@@ -1172,12 +1228,14 @@ class EventMixin:
         fmt = "%H:%M:%S"
         if embed_links:
             embed = discord.Embed(
-                description=f"**Message edited in {before.channel.mention}** [Jump to message]({after.jump_url})",
+                description=_("**Message edited in {channel}**").format(
+                    channel=before.channel.mention
+                ),
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
             embed.add_field(name=_("Before:"), value=before.content, inline=False)
-            embed.add_field(name=_("After:"), value=after.content, inline=False)
+            embed.add_field(name=_("After:"), value=after.jump_url, inline=False)
             embed.set_footer(text=_("User ID: ") + str(before.author.id))
             embed.set_author(
                 name=_("{member}").format(
@@ -1218,13 +1276,15 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            timestamp=time, colour=await self.get_event_colour(guild, "guild_change")
+            timestamp=time, 
+            colour=await self.get_event_colour(guild, "guild_change"),
+            description=_("**Updated Guild**")
         )
-        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon_url))
         embed.set_thumbnail(url=str(guild.icon_url))
         msg = _("{emoji} `{time}` Guild updated\n").format(
             emoji=self.settings[guild.id]["guild_change"]["emoji"], time=time.strftime("%H:%M:%S"),
         )
+        embed.set_footer(text=_("Guild ID: ") + str(guild.id))
         guild_updates = {
             "name": _("Name:"),
             "region": _("Region:"),
@@ -1244,27 +1304,32 @@ class EventMixin:
                 worth_updating = True
                 msg += _("Before ") + f"{name} {before_attr}\n"
                 msg += _("After ") + f"{name} {after_attr}\n"
-                embed.add_field(name=_("Before ") + name, value=str(before_attr))
-                embed.add_field(name=_("After ") + name, value=str(after_attr))
+                embed.add_field(name=_("Before ") + name, value=str(before_attr), inline=False)
+                embed.add_field(name=_("After ") + name, value=str(after_attr), inline=False)
         if not worth_updating:
             return
-        perps = []
-        reasons = []
+       
+        perp = None
+        reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.guild_update
-            async for log in guild.audit_logs(limit=int(len(embed.fields) / 2), action=action):
-                perps.append(log.user)
-                if log.reason:
-                    reasons.append(log.reason)
-        if perps:
-            perp_s = ", ".join(str(p) for p in perps)
-            msg += _("Update by ") + f"{perp_s}\n"
-            perp_m = ", ".join(p.mention for p in perps)
-            embed.add_field(name=_("Updated by"), value=perp_m)
-        if reasons:
-            s_reasons = ", ".join(str(r) for r in reasons)
-            msg += _("Reasons ") + f"{reasons}\n"
-            embed.add_field(name=_("Reasons "), value=s_reasons)
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == guild.id:
+                    perp = log.user
+                    if log.reason:
+                        reason = log.reason
+                    break
+        if perp:
+            msg += _("Updated by ") + str(perp) + "\n"
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -1294,7 +1359,7 @@ class EventMixin:
             timestamp=time,
             colour=await self.get_event_colour(guild, "emoji_change"),
         )
-        embed.set_author(name=_("Updated Server Emojis"))
+
         msg = _("{emoji} `{time}` Updated Server Emojis").format(
             emoji=self.settings[guild.id]["emoji_change"]["emoji"], time=time.strftime("%H:%M:%S")
         )
@@ -1332,59 +1397,62 @@ class EventMixin:
         if removed_emoji is not None:
             worth_updating = True
             new_msg = f"`{removed_emoji}` (ID: {removed_emoji.id})" + _(
-                " Removed from the guild\n"
+                " **Removed from the guild**\n"
             )
             msg += new_msg
             embed.description += new_msg
+            embed.set_footer(text=_("Emoji ID: ") + str(removed_emoji.id))
             action = discord.AuditLogAction.emoji_delete
         elif added_emoji is not None:
             worth_updating = True
-            new_msg = f"{added_emoji} `{added_emoji}`" + _(" Added to the guild\n")
+            new_msg = f"{added_emoji} `{added_emoji}`" + _(" **Added to the guild**\n")
             msg += new_msg
             embed.description += new_msg
+            embed.set_footer(text=_("Emoji ID: ") + str(added_emoji.id))
             action = discord.AuditLogAction.emoji_create
         elif changed_emoji is not None:
             worth_updating = True
             new_msg = f"{changed_emoji} `{changed_emoji}`"
             if old_emoji.name != changed_emoji.name:
                 new_msg += (
-                    _(" Renamed from ") + old_emoji.name + _(" to ") + f"{changed_emoji.name}\n"
+                    _(" **Renamed from** ") + old_emoji.name + _(" **to** ") + f"{changed_emoji.name}\n"
                 )
                 # emoji_update shows only for renames and not for role restriction updates
                 action = discord.AuditLogAction.emoji_update
             msg += new_msg
             embed.description += new_msg
+            embed.set_footer(text=_("Emoji ID: ") + str(changed_emoji.id))
             if old_emoji.roles != changed_emoji.roles:
                 worth_updating = True
                 if not changed_emoji.roles:
-                    new_msg = _(" Changed to unrestricted.\n")
+                    new_msg = _(" **Changed to unrestricted.**\n")
                     msg += new_msg
                     embed.description += new_msg
                 elif not old_emoji.roles:
                     msg += (
-                        _(" Restricted to roles: ")
+                        _(" **Restricted to roles:** ")
                         + humanize_list(
                             [f"{role.name} ({role.id})" for role in changed_emoji.roles]
                         )
                         + "\n"
                     )
-                    embed.description += _(" Restricted to roles: ") + humanize_list(
+                    embed.description += _(" **Restricted to roles:** ") + humanize_list(
                         [role.mention for role in changed_emoji.roles]
                     )
                 else:
                     msg += (
-                        _(" Role restriction changed from ")
+                        _(" **Role restriction changed from** ")
                         + humanize_list([f"{role.name} ({role.id})" for role in old_emoji.roles])
-                        + _(" to ")
+                        + _(" **to** ")
                         + humanize_list(
                             [f"{role.name} ({role.id})" for role in changed_emoji.roles]
                         )
                         + "\n"
                     )
                     embed.description += (
-                        _(" Role restriction changed from ")
+                        _(" **Role restriction changed from** ")
                         + humanize_list([role.mention for role in old_emoji.roles])
-                        + _(" to ")
+                        + _(" **to** ")
                         + humanize_list([role.mention for role in changed_emoji.roles])
                     )
         perp = None
@@ -1399,8 +1467,13 @@ class EventMixin:
                         reason = log.reason
                     break
         if perp:
-            embed.add_field(name=_("Updated by "), value=perp.mention)
             msg += _("Updated by ") + str(perp) + "\n"
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason)
@@ -1498,17 +1571,46 @@ class EventMixin:
             return
         perp = None
         reason = None
+        action = None
         if channel.permissions_for(guild.me).view_audit_log and change_type:
-            action = discord.AuditLogAction.member_update
-            async for log in guild.audit_logs(limit=5, action=action):
+            async for log in guild.audit_logs(limit=1, action=None):
+                action = log.action
                 is_change = getattr(log.after, change_type, None)
-                if log.target.id == member.id and is_change:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+                if action == discord.AuditLogAction.member_update:
+                    if log.target.id == member.id and is_change:
+                        perp = log.user
+                        if log.reason:
+                            reason = log.reason
+                        break
+                elif action == discord.AuditLogAction.member_move:
+                    if log.extra.count > 0 and log.extra.channel.id == after.channel.id:
+                        perp = log.user
+                        if log.reason:
+                            reason = log.reason
+                        break
+                elif action == discord.AuditLogAction.member_disconnect:
+                    if log.extra.count > 0 and after.channel == None:
+                        perp = log.user
+                        if log.reason:
+                            reason = log.reason
+                        break
+                    
         if perp:
-            embed.add_field(name=_("Updated by"), value=perp.mention)
+            if action == discord.AuditLogAction.member_update and before.deaf == False and after.deaf == True:
+                embed.add_field(name=_("Deafened by:"), value=perp.mention, inline=False)
+            elif action == discord.AuditLogAction.member_update and before.mute == False and after.mute == True:
+                embed.add_field(name=_("Muted by:"), value=perp.mention, inline=False)
+            elif action == discord.AuditLogAction.member_update and before.deaf == True and after.deaf == False:
+                embed.add_field(name=_("Undeafened by:"), value=perp.mention, inline=False)
+            elif action == discord.AuditLogAction.member_update and before.mute == True and after.mute == False:
+                embed.add_field(name=_("Unmuted by:"), value=perp.mention, inline=False)
+            elif action == discord.AuditLogAction.member_disconnect:
+                embed.add_field(name=_("Disconnected by:"), value=perp.mention, inline=False)
+            elif action == discord.AuditLogAction.member_move:
+                embed.add_field(name=_("Moved by:"), value=perp.mention, inline=False)
+
+        if reason:
+            embed.add_field(name=_("Reason:"), value=str(reason))
         if reason:
             msg += _("Reason ") + reason + "\n"
             embed.add_field(name=_("Reason "), value=reason)
@@ -1536,7 +1638,9 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            timestamp=time, colour=await self.get_event_colour(guild, "user_change")
+            title=_("Member updated"),
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "user_change")
         )
         msg = _("{emoji} `{time}` Member updated **{member}** (`{m_id}`)\n").format(
             emoji=self.settings[guild.id]["user_change"]["emoji"],
@@ -1545,7 +1649,7 @@ class EventMixin:
             m_id=before.id,
         )
         embed.set_footer(text=_("User ID: ") + str(before.id))
-        emb_msg = _("{member} updated").format(member=before)
+        emb_msg = _("{member}").format(member=before)
         embed.set_author(name=emb_msg, icon_url=before.avatar_url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
@@ -1590,16 +1694,16 @@ class EventMixin:
                                 break
                     msg += _("Before ") + f"{name} {before_attr}\n"
                     msg += _("After ") + f"{name} {after_attr}\n"
-                    embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
-                    embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024])
+                    embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024], inline=False)
+                    embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024], inline=False)
         if not worth_sending:
             return
         if perp:
             msg += _("Updated by ") + f"{perp}\n"
-            embed.add_field(name=_("Updated by "), value=perp.mention)
+            embed.add_field(name=_("Updated by "), value=perp.mention, inline=False)
         if reason:
             msg += _("Reason: ") + f"{reason}\n"
-            embed.add_field(name=_("Reason"), value=reason)
+            embed.add_field(name=_("Reason"), value=reason, inline=False)
         if embed_links:
             await channel.send(embed=embed)
         else:
@@ -1636,9 +1740,11 @@ class EventMixin:
         msg = _("{emoji} `{time}` Invite created ").format(
             emoji=self.settings[guild.id]["invite_created"]["emoji"], time=invite_time,
         )
+        time = datetime.datetime.utcnow()
         embed = discord.Embed(
-            title=_("Invite Created"),
-            colour=await self.get_event_colour(guild, "invite_created")
+            description=_("**Invite Created**"),
+            colour=await self.get_event_colour(guild, "invite_created"),
+            timestamp=time
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
@@ -1646,7 +1752,18 @@ class EventMixin:
             if before_attr:
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
-                embed.add_field(name=name, value=str(before_attr))
+                if attr == "inviter":
+                    embed.set_author(
+                        name=_("{username}#{discrim}").format(
+                        username=invite.inviter.name,
+                        discrim=invite.inviter.discriminator
+                        ),
+                        icon_url=str(invite.inviter.avatar_url),
+                    )
+                elif attr == "channel":
+                    embed.add_field(name=name, value=str(before_attr.mention), inline=False)
+                else:
+                    embed.add_field(name=name, value=str(before_attr), inline=False)
         if not worth_updating:
             return
         if embed_links:
@@ -1686,17 +1803,46 @@ class EventMixin:
         msg = _("{emoji} `{time}` Invite deleted ").format(
             emoji=self.settings[guild.id]["invite_deleted"]["emoji"], time=invite_time,
         )
+        time = datetime.datetime.utcnow()
+
         embed = discord.Embed(
-            title=_("Invite Deleted"),
-            colour=await self.get_event_colour(guild, "invite_deleted")
+            description=_("**Invite Deleted**"),
+            colour=await self.get_event_colour(guild, "invite_deleted"),
+            timestamp=time
         )
+        perp = None
+        reason = None
+        if channel.permissions_for(guild.me).view_audit_log:
+            action = discord.AuditLogAction.invite_delete
+            async for log in guild.audit_logs(limit=3, action=action):
+                if log.target.code == invite.code:
+                    perp = log.user
+                    if log.reason:
+                        reason = log.reason
+                    break
+
         worth_updating = False
         for attr, name in invite_attrs.items():
             before_attr = getattr(invite, attr)
             if before_attr:
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
-                embed.add_field(name=name, value=str(before_attr))
+                if attr == "inviter" or attr == "channel":
+                    embed.add_field(name=name, value=str(before_attr.mention), inline=False)
+                else:
+                    embed.add_field(name=name, value=str(before_attr), inline=False)
+
+        if perp:
+            msg += _("Deleted by ") + str(perp) + "\n"
+            embed.set_author(
+                name=_("{perp}").format(
+                    perp=perp
+                ),
+                icon_url=str(perp.avatar_url),
+            )
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason)
         if not worth_updating:
             return
         if embed_links:
