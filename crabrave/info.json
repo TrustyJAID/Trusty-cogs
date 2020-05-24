@@ -20,7 +20,7 @@
     ],
     "required_cogs" : {},
     "requirements" : [
-        "moviepy==1.0.0"
+        "moviepy"
     ],
     "short" : "Make Crab rave videos, in discord!",
     "tags" : [
