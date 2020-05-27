@@ -40,7 +40,8 @@ default_settings = {
         "colour": 0,
         "footer": None,
         "thumbnail": None,
-        "image": None,
+        "image_greeting": None,
+        "image_goodbye": None,
         "icon_url": None,
         "author": True,
         "timestamp": True,
@@ -672,8 +673,15 @@ class Welcome(Events, commands.Cog):
             await self.config.guild(ctx.guild).EMBED_DATA.icon_url.set(None)
             await ctx.send(_("Icon cleared."))
 
-    @_embed.command()
-    async def image(self, ctx: commands.Context, link: Optional[str] = None) -> None:
+    @_embed.group(name="image")
+    async def _image(self, ctx: commands.Context) -> None:
+        """
+        Set embed image options
+        """
+        pass
+
+    @_image.command(name="greeting")
+    async def image_greeting(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
         Set the embed image link
 
@@ -687,16 +695,50 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.image.set(link_search.group(0))
+                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set(link_search.group(0))
                 await ctx.tick()
             elif link in ["author", "avatar"]:
-                await self.config.guild(ctx.guild).EMBED_DATA.image.set("avatar")
+                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("avatar")
                 await ctx.tick()
             elif link in ["server", "guild"]:
-                await self.config.guild(ctx.guild).EMBED_DATA.image.set("guild")
+                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("guild")
                 await ctx.tick()
             elif link == "splash":
-                await self.config.guild(ctx.guild).EMBED_DATA.image.set("splash")
+                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("splash")
+                await ctx.tick()
+            else:
+                await ctx.send(
+                    _("That's not a valid option. You must provide a link, `avatar` or `server`.")
+                )
+        else:
+            await self.config.guild(ctx.guild).EMBED_DATA.image.set(None)
+            await ctx.send(_("Image cleared."))
+
+    @_image.command(name="goodbye")
+    async def image_goodbye(self, ctx: commands.Context, link: Optional[str] = None) -> None:
+        """
+        Set the embed image link
+
+        `[link]` must be a valid image link
+        You may also specify:
+         `member`, `user` or `avatar` to use the members avatar
+        `server` or `guild` to use the servers icon
+        `splash` to use the servers splash image if available
+        if nothing is provided the defaults are used.
+        """
+        if link is not None:
+            link_search = IMAGE_LINKS.search(link)
+            if link_search:
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(link_search.group(0))
+                await ctx.tick()
+            elif link in ["author", "avatar"]:
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("avatar")
+                await ctx.tick()
+            elif link in ["server", "guild"]:
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("guild")
+                await ctx.tick()
+            elif link == "splash":
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("splash")
                 await ctx.tick()
             else:
                 await ctx.send(
