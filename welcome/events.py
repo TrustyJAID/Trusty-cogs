@@ -104,8 +104,8 @@ class Events:
             elif url == "avatar" and isinstance(member, discord.Member):
                 url = member.avatar_url
             em.set_thumbnail(url=url)
-        if (is_welcome and EMBED_DATA["image_greeting"]) or (not is_welcome and EMBED_DATA["image_goodbye"]):
-            url = EMBED_DATA["image_greeting"] if is_welcome else EMBED_DATA["image_goodbye"]
+        if (is_welcome and EMBED_DATA["image"]) or (not is_welcome and EMBED_DATA["image_goodbye"]):
+            url = EMBED_DATA["image"] if is_welcome else EMBED_DATA["image_goodbye"]
             if url == "guild":
                 url = guild.icon_url
             elif url == "splash":

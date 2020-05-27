@@ -40,7 +40,7 @@ default_settings = {
         "colour": 0,
         "footer": None,
         "thumbnail": None,
-        "image_greeting": None,
+        "image": None,
         "image_goodbye": None,
         "icon_url": None,
         "author": True,
@@ -683,7 +683,7 @@ class Welcome(Events, commands.Cog):
     @_image.command(name="greeting")
     async def image_greeting(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
-        Set the embed image link
+        Set the embed image link for greetings
 
         `[link]` must be a valid image link
         You may also specify:
@@ -695,16 +695,16 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set(link_search.group(0))
+                await self.config.guild(ctx.guild).EMBED_DATA.image.set(link_search.group(0))
                 await ctx.tick()
             elif link in ["author", "avatar"]:
-                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("avatar")
+                await self.config.guild(ctx.guild).EMBED_DATA.image.set("avatar")
                 await ctx.tick()
             elif link in ["server", "guild"]:
-                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("guild")
+                await self.config.guild(ctx.guild).EMBED_DATA.image.set("guild")
                 await ctx.tick()
             elif link == "splash":
-                await self.config.guild(ctx.guild).EMBED_DATA.image_greeting.set("splash")
+                await self.config.guild(ctx.guild).EMBED_DATA.image.set("splash")
                 await ctx.tick()
             else:
                 await ctx.send(
@@ -712,12 +712,12 @@ class Welcome(Events, commands.Cog):
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.image.set(None)
-            await ctx.send(_("Image cleared."))
+            await ctx.send(_("Greeting image cleared."))
 
     @_image.command(name="goodbye")
     async def image_goodbye(self, ctx: commands.Context, link: Optional[str] = None) -> None:
         """
-        Set the embed image link
+        Set the embed image link for goodbyes
 
         `[link]` must be a valid image link
         You may also specify:
@@ -746,7 +746,7 @@ class Welcome(Events, commands.Cog):
                 )
         else:
             await self.config.guild(ctx.guild).EMBED_DATA.image.set(None)
-            await ctx.send(_("Image cleared."))
+            await ctx.send(_("Goodbye image cleared."))
 
     @_embed.command()
     async def timestamp(self, ctx: commands.Context) -> None:
