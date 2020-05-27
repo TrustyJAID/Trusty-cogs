@@ -745,7 +745,7 @@ class Welcome(Events, commands.Cog):
                     _("That's not a valid option. You must provide a link, `avatar` or `server`.")
                 )
         else:
-            await self.config.guild(ctx.guild).EMBED_DATA.image.set(None)
+            await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(None)
             await ctx.send(_("Goodbye image cleared."))
 
     @_embed.command()
