@@ -1,7 +1,7 @@
 import discord
 import logging
 
-from typing import List, cast, Dict
+from typing import List, cast, Dict, Union
 
 from redbot.core.bot import Red
 from redbot.core import Config, commands
@@ -63,10 +63,14 @@ class StarboardEvents:
         text_msg += _("{msg} Starboard {name}\n").format(msg=msg, name=starboard.name)
         return (embed, text_msg)
 
-    async def _check_roles(self, starboard: StarboardEntry, member: discord.Member) -> bool:
+    async def _check_roles(
+        self, starboard: StarboardEntry, member: Union[discord.Member, discord.User]
+    ) -> bool:
         """Checks if the user is allowed to add to the starboard
            Allows bot owner to always add messages for testing
            disallows users from adding their own messages"""
+        if isinstance(member, discord.User):
+            return True
         user_roles = set([role.id for role in member.roles])
         if starboard.whitelist_role:
             for role in starboard.whitelist_role:
@@ -83,7 +87,9 @@ class StarboardEvents:
 
         return True
 
-    async def _check_channel(self, starboard: StarboardEntry, channel: discord.TextChannel) -> bool:
+    async def _check_channel(
+        self, starboard: StarboardEntry, channel: discord.TextChannel
+    ) -> bool:
         """CHecks if the channel is allowed to track starboard
         messages"""
         if starboard.whitelist_channel:
