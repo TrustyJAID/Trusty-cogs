@@ -801,7 +801,7 @@ class EventMixin:
         embed.add_field(name=_("Type"), value=channel_type)
         if perp:
             perp_msg = _("by {perp} (`{perp_id}`)").format(perp=perp, perp_id=perp.id)
-            embed.add_field(name=_("Created by "), value=perp.mention)
+            embed.add_field(name=_("Deleted by "), value=perp.mention)
         if reason:
             perp_msg += _(" Reason: {reason}").format(reason=reason)
             embed.add_field(name=_("Reason "), value=reason)
