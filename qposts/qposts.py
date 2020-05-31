@@ -22,7 +22,7 @@ numbs = {
     "exit": "❌"
 }
 class QPosts(getattr(commands, "Cog", object)):
-    """Gather Qanon updates from 8chan"""
+    """Gather Qanon updates from 8kun"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -33,7 +33,7 @@ class QPosts(getattr(commands, "Cog", object)):
         self.config = Config.get_conf(self, 112444567876)
         self.config.register_global(**default_data)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
-        self.url = "https://8ch.net"
+        self.url = "https://8kun.top"
         self.boards = ["qresearch", "projectdcomms"]
         self.trips = ["!!Hs1Jq13jV6"]
         self.loop = bot.loop.create_task(self.get_q_posts())
@@ -199,12 +199,12 @@ class QPosts(getattr(commands, "Cog", object)):
             if "tim" in reference[0] and "tim" not in qpost:
                 file_id = reference[0]["tim"]
                 file_ext = reference[0]["ext"]
-                img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+                img_url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
                 await self.save_q_files(reference[0])
         if "tim" in qpost:
             file_id = qpost["tim"]
             file_ext = qpost["ext"]
-            img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+            img_url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
             await self.save_q_files(qpost)
 
         # print("here")
@@ -307,14 +307,14 @@ class QPosts(getattr(commands, "Cog", object)):
             if "tim" in post and "tim" not in qpost:
                 file_id = post["tim"]
                 file_ext = post["ext"]
-                img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+                img_url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
                 if file_ext in [".png", ".jpg", ".jpeg"]:
                     em.set_image(url=img_url)
         em.set_footer(text="/{}/".format(board))
         if "tim" in qpost:
             file_id = qpost["tim"]
             file_ext = qpost["ext"]
-            img_url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+            img_url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
             if file_ext in [".png", ".jpg", ".jpeg"]:
                 em.set_image(url=img_url)
         if not message:
@@ -390,7 +390,7 @@ class QPosts(getattr(commands, "Cog", object)):
         
             file_path =  cog_data_path(self) /"files"
             file_path.mkdir(exist_ok=True, parents=True)
-            url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+            url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
             async with self.session.get(url) as resp:
                 image = await resp.read()
             with open(str(file_path) + "/{}{}".format(file_id, file_ext), "wb") as out:
@@ -399,7 +399,7 @@ class QPosts(getattr(commands, "Cog", object)):
                 for file in post["extra_files"]:
                     file_id = file["tim"]
                     file_ext = file["ext"]
-                    url = "https://media.8ch.net/file_store/{}{}".format(file_id, file_ext)
+                    url = "https://media.8kun.top/file_store/{}{}".format(file_id, file_ext)
                     async with self.session.get(url) as resp:
                         image = await resp.read()
                     with open(str(file_path) + "/{}{}".format(file_id, file_ext), "wb") as out:
