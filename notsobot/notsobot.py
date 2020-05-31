@@ -92,7 +92,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.4.3"
+    __version__ = "2.4.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -228,20 +228,6 @@ class NotSoBot(commands.Cog):
         except Exception:
             log.error("Error downloading to bytes", exc_info=True)
             return False, False
-
-    async def gist(self, ctx, idk, content: str):
-        payload = {
-            "name": "NotSoBot - By: {0}.".format(ctx.message.author),
-            "title": 'ASCII for text: "{0}"'.format(idk),
-            "text": content,
-            "private": "1",
-            "lang": "python",
-            "expire": "0",
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post("https://spit.mixtape.moe/api/create", data=payload) as r:
-                url = await r.text()
-                await ctx.send("Uploaded to paste, URL: <https://spit.mixtape.moe{0}>".format(url))
 
     def do_magik(self, scale, img):
         try:
@@ -621,7 +607,7 @@ class NotSoBot(commands.Cog):
                 await ctx.send(":no_entry: go away with your invalid characters.")
                 return
             if len(txt) >= 1999:
-                await self.gist(ctx, text, txt)
+                # await self.gist(ctx, text, txt)
                 msg = None
             elif len(txt) <= 600:
                 msg = "```fix\n{0}```".format(txt)
