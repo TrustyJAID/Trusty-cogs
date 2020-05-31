@@ -34,8 +34,8 @@ class QPosts(getattr(commands, "Cog", object)):
         self.config.register_global(**default_data)
         self.session = aiohttp.ClientSession(loop=self.bot.loop)
         self.url = "https://8ch.net"
-        self.boards = ["greatawakening", "qresearch", "patriotsfight"]
-        self.trips = ["!UW.yye1fxo", "!ITPb.qbhqo", "!xowAT4Z3VQ", "!4pRcUA0lBE", "!CbboFOtcZs", "!A6yxsPKia.", "!2jsTvXXmX", "!!mG7VJxZNCI"]
+        self.boards = ["qresearch", "projectdcomms"]
+        self.trips = ["!!Hs1Jq13jV6"]
         self.loop = bot.loop.create_task(self.get_q_posts())
 
 
