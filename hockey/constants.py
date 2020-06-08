@@ -417,7 +417,7 @@ TEAMS = {
         "emoji": "WinnipegJets:664664065112539154",
         "home": "#041E41",
         "id": 52,
-        "invite": "https://discord.gg/tbyU5KF",
+        "invite": "https://discord.gg/zFSPJBk",
         "logo": "https://nhl.bamcontent.com/images/photos/281723512/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=jJnj0-aX_es",
         "timezone": "US/Central",
