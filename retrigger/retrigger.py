@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.12.0"
+    __version__ = "2.12.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -671,6 +671,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't assign roles higher than my own."))
+            if ctx.author.id == ctx.guild.owner.id:
+                continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
                     _("I can't assign roles higher than you are able to assign.")
@@ -726,10 +728,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if not await self.can_edit(ctx.author, trigger):
-            return await ctx.send(_("You are not authorized to edit this trigger."))
-        if trigger.multi_payload:
-            return await ctx.send(_("You cannot edit multi triggers response."))
         trigger.enabled = True
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -750,10 +748,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         if type(trigger) is str:
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-        if not await self.can_edit(ctx.author, trigger):
-            return await ctx.send(_("You are not authorized to edit this trigger."))
-        if trigger.multi_payload:
-            return await ctx.send(_("You cannot edit multi triggers response."))
         trigger.enabled = False
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
@@ -1539,6 +1533,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't assign roles higher than my own."))
+            if ctx.author.id == ctx.guild.owner.id:
+                continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
                     _("I can't assign roles higher than you are able to assign.")
@@ -1581,6 +1577,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't remove roles higher than my own."))
+            if ctx.author.id == ctx.guild.owner.id:
+                continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
                     _("I can't remove roles higher than you are able to remove.")

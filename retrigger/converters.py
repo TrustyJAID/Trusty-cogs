@@ -79,12 +79,18 @@ class MultiResponse(Converter):
                 raise BadArgument(_("Not creating trigger."))
             if not pred.result:
                 raise BadArgument(_("Not creating trigger."))
+
+        def author_perms(ctx: commands.Context, role: discord.Role) -> bool:
+            if ctx.author.id == ctx.guild.owner.id:
+                return True
+            return role < ctx.author.top_role
+
         if result[0] in ["add_role", "remove_role"]:
             good_roles = []
             for r in result[1:]:
                 try:
                     role = await RoleConverter().convert(ctx, r)
-                    if role < ctx.guild.me.top_role and role < ctx.author.top_role:
+                    if role < ctx.guild.me.top_role and author_perms(ctx, role):
                         good_roles.append(role.id)
                 except BadArgument:
                     log.error("Role `{}` not found.".format(r))
