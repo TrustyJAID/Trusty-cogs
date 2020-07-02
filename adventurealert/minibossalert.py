@@ -38,6 +38,7 @@ class MinibossAlert(MixinMeta):
                 )
             )
 
+    @commands.guild_only()
     @minibossalert.command(name="add", aliases=["user", "users", "remove", "rem", "toggle"])
     async def miniboss_users(self, ctx: commands.Context) -> None:
         """Toggle miniboss notifications in this server"""

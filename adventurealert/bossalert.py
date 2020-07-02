@@ -34,6 +34,7 @@ class BossAlert(MixinMeta):
                 _("{role} will now receive notifications on dragons.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @dragonalert.command(name="add", aliases=["user", "users", "remove", "rem"])
     async def boss_users(self, ctx: commands.Context) -> None:
         """Toggle dragon notifications on this server"""
