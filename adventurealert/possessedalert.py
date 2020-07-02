@@ -34,6 +34,7 @@ class PossessedAlert(MixinMeta):
                 _("{role} will now receive notifications on possesseds.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @possessedalert.command(name="add", aliases=["user", "users", "remove", "rem"])
     async def possessed_users(self, ctx: commands.Context) -> None:
         """Toggle possessed notifications on this server"""

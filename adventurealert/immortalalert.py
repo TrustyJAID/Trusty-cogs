@@ -34,6 +34,7 @@ class ImmortalAlert(MixinMeta):
                 _("{role} will now receive notifications on immortals.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @immortalalert.command(name="add", aliases=["user", "users", "remove", "rem"])
     async def immortal_users(self, ctx: commands.Context) -> None:
         """Toggle immortal notifications on this server"""

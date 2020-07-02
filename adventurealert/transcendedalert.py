@@ -34,6 +34,7 @@ class TranscendedAlert(MixinMeta):
                 _("{role} will now receive notifications on transcendeds.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @transcendedalert.command(name="add", aliases=["user", "users", "remove", "rem"])
     async def transcended_users(self, ctx: commands.Context) -> None:
         """Toggle transcended notifications on this server"""

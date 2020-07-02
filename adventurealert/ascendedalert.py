@@ -34,6 +34,7 @@ class AscendedAlert(MixinMeta):
                 _("{role} will now receive notifications on ascendeds.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @ascendedalert.command(name="add", aliases=["user", "users", "remove", "rem"])
     async def ascended_users(self, ctx: commands.Context) -> None:
         """Toggle ascended notifications on this server"""

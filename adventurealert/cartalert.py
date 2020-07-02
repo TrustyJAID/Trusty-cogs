@@ -34,6 +34,7 @@ class CartAlert(MixinMeta):
                 _("{role} will now receive notifications on carts.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @cartalert.command(name="add", aliases=["user", "users", "remove", "rem", "toggle"])
     async def cart_users(self, ctx: commands.Context) -> None:
         """Toggle cart notifications on this server"""
