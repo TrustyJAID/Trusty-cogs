@@ -150,6 +150,7 @@ class AdventureAlert(
                 _("{role} will now receive notifications on adventures.").format(role=role.name)
             )
 
+    @commands.guild_only()
     @adventurealert.command(name="add", aliases=["user", "users", "remove", "rem", "toggle"])
     async def adventure_users(self, ctx: commands.Context) -> None:
         """Toggle adventure notifications in this server"""
