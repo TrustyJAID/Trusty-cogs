@@ -22,12 +22,13 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.8.4"
+    __version__ = "2.8.5"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 154457677895, force_registration=True)
         self.config.register_guild(**inv_settings)
+        self.config.register_global(version="0.0.0")
         self.settings = {}
         self.loop = bot.loop.create_task(self.invite_links_loop())
 
@@ -45,7 +46,6 @@ class ExtendedModLog(EventMixin, commands.Cog):
             for entry, default in inv_settings.items():
                 if entry not in data:
                     all_data[guild_id][entry] = inv_settings[entry]
-                    await self.config.guild(guild).set_raw(entry, value=inv_settings[entry])
                 if type(default) == dict:
 
                     for key, _default in inv_settings[entry].items():
@@ -58,7 +58,10 @@ class ExtendedModLog(EventMixin, commands.Cog):
                             # del all_data[guild_id][entry]
                             logger.error("Somehow your dict was invalid.")
                             continue
-                    await self.config.guild(guild).set(all_data[guild_id])
+            if await self.config.version() < "2.8.5":
+                logger.info("Saving all guild data to new version type")
+                await self.config.guild(guild).set(all_data[guild_id])
+                await self.config.version.set("2.8.5")
 
         self.settings = all_data
 
