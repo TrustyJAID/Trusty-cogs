@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.7"
+    __version__ = "1.5.8"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -280,6 +280,12 @@ class EventPoster(commands.Cog):
         elif not clear:
             event_data = await self.config.guild(ctx.guild).events()
             event = await Event.from_json(event_data[str(ctx.author.id)], ctx.guild)
+            if not event:
+                async with self.config.guild(ctx.guild).events() as events:
+                    # clear the broken event
+                    del events[str(ctx.author.id)]
+                    del self.event_cache[ctx.guild.id][event.message.id]
+                return await ctx.send("You don't have any events running.")
             em = await self.make_event_embed(ctx, event)
             return await ctx.send(
                 (
@@ -288,12 +294,13 @@ class EventPoster(commands.Cog):
                 ),
                 embed=em,
             )
-        async with self.config.guild(ctx.guild).events() as events:
-            event = await Event.from_json(events[str(ctx.author.id)], ctx.guild)
-            await event.message.edit(content="This event has ended.")
-            del events[str(ctx.author.id)]
-            del self.event_cache[ctx.guild.id][event.message.id]
-        await ctx.tick()
+        else:
+            async with self.config.guild(ctx.guild).events() as events:
+                event = await Event.from_json(events[str(ctx.author.id)], ctx.guild)
+                await event.message.edit(content="This event has ended.")
+                del events[str(ctx.author.id)]
+                del self.event_cache[ctx.guild.id][event.message.id]
+            await ctx.tick()
 
     @commands.command(name="showevent")
     @commands.guild_only()
@@ -306,6 +313,14 @@ class EventPoster(commands.Cog):
             return await ctx.send(f"{member} does not have any events running.")
         event_data = await self.config.guild(ctx.guild).events()
         event = await Event.from_json(event_data[str(member.id)], ctx.guild)
+        if not event:
+            async with self.config.guild(ctx.guild).events() as events:
+                # clear the broken event
+                del events[str(ctx.author.id)]
+                del self.event_cache[ctx.guild.id][event.message.id]
+            return await ctx.send(
+                f"{member.display_name} is not currently hosting an event."
+            )
         em = await self.make_event_embed(ctx, event)
         await ctx.send(
             (
@@ -318,17 +333,19 @@ class EventPoster(commands.Cog):
     @commands.command(name="join")
     @commands.guild_only()
     async def join_event(
-        self,
-        ctx: commands.Context,
-        hoster: discord.Member,
-        *,
-        player_class: Optional[str] = None,
+        self, ctx: commands.Context, hoster: discord.Member, *, player_class: Optional[str] = None,
     ) -> None:
         """Join an event being hosted"""
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             return await ctx.send("That user is not currently hosting any events.")
         event_data = await self.config.guild(ctx.guild).events()
         event = await Event.from_json(event_data[str(hoster.id)], ctx.guild)
+        if not event:
+            async with self.config.guild(ctx.guild).events() as events:
+                # clear the broken event
+                del events[str(ctx.author.id)]
+                del self.event_cache[ctx.guild.id][event.message.id]
+            return await ctx.send("That user is not currently hosting any events.")
         event_members = [m[0] for m in event.members]
         if ctx.author in event_members:
             return await ctx.send("You're already participating in this event!")
@@ -343,6 +360,12 @@ class EventPoster(commands.Cog):
             return await ctx.send("That user is not currently hosting any events.")
         event_data = await self.config.guild(ctx.guild).events()
         event = await Event.from_json(event_data[str(hoster.id)], ctx.guild)
+        if not event:
+            async with self.config.guild(ctx.guild).events() as events:
+                # clear the broken event
+                del events[str(ctx.author.id)]
+                del self.event_cache[ctx.guild.id][event.message.id]
+            return await ctx.send("That user is not currently hosting any events.")
         event_members = [m[0] for m in event.members]
         if ctx.author not in event_members:
             return await ctx.send("You're not participating in this event!")
@@ -370,6 +393,12 @@ class EventPoster(commands.Cog):
             return await ctx.send("You are not currently hosting any events.")
         event_data = await self.config.guild(ctx.guild).events()
         event = await Event.from_json(event_data[str(ctx.author.id)], ctx.guild)
+        if not event:
+            async with self.config.guild(ctx.guild).events() as events:
+                # clear the broken event
+                del events[str(ctx.author.id)]
+                del self.event_cache[ctx.guild.id][event.message.id]
+            return await ctx.send("That user is not currently hosting any events.")
         event_members = [m[0] for m in event.members]
         if member not in event_members:
             return await ctx.send("That member is not participating in that event!")
