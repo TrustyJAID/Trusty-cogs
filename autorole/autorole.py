@@ -15,6 +15,7 @@ default_settings = {
     "AGREE_CHANNEL": None,
     "AGREE_MSG": None,
     "AGREE_KEY": None,
+    "DELETE_KEY": False,
 }
 
 log = logging.getLogger("red.Trusty-cogs.autorole")
@@ -36,7 +37,7 @@ class Autorole(commands.Cog):
     """
 
     __author__ = ["Lunar-Dust", "TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -101,14 +102,25 @@ class Autorole(commands.Cog):
             if not guild.me.guild_permissions.manage_roles:
                 await self._no_perms(agree_channel)
                 return
-            if self.users[user.id].lower() in message.content.lower():
+            if self.users[user.id]["key"].lower() in message.content.lower():
+                perms = agree_channel.permissions_for(guild.me)
                 roles_id = await self.config.guild(guild).ROLE()
-                del self.users[user.id]
                 roles = [role for role in guild.roles if role.id in roles_id]
                 for role in roles:
                     await user.add_roles(role, reason=_("Agreed to the rules"))
-                if agree_channel.permissions_for(guild.me).add_reactions:
+                if perms.manage_messages and await self.config.guild(guild).DELETE_KEY():
+                    try:
+                        await message.delete()
+                    except Exception:
+                        pass
+                    if self.users[user.id]["message"].guild:
+                        try:
+                            await self.users[user.id]["message"].delete()
+                        except Exception:
+                            pass
+                elif perms.add_reactions:
                     await message.add_reaction("✅")
+                del self.users[user.id]
 
     async def _agree_maker(self, member: discord.Member) -> None:
         guild = member.guild
@@ -119,7 +131,7 @@ class Autorole(commands.Cog):
             key = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
             # <3 Stackoverflow http://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python/23728630#23728630
 
-        self.users[member.id] = key
+
 
         ch = cast(
             discord.TextChannel, guild.get_channel(await self.config.guild(guild).AGREE_CHANNEL())
@@ -145,6 +157,7 @@ class Autorole(commands.Cog):
             msg = await ch.send(msg)
         except discord.HTTPException:
             return
+        self.users[member.id] = {"key": key, "message": msg}
 
     async def _auto_give(self, member: discord.Member) -> None:
         guild = member.guild
@@ -189,6 +202,7 @@ class Autorole(commands.Cog):
         msg = await self.config.guild(guild).AGREE_MSG()
         key = await self.config.guild(guild).AGREE_KEY()
         ch_id = await self.config.guild(guild).AGREE_CHANNEL()
+        delete = await self.config.guild(guild).DELETE_KEY()
         channel = guild.get_channel(ch_id)
         chn_name = channel.name if channel is not None else "None"
         chn_mention = channel.mention if channel is not None else "None"
@@ -218,6 +232,8 @@ class Autorole(commands.Cog):
                 + f"{msg}\n"
                 + _("Agreement key: ")
                 + f"{key}\n"
+                + _("Delete Agreement: ")
+                + f"{delete}\n"
                 + _("Agreement channel: ")
                 + f"{chn_name}"
                 + "```"
@@ -309,7 +325,7 @@ class Autorole(commands.Cog):
     @agreement.command(name="channel")
     @checks.admin_or_permissions(manage_roles=True)
     async def set_agreement_channel(
-        self, ctx: commands.context, channel: discord.TextChannel = None
+        self, ctx: commands.Context, channel: discord.TextChannel = None
     ) -> None:
         """
             Set the agreement channel
@@ -329,6 +345,19 @@ class Autorole(commands.Cog):
         else:
             await self.config.guild(guild).AGREE_CHANNEL.set(channel.id)
             await ctx.send(_("Agreement channel set to ") + channel.mention)
+
+    @agreement.command(name="delete")
+    @checks.admin_or_permissions(manage_roles=True)
+    async def set_agreement_delete(self, ctx: commands.Context) -> None:
+        """
+            Toggle automatically deleting the agreement message.
+        """
+        delete_key = await self.config.guild(ctx.guild).DELETE_KEY()
+        await self.config.guild(ctx.guild).DELETE_KEY.set(not delete_key)
+        if delete_key:
+            await ctx.send(_("No longer automatically deleting agreement key."))
+        else:
+            await ctx.send(_("Automatically deleting agreement key."))
 
     @agreement.command(name="key")
     @checks.admin_or_permissions(manage_roles=True)
