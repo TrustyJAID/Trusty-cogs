@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.12.1"
+    __version__ = "2.13.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -896,8 +896,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
             Example for simple search: `"\\bthis matches"` the whole phrase only
             For case insensitive searches add `(?i)` at the start of the regex
 
-            Other parameters are available as well such as `{author.name}`
-            [See Red's Customcom](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
+            Other parameters are available as well such as `{author.mention}`
+            `[p]` can be used to replace the bots default prefix in the message.
+            `{count}` can be used to show the number of times a trigger has been triggered.
+            [See Red's Customcom for more options](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """

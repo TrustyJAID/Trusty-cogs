@@ -1038,6 +1038,9 @@ class TriggerHandler:
                     )
                     continue
         raw_response = raw_response.replace("{count}", str(trigger.count))
+        if hasattr(message.channel, "guild"):
+            prefixes = await self.bot.get_prefix(message.channel)
+            raw_response = raw_response.replace("[p]", prefixes[0])
         return raw_response
         # await ctx.send(raw_response)
 
