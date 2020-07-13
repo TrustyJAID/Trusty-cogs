@@ -1,10 +1,14 @@
 import logging
 import asyncio
+import contextlib
+import discord
+import re
+
 from typing import Union, List
 from datetime import timedelta
 from copy import copy
-import contextlib
-import discord
+from discord.ext.commands.converter import IDConverter
+from discord.ext.commands.errors import BadArgument
 
 from redbot.core import Config, checks, commands
 from redbot.core.utils.chat_formatting import pagify, box
@@ -20,13 +24,76 @@ _ = Translator("Reports", __file__)
 log = logging.getLogger("red.trusty-cogs.reports")
 
 
+class ValidEmoji(IDConverter):
+    """
+    This is from discord.py rewrite, first we'll match the actual emoji
+    then we'll match the emoji name if we can
+    if all else fails we may suspect that it's a unicode emoji and check that later
+    All lookups are done for the local guild first, if available. If that lookup
+    fails, then it checks the client's global cache.
+    The lookup strategy is as follows (in order):
+    1. Lookup by ID.
+    2. Lookup by extracting ID from the emoji.
+    3. Lookup by name
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py
+    """
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Union[discord.Emoji, str]:
+        match = self._get_id_match(argument) or re.match(
+            r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>$|(:[a-zA-z0-9\_]+:$)", argument
+        )
+        result = None
+        bot = ctx.bot
+        guild = ctx.guild
+        if match is None:
+            # Try to get the emoji by name. Try local guild first.
+            if guild:
+                result = discord.utils.get(guild.emojis, name=argument)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, name=argument)
+        elif match.group(1):
+            emoji_id = int(match.group(1))
+
+            # Try to look up emoji by id.
+            if guild:
+                result = discord.utils.get(guild.emojis, id=emoji_id)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, id=emoji_id)
+        else:
+            emoji_name = str(match.group(2)).replace(":", "")
+
+            if guild:
+                result = discord.utils.get(guild.emojis, name=emoji_name)
+
+            if result is None:
+                result = discord.utils.get(bot.emojis, name=emoji_name)
+        if type(result) is discord.Emoji:
+            result = str(result)[1:-1]
+
+        if result is None:
+            try:
+                await ctx.message.add_reaction(argument)
+                result = argument
+            except Exception:
+                raise BadArgument(_("`{}` is not an emoji I can use.").format(argument))
+
+        return result
+
+
 @cog_i18n(_)
 class Reports(commands.Cog):
     """
         Redbot Core's default reports cog with some modifications
     """
 
-    default_guild_settings = {"output_channel": None, "active": False, "next_ticket": 1}
+    default_guild_settings = {
+        "output_channel": None,
+        "active": False,
+        "next_ticket": 1,
+        "report_emoji": None,
+    }
 
     default_report = {"report": {}}
 
@@ -73,6 +140,13 @@ class Reports(commands.Cog):
         """Set the channel where reports will be sent."""
         await self.config.guild(ctx.guild).output_channel.set(channel.id)
         await ctx.send(_("The report channel has been set."))
+
+    @checks.admin_or_permissions(manage_guild=True)
+    @reportset.command(name="emoji")
+    async def reportset_emoji(self, ctx: commands.Context, emoji: ValidEmoji):
+        """Set the emoji used to report a message."""
+        await self.config.guild(ctx.guild).report_emoji.set(emoji)
+        await ctx.send(_("The reporting emoji has been set."))
 
     @checks.admin_or_permissions(manage_guild=True)
     @reportset.command(name="toggle", aliases=["toggleactive"])
@@ -302,6 +376,32 @@ class Reports(commands.Cog):
         """
         oh dear....
         """
+        guild = self.bot.get_guild(payload.guild_id)
+        report_emoji = await self.config.guild(guild).report_emoji()
+        if report_emoji in str(payload.emoji):
+            reporter = guild.get_member(payload.user_id)
+            if reporter.bot:
+                return
+            channel = guild.get_channel(payload.channel_id)
+            try:
+                message = await channel.fetch_message(payload.message_id)
+                await message.remove_reaction(payload.emoji, reporter)
+            except Exception:
+                print("errror")
+                return
+
+            report_channel_id = await self.config.guild(guild).output_channel()
+            report_channel = guild.get_channel(report_channel_id)
+            if report_channel.permissions_for(guild.me).embed_links:
+                em = await self._build_embed(reporter, message)
+                await report_channel.send(embed=em)
+            else:
+                msg = (
+                    f"{reporter} has reported {message.author}\n"
+                    f"> {message.content}"
+                )[:len(message.jump_url)+5]
+                await report_channel.send(msg + f"\n\n{message.jump_url}")
+
         if not str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
             return
 
@@ -316,6 +416,27 @@ class Reports(commands.Cog):
                 uid=payload.user_id, message=_("{closer} has closed the correspondence")
             )
             self.tunnel_store.pop(t[0], None)
+
+    async def _build_embed(self, reporter: discord.Member, message: discord.Message) -> discord.Embed:
+        channel = message.channel
+        author = message.author
+        em = discord.Embed(timestamp=message.created_at)
+        em.description = message.content
+        em.set_author(
+            name=f"{reporter} has reported {author}",
+            url=message.jump_url,
+            icon_url=str(author.avatar_url)
+        )
+        if message.attachments != []:
+            em.set_image(url=message.attachments[0].url)
+        em.timestamp = message.created_at
+        jump_link = _("\n\n[Click Here to view message]({link})").format(link=message.jump_url)
+        if em.description:
+            em.description = f"{em.description}{jump_link}"
+        else:
+            em.description = jump_link
+        em.set_footer(text=f"{channel.guild.name} | #{channel.name}")
+        return em
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
