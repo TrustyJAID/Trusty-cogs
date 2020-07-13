@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.8"
+    __version__ = "1.5.9"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -125,14 +125,17 @@ class EventPoster(commands.Cog):
         if user.bot:
             return
         event = self.event_cache[payload.guild_id][payload.message_id]
+        event_members = [m[0] for m in event.members]
         if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
             if user == event.hoster:
                 return
-            await self.remove_user_from_event(user, event)
+            if user not in event.maybe:
+                await self.remove_user_from_event(user, event)
         if str(payload.emoji) == "\N{WHITE QUESTION MARK ORNAMENT}":
             if user == event.hoster:
                 return
-            await self.remove_user_from_event(user, event)
+            if user not in event_members:
+                await self.remove_user_from_event(user, event)
 
     async def add_user_to_event(
         self, user: discord.Member, event: Event, player_class: Optional[str] = ""
