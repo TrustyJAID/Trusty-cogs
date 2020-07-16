@@ -62,7 +62,7 @@ class Welcome(Events, commands.Cog):
      https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.2.2"
+    __version__ = "2.2.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -87,7 +87,8 @@ class Welcome(Events, commands.Cog):
         while not self.bot.is_closed():
             # log.debug("Checking for new welcomes")
             for guild_id, members in self.joined.items():
-                await self.send_member_join(members, self.bot.get_guild(guild_id))
+                if members:
+                    await self.send_member_join(members, self.bot.get_guild(guild_id))
             self.joined = {}
             await asyncio.sleep(300)
 

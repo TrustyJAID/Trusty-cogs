@@ -137,8 +137,6 @@ class Events:
             return
         if member.bot:
             return await self.bot_welcome(member, guild)
-        if guild.id not in self.joined:
-            self.joined[guild.id] = []
 
         if datetime.utcnow().date() > self.today_count["now"].date():
             self.today_count = {"now": datetime.utcnow()}
@@ -149,9 +147,12 @@ class Events:
         else:
             self.today_count[guild.id] += 1
 
-        if await self.config.guild(guild).GROUPED() and member not in self.joined[guild.id]:
+        if await self.config.guild(guild).GROUPED():
+            if guild.id not in self.joined:
+                self.joined[guild.id] = []
             log.debug("member joined")
-            return self.joined[guild.id].append(member)
+            if member not in self.joined[guild.id]:
+                return self.joined[guild.id].append(member)
         await self.send_member_join(member, guild)
 
     async def bot_welcome(self, member: discord.Member, guild: discord.Guild):
@@ -298,10 +299,11 @@ class Events:
         if guild is None:
             return
 
-        if guild.id not in self.joined:
-            self.joined[guild.id] = []
-        if await self.config.guild(guild).GROUPED() and member in self.joined[guild.id]:
-            self.joined[guild.id].remove(member)
+        if await self.config.guild(guild).GROUPED():
+            if guild.id not in self.joined:
+                self.joined[guild.id] = []
+            if member in self.joined[guild.id]:
+                self.joined[guild.id].remove(member)
             return
 
         bot_welcome = member.bot and await self.config.guild(guild).BOTS_MSG()
