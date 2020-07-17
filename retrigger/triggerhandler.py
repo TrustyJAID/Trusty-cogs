@@ -318,7 +318,10 @@ class TriggerHandler:
                 whitelist_s = ", ".join(x.mention for x in whitelist)
             else:
                 whitelist_s = ", ".join(x.name for x in whitelist)
-            responses = humanize_list(trigger.response_type)
+            if trigger.response_type:
+                responses = humanize_list(trigger.response_type)
+            else:
+                responses = _("This trigger has no actions and should be removed.")
 
             info = _(
                 "__Name__: **{name}** \n"
