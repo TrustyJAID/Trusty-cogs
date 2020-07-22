@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.8"
+    __version__ = "2.8.9"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1012,7 +1012,10 @@ class Hockey(commands.Cog):
         if games_list != []:
             await hockey_menu(ctx, "game", games_list, None, page_num)
         else:
-            await ctx.message.channel.send(team + _(" have no recent or upcoming games!"))
+            if team:
+                await ctx.message.channel.send(team + _(" have no recent or upcoming games!"))
+            else:
+                await ctx.send(_("There are currently no scheduled upcoming NHL games."))
 
     @hockey_commands.command(aliases=["player"])
     async def players(self, ctx, *, search):
