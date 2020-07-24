@@ -135,21 +135,24 @@ class ImageMaker(commands.Cog):
             return await ctx.send(msg.format(len(text)))
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url="http://talkobamato.me/synthesize.py", data={"input_text": text}
-                ) as resp:
-                    if resp.status != 200:
-                        return
-                    url = resp.url
+                try:
+                    async with session.post(
+                        url="http://talkobamato.me/synthesize.py", data={"input_text": text}
+                    ) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("Something went wrong while trying to get the video.")
+                        url = resp.url
 
-                key = url.query["speech_key"]
-                link = f"http://talkobamato.me/synth/output/{key}/obama.mp4"
-                await asyncio.sleep(len(text) // 5)
-                async with session.get(link) as resp:
-                    if resp.status != 200:
-                        return
-                async with session.get(link) as r:
-                    data = BytesIO(await r.read())
+                    key = url.query["speech_key"]
+                    link = f"http://talkobamato.me/synth/output/{key}/obama.mp4"
+                    await asyncio.sleep(len(text) // 5)
+                    async with session.get(link) as resp:
+                        if resp.status != 200:
+                            return await ctx.send("Something went wrong while trying to get the video.")
+                    async with session.get(link) as r:
+                        data = BytesIO(await r.read())
+                except aiohttp.ClientConnectionError:
+                    return await ctx.send("Something went wrong while trying to get the video.")
                 data.name = "obama.mp4"
                 data.seek(0)
                 file = discord.File(data)
