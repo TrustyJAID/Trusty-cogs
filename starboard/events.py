@@ -111,13 +111,13 @@ class StarboardEvents:
     ) -> discord.Embed:
         channel = cast(discord.TextChannel, message.channel)
         author = message.author
-        if message.embeds != []:
+        if message.embeds:
             em = message.embeds[0]
-            if message.content != "":
+            if message.system_content:
                 if em.description != discord.Embed.Empty:
-                    em.description = "{}\n\n{}".format(message.content, em.description)[:2048]
+                    em.description = "{}\n\n{}".format(message.system_content, em.description)[:2048]
                 else:
-                    em.description = message.content
+                    em.description = message.system_content
                 if not author.bot:
                     em.set_author(
                         name=author.display_name,
@@ -132,7 +132,7 @@ class StarboardEvents:
                 em.color = await self._get_colour(channel)
             else:
                 em.color = discord.Colour(starboard.colour)
-            em.description = message.content
+            em.description = message.system_content
             em.set_author(
                 name=author.display_name, url=message.jump_url, icon_url=str(author.avatar_url)
             )
