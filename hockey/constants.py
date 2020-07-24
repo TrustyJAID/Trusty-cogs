@@ -297,7 +297,7 @@ TEAMS = {
         "emoji": "SeattleKraken:735938319883698216",
         "home": "#0C1A28",
         "id": -1,
-        "invite": "https://discord.gg/qKs8ST",
+        "invite": "https://discord.gg/zhyW3rF",
         "logo": "https://nhl.bamcontent.com/images/photos/317591200/256x256/cut.png",
         "team_url": "https://www.nhl.com/kraken",
         "timezone": "US/Pacific",
