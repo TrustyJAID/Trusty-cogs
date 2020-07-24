@@ -237,7 +237,9 @@ class EventMixin:
         )
         if embed_links:
             embed = discord.Embed(
-                description=message.content, colour=await self.get_event_colour(channel), timestamp=time,
+                description=message.content,
+                colour=await self.get_event_colour(channel, "commands_used"),
+                timestamp=time,
             )
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Can Run"), value=str(can_run))
