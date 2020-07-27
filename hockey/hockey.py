@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.9"
+    __version__ = "2.8.10"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1002,7 +1002,7 @@ class Hockey(commands.Cog):
         games_list: list = []
         page_num = 0
         today = datetime.now()
-        start_date = datetime.strptime(f"{get_season()[0]}-9-1", "%Y-%m-%d")
+        start_date = datetime.strptime(f"{get_season()[0]}-7-1", "%Y-%m-%d")
         games_list = await Game.get_games_list(team, start_date)
         for game in games_list:
             game_time = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
