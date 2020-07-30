@@ -451,7 +451,7 @@ class Game:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
 
-        if self.game_state == "Final" and self.first_star is not None:
+        if self.game_state == "Final":
             """Final game state checks"""
             if (self.home_score + self.away_score) != 0:
                 """ Check for goal before posting game final, happens with OT games"""

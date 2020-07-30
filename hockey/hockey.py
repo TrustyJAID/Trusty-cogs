@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.10"
+    __version__ = "2.8.11"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -137,9 +137,11 @@ class Hockey(commands.Cog):
             if self.TEST_LOOP:
                 games = [1]
             while games != []:
-                to_remove = []
+                to_remove = {}
                 games_playing = True
                 for link in games:
+                    if link not in to_remove:
+                        to_remove[link] = 0
                     if not self.TEST_LOOP:
                         try:
                             async with aiohttp.ClientSession() as session:
@@ -170,15 +172,18 @@ class Hockey(commands.Cog):
                         )
                     )
 
-                    if game.game_state == "Final" and game.first_star is not None:
+                    if game.game_state == "Final":
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception:
                             log.error(_("Pickems Set Winner error: "), exc_info=True)
-                        to_remove.append(link)
+                        if game.first_star is None:
+                            # Wait a bit longer until the three stars show up
+                            to_remove[link] += 1
 
-                for link in to_remove:
-                    games.remove(link)
+                for link, count in to_remove.items():
+                    if count > 10:
+                        games.remove(link)
                 await asyncio.sleep(60)
             log.debug(_("Games Done Playing"))
             try:
@@ -502,7 +507,7 @@ class Hockey(commands.Cog):
                 created_channels = "None"
             if not ctx.channel.permissions_for(guild.me).embed_links:
                 msg = (
-                    _("```GDC settings for")
+                    _("```GDC settings for ")
                     + guild.name
                     + "\n"
                     + _("Create Game Day Channels:")
@@ -541,8 +546,7 @@ class Hockey(commands.Cog):
         """
             Delete all current game day channels for the server
         """
-        if await self.config.guild(ctx.guild).create_channels():
-            await GameDayChannels.delete_gdc(self.bot, ctx.guild)
+        await GameDayChannels.delete_gdc(self.bot, ctx.guild)
         await ctx.send(_("Game day channels deleted."))
 
     @gdc.command(name="defaultstate")
@@ -658,7 +662,7 @@ class Hockey(commands.Cog):
             game_list = await Game.get_games()
             for game in game_list:
                 await GameDayChannels.create_gdc(self.bot, guild, game)
-        await ctx.send(_("Game Day Channels for ") + team + _("setup in ") + category.name)
+        await ctx.send(_("Game Day Channels for ") + team + _(" setup in ") + category.name)
 
     #######################################################################
     # All Hockey setup commands
@@ -779,7 +783,7 @@ class Hockey(commands.Cog):
             em = await Standings.all_standing_embed(standings, page)
         await self.config.guild(guild).standings_type.set(standings_type)
         await self.config.guild(guild).standings_channel.set(channel.id)
-        await ctx.send(_("Sending standings to") + channel.mention)
+        await ctx.send(_("Sending standings to ") + channel.mention)
         message = await channel.send(embed=em)
         await self.config.guild(guild).standings_msg.set(message.id)
         await ctx.send(
@@ -799,7 +803,7 @@ class Hockey(commands.Cog):
         guild = ctx.message.guild
         cur_state = not await self.config.guild(guild).post_standings()
         verb = _("will") if cur_state else _("won't")
-        msg = _("Okay, standings ") + verb + _("be updated automatically.")
+        msg = _("Okay, standings ") + verb + _(" be updated automatically.")
         await self.config.guild(guild).post_standings.set(cur_state)
         await ctx.send(msg)
 
@@ -872,7 +876,7 @@ class Hockey(commands.Cog):
             channel = ctx.message.channel
         cur_teams = await self.config.channel(channel).team()
         if cur_teams is None:
-            await ctx.send(_("no teams are currently being posted in ") + channel.mention)
+            await ctx.send(_("No teams are currently being posted in ") + channel.mention)
             return
         if team is None:
             await self.config.channel(channel).clear()
