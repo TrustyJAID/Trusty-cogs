@@ -10,7 +10,7 @@ from random import choice, randint
 from datetime import datetime
 from PIL import Image, ImageSequence
 from io import BytesIO
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 log = logging.getLogger("red.trusty-cogs.ServerStats")
 
@@ -19,7 +19,7 @@ class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -29,7 +29,13 @@ class TrustyAvatar(commands.Cog):
             discord.ActivityType.listening,
             discord.ActivityType.watching,
         ]
-        defaults = {"status": False, "streaming": False, "avatar": False, "last_avatar": 0.0}
+        defaults = {
+            "status": False,
+            "streaming": False,
+            "avatar": False,
+            "last_avatar": 0.0,
+            "search_guild": None,
+        }
         self.config = Config.get_conf(self, 218773382617890828)
         self.config.register_global(**defaults)
         self.loop = bot.loop.create_task(self.maybe_change_avatar())
@@ -264,6 +270,16 @@ class TrustyAvatar(commands.Cog):
         await ctx.send("Status override set to " + str(not is_override))
 
     @trustyavatarset.command()
+    async def guild(self, ctx: commands.Context, guild_id: int):
+        """
+            Set a guild preferrably owned by the bot owner for the bot
+            to use to get a member object of the owner for streaming status
+            updates.
+        """
+        await self.config.search_guild.set(guild_id)
+        await ctx.send("Default guild set to " + str(guild_id))
+
+    @trustyavatarset.command()
     async def avatar(self, ctx: commands.Context):
         """
             Toggle avatar automatic changing
@@ -288,8 +304,9 @@ class TrustyAvatar(commands.Cog):
             return
         if not await self.config.streaming():
             return
-        if type(after.activity) == discord.ActivityType.streaming:
-            await self.bot.change_presence(activity=after.activity)
+        for activity in after.activities:
+            if type(activity) == discord.ActivityType.streaming:
+                await self.bot.change_presence(activity=after.activity)
 
     async def change_avatar(self, url: str) -> None:
         now = datetime.now().timestamp()
@@ -336,16 +353,21 @@ class TrustyAvatar(commands.Cog):
             status = new_status["status"]
         return status, activity, url
 
-    async def get_bot_owner(self) -> discord.Member:
+    async def get_bot_owner_streaming(self) -> Tuple[bool, Optional[discord.Activity]]:
         """
             Probably somewhat expensive once we start scaling
             Hopefully we can get owner as a member object easier in the future
             without hard coding a server to search for the owner of the bot
         """
-        for members in self.bot.get_all_members():
-            if members.id == self.bot.owner_id:
-                member = members
-        return member
+        guild_id = await self.config.search_guild()
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return False, None
+        owner = guild.get_member(self.bot.owner_id)
+        for activity in owner.activites:
+            if type(activity) == discord.ActivityType.streaming:
+                return True, activity
+        return False
 
     async def maybe_change_avatar(self) -> None:
         if version_info >= VersionInfo.from_str("3.2.0"):
@@ -357,11 +379,10 @@ class TrustyAvatar(commands.Cog):
             new_avatar = choice([s for s in self.statuses])
             new_status = self.statuses.get(new_avatar, None)
             status, activity, url = await self.get_activity(new_status)
-            owner = await self.get_bot_owner()
-            is_streaming = type(owner.activity) == discord.ActivityType.streaming
+            is_streaming, activity = await self.get_bot_owner_streaming()
             if await self.config.streaming():
                 if is_streaming:
-                    await self.change_activity(None, owner.activity)
+                    await self.change_activity(None, activity)
                     log.debug("Changing to owner is streaming status.")
             if await self.config.status() and not is_streaming:
                 # we don't want to override the streaming status if the owner is streaming
