@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.5.9"
+    __version__ = "1.6.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -36,6 +36,7 @@ class EventPoster(commands.Cog):
             "custom_links": {},
             "default_max": None,
             "auto_end_events": False,
+            "publish": False,
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
@@ -224,9 +225,13 @@ class EventPoster(commands.Cog):
             await self.config.guild(ctx.guild).announcement_channel()
         )
         if not approval_channel:
-            return await ctx.send("No admin channel has been setup on this server.")
+            return await ctx.send(
+                "No admin channel has been setup on this server. Use `[p]eventset approvalchannel` to add one."
+            )
         if not announcement_channel:
-            return await ctx.send("No announcement channel has been setup on this server.")
+            return await ctx.send(
+                "No announcement channel has been setup on this server. Use `[p]eventset channel` to add one."
+            )
         if str(ctx.author.id) in await self.config.guild(ctx.guild).events():
             if not await self.check_clear_event(ctx):
                 return
@@ -250,10 +255,19 @@ class EventPoster(commands.Cog):
         reaction, user = await ctx.bot.wait_for("reaction_add", check=pred)
         if pred.result:
             ping = await self.config.guild(ctx.guild).ping()
+            publish = (
+                await self.config.guild(ctx.guild).publish() and announcement_channel.is_news()
+            )
             event.approver = user
             event.channel = announcement_channel
             em.set_footer(text=f"Approved by {user}", icon_url=user.avatar_url)
             posted_message = await announcement_channel.send(ping, embed=em)
+            if publish:
+                try:
+                    await posted_message.publish()
+                except (discord.errors.Forbidden, discord.errors.HTTPException):
+                    log.debug("Event Channel is not a news channel.")
+                    pass
             event.message = posted_message
             async with self.config.guild(ctx.guild).events() as cur_events:
                 cur_events[str(event.hoster.id)] = event.to_json()
@@ -321,9 +335,7 @@ class EventPoster(commands.Cog):
                 # clear the broken event
                 del events[str(ctx.author.id)]
                 del self.event_cache[ctx.guild.id][event.message.id]
-            return await ctx.send(
-                f"{member.display_name} is not currently hosting an event."
-            )
+            return await ctx.send(f"{member.display_name} is not currently hosting an event.")
         em = await self.make_event_embed(ctx, event)
         await ctx.send(
             (
@@ -469,6 +481,24 @@ class EventPoster(commands.Cog):
         """Manage server specific settings for events"""
         pass
 
+    @event_settings.command(name="publish")
+    @commands.guild_only()
+    async def set_guild_publish(self, ctx: commands.Context, publish: bool):
+        """
+            Toggle publishing events in news channels.
+        """
+        announcement_channel = await self.config.guild(ctx.guild).announcement_channel()
+        chan = ctx.guild.get_channel(announcement_channel)
+        if chan and chan.is_news():
+            await self.config.guild(ctx.guild).publish.set(publish)
+            await ctx.send("I will now publish events posted in this channel.")
+        elif chan and not chan.is_news():
+            await ctx.send("The announcement channel set is not a news channel I can publish in.")
+        else:
+            await ctx.send(
+                "No announcement channel has been setup. Use `[p]eventset channel` to create an announcement channel."
+            )
+
     @event_settings.command(name="playerclass")
     @commands.guild_only()
     async def set_default_player_class(
@@ -532,7 +562,7 @@ class EventPoster(commands.Cog):
             await self.config.guild(ctx.guild).announcement_channel.clear()
         await ctx.send(reply)
 
-    @event_settings.command(name="approvalchannel")
+    @event_settings.command(name="approvalchannel", aliases=["adminchannel"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def set_approval_channel(
