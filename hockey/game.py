@@ -461,7 +461,7 @@ class Game:
                 msg = "Game Final {} @ {}"
                 log.debug(msg.format(self.home_team, self.away_team))
                 await self.post_game_state(bot)
-                await self.save_game_state(bot)
+                # await self.save_game_state(bot)
 
     async def post_game_state(self, bot):
         """

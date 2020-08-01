@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.11"
+    __version__ = "2.8.12"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -80,6 +80,7 @@ class Hockey(commands.Cog):
             "team": [],
             "game_states": ["Preview", "Live", "Final", "Goal"],
             "to_delete": False,
+            "publish_states": [],
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
@@ -180,6 +181,8 @@ class Hockey(commands.Cog):
                         if game.first_star is None:
                             # Wait a bit longer until the three stars show up
                             to_remove[link] += 1
+                            if to_remove[link] > 10:
+                                await game.save_game_state(self.bot)
 
                 for link, count in to_remove.items():
                     if count > 10:
@@ -826,6 +829,40 @@ class Hockey(commands.Cog):
             `goal` is all the goal updates.
         """
         await self.config.channel(channel).game_states.set(list(set(state)))
+        await ctx.send(
+            _("{channel} game updates set to {states}").format(
+                channel=channel.mention, states=humanize_list(list(set(state)))
+            )
+        )
+        if not await self.config.channel(channel).team():
+            await ctx.send(
+                _(
+                    "You have not setup any team updates in {channel}. "
+                    "You can do so with `{prefix}hockeyset add`."
+                ).format(channel=channel.mention, prefix=ctx.prefix)
+            )
+
+    @hockeyset_commands.command(name="publishupdates", hidden=True)
+    async def set_game_publish_updates(
+        self, ctx, channel: discord.TextChannel, *state: HockeyStates
+    ):
+        """
+            Set what type of game updates will be published in the designated news channel.
+
+            `<channel>` is a text channel for the updates.
+            `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.
+
+            `preview` updates are the pre-game notifications 60, 30, and 10 minutes
+            before the game starts and the pre-game notification at the start of the day.
+
+            Note: This may disable pickems if it is not selected.
+            `live` are the period start notifications.
+            `final` is the final game update including 3 stars.
+            `goal` is all the goal updates.
+        """
+        if not channel.is_news():
+            return await ctx.send(_("The designated channel is not a news channel that I can publish in."))
+        await self.config.channel(channel).publish_states.set(list(set(state)))
         await ctx.send(
             _("{channel} game updates set to {states}").format(
                 channel=channel.mention, states=humanize_list(list(set(state)))
