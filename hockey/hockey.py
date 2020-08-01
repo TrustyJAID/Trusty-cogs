@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.12"
+    __version__ = "2.8.13"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -183,6 +183,10 @@ class Hockey(commands.Cog):
                             to_remove[link] += 1
                             if to_remove[link] > 10:
                                 await game.save_game_state(self.bot)
+                                await game.post_game_state(self.bot)
+                        else:
+                            await game.save_game_state(self.bot)
+                            await game.post_game_state(self.bot)
 
                 for link, count in to_remove.items():
                     if count > 10:
