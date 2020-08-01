@@ -12,14 +12,14 @@ from PIL import Image, ImageSequence
 from io import BytesIO
 from typing import Union, Optional, Tuple
 
-log = logging.getLogger("red.trusty-cogs.ServerStats")
+log = logging.getLogger("red.trusty-cogs.TrustyAvatar")
 
 
 class TrustyAvatar(commands.Cog):
     """Changes the bot's image every so often"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.2"
+    __version__ = "1.2.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -335,8 +335,11 @@ class TrustyAvatar(commands.Cog):
             This will return which avatar, status, and activity to use
         """
         date = datetime.now()
-        activity = None
-        status = None
+        activity = discord.Activity(
+                name=choice(new_status["game"]), type=choice(new_status["type"])
+            )
+        status = new_status["status"]
+        url = new_status["link"]
         if date.month == 12 and date.day <= 25:
             url = new_status["xmas"]
             activity = discord.Activity(name="Merry Christmas!", type=discord.ActivityType.playing)
@@ -345,12 +348,6 @@ class TrustyAvatar(commands.Cog):
             url = new_status["link"]
             activity = discord.Activity(name="Happy New Year!", type=discord.ActivityType.playing)
             status = discord.Status.online
-        else:
-            url = new_status["link"]
-            activity = discord.Activity(
-                name=choice(new_status["game"]), type=choice(new_status["type"])
-            )
-            status = new_status["status"]
         return status, activity, url
 
     async def get_bot_owner_streaming(self) -> Tuple[bool, Optional[discord.Activity]]:
@@ -379,10 +376,10 @@ class TrustyAvatar(commands.Cog):
             new_avatar = choice([s for s in self.statuses])
             new_status = self.statuses.get(new_avatar, None)
             status, activity, url = await self.get_activity(new_status)
-            is_streaming, activity = await self.get_bot_owner_streaming()
+            is_streaming, stream_activity = await self.get_bot_owner_streaming()
             if await self.config.streaming():
                 if is_streaming:
-                    await self.change_activity(None, activity)
+                    await self.change_activity(None, stream_activity)
                     log.debug("Changing to owner is streaming status.")
             if await self.config.status() and not is_streaming:
                 # we don't want to override the streaming status if the owner is streaming
