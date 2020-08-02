@@ -1,3 +1,4 @@
+import discord
 from datetime import datetime
 from redbot.core import Config
 from .game import Game
@@ -133,16 +134,28 @@ class GameDayChannels:
             f"{next_game.away_team} {next_game.away_emoji} @ "
             f"{next_game.home_team} {next_game.home_emoji} {time_string}"
         )
-
-        await new_chn.edit(topic=game_msg)
+        try:
+            await new_chn.edit(topic=game_msg)
+        except discord.errors.Forbidden:
+            log.error("Error editing the channel topic")
         if new_chn.permissions_for(guild.me).embed_links:
             em = await next_game.game_state_embed()
-            preview_msg = await new_chn.send(embed=em)
+            try:
+                preview_msg = await new_chn.send(embed=em)
+            except Exception:
+                log.error("Error posting game preview in GDC channel.")
         else:
-            preview_msg = await new_chn.send(await next_game.game_state_text())
+            try:
+                preview_msg = await new_chn.send(await next_game.game_state_text())
+            except Exception:
+                log.error("Error posting game preview in GDC channel.")
+                return
 
         # Create new pickems object for the game
-        await Pickems.create_pickem_object(bot, guild, preview_msg, new_chn, next_game)
+        try:
+            await Pickems.create_pickem_object(bot, guild, preview_msg, new_chn, next_game)
+        except Exception:
+            log.error("Error creating pickems object in GDC channel.")
 
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()

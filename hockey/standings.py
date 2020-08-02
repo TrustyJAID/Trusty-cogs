@@ -166,8 +166,9 @@ class Standings:
                     message = await channel.fetch_message(standings_msg)
                 except AttributeError:
                     message = await channel.get_message(standings_msg)
-                except discord.errors.NotFound:
+                except (discord.errors.NotFound, discord.errors.Forbidden):
                     await config.guild(guild).post_standings.set(False)
+                    continue
 
                 standings, page = await Standings.get_team_standings(search)
                 if search != "all":
