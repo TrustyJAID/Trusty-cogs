@@ -181,15 +181,9 @@ class Hockey(commands.Cog):
                         if game.first_star is None:
                             # Wait a bit longer until the three stars show up
                             to_remove[link] += 1
-                            if to_remove[link] > 10:
-                                await game.save_game_state(self.bot)
-                                await game.post_game_state(self.bot)
-                        else:
-                            await game.save_game_state(self.bot)
-                            await game.post_game_state(self.bot)
 
                 for link, count in to_remove.items():
-                    if count > 10:
+                    if count >= 1:
                         games.remove(link)
                 await asyncio.sleep(60)
             log.debug(_("Games Done Playing"))
