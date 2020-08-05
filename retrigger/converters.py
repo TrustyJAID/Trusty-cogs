@@ -34,6 +34,7 @@ class MultiResponse(Converter):
             "text",
             "filter",
             "delete",
+            "publish",
             "react",
             "rename",
             "command",
@@ -57,6 +58,8 @@ class MultiResponse(Converter):
         if result[0] in ["add_role", "remove_role"] and not my_perms.manage_roles:
             raise BadArgument(_('I require "Manage Roles" permission to use that.'))
         if result[0] == "filter" and not my_perms.manage_messages:
+            raise BadArgument(_('I require "Manage Messages" permission to use that.'))
+        if result[0] == "publish" and not my_perms.manage_messages:
             raise BadArgument(_('I require "Manage Messages" permission to use that.'))
         if result[0] == "ban" and not my_perms.ban_members:
             raise BadArgument(_('I require "Ban Members" permission to use that.'))

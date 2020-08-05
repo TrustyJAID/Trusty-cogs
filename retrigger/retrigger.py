@@ -41,7 +41,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.13.1"
+    __version__ = "2.14.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -59,7 +59,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1)
-        self.re_pool = Pool(maxtasksperchild=2)
+        self.re_pool = Pool(maxtasksperchild=1000)
         self.triggers = {}
         self.save_triggers = self.bot.loop.create_task(self.save_loop())
         self.__unload = self.cog_unload
@@ -117,6 +117,15 @@ class ReTrigger(TriggerHandler, commands.Cog):
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         pass
+
+    @checks.is_owner()
+    @retrigger.command()
+    async def deleteallbyuser(self, ctx: commands.Context, user_id: int):
+        """
+            Delete all triggers created by a specified user ID.
+        """
+        await self.red_delete_data_for_user(requester="owner", user_id=user_id)
+        await ctx.tick()
 
     @retrigger.group()
     @checks.mod_or_permissions(manage_messages=True)
@@ -319,7 +328,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger_list = await self.config.guild(ctx.guild).trigger_list()
         trigger.cooldown = cooldown
         trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         await self.config.guild(ctx.guild).trigger_list.set(trigger_list)
         await ctx.send(msg.format(time=time, style=style, name=trigger.name))
@@ -349,7 +358,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
                     trigger.whitelist.append(obj.id)
                     trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} added `{list_type}` to its whitelist.")
         list_type = humanize_list([c.name for c in channel_user_role])
@@ -383,7 +392,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
                     trigger.whitelist.remove(obj.id)
                     trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} removed `{list_type}` from its whitelist.")
         list_type = humanize_list([c.name for c in channel_user_role])
@@ -414,7 +423,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
                     trigger.blacklist.append(obj.id)
                     trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} added `{list_type}` to its blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
@@ -448,7 +457,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
                     trigger.blacklist.remove(obj.id)
                     trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
@@ -474,7 +483,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.regex = re.compile(regex)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} regex changed to ```bf\n{regex}\n```")
         await ctx.send(msg.format(name=trigger.name, regex=regex))
@@ -497,7 +506,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.ocr_search = not trigger.ocr_search
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} OCR Search set to: {ocr_search}")
         await ctx.send(msg.format(name=trigger.name, ocr_search=trigger.ocr_search))
@@ -520,7 +529,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.ignore_edits = not trigger.ignore_edits
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} ignore edits set to: {ignore_edits}")
         await ctx.send(msg.format(name=trigger.name, ignore_edits=trigger.ignore_edits))
@@ -547,7 +556,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.text = text
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} text changed to `{text}`")
         await ctx.send(msg.format(name=trigger.name, text=text))
@@ -588,7 +597,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.delete_after = delete_after_seconds
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} will now delete after `{time}` seconds.")
         await ctx.send(msg.format(name=trigger.name, time=delete_after_seconds))
@@ -610,7 +619,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.ignore_commands = not trigger.ignore_commands
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} ignoring commands set to `{text}`")
         await ctx.send(msg.format(name=trigger.name, text=trigger.ignore_commands))
@@ -644,7 +653,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.text = command
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} command changed to `{command}`")
         await ctx.send(msg.format(name=trigger.name, command=command))
@@ -683,7 +692,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.text = role_ids
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} role edits changed to `{roles}`")
         await ctx.send(msg.format(name=trigger.name, roles=humanize_list([r.name for r in roles])))
@@ -710,7 +719,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.text = emojis
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} reactions changed to {emojis}")
         emoji_s = [f"<{e}>" for e in emojis if len(e) > 5] + [e for e in emojis if len(e) < 5]
@@ -731,7 +740,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.enabled = True
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} has been enabled.")
         await ctx.send(msg.format(name=trigger.name))
@@ -751,7 +760,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         trigger.enabled = False
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
-        await self.remove_trigger_from_cache(ctx.guild, trigger)
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         msg = _("Trigger {name} has been disabled.")
         await ctx.send(msg.format(name=trigger.name))
 
@@ -864,8 +873,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
         if type(trigger) is Trigger:
-            await self.remove_trigger(ctx.guild, trigger.name)
-            await self.remove_trigger_from_cache(ctx.guild, trigger)
+            await self.remove_trigger(ctx.guild.id, trigger.name)
+            await self.remove_trigger_from_cache(ctx.guild.id, trigger)
             await ctx.send(_("Trigger `") + trigger.name + _("` removed."))
         else:
             await ctx.send(_("Trigger `") + str(trigger) + _("` doesn't exist."))
@@ -1373,6 +1382,38 @@ class ReTrigger(TriggerHandler, commands.Cog):
         author = ctx.message.author.id
         new_trigger = Trigger(
             name, regex, ["react"], author, text=emojis, created_at=ctx.message.id
+        )
+        if ctx.guild.id not in self.triggers:
+            self.triggers[ctx.guild.id] = []
+        self.triggers[ctx.guild.id].append(new_trigger)
+        trigger_list = await self.config.guild(guild).trigger_list()
+        trigger_list[name] = await new_trigger.to_json()
+        await self.config.guild(guild).trigger_list.set(trigger_list)
+        await ctx.send(_("Trigger `{name}` set.").format(name=name))
+
+    @retrigger.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(add_reactions=True)
+    async def publish(self, ctx: commands.Context, name: TriggerExists, regex: ValidRegex) -> None:
+        """
+            Add a trigger to automatically publish content in news channels.
+
+            `<name>` name of the trigger
+            `<regex>` the regex that will determine when to respond
+
+            See https://regex101.com/ for help building a regex pattern
+            Example for simple search: `"\\bthis matches"` the whole phrase only
+            For case insensitive searches add `(?i)` at the start of the regex
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(name) != str:
+            msg = _("{name} is already a trigger name").format(name=name.name)
+            return await ctx.send(msg)
+        guild = ctx.guild
+        author = ctx.message.author.id
+        new_trigger = Trigger(
+            name, regex, ["publish"], author, created_at=ctx.message.id
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
