@@ -68,7 +68,6 @@ class Reddit(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reddit_post(self, subreddit: Subreddit, submission: Submission):
-        log.info(f"New post in {subreddit.display_name_prefixed} - {submission.title}")
         if subreddit.id not in self.subreddits:
             try:
                 self._streams[subreddit.id].cancel()
@@ -76,7 +75,6 @@ class Reddit(commands.Cog):
                 log.exception("Error closing stream.")
             del self._streams[subreddit.id]
         else:
-            log.info("starts working")
             tasks = []
             for channel_id in self.subreddits[subreddit.id]["channels"]:
                 channel = self.bot.get_channel(channel_id)
@@ -85,7 +83,6 @@ class Reddit(commands.Cog):
                 chan_perms = channel.permissions_for(channel.guild.me)
                 if not chan_perms.send_messages and not chan_perms.manage_webhooks:
                     continue
-                log.info("maybe here?")
                 use_embed = True  # channel.id not in self.regular_embed_channels
                 contents = await make_embed_from_submission(channel, subreddit, submission)
                 contents["subreddit"] = subreddit
