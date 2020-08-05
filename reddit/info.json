@@ -10,7 +10,7 @@
     "min_bot_version" : "3.3.10",
     "min_python_version" : [
         3,
-        8,
+        7,
         2
     ],
     "name" : "Reddit",
