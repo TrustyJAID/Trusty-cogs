@@ -21,7 +21,7 @@ class Reddit(commands.Cog):
         A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -175,7 +175,7 @@ class Reddit(commands.Cog):
         if sub.id not in self.subreddits:
             self.subreddits[sub.id] = {"name": sub.display_name, "channels": [channel.id]}
             self._streams[sub.id] = self.bot.loop.create_task(
-                self._run_subreddit_stream(sub.display_name)
+                self._run_subreddit_stream(sub)
             )
             await self.config.subreddits.set_raw(sub.id, value=self.subreddits[sub.id])
         else:
