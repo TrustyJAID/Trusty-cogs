@@ -86,9 +86,7 @@ class ImageMaker(commands.Cog):
     @commands.command()
     async def facemerge(self, ctx: commands.Context, *, urls: ImageFinder) -> None:
         """
-            Generate a wheeze image with text or a user avatar
-
-            `text` the text or user avatar who will be placed in the bottom pane
+            Generate a gif of two images fading into eachother
         """
         if len(urls) < 2:
             urls = await ImageFinder().search_for_images(ctx)
