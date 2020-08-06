@@ -1,10 +1,16 @@
 import discord
+import logging
+import re
 
 from apraw.models import Subreddit, Submission
 from redbot.core import commands
 
 
 BASE_URL = "https://reddit.com"
+
+SELF_POST_SCRUB = re.compile(r"^(&#x200B;[\s\n]+)(https?://.+)$")
+
+log = logging.getLogger("red.Trusty-cogs.reddit")
 
 
 async def make_embed_from_submission(
@@ -24,6 +30,7 @@ async def make_embed_from_submission(
         title=submission.title[:256],
         timestamp=submission.created_utc
     )
+    has_text, has_image = False, False
     kind = " post"
     if submission.is_self:
         kind = " self post"
@@ -42,19 +49,40 @@ async def make_embed_from_submission(
         colour = int(subreddit.primary_color.replace("#", ""), 16)
         em.colour = discord.Colour(colour)
     if submission.selftext:
-        em.description = submission.selftext[:512]
+        has_text = True
+        text = SELF_POST_SCRUB.sub("", submission.selftext)
+        em.description = text[:512]
     author_name = await submission.author()
     author_str = f"[u/{author_name}]({BASE_URL}/u/{author_name})"
     em.add_field(name="Post Author", value=author_str)
     # em.add_field(name="Content Warning", value=)
     # link_str = f"[Click to see full post]({BASE_URL}{submission.permalink})"
     if submission.thumbnail:
-        if submission.thumbnail:
-            url = submission.url
-            if url.endswith("gifv"):
-                url = url.replace("gifv", "gif")
-        em.set_image(url=url)
+        url = submission.url
+        if url.endswith("gifv"):
+            url = url.replace("gifv", "gif")
+        if submission.thumbnail != "self":
+            has_image = True
+            em.set_image(url=url)
+    if getattr(submission, "media_metadata", None):
+        log.debug("There's media metadata!")
+        for _id, data in submission.media_metadata.items():
+            if data["e"] == "RedditVideo":
+                continue
+            if data["e"] == "Image":
+                log.debug(data)
+                has_image = True
+                em.set_image(url=data["s"]["u"])
+                break
+            if data["e"] == "AnimatedImage":
+                log.debug(data)
+                has_image = True
+                em.set_image(url=data["s"]["gif"])
+                break
+
     if submission.over_18:
         em.add_field(name="Content Warning", value="NSFW")
+    if not has_image and not has_text:
+        em.description = submission.url
     em.set_footer(text=f"Score {submission.score}")
     return {"embed": em, "content": post_url}

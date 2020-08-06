@@ -2,6 +2,7 @@ import discord
 import logging
 import apraw
 import asyncio
+import aiohttp
 
 from typing import Optional
 
@@ -21,7 +22,7 @@ class Reddit(commands.Cog):
         A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -63,8 +64,17 @@ class Reddit(commands.Cog):
             A function to run the infinite loop of the subreddit stream and dispatch
             new posts as an event.
         """
-        async for submission in subreddit.new.stream(skip_existing=True):
-            self.bot.dispatch("reddit_post", subreddit, submission)
+        try:
+            async for submission in subreddit.new.stream(skip_existing=True):
+                self.bot.dispatch("reddit_post", subreddit, submission)
+        except aiohttp.ContentTypeError:
+            log.exception("Stream recieved incorrect data type.")
+            self._streams[subreddit.id] = self.bot.loop.create_task(
+                self._run_subreddit_stream(subreddit)
+            )
+        except Exception:
+            log.exception("Error in streams task.")
+            return None
 
     @commands.Cog.listener()
     async def on_reddit_post(self, subreddit: Subreddit, submission: Submission):
@@ -171,9 +181,7 @@ class Reddit(commands.Cog):
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         if sub.id not in self.subreddits:
             self.subreddits[sub.id] = {"name": sub.display_name, "channels": [channel.id]}
-            self._streams[sub.id] = self.bot.loop.create_task(
-                self._run_subreddit_stream(sub)
-            )
+            self._streams[sub.id] = self.bot.loop.create_task(self._run_subreddit_stream(sub))
             await self.config.subreddits.set_raw(sub.id, value=self.subreddits[sub.id])
         else:
             if channel.id not in self.subreddits[sub.id]["channels"]:

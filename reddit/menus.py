@@ -93,14 +93,14 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
-        if page.over_18 and not menu.ctx.channel.is_nsfw():
+        if page.over_18 and not self.message.channel.is_nsfw():
+            await self.message.edit(content="This post is NSFW.", embed=None)
             return
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
-        log.info(self.source.over_18)
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
@@ -174,3 +174,4 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
+        await self.message.delete()
