@@ -45,7 +45,7 @@ class Hockey(commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.8.14"
+    __version__ = "2.8.15"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -431,12 +431,14 @@ class Hockey(commands.Cog):
                     teams = ", ".join(t for t in await self.config.channel(chn).team())
                     is_gdc = "(GDC)" if chn.id in gdc_channels else ""
                     game_states = await self.config.channel(chn).game_states()
+                    channels += f"{chn.mention}{is_gdc}: {teams}\n"
+
                     if len(game_states) != 4:
                         channels += (
-                            f"{chn.mention}{is_gdc}: {teams}\n"
                             + _("Game Sates: ")
                             + ", ".join(s for s in game_states)
                         )
+                        channels += "\n"
 
             notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
                 game_start=await self.config.guild(guild).game_state_notifications(),
