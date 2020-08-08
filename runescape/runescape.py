@@ -47,6 +47,7 @@ class Runescape(commands.Cog):
 
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
+        """Display a players stats in oldschool Runescape."""
         user = self.bot.get_user(ctx.message.author.id)
         if runescape_name is None:
             runescape_name = await self.config.user(user).rsn()
