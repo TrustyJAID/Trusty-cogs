@@ -29,7 +29,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
 
     """
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -199,6 +199,14 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         ctx = await self.bot.get_context(message)
         author = message.author
         text = message.clean_content
+        to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
+        is_mention = re.search(to_strip, message.content)
+        if is_mention:
+            text = text[len(ctx.me.display_name) + 2:]
+            log.debug(text)
+        if not text:
+            log.debug("No text to send to cleverbot.")
+            return
         if guild is None:
             if await self.config.allow_dm() and message.author.id != self.bot.user.id:
                 if ctx.prefix:
@@ -206,9 +214,6 @@ class Cleverbot(CleverbotAPI, commands.Cog):
                 await self.send_cleverbot_response(text, message.author, ctx)
             return
 
-        msg = message.content
-        to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
-        is_mention = re.findall(to_strip, msg)
         if message.author.id != self.bot.user.id:
 
             if not is_mention and message.channel.id != await self.config.guild(guild).channel():
