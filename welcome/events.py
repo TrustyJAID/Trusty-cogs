@@ -104,8 +104,12 @@ class Events:
             elif url == "avatar" and isinstance(member, discord.Member):
                 url = member.avatar_url
             em.set_thumbnail(url=url)
-        if (is_welcome and EMBED_DATA["image"]) or (not is_welcome and EMBED_DATA["image_goodbye"]):
-            url = EMBED_DATA["image"] if is_welcome else EMBED_DATA["image_goodbye"]
+        if EMBED_DATA["image"] or EMBED_DATA["image_goodbye"]:
+            url = ""
+            if EMBED_DATA["image"] and is_welcome:
+                url = EMBED_DATA["image"]
+            if EMBED_DATA["image_goodbye"] and not is_welcome:
+                url = EMBED_DATA["image_goodbye"]
             if url == "guild":
                 url = guild.icon_url
             elif url == "splash":
@@ -245,7 +249,7 @@ class Events:
             if await self.config.guild(guild).WHISPER():
                 try:
                     if is_embed:
-                        em = await self.make_embed(member, guild, msg, False)
+                        em = await self.make_embed(member, guild, msg, True)
                         if await self.config.guild(guild).EMBED_DATA.mention():
                             await member.send(member.mention, embed=em)  # type: ignore
                         else:
@@ -366,7 +370,6 @@ class Events:
         guild_settings = await self.config.guild(guild).get_raw()
         # log.info(guild_settings)
         channel = guild.get_channel(guild_settings["CHANNEL"])
-        send_count = not leave
         if leave:
             channel = guild.get_channel(guild_settings["LEAVE_CHANNEL"])
         rand_msg = msg or rand_choice(guild_settings["GREETING"])
@@ -380,6 +383,7 @@ class Events:
             rand_msg = default_bot_msg
         if rand_msg is None and leave:
             rand_msg = default_goodbye
+        is_welcome = not leave
         is_embed = guild_settings["EMBED"]
         member = ctx.message.author
         whisper_settings = guild_settings["WHISPER"]
@@ -393,11 +397,11 @@ class Events:
             await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
         if not bot and guild_settings["WHISPER"]:
             if is_embed:
-                em = await self.make_embed(member, guild, rand_msg, False)
+                em = await self.make_embed(member, guild, rand_msg, is_welcome)
                 await ctx.author.send(embed=em, delete_after=60)
             else:
                 await ctx.author.send(
-                    await self.convert_parms(member, guild, rand_msg, False), delete_after=60
+                    await self.convert_parms(member, guild, rand_msg, is_welcome), delete_after=60
                 )
             if guild_settings["WHISPER"] != "BOTH":
                 return
@@ -407,7 +411,7 @@ class Events:
             if guild_settings["GROUPED"]:
                 member = [ctx.author, ctx.me]
             if is_embed and channel.permissions_for(guild.me).embed_links:
-                em = await self.make_embed(member, guild, rand_msg, send_count)
+                em = await self.make_embed(member, guild, rand_msg, is_welcome)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     if guild_settings["GROUPED"]:
                         await channel.send(
@@ -420,7 +424,7 @@ class Events:
             else:
                 await channel.send(
                     filter_mass_mentions(
-                        await self.convert_parms(member, guild, rand_msg, send_count)
+                        await self.convert_parms(member, guild, rand_msg, is_welcome)
                     ),
                     delete_after=60,
                 )
