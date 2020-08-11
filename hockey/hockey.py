@@ -435,7 +435,7 @@ class Hockey(commands.Cog):
 
                     if len(game_states) != 4:
                         channels += (
-                            _("Game Sates: ")
+                            _("Game States: ")
                             + ", ".join(s for s in game_states)
                         )
                         channels += "\n"
