@@ -22,7 +22,7 @@ class Reddit(commands.Cog):
         A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -68,7 +68,8 @@ class Reddit(commands.Cog):
             async for submission in subreddit.new.stream(skip_existing=True):
                 self.bot.dispatch("reddit_post", subreddit, submission)
         except aiohttp.ContentTypeError:
-            log.exception("Stream recieved incorrect data type.")
+            log.debug("Stream recieved incorrect data type.")
+            # attempt to create the stream again.
             self._streams[subreddit.id] = self.bot.loop.create_task(
                 self._run_subreddit_stream(subreddit)
             )
