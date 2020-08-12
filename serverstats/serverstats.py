@@ -1365,6 +1365,7 @@ class ServerStats(commands.Cog):
     @commands.command(name="serverstats")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
     async def server_stats(
         self, ctx: commands.Context, limit: Optional[int] = None, *, guild: GuildConverter = None
     ) -> None:
