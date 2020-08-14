@@ -293,7 +293,6 @@ class TriggerHandler:
             trigger = await Trigger.from_json(triggers)
             author = ctx.guild.get_member(trigger.author)
             active_triggers = [t.name for t in self.triggers[ctx.guild.id]]
-            log.info(active_triggers)
             if not author:
                 try:
                     author = await self.bot.fetch_user(trigger.author)
