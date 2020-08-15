@@ -134,6 +134,7 @@ class Trigger:
     ignore_edits: bool
     ocr_search: bool
     delete_after: int
+    read_filenames: bool
 
     def __init__(self, name, regex, response_type, author, **kwargs):
         self.name = name
@@ -153,6 +154,19 @@ class Trigger:
         self.ignore_edits = kwargs.get("ignore_edits", False)
         self.ocr_search = kwargs.get("ocr_search", False)
         self.delete_after = kwargs.get("delete_after", None)
+        self.read_filenames = kwargs.get("read_filenames", False)
+
+    def enable(self):
+        """Explicitly enable this trigger"""
+        self.enabled = True
+
+    def disable(self):
+        """Explicitly disables this trigger"""
+        self.enabled = False
+
+    def toggle(self):
+        """Toggle whether or not this trigger is enabled."""
+        self.enabled = not self.enabled
 
     def __str__(self):
         """This is defined moreso for debugging purposes but may prove useful for elaborating
@@ -236,6 +250,8 @@ class Trigger:
             info += _("Ignoring edits: **Enabled**\n")
         if self.delete_after:
             info += _("Message deleted after: {time} seconds.\n").format(time=self.delete_after)
+        if self.read_filenames:
+            info += _("Read filenames: **Enabled**\n")
         info += _("__Regex__: ") + self.regex.pattern
         return info
 
@@ -258,6 +274,7 @@ class Trigger:
             "ignore_edits": self.ignore_edits,
             "ocr_search": self.ocr_search,
             "delete_after": self.delete_after,
+            "read_filenames": self.read_filenames,
         }
 
     @classmethod
@@ -270,6 +287,7 @@ class Trigger:
         ocr_search = False
         delete_after = None
         enabled = True
+        read_filenames = True
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -290,6 +308,12 @@ class Trigger:
             delete_after = data["delete_after"]
         if "enabled" in data:
             enabled = data["enabled"]
+        if "read_filenames" in data:
+            read_filenames = data["read_filenames"]
+        if "delete" in response_type and type(data["text"]) == bool:
+            # replace old setting with new flag
+            read_filenames = data["text"]
+            data["text"] = ""
         return cls(
             data["name"],
             data["regex"],
@@ -308,6 +332,7 @@ class Trigger:
             ignore_commands=ignore_commands,
             ignore_edits=ignore_edits,
             ocr_search=ocr_search,
+            read_filenames=read_filenames,
         )
 
 

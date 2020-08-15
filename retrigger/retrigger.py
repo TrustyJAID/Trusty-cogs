@@ -25,6 +25,7 @@ from .converters import (
     ChannelUserRole,
 )
 from .triggerhandler import TriggerHandler
+from .menus import ReTriggerMenu, BaseMenu
 
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
@@ -41,7 +42,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.14.0"
+    __version__ = "2.15.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -85,8 +86,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             self.triggers[guild] = []
             for trigger in settings["trigger_list"].values():
                 new_trigger = await Trigger.from_json(trigger)
-                if new_trigger.enabled:
-                    self.triggers[guild].append(new_trigger)
+                self.triggers[guild].append(new_trigger)
 
     async def save_loop(self):
         if version_info >= VersionInfo.from_str("3.2.0"):
@@ -511,6 +511,28 @@ class ReTrigger(TriggerHandler, commands.Cog):
         msg = _("Trigger {name} OCR Search set to: {ocr_search}")
         await ctx.send(msg.format(name=trigger.name, ocr_search=trigger.ocr_search))
 
+    @_edit.command(name="readfilenames", aliases=["filenames"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def toggle_filename_search(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+        """
+            Toggle whether to search message attachment filenames.
+
+            <trigger> is the name of the trigger.
+
+            [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.read_filenames = not trigger.read_filenames
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} read filenames set to: {read_filenames}")
+        await ctx.send(msg.format(name=trigger.name, read_filenames=trigger.read_filenames))
+
     @_edit.command(name="edited")
     @checks.mod_or_permissions(manage_messages=True)
     async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists) -> None:
@@ -845,22 +867,27 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        trigger_dict = await self.config.guild(ctx.guild).trigger_list()
-        trigger_list = [trigger_dict[name] for name in trigger_dict]
-        if trigger_list == []:
+        index = 0
+        if ctx.guild.id not in self.triggers or not self.triggers[ctx.guild.id]:
             msg = _("There are no triggers setup on this server.")
             await ctx.send(msg)
             return
         if trigger:
             if type(trigger) is str:
                 return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
-            for t in trigger_list:
-                if t["name"] == trigger.name:
-                    trigger_list.insert(0, trigger_list.pop(trigger_list.index(t)))
-        triggers = await self.trigger_embed(ctx, trigger_list)
-        await menu(ctx, triggers, DEFAULT_CONTROLS)
-        # await menus.PagedMenu.send_and_wait(ctx, pages=triggers)
-        # print("Hello, world.")
+            for t in self.triggers[ctx.guild.id]:
+                if t.name == trigger.name:
+                    index = self.triggers[ctx.guild.id].index(t)
+        await BaseMenu(
+            source=ReTriggerMenu(
+                triggers=self.triggers[ctx.guild.id],
+            ),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=index,
+        ).start(ctx=ctx)
 
     @retrigger.command(aliases=["del", "rem", "delete"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1412,9 +1439,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(
-            name, regex, ["publish"], author, created_at=ctx.message.id
-        )
+        new_trigger = Trigger(name, regex, ["publish"], author, created_at=ctx.message.id)
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1543,7 +1568,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
         guild = ctx.guild
         author = ctx.message.author.id
         new_trigger = Trigger(
-            name, regex, ["delete"], author, text=check_filenames, created_at=ctx.message.id,
+            name,
+            regex,
+            ["delete"],
+            author,
+            read_filenames=check_filenames,
+            created_at=ctx.message.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
