@@ -6,7 +6,7 @@ import string
 import os
 
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional, cast, Literal
 
 from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.data_manager import cog_data_path
@@ -26,7 +26,7 @@ class AddImage(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -44,6 +44,29 @@ class AddImage(commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            for image in data["images"].items():
+                if image["author"] == user_id:
+                    try:
+                        os.remove(cog_data_path(self) / str(guild_id) / image["file_loc"])
+                    except Exception:
+                        log.error(
+                            _("Error deleting image {image}").format(image=image["file_loc"]), exc_info=True
+                        )
+                        pass
+                    data["images"].remove(image)
+                await self.config.guild_from_id(guild_id).images.set(data["images"])
 
     async def initialize(self) -> None:
         guilds = await self.config.all_guilds()
@@ -249,6 +272,15 @@ class AddImage(commands.Cog):
             Add an image for the bot to directly upload
         """
         pass
+
+    @checks.is_owner()
+    @addimage.command()
+    async def deleteallbyuser(self, ctx: commands.Context, user_id: int):
+        """
+            Delete all triggers created by a specified user ID.
+        """
+        await self.red_delete_data_for_user(requester="owner", user_id=user_id)
+        await ctx.tick()
 
     @addimage.command(name="ignoreglobal")
     @checks.mod_or_permissions(manage_channels=True)
