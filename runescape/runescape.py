@@ -73,7 +73,7 @@ class Runescape(commands.Cog):
         for page in pagify(msg):
             await ctx.send(box(page, lang="css"))
 
-    @osrs.command()
+    @osrs.command(name="set")
     async def osrs_set(self, ctx: commands.Context, *, runescape_name: Optional[str] = None) -> None:
         """
             Set your runescape name for easer commands.
