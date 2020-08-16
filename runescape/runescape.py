@@ -131,7 +131,7 @@ class Runescape(commands.Cog):
                 json_data = json.loads(
                     data.replace("jQuery000000000000000_0000000000([", "").replace("]);", "")
                 )
-            except aiohttp.JSONDecodeError:
+            except Exception:
                 return {}
             return json_data
             # return await resp.json()
