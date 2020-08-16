@@ -1,6 +1,7 @@
 import discord
 
 from abc import ABC
+from typing import Literal
 from redbot import VersionInfo, version_info
 from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
@@ -44,7 +45,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -87,10 +88,48 @@ class AdventureAlert(
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        await self.config.user_from_id(user_id).clear()
+        all_guilds = await self.config.all_guilds()
+        for g_id, settings in all_guilds.items():
+            guild = self.bot.get_guild(g_id)
+            if not guild:
+                continue
+            if user_id in settings["users"]:
+                all_guilds[g_id]["users"].remove(user_id)
+            if user_id in settings["adventure_users"]:
+                all_guilds[g_id]["adventure_users"].remove(user_id)
+            if user_id in settings["miniboss_users"]:
+                all_guilds[g_id]["miniboss_users"].remove(user_id)
+            if user_id in settings["cart_users"]:
+                all_guilds[g_id]["cart_users"].remove(user_id)
+            if user_id in settings["ascended_users"]:
+                all_guilds[g_id]["ascended_users"].remove(user_id)
+            if user_id in settings["transcended_users"]:
+                all_guilds[g_id]["transcended_users"].remove(user_id)
+            if user_id in settings["immortal_users"]:
+                all_guilds[g_id]["immortal_users"].remove(user_id)
+            if user_id in settings["possessed_users"]:
+                all_guilds[g_id]["possessed_users"].remove(user_id)
+
     @commands.group()
     async def adventurealert(self, ctx: commands.Context) -> None:
         """Set notifications for all adventures"""
         pass
+
+    @adventurealert.command()
+    async def removeall(self, ctx: commands.Context) -> None:
+        """Remove all adventurealert settings in all guilds"""
+        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
+        await ctx.send(_("Your Adventure Alerts have all been removed."))
 
     @adventurealert.command(name="settings", aliases=["setting"])
     async def alert_settings(self, ctx: commands.Context):
@@ -108,6 +147,10 @@ class AdventureAlert(
             "adventure_servers": ([], _("Adventure Notifications")),
             "boss_servers": ([], _("Dragon Notifications")),
             "miniboss_servers": ([], _("Miniboss Notifications")),
+            "ascended_servers": ([], _("Ascended Notifications")),
+            "transcended_servers": ([], _("Transcended Notifications")),
+            "immortal_servers": ([], _("Immortal Notifications")),
+            "possessed_servers": ([], _("Possessed Notifications")),
         }
         all_guilds = await self.config.all_guilds()
         for g_id, settings in all_guilds.items():
@@ -122,6 +165,14 @@ class AdventureAlert(
                 all_data["miniboss_servers"][0].append(guild.name)
             if ctx.author.id in settings["cart_users"]:
                 all_data["cart_servers"][0].append(guild.name)
+            if ctx.author.id in settings["ascended_users"]:
+                all_data["ascended_servers"][0].append(guild.name)
+            if ctx.author.id in settings["transcended_users"]:
+                all_data["transcended_servers"][0].append(guild.name)
+            if ctx.author.id in settings["immortal_users"]:
+                all_data["immortal_servers"][0].append(guild.name)
+            if ctx.author.id in settings["possessed_users"]:
+                all_data["possessed_servers"][0].append(guild.name)
         for k, v in all_data.items():
             if v[0]:
                 msg += f"__**{v[1]}**__: {humanize_list(v[0])}\n\n"
