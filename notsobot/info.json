@@ -5,6 +5,7 @@
     ],
     "description" : "Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Please, read the README.md (https://github.com/TrustyJAID/Trusty-cogs/tree/master/notsobot) for instructions on how and what to install. `sudo apt-get install libmagickwand-dev libaa1-dev` and install all other requirements. Note some commands may be hidden if AALIB is not installed and AALIB will not work on Macs.",
     "max_bot_version" : "0.0.0",

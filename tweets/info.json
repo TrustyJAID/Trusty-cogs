@@ -5,6 +5,7 @@
     ],
     "description" : "Gets the latest Tweet from twitter accounts and posts them in the specified channels",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "`[p]tweets` to see commands and `[p]autotweet` to setup automatic twitter updates. Do `[p]tweetset creds` for how to set consumer key and secret and access token and secret. If you need these, visit https://apps.twitter.com/ and create an application. This plugin only needs read only permissions as it will only read public information.",
     "max_bot_version" : "0.0.0",

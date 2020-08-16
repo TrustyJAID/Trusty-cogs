@@ -4,6 +4,7 @@
     ],
     "description" : "Get notified of new twitch followers and get basic profile info.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog stores User ID's linked to an external API name for the purposes of tracking information from the external API.",
     "hidden" : false,
     "install_msg" : "Setup a channel for new twitch follower notifications!",
     "max_bot_version" : "0.0.0",

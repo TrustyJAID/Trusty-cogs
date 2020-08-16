@@ -5,6 +5,7 @@
     ],
     "description" : "Recreation of Red v1 meme generator",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Recreation of Red v1 meme generator cog!",
     "max_bot_version" : "0.0.0",

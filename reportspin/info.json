@@ -7,6 +7,7 @@
     ],
     "description" : "Reports cog but pins new reports",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : true,
     "install_msg" : "Redbot core reports cog but pins new reports",
     "max_bot_version" : "0.0.0",

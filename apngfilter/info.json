@@ -6,6 +6,7 @@
     ],
     "description" : "Automatically filter animated PNG's.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Do `[p]apngfilter` to toggle servers automatically deleting APNG files.",
     "max_bot_version" : "0.0.0",

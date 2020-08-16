@@ -4,6 +4,7 @@
     ],
     "description" : "Talk to your bot and build a unique dataset for conversations!",
     "disabled" : true,
+    "end_user_data_statement" : "This cog extracts user messages for the purposes of training the chat response algorithm.",
     "hidden" : true,
     "install_msg" : "Talk to your bot and have it learn how to talk in conversations! Recommended you unload the cleverbot cog before running.",
     "max_bot_version" : "0.0.0",

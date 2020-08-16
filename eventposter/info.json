@@ -4,6 +4,7 @@
     ],
     "description" : "Allow users to setup and host events to be approved by admins.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog stores User ID's for the purposes of tracking user created events.",
     "hidden" : false,
     "install_msg" : "Setup a channel with `[p]eventset channel` for announcements and an admin channel with `[p]eventset approvalchannel`. Then anyone can ask to make an event with `[p]event`",
     "max_bot_version" : "0.0.0",

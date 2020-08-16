@@ -4,6 +4,7 @@
     ],
     "description" : "Find your tarot reading, your life reading, or pull a random tarot card!",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Usage: `[p]tarot life` `[p]tarot reading` `[p]tarot card`",
     "max_bot_version" : "0.0.0",

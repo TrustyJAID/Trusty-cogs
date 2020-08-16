@@ -5,6 +5,7 @@
     ],
     "description" : "All sorts of commands that users may find fun or useful",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Type `[p]help` to see all the commands.",
     "max_bot_version" : "0.0.0",

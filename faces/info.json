@@ -4,6 +4,7 @@
     ],
     "description" : "Japanese faces courtesy of the CIA",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Find what your face is like!",
     "max_bot_version" : "0.0.0",

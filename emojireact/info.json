@@ -4,6 +4,7 @@
     ],
     "description" : "React to messages containing any emojis!",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "React to message emojis automatically!",
     "max_bot_version" : "0.0.0",

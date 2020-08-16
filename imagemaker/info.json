@@ -7,6 +7,7 @@
     ],
     "description" : "Show how you really feel. Make someone beautiful. Make something illegal.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. Type `[p]help ImageMaker` to see available commands.",
     "max_bot_version" : "0.0.0",

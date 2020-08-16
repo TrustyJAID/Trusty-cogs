@@ -11,6 +11,7 @@
     ],
     "description" : "Cog loadable dev commands, replaces mock with legacy sudo command",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : true,
     "install_msg" : "Separate loadable dev functions instead of `--dev` startup command",
     "max_bot_version" : "0.0.0",

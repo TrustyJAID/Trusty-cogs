@@ -5,6 +5,7 @@
     ],
     "description" : "Log changes within the server using extended modlogs, an extension of RedBot cores modlog.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Thanks for installing. Use `[p]modlog` to see the available commands.",
     "max_bot_version" : "0.0.0",

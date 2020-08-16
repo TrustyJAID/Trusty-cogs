@@ -4,6 +4,7 @@
     ],
     "description" : "Get a plethora of information about elements on the periodic table.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Do `[p]element <name|number|symbol>` to see info about the element. do `[p]ptable` to get a menu of all elements on the periodic table. NOTE: The mendeleev package is not currently installable on windows.",
     "max_bot_version" : "0.0.0",

@@ -4,6 +4,7 @@
     ],
     "description" : "Lets you control your philips hue lights with redbot.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Type `[p]hue` to see available commands.",
     "max_bot_version" : "0.0.0",

@@ -517,6 +517,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
             Toggle whether to search message attachment filenames.
 
+            Note: This will append all attachments in a message to the message content. This **will not**
+            download and read file content using regex.
+
             <trigger> is the name of the trigger.
 
             [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
