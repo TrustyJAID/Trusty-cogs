@@ -3,7 +3,7 @@ import json
 import aiohttp
 
 from tabulate import tabulate
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from redbot.core.bot import Red
 from redbot.core import commands
@@ -20,12 +20,12 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
         self.config: Config = Config.get_conf(self, 1845134845412)
-        default: dict = {"rsn": ""}
+        default: dict = {"rsn": "", "osrsn": ""}
         self.config.register_user(**default)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -34,6 +34,17 @@ class Runescape(commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        await self.config.user_from_id(user_id).clear()
 
     @commands.group(name="runescape", aliases=["rs"])
     async def runescape(self, ctx: commands.Context):
@@ -48,9 +59,9 @@ class Runescape(commands.Cog):
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
         """Display a players stats in oldschool Runescape."""
-        user = self.bot.get_user(ctx.message.author.id)
+        await ctx.trigger_typing()
         if runescape_name is None:
-            runescape_name = await self.config.user(user).rsn()
+            runescape_name = await self.config.user(ctx.author).osrsn()
             if runescape_name is None:
                 await ctx.send("You need to set your Runescape name first!")
                 return
@@ -62,12 +73,33 @@ class Runescape(commands.Cog):
         for page in pagify(msg):
             await ctx.send(box(page, lang="css"))
 
+    @osrs.command()
+    async def osrs_set(self, ctx: commands.Context, *, runescape_name: Optional[str] = None) -> None:
+        """
+            Set your runescape name for easer commands.
+
+            Use this command without a name to clear your settings.
+        """
+        if not runescape_name:
+            await self.config.user(ctx.author).clear()
+            await ctx.send("Your Runescape name has been cleared.")
+        else:
+            await self.config.user(ctx.author).osrsn.set(runescape_name)
+            await ctx.send("Your Old School Runescape name has been set.")
+
     @runescape.command()
-    async def set(self, ctx: commands.Context, *, RunescapeName: str) -> None:
-        """Set your runescape name for easer commands."""
-        user = self.bot.get_user(ctx.message.author.id)
-        await self.config.user(user).rsn.set(RunescapeName)
-        await ctx.send("Your Runescape name has been set. To change re-do this command.")
+    async def set(self, ctx: commands.Context, *, runescape_name: Optional[str] = None) -> None:
+        """
+            Set your runescape name for easer commands.
+
+            Use this command without a name to clear your settings.
+        """
+        if not runescape_name:
+            await self.config.user(ctx.author).clear()
+            await ctx.send("Your Runescape name has been cleared.")
+        else:
+            await self.config.user(ctx.author).rsn.set(runescape_name)
+            await ctx.send("Your Runescape name has been set. To change re-do this command.")
 
     async def osrs_highscores(self, runescape_name: str) -> str:
         return "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player={}".format(
@@ -95,9 +127,12 @@ class Runescape(commands.Cog):
         async with aiohttp.ClientSession() as session:
             async with session.get(await self.make_url_player_details(runescape_name)) as resp:
                 data = await resp.text()
-            json_data = json.loads(
-                data.replace("jQuery000000000000000_0000000000([", "").replace("]);", "")
-            )
+            try:
+                json_data = json.loads(
+                    data.replace("jQuery000000000000000_0000000000([", "").replace("]);", "")
+                )
+            except aiohttp.JSONDecodeError:
+                return {}
             return json_data
             # return await resp.json()
 
@@ -122,9 +157,9 @@ class Runescape(commands.Cog):
         self, ctx: commands.Context, runescape_name: str = None, activity: int = 10
     ) -> None:
         """Display a players profile in Runescape"""
-        user = self.bot.get_user(ctx.message.author.id)
+        await ctx.trigger_typing()
         if runescape_name is None:
-            runescape_name = await self.config.user(user).rsn()
+            runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:
                 await ctx.send("You need to set your Runescape name first!")
                 return
@@ -141,9 +176,9 @@ class Runescape(commands.Cog):
     @runescape.command()
     async def stats(self, ctx: commands.Context, *, runescape_name: str = None) -> None:
         """Display a players stats in Runescape"""
-        user = self.bot.get_user(ctx.message.author.id)
+        await ctx.trigger_typing()
         if runescape_name is None:
-            runescape_name = await self.config.user(user).rsn()
+            runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:
                 await ctx.send("You need to set your Runescape name first!")
                 return
