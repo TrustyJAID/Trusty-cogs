@@ -1,7 +1,7 @@
 import discord
 import logging
 
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.utils.predicates import ReactionPredicate

@@ -3,7 +3,7 @@ import logging
 import asyncio
 import datetime
 
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
