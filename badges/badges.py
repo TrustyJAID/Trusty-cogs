@@ -45,6 +45,12 @@ class Badges(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     def remove_white_barcode(self, img: Image) -> Image:
         """https://stackoverflow.com/questions/765736/using-pil-to-make-all-white-pixels-transparent"""
         img = img.convert("RGBA")

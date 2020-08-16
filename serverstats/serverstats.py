@@ -53,6 +53,12 @@ class ServerStats(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def avatar(self, ctx: commands.Context, *members: FuzzyMember):

@@ -22,6 +22,12 @@ class EmojiReactions(commands.Cog):
         self.config = Config.get_conf(self, 35677998656)
         self.config.register_guild(**default_guild)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.group()
     @checks.admin_or_permissions(manage_messages=True)
     async def emojireact(self, ctx):

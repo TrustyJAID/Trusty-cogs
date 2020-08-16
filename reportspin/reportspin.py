@@ -123,6 +123,12 @@ class Reports(commands.Cog):
         # (guild, ticket#):
         #   {'tun': Tunnel, 'msgs': List[int]}
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @property
     def tunnels(self):
         return [x["tun"] for x in self.tunnel_store.values()]

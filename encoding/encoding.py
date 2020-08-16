@@ -116,6 +116,12 @@ class Encoding(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     def search_words(self, data: str) -> bool:
         count = 0
         try:

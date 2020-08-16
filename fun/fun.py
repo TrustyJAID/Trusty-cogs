@@ -174,6 +174,12 @@ class Fun(commands.Cog):
         ]
         self.generate_text_flip()
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     def generate_text_flip(self):
         for idx, char in enumerate(self.char_list):
             self.text_flip[char] = self.alt_char_list[idx]

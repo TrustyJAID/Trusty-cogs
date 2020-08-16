@@ -52,6 +52,12 @@ class Autorole(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     async def _no_perms(self, channel: Optional[discord.TextChannel] = None) -> None:
         m = _(
             "It appears that you haven't given this "

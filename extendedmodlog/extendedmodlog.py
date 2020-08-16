@@ -39,6 +39,12 @@ class ExtendedModLog(EventMixin, commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     async def initialize(self) -> None:
         all_data = await self.config.all_guilds()
         for guild_id, data in all_data.items():

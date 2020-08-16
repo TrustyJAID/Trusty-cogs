@@ -73,6 +73,12 @@ class Imgflip(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     async def get_meme(
         self, meme: int, boxes: List[Dict[str, str]], username: str, password: str
     ) -> str:

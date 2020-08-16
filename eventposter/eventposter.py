@@ -51,6 +51,25 @@ class EventPoster(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            if str(user_id) in data["events"]:
+                del data["events"][str(user_id)]
+                await self.config.guild_from_id(guild_id).events.set(data["events"])
+        all_members = await self.config.all_members()
+        for guild_id, members in all_members.items():
+            if user_id in members:
+                await self.config.member_from_ids(guild_id, user_id).clear()
+
     async def initialize(self) -> None:
         if version_info >= VersionInfo.from_str("3.2.0"):
             await self.bot.wait_until_red_ready()

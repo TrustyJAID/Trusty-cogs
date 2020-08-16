@@ -25,6 +25,12 @@ class TarotReading(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     def get_colour(self) -> int:
         colour = "".join([choice("0123456789ABCDEF") for x in range(6)])
         return int(colour, 16)

@@ -56,7 +56,7 @@ class AddImage(commands.Cog):
         """
         all_guilds = await self.config.all_guilds()
         for guild_id, data in all_guilds.items():
-            for image in data["images"].items():
+            for image in data["images"]:
                 if image["author"] == user_id:
                     try:
                         os.remove(cog_data_path(self) / str(guild_id) / image["file_loc"])

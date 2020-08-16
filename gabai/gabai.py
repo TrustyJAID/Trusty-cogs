@@ -36,6 +36,12 @@ class Gabai(commands.Cog):
         self.rate_limit_remaining = 60
         self.rate_limit_time = 0
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.group()
     async def gab(self, ctx):
         """

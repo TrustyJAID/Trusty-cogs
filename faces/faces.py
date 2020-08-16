@@ -443,6 +443,12 @@ class Faces(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.command(aliases=["japaneseface"])
     async def face(self, ctx, number=None):
         """Japanese Faces at random courtesy of the CIA"""

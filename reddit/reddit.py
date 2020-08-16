@@ -34,6 +34,19 @@ class Reddit(commands.Cog):
         default = {"subreddits": {}}
         self.config.register_global(**default)
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     async def initialize(self):
         await self.bot.wait_until_red_ready()
         keys = await self.bot.get_shared_api_tokens("reddit")
