@@ -1,7 +1,7 @@
 import discord
 import logging
 
-from typing import List, cast, Dict, Union
+from typing import List, cast, Dict, Union, Literal
 
 from redbot.core.bot import Red
 from redbot.core import Config, commands
@@ -278,6 +278,11 @@ class StarboardEvents:
             em = await self._build_embed(guild, msg, starboard)
             count_msg = "{} **#{}**".format(payload.emoji, count)
             post_msg = await star_channel.send(count_msg, embed=em)
+            if starboard.autostar:
+                try:
+                    await post_msg.add_reaction(starboard.emoji)
+                except Exception:
+                    log.exception("Error adding autostar.")
             if star_message.to_json() not in starboard.messages:
                 self.starboards[guild.id][starboard.name].messages.append(star_message.to_json())
             star_message = StarboardMessage(
@@ -285,6 +290,22 @@ class StarboardEvents:
             )
             self.starboards[guild.id][starboard.name].messages.append(star_message.to_json())
             await self._save_starboards(guild)
+
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        for guild_id, starboards in self.starboards.items():
+            for starboard, entry in starboards.items():
+                for message in entry.messages:
+                    if message["author"] == user_id:
+                        self.starboards[guild_id][starboard].messages.remove(message)
+            await self.config.guild_from_id(guild_id).starboards.set(self.starboard[guild_id])
 
     async def _loop_messages(
         self,

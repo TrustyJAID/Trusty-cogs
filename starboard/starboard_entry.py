@@ -13,6 +13,7 @@ class StarboardEntry:
         blacklist_channel: list = [],
         whitelist_channel: list = [],
         threshold: int = 1,
+        autostar: bool = False,
     ):
 
         super().__init__()
@@ -28,6 +29,7 @@ class StarboardEntry:
         self.blacklist_channel = blacklist_channel
         self.whitelist_channel = whitelist_channel
         self.threshold = threshold
+        self.autostar = autostar
 
     def to_json(self) -> dict:
         return {
@@ -43,12 +45,16 @@ class StarboardEntry:
             "blacklist_channel": self.blacklist_channel,
             "whitelist_channel": self.whitelist_channel,
             "threshold": self.threshold,
+            "autostar": self.autostar,
         }
 
     @classmethod
     def from_json(cls, data: dict):
         colour = "user"
         selfstar = False
+        autostar = False
+        if "autostar" in data:
+            autostar = data["autostar"]
         if "selfstar" in data:
             selfstar = data["selfstar"]
         if "colour" in data:
@@ -66,4 +72,5 @@ class StarboardEntry:
             data["blacklist_channel"],
             data["whitelist_channel"],
             data["threshold"],
+            autostar,
         )

@@ -22,7 +22,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.2.5"
+    __version__ = "2.3.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -510,6 +510,22 @@ class Starboard(StarboardEvents, commands.Cog):
         else:
             msg = _("Selfstarring on starboard {name} enabled.").format(name=starboard.name)
         self.starboards[ctx.guild.id][starboard.name].selfstar = not starboard.selfstar
+        await self._save_starboards(guild)
+        await ctx.send(msg)
+
+    @starboard.command(name="autostar")
+    async def toggle_autostar(self, ctx: commands.Context, starboard: StarboardExists) -> None:
+        """
+            Toggle whether or not the bot will add the emoji automatically to the starboard message.
+
+            `<name>` is the name of the starboard to toggle
+        """
+        guild = ctx.guild
+        if starboard.autostar:
+            msg = _("Autostarring on starboard {name} disabled.").format(name=starboard.name)
+        else:
+            msg = _("Autostarring on starboard {name} enabled.").format(name=starboard.name)
+        self.starboards[ctx.guild.id][starboard.name].autostar = not starboard.autostar
         await self._save_starboards(guild)
         await ctx.send(msg)
 
