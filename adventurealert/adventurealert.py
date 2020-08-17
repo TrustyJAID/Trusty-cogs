@@ -45,7 +45,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.4.1"
+    __version__ = "1.4.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -79,7 +79,10 @@ class AdventureAlert(
             immortal=False,
             possessed=False,
         )
-        self.sanitize = {}
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            self.sanitize = {"allowed_mentions": discord.AllowedMentions(users=True, roles=True)}
+        else:
+            self.sanitize = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
