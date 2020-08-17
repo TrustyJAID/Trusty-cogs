@@ -3,6 +3,7 @@ import logging
 
 from typing import Union, Optional, Literal
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
@@ -22,7 +23,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.6.0"
+    __version__ = "1.6.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -43,6 +44,10 @@ class EventPoster(commands.Cog):
         self.config.register_member(**default_user)
         self.event_cache = {}
         self.bot.loop.create_task(self.initialize())
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            self.sanitize = {"allowed_mentions": discord.AllowedMentions(everyone=True, roles=True)}
+        else:
+            self.sanitize = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -280,7 +285,7 @@ class EventPoster(commands.Cog):
             event.approver = user
             event.channel = announcement_channel
             em.set_footer(text=f"Approved by {user}", icon_url=user.avatar_url)
-            posted_message = await announcement_channel.send(ping, embed=em)
+            posted_message = await announcement_channel.send(ping, embed=em, **self.sanitize)
             if publish:
                 try:
                     await posted_message.publish()
