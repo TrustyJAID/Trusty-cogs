@@ -10,6 +10,7 @@ from html import unescape
 from io import BytesIO
 
 
+from redbot import version_info, VersionInfo
 from redbot.core import Config, checks, commands, VersionInfo, version_info
 from redbot.core.utils.chat_formatting import escape, pagify
 from redbot.core.i18n import Translator, cog_i18n
@@ -292,6 +293,9 @@ class Tweets(commands.Cog):
     ):
         username = status.user.screen_name
         post_url = f"https://twitter.com/{status.user.screen_name}/status/{status.id}"
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, channel_send.guild):
+                return
         try:
             if channel_send.permissions_for(channel_send.guild.me).embed_links:
                 if use_custom_embed:

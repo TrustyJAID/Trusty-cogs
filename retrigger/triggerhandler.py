@@ -13,6 +13,7 @@ from copy import copy
 from datetime import datetime
 from typing import List, Union, Pattern, cast, Dict, Tuple, Any, Literal
 
+from redbot import version_info, VersionInfo
 from redbot.core.bot import Red
 from redbot.core import commands, Config, modlog
 from redbot.core.i18n import Translator
@@ -520,6 +521,9 @@ class TriggerHandler:
             return
         if message.author.bot:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, message.guild):
+                return
         if getattr(message, "retrigger", False):
             log.debug("A ReTrigger dispatched message, ignoring.")
             return
@@ -535,10 +539,7 @@ class TriggerHandler:
             return
         try:
             channel = self.bot.get_channel(int(payload.data["channel_id"]))
-            try:
-                message = await channel.fetch_message(int(payload.data["id"]))
-            except AttributeError:
-                message = await channel.get_message(int(payload.data["id"]))
+            message = await channel.fetch_message(int(payload.data["id"]))
         except discord.errors.Forbidden:
             log.debug(_("I don't have permission to read channel history"))
             return
@@ -549,6 +550,9 @@ class TriggerHandler:
         if message.author.bot:
             # somehow we got a bot through the previous check :thonk:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, message.guild):
+                return
         await self.check_triggers(message, True)
 
     async def check_triggers(self, message: discord.Message, edit: bool) -> None:

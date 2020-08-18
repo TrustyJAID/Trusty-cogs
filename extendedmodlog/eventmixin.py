@@ -6,6 +6,7 @@ import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, Config, modlog, VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -170,6 +171,9 @@ class EventMixin:
         guild = ctx.guild
         if guild is None:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, ctx.guild):
+                return
         if guild.id not in self.settings:
             return
         if not self.settings[guild.id]["commands_used"]["enabled"]:
@@ -264,6 +268,9 @@ class EventMixin:
         guild = self.bot.get_guild(guild_id)
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         # settings = await self.config.guild(guild).message_delete()
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
@@ -390,6 +397,9 @@ class EventMixin:
         guild = self.bot.get_guild(guild_id)
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
@@ -536,6 +546,9 @@ class EventMixin:
             return
         # if not await self.config.guild(guild).user_join.enabled():
         # return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         try:
             channel = await self.modlog_channel(guild, "user_join")
         except RuntimeError:
@@ -594,6 +607,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_left"]["enabled"]:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         try:
             channel = await self.modlog_channel(guild, "user_left")
         except RuntimeError:
@@ -706,6 +722,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_create"]["enabled"]:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if await self.is_ignored_channel(guild, new_channel):
             return
         try:
@@ -767,6 +786,9 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_delete"]["enabled"]:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if await self.is_ignored_channel(guild, old_channel):
             return
         try:
@@ -826,6 +848,9 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["channel_change"]["enabled"]:
             return
         try:
@@ -977,6 +1002,9 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["role_change"]["enabled"]:
             return
         try:
@@ -1053,6 +1081,9 @@ class EventMixin:
         guild = role.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["role_create"]["enabled"]:
             return
         try:
@@ -1103,6 +1134,9 @@ class EventMixin:
         guild = role.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["role_delete"]["enabled"]:
             return
         try:
@@ -1155,6 +1189,9 @@ class EventMixin:
             return
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         settings = self.settings[guild.id]["message_edit"]
         if not settings["enabled"]:
             return
@@ -1211,6 +1248,9 @@ class EventMixin:
         guild = after
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["guild_change"]["enabled"]:
             return
         try:
@@ -1281,6 +1321,9 @@ class EventMixin:
     ) -> None:
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["emoji_change"]["enabled"]:
             return
         try:
@@ -1421,6 +1464,9 @@ class EventMixin:
         guild = member.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["voice_change"]["enabled"]:
             return
         if member.bot:
@@ -1525,6 +1571,9 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["user_change"]["enabled"]:
             return
         if not self.settings[guild.id]["user_change"]["bots"] and after.bot:
@@ -1617,6 +1666,9 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["invite_created"]["enabled"]:
             return
         try:
@@ -1666,6 +1718,9 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not self.settings[guild.id]["invite_deleted"]["enabled"]:
             return
         try:

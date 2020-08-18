@@ -1,6 +1,7 @@
 import discord
 import logging
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -110,6 +111,9 @@ class StickyRoles(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         guild = member.guild
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.guild(guild).to_reapply()
         if sticky_roles is None:
@@ -130,6 +134,9 @@ class StickyRoles(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         guild = member.guild
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.guild(guild).to_reapply()
         if to_reapply is None:

@@ -1,5 +1,6 @@
 import discord
 
+from redbot import version_info, VersionInfo
 from redbot.core.bot import Red
 from redbot.core import Config, checks, commands
 
@@ -112,9 +113,11 @@ class Fenrir(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         try:
             guild = self.bot.get_guild(payload.guild_id)
-        except Exception as e:
-            print(e)
+        except Exception:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if payload.message_id in self.kicks:
             member = guild.get_member(payload.user_id)
             if member is None:

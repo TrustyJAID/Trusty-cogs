@@ -5,6 +5,7 @@ import logging
 
 from typing import Optional, cast
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -90,6 +91,10 @@ class Autorole(commands.Cog):
         guild = message.guild
         if not guild:
             return
+
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         user = cast(discord.Member, message.author)
         channel = message.channel
         agree_channel = cast(

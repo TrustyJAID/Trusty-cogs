@@ -4,6 +4,7 @@ import re
 
 from typing import Optional, Union
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -203,6 +204,9 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         guild = message.guild
         ctx = await self.bot.get_context(message)
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, ctx.guild):
+                return
         author = message.author
         text = message.clean_content
         to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"

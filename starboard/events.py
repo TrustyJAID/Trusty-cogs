@@ -3,6 +3,7 @@ import logging
 
 from typing import List, cast, Dict, Union, Literal
 
+from redbot import version_info, VersionInfo
 from redbot.core.bot import Red
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -206,10 +207,11 @@ class StarboardEvents:
         except AttributeError:
             # DMChannels don't have guilds
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            msg = await channel.get_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
         if guild.id not in self.starboards:
@@ -231,6 +233,9 @@ class StarboardEvents:
             return
         if guild.id not in self.starboards:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
         except AttributeError:

@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from typing import Optional, cast, Literal
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, checks, Config, VersionInfo, version_info
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
@@ -26,7 +27,7 @@ class AddImage(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.3"
+    __version__ = "1.3.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -209,6 +210,9 @@ class AddImage(commands.Cog):
         msg = message.content
         guild = message.guild
         channel = message.channel
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         try:
             prefix = await self.get_prefix(message)
         except ValueError:

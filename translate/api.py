@@ -206,6 +206,9 @@ class GoogleTranslateAPI:
         author = cast(discord.Member, message.author)
         channel = cast(discord.TextChannel, message.channel)
         guild = message.guild
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if not await self.check_bw_list(guild, channel, author):
             return
         if not await self.config.guild(guild).text():
@@ -251,6 +254,9 @@ class GoogleTranslateAPI:
             return
         if guild is None:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         reacted_user = guild.get_member(payload.user_id)
         if reacted_user.bot:
             return
@@ -269,8 +275,6 @@ class GoogleTranslateAPI:
             return
         try:
             message = await channel.fetch_message(id=payload.message_id)
-        except AttributeError:
-            message = await channel.get_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
 

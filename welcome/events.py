@@ -7,6 +7,7 @@ from random import choice as rand_choice
 from datetime import datetime
 from typing import List, Union, Pattern, Optional, cast
 
+from redbot import version_info, VersionInfo
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import humanize_list
@@ -139,6 +140,9 @@ class Events:
             return
         if guild is None:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if member.bot:
             return await self.bot_welcome(member, guild)
 
@@ -302,7 +306,9 @@ class Events:
             return
         if guild is None:
             return
-
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if await self.config.guild(guild).GROUPED():
             if guild.id not in self.joined:
                 self.joined[guild.id] = []

@@ -117,6 +117,9 @@ class EventPoster(commands.Cog):
         user = guild.get_member(payload.user_id)
         if user.bot:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         event = self.event_cache[payload.guild_id][payload.message_id]
         if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
             await self.add_user_to_event(user, event)
