@@ -1,5 +1,7 @@
 import asyncio
 import discord
+import logging
+
 from redbot.core.commands import Context
 from .embeds import roster_embed, make_leaderboard_embed
 from .standings import Standings
@@ -7,9 +9,15 @@ from .game import Game
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions, DEFAULT_CONTROLS
 
-_ = Translator("Hockey", __file__)
 
-numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
+_ = Translator("Hockey", __file__)
+log = logging.getLogger("red.trusty-cogs.hockey")
+
+numbs = {
+    "next": "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}",
+    "back": "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
+    "exit": "\N{CROSS MARK}",
+}
 
 
 async def hockey_menu(
@@ -53,38 +61,38 @@ async def hockey_menu(
     if not message:
         message = await ctx.send(embed=em)
         start_adding_reactions(message, DEFAULT_CONTROLS.keys())
-        # await message.add_reaction("⬅")
-        # await message.add_reaction("❌")
-        # await message.add_reaction("➡")
     else:
         # message edits don't return the message object anymore lol
         await message.edit(embed=em)
     check = (
         lambda react, user: user == ctx.message.author
-        and react.emoji in ["➡", "⬅", "❌"]
+        and str(react.emoji) in numbs.values()
         and react.message.id == message.id
     )
     try:
         react, user = await ctx.bot.wait_for("reaction_add", check=check, timeout=timeout)
     except asyncio.TimeoutError:
-        await message.remove_reaction("⬅", ctx.me)
-        await message.remove_reaction("❌", ctx.me)
-        await message.remove_reaction("➡", ctx.me)
+        for emoji in numbs.values():
+            await message.remove_reaction(emoji, ctx.me)
         return None
     else:
         reacts = {v: k for k, v in numbs.items()}
         react = reacts[react.emoji]
         if react == "next":
             next_page = 0
+            log.debug("Going to next page")
             if page == len(post_list) - 1:
                 next_page = 0  # Loop around to the first item
             else:
                 next_page = page + 1
             if ctx.channel.permissions_for(ctx.me).manage_messages:
-                await message.remove_reaction("➡", ctx.message.author)
+                await message.remove_reaction(
+                    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author
+                )
             return await hockey_menu(
                 ctx, display_type, post_list, message=message, page=next_page, timeout=timeout
             )
+
         elif react == "back":
             next_page = 0
             if page == 0:
@@ -92,7 +100,9 @@ async def hockey_menu(
             else:
                 next_page = page - 1
             if ctx.channel.permissions_for(ctx.me).manage_messages:
-                await message.remove_reaction("⬅", ctx.message.author)
+                await message.remove_reaction(
+                    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author
+                )
             return await hockey_menu(
                 ctx, display_type, post_list, message=message, page=next_page, timeout=timeout
             )

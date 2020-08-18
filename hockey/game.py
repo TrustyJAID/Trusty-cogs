@@ -8,6 +8,7 @@ from .helper import utc_to_local, check_to_post, get_team, get_team_role
 from .standings import Standings
 import discord
 import logging
+from redbot import version_info, VersionInfo
 from redbot.core.i18n import Translator
 import asyncio
 
@@ -502,18 +503,19 @@ class Game:
 
         if self.game_state == "Live":
 
-            state_notifications = await config.guild(guild).game_state_notifications()
+            guild_notifications = await config.guild(guild).game_state_notifications()
+            channel_notifications = await config.channel(channel).game_state_notifications()
+            state_notifications = guild_notifications or channel_notifications
+            guild_start = await config.guild(guild).start_notifications()
+            channel_start = await config.channel(channel).start_notifications()
+            start_notifications = guild_start or channel_start
+            # heh inclusive or
             if state_notifications:
                 home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
-                if state_notifications == "auto" and guild.me.guild_permissions.manage_roles:
-                    if home_role != self.home_team:
-                        home_role_obj = guild.get_role(int(home_role[3:-1]))
-                        if home_role_obj and home_role_obj < guild.me.top_role:
-                            await home_role_obj.edit(mentionable=True)
-                    if away_role != self.away_team:
-                        away_role_obj = guild.get_role(int(away_role[3:-1]))
-                        if away_role_obj and away_role_obj < guild.me.top_role:
-                            await away_role_obj.edit(mentionable=True)
+                if version_info >= VersionInfo.from_str("3.4.0"):
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
+                else:
+                    allowed_mentions = {}
             if not state_notifications:
                 home_role = self.home_team
                 away_role = self.away_team
@@ -535,7 +537,7 @@ class Game:
                 if not can_embed:
                     await channel.send(msg + "\n{}".format(state_text))
                 else:
-                    await channel.send(msg, embed=state_embed)
+                    await channel.send(msg, embed=state_embed, **allowed_mentions)
             except Exception:
                 log.error(
                     _("Could not post goal in {channel} ({id})").format(
@@ -543,15 +545,6 @@ class Game:
                     ),
                     exc_info=True,
                 )
-            if state_notifications == "auto" and guild.me.guild_permissions.manage_roles:
-                if home_role != self.home_team:
-                    home_role_obj = guild.get_role(int(home_role[3:-1]))
-                    if home_role_obj and home_role_obj < guild.me.top_role:
-                        await home_role_obj.edit(mentionable=False)
-                if away_role != self.away_team:
-                    away_role_obj = guild.get_role(int(away_role[3:-1]))
-                    if away_role_obj and away_role_obj < guild.me.top_role:
-                        await away_role_obj.edit(mentionable=False)
 
         else:
             if self.game_state == "Preview":

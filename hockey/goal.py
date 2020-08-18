@@ -4,6 +4,8 @@ from typing import List
 from datetime import datetime
 import discord
 from .helper import check_to_post, get_team
+
+from redbot import version_info, VersionInfo
 from redbot.core.i18n import Translator
 from redbot.core import Config
 import logging
@@ -161,19 +163,16 @@ class Goal:
                 False
             )  # channel.permissions_for(guild.me).manage_webhooks
             role = None
-            goal_notifications = await config.guild(guild).goal_notifications()
+            guild_notifications = await config.guild(guild).goal_notifications()
+            channel_notifications = await config.channel(channel).goal_notifications()
+            goal_notifications = guild_notifications or channel_notifications
             if goal_notifications:
                 log.debug(goal_notifications)
-                for roles in guild.roles:
-                    if roles.name == self.team_name + " GOAL":
-                        role = roles
-                        break
-                if goal_notifications == "auto" and guild.me.guild_permissions.manage_roles:
-                    if role and role < guild.me.top_role:
-                        try:
-                            await role.edit(mentionable=True)
-                        except Exception:
-                            pass
+                if version_info >= VersionInfo.from_str("3.4.0"):
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
+                else:
+                    allowed_mentions = {}
+                role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
 
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
@@ -200,7 +199,7 @@ class Goal:
             if not can_embed and not can_manage_webhooks:
                 # Create text only message if embed_links permission is not set
                 if role is not None:
-                    msg = await channel.send(f"{role}\n{goal_text}")
+                    msg = await channel.send(f"{role}\n{goal_text}", **allowed_mentions)
                 else:
                     msg = await channel.send(goal_text)
                 # msg_list[str(channel.id)] = msg.id
@@ -211,14 +210,8 @@ class Goal:
                 # msg_list[str(channel.id)] = msg.id
                 return channel.id, msg.id
             else:
-                msg = await channel.send(role.mention, embed=goal_embed)
+                msg = await channel.send(role.mention, embed=goal_embed, **allowed_mentions)
                 # msg_list[str(channel.id)] = msg.id
-                if goal_notifications == "auto" and guild.me.guild_permissions.manage_roles:
-                    if role and role < guild.me.top_role:
-                        try:
-                            await role.edit(mentionable=False)
-                        except Exception:
-                            pass
                 return channel.id, msg.id
         except Exception:
             log.error(_("Could not post goal in "), exc_info=True)
