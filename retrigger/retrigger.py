@@ -42,7 +42,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.15.0"
+    __version__ = "2.15.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -936,8 +936,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
             For case insensitive searches add `(?i)` at the start of the regex
 
             Other parameters are available as well such as `{author.mention}`
-            `[p]` can be used to replace the bots default prefix in the message.
-            `[pp]` can be used to list all the bots prefixes available on the server.
+            `{p}` can be used to replace the bots default prefix in the message.
+            `{pp}` can be used to list all the bots prefixes available on the server.
             `{count}` can be used to show the number of times a trigger has been triggered.
             [See Red's Customcom for more options](https://red-discordbot.readthedocs.io/en/latest/cog_customcom.html#context-parameters) for more examples.
 
