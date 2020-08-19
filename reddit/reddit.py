@@ -22,7 +22,7 @@ class Reddit(commands.Cog):
         A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -33,6 +33,7 @@ class Reddit(commands.Cog):
         self._streams = {}
         default = {"subreddits": {}}
         self.config.register_global(**default)
+        bot.loop.create_task(self.initialize())
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
