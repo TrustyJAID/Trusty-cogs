@@ -166,12 +166,11 @@ class Goal:
             guild_notifications = await config.guild(guild).goal_notifications()
             channel_notifications = await config.channel(channel).goal_notifications()
             goal_notifications = guild_notifications or channel_notifications
+            allowed_mentions = {}
             if goal_notifications:
                 log.debug(goal_notifications)
                 if version_info >= VersionInfo.from_str("3.4.0"):
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-                else:
-                    allowed_mentions = {}
                 role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
 
             if game_day_channels is not None:

@@ -510,12 +510,11 @@ class Game:
             channel_start = await config.channel(channel).start_notifications()
             start_notifications = guild_start or channel_start
             # heh inclusive or
+            allowed_mentions = {}
             if state_notifications:
                 home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
                 if version_info >= VersionInfo.from_str("3.4.0"):
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-                else:
-                    allowed_mentions = {}
             if not state_notifications:
                 home_role = self.home_team
                 away_role = self.away_team
