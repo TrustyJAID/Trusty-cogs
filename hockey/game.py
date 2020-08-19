@@ -534,7 +534,7 @@ class Game:
             )
             try:
                 if not can_embed:
-                    await channel.send(msg + "\n{}".format(state_text))
+                    await channel.send(msg + "\n{}".format(state_text), **allowed_mentions)
                 else:
                     await channel.send(msg, embed=state_embed, **allowed_mentions)
             except Exception:
