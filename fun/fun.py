@@ -15,7 +15,7 @@ class Fun(commands.Cog):
         RedBot V3 conversion of Appu's Fun cog
     """
     __author__ = ["Appu", "TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -315,7 +315,7 @@ class Fun(commands.Cog):
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
-    @commands.command(aliases=["r"])
+    @commands.command()
     async def react(
         self,
         ctx: commands.Context,
