@@ -642,7 +642,7 @@ class TriggerHandler:
                     log.debug(print_msg + trigger.name)
                     continue
             content = message.content
-            if trigger.read_filenames:
+            if trigger.read_filenames and message.attachments:
                 content = message.content + " " + " ".join(f.filename for f in message.attachments)
 
             if trigger.ocr_search and ALLOW_OCR:
