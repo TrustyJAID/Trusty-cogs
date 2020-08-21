@@ -1,3 +1,4 @@
+from typing import List
 from tabulate import tabulate
 
 
@@ -89,6 +90,50 @@ class Profile:
         self.invention = invention
         self.archaeology = archaeology
 
+    def __str__(self):
+        skills_list = [["Overall", self.totalskill, "{:,}".format(self.totalxp), self.rank]]
+        skills: List[str] = [
+            "Attack",
+            "Defence",
+            "Strength",
+            "Constitution",
+            "Ranged",
+            "Prayer",
+            "Magic",
+            "Cooking",
+            "Woodcutting",
+            "Fletching",
+            "Fishing",
+            "Firemaking",
+            "Crafting",
+            "Smithing",
+            "Mining",
+            "Herblore",
+            "Agility",
+            "Thieving",
+            "Slayer",
+            "Farming",
+            "Runecrafting",
+            "Hunter",
+            "Construction",
+            "Summoning",
+            "Dungeoneering",
+            "Divination",
+            "Invention",
+            "Archaeology",
+        ]
+        stats = self.to_json()
+        for skill in skills:
+            if skill.lower() not in stats:
+                continue
+            level = stats[skill.lower()]["level"]
+            xp = stats[skill.lower()]["xp"]
+            rank = stats[skill.lower()]["rank"] if "rank" in stats[skill.lower()] else "Unranked"
+            skills_list.append([skill, level, xp, rank])
+        return tabulate(
+            skills_list, headers=["Skill", "Level", "Experience", "Rank"], tablefmt="orgtbl"
+        )
+
     def to_json(self) -> dict:
         return {
             "name": self.name,
@@ -164,7 +209,7 @@ class Profile:
             "24": "Dungeoneering",
             "25": "Divination",
             "26": "Invention",
-            "27": "Archaeology"
+            "27": "Archaeology",
         }
 
         def get_skill(skill_id):
@@ -254,7 +299,7 @@ class Profile:
             "Clue Scrolls Hard",
             "Clue Scrolls Elite",
             "Clue Scrolls Master",
-            "LMS Rank"
+            "LMS Rank",
         ]
         skills_list = []
         for line in enumerate(data.decode().split("\n")):

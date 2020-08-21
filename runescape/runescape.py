@@ -1,6 +1,7 @@
 import discord
 import json
 import aiohttp
+import logging
 
 from tabulate import tabulate
 from typing import Optional, List, Literal
@@ -13,6 +14,8 @@ from redbot.core.utils.chat_formatting import pagify, box
 
 from .profile import Profile
 
+log = logging.getLogger("red.trusty-cogs.runescape")
+
 
 class Runescape(commands.Cog):
     """
@@ -20,7 +23,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -166,10 +169,10 @@ class Runescape(commands.Cog):
 
         details = await self.get_player_details(runescape_name)
         data = await self.get_profile(runescape_name, activity)
-        if data == "NO PROFILE":
+        log.debug(data)
+        if data == "NO PROFILE" or not details:
             await ctx.send("The account {} doesn't appear to exist!".format(runescape_name))
             return
-        # print(data.slayer)
         embed = await self.profile_embed(data, details)
         await ctx.send(embed=embed)
 
@@ -188,7 +191,6 @@ class Runescape(commands.Cog):
         if data == "NO PROFILE":
             await ctx.send("The account {} doesn't appear to exist!".format(runescape_name))
             return
-        # print(data.slayer)
         skills = await self.stats_message(data)
         await ctx.send(skills)
 
@@ -237,7 +239,7 @@ class Runescape(commands.Cog):
         )
 
     async def stats_message(self, p: Profile) -> str:
-        table = await self.raw_stats_message(p)
+        table = str(p)
         top_row_len = len(table.split("\n")[0])
         top_row = top_row_len * "-"
         spaces = int(((top_row_len - (14 + len(p.name))) / 2) - 1) * " "
@@ -266,7 +268,7 @@ class Runescape(commands.Cog):
 
     async def profile_embed(self, profile: Profile, details: dict) -> discord.Embed:
         em = discord.Embed()
-        if "isSuffix" in details:
+        if details["isSuffix"]:
             em.set_author(name="{} {}".format(profile.name, details["title"]))
         else:
             em.set_author(name="{} {}".format(details["title"], profile.name))
