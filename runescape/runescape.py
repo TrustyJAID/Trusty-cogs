@@ -23,7 +23,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.2"
+    __version__ = "1.2.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -117,9 +117,11 @@ class Runescape(commands.Cog):
                 return await resp.read()
 
     async def make_url_profile(self, runescape_name: str, activities: int) -> str:
-        return "https://apps.runescape.com/runemetrics/profile/profile?user={}&activities={}".format(
+        url = "https://apps.runescape.com/runemetrics/profile/profile?user={}&activities={}".format(
             runescape_name, activities
         )
+        log.debug(url)
+        return url
 
     async def make_url_player_details(self, runescape_name: str) -> str:
         return "http://services.runescape.com/m=website-data/playerDetails.ws?names=%5B%22{}%22%5D&callback=jQuery000000000000000_0000000000&_=0".format(
@@ -144,13 +146,18 @@ class Runescape(commands.Cog):
             async with session.get(
                 await self.make_url_profile(runescape_name, activities)
             ) as resp:
-                return await resp.json()
+                data = await resp.json()
+        # log.debug(data)
+        return data
 
     async def get_profile_obj(self, profile_data: dict) -> Profile:
-        return await Profile.from_json(profile_data)
+        ret = await Profile.from_json(profile_data)
+        # log.debug(ret)
+        return ret
 
     async def get_profile(self, runescape_name: str, activities: int = 5) -> Profile:
         data = await self.get_data_profile(runescape_name, activities)
+        log.debug(data)
         if "error" in data:
             return "NO PROFILE"
         return await self.get_profile_obj(data)
@@ -169,8 +176,8 @@ class Runescape(commands.Cog):
 
         details = await self.get_player_details(runescape_name)
         data = await self.get_profile(runescape_name, activity)
-        log.debug(data)
-        if data == "NO PROFILE" or not details:
+        # log.debug(data)
+        if data == "NO PROFILE":
             await ctx.send("The account {} doesn't appear to exist!".format(runescape_name))
             return
         embed = await self.profile_embed(data, details)
@@ -268,10 +275,13 @@ class Runescape(commands.Cog):
 
     async def profile_embed(self, profile: Profile, details: dict) -> discord.Embed:
         em = discord.Embed()
-        if details["isSuffix"]:
+
+        if details and details["isSuffix"]:
             em.set_author(name="{} {}".format(profile.name, details["title"]))
-        else:
+        elif details:
             em.set_author(name="{} {}".format(details["title"], profile.name))
+        else:
+            em.set_author(name=profile.name)
         activities = ""
         for activity in profile.activities:
             activities += "[{}] {}\n".format(activity["date"], activity["text"])
