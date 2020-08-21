@@ -20,7 +20,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -266,7 +266,7 @@ class Runescape(commands.Cog):
 
     async def profile_embed(self, profile: Profile, details: dict) -> discord.Embed:
         em = discord.Embed()
-        if details["isSuffix"]:
+        if "isSuffix" in details:
             em.set_author(name="{} {}".format(profile.name, details["title"]))
         else:
             em.set_author(name="{} {}".format(details["title"], profile.name))
