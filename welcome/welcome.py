@@ -316,7 +316,7 @@ class Welcome(Events, commands.Cog):
         has_filter = self.bot.get_cog("Filter")
         if replacement:
             await ctx.send(
-                _("I will now replace usernames matching cores filter with `{days}`").format(
+                _("I will now replace usernames matching cores filter with `{replacement}`").format(
                     replacement=replacement
                 )
             )
