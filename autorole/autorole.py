@@ -38,7 +38,7 @@ class Autorole(commands.Cog):
     """
 
     __author__ = ["Lunar-Dust", "TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -207,8 +207,6 @@ class Autorole(commands.Cog):
         """
         guild = ctx.message.guild
         enabled = await self.config.guild(guild).ENABLED()
-        if not enabled:
-            return
         roles = await self.config.guild(guild).ROLE()
         msg = await self.config.guild(guild).AGREE_MSG()
         key = await self.config.guild(guild).AGREE_KEY()
