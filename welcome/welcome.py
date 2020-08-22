@@ -297,7 +297,7 @@ class Welcome(Events, commands.Cog):
         if days < 0:
             days = 0
         await self.config.guild(guild).MINIMUM_DAYS.set(days)
-        await ctx.send(_("I will now show users joining who are {days} old.").format(days=days))
+        await ctx.send(_("I will now show users joining who are {days} days old.").format(days=days))
 
     @welcomeset_greeting.command(name="filter")
     async def welcomeset_greeting_filter(
