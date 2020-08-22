@@ -4,7 +4,7 @@ import logging
 import discord
 
 from random import choice as rand_choice
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Union, Pattern, Optional, cast
 
 from redbot import version_info, VersionInfo
@@ -48,13 +48,18 @@ class Events:
         is_welcome: bool,
     ) -> str:
         results = RE_POS.findall(msg)
-        log.debug(results)
         raw_response = msg
         user_count = self.today_count[guild.id] if guild.id in self.today_count else 1
         raw_response = raw_response.replace("{count}", str(user_count))
-
+        has_filter = self.bot.get_cog("Filter")
+        filter_setting = await self.config.guild(guild).FILTER_SETTING()
+        if filter_setting is None:
+            filter_setting = "[Redacted]"
+        if isinstance(member, list):
+            username = humanize_list(member)
+        else:
+            username = str(member)
         for result in results:
-            log.debug(result)
             if int(result[1]) == 1:
                 param = self.transform_arg(result[0], result[2], guild)
             elif int(result[1]) == 0:
@@ -68,8 +73,20 @@ class Events:
                         param = humanize_list(params)
                     else:
                         param = params[0]
-            log.debug(param)
             raw_response = raw_response.replace("{" + result[0] + "}", param)
+        if has_filter:
+            bad_name = await has_filter.filter_hits(username, guild)
+            if bad_name:
+                for word in bad_name:
+                    raw_response = re.sub(rf"(?i){word}", filter_setting, raw_response)
+                    if isinstance(member, list):
+                        raw_response = re.sub(
+                            "|".join(m.mention for m in member), filter_setting, raw_response
+                        )
+                    else:
+                        raw_response = re.sub(
+                            rf"(?i){member.mention}", filter_setting, raw_response
+                        )
         if await self.config.guild(guild).JOINED_TODAY() and is_welcome:
             raw_response = _("{raw_response}\n\n{count} users joined today!").format(
                 raw_response=raw_response, count=user_count
@@ -85,6 +102,13 @@ class Events:
     ) -> discord.Embed:
         EMBED_DATA = await self.config.guild(guild).EMBED_DATA()
         converted_msg = await self.convert_parms(member, guild, msg, is_welcome)
+        has_filter = self.bot.get_cog("Filter")
+        username = str(member)
+        if has_filter:
+            bad_words = await has_filter.filter_hits(username, guild)
+            if bad_words:
+                for word in bad_words:
+                    username = username.replace(word, "[Redacted]")
         em = discord.Embed(description=converted_msg)
         if isinstance(member, discord.Member):
             em.set_thumbnail(url=member.avatar_url_as(format="png"))
@@ -126,11 +150,11 @@ class Events:
                 url = guild.splash_url
             elif url == "avatar" and isinstance(member, discord.Member):
                 url = member.avatar_url
-            em.set_author(name=str(member), icon_url=url)
+            em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
             em.timestamp = datetime.utcnow()
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
-            em.set_author(name=str(member), icon_url=member.avatar_url)
+            em.set_author(name=username, icon_url=member.avatar_url)
         return em
 
     @commands.Cog.listener()
@@ -145,6 +169,16 @@ class Events:
                 return
         if member.bot:
             return await self.bot_welcome(member, guild)
+        td = timedelta(days=await self.config.guild(guild).MINIMUM_DAYS())
+        if (datetime.utcnow() - member.created_at) <= td:
+            log.info(_("Member joined with an account newer than required days."))
+            return
+        has_filter = self.bot.get_cog("Filter")
+        filter_setting = await self.config.guild(guild).FILTER_SETTING()
+        if has_filter and filter_setting is None:
+            if await has_filter.filter_hits(member.name, guild):
+                log.info(_("Member joined with a bad username."))
+                return
 
         if datetime.utcnow().date() > self.today_count["now"].date():
             self.today_count = {"now": datetime.utcnow()}
@@ -169,6 +203,7 @@ class Events:
         msg = bot_welcome or rand_choice(await self.config.guild(guild).GREETING())
         channel = await self.get_welcome_channel(member, guild)
         is_embed = await self.config.guild(guild).EMBED()
+
         if bot_role:
             try:
                 role = cast(discord.abc.Snowflake, guild.get_role(bot_role))

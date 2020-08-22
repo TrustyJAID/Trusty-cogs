@@ -29,11 +29,13 @@ default_settings = {
     "BOTS_ROLE": None,
     "EMBED": False,
     "JOINED_TODAY": False,
+    "MINIMUM_DAYS": 0,
     "DELETE_PREVIOUS_GREETING": False,
     "DELETE_AFTER_GREETING": None,
     "DELETE_PREVIOUS_GOODBYE": False,
     "DELETE_AFTER_GOODBYE": None,
     "LAST_GREETING": None,
+    "FILTER_SETTING": None,
     "LAST_GOODBYE": None,
     "EMBED_DATA": {
         "title": None,
@@ -62,7 +64,7 @@ class Welcome(Events, commands.Cog):
      https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.2.4"
+    __version__ = "2.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -118,6 +120,7 @@ class Welcome(Events, commands.Cog):
                 "DELETE_PREVIOUS_GOODBYE": _("Previous goodbye deleted "),
                 "DELETE_AFTER_GREETING": _("Greeting deleted after "),
                 "DELETE_AFTER_GOODBYE": _("Goodbye deleted after "),
+                "MINIMUM_DAYS": _("Minimum days old to welcome "),
                 "WHISPER": _("Whisper "),
                 "BOTS_MSG": _("Bots message "),
                 "BOTS_ROLE": _("Bots role "),
@@ -282,6 +285,59 @@ class Welcome(Events, commands.Cog):
         else:
             await ctx.send(_("I will stop showing how many people join the server each day."))
         await self.config.guild(guild).JOINED_TODAY.set(guild_settings)
+
+    @welcomeset_greeting.command(name="minimumage", aliases=["age"])
+    async def welcomeset_greeting_minimum_days(self, ctx: commands.Context, days: int) -> None:
+        """
+            Set the minimum number of days a user account must be to show up in the welcome message
+
+            `<days>` number of days old the account must be, set to 0 to not require this.
+        """
+        guild = ctx.message.guild
+        if days < 0:
+            days = 0
+        await self.config.guild(guild).MINIMUM_DAYS.set(days)
+        await ctx.send(_("I will now show users joining who are {days} old.").format(days=days))
+
+    @welcomeset_greeting.command(name="filter")
+    async def welcomeset_greeting_filter(
+        self, ctx: commands.Context, replacement: Optional[str] = None
+    ) -> None:
+        """
+            Set what to do when a username matches the bots filter.
+
+            `[replacement]` replaces usernames that are found by cores filter with this word.
+
+            If left blank, this will prevent welcome messages for usernames matching cores filter.
+
+        """
+
+        await self.config.guild(ctx.guild).FILTER_SETTING.set(replacement)
+        has_filter = self.bot.get_cog("Filter")
+        if replacement:
+            await ctx.send(
+                _("I will now replace usernames matching cores filter with `{days}`").format(
+                    replacement=replacement
+                )
+            )
+            if not has_filter:
+                await ctx.send(
+                    _(
+                        "Filter is not loaded, run `{prefix}load filter` and add "
+                        "some words to filter for this to work"
+                    ).format(prefix=ctx.clean_prefix)
+                )
+        else:
+            await ctx.send(
+                _("I will not post welcome messages for usernames that match cores filter.")
+            )
+            if not has_filter:
+                await ctx.send(
+                    _(
+                        "Filter is not loaded, run `{prefix}load filter` and add "
+                        "some words to filter for this to work"
+                    ).format(prefix=ctx.clean_prefix)
+                )
 
     @welcomeset_greeting.command(name="deleteafter")
     async def welcomeset_greeting_delete_after(
@@ -736,7 +792,9 @@ class Welcome(Events, commands.Cog):
         if link is not None:
             link_search = IMAGE_LINKS.search(link)
             if link_search:
-                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(link_search.group(0))
+                await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set(
+                    link_search.group(0)
+                )
                 await ctx.tick()
             elif link in ["author", "avatar"]:
                 await self.config.guild(ctx.guild).EMBED_DATA.image_goodbye.set("avatar")
