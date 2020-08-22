@@ -1,20 +1,32 @@
 import asyncio
-from datetime import datetime, timezone
-from redbot.core import Config
-from .constants import TEAMS, CONFIG_ID
-from .teamentry import TeamEntry
-from redbot.core.i18n import Translator
 import pytz
 import logging
-from discord.ext.commands.converter import Converter
-from discord.ext.commands.errors import BadArgument
+import re
+
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Union, Pattern
+
+from redbot.core.i18n import Translator
+from redbot.core.commands import Context
+
+from discord.ext.commands.converter import Converter  # type: ignore[import]
+from discord.ext.commands.errors import BadArgument  # type: ignore[import]
+
+from .constants import TEAMS
+from .teamentry import TeamEntry
 
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
+DATE_RE = re.compile(
+    r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
+)
+# https://www.regular-expressions.info/dates.html
+
 
 def get_season():
+    # this may be obsolete now
     now = datetime.now()
     if (now.month, now.day) < (7, 1):
         return (now.year - 1, now.year)
@@ -27,6 +39,59 @@ def utc_to_local(utc_dt, new_timezone="US/Eastern"):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
 
 
+class DateFinder(Converter):
+    """
+        Converter for `YYYY-MM-DD` date formats
+
+        for use in the `[p]nhl games` command to pull up specific dates
+    """
+
+    async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
+        result = None
+        find = DATE_RE.search(argument)
+        if find:
+            date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
+            return datetime.strptime(date_str, "%Y-%m-%d")
+        else:
+            return datetime.utcnow()
+
+
+class TeamDateFinder(Converter):
+    """
+        Converter to get both a team and a date from a string
+    """
+
+    async def convert(
+        self, ctx: Context, argument: str
+    ) -> Dict[str, Optional[Union[datetime, List[str], str]]]:
+        result: Dict[str, Optional[Union[datetime, List[str], str]]] = {"team": [], "date": None}
+        find = DATE_RE.search(argument)
+        if find:
+            log.debug(find)
+            date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
+            result["date"] = datetime.strptime(date_str, "%Y-%m-%d")
+            argument = DATE_RE.sub("", argument)
+        potential_teams = argument.split()
+        for team, data in TEAMS.items():
+            if "Team" in team:
+                continue
+            nick = data["nickname"]
+            short = data["short_name"]
+            pattern = (
+                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split()) + r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+            )
+            # log.debug(pattern)
+            reg: Pattern = re.compile(fr"\b{pattern}\b", flags=re.I)
+            for pot in potential_teams:
+                find = reg.findall(pot)
+                if find:
+                    log.debug(reg)
+                    log.debug(find)
+                    result["team"].append(team)
+
+        return result
+
+
 class HockeyTeams(Converter):
     """
     Converter for valid Hockey Teams to choose from
@@ -36,8 +101,10 @@ class HockeyTeams(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx, argument):
-        result = []
+    async def convert(
+        self, ctx: Context, argument: str
+    ) -> Optional[Union[List[Dict[str, dict]], str]]:
+        result: Optional[Union[List[Dict[str, dict]], str]] = []
         team_list = await check_valid_team(argument)
         if team_list == []:
             raise BadArgument('Team "{}" not found'.format(argument))
@@ -64,7 +131,7 @@ class HockeyTeams(Converter):
                     )
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
-                    return
+                    return None
                 else:
                     result = team_list[
                         team_emojis.index(str(reaction.emoji).replace("<:", "").replace(">", ""))
@@ -81,7 +148,7 @@ class HockeyTeams(Converter):
                     msg = await ctx.bot.wait_for("message", check=msg_check, timeout=15)
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
-                    return
+                    return None
 
                 if msg.content.isdigit():
                     msg = int(msg.content) - 1
@@ -109,7 +176,7 @@ class HockeyStandings(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: Context, argument):
         result = []
         team_list = await check_valid_team(argument, True)
         if team_list == []:
@@ -167,7 +234,7 @@ async def get_team_role(guild, home_team, away_team):
     return home_role, away_role
 
 
-async def get_team(bot, team):
+async def get_team(bot, team: str):
     config = bot.get_cog("Hockey").config
     return_team = None
     team_list = await config.teams()
@@ -188,7 +255,7 @@ async def get_team(bot, team):
         return await get_team(bot, team)
 
 
-async def check_valid_team(team_name, standings=False):
+async def check_valid_team(team_name: str, standings: bool = False) -> str:
     """
         Checks if this is a valid team name or all teams
         useful for game day channel creation should impliment elsewhere

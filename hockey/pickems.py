@@ -1,11 +1,14 @@
 import discord
-from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
-from datetime import datetime, timedelta
-from .constants import TEAMS
-from redbot.core.i18n import Translator
 import asyncio
 import logging
+import aiohttp
 
+from datetime import datetime, timedelta
+from redbot.core.i18n import Translator
+
+from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
+from .constants import TEAMS
+from .game import Game
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
@@ -26,6 +29,7 @@ class Pickems:
         votes: dict,
         name: str,
         winner: str = None,
+        link: str = None,
     ):
         super().__init__()
         self.message = message
@@ -42,6 +46,7 @@ class Pickems:
         )
         self.winner = winner
         self.name = name
+        self.link = link
 
     def add_vote(self, user_id, team):
         time_now = datetime.utcnow()
@@ -83,6 +88,16 @@ class Pickems:
         if game.away_score > game.home_score:
             self.winner = self.away_team
         return self
+
+    async def check_winner(self):
+        """
+            allow the pickems objects to check winner on their own
+        """
+        if self.link:
+            game = await get_game_from_link(self.link)
+            return await self.set_pickem_winner(game)
+        else:
+            return
 
     @staticmethod
     async def find_pickems_object(bot, game):
@@ -148,6 +163,7 @@ class Pickems:
                     "votes": {},
                     "name": new_name,
                     "winner": None,
+                    "link": game.link,
                 })
 
             bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
@@ -349,10 +365,14 @@ class Pickems:
             "away_team": self.away_team,
             "votes": self.votes,
             "winner": self.winner,
+            "link": self.link,
         }
 
     @classmethod
     def from_json(cls, data: dict):
+        link = None
+        if "link" in data:
+            link = data["link"]
         return cls(
             data["message"],
             data["channel"],
@@ -361,4 +381,5 @@ class Pickems:
             data["away_team"],
             data["votes"],
             data["winner"],
+            link,
         )

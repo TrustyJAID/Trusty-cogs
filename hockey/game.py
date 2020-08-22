@@ -1,16 +1,19 @@
+import discord  # type: ignore[import]
 import aiohttp
+import asyncio
+import logging
+
 from datetime import datetime
+
 from redbot.core import Config
-from .pickems import Pickems
+from redbot import version_info, VersionInfo
+from redbot.core.i18n import Translator
+
+
 from .constants import BASE_URL, TEAMS
 from .goal import Goal
 from .helper import utc_to_local, check_to_post, get_team, get_team_role
 from .standings import Standings
-import discord
-import logging
-from redbot import version_info, VersionInfo
-from redbot.core.i18n import Translator
-import asyncio
 
 
 _ = Translator("Hockey", __file__)
@@ -47,6 +50,7 @@ class Game:
         second_star: str,
         third_star: str,
         players: dict = None,
+        link: str = None,
     ):
         super().__init__()
         self.game_state = game_state
@@ -90,6 +94,7 @@ class Game:
         self.second_star = second_star
         self.third_star = third_star
         self.players = players
+        self.link = link
 
     def to_json(self) -> dict:
         return {
@@ -117,6 +122,7 @@ class Game:
             "first_star": self.first_star,
             "second_star": self.second_star,
             "third_star": self.third_star,
+            "link": self.link
         }
 
     @staticmethod
@@ -144,6 +150,19 @@ class Game:
                     log.error("Error grabbing game data:", exc_info=True)
                     continue
         return return_games_list
+
+    @staticmethod
+    async def get_game_from_link(url: str):
+        """
+            Returns a game object from a provided link
+        """
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                data = await resp.json()
+            if "message" in data:
+                return data["message"]
+        game = await Game.from_json(data)
+        return game
 
     @staticmethod
     async def get_games_list(team=None, start_date: datetime = None, end_date: datetime = None):
@@ -275,8 +294,11 @@ class Game:
                             )
                             count = 0
                             goal_msg = ""
-                        emoji = TEAMS[goal.team_name]["emoji"]
-                        goal_msg += f"<:{emoji}> {goal.team_name} Goal By {goal.description}\n\n"
+                        try:
+                            emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
+                        except KeyError:
+                            emoji = ""
+                        goal_msg += f"{emoji} {goal.team_name} Goal By {goal.description}\n\n"
                         count += 1
                     if len(list_goals[ordinal]) > 5 and goal_msg != "":
                         em.add_field(
@@ -409,7 +431,7 @@ class Game:
             pass
         return home_str, away_str
 
-    async def check_game_state(self, bot):
+    async def check_game_state(self, bot, count=0):
         # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(bot, self.home_team)
         # away = await get_team(self.away_team)
@@ -425,18 +447,22 @@ class Game:
             if "Preview" not in home["game_state"]:
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
+                bot.dispatch("hockey_preview", self)
             if game_start < 60 and game_start > 30 and home["game_state"] != "Preview60":
                 # Post 60 minutes until game start
                 await self.post_time_to_game_start(bot, "60")
                 await self.save_game_state(bot, "60")
+                bot.dispatch("hockey_preview", self)
             if game_start < 30 and game_start > 10 and home["game_state"] != "Preview30":
                 # Post 30 minutes until game start
                 await self.post_time_to_game_start(bot, "30")
                 await self.save_game_state(bot, "30")
+                bot.dispatch("hockey_preview", self)
             if game_start < 10 and game_start > 0 and home["game_state"] != "Preview10":
                 # Post 10 minutes until game start
                 await self.post_time_to_game_start(bot, "10")
                 await self.save_game_state(bot, "10")
+                bot.dispatch("hockey_preview", self)
 
                 # Create channel and look for game day thread
 
@@ -447,12 +473,13 @@ class Game:
                 log.debug(msg.format(self.period_ord, self.away_team, self.home_team))
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
+                bot.dispatch("hockey_live", self)
 
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
 
-        if self.game_state == "Final":
+        if self.game_state == "Final" and (self.first_star is not None or count >= 10):
             """Final game state checks"""
             if (self.home_score + self.away_score) != 0:
                 """ Check for goal before posting game final, happens with OT games"""
@@ -463,6 +490,7 @@ class Game:
                 log.debug(msg.format(self.home_team, self.away_team))
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
+                bot.dispatch("hockey_final", self)
 
     async def post_game_state(self, bot):
         """
@@ -487,14 +515,16 @@ class Game:
             if preview is None:
                 continue
             else:
-                await Pickems.create_pickem_object(bot, preview[0].guild, preview[1], preview[0], self)
+                bot.dispatch("hockey_preview_message", preview[0], preview[1], self)
 
     async def actually_post_state(self, bot, channel, state_embed, state_text):
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
-            log.debug(_("No permission to send messages in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ))
+            log.debug(
+                _("No permission to send messages in {channel} ({id})").format(
+                    channel=channel, id=channel.id
+                )
+            )
             return
         config = bot.get_cog("Hockey").config
         game_day_channels = await config.guild(guild).gdc()
@@ -511,13 +541,10 @@ class Game:
             start_notifications = guild_start or channel_start
             # heh inclusive or
             allowed_mentions = {}
+            home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
             if state_notifications:
-                home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
                 if version_info >= VersionInfo.from_str("3.4.0"):
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-            if not state_notifications:
-                home_role = self.home_team
-                away_role = self.away_team
 
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
@@ -596,6 +623,7 @@ class Game:
             team_data = await get_team(bot, goal.team_name)
             if goal.goal_id not in team_data["goal_id"]:
                 # attempts to post the goal if there is a new goal
+                bot.dispatch("hockey_goal", self, goal)
                 msg_list = await goal.post_team_goal(bot, self)
                 team_list.remove(team_data)
                 team_data["goal_id"][goal.goal_id] = {"goal": goal.to_json(), "messages": msg_list}
@@ -606,6 +634,7 @@ class Game:
                 # attempts to edit the goal if the scorers have changed
                 old_goal = Goal(**team_data["goal_id"][goal.goal_id]["goal"])
                 if goal.description != old_goal.description:
+                    bot.dispatch("hockey_goal_edit", self, goal)
                     old_msgs = team_data["goal_id"][goal.goal_id]["messages"]
                     team_list.remove(team_data)
                     team_data["goal_id"][goal.goal_id]["goal"] = goal.to_json()
@@ -656,15 +685,13 @@ class Game:
             Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
-        msg = _(
-                "{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!"
-            ).format(
-                time=time_left,
-                away_emoji=self.away_emoji,
-                away=self.away_team,
-                home_emoji=self.home_emoji,
-                home=self.home_team,
-            )
+        msg = _("{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!").format(
+            time=time_left,
+            away_emoji=self.away_emoji,
+            away=self.away_team,
+            home_emoji=self.home_emoji,
+            home=self.home_team,
+        )
         tasks = []
         for channels in await bot.get_cog("Hockey").config.all_channels():
             channel = bot.get_channel(id=channels)
@@ -681,9 +708,11 @@ class Game:
 
     async def post_game_start(self, channel, msg):
         if not channel.permissions_for(channel.guild.me).send_messages:
-            log.debug(_("No permission to send messages in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ))
+            log.debug(
+                _("No permission to send messages in {channel} ({id})").format(
+                    channel=channel, id=channel.id
+                )
+            )
             return
         try:
             await channel.send(msg)
@@ -722,7 +751,7 @@ class Game:
                 and goal["about"]["ordinalNum"] == "SO"
             )
         ]
-
+        link = f"{BASE_URL}{data['link']}"
         if "currentPeriodOrdinal" in data["liveData"]["linescore"]:
             period_ord = data["liveData"]["linescore"]["currentPeriodOrdinal"]
             period_time_left = data["liveData"]["linescore"]["currentPeriodTimeRemaining"]
@@ -757,5 +786,6 @@ class Game:
             first_star,
             second_star,
             third_star,
-            players
+            players,
+            link,
         )

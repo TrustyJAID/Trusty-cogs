@@ -13,6 +13,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281720124/256x256/cut.png",
         "team_url": "http://www.anaheimducks.com",
         "timezone": "US/Pacific",
+        "nickname": ["ducks"],
+        "short_name": "ANA",
     },
     "Arizona Coyotes": {
         "away": "#E2D6B5",
@@ -25,6 +27,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281720888/256x256/cut.png",
         "team_url": "http://www.arizonacoyotes.com",
         "timezone": "US/Arizona",
+        "nickname": ["yotes"],
+        "short_name": "ARI",
     },
     "Boston Bruins": {
         "away": "#111111",
@@ -37,6 +41,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281719378/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=1RCjTRXRk1Y",
         "timezone": "US/Eastern",
+        "nickname": ["bruins"],
+        "short_name": "BOS",
     },
     "Buffalo Sabres": {
         "away": "#FCB514",
@@ -49,6 +55,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723274/256x256/cut.png",
         "team_url": "http://www.sabres.com",
         "timezone": "US/Eastern",
+        "nickname": ["sabres"],
+        "short_name": "BUF",
     },
     "Calgary Flames": {
         "away": "#F1BE48",
@@ -61,6 +69,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281720898/256x256/cut.png",
         "team_url": "http://www.calgaryflames.com",
         "timezone": "US/Mountain",
+        "nickname": ["flames"],
+        "short_name": "CGY",
     },
     "Carolina Hurricanes": {
         "away": "#A4A9AD",
@@ -73,6 +83,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726500/256x256/cut.png",
         "team_url": "http://www.carolinahurricanes.com",
         "timezone": "US/Eastern",
+        "nickname": ["canes"],
+        "short_name": "CAR",
     },
     "Chicago Blackhawks": {
         "away": "#000000",
@@ -85,6 +97,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726514/256x256/cut.png",
         "team_url": "http://www.chicagoblackhawks.com",
         "timezone": "US/Central",
+        "nickname": ["hawks"],
+        "short_name": "CHI",
     },
     "Colorado Avalanche": {
         "away": "#236192",
@@ -97,6 +111,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721016/256x256/cut.png",
         "team_url": "http://www.coloradoavalanche.com",
         "timezone": "US/Mountain",
+        "nickname": ["avs"],
+        "short_name": "COL",
     },
     "Columbus Blue Jackets": {
         "away": "#CE1126",
@@ -109,6 +125,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726518/256x256/cut.png",
         "team_url": "http://www.bluejackets.com",
         "timezone": "US/Eastern",
+        "nickname": ["jackets", "bjs"],
+        "short_name": "CBJ",
     },
     "Dallas Stars": {
         "away": "#8F8F8C",
@@ -121,6 +139,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726660/256x256/cut.png",
         "team_url": "http://www.dallasstars.com",
         "timezone": "US/Central",
+        "nickname": ["stars"],
+        "short_name": "DAL",
     },
     "Detroit Red Wings": {
         "away": "#FFFFFF",
@@ -133,6 +153,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723286/256x256/cut.png",
         "team_url": "http://www.detroitredwings.com",
         "timezone": "US/Eastern",
+        "nickname": ["red wings"],
+        "short_name": "DET",
     },
     "Edmonton Oilers": {
         "away": "#041E41",
@@ -145,6 +167,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721030/256x256/cut.png",
         "team_url": "https://youtu.be/xXwkD8N8TjY?t=1m3s",
         "timezone": "US/Mountain",
+        "nickname": ["oilers"],
+        "short_name": "EDM",
     },
     "Florida Panthers": {
         "away": "#041E42",
@@ -157,6 +181,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723310/256x256/cut.png",
         "team_url": "http://www.floridapanthers.com",
         "timezone": "US/Eastern",
+        "nickname": ["panthers"],
+        "short_name": "FLA",
     },
     "Los Angeles Kings": {
         "away": "#B2B7BB",
@@ -169,6 +195,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721042/256x256/cut.png",
         "team_url": "http://www.lakings.com",
         "timezone": "US/Mountain",
+        "nickname": ["kings"],
+        "short_name": "LAK",
     },
     "Minnesota Wild": {
         "away": "#C51230",
@@ -181,6 +209,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721058/256x256/cut.png",
         "team_url": "http://www.wild.com",
         "timezone": "US/Central",
+        "nickname": ["wild"],
+        "short_name": "MIN",
     },
     "Montr\u00e9al Canadiens": {
         "away": "#192168",
@@ -193,6 +223,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723300/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=9YFtlvDOVVE",
         "timezone": "US/Eastern",
+        "nickname": ["montreal canadiens", "habs", "montreal"],
+        "short_name": "MTL",
     },
     "Nashville Predators": {
         "away": "#041E42",
@@ -205,6 +237,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721070/256x256/cut.png",
         "team_url": "http://www.nashvillepredators.com",
         "timezone": "US/Central",
+        "nickname": ["preds"],
+        "short_name": "NSH",
     },
     "New Jersey Devils": {
         "away": "#000000",
@@ -217,6 +251,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726626/256x256/cut.png",
         "team_url": "http://www.truesince82.com",
         "timezone": "US/Eastern",
+        "nickname": ["devils"],
+        "short_name": "NJD",
     },
     "New York Islanders": {
         "away": "#F47920",
@@ -229,6 +265,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726632/256x256/cut.png",
         "team_url": "http://www.newyorkislanders.com",
         "timezone": "US/Eastern",
+        "nickname": ["isles"],
+        "short_name": "NYI",
     },
     "New York Rangers": {
         "away": "#C8102E",
@@ -241,6 +279,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281718864/256x256/cut.png",
         "team_url": "http://www.newyorkrangers.com",
         "timezone": "US/Eastern",
+        "nickname": ["rangers"],
+        "short_name": "NYR",
     },
     "Ottawa Senators": {
         "away": "#CBA044",
@@ -253,6 +293,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723314/256x256/cut.png",
         "team_url": "http://www.ottawasenators.com",
         "timezone": "US/Eastern",
+        "nickname": ["sens"],
+        "short_name": "OTT",
     },
     "Philadelphia Flyers": {
         "away": "#000000",
@@ -265,6 +307,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726640/256x256/cut.png",
         "team_url": "http://www.philadelphiaflyers.com",
         "timezone": "US/Eastern",
+        "nickname": ["flyers"],
+        "short_name": "PHI",
     },
     "Pittsburgh Penguins": {
         "away": "#CFC493",
@@ -277,6 +321,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726648/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=lDw7GqD_xro",
         "timezone": "US/Eastern",
+        "nickname": ["pens"],
+        "short_name": "PIT",
     },
     "San Jose Sharks": {
         "away": "#EA7200",
@@ -289,6 +335,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721090/256x256/cut.png",
         "team_url": "http://www.sjsharks.com",
         "timezone": "US/Pacific",
+        "nickname": ["sharks"],
+        "short_name": "SJS",
     },
     "Seattle Kraken": {
         "away": "#5dbcd2",
@@ -301,6 +349,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/317591200/256x256/cut.png",
         "team_url": "https://www.nhl.com/kraken",
         "timezone": "US/Pacific",
+        "nickname": ["kraken"],
+        "short_name": "SEA",
     },
     "St. Louis Blues": {
         "away": "#FCB514",
@@ -313,6 +363,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281752302/256x256/cut.png",
         "team_url": "http://www.stlouisblues.com",
         "timezone": "US/Central",
+        "nickname": ["blues"],
+        "short_name": "STL",
     },
     "Tampa Bay Lightning": {
         "away": "#FFFFFF",
@@ -325,6 +377,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723320/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=UjbdFKsHD_M",
         "timezone": "US/Eastern",
+        "nickname": ["bolts"],
+        "short_name": "TBL",
     },
     "Team Atlantic": {
         "away": "#fef5aa",
@@ -337,6 +391,8 @@ TEAMS = {
         "logo": "https://i.imgur.com/I1NWsss.png",
         "team_url": "http://nhl.coms.com",
         "timezone": "US/Eastern",
+        "nickname": [],
+        "short_name": "",
     },
     "Team Central": {
         "away": "#111111",
@@ -349,6 +405,8 @@ TEAMS = {
         "logo": "https://i.imgur.com/Adrh7aD.png",
         "team_url": "http://nhl.coms.com",
         "timezone": "US/Central",
+        "nickname": [],
+        "short_name": "",
     },
     "Team Metropolitan": {
         "away": "#d1cad2",
@@ -361,6 +419,8 @@ TEAMS = {
         "logo": "https://i.imgur.com/l4nxmZx.png",
         "team_url": "http://nhl.coms.com",
         "timezone": "US/Mountain",
+        "nickname": [],
+        "short_name": "",
     },
     "Team Pacific": {
         "away": "#FFFFFF",
@@ -373,6 +433,8 @@ TEAMS = {
         "logo": "https://i.imgur.com/e5a4y36.png",
         "team_url": "http://nhl.coms.com",
         "timezone": "US/Pacific",
+        "nickname": [],
+        "short_name": "",
     },
     "Toronto Maple Leafs": {
         "away": "#FFFFFF",
@@ -385,6 +447,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723324/256x256/cut.png",
         "team_url": "http://www.mapleleafs.com",
         "timezone": "US/Eastern",
+        "nickname": ["leafs"],
+        "short_name": "TOR",
     },
     "Vancouver Canucks": {
         "away": "#008852",
@@ -397,6 +461,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281721212/256x256/cut.png",
         "team_url": "http://www.canucks.com",
         "timezone": "US/Pacific",
+        "nickname": ["canucks", "nucks", "nuks"],
+        "short_name": "VAN",
     },
     "Vegas Golden Knights": {
         "away": "#333F42",
@@ -409,6 +475,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/284409696/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=QrctmCqhq6o",
         "timezone": "US/Pacific",
+        "nickname": ["knights"],
+        "short_name": "VGK",
     },
     "Washington Capitals": {
         "away": "#CF0A2C",
@@ -421,6 +489,8 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281726654/256x256/cut.png",
         "team_url": "http://www.washingtoncapitals.com",
         "timezone": "US/Eastern",
+        "nickname": ["caps"],
+        "short_name": "WSH",
     },
     "Winnipeg Jets": {
         "away": "#AC162C",
@@ -433,5 +503,7 @@ TEAMS = {
         "logo": "https://nhl.bamcontent.com/images/photos/281723512/256x256/cut.png",
         "team_url": "https://www.youtube.com/watch?v=jJnj0-aX_es",
         "timezone": "US/Central",
+        "nickname": ["jets"],
+        "short_name": "WPG",
     },
 }
