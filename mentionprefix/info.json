@@ -1,0 +1,27 @@
+{
+    "author" : [
+        "Draper",
+        "TrustyJAID"
+    ],
+    "description" : "This cog allows ping the bot to see the prefixes available.",
+    "disabled" : false,
+    "end_user_data_statement" : "This cog allows ping the bot to see the prefixes available.",
+    "hidden" : false,
+    "install_msg" : "This cog allows ping the bot to see the prefixes available.",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.4.0",
+    "min_python_version" : [
+        3,
+        8,
+        1
+    ],
+    "name" : "MentionPrefix",
+    "permissions" : [],
+    "required_cogs" : {},
+    "requirements" : [],
+    "short" : "This cog allows ping the bot to see the prefixes available.",
+    "tags" : [
+        "help"
+    ],
+    "type" : "COG"
+}
