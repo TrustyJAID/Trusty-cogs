@@ -95,7 +95,7 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_guild(**default_guild, force_registration=True)
         self.config.register_channel(**default_channel, force_registration=True)
         self.loop = bot.loop.create_task(self.game_check_loop())
-        self.TEST_LOOP = True  # used to test a continuous loop of a single game data
+        self.TEST_LOOP = False  # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
@@ -201,7 +201,7 @@ class Hockey(HockeyDev, commands.Cog):
                 for link, count in games.items():
                     if games[link] == 10:
                         del games[link]
-                await asyncio.sleep(15)
+                await asyncio.sleep(60)
             log.debug(_("Games Done Playing"))
             try:
                 await Pickems.tally_leaderboard(self.bot)
