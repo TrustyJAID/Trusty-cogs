@@ -3,13 +3,13 @@ import logging
 import asyncio
 import datetime
 
-from typing import Union, Optional
+from typing import Optional, List, Literal
 
 from redbot.core import commands, Config, checks
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
-from redbot.core.json_io import JsonIO
-from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
+from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .errors import Destiny2APIError, Destiny2MissingManifest
 from .converter import DestinyActivity, StatsPage
@@ -30,7 +30,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information from the Destiny 2 API
     """
 
-    __version__ = "1.2.2"
+    __version__ = "1.3.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -45,6 +45,24 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config.register_user(**default_user, force_registration=True)
         self.throttle: float = 0
         # self.manifest_download_start = bot.loop.create_task(self.get_manifest())
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+            Method for finding users data inside the cog and deleting it.
+        """
+        await self.config.user_from_id(user_id).clear()
 
     @staticmethod
     def humanize_timedelta(
@@ -84,12 +102,12 @@ class Destiny(DestinyAPI, commands.Cog):
         return ", ".join(strings)
 
     @commands.group()
-    async def destiny(self, ctx):
+    async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
         pass
 
     @destiny.group(aliases=["s"])
-    async def search(self, ctx: commands.Context):
+    async def search(self, ctx: commands.Context) -> None:
         """
             Search for a destiny item, vendor, record, etc.
         """
@@ -97,7 +115,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @search.command(aliases=["item"])
     @commands.bot_has_permissions(embed_links=True)
-    async def items(self, ctx: commands.Context, *, search: str):
+    async def items(self, ctx: commands.Context, *, search: str) -> None:
         """
             Search for a specific item in Destiny 2
         """
@@ -115,7 +133,17 @@ class Destiny(DestinyAPI, commands.Cog):
             if not (item["equippable"]):
                 continue
             embed = discord.Embed()
-            embed.description = item["displayProperties"]["description"]
+            description = item["displayProperties"]["description"]
+            if "loreHash" in item:
+                lore = await self.get_definition("DestinyLoreDefinition", [item["loreHash"]])
+                description += _("\n\n Lore: \n\n") + lore[0]["displayProperties"]["description"]
+            count = 0
+            for page in pagify(description, page_length=1024):
+                if count == 0:
+                    embed.description = page
+                else:
+                    embed.add_field(name=_("Lore Continued"), value=page)
+                count += 1
             embed.title = item["itemTypeAndTierDisplayName"]
             name = item["displayProperties"]["name"]
             icon_url = IMAGE_URL + item["displayProperties"]["icon"]
@@ -126,7 +154,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def user(self, ctx: commands.Context, user: discord.Member = None):
+    async def user(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
             Display a menu of your basic characters info
             `[user]` A member on the server who has setup their account on this bot.
@@ -138,7 +166,7 @@ class Destiny(DestinyAPI, commands.Cog):
         try:
             chars = await self.get_characters(user)
         except Destiny2APIError as e:
-            # log.debug(e)
+            log.error(e, exc_info=True)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
@@ -166,7 +194,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         title_name = t["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
                         title_desc = t["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                    except:
+                    except KeyError:
                         pass
             embed = discord.Embed(title=info)
             embed.set_author(name=user.display_name, icon_url=user.avatar_url)
@@ -174,7 +202,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
             if titles:
                 # embed.add_field(name=_("Titles"), value=titles)
-                embed.set_author(name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url)
+                embed.set_author(
+                    name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url
+                )
             items = chars["characterEquipment"]["data"][char_id]["items"]
             # log.debug(data)
             level = char["baseCharacterLevel"]
@@ -189,9 +219,42 @@ class Destiny(DestinyAPI, commands.Cog):
             embeds.append(embed)
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
+    @search.command()
+    @commands.bot_has_permissions(embed_links=True)
+    async def lore(self, ctx: commands.Context, entry: str = None) -> None:
+        """
+            Find Destiny Lore
+        """
+        if not await self.config.manifest_version():
+            return await ctx.send(_("The manifest needs to be downloaded for this to work."))
+        data = await self.get_entities("DestinyLoreDefinition")
+        lore = []
+        for entry_hash, entries in data.items():
+            em = discord.Embed(title=entries["displayProperties"]["name"])
+            description = entries["displayProperties"]["description"]
+            if len(description) < 2048:
+                em.description = entries["displayProperties"]["description"]
+            elif len(description) > 2048 and len(description) < 6000:
+                em.description = description[:2048]
+                new_desc = description[:2048]
+                parts = [new_desc[i : i + 1024] for i in range(0, len(new_desc), 1024)]
+                for i in parts:
+                    em.add_field(name=_("Continued"), value=i)
+
+            if entries["displayProperties"]["hasIcon"]:
+                icon = entries["displayProperties"]["icon"]
+                em.set_thumbnail(url=f"{IMAGE_URL}{icon}")
+            lore.append(em)
+        if entry:
+            for t in lore:
+                if entry.lower() in str(t.title).lower():
+                    print(t.title)
+                    lore.insert(0, lore.pop(lore.index(t)))
+        await menu(ctx, lore, DEFAULT_CONTROLS)
+
     @destiny.command(aliases=["xûr"])
     @commands.bot_has_permissions(embed_links=True)
-    async def xur(self, ctx: commands.Context, full: bool = False):
+    async def xur(self, ctx: commands.Context, full: bool = False) -> None:
         """
             Display a menu of Xûr's current wares
 
@@ -201,12 +264,11 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         try:
             chars = await self.get_characters(ctx.author)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
-        embeds = []
         await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
@@ -227,7 +289,6 @@ class Destiny(DestinyAPI, commands.Cog):
             break
         items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
         data = await self.get_definition("DestinyInventoryItemDefinition", items)
-        embeds = []
         embed = discord.Embed(
             colour=discord.Colour.red(), description=xur_def[0]["displayProperties"]["description"]
         )
@@ -273,7 +334,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def eververse(self, ctx: commands.Context):
+    async def eververse(self, ctx: commands.Context) -> None:
         """
             Display items available on the eververse right now
         """
@@ -281,18 +342,18 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         try:
             chars = await self.get_characters(ctx.author)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
             return
-        embeds = []
+        embeds: List[discord.Embed] = []
         await ctx.trigger_typing()
         for char_id, char in chars["characters"]["data"].items():
             log.debug(char_id)
             try:
                 eververse = await self.get_vendor(ctx.author, char_id, "3361454721")
-            except Destiny2APIError as e:
+            except Destiny2APIError:
                 log.error("I can't seem to see the eververse at the moment", exc_info=True)
                 await ctx.send(_("I can't access the eververse at the moment."))
                 return
@@ -319,7 +380,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def loadout(
         self, ctx: commands.Context, full: Optional[bool] = False, user: discord.Member = None
-    ):
+    ) -> None:
         """
             Display a menu of each characters equipped weapons and their info
 
@@ -332,7 +393,7 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -362,7 +423,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         title_name = t["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
                         title_desc = t["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                    except:
+                    except KeyError:
                         pass
                 log.debug("User has a title")
                 pass
@@ -372,7 +433,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
             if titles:
                 # embed.add_field(name=_("Titles"), value=titles)
-                embed.set_author(name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url)
+                embed.set_author(
+                    name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url
+                )
             char_items = chars["characterEquipment"]["data"][char_id]["items"]
             item_list = [i["itemHash"] for i in char_items]
             # log.debug(item_list)
@@ -427,7 +490,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def gambit(self, ctx):
+    async def gambit(self, ctx: commands.Context) -> None:
         """
             Display a menu of each characters gambit stats
         """
@@ -437,7 +500,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def pvp(self, ctx):
+    async def pvp(self, ctx: commands.Context) -> None:
         """
             Display a menu of each characters pvp stats
         """
@@ -447,7 +510,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command(aliases=["raids"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def raid(self, ctx):
+    async def raid(self, ctx: commands.Context) -> None:
         """
             Display a menu for each characters RAID stats
         """
@@ -457,7 +520,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command(aliases=["qp"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def quickplay(self, ctx):
+    async def quickplay(self, ctx: commands.Context) -> None:
         """
             Display a menu of past quickplay matches
         """
@@ -467,7 +530,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def history(self, ctx: commands.Context, activity: DestinyActivity):
+    async def history(self, ctx: commands.Context, activity: DestinyActivity) -> None:
         """
             Display a meny of each characters last 5 activities
 
@@ -489,7 +552,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -524,7 +587,7 @@ class Destiny(DestinyAPI, commands.Cog):
             )
             try:
                 data = await self.get_activity_history(user, char_id, activity)
-            except:
+            except Exception:
                 log.error(
                     _(
                         "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
@@ -540,7 +603,6 @@ class Destiny(DestinyAPI, commands.Cog):
                     "DestinyActivityDefinition", [activity_hash]
                 )
                 activity_data = activity_data[0]
-                info = ""
                 embed = discord.Embed(
                     title=activity_data["displayProperties"]["name"],
                     description=activity_data["displayProperties"]["description"],
@@ -568,7 +630,7 @@ class Destiny(DestinyAPI, commands.Cog):
         await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @staticmethod
-    async def get_extra_attrs(stat_type: str, attrs: dict):
+    async def get_extra_attrs(stat_type: str, attrs: dict) -> dict:
         """Helper function to receive the total attributes we care about"""
         EXTRA_ATTRS = {}
         if stat_type == "allPvECompetitive":
@@ -594,19 +656,21 @@ class Destiny(DestinyAPI, commands.Cog):
             attrs[k] = v
         return attrs
 
-    async def build_character_stats(self, user, chars, stat_type):
+    async def build_character_stats(
+        self, user: discord.Member, chars: dict, stat_type: str
+    ) -> List[discord.Embed]:
 
-        embeds = []
+        embeds: List[discord.Embed] = []
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
 
             try:
                 data = await self.get_historical_stats(user, char_id, 0)
-            except:
+            except Exception:
                 log.error(
-                    _(
-                        "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
-                    ).format(char_id=char_id, activity=activity)
+                    _("Something went wrong I couldn't get info on character {char_id}").format(
+                        char_id=char_id
+                    )
                 )
                 continue
             if not data:
@@ -619,7 +683,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     data = data[stat_type]["allTime"]
                     embed = await self.build_stat_embed_char_gambit(user, char, data, stat_type)
                     embeds.append(embed)
-            except Exception as e:
+            except Exception:
                 log.error(
                     f"User {user.id} had an issue generating stats for character {char_id}",
                     exc_info=True,
@@ -627,7 +691,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 continue
         return embeds
 
-    async def build_stat_embed_char_basic(self, user, char, data, stat_type):
+    async def build_stat_embed_char_basic(
+        self, user: discord.Member, char: dict, data: dict, stat_type: str
+    ) -> discord.Embed:
         char_info = ""
         race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
         gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
@@ -679,7 +745,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed.add_field(name=_("Resurrections/Received"), value=f"{res}/{resur}")
         return await self.get_char_colour(embed, char)
 
-    async def build_stat_embed_char_gambit(self, user, char, data, stat_type):
+    async def build_stat_embed_char_gambit(
+        self, user: discord.Member, char: dict, data: dict, stat_type: str
+    ) -> discord.Embed:
         char_info = ""
         race = await self.get_definition("DestinyRaceDefinition", [char["raceHash"]])
         gender = await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
@@ -730,7 +798,7 @@ class Destiny(DestinyAPI, commands.Cog):
         embed.add_field(name=_("Invaders"), value=invaders)
         motes_dep = data["motesDeposited"]["basic"]["value"]
         try:
-            lost = 1-(motes_dep / data["motesPickedUp"]["basic"]["value"])
+            lost = 1 - (motes_dep / data["motesPickedUp"]["basic"]["value"])
             motes_lost = "{:.2%}".format(lost)
         except ZeroDivisionError:
             motes_lost = "0%"
@@ -767,7 +835,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True):
+    async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True) -> None:
         """
             Display each characters stats for a specific activity
             `<activity>` The type of stats to display, available options are:
@@ -778,7 +846,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user = ctx.author
         try:
             chars = await self.get_characters(user)
-        except Destiny2APIError as e:
+        except Destiny2APIError:
             # log.debug(e)
             msg = _("I can't seem to find your Destiny profile.")
             await ctx.send(msg)
@@ -794,7 +862,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @destiny.command()
     @checks.is_owner()
     @commands.bot_has_permissions(add_reactions=True)
-    async def manifest(self, ctx):
+    async def manifest(self, ctx: commands.Context) -> None:
         """
             See the current manifest version and optionally re-download it
         """
@@ -804,26 +872,27 @@ class Destiny(DestinyAPI, commands.Cog):
         await ctx.send(_("Current manifest version is {version}").format(version=version))
         await ctx.trigger_typing()
         msg = await ctx.send(_("Would you like to re-download the manifest?"))
-        await msg.add_reaction("✅")
-        await msg.add_reaction("❌")
-        check = lambda r, u: u == ctx.author and str(r.emoji) in ["✅", "❌"]
+        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
         try:
-            react, user = await self.bot.wait_for("reaction_add", check=check, timeout=15)
+            react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=15)
         except asyncio.TimeoutError:
             await msg.delete()
-        if str(react.emoji) == "✅":
+        if pred.result:
             try:
-                await self.get_manifest()
-            except:
-                await ctx.send(_("There was an issue downloading the manifest."))
+                version = await self.get_manifest()
+            except Exception:
+                return await ctx.send(_("There was an issue downloading the manifest."))
             await msg.delete()
-            await ctx.tick()
+            await ctx.send(f"Manifest {version} was downloaded.")
         else:
             await msg.delete()
 
     @destiny.command()
     @checks.is_owner()
-    async def token(self, ctx, api_key: str, client_id: str, client_secret: str):
+    async def token(
+        self, ctx: commands.Context, api_key: str, client_id: str, client_secret: str
+    ) -> None:
         """
         Set the API tokens for Destiny 2's API
 

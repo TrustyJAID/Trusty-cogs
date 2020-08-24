@@ -3,13 +3,14 @@ import logging
 import discord
 import unidecode
 
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
+from redbot.core import commands
 
 from discord.ext.commands.converter import IDConverter
 from discord.ext.commands.converter import _get_from_guilds
 from discord.ext.commands.errors import BadArgument
 
-from typing import List
+from typing import List, Union
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
@@ -26,7 +27,7 @@ class FuzzyMember(IDConverter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx, argument) -> List[discord.Member]:
+    async def convert(self, ctx: commands.Context, argument: str) -> List[discord.Member]:
         bot = ctx.bot
         match = self._get_id_match(argument) or re.match(r"<@!?([0-9]+)>$", argument)
         guild = ctx.guild
@@ -68,7 +69,7 @@ class GuildConverter(IDConverter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.Guild:
         bot = ctx.bot
         match = self._get_id_match(argument)
         result = None
@@ -99,8 +100,10 @@ class ChannelConverter(IDConverter):
     This is to convert ID's from a category, voice, or text channel via ID's or names
     """
 
-    async def convert(self, ctx, argument):
-        match = self._get_id_match(argument) or re.match(r'<#([0-9]+)>$', argument)
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> Union[discord.TextChannel, discord.CategoryChannel, discord.VoiceChannel]:
+        match = self._get_id_match(argument) or re.match(r"<#([0-9]+)>$", argument)
         result = None
         guild = ctx.guild
 

@@ -2,27 +2,25 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
     "description" : "Conversions for BTC, currencies, precious metals, and stocks.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
     "install_msg" : "Various commands.",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "Conversions",
     "permissions" : [
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [],
-    "short" : "Conversions",
+    "short" : "Conversions for BTC, currencies, precious metals, and stocks.",
     "tags" : [],
     "type" : "COG"
 }

@@ -2,18 +2,16 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
-    "description" : "Gather hockey information from nhl.com and display in discord.",
+    "description" : "A cog to gather hockey scores, schedules, player data and more!",
     "disabled" : false,
+    "end_user_data_statement" : "This cog stores User ID's for the purposes of tracking votes in pickems.",
     "hidden" : false,
-    "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available. If you want the emojis to work please ask <@218773382617890828> to add your bot to his server hosting the emojis.",
+    "install_msg" : "Use `[p]hockey`, `[p]hockeyset` and `[p]gdc` to see what commands are available.",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "Hockey",
@@ -22,7 +20,7 @@
         "manage_messages",
         "manage_channels"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "pytz"
     ],

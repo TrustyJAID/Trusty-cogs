@@ -1,13 +1,11 @@
 from redbot.core import commands, checks, Config
-from random import choice
 import aiohttp
-from typing import Union, List, Dict
+from typing import List, Dict, Tuple
 from redbot.core.utils.chat_formatting import pagify
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 import re
 import logging
-import json
 
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"
@@ -25,7 +23,7 @@ class Meme(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx, argument):
+    async def convert(self, ctx, argument: str) -> Tuple[int, str]:
         result = None
         if not argument.isdigit():
             try:
@@ -51,7 +49,6 @@ class Meme(Converter):
 
 class ImgFlipAPIError(Exception):
     """ImgFlip API Error"""
-
     pass
 
 
@@ -60,13 +57,31 @@ class Imgflip(commands.Cog):
         Generate memes from imgflip.com API
     """
 
+    __author__ = ["Twentysix", "TrustyJAID"]
+    __version__ = "2.1.0"
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 356889977)
         default_global = {"username": "", "password": ""}
         self.config.register_global(**default_global)
 
-    async def get_meme(self, meme: int, boxes: List[Dict[str, str]], username: str, password: str):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
+    async def get_meme(
+        self, meme: int, boxes: List[Dict[str, str]], username: str, password: str
+    ) -> str:
         log.debug(boxes)
         try:
             form_data = aiohttp.FormData()
@@ -82,16 +97,15 @@ class Imgflip(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.post(CAPTION_URL, data=form_data) as r:
                     result = await r.json()
-            if result["success"]:
-                return result["data"]["url"]
             if not result["success"]:
                 raise ImgFlipAPIError(result["error_message"])
         except Exception as e:
             log.error("Error grabbing meme", exc_info=True)
             raise ImgFlipAPIError(e)
+        return result["data"]["url"]
 
     @commands.command(alias=["listmemes"])
-    async def getmemes(self, ctx):
+    async def getmemes(self, ctx: commands.Context) -> None:
         """List memes with names that can be used"""
         await ctx.trigger_typing()
         await self.get_memes(ctx)
@@ -109,7 +123,7 @@ class Imgflip(commands.Cog):
             await ctx.send(page)
 
     @commands.command()
-    async def meme(self, ctx, meme: Meme, *, text: str):
+    async def meme(self, ctx: commands.Context, meme: Meme, *, text: str) -> None:
         """Create custom memes from imgflip
 
             `meme_name` can be the name of the meme to use or the ID from imgflip
@@ -127,20 +141,24 @@ class Imgflip(commands.Cog):
             )
         await ctx.trigger_typing()
         text = "".join(
-            ctx.message.clean_content.replace(f"{ctx.prefix}{ctx.invoked_with} {meme[1]}", "")
+            ctx.message.clean_content.replace(
+                f"{ctx.prefix}{ctx.invoked_with} {meme[1]}", ""
+            )
         )
-        text = re.split(r"\|", text)
-        boxes = [{"text": v, "color": "#ffffff", "outline_color": "#000000"} for v in text]
+        search_text: List[str] = re.split(r"\|", text)
+        boxes = [
+            {"text": v, "color": "#ffffff", "outline_color": "#000000"} for v in search_text
+        ]
         try:
             url = await self.get_meme(meme[0], boxes, user_pass["username"], user_pass["password"])
-        except Exception as e:
+        except Exception:
             return await ctx.send("Something went wrong generating a meme.")
 
         await ctx.send(url)
 
     @commands.command(name="imgflipset", aliases=["memeset"])
     @checks.is_owner()
-    async def imgflip_set(self, ctx, username: str, password: str):
+    async def imgflip_set(self, ctx: commands.Context, username: str, password: str) -> None:
         """Command for setting required access information for the API"""
         await self.config.username.set(username)
         await self.config.password.set(password)

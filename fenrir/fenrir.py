@@ -1,12 +1,8 @@
 import discord
 
+from redbot import version_info, VersionInfo
+from redbot.core.bot import Red
 from redbot.core import Config, checks, commands
-
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
 
 
 class Fenrir(commands.Cog):
@@ -14,24 +10,37 @@ class Fenrir(commands.Cog):
         Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.0"
-    __author__ = "TrustyJAID"
+    __version__ = "1.0.3"
+    __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
-        self.bot = bot
-        self.kicks = []
-        self.bans = []
-        self.mutes = []
-        self.feedback = {}
-        # default_guild = {"kicks": [], "bans":[]}
+        self.bot: Red = bot
+        self.kicks: list = []
+        self.bans: list = []
+        self.mutes: list = []
+        self.feedback: dict = {}
+        default_guild: dict = {"mute_role": None}
 
-        # self.config = Config.get_conf(self, 228492507124596736)
-        # self.config.register_guild(**default_guild)
+        self.config: Config = Config.get_conf(self, 228492507124596736)
+        self.config.register_guild(**default_guild)
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
 
     @commands.command()
     @checks.admin_or_permissions(kick_members=True)
     @commands.guild_only()
-    async def fenrirkick(self, ctx):
+    async def fenrirkick(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to kick users"""
         msg = await ctx.send("React to this message to be kicked!")
         await msg.add_reaction("✅")
@@ -39,9 +48,24 @@ class Fenrir(commands.Cog):
         self.kicks.append(msg.id)
 
     @commands.command()
+    @checks.admin_or_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def fenrirset(self, ctx: commands.Context, *, role: discord.Role = None) -> None:
+        """
+        Sets the mute role for fenrirmute to work
+
+        if no role is provided it will disable the command
+        """
+        if role:
+            await self.config.guild(ctx.guild).mute_role.set(role.id)
+        else:
+            await self.config.guild(ctx.guild).mute_role.set(role)
+        await ctx.tick()
+
+    @commands.command()
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
-    async def fenrirban(self, ctx):
+    async def fenrirban(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to ban users"""
         msg = await ctx.send("React to this message to be banned!")
         await msg.add_reaction("✅")
@@ -51,9 +75,10 @@ class Fenrir(commands.Cog):
     @commands.command()
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
-    @commands.check(lambda ctx: ctx.guild.id == 236313384100954113)
-    async def fenrirmute(self, ctx):
+    async def fenrirmute(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to mute users"""
+        if not await self.config.guild(ctx.guild).mute_role():
+            return await ctx.send("No mute role has been setup on this server.")
         msg = await ctx.send("React to this message to be muted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
@@ -63,14 +88,14 @@ class Fenrir(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     @commands.check(lambda ctx: ctx.bot.get_cog("Insult"))
-    async def fenrirfeedback(self, ctx):
+    async def fenrirfeedback(self, ctx: commands.Context) -> None:
         """Create a reaction emoji to insult users"""
         msg = await ctx.send("React to this message to be insulted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
         self.feedback[msg.id] = []
 
-    async def is_mod_or_admin(self, member: discord.Member):
+    async def is_mod_or_admin(self, member: discord.Member) -> bool:
         guild = member.guild
         if member == guild.owner:
             return True
@@ -84,13 +109,15 @@ class Fenrir(commands.Cog):
             return True
         return False
 
-    @listener()
-    async def on_raw_reaction_add(self, payload):
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         try:
             guild = self.bot.get_guild(payload.guild_id)
-        except Exception as e:
-            print(e)
+        except Exception:
             return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
         if payload.message_id in self.kicks:
             member = guild.get_member(payload.user_id)
             if member is None:
@@ -112,7 +139,7 @@ class Fenrir(commands.Cog):
             if await self.is_mod_or_admin(member):
                 return
             try:
-                await member.ban(reason="They asked for it.")
+                await member.ban(reason="They asked for it.", delete_message_days=0)
             except Exception:
                 return
         if payload.message_id in self.mutes:
@@ -124,7 +151,7 @@ class Fenrir(commands.Cog):
             if await self.is_mod_or_admin(member):
                 return
             try:
-                r = guild.get_role(241943133003317249)
+                r = guild.get_role(await self.config.guild(guild).mute_role())
                 await member.add_roles(r, reason="They asked for it.")
             except Exception:
                 return
@@ -137,15 +164,21 @@ class Fenrir(commands.Cog):
             if member.bot:
                 return
             channel = guild.get_channel(payload.channel_id)
-            msg = await channel.get_message(payload.message_id)
+            try:
+                msg = await channel.fetch_message(payload.message_id)
+            except AttributeError:
+                msg = await channel.get_message(payload.message_id)
+            except Exception:
+                return
             ctx = await self.bot.get_context(msg)
             if await self.is_mod_or_admin(member) or str(payload.emoji) == "🐶":
                 try:
-                    compliment = self.bot.get_cog("Compliment").compliment
+                    compliment = self.bot.get_command("compliment")
                 except AttributeError:
-                    compliment = self.bot.get_cog("Insult").insult
-                await ctx.invoke(compliment, user=member)
+                    compliment = self.bot.get_command("insult")
+                if compliment:
+                    await ctx.invoke(compliment, user=member)
             else:
-                insult = self.bot.get_cog("Insult").insult
+                insult = self.bot.get_command("insult")
                 await ctx.invoke(insult, user=member)
             self.feedback[payload.message_id].append(member.id)

@@ -2,11 +2,12 @@ import discord
 from redbot.core import commands
 from random import choice
 from redbot.core.i18n import Translator, cog_i18n
+from typing import List
 
 
 _ = Translator("Insult", __file__)
 
-insults = [
+insults: List[str] = [
     _("Yo Mama so fat she sued Xbox 360 for guessing her weight."),
     _(
         "You're so fat that when you were diagnosed with a flesh eating bacteria - the doctors gave you 87 years to live."
@@ -259,32 +260,103 @@ insults = [
     ),
     _("Your father could've used a condom but here you are."),
     _("You look like a randomized sim."),
-    
+    _("*Puts you in the oven.*"),
+	_("You're so stupid."),
+	_("Sorry, I can't hear you over how annoying you are."),
+	_("I've got better things to do."),
+	_("You're as dumb as Cleverbot."),
+	_("Your IQ is actually lower than The Mariana Trench."),
+	_("You're so annoying even the flies stay away from your stench."),
+	_("Go away, please."),
+	_("It looks like your face caught fire and someone tried to put it out with a hammer."),
+	_("Your family tree must be a cactus because everyone on it is a prick."),
+	_("Someday you will go far, and I hope you stay there."),
+	_("The zoo called. They're wondering how you got out of your cage."),
+	_("I was hoping for a battle of wits, but you appear to be unarmed."),
+	_("Brains aren't everything, in your case, they're nothing."),
+	_("Sorry I didn't get that, I don't speak idiot."),
+	_("Why is it acceptable for you to be an idiot, but not for me to point it out?"),
+	_("We all sprang from apes, but you did not spring far enough."),
+	_("Even monkeys can go to space, so clearly you lack some potential."),
+	_("It's brains over brawn, yet you have neither."),
+	_("You look like a monkey, and you smell like one too."),
+	_("Even among idiots you're lacking."),
+	_("You fail even when you're doing absolutely nothing."),
+	_("If there was a vote for 'least likely to succeed' you'd win first prize."),
+	_("I'm surrounded by idiots... Or, wait, that's just you."),
+	_("I wanna go home. Well, really I just want to get away from the awful aroma you've got going there."),
+	_("Every time you touch me I have to go home and wash all my clothes nine times just to get a normal smell back."),
+	_("If I had a dollar for every brain you don't have, I'd have one dollar."),
+	_("I'd help you succeed but you're incapable."),
+	_("Your hairline is built like a graph chart, positive and negative forces attract but the clippers and your hair repel."),
+	_("I know a good joke! You!"),
+	_("You have two parts of your brain, 'left' and 'right'. In the left side, there's nothing right. In the right side, there's nothing left."),
+	_("Is your ass jealous of the amount of shit that just comes out of your mouth?"),
+	_("I don't engage in mental combat with the unarmed."),
+	_("You sound reasonable. It must be time to up my medication!"),
+	_("If I had a face like yours, I'd sue my parents."),
+	_("There's only one problem with your face. I can see it."),
+	_("Don't you love nature, despite what it did to you?"),
+	_("What language are you speaking? Cause it sounds like bullshit."),
+	_("You have a room temperature IQ - if the room is in Antarctica."),
+	_("I would ask you how old you are but I know you can't count that high."),
+	_("Do you want to know how I get all these insults? I use something called intelligence."),
+	_("I was going to give you a nasty look, but you already have one."),
+	_("As an outsider, what do you think of the human race?"),
+	_("Oh, what? Sorry. I was trying to imagine you with a personality."),
+	_("We can always tell when you are lying. Your lips move."),
+	_("I may love to shop but I'm not buying your bullshit."),
+	_("Hell is wallpapered with all your deleted selfies."),
+	_("You are living proof that manure can sprout legs and walk."),
+	_("You do realize makeup isn't going to fix your stupidity?"),
+	_("Calling you an idiot would be an insult to all stupid people."),
+	_("You have the perfect face for radio."),
+	_("What's the difference between you and an egg? Eggs get laid!"),
+	_("You look like a rock smashed into a pile of sand, rolled into a blunt, and got smoked through an asthma inhaler."),
+	_("Your advice is about as useful as a paper-mache bomb shelter."),
+	_("Is it sad that your theme song might as well have a 0/0 signature?"),
+	_("You're so fat, you make the galaxy look like it's on the molecular scale."),
+
 ]
 
 
 @cog_i18n(_)
 class Insult(commands.Cog):
-
     """Airenkun's Insult Cog"""
+
+    __author__ = ["Airen", "JennJenn", "TrustyJAID"]
+    __version__ = "1.0.0"
 
     def __init__(self, bot):
         self.bot = bot
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.command(aliases=["takeitback"])
-    async def insult(self, ctx, user: discord.Member = None):
+    async def insult(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
             Insult the user
-            
+
             `user` the user you would like to insult
         """
 
         msg = " "
-        if user != None:
+        if user:
 
             if user.id == self.bot.user.id:
                 user = ctx.message.author
-                msg = [
+                bot_msg = [
                     _(
                         " How original. No one else had thought of trying to get the bot to insult itself. I applaud your creativity. Yawn. Perhaps this is why you don't have friends. You don't add anything new to any conversation. You are more of a bot than me, predictable answers, and absolutely dull to have an actual conversation with."
                     ),
@@ -292,7 +364,7 @@ class Insult(commands.Cog):
                         " What the fuck did you just fucking say about me, you little bitch? I’ll have you know I graduated top of my class in the Navy Seals, and I’ve been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I’m the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You’re fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that’s just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little “clever” comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn’t, you didn’t, and now you’re paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You’re fucking dead, kiddo."
                     ),
                 ]
-                await ctx.send(user.mention + choice(msg))
+                await ctx.send(f"{ctx.author.mention}{choice(bot_msg)}")
 
             else:
                 await ctx.send(user.mention + msg + choice(insults))

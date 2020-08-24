@@ -1,5 +1,3 @@
-import discord
-
 
 class Badge:
     def __init__(

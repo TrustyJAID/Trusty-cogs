@@ -1,3 +1,4 @@
+import discord
 from datetime import datetime
 from redbot.core import Config
 from .game import Game
@@ -31,7 +32,7 @@ class GameDayChannels:
 
     @staticmethod
     async def check_new_gdc(bot):
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+        config = bot.get_cog("Hockey").config
         game_list = await Game.get_games()  # Do this once so we don't spam the api
         for guilds in await config.all_guilds():
             guild = bot.get_guild(guilds)
@@ -50,7 +51,11 @@ class GameDayChannels:
                 chn_name = await GameDayChannels.get_chn_name(next_game)
                 try:
                     cur_channels = await config.guild(guild).gdc()
-                    cur_channel = bot.get_channel(cur_channels[0])
+                    if cur_channels:
+                        cur_channel = bot.get_channel(cur_channels[0])
+                    else:
+                        cur_channel = None
+                        # this is dumb but eh
                 except Exception:
                     log.error("Error checking new GDC", exc_info=True)
                     cur_channel = None
@@ -72,14 +77,16 @@ class GameDayChannels:
             if no game object is passed it looks for the set team for the guild
             returns None if not setup
         """
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
-        guild_data = await config.guild(guild).all()
-        category = bot.get_channel(guild_data["category"])
+        config = bot.get_cog("Hockey").config
+        category_id = await config.guild(guild).category()
+        if not category_id:
+            return
+        category = bot.get_channel(category_id)
         if category is None:
             # Return none if there's no category to create the channel
             return
         if game_data is None:
-            team = guild_data["gdc_team"]
+            team = await config.guild(guild).gdc_team()
 
             next_games = await Game.get_games_list(team, datetime.now())
             if next_games != []:
@@ -100,16 +107,15 @@ class GameDayChannels:
             log.error("Error creating channels in {}".format(guild.name), exc_info=True)
             return
         # cur_channels = await config.guild(guild).gdc()
-        if "gdc" not in guild_data:
-            guild_data["gdc"] = []
-        if guild_data["gdc"] is None:
-            guild_data["gdc"] = []
-        guild_data["gdc"].append(new_chn.id)
-        await config.guild(guild).gdc.set(guild_data["gdc"])
+        current_gdc = await config.guild(guild).gdc()
+        current_gdc.append(new_chn.id)
+        await config.guild(guild).gdc.set(current_gdc)
         # await config.guild(guild).create_channels.set(True)
         await config.channel(new_chn).team.set([team])
-        # delete_gdc = await config.guild(guild).delete_gdc()
-        await config.channel(new_chn).to_delete.set(guild_data["delete_gdc"])
+        delete_gdc = await config.guild(guild).delete_gdc()
+        await config.channel(new_chn).to_delete.set(delete_gdc)
+        gdc_state_updates = await config.guild(guild).gdc_state_updates()
+        await config.channel(new_chn).game_states.set(gdc_state_updates)
 
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
@@ -128,16 +134,28 @@ class GameDayChannels:
             f"{next_game.away_team} {next_game.away_emoji} @ "
             f"{next_game.home_team} {next_game.home_emoji} {time_string}"
         )
-
-        await new_chn.edit(topic=game_msg)
+        try:
+            await new_chn.edit(topic=game_msg)
+        except discord.errors.Forbidden:
+            log.error("Error editing the channel topic")
         if new_chn.permissions_for(guild.me).embed_links:
             em = await next_game.game_state_embed()
-            preview_msg = await new_chn.send(embed=em)
+            try:
+                preview_msg = await new_chn.send(embed=em)
+            except Exception:
+                log.error("Error posting game preview in GDC channel.")
         else:
-            preview_msg = await new_chn.send(await next_game.game_state_text())
+            try:
+                preview_msg = await new_chn.send(await next_game.game_state_text())
+            except Exception:
+                log.error("Error posting game preview in GDC channel.")
+                return
 
         # Create new pickems object for the game
-        await Pickems.create_pickem_object(guild, preview_msg, new_chn, next_game)
+        try:
+            await Pickems.create_pickem_object(bot, guild, preview_msg, new_chn, next_game)
+        except Exception:
+            log.error("Error creating pickems object in GDC channel.")
 
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()
@@ -153,9 +171,10 @@ class GameDayChannels:
         """
             Deletes all game day channels in a given guild
         """
-        config = Config.get_conf(None, CONFIG_ID, cog_name="Hockey")
+        config = bot.get_cog("Hockey").config
         channels = await config.guild(guild).gdc()
-
+        if channels is None:
+            channels = []
         for channel in channels:
             chn = bot.get_channel(channel)
             if chn is None:

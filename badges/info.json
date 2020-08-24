@@ -2,25 +2,23 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
-    "description" : "Create your own 3 letter agency badge! Works with gif avatars too.",
+    "description" : "Create your own badge with your discord info.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
-    "install_msg" : "This cog comes with a bundled data folder containing fonts. Type [p]badges to see what badges are available!",
+    "install_msg" : "This cog comes with a bundled data folder containing fonts. Type `[p]badges` to see what badges are available!",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "Badges",
     "permissions" : [
         "attach_files"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "pillow"
     ],

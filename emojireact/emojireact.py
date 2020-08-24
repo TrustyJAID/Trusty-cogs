@@ -22,6 +22,12 @@ class EmojiReactions(commands.Cog):
         self.config = Config.get_conf(self, 35677998656)
         self.config.register_guild(**default_guild)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.group()
     @checks.admin_or_permissions(manage_messages=True)
     async def emojireact(self, ctx):
@@ -89,10 +95,13 @@ class EmojiReactions(commands.Cog):
             msg = _("Okay, I will react to messages " "containing all emojis!")
             await ctx.send(msg)
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         channel = message.channel
         emoji_list = []
         if message.guild is None:
+            return
+        if not channel.permissions_for(message.guild.me).add_reactions:
             return
         if await self.config.guild(message.guild).guild():
             for match in EMOJI.finditer(message.content):
@@ -108,5 +117,7 @@ class EmojiReactions(commands.Cog):
         for emoji in emoji_list:
             try:
                 await message.add_reaction(emoji)
-            except:
-                pass
+            except discord.errors.Forbidden:
+                return
+            except discord.errors.HTTPException:
+                continue

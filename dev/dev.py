@@ -11,6 +11,7 @@ import discord
 from redbot.core import checks, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.utils.predicates import MessagePredicate
 
 """
 Notice:
@@ -28,11 +29,36 @@ START_CODE_BLOCK_RE = re.compile(r"^((```py)(?=\s)|(```))")
 class Dev(commands.Cog):
     """Various development focused utilities."""
 
+    __version__ = "3.2.3"
+    __author__ = [
+        "R.Danny",
+        "Toby",
+        "Will",
+        "Michael",
+        "Eslyium",
+        "Preda",
+        "NeuroAssassin",
+        "TrustyJAID",
+    ]
+
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
         self._last_result = None
         self.sessions = set()
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
 
     @staticmethod
     def cleanup_code(content):
@@ -63,11 +89,7 @@ class Dev(commands.Cog):
     def sanitize_output(ctx: commands.Context, input_: str) -> str:
         """Hides the bot's token from a string."""
         token = ctx.bot.http.token
-        r = "[EXPUNGED]"
-        result = input_.replace(token, r)
-        result = result.replace(token.lower(), r)
-        result = result.replace(token.upper(), r)
-        return result
+        return re.sub(re.escape(token), "[EXPUNGED]", input_, re.I)
 
     @commands.command()
     @checks.is_owner()
@@ -115,11 +137,10 @@ class Dev(commands.Cog):
             await ctx.send(box("{}: {!s}".format(type(e).__name__, e), lang="py"))
             return
 
-        if asyncio.iscoroutine(result):
+        if inspect.isawaitable(result):
             result = await result
 
         self._last_result = result
-
         result = self.sanitize_output(ctx, str(result))
 
         await ctx.send_interactive(self.get_pages(result), box_lang="py")
@@ -219,17 +240,13 @@ class Dev(commands.Cog):
         self.sessions.add(ctx.channel.id)
         await ctx.send(_("Enter code to execute or evaluate. `exit()` or `quit` to exit."))
 
-        msg_check = lambda m: (
-            m.author == ctx.author and m.channel == ctx.channel and m.content.startswith("`")
-        )
-
         while True:
-            response = await ctx.bot.wait_for("message", check=msg_check)
+            response = await ctx.bot.wait_for("message", check=MessagePredicate.regex(r"^`", ctx))
 
             cleaned = self.cleanup_code(response.content)
 
             if cleaned in ("quit", "exit", "exit()"):
-                await ctx.send("Exiting.")
+                await ctx.send(_("Exiting."))
                 self.sessions.remove(ctx.channel.id)
                 return
 
@@ -294,7 +311,7 @@ class Dev(commands.Cog):
 
         ctx.bot.dispatch("message", msg)
 
-    @commands.command(name="sudomsg")
+    @commands.command(name="mockmsg")
     @checks.is_owner()
     async def mock_msg(self, ctx, user: discord.Member, *, content: str):
         """Dispatch a message event as if it were sent by a different user.

@@ -2,32 +2,31 @@
     "author" : [
         "TrustyJAID"
     ],
-    "bot_version" : [
-        3,
-        0,
-        0
-    ],
-    "description" : "Gathers stats from Runescape API endpoints.",
+    "description" : "A cog to grab Runescape and OSRS stats and profile information.",
     "disabled" : false,
+    "end_user_data_statement" : "This cog may store User ID's linked with an external API name for the purposes of simplifying command usage.\nUsers may clear this saved information at any time by command.",
     "hidden" : false,
-    "install_msg" : "gathers runescape stats and information.",
+    "install_msg" : "Thanks for installing.",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.1.8",
     "min_python_version" : [
         3,
-        6,
+        7,
         2
     ],
     "name" : "runescape",
     "permissions" : [
         "embed_links"
     ],
-    "required_cogs" : [],
+    "required_cogs" : {},
     "requirements" : [
         "tabulate"
     ],
     "short" : "Runescape",
     "tags" : [
-        "rune",
-        "games"
+        "runescape",
+        "games",
+        "osrs"
     ],
     "type" : "COG"
 }

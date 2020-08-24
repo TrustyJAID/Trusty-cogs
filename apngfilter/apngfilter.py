@@ -3,18 +3,17 @@ import io
 from redbot.core import checks, commands, Config
 import re
 import aiohttp
+from typing import cast
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
 APNG_REGEX = re.compile(rb"fdAT")  # credit to Soulrift for researh on this
-listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
-
-if listener is None:  # thanks Sinbad
-    def listener(name=None):
-        return lambda x: x
 
 
 class APNGFilter(commands.Cog):
     """Filter those pesky APNG images"""
+
+    __author__ = ["TrustyJAID", "Sinbad", "Soulrift"]
+    __version__ = "1.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -22,10 +21,23 @@ class APNGFilter(commands.Cog):
         self.config = Config.get_conf(self, 435457347654)
         self.config.register_guild(**default)
 
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    async def apngfilter(self, ctx):
+    async def apngfilter(self, ctx: commands.Context) -> None:
         """
             Toggle APNG filters on the server
         """
@@ -37,13 +49,13 @@ class APNGFilter(commands.Cog):
             msg = "Enabled"
         await ctx.send("APNG Filter " + msg)
 
-    @listener()
-    async def on_message(self, message):
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
         if not message.guild:
             return
         if not await self.config.guild(message.guild).enabled():
             return
-        channel = message.channel
+        channel = cast(discord.TextChannel, message.channel)
         if not channel.permissions_for(channel.guild.me).manage_messages:
             return
         is_link = IS_LINK_REGEX.findall(message.content)
@@ -64,9 +76,9 @@ class APNGFilter(commands.Cog):
                 await message.delete()
                 break
         if is_link:
-            for file in IS_LINK_REGEX.finditer(message.content):
+            for files in IS_LINK_REGEX.finditer(message.content):
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(file.group()) as file:
+                    async with session.get(files.group()) as file:
                         temp = io.BytesIO()
                         data = await file.read()
                         temp.write(data)

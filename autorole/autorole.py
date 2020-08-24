@@ -1,8 +1,13 @@
 import discord
-from redbot.core import commands, checks, Config
-from redbot.core.i18n import Translator, cog_i18n
 import random
 import string
+import logging
+
+from typing import Optional, cast
+
+from redbot import version_info, VersionInfo
+from redbot.core import commands, checks, Config
+from redbot.core.i18n import Translator, cog_i18n
 
 
 default_settings = {
@@ -11,11 +16,16 @@ default_settings = {
     "AGREE_CHANNEL": None,
     "AGREE_MSG": None,
     "AGREE_KEY": None,
+    "DELETE_KEY": False,
 }
+
+log = logging.getLogger("red.Trusty-cogs.autorole")
+
 _ = Translator("Autorole", __file__)
 listener = getattr(commands.Cog, "listener", None)  # red 3.0 backwards compatibility support
 
 if listener is None:  # thanks Sinbad
+
     def listener(name=None):
         return lambda x: x
 
@@ -27,13 +37,29 @@ class Autorole(commands.Cog):
         https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/autorole/autorole.py
     """
 
+    __author__ = ["Lunar-Dust", "TrustyJAID"]
+    __version__ = "1.3.1"
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 45463543548)
         self.config.register_guild(**default_settings)
         self.users = {}
 
-    async def _no_perms(self, channel=None):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+            Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
+    async def _no_perms(self, channel: Optional[discord.TextChannel] = None) -> None:
         m = _(
             "It appears that you haven't given this "
             "bot enough permissions to use autorole. "
@@ -44,28 +70,36 @@ class Autorole(commands.Cog):
             "guild settings."
         )
         if channel is None:
-            print(m)
+            log.info(m)
             return
         if channel.permissions_for(channel.guild.me).send_messages:
             await channel.send(m)
         else:
-            print(m + _("\n I also don't have permission to speak in #") + channel.name)
+            log.info(m + _("\n I also don't have permission to speak in #") + channel.name)
 
-    async def get_colour(self, guild):
-        if await self.bot.db.guild(guild).use_bot_color():
-            return guild.me.colour
-        else:
-            return await self.bot.db.color()
-
-    @listener()
-    async def on_message(self, message):
-        guild = message.guild
-        user = message.author
-        channel = message.channel
+    async def get_colour(self, channel: discord.TextChannel) -> discord.Colour:
         try:
-            agree_channel = guild.get_channel(await self.config.guild(guild).AGREE_CHANNEL())
-        except:
+            if await self.bot.db.guild(channel.guild).use_bot_color():
+                return channel.guild.me.colour
+            else:
+                return await self.bot.db.color()
+        except AttributeError:
+            return await self.bot.get_embed_colour(channel)
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        guild = message.guild
+        if not guild:
             return
+
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        user = cast(discord.Member, message.author)
+        channel = message.channel
+        agree_channel = cast(
+            discord.TextChannel, guild.get_channel(await self.config.guild(guild).AGREE_CHANNEL())
+        )
         if guild is None:
             return
         if agree_channel is None:
@@ -79,16 +113,27 @@ class Autorole(commands.Cog):
             if not guild.me.guild_permissions.manage_roles:
                 await self._no_perms(agree_channel)
                 return
-            if self.users[user.id].lower() in message.content.lower():
+            if self.users[user.id]["key"].lower() in message.content.lower():
+                perms = agree_channel.permissions_for(guild.me)
                 roles_id = await self.config.guild(guild).ROLE()
-                del self.users[user.id]
                 roles = [role for role in guild.roles if role.id in roles_id]
                 for role in roles:
                     await user.add_roles(role, reason=_("Agreed to the rules"))
-                if agree_channel.permissions_for(guild.me).add_reactions:
+                if perms.manage_messages and await self.config.guild(guild).DELETE_KEY():
+                    try:
+                        await message.delete()
+                    except Exception:
+                        pass
+                    if self.users[user.id]["message"].guild:
+                        try:
+                            await self.users[user.id]["message"].delete()
+                        except Exception:
+                            pass
+                elif perms.add_reactions:
                     await message.add_reaction("✅")
+                del self.users[user.id]
 
-    async def _agree_maker(self, member):
+    async def _agree_maker(self, member: discord.Member) -> None:
         guild = member.guild
         self.last_guild = guild
         # await self._verify_json(None)
@@ -97,9 +142,11 @@ class Autorole(commands.Cog):
             key = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
             # <3 Stackoverflow http://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python/23728630#23728630
 
-        self.users[member.id] = key
 
-        ch = guild.get_channel(await self.config.guild(guild).AGREE_CHANNEL())
+
+        ch = cast(
+            discord.TextChannel, guild.get_channel(await self.config.guild(guild).AGREE_CHANNEL())
+        )
         msg = await self.config.guild(guild).AGREE_MSG()
         if msg is None:
             msg = "{mention} please enter {key} in {channel}"
@@ -112,8 +159,8 @@ class Autorole(commands.Cog):
                 guild=guild.name,
                 channel=ch.mention,
             )
-        except Exception as e:
-            print(e)
+        except Exception:
+            log.error("Error formatting agreement message", exc_info=True)
 
         try:
             msg = await member.send(msg)
@@ -121,8 +168,9 @@ class Autorole(commands.Cog):
             msg = await ch.send(msg)
         except discord.HTTPException:
             return
+        self.users[member.id] = {"key": key, "message": msg}
 
-    async def _auto_give(self, member):
+    async def _auto_give(self, member: discord.Member) -> None:
         guild = member.guild
         roles_id = await self.config.guild(guild).ROLE()
         roles = [role for role in guild.roles if role.id in roles_id]
@@ -132,8 +180,8 @@ class Autorole(commands.Cog):
         for role in roles:
             await member.add_roles(role, reason=_("Joined the server"))
 
-    @listener()
-    async def on_member_join(self, member):
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if await self.config.guild(guild).ENABLED():
             if await self.config.guild(guild).AGREE_CHANNEL() is not None:
@@ -141,61 +189,69 @@ class Autorole(commands.Cog):
             else:  # Immediately give the new user the role
                 await self._auto_give(member)
 
+    @commands.guild_only()
     @commands.group(name="autorole")
     @commands.bot_has_permissions(manage_roles=True)
-    async def autorole(self, ctx):
+    async def autorole(self, ctx: commands.Context) -> None:
         """
             Change settings for autorole
 
             Requires the manage roles permission
         """
-        if ctx.invoked_subcommand is None:
-            guild = ctx.message.guild
-            enabled = await self.config.guild(guild).ENABLED()
-            if not enabled:
-                return
-            roles = await self.config.guild(guild).ROLE()
-            msg = await self.config.guild(guild).AGREE_MSG()
-            key = await self.config.guild(guild).AGREE_KEY()
-            ch_id = await self.config.guild(guild).AGREE_CHANNEL()
-            channel = guild.get_channel(ch_id)
-            chn_name = channel.name if channel is not None else "None"
-            chn_mention = channel.mention if channel is not None else "None"
-            role_name = []
-            if ctx.channel.permissions_for(ctx.me).embed_links:
-                role_name_str = ", ".join(role.mention for role in guild.roles if role.id in roles)
-                embed = discord.Embed(colour=await self.get_colour(guild))
-                embed.set_author(name=_("Autorole settings for ") + guild.name)
-                embed.add_field(name=_("Current autorole state: "), value=str(enabled))
-                embed.add_field(name=_("Current Roles: "), value=role_name_str)
-                if msg:
-                    embed.add_field(name=_("Agreement message: "), value=msg)
-                if key:
-                    embed.add_field(name=_("Agreement key: "), value=key)
-                if channel:
-                    embed.add_field(name=_("Agreement channel: "), value=chn_mention)
-                await ctx.send(embed=embed)
-            else:
-                role_name_str = ", ".join(role.name for role in guild.roles if role.id in roles)
-                send_msg = (
-                    "```"
-                    + _("Current autorole state: ")
-                    + f"{enabled}\n"
-                    + _("Current Roles: ")
-                    + f"{role_name_str}\n"
-                    + _("Agreement message: ")
-                    + f"{msg}\n"
-                    + _("Agreement key: ")
-                    + f"{key}\n"
-                    + _("Agreement channel: ")
-                    + f"{chn_name}"
-                    + "```"
-                )
-                await ctx.send(send_msg)
+        pass
+
+    @autorole.command(name="info")
+    async def autorole_info(self, ctx: commands.Context) -> None:
+        """
+            Display current autorole info
+        """
+        guild = ctx.message.guild
+        enabled = await self.config.guild(guild).ENABLED()
+        roles = await self.config.guild(guild).ROLE()
+        msg = await self.config.guild(guild).AGREE_MSG()
+        key = await self.config.guild(guild).AGREE_KEY()
+        ch_id = await self.config.guild(guild).AGREE_CHANNEL()
+        delete = await self.config.guild(guild).DELETE_KEY()
+        channel = guild.get_channel(ch_id)
+        chn_name = channel.name if channel is not None else "None"
+        chn_mention = channel.mention if channel is not None else "None"
+        role_name_str = ", ".join(role.mention for role in guild.roles if role.id in roles)
+        if not role_name_str:
+            role_name_str = "None"
+        if ctx.channel.permissions_for(ctx.me).embed_links:
+            embed = discord.Embed(colour=await self.get_colour(ctx.channel))
+            embed.set_author(name=_("Autorole settings for ") + guild.name)
+            embed.add_field(name=_("Current autorole state: "), value=str(enabled))
+            embed.add_field(name=_("Current Roles: "), value=str(role_name_str))
+            if msg:
+                embed.add_field(name=_("Agreement message: "), value=str(msg))
+            if key:
+                embed.add_field(name=_("Agreement key: "), value=str(key))
+            if channel:
+                embed.add_field(name=_("Agreement channel: "), value=str(chn_mention))
+            await ctx.send(embed=embed)
+        else:
+            send_msg = (
+                "```"
+                + _("Current autorole state: ")
+                + f"{enabled}\n"
+                + _("Current Roles: ")
+                + f"{role_name_str}\n"
+                + _("Agreement message: ")
+                + f"{msg}\n"
+                + _("Agreement key: ")
+                + f"{key}\n"
+                + _("Delete Agreement: ")
+                + f"{delete}\n"
+                + _("Agreement channel: ")
+                + f"{chn_name}"
+                + "```"
+            )
+            await ctx.send(send_msg)
 
     @autorole.command()
     @checks.admin_or_permissions(manage_roles=True)
-    async def toggle(self, ctx):
+    async def toggle(self, ctx: commands.Context) -> None:
         """
             Enables/Disables autorole
         """
@@ -213,7 +269,7 @@ class Autorole(commands.Cog):
 
     @autorole.command(name="add", aliases=["role"])
     @checks.admin_or_permissions(manage_roles=True)
-    async def role(self, ctx, *, role: discord.Role):
+    async def role(self, ctx: commands.Context, *, role: discord.Role) -> None:
         """
             Add a role for autorole to assign.
 
@@ -240,7 +296,7 @@ class Autorole(commands.Cog):
 
     @autorole.command()
     @checks.admin_or_permissions(manage_roles=True)
-    async def remove(self, ctx, *, role: discord.Role):
+    async def remove(self, ctx: commands.Context, *, role: discord.Role) -> None:
         """
             Remove a role from the autorole.
         """
@@ -255,7 +311,7 @@ class Autorole(commands.Cog):
 
     @autorole.group()
     @checks.admin_or_permissions(manage_roles=True)
-    async def agreement(self, ctx):
+    async def agreement(self, ctx: commands.Context) -> None:
         """
             Set the channel and message that will be used for accepting the rules.
 
@@ -278,8 +334,8 @@ class Autorole(commands.Cog):
     @agreement.command(name="channel")
     @checks.admin_or_permissions(manage_roles=True)
     async def set_agreement_channel(
-        self, ctx: commands.context, channel: discord.TextChannel = None
-    ):
+        self, ctx: commands.Context, channel: discord.TextChannel = None
+    ) -> None:
         """
             Set the agreement channel
 
@@ -299,9 +355,22 @@ class Autorole(commands.Cog):
             await self.config.guild(guild).AGREE_CHANNEL.set(channel.id)
             await ctx.send(_("Agreement channel set to ") + channel.mention)
 
+    @agreement.command(name="delete")
+    @checks.admin_or_permissions(manage_roles=True)
+    async def set_agreement_delete(self, ctx: commands.Context) -> None:
+        """
+            Toggle automatically deleting the agreement message.
+        """
+        delete_key = await self.config.guild(ctx.guild).DELETE_KEY()
+        await self.config.guild(ctx.guild).DELETE_KEY.set(not delete_key)
+        if delete_key:
+            await ctx.send(_("No longer automatically deleting agreement key."))
+        else:
+            await ctx.send(_("Automatically deleting agreement key."))
+
     @agreement.command(name="key")
     @checks.admin_or_permissions(manage_roles=True)
-    async def set_agreement_key(self, ctx, *, key: str = None):
+    async def set_agreement_key(self, ctx: commands.Context, *, key: str = None) -> None:
         """
             Set the agreement key
 
@@ -324,7 +393,7 @@ class Autorole(commands.Cog):
 
     @agreement.command(name="message", aliases=["msg"])
     @checks.admin_or_permissions(manage_roles=True)
-    async def set_agreement_msg(self, ctx, *, message: str = None):
+    async def set_agreement_msg(self, ctx: commands.Context, *, message: str = None) -> None:
         """
             Set the agreement message
             `{key}` must be included in the message so a user knows what to type in the channel.
@@ -354,8 +423,13 @@ class Autorole(commands.Cog):
     @agreement.command(name="setup")
     @checks.admin_or_permissions(manage_roles=True)
     async def agreement_setup(
-        self, ctx, channel: discord.TextChannel = None, key: str = None, *, msg: str = None
-    ):
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = None,
+        key: str = None,
+        *,
+        msg: str = None,
+    ) -> None:
         """
             Set the channel and message that will be used for accepting the rules.
 

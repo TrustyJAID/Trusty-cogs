@@ -21,6 +21,12 @@ class Covfefe(commands.Cog):
         except:
             return None
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     @commands.command()
     async def covefy(self, ctx, msg):
         """Convert almost any word into covfefe"""

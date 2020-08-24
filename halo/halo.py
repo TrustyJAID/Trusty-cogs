@@ -21,6 +21,12 @@ class Halo(commands.Cog):
         self.config = Config.get_conf(self, 35689771456)
         self.config.register_global(**default_global)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+            Nothing to delete
+        """
+        return
+
     async def request_url(self, url, params=None):
         header_data = await self.config.api_token()
         header = {

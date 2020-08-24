@@ -2,15 +2,17 @@ import discord
 import aiohttp
 import asyncio
 import logging
+import json
 from base64 import b64encode
 from datetime import datetime
+from typing import Optional, List
 
 
-from redbot.core.json_io import JsonIO
+from redbot.core import commands, Config, checks, VersionInfo, version_info
 from redbot.core.bot import Red
-from redbot.core import commands, Config, checks
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator, cog_i18n, get_locale
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.predicates import MessagePredicate
 
 from .errors import (
     Destiny2APIError,
@@ -25,6 +27,16 @@ BASE_URL = "https://www.bungie.net/Platform"
 IMAGE_URL = "https://www.bungie.net"
 AUTH_URL = "https://www.bungie.net/en/oauth/authorize"
 TOKEN_URL = "https://www.bungie.net/platform/app/oauth/token/"
+BUNGIE_MEMBERSHIP_TYPES = {
+    0: "None",
+    1: "Xbox",
+    2: "Playstation",
+    3: "Steam",
+    4: "Blizzard",
+    5: "Stadia",
+    10: "Demon",
+    254: "BungieNext",
+}
 
 
 _ = Translator("Destiny", __file__)
@@ -33,11 +45,18 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 
 @cog_i18n(_)
 class DestinyAPI:
+    config: Config
+    bot: Red
+    throttle: float
+
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
+        self.throttle: float
 
-    async def request_url(self, url, params=None, headers=None):
+    async def request_url(
+        self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
+    ) -> dict:
         """
             Helper to make requests from formed headers and params elsewhere
             and apply rate limiting to prevent issues
@@ -66,7 +85,7 @@ class DestinyAPI:
                     log.error("Could not connect to the API")
                     raise Destiny2APIError
 
-    async def get_access_token(self, code):
+    async def get_access_token(self, code: str) -> dict:
         """
             Called once the OAuth flow is complete and acquires an access token
         """
@@ -89,7 +108,7 @@ class DestinyAPI:
                 else:
                     raise Destiny2InvalidParameters(_("That token is invalid."))
 
-    async def get_refresh_token(self, user: discord.User):
+    async def get_refresh_token(self, user: discord.User) -> dict:
         """
             Generate a refresh token if the token is expired
         """
@@ -111,9 +130,10 @@ class DestinyAPI:
                     else:
                         return data
                 else:
+                    await self.config.user(user).oauth.clear()
                     raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
 
-    async def get_o_auth(self, ctx):
+    async def get_o_auth(self, ctx: commands.Context) -> Optional[dict]:
         """
             This sets up the OAuth flow for logging into the API
         """
@@ -134,17 +154,15 @@ class DestinyAPI:
             await ctx.send(msg + url)
         try:
             msg = await ctx.bot.wait_for(
-                "message",
-                check=lambda m: m.author == ctx.message.author,
-                timeout=60
+                "message", check=lambda m: m.author == ctx.message.author, timeout=60
             )
         except asyncio.TimeoutError:
-            return
+            return None
         if msg.content != "exit":
             return await self.get_access_token(msg.content)
-        pass
+        return None
 
-    async def build_headers(self, user: discord.User = None):
+    async def build_headers(self, user: discord.User = None) -> dict:
         """
             Build the headers for each API call from a discord User
             if present, if a function doesn't require OAuth it won't pass
@@ -161,14 +179,15 @@ class DestinyAPI:
             return header
         try:
             await self.check_expired_token(user)
-        except Destiny2RefreshTokenError:
+        except Destiny2RefreshTokenError as e:
+            log.error(e, exc_info=True)
             raise
         access_token = await self.config.user(user).oauth.access_token()
         token_type = await self.config.user(user).oauth.token_type()
         header["Authorization"] = "{} {}".format(token_type, access_token)
         return header
 
-    async def get_user_profile(self, user: discord.User):
+    async def get_user_profile(self, user: discord.User) -> dict:
         headers = await self.build_headers(user)
         return await self.request_url(
             BASE_URL + "/User/GetMembershipsForCurrentUser/", headers=headers
@@ -213,13 +232,14 @@ class DestinyAPI:
             await self.config.user(user).oauth.set(refresh)
             return
 
-    async def get_characters(self, user: discord.User):
+    async def get_characters(self, user: discord.User) -> dict:
         """
             This pulls the data for each character from the API given a user object
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception as e:
+            log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
         params = {"components": "200,204,205,300,302,304"}
         platform = await self.config.user(user).account.membershipType()
@@ -227,15 +247,16 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_entities(self, entity: str):
+    async def get_entities(self, entity: str) -> dict:
         """
             This loads the entity from the saved manifest
         """
-        json_io = JsonIO(cog_data_path(self) / f"{entity}.json")
-        data = json_io._load_json()
+        path = cog_data_path(self) / f"{entity}.json"
+        with path.open(encoding="utf-8", mode="r") as f:
+            data = json.load(f)
         return data
 
-    async def get_definition(self, entity: str, entity_hash: list):
+    async def get_definition(self, entity: str, entity_hash: list) -> List[dict]:
         """
             This will attempt to get a definition from the manifest
             if the manifest is missing it will try and pull the data
@@ -244,7 +265,7 @@ class DestinyAPI:
         items = []
         try:
             data = await self.get_entities(entity)
-        except:
+        except Exception:
             log.info(_("No manifest found, getting response from API."))
             return await self.get_definition_from_api(entity, entity_hash)
         for item in entity_hash:
@@ -255,13 +276,13 @@ class DestinyAPI:
         return items
         # return data[entity][entity_hash]
 
-    async def get_definition_from_api(self, entity: str, entity_hash):
+    async def get_definition_from_api(self, entity: str, entity_hash) -> List[dict]:
         """
             This will acquire definition data from the API when the manifest is missing
         """
         try:
             headers = await self.build_headers()
-        except:
+        except Exception:
             raise Destiny2APIError
         items = []
         for hashes in entity_hash:
@@ -270,13 +291,13 @@ class DestinyAPI:
             items.append(data)
         return items
 
-    async def search_definition(self, entity: str, entity_hash: str):
+    async def search_definition(self, entity: str, entity_hash: str) -> List[dict]:
         """
             This is a helper to search clean names for a given definition of data
         """
         try:
             data = await self.get_entities(entity)
-        except:
+        except Exception:
             err_msg = _("This command requires the Manifest to be downloaded to work.")
             raise Destiny2MissingManifest(err_msg)
         items = []
@@ -288,13 +309,13 @@ class DestinyAPI:
                 items.append(data)
         return items
 
-    async def get_vendor(self, user: discord.User, character, vendor):
+    async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
         """
             This gets the inventory of a specified Vendor
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception:
             raise Destiny2RefreshTokenError
         params = {"components": "400,401,402"}
         platform = await self.config.user(user).account.membershipType()
@@ -302,14 +323,14 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_activity_history(self, user: discord.User, character, mode):
+    async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
         """
             This retreieves the activity history for a users character
 
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception:
             raise Destiny2RefreshTokenError
         params = {"count": 5, "mode": mode}
         platform = await self.config.user(user).account.membershipType()
@@ -318,8 +339,14 @@ class DestinyAPI:
         return await self.request_url(url, params=params, headers=headers)
 
     async def get_historical_stats(
-        self, user: discord.User, character, mode, period=2, dayend=None, daystart=None
-    ):
+        self,
+        user: discord.User,
+        character: str,
+        mode: str,
+        period: int = 2,
+        dayend: Optional[str] = None,
+        daystart: Optional[str] = None,
+    ) -> dict:
         """
             Setup access to historical data
             requires a user object, character hash, and mode type
@@ -329,7 +356,7 @@ class DestinyAPI:
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception:
             raise Destiny2RefreshTokenError
         params = {"mode": mode, "periodType": period, "groups": "1,2,3,101,102,103"}
         # Set these up incase we want to use them later
@@ -342,7 +369,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_historical_stats_account(self, user: discord.User):
+    async def get_historical_stats_account(self, user: discord.User) -> dict:
         """
             This works the same as get_historical_stats but gets
             stats for all characters merged together
@@ -351,7 +378,7 @@ class DestinyAPI:
         """
         try:
             headers = await self.build_headers(user)
-        except:
+        except Exception:
             raise Destiny2RefreshTokenError
         params = {"groups": "1,2,3,101,102,103"}
         platform = await self.config.user(user).account.membershipType()
@@ -359,7 +386,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def has_oauth(self, ctx: commands.Context, user: discord.Member = None):
+    async def has_oauth(self, ctx: commands.Context, user: discord.Member = None) -> bool:
         """
             Basic checks to see if the user has OAuth setup
             if not or the OAuth keys are expired this will call the refresh
@@ -379,11 +406,11 @@ class DestinyAPI:
             try:
                 data = await self.get_o_auth(ctx)
                 if not data:
-                    return
+                    return False
             except Destiny2InvalidParameters as e:
                 try:
                     await ctx.author.send(str(e))
-                except:
+                except discord.errors.Forbidden:
                     await ctx.send(str(e))
                 return False
             except Destiny2MissingAPITokens:
@@ -394,7 +421,7 @@ class DestinyAPI:
             await self.config.user(ctx.author).oauth.set(data)
             try:
                 await ctx.author.send(_("Credentials saved."))
-            except:
+            except discord.errors.Forbidden:
                 await ctx.send(_("Credentials saved."))
         if not await self.config.user(ctx.author).account():
             data = await self.get_user_profile(ctx.author)
@@ -404,16 +431,23 @@ class DestinyAPI:
                 name = datas["displayName"]
                 await self.config.user(ctx.author).account.set(datas)
             else:
-                bungie_membership_types = {1: "Xbox", 2: "Playstation", 4: "Blizzard"}
                 name = data["destinyMemberships"][0]["displayName"]
-                platform = bungie_membership_types[data["destinyMemberships"][0]["membershipType"]]
+                platform = BUNGIE_MEMBERSHIP_TYPES[data["destinyMemberships"][0]["membershipType"]]
                 await self.config.user(ctx.author).account.set(data["destinyMemberships"][0])
+            await ctx.send(
+                _("Account set to {name} {platform}").format(name=name, platform=platform)
+            )
+        if await self.config.user(ctx.author).account.membershipType() == 4:
+            data = await self.get_user_profile(ctx.author)
+            datas, platform = await self.pick_account(ctx, data["destinyMemberships"])
+            name = datas["displayName"]
+            await self.config.user(ctx.author).account.set(datas)
             await ctx.send(
                 _("Account set to {name} {platform}").format(name=name, platform=platform)
             )
         return True
 
-    async def pick_account(self, ctx, memberships: list):
+    async def pick_account(self, ctx: commands.Context, memberships: list) -> tuple:
         """
             Have the user pick which account they want to pull data
             from if they have multiple accounts across platforms
@@ -422,37 +456,41 @@ class DestinyAPI:
             "There are multiple destiny memberships "
             "available, which one would you like to use?\n"
         )
-        bungie_membership_types = {1: "Xbox", 2: "Playstation", 4: "Blizzard"}
         count = 1
         for membership in memberships:
-            platform = bungie_membership_types[membership["membershipType"]]
+            platform = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
             account_name = membership["displayName"]
             msg += f"**{count}. {account_name} {platform}**\n"
             count += 1
-        check = lambda m: m.author == ctx.message.author and m.content.isdigit()
         try:
             await ctx.author.send(msg)
-        except:
+        except discord.errors.Forbidden:
             await ctx.send(msg)
         try:
-            msg = await ctx.bot.wait_for("message", check=check, timeout=60)
+            pred = MessagePredicate.valid_int(ctx)
+            msg = await ctx.bot.wait_for(
+                "message", check=pred, timeout=60
+            )
         except asyncio.TimeoutError:
-            return
-        membership = memberships[int(msg.content) - 1]
-        membership_name = bungie_membership_types[membership["membershipType"]]
+            return None, None
+        membership = memberships[int(pred.result) - 1]
+        membership_name = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
         return (membership, membership_name)
 
-    async def get_manifest(self):
+    async def get_manifest(self) -> None:
         """
             Checks if the manifest is up to date and downloads if it's not
         """
-        await self.bot.wait_until_ready()
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         try:
             headers = await self.build_headers()
         except Destiny2MissingAPITokens:
             return
         manifest_data = await self.request_url(f"{BASE_URL}/Destiny2/Manifest/", headers=headers)
-        locale = await self.bot.db.locale()
+        locale = get_locale()
         if locale in manifest_data:
             manifest = manifest_data["jsonWorldContentPaths"][locale]
         elif locale[:-3] in manifest_data:
@@ -464,8 +502,11 @@ class DestinyAPI:
                 async with session.get(f"https://bungie.net/{manifest}", headers=headers) as resp:
                     data = await resp.json()
             for key, value in data.items():
-                await JsonIO(cog_data_path(self) / f"{key}.json")._threadsafe_save_json(value)
+                path = cog_data_path(self) / f"{key}.json"
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(value, f, indent=4, sort_keys=False, separators=(",", " : "))
             await self.config.manifest_version.set(manifest_data["version"])
+        return manifest_data["version"]
 
     async def get_char_colour(self, embed: discord.Embed, character):
         r = character["emblemColor"]["red"]
