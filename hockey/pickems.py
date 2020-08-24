@@ -39,10 +39,14 @@ class Pickems:
         self.away_team = away_team
         self.votes = votes
         self.home_emoji = (
-            TEAMS[home_team]["emoji"] if home_team in TEAMS else "nhl:496510372828807178"
+            TEAMS[home_team]["emoji"]
+            if home_team in TEAMS
+            else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
         )
         self.away_emoji = (
-            TEAMS[away_team]["emoji"] if away_team in TEAMS else "nhl:496510372828807178"
+            TEAMS[away_team]["emoji"]
+            if away_team in TEAMS
+            else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
         )
         self.winner = winner
         self.name = name
@@ -94,10 +98,15 @@ class Pickems:
             allow the pickems objects to check winner on their own
         """
         if self.link:
-            game = await get_game_from_link(self.link)
+            game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
         else:
-            return
+            games_list = await Game.get_games(self.home_team, self.game_start, self.game_start)
+            if len(games_list) == 0 and self.name:
+                log.error(f"{self.name} Pickems game could not be found, was it rescheduled?")
+            elif len(games_list) == 1:
+                return await self.set_pickem_winner(games_list[0])
+            return self
 
     @staticmethod
     async def find_pickems_object(bot, game):
@@ -154,7 +163,8 @@ class Pickems:
                     old_name = name
 
         if old_pickem is None:
-            pickems[new_name] = Pickems.from_json({
+            pickems[new_name] = Pickems.from_json(
+                {
                     "message": [message.id],
                     "channel": [channel.id],
                     "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -164,10 +174,12 @@ class Pickems:
                     "name": new_name,
                     "winner": None,
                     "link": game.link,
-                })
+                }
+            )
 
             bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             log.debug("creating new pickems")
+            log.debug(pickems)
             return True
         else:
             # del pickems[old_name]
@@ -262,9 +274,7 @@ class Pickems:
         count = 0
 
         while True:
-            chn_name = _("pickems-{month}-{day}").format(
-                month=today.month, day=today.day
-            )
+            chn_name = _("pickems-{month}-{day}").format(month=today.month, day=today.day)
             data = []
             for guild in guilds:
                 new_chn = await Pickems.create_pickems_channel(bot, chn_name, guild)
@@ -351,7 +361,7 @@ class Pickems:
                     except Exception:
                         log.error("Error removing pickems from memory", exc_info=True)
                 # await config.guild(guild).pickems.set(
-                    # [p.to_json() for p in pickem_list if p.winner is None]
+                # [p.to_json() for p in pickem_list if p.winner is None]
                 # )
             except Exception:
                 log.error(_("Error tallying leaderboard in ") + f"{guild.name}", exc_info=True)
@@ -370,9 +380,7 @@ class Pickems:
 
     @classmethod
     def from_json(cls, data: dict):
-        link = None
-        if "link" in data:
-            link = data["link"]
+
         return cls(
             data["message"],
             data["channel"],
@@ -380,6 +388,6 @@ class Pickems:
             data["home_team"],
             data["away_team"],
             data["votes"],
-            data["winner"],
-            link,
+            data.get("winner", None),
+            data.get("link", None),
         )

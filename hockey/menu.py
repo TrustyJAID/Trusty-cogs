@@ -2,8 +2,9 @@ import asyncio
 import discord
 import logging
 import aiohttp
+import re
 
-from typing import Any, Optional
+from typing import Any, Optional, Pattern, List
 from datetime import datetime
 
 from redbot.core import commands
@@ -21,7 +22,6 @@ from .errors import NoSchedule
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
-
 
 
 class GamesMenu(menus.MenuPages, inherit_buttons=False):
@@ -191,6 +191,50 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
                     )
                 )
             await self.show_page(0)
+
+    @menus.button("\N{FAMILY}")
+    async def choose_teams(self, payload: discord.RawReactionActionEvent) -> None:
+        """stops the pagination session."""
+        send_msg = await self.ctx.send(
+            _("Enter the team you would like to filter for.")
+        )
+
+        def check(m: discord.Message):
+            return m.author == self.ctx.author
+
+        try:
+            msg = await self.ctx.bot.wait_for("message", check=check, timeout=30)
+        except asyncio.TimeoutError:
+            await send_msg.delete()
+            return
+        potential_teams = msg.clean_content.split()
+        teams: List[str] = []
+        for team, data in TEAMS.items():
+            if "Team" in teams:
+                continue
+            nick = data["nickname"]
+            short = data["tri_code"]
+            pattern = (
+                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
+            )
+            if nick:
+                pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+            # log.debug(pattern)
+            reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
+            for pot in potential_teams:
+                find = reg.findall(pot)
+                if find:
+                    teams.append(team)
+            self.source.team = teams
+        try:
+            await self.source.prepare()
+        except NoSchedule:
+            return await self.ctx.send(
+                _("Sorry No schedule was found for the teams {teams}").format(
+                    teams=humanize_list(teams)
+                )
+            )
+        await self.show_page(0)
 
 
 class StandingsPages(menus.ListPageSource):

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
+from .helper import utc_to_local
 from .constants import BASE_URL, TEAMS
 from .game import Game
 from .errors import NoSchedule
@@ -23,9 +24,7 @@ class Schedule(menus.PageSource):
         self._cache = []
         self._checks = 0
         self._last_page = 0
-        self.date = kwargs.get("date", datetime.utcnow())
-        if self.date is None:
-            self.date = datetime.utcnow()
+        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", None)
         self._last_searched = ""
@@ -60,7 +59,7 @@ class Schedule(menus.PageSource):
                 data = await resp.json()
         game_obj = await Game.from_json(data)
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
-        return await game_obj.make_game_embed()
+        return await game_obj.make_game_embed(True)
 
     async def next(self, skip: bool = False):
         """

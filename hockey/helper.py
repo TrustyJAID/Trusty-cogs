@@ -64,7 +64,7 @@ class TeamDateFinder(Converter):
     async def convert(
         self, ctx: Context, argument: str
     ) -> Dict[str, Optional[Union[datetime, List[str], str]]]:
-        result: Dict[str, Optional[Union[datetime, List[str], str]]] = {"team": [], "date": None}
+        result: Dict[str, Optional[Union[datetime, List[str], str]]] = {"team": []}
         find = DATE_RE.search(argument)
         if find:
             log.debug(find)
@@ -76,12 +76,14 @@ class TeamDateFinder(Converter):
             if "Team" in team:
                 continue
             nick = data["nickname"]
-            short = data["short_name"]
+            short = data["tri_code"]
             pattern = (
-                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split()) + r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
             )
+            if nick:
+                pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
             # log.debug(pattern)
-            reg: Pattern = re.compile(fr"\b{pattern}\b", flags=re.I)
+            reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
             for pot in potential_teams:
                 find = reg.findall(pot)
                 if find:
