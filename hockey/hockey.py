@@ -132,7 +132,7 @@ class Hockey(HockeyDev, commands.Cog):
             await self.bot.wait_until_red_ready()
         else:
             await self.bot.wait_until_ready()
-        # await self._pre_check()
+        await self._pre_check()
         while self is self.bot.get_cog("Hockey"):
             try:
                 async with aiohttp.ClientSession() as session:
