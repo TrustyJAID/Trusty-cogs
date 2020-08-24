@@ -1,9 +1,13 @@
-import re
+import discord
+from redbot.core.bot import Red
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
-import discord
 
+import re
+import contextlib
 from typing import Optional, Union
+
+from .constants import regionals, ball, emoji_dict
 
 """Module for fun/meme commands commands
    Fun commands from Appu's selfbot
@@ -12,166 +16,18 @@ from typing import Optional, Union
 
 class Fun(commands.Cog):
     """
-        RedBot V3 conversion of Appu's Fun cog
+    Module for fun/meme commands.
+    
+    RedBot V3 conversion of Appu's Fun cog.
     """
+
     __author__ = ["Appu", "TrustyJAID"]
-    __version__ = "1.2.2"
+    __version__ = "1.3.0"
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red):
         self.bot = bot
-        self.regionals = {
-            "a": "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
-            "b": "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
-            "c": "\N{REGIONAL INDICATOR SYMBOL LETTER C}",
-            "d": "\N{REGIONAL INDICATOR SYMBOL LETTER D}",
-            "e": "\N{REGIONAL INDICATOR SYMBOL LETTER E}",
-            "f": "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
-            "g": "\N{REGIONAL INDICATOR SYMBOL LETTER G}",
-            "h": "\N{REGIONAL INDICATOR SYMBOL LETTER H}",
-            "i": "\N{REGIONAL INDICATOR SYMBOL LETTER I}",
-            "j": "\N{REGIONAL INDICATOR SYMBOL LETTER J}",
-            "k": "\N{REGIONAL INDICATOR SYMBOL LETTER K}",
-            "l": "\N{REGIONAL INDICATOR SYMBOL LETTER L}",
-            "m": "\N{REGIONAL INDICATOR SYMBOL LETTER M}",
-            "n": "\N{REGIONAL INDICATOR SYMBOL LETTER N}",
-            "o": "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
-            "p": "\N{REGIONAL INDICATOR SYMBOL LETTER P}",
-            "q": "\N{REGIONAL INDICATOR SYMBOL LETTER Q}",
-            "r": "\N{REGIONAL INDICATOR SYMBOL LETTER R}",
-            "s": "\N{REGIONAL INDICATOR SYMBOL LETTER S}",
-            "t": "\N{REGIONAL INDICATOR SYMBOL LETTER T}",
-            "u": "\N{REGIONAL INDICATOR SYMBOL LETTER U}",
-            "v": "\N{REGIONAL INDICATOR SYMBOL LETTER V}",
-            "w": "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
-            "x": "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
-            "y": "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
-            "z": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
-            "0": "0⃣",
-            "1": "1⃣",
-            "2": "2⃣",
-            "3": "3⃣",
-            "4": "4⃣",
-            "5": "5⃣",
-            "6": "6⃣",
-            "7": "7⃣",
-            "8": "8⃣",
-            "9": "9⃣",
-            "!": "\u2757",
-            "?": "\u2753",
-        }
-        self.emoji_reg = re.compile(r"<:.+?:([0-9]{15,21})>")
-        self.ball = [
-            "It is certain",
-            "It is decidedly so",
-            "Without a doubt",
-            "Yes definitely",
-            "You may rely on it",
-            "As I see it, yes",
-            "Most likely",
-            "Outlook good",
-            "Yes",
-            "Signs point to yes",
-            "Reply hazy try again",
-            "Ask again later",
-            "Better not tell you now",
-            "Cannot predict now",
-            "Concentrate and ask again",
-            "Don't count on it",
-            "My reply is no",
-            "My sources say no",
-            "Outlook not so good",
-            "Very doubtful",
-        ]
 
-        self.emoji_dict = {
-            # these arrays are in order of "most desirable". Put emojis that most convincingly correspond to their letter near the front of each array.
-            "a": ["🇦", "🅰", "🍙", "🔼", "4⃣"],
-            "b": ["🇧", "🅱", "8⃣"],
-            "c": ["🇨", "©", "🗜"],
-            "d": ["🇩", "↩"],
-            "e": ["🇪", "3⃣", "📧", "💶"],
-            "f": ["🇫", "🎏"],
-            "g": ["🇬", "🗜", "6⃣", "9⃣", "⛽"],
-            "h": ["🇭", "♓"],
-            "i": ["🇮", "ℹ", "🚹", "1⃣"],
-            "j": ["🇯", "🗾"],
-            "k": ["🇰", "🎋"],
-            "l": ["🇱", "1⃣", "🇮", "👢", "💷"],
-            "m": ["🇲", "Ⓜ", "📉"],
-            "n": ["🇳", "♑", "🎵"],
-            "o": ["🇴", "🅾", "0⃣", "⭕", "🔘", "⏺", "⚪", "⚫", "🔵", "🔴", "💫"],
-            "p": ["🇵", "🅿"],
-            "q": ["🇶", "♌"],
-            "r": ["🇷", "®"],
-            "s": ["🇸", "💲", "5⃣", "⚡", "💰", "💵"],
-            "t": ["🇹", "✝", "➕", "🎚", "🌴", "7⃣"],
-            "u": ["🇺", "⛎", "🐉"],
-            "v": ["🇻", "♈", "☑"],
-            "w": ["🇼", "〰", "📈"],
-            "x": ["🇽", "❎", "✖", "❌", "⚒"],
-            "y": ["🇾", "✌", "💴"],
-            "z": ["🇿", "2⃣"],
-            "0": ["0⃣", "🅾", "0⃣", "⭕", "🔘", "⏺", "⚪", "⚫", "🔵", "🔴", "💫"],
-            "1": ["1⃣", "🇮"],
-            "2": ["2⃣", "🇿"],
-            "3": ["3⃣"],
-            "4": ["4⃣"],
-            "5": ["5⃣", "🇸", "💲", "⚡"],
-            "6": ["6⃣"],
-            "7": ["7⃣"],
-            "8": ["8⃣", "🎱", "🇧", "🅱"],
-            "9": ["9⃣"],
-            "?": ["❓"],
-            "!": ["❗", "❕", "⚠", "❣"],
-            # emojis that contain more than one letter can also help us react
-            # letters that we are trying to replace go in front, emoji to use second
-            #
-            # if there is any overlap between characters that could be replaced,
-            # e.g. 💯 vs 🔟, both could replace "10",
-            # the longest ones & most desirable ones should go at the top
-            # else you'll have "100" -> "🔟0" instead of "100" -> "💯".
-            "combination": [
-                ["cool", "🆒"],
-                ["back", "🔙"],
-                ["soon", "🔜"],
-                ["free", "🆓"],
-                ["end", "🔚"],
-                ["top", "🔝"],
-                ["abc", "🔤"],
-                ["atm", "🏧"],
-                ["new", "🆕"],
-                ["sos", "🆘"],
-                ["100", "💯"],
-                ["loo", "💯"],
-                ["zzz", "💤"],
-                ["...", "💬"],
-                ["ng", "🆖"],
-                ["id", "🆔"],
-                ["vs", "🆚"],
-                ["wc", "🚾"],
-                ["ab", "🆎"],
-                ["cl", "🆑"],
-                ["ok", "🆗"],
-                ["up", "🆙"],
-                ["10", "🔟"],
-                ["11", "⏸"],
-                ["ll", "⏸"],
-                ["ii", "⏸"],
-                ["tm", "™"],
-                ["on", "🔛"],
-                ["oo", "🈁"],
-                ["!?", "⁉"],
-                ["!!", "‼"],
-                ["21", "📅"],
-            ],
-        }
-
-        # used in textflip
         self.text_flip = {}
-        self.char_list = "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}"
-        self.alt_char_list = "{|}zʎxʍʌnʇsɹbdouɯlʞɾᴉɥƃɟǝpɔqɐ,‾^[\]Z⅄XMΛ∩┴SɹQԀONW˥ʞſIHפℲƎpƆq∀@¿<=>;:68ㄥ9ϛㄣƐᄅƖ0/˙-'+*(),⅋%$#¡"[
-            ::-1
-        ]
         self.generate_text_flip()
 
     async def red_delete_data_for_user(self, **kwargs):
@@ -181,9 +37,11 @@ class Fun(commands.Cog):
         return
 
     def generate_text_flip(self):
-        for idx, char in enumerate(self.char_list):
-            self.text_flip[char] = self.alt_char_list[idx]
-            self.text_flip[self.alt_char_list[idx]] = char
+        char_list = r"!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}"
+        alt_char_list = r"{|}zʎxʍʌnʇsɹbdouɯlʞɾᴉɥƃɟǝpɔqɐ,‾^[\]Z⅄XMΛ∩┴SɹQԀONW˥ʞſIHפℲƎpƆq∀@¿<=>;:68ㄥ9ϛㄣƐᄅƖ0/˙-'+*(),⅋%$#¡"
+        for idx, char in enumerate(char_list):
+            self.text_flip[char] = alt_char_list[::-1][idx]
+            self.text_flip[alt_char_list[::-1][idx]] = char
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -200,7 +58,7 @@ class Fun(commands.Cog):
 
     # used in [p]react, replaces e.g. 'ng' with '🆖'
     def replace_combos(self, react_me: str) -> str:
-        for combo in self.emoji_dict["combination"]:
+        for combo in emoji_dict["combination"]:
             if combo[0] in react_me:
                 react_me = react_me.replace(combo[0], combo[1], 1)
         return react_me
@@ -210,33 +68,28 @@ class Fun(commands.Cog):
         for char in "abcdefghijklmnopqrstuvwxyz0123456789!?":
             char_count = react_me.count(char)
             if char_count > 1:  # there's a duplicate of this letter:
-                if (
-                    len(self.emoji_dict[char]) >= char_count
-                ):  # if we have enough different ways to say the letter to complete the emoji chain
+                if len(emoji_dict[char]) >= char_count:
+                    # if we have enough different ways to say the letter to complete the emoji chain
                     i = 0
-                    while (
-                        i < char_count
-                    ):  # moving goal post necessitates while loop instead of for
-                        if self.emoji_dict[char][i] not in react_me:
-                            react_me = react_me.replace(char, self.emoji_dict[char][i], 1)
+                    while i < char_count:
+                        # moving goal post necessitates while loop instead of for
+                        if emoji_dict[char][i] not in react_me:
+                            react_me = react_me.replace(char, emoji_dict[char][i], 1)
                         else:
-                            char_count += 1  # skip this one because it's already been used by another replacement (e.g. circle emoji used to replace O already, then want to replace 0)
+                            # skip this one because it's already been used by another replacement (e.g. circle emoji used to replace O already, then want to replace 0)
+                            char_count += 1
                         i += 1
             else:
                 if char_count == 1:
-                    react_me = react_me.replace(char, self.emoji_dict[char][0])
+                    react_me = react_me.replace(char, emoji_dict[char][0])
         return react_me
 
     @commands.command()
     async def vowelreplace(self, ctx: commands.Context, replace: str, *, msg: str) -> None:
-        """Replaces all vowels in a word with a letter"""
+        """Replaces all vowels in a word with a letter."""
         result = ""
         for letter in msg:
-            if letter.lower() in "aeiou":
-                result += replace
-            else:
-                result += letter
-
+            result += replace if letter.lower() in "aeiou" else letter
         await ctx.send(result)
 
     @commands.command()
@@ -244,27 +97,18 @@ class Fun(commands.Cog):
         """Flip given text."""
         result = ""
         for char in msg:
-            if char in self.text_flip:
-                result += self.text_flip[char]
-            else:
-                result += char
+            result += self.text_flip[char] if char in self.text_flip else char
         await ctx.send(result[::-1])  # slice reverses the string
 
     @commands.command()
     async def regional(self, ctx: commands.Context, *, msg: str) -> None:
-        """Replace letters with regional indicator emojis"""
-
-        msg = list(msg)
-        regional_list = [
-            self.regionals[x.lower()] if x.lower() in self.regionals else x for x in msg
-        ]
-        regional_output = "\u200b".join(regional_list)
-        await ctx.send(regional_output)
+        """Replace letters with regional indicator emojis."""
+        regional_list = [regionals[x.lower()] if x.lower() in regionals else x for x in list(msg)]
+        await ctx.send("\u200b".join(regional_list))
 
     @commands.command()
     async def space(self, ctx: commands.Context, *, msg: str) -> None:
-        """Add n spaces between each letter. Ex: [p]space 2 thicc"""
-
+        """Add n spaces between each letter. Ex: `[p]space 2 thicc`."""
         if msg.split(" ", 1)[0].isdigit():
             spaces = int(msg.split(" ", 1)[0]) * " "
             msg = msg.split(" ", 1)[1].strip()
@@ -273,7 +117,7 @@ class Fun(commands.Cog):
         spaced_message = pagify(spaces.join(list(msg)))
         try:
             await ctx.send_interactive(spaced_message)
-        except discord.errors.HTTPException:
+        except discord.HTTPException:
             await ctx.send("That message is too long.", delete_after=10)
 
     @commands.command()
@@ -281,13 +125,12 @@ class Fun(commands.Cog):
         self, ctx: commands.Context, msg_id: int = None, channel: discord.TextChannel = None
     ) -> None:
         """
-            react 🅾🇴🇫 to a message
+            React 🅾🇴🇫 to a message.
 
-            `msg_id` must be the message ID for desited message within the channel
+            `msg_id` must be the message ID for desited message within the channel.
             `channel` must be the channel where the desired message is defaults to current channel
-            if the bot has manage messages permission it will attempt to delete the command
+            if the bot has manage messages permission it will attempt to delete the command.
         """
-        emojis = ["🅾", "🇴", "🇫"]
         if channel is None:
             channel = ctx.message.channel
         if msg_id is None:
@@ -296,22 +139,17 @@ class Fun(commands.Cog):
         else:
             try:
                 message = await channel.fetch_message(msg_id)
-            except AttributeError:
-                message = await channel.get_message(msg_id)  # type: ignore
-                # discord.py backwards compatibility support
-            except Exception:
-                await ctx.send(
+            except discord.NotFound:
+                return await ctx.send(
                     "Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5
                 )
-                return
+
+        if channel.permissions_for(ctx.me).add_reactions:
+            with contextlib.suppress(discord.HTTPException):
+                for emoji in ("🅾", "🇴", "🇫"):
+                    await message.add_reaction(emoji)
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
-        if channel.permissions_for(ctx.me).add_reactions:
-            for emoji in emojis:
-                try:
-                    await message.add_reaction(emoji)
-                except discord.errors.Forbidden:
-                    return
 
     # given String react_me, return a list of emojis that can construct the string with no duplicates (for the purpose of reacting)
     # TODO make it consider reactions already applied to the message
@@ -326,13 +164,10 @@ class Fun(commands.Cog):
         """
             Add letter(s) as reaction to previous message.
 
-            `msg` is the word you would like to react, no spaces
-            `msg_id` must be the message ID for desited message within the channel
-            `channel` must be the channel where the desired message is defaults to current channel
+            `msg` is the word you would like to react, no spaces.
+            `msg_id` must be the message ID for desited message within the channel.
+            `channel` must be the channel where the desired message is defaults to current channel.
         """
-
-        msg = msg.lower()
-
         if channel is None:
             channel = ctx.channel
         if not channel.permissions_for(ctx.me).add_reactions:
@@ -343,23 +178,19 @@ class Fun(commands.Cog):
         else:
             try:
                 message = await channel.fetch_message(msg_id)
-            except AttributeError:
-                message = await channel.get_message(msg_id)  # type: ignore
-            except discord.errors.NotFound:
-                await ctx.send(
+            except discord.NotFound:
+                return await ctx.send(
                     "Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5
                 )
-                return
 
         reactions = []
         non_unicode_emoji_list = []
-        react_me = (
-            ""  # this is the string that will hold all our unicode converted characters from msg
-        )
+        react_me = ""
+        # this is the string that will hold all our unicode converted characters from msg
 
         # replace all custom server emoji <:emoji:123456789> with "<" and add emoji ids to non_unicode_emoji_list
-        emotes = re.findall(r"<a?:(?:[a-zA-Z0-9]+?):(?:[0-9]+?)>", msg)
-        react_me = re.sub(r"<a?:([a-zA-Z0-9]+?):([0-9]+?)>", "", msg)
+        emotes = re.findall(r"<a?:(?:[a-zA-Z0-9]+?):(?:[0-9]+?)>", msg.lower())
+        react_me = re.sub(r"<a?:([a-zA-Z0-9]+?):([0-9]+?)>", "", msg.lower())
 
         for emote in emotes:
             reactions.append(discord.utils.get(self.bot.emojis, id=int(emote.split(":")[-1][:-1])))
@@ -367,16 +198,16 @@ class Fun(commands.Cog):
 
         if self.has_dupe(non_unicode_emoji_list):
             return await ctx.send(
-                "You requested that I react with at least two of the exact same specific emoji. I'll try to find alternatives for alphanumeric text, but if you specify a specific emoji must be used, I can't help."
+                "You requested that I react with at least two of the exact same specific emoji. "
+                "I'll try to find alternatives for alphanumeric text, but if you specify a specific emoji must be used, I can't help."
             )
 
         react_me_original = react_me
         # we'll go back to this version of react_me if prefer_combine
         # is false but we can't make the reaction happen unless we combine anyway.
 
-        if self.has_dupe(
-            react_me
-        ):  # there's a duplicate letter somewhere, so let's go ahead try to fix it.
+        if self.has_dupe(react_me):
+            # there's a duplicate letter somewhere, so let's go ahead try to fix it.
             react_me = self.replace_combos(react_me)
             react_me = self.replace_letters(react_me)
             # print(react_me)
@@ -384,14 +215,12 @@ class Fun(commands.Cog):
                 react_me = react_me_original
                 react_me = self.replace_combos(react_me)
                 react_me = self.replace_letters(react_me)
-                if self.has_dupe(
-                    react_me
-                ):  # this failed too, so there's really nothing we can do anymore.
+                if self.has_dupe(react_me):
+                    # this failed too, so there's really nothing we can do anymore.
                     return await ctx.send(
                         "Failed to fix all duplicates. Cannot react with this string."
                     )
 
-            lt_count = 0
             for char in react_me:
                 if (
                     char not in "0123456789"
@@ -399,19 +228,19 @@ class Fun(commands.Cog):
                     if char != "⃣":  # </3
                         reactions.append(char)
                 else:
-                    reactions.append(self.emoji_dict[char][0])
+                    reactions.append(emoji_dict[char][0])
         else:  # probably doesn't matter, but by treating the case without dupes seperately, we can save some time
-            lt_count = 0
             for char in react_me:
                 if char in "abcdefghijklmnopqrstuvwxyz0123456789!?":
-                    reactions.append(self.emoji_dict[char][0])
+                    reactions.append(emoji_dict[char][0])
                 else:
                     reactions.append(char)
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.message.delete()
+
         if message.channel.permissions_for(ctx.me).add_reactions:
-            for i in reactions:
-                try:
-                    await message.add_reaction(i)
-                except (discord.errors.Forbidden, discord.errors.HTTPException):
-                    return
+            with contextlib.suppress(discord.HTTPException):
+                for reaction in reactions:
+                    await message.add_reaction(reaction)
+        if not channel and ctx.channel.permissions_for(ctx.me).manage_messages:
+            await ctx.message.delete()
+        else:
+            await ctx.tick()
