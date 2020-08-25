@@ -1,4 +1,4 @@
-from .dev import Dev
+from .loaddev import LoadDev
 
 
 __red_end_user_data_statement__ = (
@@ -7,4 +7,5 @@ __red_end_user_data_statement__ = (
 
 
 def setup(bot):
-    bot.add_cog(Dev(bot))
+    cog = LoadDev(bot)
+    bot.add_cog(cog)

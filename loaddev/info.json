@@ -1,19 +1,12 @@
 {
     "author" : [
-        "R.Danny",
-        "Toby",
-        "Will",
-        "Michael",
-        "Eslyium",
-        "Preda",
         "TrustyJAID",
-        "NeuroAssassin"
     ],
-    "description" : "Cog loadable dev commands, replaces mock with legacy sudo command",
+    "description" : "Allow for cores dev module to be loaded after bot startup. Also allows replacing `[p]mock` with another alternative.",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : true,
-    "install_msg" : "Separate loadable dev functions instead of `--dev` startup command",
+    "install_msg" : "This allows cores dev module to be loaded dynamically. Not recommended for production use.",
     "max_bot_version" : "0.0.0",
     "min_bot_version" : "3.1.8",
     "min_python_version" : [
@@ -21,7 +14,7 @@
         7,
         2
     ],
-    "name" : "Dev",
+    "name" : "loaddev",
     "permissions" : [],
     "required_cogs" : {},
     "requirements" : [],
