@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.10.1"
+    __version__ = "2.11.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1072,7 +1072,7 @@ class Hockey(HockeyDev, commands.Cog):
                 ).format(channel=channel.mention, prefix=ctx.prefix)
             )
 
-    @hockeyset_commands.command(name="publishupdates", hidden=True)
+    @hockeyset_commands.command(name="publishupdates")
     async def set_game_publish_updates(
         self, ctx, channel: discord.TextChannel, *state: HockeyStates
     ):

@@ -174,7 +174,7 @@ class Standings:
                 if search != "all":
                     em = await Standings.build_standing_embed(standings, page)
                 else:
-                    em = await Standings.all_standing_embed(standings, page)
+                    em = await Standings.build_standing_embed(standings, page)
                 if message is not None:
                     await message.edit(embed=em)
 

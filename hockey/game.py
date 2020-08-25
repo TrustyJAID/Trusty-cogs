@@ -529,6 +529,7 @@ class Game:
         config = bot.get_cog("Hockey").config
         game_day_channels = await config.guild(guild).gdc()
         can_embed = channel.permissions_for(guild.me).embed_links
+        publish_states = await config.channel(channel).publish_states()
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
         if self.game_state == "Live":
@@ -561,9 +562,16 @@ class Game:
             )
             try:
                 if not can_embed:
-                    await channel.send(msg + "\n{}".format(state_text), **allowed_mentions)
+                    msg = await channel.send(msg + "\n{}".format(state_text), **allowed_mentions)
                 else:
-                    await channel.send(msg, embed=state_embed, **allowed_mentions)
+                    msg = await channel.send(msg, embed=state_embed, **allowed_mentions)
+                if self.game_state in publish_states:
+                    try:
+                        if channel.is_news():
+                            # allows backwards compatibility still
+                            await msg.publish()
+                    except Exception:
+                        pass
             except Exception:
                 log.error(
                     _("Could not post goal in {channel} ({id})").format(
@@ -583,6 +591,14 @@ class Game:
                     preview_msg = await channel.send(state_text)
                 else:
                     preview_msg = await channel.send(embed=state_embed)
+
+                if self.game_state in publish_states:
+                    try:
+                        if channel.is_news():
+                            # allows backwards compatibility still
+                            await preview_msg.publish()
+                    except Exception:
+                        pass
 
                 # Create new pickems object for the game
                 if self.game_state == "Preview":

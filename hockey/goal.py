@@ -80,7 +80,9 @@ class Goal:
         scorer_id = []
         if "players" in data:
             scorer_id = [
-                p["player"]["id"] for p in data["players"] if p["playerType"] in ["Scorer", "Shooter"]
+                p["player"]["id"]
+                for p in data["players"]
+                if p["playerType"] in ["Scorer", "Shooter"]
             ]
 
         if "strength" in data["result"]:
@@ -151,21 +153,22 @@ class Goal:
         try:
             guild = channel.guild
             if not channel.permissions_for(guild.me).send_messages:
-                log.debug(_("No permission to send messages in {channel} ({id})").format(
+                log.debug(
+                    _("No permission to send messages in {channel} ({id})").format(
                         channel=channel, id=channel.id
-                    ))
+                    )
+                )
                 return
             config = bot.get_cog("Hockey").config
             game_day_channels = await config.guild(guild).gdc()
             # Don't want to ping people in the game day channels
             can_embed = channel.permissions_for(guild.me).embed_links
-            can_manage_webhooks = (
-                False
-            )  # channel.permissions_for(guild.me).manage_webhooks
+            can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
             role = None
             guild_notifications = await config.guild(guild).goal_notifications()
             channel_notifications = await config.channel(channel).goal_notifications()
             goal_notifications = guild_notifications or channel_notifications
+            publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
             if goal_notifications:
                 log.debug(goal_notifications)
@@ -190,9 +193,7 @@ class Goal:
                 if webhook is None:
                     webhook = await channel.create_webhook(name=guild.me.name)
                 url = TEAMS[self.team_name]["logo"]
-                await webhook.send(
-                    username=self.team_name, avatar_url=url, embed=goal_embed
-                )
+                await webhook.send(username=self.team_name, avatar_url=url, embed=goal_embed)
                 return
 
             if not can_embed and not can_manage_webhooks:
@@ -202,16 +203,22 @@ class Goal:
                 else:
                     msg = await channel.send(goal_text)
                 # msg_list[str(channel.id)] = msg.id
-                return channel.id, msg.id
 
             if role is None or "missed" in self.event.lower():
                 msg = await channel.send(embed=goal_embed)
                 # msg_list[str(channel.id)] = msg.id
-                return channel.id, msg.id
+
             else:
                 msg = await channel.send(role.mention, embed=goal_embed, **allowed_mentions)
                 # msg_list[str(channel.id)] = msg.id
-                return channel.id, msg.id
+            if publish_goals:
+                try:
+                    if channel.is_news():
+                        # allows backwards compatibility still
+                        await msg.publish()
+                except Exception:
+                    pass
+            return channel.id, msg.id
         except Exception:
             log.error(_("Could not post goal in "), exc_info=True)
             return
