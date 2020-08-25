@@ -418,7 +418,7 @@ class Autorole(commands.Cog):
             await ctx.send(_("Agreement message cleared"))
         else:
             await self.config.guild(guild).AGREE_MSG.set(message)
-            await ctx.send(_("Agreement key set to ") + message)
+            await ctx.send(_("Agreement message set to ") + message)
 
     @agreement.command(name="setup")
     @checks.admin_or_permissions(manage_roles=True)
