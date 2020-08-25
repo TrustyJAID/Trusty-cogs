@@ -1,7 +1,5 @@
 {
-    "author" : [
-        "TrustyJAID",
-    ],
+    "author" : ["TrustyJAID"],
     "description" : "Allow for cores dev module to be loaded after bot startup. Also allows replacing `[p]mock` with another alternative.",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",

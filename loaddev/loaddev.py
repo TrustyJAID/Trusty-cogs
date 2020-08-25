@@ -120,3 +120,12 @@ class LoadDev(commands.Cog):
         # remove currently existing dev cog if it's loaded
         self.bot.add_cog(dev)
         await ctx.send(_("The following package was loaded: `{pack}`").format(pack="dev"))
+
+    @commands.command(name="unloaddev")
+    @checks.is_owner()
+    async def unload_dev(self, ctx: commands.Context):
+        """
+            Unload Dev
+        """
+        self.bot.remove_cog("Dev")
+        await ctx.send(_("The following package was unloaded: `{pack}`").format(pack="dev"))
