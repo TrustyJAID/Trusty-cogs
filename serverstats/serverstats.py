@@ -38,7 +38,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.4.3"
+    __version__ = "1.4.4"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -397,41 +397,38 @@ class ServerStats(commands.Cog):
     @commands.command()
     async def botstats(self, ctx: commands.Context) -> None:
         """Display stats about the bot"""
-        servers = len(ctx.bot.guilds)
-        members = set()
-        passed = (datetime.datetime.utcnow() - ctx.me.created_at).days
-        since = ctx.me.created_at.strftime("%d %b %Y %H:%M")
-        for g in ctx.bot.guilds:
-            count = 0
-            for m in g.members:
-                members.add(m.id)
-                count += 1
-            if not count % 10:
-                await asyncio.sleep(0.1)
-        msg = _(
-            "{bot} is on {servers} servers serving {members} members!\n"
-            "{bot} was created on **{since}**.\n"
-            "That's over **{passed}** days ago!"
-        ).format(
-            bot=ctx.me.mention, servers=servers, members=len(members), since=since, passed=passed
-        )
-        em = discord.Embed(
-            description=msg, colour=await ctx.embed_colour(), timestamp=ctx.message.created_at
-        )
-        if ctx.guild:
-            em.set_author(
-                name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-                icon_url=ctx.me.avatar_url,
+        async with ctx.typing():
+            servers = len(ctx.bot.guilds)
+            passed = (datetime.datetime.utcnow() - ctx.me.created_at).days
+            since = ctx.me.created_at.strftime("%d %b %Y %H:%M")
+            msg = _(
+                "{bot} is on {servers} servers serving {members} members!\n"
+                "{bot} was created on **{since}**.\n"
+                "That's over **{passed}** days ago!"
+            ).format(
+                bot=ctx.me.mention,
+                servers=servers,
+                members=len(self.bot.users),
+                since=since,
+                passed=passed,
             )
-        else:
-            em.set_author(
-                name=f"{ctx.me}", icon_url=ctx.me.avatar_url,
+            em = discord.Embed(
+                description=msg, colour=await ctx.embed_colour(), timestamp=ctx.message.created_at
             )
-        em.set_thumbnail(url=ctx.me.avatar_url)
-        if ctx.channel.permissions_for(ctx.me).embed_links:
-            await ctx.send(embed=em)
-        else:
-            await ctx.send(msg)
+            if ctx.guild:
+                em.set_author(
+                    name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
+                    icon_url=ctx.me.avatar_url,
+                )
+            else:
+                em.set_author(
+                    name=f"{ctx.me}", icon_url=ctx.me.avatar_url,
+                )
+            em.set_thumbnail(url=ctx.me.avatar_url)
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                await ctx.send(embed=em)
+            else:
+                await ctx.send(msg)
 
     @commands.command()
     @checks.mod_or_permissions(manage_channels=True)
