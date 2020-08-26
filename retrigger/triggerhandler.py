@@ -49,8 +49,12 @@ _ = Translator("ReTrigger", __file__)
 
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")
-LINK_REGEX: Pattern = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4))")
-IMAGE_REGEX: Pattern = re.compile(r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg)+")
+LINK_REGEX: Pattern = re.compile(
+    r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|mp3|mp4))", flags=re.I
+)
+IMAGE_REGEX: Pattern = re.compile(
+    r"(?:(?:https?):\/\/)?[\w\/\-?=%.]+\.(?:png|jpg|jpeg)+", flags=re.I
+)
 
 
 class TriggerHandler:
