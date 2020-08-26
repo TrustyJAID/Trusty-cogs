@@ -6,7 +6,6 @@ import logging
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
-from redbot import version_info, VersionInfo
 from redbot.core import commands, Config, modlog, VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -467,16 +466,21 @@ class EventMixin:
             return False
         for invite in await guild.invites():
             try:
+
+                created_at = getattr(invite, "created_at", datetime.datetime.utcnow())
+                channel = getattr(invite, "channel", discord.Object(id=0))
+                inviter = getattr(invite, "inviter", discord.Object(id=0))
                 invites[invite.code] = {
-                    "uses": invite.uses,
-                    "max_age": invite.max_age,
-                    "created_at": invite.created_at.timestamp(),
-                    "max_uses": invite.max_uses,
-                    "temporary": invite.temporary,
-                    "inviter": invite.inviter.id,
-                    "channel": invite.channel.id,
+                    "uses": getattr(invite, "uses", 0),
+                    "max_age": getattr(invite, "max_age", None),
+                    "created_at": created_at.timestamp(),
+                    "max_uses": getattr(invite, "max_uses", None),
+                    "temporary": getattr(invite, "temporary", False),
+                    "inviter": inviter.id,
+                    "channel": channel.id,
                 }
             except Exception:
+                logger.exception("Error saving invites.")
                 pass
         await self.config.guild(guild).invite_links.set(invites)
         return True
@@ -497,16 +501,13 @@ class EventMixin:
                     # logger.info(f"{invite.code}: {invite.uses} - {uses}")
                     if invite.uses > uses:
                         possible_link = _(
-                            "https://discord.gg/{code}\n" "Invited by: {inviter}"
+                            "https://discord.gg/{code}\nInvited by: {inviter}"
                         ).format(code=invite.code, inviter=str(invite.inviter))
 
             if not possible_link:
                 for code, data in invites.items():
                     try:
-                        try:
-                            invite = await self.bot.get_invite(code)
-                        except AttributeError:
-                            invite = await self.bot.fetch_invite(code)
+                        invite = await self.bot.fetch_invite(code)
                     except (
                         discord.errors.NotFound,
                         discord.errors.HTTPException,
@@ -520,20 +521,22 @@ class EventMixin:
                             # The invite link was on its last uses and subsequently
                             # deleted so we're fairly sure this was the one used
                             try:
-                                inviter = await self.bot.get_user_info(data["inviter"])
-                            except AttributeError:
                                 inviter = await self.bot.fetch_user(data["inviter"])
+                            except (discord.errors.NotFound, discord.errors.Forbidden):
+                                inviter = _("Unknown or deleted user ({inviter})").format(
+                                    inviter=data["inviter"]
+                                )
                             possible_link = _(
-                                "https://discord.gg/{code}\n" "Invited by: {inviter}"
+                                "https://discord.gg/{code}\nInvited by: {inviter}"
                             ).format(code=code, inviter=str(inviter))
             await self.save_invite_links(guild)  # Save all the invites again since they've changed
         if check_logs and not possible_link:
             action = discord.AuditLogAction.invite_create
             async for log in guild.audit_logs(action=action):
                 if log.target.code not in invites:
-                    possible_link = _(
-                        "https://discord.gg/{code}\n" "Invited by: {inviter}"
-                    ).format(code=log.target.code, inviter=str(log.target.inviter))
+                    possible_link = _("https://discord.gg/{code}\nInvited by: {inviter}").format(
+                        code=log.target.code, inviter=str(log.target.inviter)
+                    )
                     break
         return possible_link
 
@@ -619,11 +622,12 @@ class EventMixin:
             and self.settings[guild.id]["user_left"]["embed"]
         )
         time = datetime.datetime.utcnow()
+        check_after = time + datetime.timedelta(minutes=-30)
         perp = None
         reason = None
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.kick
-            async for log in guild.audit_logs(limit=5, action=action):
+            async for log in guild.audit_logs(limit=5, after=check_after, action=action):
                 if log.target.id == member.id:
                     perp = log.user
                     reason = log.reason
@@ -1669,6 +1673,22 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.0"):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
+        if invite.code not in self.settings[guild.id]["invite_links"]:
+            created_at = getattr(invite, "created_at", datetime.datetime.utcnow())
+            inviter = getattr(invite, "inviter", discord.Object(id=0))
+            channel = getattr(invite, "channel", discord.Object(id=0))
+            self.settings[guild.id]["invite_links"][invite.code] = {
+                "uses": getattr(invite, "uses", 0),
+                "max_age": getattr(invite, "max_age", None),
+                "created_at": created_at.timestamp(),
+                "max_uses": getattr(invite, "max_uses", None),
+                "temporary": getattr(invite, "temporary", False),
+                "inviter": inviter.id,
+                "channel": channel.id,
+            }
+            await self.config.guild(guild).invite_links.set(
+                self.settings[guild.id]["invite_links"]
+            )
         if not self.settings[guild.id]["invite_created"]["enabled"]:
             return
         try:
@@ -1693,8 +1713,7 @@ class EventMixin:
             emoji=self.settings[guild.id]["invite_created"]["emoji"], time=invite_time,
         )
         embed = discord.Embed(
-            title=_("Invite Created"),
-            colour=await self.get_event_colour(guild, "invite_created")
+            title=_("Invite Created"), colour=await self.get_event_colour(guild, "invite_created")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
@@ -1746,8 +1765,7 @@ class EventMixin:
             emoji=self.settings[guild.id]["invite_deleted"]["emoji"], time=invite_time,
         )
         embed = discord.Embed(
-            title=_("Invite Deleted"),
-            colour=await self.get_event_colour(guild, "invite_deleted")
+            title=_("Invite Deleted"), colour=await self.get_event_colour(guild, "invite_deleted")
         )
         worth_updating = False
         for attr, name in invite_attrs.items():
