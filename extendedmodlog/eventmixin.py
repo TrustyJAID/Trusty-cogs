@@ -1615,8 +1615,8 @@ class EventMixin:
                 if attr == "roles":
                     b = set(before.roles)
                     a = set(after.roles)
-                    before_roles = [list(b - a)][0]
-                    after_roles = [list(a - b)][0]
+                    before_roles = list(b - a)
+                    after_roles = list(a - b)
                     if before_roles:
                         for role in before_roles:
                             msg += role.name + _(" Role Removed.")
