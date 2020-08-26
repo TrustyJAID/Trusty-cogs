@@ -1279,7 +1279,6 @@ class Hockey(HockeyDev, commands.Cog):
                 source[team.replace("Team ", "").lower()] = DivisionStandingsPages
             else:
                 source[team] = TeamStandingsPages
-        log.info(standings)
         await BaseMenu(
             source=source[search](pages=standings),
             page_start=page,
