@@ -312,19 +312,21 @@ class Goal:
         away_msg = ""
         score = "☑ {scorer}\n"
         miss = "❌ {scorer}\n"
+        players = game.home_roster
+        players.update(game.away_roster)
         for goal in game.home_goals:
             scorer = ""
             scorer_num = ""
-            if f"ID{goal.scorer_id}" in game.players:
-                scorer = game.players[f"ID{goal.scorer_id}"]["person"]["fullName"]
+            if f"ID{goal.scorer_id}" in players:
+                scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 home_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":
                 home_msg += score.format(scorer=scorer)
         for goal in game.away_goals:
             scorer = ""
-            if f"ID{goal.scorer_id}" in game.players:
-                scorer = game.players[f"ID{goal.scorer_id}"]["person"]["fullName"]
+            if f"ID{goal.scorer_id}" in players:
+                scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 away_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":

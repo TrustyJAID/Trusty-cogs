@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.11.0"
+    __version__ = "2.11.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -95,11 +95,14 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_guild(**default_guild, force_registration=True)
         self.config.register_channel(**default_channel, force_registration=True)
         self.loop = bot.loop.create_task(self.game_check_loop())
-        self.TEST_LOOP = False  # used to test a continuous loop of a single game data
+        self.TEST_LOOP = False
+        # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
         self.pickems_save_lock = asyncio.Lock()
+        self.current_games = {}
+        self.games_playing = False
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -136,14 +139,14 @@ class Hockey(HockeyDev, commands.Cog):
         while self is self.bot.get_cog("Hockey"):
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(BASE_URL + "/api/v1/schedule") as resp:
+                    async with session.get(f"{BASE_URL}/api/v1/schedule") as resp:
                         data = await resp.json()
             except Exception:
                 log.debug(_("Error grabbing the schedule for today."), exc_info=True)
                 data = {"dates": []}
             if data["dates"] != []:
-                games = {
-                    game["link"]: 0
+                self.current_games = {
+                    game["link"]: {"count": 0, "game": None}
                     for game in data["dates"][0]["games"]
                     if game["status"]["abstractGameState"] != "Final"
                 }
@@ -153,12 +156,16 @@ class Hockey(HockeyDev, commands.Cog):
                 # Otherwise make the game day channels once we see
                 # the first preview message to delete old ones
                 await self.check_new_day()
-            games_playing = False
             if self.TEST_LOOP:
-                games = {"https://statsapi.web.nhl.com/api/v1/game/2019030231/feed/live": 0}
-            while games != {}:
-                games_playing = True
-                for link in games:
+                self.current_games = {
+                    "https://statsapi.web.nhl.com/api/v1/game/2019030231/feed/live": {
+                        "count": 0,
+                        "game": None,
+                    }
+                }
+            while self.current_games != {}:
+                self.games_playing = True
+                for link in self.current_games:
                     if not self.TEST_LOOP:
                         try:
                             async with aiohttp.ClientSession() as session:
@@ -168,17 +175,18 @@ class Hockey(HockeyDev, commands.Cog):
                             log.error(_("Error grabbing game data: "), exc_info=True)
                             continue
                     else:
-                        games_playing = False
+                        self.games_playing = False
                         with open(str(__file__)[:-9] + "testgame.json", "r") as infile:
                             data = json.loads(infile.read())
                     try:
                         game = await Game.from_json(data)
+                        self.current_games[link]["game"] = game
                     except Exception:
                         log.error(_("Error creating game object from json."), exc_info=True)
                         continue
                     try:
                         await self.check_new_day()
-                        posted_final = await game.check_game_state(self.bot, games[link])
+                        posted_final = await game.check_game_state(self.bot, self.current_games[link]["count"])
                     except Exception:
                         log.error("Error checking game state: ", exc_info=True)
 
@@ -194,21 +202,24 @@ class Hockey(HockeyDev, commands.Cog):
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception:
                             log.error(_("Pickems Set Winner error: "), exc_info=True)
-                        games[link] += 1
+                        self.current_games[link]["count"] += 1
                         if posted_final:
-                            games[link] = 10
+                            self.current_games[link]["count"] = 10
 
-                for link, count in games.items():
-                    if games[link] == 10:
-                        del games[link]
-                await asyncio.sleep(60)
+                for link in self.current_games:
+                    if self.current_games[link] == 10:
+                        del self.current_games[link]
+                if not self.TEST_LOOP:
+                    await asyncio.sleep(60)
+                else:
+                    await asyncio.sleep(10)
             log.debug(_("Games Done Playing"))
             try:
                 await Pickems.tally_leaderboard(self.bot)
             except Exception:
                 log.error(_("Error tallying leaderboard:"), exc_info=True)
                 pass
-            if games_playing:
+            if self.games_playing:
                 await self.config.created_gdc.set(False)
 
             # Final cleanup of config incase something went wrong
@@ -315,11 +326,7 @@ class Hockey(HockeyDev, commands.Cog):
                         guild_obj = discord.Object(id=int(guild_id))
                         data = {}
                         for name, pickem in pickems.items():
-                            if (
-                                datetime.utcnow() > (pickem.game_start + timedelta(hours=3))
-                                and not pickem.winner
-                            ):
-                                pickem = await pickem.check_winner()
+                            pickem = await pickem.check_winner()
                             data[name] = pickem.to_json()
                         await self.config.guild(guild_obj).pickems.set(data)
             except Exception:
@@ -328,6 +335,7 @@ class Hockey(HockeyDev, commands.Cog):
 
             log.debug("Saved pickems data.")
             await asyncio.sleep(120)
+
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(self, channel, message, game):
@@ -1096,7 +1104,7 @@ class Hockey(HockeyDev, commands.Cog):
             )
         await self.config.channel(channel).publish_states.set(list(set(state)))
         await ctx.send(
-            _("{channel} game updates set to {states}").format(
+            _("{channel} game updates set to publish {states}").format(
                 channel=channel.mention, states=humanize_list(list(set(state)))
             )
         )
@@ -1657,11 +1665,12 @@ class Hockey(HockeyDev, commands.Cog):
                     await ctx.send(msg)
 
     async def save_pickems_unload(self):
-        for guild_id, pickems in self.all_pickems.items():
-            guild_obj = discord.Object(id=int(guild_id))
-            await self.config.guild(guild_obj).pickems.set(
-                {name: p.to_json() for name, p in pickems.items()}
-            )
+        async with self.pickems_save_lock:
+            for guild_id, pickems in self.all_pickems.items():
+                guild_obj = discord.Object(id=int(guild_id))
+                await self.config.guild(guild_obj).pickems.set(
+                    {name: p.to_json() for name, p in pickems.items()}
+                )
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())

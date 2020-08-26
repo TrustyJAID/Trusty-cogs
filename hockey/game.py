@@ -21,6 +21,8 @@ _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
+GAME_TYPES = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
+
 
 class Game:
     """
@@ -86,18 +88,19 @@ class Game:
         self.home_emoji = (
             "<:{}>".format(TEAMS[home_team]["emoji"])
             if home_team in TEAMS
-            else "<:nhl:496510372828807178>"
+            else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
         )
         self.away_emoji = (
             "<:{}>".format(TEAMS[away_team]["emoji"])
             if away_team in TEAMS
-            else "<:nhl:496510372828807178>"
+            else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
         )
         self.first_star = kwargs.get("first_star")
         self.second_star = kwargs.get("second_star")
         self.third_star = kwargs.get("third_star")
         self.away_roster = kwargs.get("away_roster")
         self.home_roster = kwargs.get("home_roster")
+        self.game_type = kwargs.get("game_type")
         self.link = kwargs.get("link")
 
     def to_json(self) -> dict:
@@ -126,6 +129,7 @@ class Game:
             "first_star": self.first_star,
             "second_star": self.second_star,
             "third_star": self.third_star,
+            "game_type": {v: k for k, v in GAME_TYPES.items()}.get(self.game_type, ""),
             "link": self.link,
         }
 
@@ -231,16 +235,19 @@ class Game:
             em.colour = colour
         em.set_author(name=title, url=team_url, icon_url=self.home_logo)
         em.set_thumbnail(url=self.home_logo)
-        em.set_footer(text=_("Game start "), icon_url=self.away_logo)
+        em.set_footer(
+            text=_("{game_type} Game start ").format(game_type=self.game_type),
+            icon_url=self.away_logo,
+        )
         if self.game_state == "Preview":
             home_str, away_str = await self.get_stats_msg()
-
-            em.add_field(
-                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_str
-            )
             em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_str
             )
+            em.add_field(
+                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_str
+            )
+
         if self.game_state != "Preview":
             home_msg = (
                 _("Goals: **")
@@ -257,11 +264,12 @@ class Game:
                 + "**"
             )
             em.add_field(
-                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_msg
-            )
-            em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_msg
             )
+            em.add_field(
+                name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_msg
+            )
+
             if self.goals != []:
                 goal_msg = ""
                 first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
@@ -282,7 +290,7 @@ class Game:
                     for goal in list_goals[ordinal]:
                         if count == 5:
                             em.add_field(
-                                name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024]
+                                name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024], inline=False
                             )
                             count = 0
                             goal_msg = ""
@@ -298,14 +306,14 @@ class Game:
                             value=goal_msg[:1024],
                         )
                     if len(list_goals[ordinal]) <= 5 and goal_msg != "":
-                        em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024])
+                        em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024], inline=False)
                 if len(so_goals) != 0:
                     home_msg, away_msg = await self.goals[0].get_shootout_display(self)
                     em.add_field(name=f"{self.home_team}" + _(" Shootout"), value=home_msg)
                     em.add_field(name=f"{self.away_team}" + _(" Shootout"), value=away_msg)
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
-                em.add_field(name=_("Stars of the game"), value=stars)
+                em.add_field(name=_("Stars of the game"), value=stars, inline=False)
             if self.game_state == "Live":
                 period = self.period_ord
                 if self.period_time_left[0].isdigit():
@@ -783,7 +791,7 @@ class Game:
         first_star = decisions["firstStar"]["fullName"] if "firstStar" in decisions else None
         second_star = decisions["secondStar"]["fullName"] if "secondStar" in decisions else None
         third_star = decisions["thirdStar"]["fullName"] if "thirdStar" in decisions else None
-
+        game_type = GAME_TYPES.get(data["gameData"]["game"]["type"], _("Unknown"))
         return cls(
             game_state=data["gameData"]["status"]["abstractGameState"],
             home_team=data["gameData"]["teams"]["home"]["name"],
@@ -808,4 +816,5 @@ class Game:
             away_roster=away_roster,
             home_roster=home_roster,
             link=link,
+            game_type=game_type,
         )

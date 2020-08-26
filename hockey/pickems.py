@@ -19,38 +19,38 @@ class Pickems:
         Pickems object for handling votes on games for the day
     """
 
-    def __init__(
-        self,
-        message: list,
-        channel: list,
-        game_start: str,
-        home_team: str,
-        away_team: str,
-        votes: dict,
-        name: str,
-        winner: str = None,
-        link: str = None,
-    ):
+    message: list
+    channel: list
+    game_start: datetime
+    home_team: str
+    away_team: str
+    votes: dict
+    name: str
+    winner: str
+    link: str
+
+    def __init__(self, **kwargs):
         super().__init__()
-        self.message = message
-        self.channel = channel
+        self.message = kwargs.get("message")
+        self.channel = kwargs.get("channel")
+        game_start = kwargs.get("game_start")
         self.game_start = datetime.strptime(game_start, "%Y-%m-%dT%H:%M:%SZ")
-        self.home_team = home_team
-        self.away_team = away_team
-        self.votes = votes
+        self.home_team = kwargs.get("home_team")
+        self.away_team = kwargs.get("away_team")
+        self.votes = kwargs.get("votes")
         self.home_emoji = (
-            TEAMS[home_team]["emoji"]
-            if home_team in TEAMS
+            TEAMS[self.home_team]["emoji"]
+            if self.home_team in TEAMS
             else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
         )
         self.away_emoji = (
-            TEAMS[away_team]["emoji"]
-            if away_team in TEAMS
+            TEAMS[self.away_team]["emoji"]
+            if self.away_team in TEAMS
             else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
         )
-        self.winner = winner
-        self.name = name
-        self.link = link
+        self.winner = kwargs.get("winner")
+        self.name = kwargs.get("name")
+        self.link = kwargs.get("link")
 
     def add_vote(self, user_id, team):
         time_now = datetime.utcnow()
@@ -97,16 +97,21 @@ class Pickems:
         """
             allow the pickems objects to check winner on their own
         """
-        if self.link:
+        after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=3))
+        if self.winner:
+            return self
+        if self.link and after_game:
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
-        else:
-            games_list = await Game.get_games(self.home_team, self.game_start, self.game_start)
-            if len(games_list) == 0 and self.name:
-                log.error(f"{self.name} Pickems game could not be found, was it rescheduled?")
-            elif len(games_list) == 1:
-                return await self.set_pickem_winner(games_list[0])
-            return self
+
+        games_list = await Game.get_games(self.home_team, self.game_start, self.game_start)
+        if len(games_list) == 0 and self.name:
+            log.error(f"{self.name} Pickems game could not be found, was it rescheduled?")
+        elif len(games_list) == 1:
+            self.link = games_list[0].link
+            log.debug("Found a pickems game, setting link and winner")
+            return await self.set_pickem_winner(games_list[0])
+        return self
 
     @staticmethod
     async def find_pickems_object(bot, game):
@@ -187,6 +192,8 @@ class Pickems:
             # old_pickem["channel"].append(channel.id)
             old_pickem.message.append(message.id)
             old_pickem.channel.append(message.id)
+            if not old_pickem.link:
+                old_pickem.link = game.link
             pickems[old_name] = old_pickem
             # bot.get_cog("Hockey").all_pickems[str(guild.id)] = pickems
             log.debug("using old pickems")
@@ -374,20 +381,22 @@ class Pickems:
             "home_team": self.home_team,
             "away_team": self.away_team,
             "votes": self.votes,
+            "name": self.name,
             "winner": self.winner,
             "link": self.link,
         }
 
     @classmethod
     def from_json(cls, data: dict):
-
+        # log.debug(data)
         return cls(
-            data["message"],
-            data["channel"],
-            data["game_start"],
-            data["home_team"],
-            data["away_team"],
-            data["votes"],
-            data.get("winner", None),
-            data.get("link", None),
+            message=data["message"],
+            channel=data["channel"],
+            game_start=data["game_start"],
+            home_team=data["home_team"],
+            away_team=data["away_team"],
+            votes=data["votes"],
+            name=data.get("name", ""),
+            winner=data.get("winner", None),
+            link=data.get("link", None),
         )
