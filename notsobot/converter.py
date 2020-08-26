@@ -3,7 +3,9 @@ import re
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
-IMAGE_LINKS = re.compile(r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)")
+IMAGE_LINKS = re.compile(
+    r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)", flags=re.I
+)
 EMOJI_REGEX = re.compile(r"(<(a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
 MENTION_REGEX = re.compile(r"<@!?([0-9]+)>")
 ID_REGEX = re.compile(r"[0-9]{17,}")

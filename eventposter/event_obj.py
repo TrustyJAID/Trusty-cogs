@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional, cast
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
-IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))")
+IMAGE_LINKS = re.compile(r"(http[s]?:\/\/[^\"\']*\.(?:png|jpg|jpeg|gif|png))", flags=re.I)
 
 
 class Event:
