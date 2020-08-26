@@ -171,7 +171,7 @@ class Fenrir(commands.Cog):
             except Exception:
                 return
             ctx = await self.bot.get_context(msg)
-            if await self.is_mod_or_admin(member) or str(payload.emoji) == "🐶":
+            if await self.is_mod_or_admin(member) or str(payload.emoji) == "\N{DOG FACE}":
                 try:
                     compliment = self.bot.get_command("compliment")
                 except AttributeError:
