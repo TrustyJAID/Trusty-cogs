@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.11.2"
+    __version__ = "2.11.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -91,9 +91,9 @@ class Hockey(HockeyDev, commands.Cog):
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
-        self.config.register_global(**default_global, force_registration=True)
-        self.config.register_guild(**default_guild, force_registration=True)
-        self.config.register_channel(**default_channel, force_registration=True)
+        self.config.register_global(**default_global)
+        self.config.register_guild(**default_guild)
+        self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
@@ -1021,7 +1021,7 @@ class Hockey(HockeyDev, commands.Cog):
         if standings_type.lower() != "all":
             em = await Standings.build_standing_embed(standings, page)
         else:
-            em = await Standings.all_standing_embed(standings, page)
+            em = await Standings.all_standing_embed(standings)
         await self.config.guild(guild).standings_type.set(standings_type)
         await self.config.guild(guild).standings_channel.set(channel.id)
         await ctx.send(_("Sending standings to ") + channel.mention)
