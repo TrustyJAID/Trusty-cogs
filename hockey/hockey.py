@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.11.3"
+    __version__ = "2.12.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -95,7 +95,7 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
-        self.TEST_LOOP = False
+        self.TEST_LOOP = True
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
@@ -135,7 +135,7 @@ class Hockey(HockeyDev, commands.Cog):
             await self.bot.wait_until_red_ready()
         else:
             await self.bot.wait_until_ready()
-        await self._pre_check()
+        # await self._pre_check()
         while self is self.bot.get_cog("Hockey"):
             try:
                 async with aiohttp.ClientSession() as session:
@@ -186,7 +186,9 @@ class Hockey(HockeyDev, commands.Cog):
                         continue
                     try:
                         await self.check_new_day()
-                        posted_final = await game.check_game_state(self.bot, self.current_games[link]["count"])
+                        posted_final = await game.check_game_state(
+                            self.bot, self.current_games[link]["count"]
+                        )
                     except Exception:
                         log.error("Error checking game state: ", exc_info=True)
 
@@ -335,7 +337,6 @@ class Hockey(HockeyDev, commands.Cog):
 
             log.debug("Saved pickems data.")
             await asyncio.sleep(120)
-
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(self, channel, message, game):
@@ -611,7 +612,7 @@ class Hockey(HockeyDev, commands.Cog):
                 em.add_field(name=_("Create Game Day Channels"), value=str(create_channels))
                 em.add_field(name=_("Delete Game Day Channels"), value=str(delete_gdc))
                 em.add_field(name=_("Team"), value=str(team))
-                em.add_field(name=_("Current Channels"), value=created_channels)
+                em.add_field(name=_("Current Channels"), value=created_channels[:1024])
                 if not game_states:
                     game_states = ["None"]
                 em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
@@ -1056,7 +1057,7 @@ class Hockey(HockeyDev, commands.Cog):
             Set what type of game updates to be posted in the designated channel.
 
             `<channel>` is a text channel for the updates.
-            `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.
+            `<state>` must be any combination of `preview`, `live`, `final`, `goal` and `periodrecap`.
 
             `preview` updates are the pre-game notifications 60, 30, and 10 minutes
             before the game starts and the pre-game notification at the start of the day.
@@ -1064,7 +1065,8 @@ class Hockey(HockeyDev, commands.Cog):
             Note: This may disable pickems if it is not selected.
             `live` are the period start notifications.
             `final` is the final game update including 3 stars.
-            `goal` is all the goal updates.
+            `goal` is all goal updates.
+            `periodrecap` is a recap of the period at the intermission.
         """
         await self.config.channel(channel).game_states.set(list(set(state)))
         await ctx.send(
@@ -1080,15 +1082,19 @@ class Hockey(HockeyDev, commands.Cog):
                 ).format(channel=channel.mention, prefix=ctx.prefix)
             )
 
-    @hockeyset_commands.command(name="publishupdates")
+    @hockeyset_commands.command(name="publishupdates", hidden=True)
+    @checks.is_owner()
     async def set_game_publish_updates(
         self, ctx, channel: discord.TextChannel, *state: HockeyStates
     ):
         """
             Set what type of game updates will be published in the designated news channel.
 
+            Note: Discord has a limit on the number of published messages per hour.
+            This does not error on the bot and can lead to waiting forever for it to update.
+
             `<channel>` is a text channel for the updates.
-            `<state>` must be any combination of `preview`, `live`, `final`, and `goal`.
+            `<state>` must be any combination of `preview`, `live`, `final`, and `periodrecap`.
 
             `preview` updates are the pre-game notifications 60, 30, and 10 minutes
             before the game starts and the pre-game notification at the start of the day.
@@ -1096,7 +1102,7 @@ class Hockey(HockeyDev, commands.Cog):
             Note: This may disable pickems if it is not selected.
             `live` are the period start notifications.
             `final` is the final game update including 3 stars.
-            `goal` is all the goal updates.
+            `periodrecap` is a recap of the period at the intermission.
         """
         if not channel.is_news():
             return await ctx.send(

@@ -1,15 +1,18 @@
-from .constants import HEADSHOT_URL, TEAMS
+import logging
 import asyncio
-from typing import List
-from datetime import datetime
 import discord
-from .helper import check_to_post, get_team
+
+
+from typing import List, Optional
+from datetime import datetime
 
 from redbot import version_info, VersionInfo
 from redbot.core.i18n import Translator
 from redbot.core import Config
-import logging
 
+
+from .constants import HEADSHOT_URL, TEAMS
+from .helper import check_to_post, get_team
 try:
     from .oilers import Oilers
 except ImportError:
@@ -22,39 +25,42 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
 class Goal:
-    def __init__(
-        self,
-        goal_id: str,
-        team_name: str,
-        scorer_id: int,
-        jersey_no: str,
-        description: str,
-        period: int,
-        period_ord: str,
-        time_remaining: str,
-        time: str,
-        home_score: int,
-        away_score: int,
-        strength: str,
-        empty_net: bool,
-        event: str,
-    ):
+
+    goal_id: str
+    team_name: str
+    scorer_id: int
+    jersey_no: str
+    description: str
+    period: int
+    period_ord: str
+    time_remaining: str
+    time: datetime
+    home_score: int
+    away_score: int
+    strength: str
+    empty_net: bool
+    event: str
+    link: Optional[str]
+
+    def __init__(self, **kwargs):
         super().__init__()
-        self.goal_id = goal_id
-        self.team_name = team_name
-        self.scorer_id = scorer_id
-        self.headshot = HEADSHOT_URL.format(scorer_id)
-        self.jersey_no = jersey_no
-        self.description = description
-        self.period = period
-        self.period_ord = period_ord
-        self.time_remaining = time_remaining
+        self.goal_id = kwargs.get("goal_id")
+        self.team_name = kwargs.get("team_name")
+        self.scorer_id = kwargs.get("scorer_id")
+        self.headshot = HEADSHOT_URL.format(kwargs.get("scorer_id", ""))
+        self.jersey_no = kwargs.get("jersey_no")
+        self.description = kwargs.get("description")
+        self.period = kwargs.get("period")
+        self.period_ord = kwargs.get("period_ord")
+        self.time_remaining = kwargs.get("time_remaining")
+        time = kwargs.get("time")
         self.time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
-        self.home_score = home_score
-        self.away_score = away_score
-        self.strength = strength
-        self.empty_net = empty_net
-        self.event = event
+        self.home_score = kwargs.get("home_score")
+        self.away_score = kwargs.get("away_score")
+        self.strength = kwargs.get("strength")
+        self.empty_net = kwargs.get("empty_net")
+        self.event = kwargs.get("event")
+        self.link = kwargs.get("link", None)
         self.tasks: List[asyncio.Task] = []
 
     def to_json(self) -> dict:
@@ -73,10 +79,11 @@ class Goal:
             "strength": self.strength,
             "empty_net": self.empty_net,
             "event": self.event,
+            "link": self.link,
         }
 
     @classmethod
-    async def from_json(cls, data: dict, players: dict):
+    async def from_json(cls, data: dict, players: dict, media_content: Optional[dict] = None):
         scorer_id = []
         if "players" in data:
             scorer_id = [
@@ -98,22 +105,35 @@ class Goal:
             jersey_no = players[player_id]["jerseyNumber"]
         else:
             jersey_no = ""
+        link = None
+        if media_content:
+            event_id = data["about"]["eventId"]
+            try:
+                for highlight in media_content["media"]["milestones"]["items"]:
+                    if highlight["statsEventId"] == str(event_id):
+                        for playback in highlight["highlight"]["playbacks"]:
+                            if playback["name"] == "FLASH_1800K_896x504":
+                                link = playback["url"]
+            except KeyError:
+                pass
+
         # scorer = scorer_id[0]
         return cls(
-            data["result"]["eventCode"],
-            data["team"]["name"],
-            scorer_id[0] if scorer_id != [] else None,
-            jersey_no,
-            data["result"]["description"],
-            data["about"]["period"],
-            data["about"]["ordinalNum"],
-            data["about"]["periodTimeRemaining"],
-            data["about"]["dateTime"],
-            data["about"]["goals"]["home"],
-            data["about"]["goals"]["away"],
-            strength,
-            empty_net,
-            data["result"]["event"],
+            goal_id=data["result"]["eventCode"],
+            team_name=data["team"]["name"],
+            scorer_id=scorer_id[0] if scorer_id != [] else None,
+            jersey_no=jersey_no,
+            description=data["result"]["description"],
+            period=data["about"]["period"],
+            period_ord=data["about"]["ordinalNum"],
+            time_remaining=data["about"]["periodTimeRemaining"],
+            time=data["about"]["dateTime"],
+            home_score=data["about"]["goals"]["home"],
+            away_score=data["about"]["goals"]["away"],
+            strength=strength,
+            empty_net=empty_net,
+            event=data["result"]["event"],
+            link=link,
         )
 
     async def post_team_goal(self, bot, game_data):
@@ -211,13 +231,6 @@ class Goal:
             else:
                 msg = await channel.send(role.mention, embed=goal_embed, **allowed_mentions)
                 # msg_list[str(channel.id)] = msg.id
-            if publish_goals:
-                try:
-                    if channel.is_news():
-                        # allows backwards compatibility still
-                        await msg.publish()
-                except Exception:
-                    pass
             return channel.id, msg.id
         except Exception:
             log.error(_("Could not post goal in "), exc_info=True)
@@ -355,6 +368,8 @@ class Goal:
         if not shootout:
 
             em = discord.Embed(description=self.description)
+            if self.link:
+                em.description = f"[{self.description}]({self.link})"
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)

@@ -87,6 +87,8 @@ class Pickems:
         """
             Sets the pickem object winner from game object
         """
+        if not game:
+            return self
         if game.home_score > game.away_score:
             self.winner = self.home_team
         if game.away_score > game.home_score:
@@ -97,12 +99,14 @@ class Pickems:
         """
             allow the pickems objects to check winner on their own
         """
+        return self
         after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=3))
         if self.winner:
             return self
         if self.link and after_game:
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
+        return self
 
         games_list = await Game.get_games(self.home_team, self.game_start, self.game_start)
         if len(games_list) == 0 and self.name:

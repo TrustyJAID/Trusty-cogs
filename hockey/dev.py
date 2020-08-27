@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 
 from datetime import datetime, timedelta, date
 
@@ -23,6 +24,8 @@ except ImportError:
     pass
 
 _ = Translator("Hockey", __file__)
+
+log = logging.getLogger("red.trusty-cogs.hockey")
 
 
 class HockeyDev:

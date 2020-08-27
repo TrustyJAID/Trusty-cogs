@@ -3,15 +3,16 @@ import aiohttp
 import asyncio
 import logging
 
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 from redbot.core import Config
 from redbot import version_info, VersionInfo
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import pagify
 
 
-from .constants import BASE_URL, TEAMS
+from .constants import BASE_URL, TEAMS, CONTENT_URL
 from .goal import Goal
 from .helper import utc_to_local, check_to_post, get_team, get_team_role
 from .standings import Standings
@@ -30,6 +31,7 @@ class Game:
         game state updates and goal posts
     """
 
+    game_id: int
     game_state: str
     home_team: str
     away_team: str
@@ -56,6 +58,7 @@ class Game:
 
     def __init__(self, **kwargs):
         super().__init__()
+        self.game_id = kwargs.get("game_id")
         self.game_state = kwargs.get("game_state")
         self.home_team = kwargs.get("home_team")
         self.away_team = kwargs.get("away_team")
@@ -212,7 +215,11 @@ class Game:
 
         return await data.make_game_embed()
 
-    async def make_game_embed(self, include_plays: bool = False):
+    async def make_game_embed(
+        self,
+        include_plays: bool = False,
+        period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
+    ):
         """
             Builds the game embed when the command is called
             provides as much data as possible
@@ -283,14 +290,18 @@ class Game:
                     "3rd": third_goals,
                     "OT": ot_goals,
                 }
+                if period_goals:
+                    list_goals = {period_goals: list_goals[period_goals]}
                 for goals in list_goals:
                     ordinal = goals
                     goal_msg = ""
                     count = 0
                     for goal in list_goals[ordinal]:
-                        if count == 5:
+                        if count == 4:
                             em.add_field(
-                                name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024], inline=False
+                                name=str(ordinal) + _(" Period Goals"),
+                                value=goal_msg[:1024],
+                                inline=False,
                             )
                             count = 0
                             goal_msg = ""
@@ -298,15 +309,22 @@ class Game:
                             emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
                         except KeyError:
                             emoji = ""
-                        goal_msg += f"{emoji} {goal.team_name} Goal By {goal.description}\n\n"
+                        if not goal.link:
+                            goal_msg += f"{emoji} {goal.team_name} Goal By {goal.description}\n\n"
+                        else:
+                            goal_msg += f"{emoji} [{goal.team_name} Goal By {goal.description}]({goal.link})\n\n"
                         count += 1
-                    if len(list_goals[ordinal]) > 5 and goal_msg != "":
+                    if len(list_goals[ordinal]) > 4 and goal_msg != "":
                         em.add_field(
                             name=str(ordinal) + _(" Period Goals (Continued)"),
                             value=goal_msg[:1024],
                         )
-                    if len(list_goals[ordinal]) <= 5 and goal_msg != "":
-                        em.add_field(name=str(ordinal) + _(" Period Goals"), value=goal_msg[:1024], inline=False)
+                    if len(list_goals[ordinal]) <= 4 and goal_msg != "":
+                        em.add_field(
+                            name=str(ordinal) + _(" Period Goals"),
+                            value=goal_msg[:1024],
+                            inline=False,
+                        )
                 if len(so_goals) != 0:
                     home_msg, away_msg = await self.goals[0].get_shootout_display(self)
                     em.add_field(name=f"{self.home_team}" + _(" Shootout"), value=home_msg)
@@ -324,12 +342,7 @@ class Game:
                         + _(" period")
                     )
                 else:
-                    msg = (
-                        str(self.period_time_left)
-                        + _(" Left in the ")
-                        + str(period)
-                        + _(" period")
-                    )
+                    msg = str(self.period_time_left) + _(" of the ") + str(period) + _(" period")
                 if include_plays:
                     em.description = self.plays[-1]["result"]["description"]
                 em.add_field(name="Period", value=msg)
@@ -439,6 +452,9 @@ class Game:
         # away = await get_team(self.away_team)
         # team_list = await self.config.teams()
         # Home team checking
+        end_first = self.period_time_left == "END" and self.period == 1
+        end_second = self.period_time_left == "END" and self.period == 2
+        end_third = self.period_time_left == "END" and self.period == 3
         if self.game_state == "Preview":
             """Checks if the the game state has changes from Final to Preview
                Could be unnecessary since after Game Final it will check for next game
@@ -470,16 +486,35 @@ class Game:
 
         if self.game_state == "Live":
             # Checks what the period is and posts the game is starting in the appropriate channel
+
             if home["period"] != self.period:
                 msg = "**{} Period starting {} at {}**"
                 log.debug(msg.format(self.period_ord, self.away_team, self.home_team))
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
-                bot.dispatch("hockey_live", self)
+                bot.dispatch("hockey_period_start", self)
 
             if (self.home_score + self.away_score) != 0:
                 # Check if there's goals only if there are goals
                 await self.check_team_goals(bot)
+            if end_first and home["game_state"] != "LiveEND1st":
+                log.debug("End of the first period")
+                await self.period_recap(bot, "1st")
+                await self.save_game_state(bot, "END1st")
+            if end_second and home["game_state"] != "LiveEND2nd":
+                log.debug("End of the second period")
+                await self.period_recap(bot, "2nd")
+                await self.save_game_state(bot, "END2nd")
+            if end_third and home["game_state"] not in ["LiveEND3rd", "FinalEND3rd"]:
+                log.debug("End of the third period")
+                await self.period_recap(bot, "3rd")
+                await self.save_game_state(bot, "END3rd")
+
+        if self.game_state == "Final":
+            if end_third and home["game_state"] not in ["LiveEND3rd", "FinalEND3rd"]:
+                log.debug("End of the third period")
+                await self.period_recap(bot, "3rd")
+                await self.save_game_state(bot, "END3rd")
 
         if self.game_state == "Final" and (self.first_star is not None or count >= 10):
             """Final game state checks"""
@@ -499,6 +534,54 @@ class Game:
                 log.debug("Saving final")
                 return True
         return False
+
+    async def period_recap(self, bot, period: Literal["1st", "2nd", "3rd"]):
+        """
+            Builds the period recap
+        """
+        em = await self.make_game_embed(False, period)
+        tasks = []
+        post_state = ["all", self.home_team, self.away_team]
+        config = bot.get_cog("Hockey").config
+        for channels in await bot.get_cog("Hockey").config.all_channels():
+            channel = bot.get_channel(id=channels)
+            if channel is None:
+                await bot.get_cog("Hockey").config._clear_scope(Config.CHANNEL, str(channels))
+                log.info("{} channel was removed because it no longer exists".format(channels))
+                continue
+
+            should_post = await check_to_post(bot, channel, post_state, self.game_state)
+            should_post &= "Periodrecap" in await config.channel(channel).game_states()
+            publish = "Periodrecap" in await config.channel(channel).publish_states()
+            if should_post:
+                tasks.append(self.post_period_recap(channel, em, publish))
+        await asyncio.gather(*tasks)
+
+    async def post_period_recap(
+        self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
+    ):
+        """
+            Posts the period recap in designated channels
+        """
+        if not channel.permissions_for(channel.guild.me).send_messages:
+            log.debug(
+                _("No permission to send messages in {channel} ({id})").format(
+                    channel=channel, id=channel.id
+                )
+            )
+            return
+        try:
+            msg = await channel.send(embed=embed)
+            if publish and channel.is_news():
+                pass
+                # await msg.publish()
+        except Exception:
+            log.error(
+                _("Could not post goal in {channel} ({id})").format(
+                    channel=channel, id=channel.id
+                ),
+                exc_info=True,
+            )
 
     async def post_game_state(self, bot):
         """
@@ -577,7 +660,8 @@ class Game:
                     try:
                         if channel.is_news():
                             # allows backwards compatibility still
-                            await msg.publish()
+                            # await msg.publish()
+                            pass
                     except Exception:
                         pass
             except Exception:
@@ -604,7 +688,8 @@ class Game:
                     try:
                         if channel.is_news():
                             # allows backwards compatibility still
-                            await preview_msg.publish()
+                            # await preview_msg.publish()
+                            pass
                     except Exception:
                         pass
 
@@ -657,7 +742,7 @@ class Game:
             if goal.goal_id in team_data["goal_id"]:
                 # attempts to edit the goal if the scorers have changed
                 old_goal = Goal(**team_data["goal_id"][goal.goal_id]["goal"])
-                if goal.description != old_goal.description:
+                if goal.description != old_goal.description or goal.link != old_goal.link:
                     bot.dispatch("hockey_goal_edit", self, goal)
                     old_msgs = team_data["goal_id"][goal.goal_id]["messages"]
                     team_list.remove(team_data)
@@ -684,6 +769,9 @@ class Game:
             if self.game_state == "Preview" and time_to_game_start != "0":
                 home["game_state"] = self.game_state + time_to_game_start
                 away["game_state"] = self.game_state + time_to_game_start
+            elif self.game_state == "Live" and time_to_game_start != "0":
+                home["game_state"] = self.game_state + time_to_game_start
+                away["game_state"] = self.game_state + time_to_game_start
             else:
                 home["game_state"] = self.game_state
                 away["game_state"] = self.game_state
@@ -692,14 +780,18 @@ class Game:
             home["game_start"] = self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
             away["game_start"] = self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
-            home["game_state"] = "Null"
-            away["game_state"] = "Null"
-            home["period"] = 0
-            away["period"] = 0
-            home["goal_id"] = {}
-            away["goal_id"] = {}
-            home["game_start"] = ""
-            away["game_start"] = ""
+            if time_to_game_start == "0":
+                home["game_state"] = "Null"
+                away["game_state"] = "Null"
+                home["period"] = 0
+                away["period"] = 0
+                home["goal_id"] = {}
+                away["goal_id"] = {}
+                home["game_start"] = ""
+                away["game_start"] = ""
+            elif self.game_state == "Final" and time_to_game_start != "0":
+                home["game_state"] = self.game_state + time_to_game_start
+                away["game_state"] = self.game_state + time_to_game_start
         team_list.append(home)
         team_list.append(away)
         await bot.get_cog("Hockey").config.teams.set(team_list)
@@ -769,8 +861,17 @@ class Game:
         players = {}
         players.update(away_roster)
         players.update(home_roster)
+        game_id = data["gameData"]["game"]["pk"]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(CONTENT_URL.format(game_id)) as resp:
+                    content = await resp.json()
+            # log.debug(CONTENT_URL.format(game_id))
+        except Exception:
+            log.debug("Error getting content")
+            content = {}
         goals = [
-            await Goal.from_json(goal, players)
+            await Goal.from_json(goal, players, content)
             for goal in event
             if goal["result"]["eventTypeId"] == "GOAL"
             or (
@@ -793,6 +894,7 @@ class Game:
         third_star = decisions["thirdStar"]["fullName"] if "thirdStar" in decisions else None
         game_type = GAME_TYPES.get(data["gameData"]["game"]["type"], _("Unknown"))
         return cls(
+            game_id=game_id,
             game_state=data["gameData"]["status"]["abstractGameState"],
             home_team=data["gameData"]["teams"]["home"]["name"],
             away_team=data["gameData"]["teams"]["away"]["name"],

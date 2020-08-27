@@ -196,7 +196,7 @@ class HockeyStates(Converter):
     """
 
     async def convert(self, ctx, argument):
-        state_list = ["preview", "live", "final", "goal"]
+        state_list = ["preview", "live", "final", "goal", "periodrecap"]
         if argument.lower() not in state_list:
             raise BadArgument('"{}" is not a valid game state.'.format(argument))
         return argument.title()

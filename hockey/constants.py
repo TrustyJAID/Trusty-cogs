@@ -1,5 +1,6 @@
 BASE_URL = "https://statsapi.web.nhl.com"
 HEADSHOT_URL = "https://nhl.bamcontent.com/images/headshots/current/168x168/{}.jpg"
+CONTENT_URL = "http://statsapi.web.nhl.com/api/v1/game/{}/content"
 CONFIG_ID = 13457745779
 TEAMS = {
    "Anaheim Ducks": {
