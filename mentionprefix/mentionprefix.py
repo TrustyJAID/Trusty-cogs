@@ -52,8 +52,9 @@ class MentionPrefix(commands.Cog):
 
     @commands.command(name="mentiontoggle")
     @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
     async def commands_mentiontoggle(self, ctx: commands.Context):
-        """Toggle wether mentioning the bot will send a help message."""
+        """Toggle whether mentioning the bot will send a help message."""
         if ctx.guild.id in self.disable_in:
             self.disable_in.discard(ctx.guild.id)
             await ctx.send(_("Mentioning the bot will trigger it to send a help message."))
