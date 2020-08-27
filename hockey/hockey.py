@@ -95,7 +95,7 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
         self.loop = bot.loop.create_task(self.game_check_loop())
-        self.TEST_LOOP = True
+        self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
@@ -135,7 +135,7 @@ class Hockey(HockeyDev, commands.Cog):
             await self.bot.wait_until_red_ready()
         else:
             await self.bot.wait_until_ready()
-        # await self._pre_check()
+        await self._pre_check()
         while self is self.bot.get_cog("Hockey"):
             try:
                 async with aiohttp.ClientSession() as session:
