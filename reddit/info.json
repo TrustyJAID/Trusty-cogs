@@ -19,7 +19,7 @@
     "required_cogs" : {},
     "requirements" : [
         "reactivepy>=1.9.0.dev0",
-        "git+https://github.com/Dan6erbond/aPRAW"
+        "git+https://github.com/TrustyJAID/aPRAW@setup-fix"
     ],
     "short" : "A cog to post updates from reddit.",
     "tags" : [
