@@ -165,6 +165,7 @@ class HockeyDev:
             Test checking for new game day channels
         """
         await GameDayChannels.check_new_gdc(self.bot)
+        await ctx.tick()
 
     @hockeydev.command()
     async def teststandings(self, ctx):
@@ -175,6 +176,7 @@ class HockeyDev:
             await Standings.post_automatic_standings(self.bot)
         except Exception:
             log.debug("error testing standings page", exc_info=True)
+        await ctx.tick()
 
     @hockeydev.command()
     async def cogstats(self, ctx):
@@ -274,6 +276,7 @@ class HockeyDev:
             else:
                 good_channels.append(channel.id)
         await self.config.guild(guild).gdc.set(good_channels)
+        await ctx.tick()
 
     @hockeydev.command()
     async def clear_broken_channels(self, ctx):
@@ -319,6 +322,7 @@ class HockeyDev:
         for user in leaderboard:
             leaderboard[str(user)]["weekly"] = 0
         await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
+        await ctx.tick()
 
     @hockeydev.command(hidden=True)
     async def lights(self, ctx):
@@ -331,8 +335,7 @@ class HockeyDev:
             hue = Oilers(self.bot)
             hue.goal_lights()
             print("done")
-        else:
-            return
+        await ctx.tick()
 
     @hockeydev.command(hidden=True)
     async def testloop(self, ctx):

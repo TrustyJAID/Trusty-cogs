@@ -164,17 +164,20 @@ class Standings:
                     continue
                 try:
                     message = await channel.fetch_message(standings_msg)
-                except AttributeError:
-                    message = await channel.get_message(standings_msg)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     await config.guild(guild).post_standings.set(False)
                     continue
 
                 standings, page = await Standings.get_team_standings(search)
-                if search != "all":
-                    em = await Standings.build_standing_embed(standings, page)
+                team_stats = standings[page]
+
+                if len(standings) >= 2 and len(standings) < 4:
+                    em = await Standings.make_division_standings_embed(team_stats)
+
+                elif len(standings) >= 4 and len(standings) < 31:
+                    em = await Standings.make_conference_standings_embed(team_stats)
                 else:
-                    em = await Standings.build_standing_embed(standings, page)
+                    em = await Standings.all_standing_embed(standings)
                 if message is not None:
                     await message.edit(embed=em)
 
@@ -266,7 +269,6 @@ class Standings:
         em.set_thumbnail(url=division_logo)
         return em
 
-
     @staticmethod
     async def make_conference_standings_embed(team_stats):
         em = discord.Embed()
@@ -336,7 +338,7 @@ class Standings:
         """
         team_stats = post_list[page]
 
-        if type(team_stats) is not list:
+        if not isinstance(team_stats, list):
             return await Standings.make_team_standings_embed(team_stats)
 
         elif len(team_stats) >= 7 and len(team_stats) < 16:

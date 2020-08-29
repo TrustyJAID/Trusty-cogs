@@ -81,12 +81,12 @@ class Game:
         self.home_logo = (
             TEAMS[home_team]["logo"]
             if home_team in TEAMS
-            else "https://www-league.nhlstatic.com/images/logos/league-light/133.svg"
+            else "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         )
         self.away_logo = (
             TEAMS[away_team]["logo"]
             if away_team in TEAMS
-            else "https://www-league.nhlstatic.com/images/logos/league-light/133.svg"
+            else "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         )
         self.home_emoji = (
             "<:{}>".format(TEAMS[home_team]["emoji"])
