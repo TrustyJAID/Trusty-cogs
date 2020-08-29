@@ -1142,7 +1142,7 @@ class ServerStats(commands.Cog):
            https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         guild = post_list[page]
         em = await self.guild_embed(guild)
-        emojis = ["➡", "⬅", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
+        emojis = ["\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
         if not message:
             message = await ctx.send(embed=em)
             start_adding_reactions(message, emojis)
@@ -1151,7 +1151,7 @@ class ServerStats(commands.Cog):
             await message.edit(embed=em)
         check = (
             lambda react, user: user == ctx.message.author
-            and react.emoji in ["➡", "⬅", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
+            and react.emoji in ["\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
             and react.message.id == message.id
         )
         try:
@@ -1164,25 +1164,25 @@ class ServerStats(commands.Cog):
                     pass
             return None
         else:
-            if react.emoji == "➡":
+            if react.emoji == "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}":
                 next_page = 0
                 if page == len(post_list) - 1:
                     next_page = 0  # Loop around to the first item
                 else:
                     next_page = page + 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
-                    await message.remove_reaction("➡", ctx.message.author)
+                    await message.remove_reaction("\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author)
                 return await self.guild_menu(
                     ctx, post_list, message=message, page=next_page, timeout=timeout
                 )
-            elif react.emoji == "⬅":
+            elif react.emoji == "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}":
                 next_page = 0
                 if page == 0:
                     next_page = len(post_list) - 1  # Loop around to the last item
                 else:
                     next_page = page - 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
-                    await message.remove_reaction("⬅", ctx.message.author)
+                    await message.remove_reaction("\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author)
                 return await self.guild_menu(
                     ctx, post_list, message=message, page=next_page, timeout=timeout
                 )
