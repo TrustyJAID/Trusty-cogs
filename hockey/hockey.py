@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.12.1"
+    __version__ = "2.12.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -165,6 +165,7 @@ class Hockey(HockeyDev, commands.Cog):
                 }
             while self.current_games != {}:
                 self.games_playing = True
+                to_delete = []
                 for link in self.current_games:
                     if not self.TEST_LOOP:
                         try:
@@ -210,7 +211,9 @@ class Hockey(HockeyDev, commands.Cog):
 
                 for link in self.current_games:
                     if self.current_games[link]["count"] == 10:
-                        del self.current_games[link]
+                        to_delete.append(link)
+                for link in to_delete:
+                    del self.current_games[link]
                 if not self.TEST_LOOP:
                     await asyncio.sleep(60)
                 else:
