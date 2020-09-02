@@ -39,16 +39,19 @@ class Schedule(menus.PageSource):
 
     async def get_page(self, page_number, *, skip_next: bool = False, skip_prev: bool = False):
         # log.info(f"Cache size is {len(self._cache)}")
+
         if page_number < self.last_page:
             page = await self.prev()
         if page_number > self.last_page:
             page = await self.next()
-        if page_number == self.last_page:
+        if page_number == self.last_page and self._cache:
             page = self._cache[page_number]
         if skip_next:
             page = await self.next(True)
         if skip_prev:
             page = await self.prev(True)
+        if not self._cache:
+            raise NoSchedule
         # log.info(page)
         self._last_page = page_number
         return page
@@ -72,13 +75,13 @@ class Schedule(menus.PageSource):
         self._index += 1
         if self._index > (len(self._cache) - 1) or skip:
             # Grab new list from next day
-            log.debug("Getting new games")
+            # log.debug("Getting new games")
             new_date = self.date + timedelta(days=30)
             self.date = new_date
             try:
                 await self._next_batch(date=new_date, _next=True)
             except NoSchedule as e:
-                log.debug("Error getting schedule")
+                # log.debug("Error getting schedule")
                 raise NoSchedule(e)
             self._index = 0
         # log.info(f"getting next data {len(self._cache)}")
@@ -103,7 +106,7 @@ class Schedule(menus.PageSource):
                 new_data = await self._next_batch(date=new_date, _prev=True)
                 self._index = len(new_data) - 1
             except NoSchedule as e:
-                log.debug("Error getting schedule")
+                # log.debug("Error getting schedule")
                 self._index = 0
                 raise NoSchedule(e)
         return self._cache[self.index]
@@ -141,19 +144,19 @@ class Schedule(menus.PageSource):
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
-        log.debug(url)
+        # log.debug(url)
         self._last_searched = f"{date_str} to {end_date_str}"
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:
-            log.debug("No schedule, looking for more days")
+            # log.debug("No schedule, looking for more days")
             if self._checks < self.limit:
                 self._checks += 1
                 games = await self._next_batch(date=self.date, _next=_next, _prev=_prev)
             else:
-                raise NoSchedule(f"No games for date ranges {date_str} to {end_date_str}")
+                raise NoSchedule
         self._cache = games
         # return the games as a form of metadata about how the cache is changing
         return games

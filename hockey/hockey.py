@@ -48,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
         Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.12.2"
+    __version__ = "2.12.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1368,6 +1368,7 @@ class Hockey(HockeyDev, commands.Cog):
             await ctx.message.delete()
         await ctx.send(embed=em)
 
+    @staticmethod
     async def make_rules_embed(guild, team, rules):
         """
             Builds the rule embed for the server

@@ -5,7 +5,7 @@ import aiohttp
 import re
 
 from typing import Any, Optional, Pattern, List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -73,8 +73,17 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
                 page_number, skip_next=skip_next, skip_prev=skip_prev
             )
         except NoSchedule:
+            team = ""
+            if self.source.team:
+                team = _("for {teams} ").format(teams=humanize_list(self.source.team))
+            msg = _(
+                "No schedule could be found {team}in dates between {last_searched}"
+            ).format(
+                team=team,
+                last_searched=self.source._last_searched
+            )
             await self.message.edit(
-                content=_("No Schedule could be found for that date and team."), embed=None
+                content=msg, embed=None
             )
             return
         self.current_page = page_number
@@ -89,18 +98,23 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         """
         try:
             page = await self._source.get_page(0)
-        except IndexError:
-            if self.source.team:
-                return await channel.send(
-                    f"No schedule could be found for {humanize_list(self.source.team)} in date "
-                    f"ranges {self.source._last_searched}."
-                )
-            else:
-                return await channel.send(
-                    f"No schedule could be found in date ranges {self.source._last_searched}"
-                )
+        except (IndexError, NoSchedule):
+
+            return await channel.send(self.format_error())
         kwargs = await self._get_kwargs_from_page(page)
         return await channel.send(**kwargs)
+
+    def format_error(self):
+        team = ""
+        if self.source.team:
+            team = _("for {teams} ").format(teams=humanize_list(self.source.team))
+        msg = _(
+            "No schedule could be found {team}in dates between {last_searched}"
+        ).format(
+            team=team,
+            last_searched=self.source._last_searched
+        )
+        return msg
 
     async def show_checked_page(self, page_number: int) -> None:
         try:
@@ -124,14 +138,16 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         return max_pages == 1
 
     @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", position=menus.First(1),
+        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+        position=menus.First(1),
     )
     async def go_to_previous_page(self, payload):
         """go to the previous page"""
         await self.show_checked_page(self.current_page - 1)
 
     @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", position=menus.Last(0),
+        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+        position=menus.Last(0),
     )
     async def go_to_next_page(self, payload):
         """go to the next page"""
@@ -180,24 +196,18 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         if search:
             date_str = f"{search.group(1)}-{search.group(3)}-{search.group(4)}"
             date = datetime.strptime(date_str, "%Y-%m-%d")
-            log.info(date)
+            # log.debug(date)
             self.source.date = date
             try:
                 await self.source.prepare()
             except NoSchedule:
-                return await self.ctx.send(
-                    _("Sorry No schedule was found for the date range {date}").format(
-                        date=date_str
-                    )
-                )
+                return await self.ctx.send(self.format_error())
             await self.show_page(0)
 
     @menus.button("\N{FAMILY}")
     async def choose_teams(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
-        send_msg = await self.ctx.send(
-            _("Enter the team you would like to filter for.")
-        )
+        send_msg = await self.ctx.send(_("Enter the team you would like to filter for."))
 
         def check(m: discord.Message):
             return m.author == self.ctx.author
@@ -214,9 +224,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
                 continue
             nick = data["nickname"]
             short = data["tri_code"]
-            pattern = (
-                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
-            )
+            pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
             if nick:
                 pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
             # log.debug(pattern)
@@ -229,11 +237,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         try:
             await self.source.prepare()
         except NoSchedule:
-            return await self.ctx.send(
-                _("Sorry No schedule was found for the teams {teams}").format(
-                    teams=humanize_list(teams)
-                )
-            )
+            return await self.ctx.send(self.format_error())
         await self.show_page(0)
 
 
