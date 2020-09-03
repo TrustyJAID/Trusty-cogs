@@ -2,7 +2,7 @@ import discord
 import aiohttp
 import logging
 
-from typing import Tuple
+from typing import Tuple, Union
 
 from redbot.core.bot import Red
 from redbot.core import Config
@@ -13,6 +13,11 @@ from .errors import (
     APIError,
     OutOfRequests,
 )
+
+try:
+    import cchardet as chardet
+except ImportError:
+    import chardet
 
 API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
@@ -38,11 +43,30 @@ class CleverbotAPI:
             payload["key"] = await self.get_credentials()
             payload["cs"] = self.instances.get(str(author.id), "")
             payload["input"] = text
+            payload.update(await self.get_tweaks(author))
             return await self.get_cleverbotcom_response(payload, author)
         except NoCredentials:
             payload["user"], payload["key"] = await self.get_io_credentials()
             payload["nick"] = str("{}".format(self.bot.user))
             return await self.get_cleverbotio_response(payload, text)
+
+    async def get_tweaks(self, author: Union[discord.Member, discord.User]):
+        ret = {}
+        ret["cb_settings_tweak1"] = str(await self.config.tweak1())
+        ret["cb_settings_tweak2"] = str(await self.config.tweak2())
+        ret["cb_settings_tweak3"] = str(await self.config.tweak3())
+        if isinstance(author, discord.Member):
+            tweak1 = str(await self.config.guild(author.guild).tweak1())
+            tweak2 = str(await self.config.guild(author.guild).tweak2())
+            tweak3 = str(await self.config.guild(author.guild).tweak3())
+
+            if ret["cb_settings_tweak1"] != tweak1 and tweak1 != "-1":
+                ret["cb_settings_tweak1"] = tweak1
+            if ret["cb_settings_tweak2"] != tweak2 and tweak2 != "-1":
+                ret["cb_settings_tweak2"] = tweak2
+            if ret["cb_settings_tweak3"] != tweak3 and tweak3 != "-1":
+                ret["cb_settings_tweak3"] = tweak3
+        return ret
 
     async def make_cleverbotio_instance(self, payload: dict) -> None:
         """Makes the cleverbot.io instance if one isn't created for the user"""
@@ -86,9 +110,9 @@ class CleverbotAPI:
                 # print(r.status)
                 if r.status == 200:
                     try:
-                        data = await r.json()
-                    except UnicodeDecodeError:
-                        data = await r.json(encoding="latin-1")
+                        msg = await r.read()
+                        enc = chardet.detect(msg)
+                        data = await r.json(encoding=enc["encoding"])
                     except Exception:
                         raise APIError("Error decoding cleverbot respose.")
                     self.instances[str(author.id)] = data["cs"]  # Preserves conversation status
@@ -102,6 +126,7 @@ class CleverbotAPI:
                     error_msg = "Cleverbot.com API Error " + str(r.status)
                     log.error(error_msg)
                     raise APIError(error_msg)
+        log.info(data)
         return data["output"]
 
     async def get_credentials(self) -> str:
