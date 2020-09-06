@@ -476,7 +476,7 @@ class EventMixin:
                     "created_at": created_at.timestamp(),
                     "max_uses": getattr(invite, "max_uses", None),
                     "temporary": getattr(invite, "temporary", False),
-                    "inviter": inviter.id,
+                    "inviter": getattr(inviter, "id", "Unknown"),
                     "channel": channel.id,
                 }
             except Exception:
@@ -1683,7 +1683,7 @@ class EventMixin:
                 "created_at": created_at.timestamp(),
                 "max_uses": getattr(invite, "max_uses", None),
                 "temporary": getattr(invite, "temporary", False),
-                "inviter": inviter.id,
+                "inviter": getattr(inviter, "id", "Unknown"),
                 "channel": channel.id,
             }
             await self.config.guild(guild).invite_links.set(
