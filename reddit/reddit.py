@@ -269,7 +269,7 @@ class Reddit(commands.Cog):
             "1. Go to https://www.reddit.com/prefs/apps and select create another app...\n"
             "2. Give the app a name and description, specify that it's a script\n"
             "3. In the developed apps section under the apps name you provided before below `personal use script` "
-            "copy that into `<client_id>`\n"
+            "copy that into `<client_id>` Use `https://127.0.0.1` or `https://localhost` for the redirect url.\n"
             "4. In the app box where it says `secret` copy the code after into `<client_secret>` if you don't see this click the edit button\n"
             "5. Fill out the rest of the following command with your accounts username and password\n"
             "NOTE: If you have 2FA enabled on your account this will not work, I'd recommend creating a new reddit "
