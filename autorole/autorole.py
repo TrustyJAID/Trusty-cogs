@@ -38,7 +38,7 @@ class Autorole(commands.Cog):
     """
 
     __author__ = ["Lunar-Dust", "TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -79,12 +79,12 @@ class Autorole(commands.Cog):
 
     async def get_colour(self, channel: discord.TextChannel) -> discord.Colour:
         try:
+            return await self.bot.get_embed_colour(channel)
+        except AttributeError:
             if await self.bot.db.guild(channel.guild).use_bot_color():
                 return channel.guild.me.colour
             else:
                 return await self.bot.db.color()
-        except AttributeError:
-            return await self.bot.get_embed_colour(channel)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
