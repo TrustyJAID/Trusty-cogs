@@ -19,10 +19,10 @@ log = logging.getLogger("red.trusty-cogs.Starboard")
 @cog_i18n(_)
 class Starboard(StarboardEvents, commands.Cog):
     """
-        Create a starboard to *pin* those special comments indefinitely
+    Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -43,7 +43,7 @@ class Starboard(StarboardEvents, commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -53,13 +53,13 @@ class Starboard(StarboardEvents, commands.Cog):
     @commands.guild_only()
     async def starboard(self, ctx: commands.Context) -> None:
         """
-            Commands for managing the starboard
+        Commands for managing the starboard
         """
 
     @starboard.command(name="info")
     async def starboard_info(self, ctx: commands.Context) -> None:
         """
-            Display info on starboards setup on the server.
+        Display info on starboards setup on the server.
         """
         guild = ctx.guild
         if await self.config.guild(guild).starboards():
@@ -84,11 +84,11 @@ class Starboard(StarboardEvents, commands.Cog):
         emoji: Union[discord.Emoji, str] = "⭐",
     ) -> None:
         """
-            Create a starboard on this server
+        Create a starboard on this server
 
-            `<name>` is the name for the starboard and will be lowercase only
-            `[channel]` is the channel where posts will be made defaults to current channel
-            `[emoji=⭐]` is the emoji that will be used to add to the starboard defaults to ⭐
+        `<name>` is the name for the starboard and will be lowercase only
+        `[channel]` is the channel where posts will be made defaults to current channel
+        `[emoji=⭐]` is the emoji that will be used to add to the starboard defaults to ⭐
         """
         guild = ctx.message.guild
         name = name.lower()
@@ -125,7 +125,7 @@ class Starboard(StarboardEvents, commands.Cog):
     @starboard.command(name="cleanup")
     async def cleanup(self, ctx: commands.Context) -> None:
         """
-            Cleanup stored deleted channels or roles in the blacklist/whitelist
+        Cleanup stored deleted channels or roles in the blacklist/whitelist
         """
         guild = ctx.guild
         if guild.id not in self.starboards:
@@ -174,9 +174,9 @@ class Starboard(StarboardEvents, commands.Cog):
     @starboard.command(name="remove", aliases=["delete", "del"])
     async def remove_starboard(self, ctx: commands.Context, starboard: StarboardExists) -> None:
         """
-            Remove a starboard from the server
+        Remove a starboard from the server
 
-            `<name>` is the name for the starboard and will be lowercase only
+        `<name>` is the name for the starboard and will be lowercase only
         """
         del self.starboards[ctx.guild.id][starboard.name]
         await self._save_starboards(ctx.guild)
@@ -192,11 +192,11 @@ class Starboard(StarboardEvents, commands.Cog):
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
-            Manually star a message
+        Manually star a message
 
-            `<name>` is the name of the starboard you would like to add the message to
-            `<msg_id>` is the message ID you want to star
-            `[channel]` is the channel where that message is located
+        `<name>` is the name of the starboard you would like to add the message to
+        `<msg_id>` is the message ID you want to star
+        `[channel]` is the channel where that message is located
         """
         guild = ctx.guild
         if channel is None:
@@ -268,10 +268,10 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.Role],
     ) -> None:
         """
-            Add a channel to the starboard blacklist
+        Add a channel to the starboard blacklist
 
-            `<name>` is the name of the starboard to adjust
-            `<channel_or_role>` is the channel or role you would like to add to the blacklist
+        `<name>` is the name of the starboard to adjust
+        `<channel_or_role>` is the channel or role you would like to add to the blacklist
         """
         guild = ctx.guild
         if type(channel_or_role) is discord.TextChannel:
@@ -315,10 +315,10 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.Role],
     ) -> None:
         """
-            Remove a channel to the starboard blacklist
+        Remove a channel to the starboard blacklist
 
-            `<name>` is the name of the starboard to adjust
-            `<channel_or_role>` is the channel or role you would like to remove from the blacklist
+        `<name>` is the name of the starboard to adjust
+        `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
         if type(channel_or_role) is discord.TextChannel:
@@ -362,10 +362,10 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.Role],
     ) -> None:
         """
-            Add a channel to the starboard whitelist
+        Add a channel to the starboard whitelist
 
-            `<name>` is the name of the starboard to adjust
-            `<channel_or_role>` is the channel or role you would like to add to the whitelist
+        `<name>` is the name of the starboard to adjust
+        `<channel_or_role>` is the channel or role you would like to add to the whitelist
         """
         guild = ctx.guild
         if type(channel_or_role) is discord.TextChannel:
@@ -409,10 +409,10 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.Role],
     ) -> None:
         """
-            Remove a channel to the starboard whitelist
+        Remove a channel to the starboard whitelist
 
-            `<name>` is the name of the starboard to adjust
-            `<channel_or_role>` is the channel or role you would like to remove from the whitelist
+        `<name>` is the name of the starboard to adjust
+        `<channel_or_role>` is the channel or role you would like to remove from the whitelist
         """
         guild = ctx.guild
         if type(channel_or_role) is discord.TextChannel:
@@ -453,10 +453,10 @@ class Starboard(StarboardEvents, commands.Cog):
         self, ctx: commands.Context, starboard: StarboardExists, channel: discord.TextChannel
     ) -> None:
         """
-            Change the channel that the starboard gets posted to
+        Change the channel that the starboard gets posted to
 
-            `<name>` is the name of the starboard to adjust
-            `<channel_or_role>` is the channel or role you would like to remove from the blacklist
+        `<name>` is the name of the starboard to adjust
+        `<channel_or_role>` is the channel or role you would like to remove from the blacklist
         """
         guild = ctx.guild
         if not channel.permissions_for(guild.me).send_messages:
@@ -484,9 +484,9 @@ class Starboard(StarboardEvents, commands.Cog):
     @starboard.command(name="toggle")
     async def toggle_starboard(self, ctx: commands.Context, starboard: StarboardExists) -> None:
         """
-            Toggle a starboard on/off
+        Toggle a starboard on/off
 
-            `<name>` is the name of the starboard to toggle
+        `<name>` is the name of the starboard to toggle
         """
         guild = ctx.guild
         if starboard.enabled:
@@ -500,9 +500,9 @@ class Starboard(StarboardEvents, commands.Cog):
     @starboard.command(name="selfstar")
     async def toggle_selfstar(self, ctx: commands.Context, starboard: StarboardExists) -> None:
         """
-            Toggle whether or not a user can star their own post
+        Toggle whether or not a user can star their own post
 
-            `<name>` is the name of the starboard to toggle
+        `<name>` is the name of the starboard to toggle
         """
         guild = ctx.guild
         if starboard.selfstar:
@@ -516,9 +516,9 @@ class Starboard(StarboardEvents, commands.Cog):
     @starboard.command(name="autostar")
     async def toggle_autostar(self, ctx: commands.Context, starboard: StarboardExists) -> None:
         """
-            Toggle whether or not the bot will add the emoji automatically to the starboard message.
+        Toggle whether or not the bot will add the emoji automatically to the starboard message.
 
-            `<name>` is the name of the starboard to toggle
+        `<name>` is the name of the starboard to toggle
         """
         guild = ctx.guild
         if starboard.autostar:
@@ -534,13 +534,13 @@ class Starboard(StarboardEvents, commands.Cog):
         self, ctx: commands.Context, starboard: StarboardExists, colour: Union[discord.Colour, str]
     ) -> None:
         """
-            Change the default colour for a starboard
+        Change the default colour for a starboard
 
-            `<name>` is the name of the starboard to toggle
-            `<colour>` The colour to use for the starboard embed
-            This can be a hexcode or integer for colour or `author/member/user` to use
-            the original posters colour or `bot` to use the bots colour.
-            Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/latest/api.html#colour)
+        `<name>` is the name of the starboard to toggle
+        `<colour>` The colour to use for the starboard embed
+        This can be a hexcode or integer for colour or `author/member/user` to use
+        the original posters colour or `bot` to use the bots colour.
+        Colour also accepts names from [discord.py](https://discordpy.readthedocs.io/en/latest/api.html#colour)
         """
         guild = ctx.guild
         if isinstance(colour, str):
@@ -562,10 +562,10 @@ class Starboard(StarboardEvents, commands.Cog):
         self, ctx: commands.Context, starboard: StarboardExists, emoji: Union[discord.Emoji, str]
     ) -> None:
         """
-            Set the emoji for the starboard
+        Set the emoji for the starboard
 
-            `<name>` is the name of the starboard to change the emoji for
-            `<emoji>` must be an emoji on the server or a default emoji
+        `<name>` is the name of the starboard to change the emoji for
+        `<emoji>` must be an emoji on the server or a default emoji
         """
         guild = ctx.guild
         if type(emoji) == discord.Emoji:
@@ -582,11 +582,11 @@ class Starboard(StarboardEvents, commands.Cog):
         self, ctx: commands.Context, starboard: StarboardExists, threshold: int
     ) -> None:
         """
-            Set the threshold before posting to the starboard
+        Set the threshold before posting to the starboard
 
-            `<name>` is the name of the starboard to change the threshold for
-            `<threshold>` must be a number of reactions before a post gets
-            moved to the starboard
+        `<name>` is the name of the starboard to change the threshold for
+        `<threshold>` must be a number of reactions before a post gets
+        moved to the starboard
         """
         guild = ctx.guild
         if threshold <= 0:

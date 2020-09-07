@@ -68,8 +68,8 @@ class StarboardEvents:
         self, starboard: StarboardEntry, member: Union[discord.Member, discord.User]
     ) -> bool:
         """Checks if the user is allowed to add to the starboard
-           Allows bot owner to always add messages for testing
-           disallows users from adding their own messages"""
+        Allows bot owner to always add messages for testing
+        disallows users from adding their own messages"""
         if isinstance(member, discord.User):
             return True
         user_roles = set([role.id for role in member.roles])
@@ -116,7 +116,9 @@ class StarboardEvents:
             em = message.embeds[0]
             if message.system_content:
                 if em.description != discord.Embed.Empty:
-                    em.description = "{}\n\n{}".format(message.system_content, em.description)[:2048]
+                    em.description = "{}\n\n{}".format(message.system_content, em.description)[
+                        :2048
+                    ]
                 else:
                     em.description = message.system_content
                 if not author.bot:
@@ -175,7 +177,9 @@ class StarboardEvents:
             async for user in reaction.users():
                 if not await self._check_roles(starboard, user):
                     continue
-                if user.id not in unique_users:
+                if not starboard.selfstar and user.id == orig_msg.author.id:
+                    continue
+                if user.id not in unique_users and not user.bot:
                     unique_users.append(user.id)
         return len(unique_users)
 
@@ -303,7 +307,7 @@ class StarboardEvents:
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         for guild_id, starboards in self.starboards.items():
             for starboard, entry in starboards.items():

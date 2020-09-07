@@ -1,4 +1,3 @@
-
 from .starboard_entry import StarboardEntry
 
 from discord.ext.commands.converter import Converter
