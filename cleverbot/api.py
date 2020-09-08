@@ -126,7 +126,6 @@ class CleverbotAPI:
                     error_msg = "Cleverbot.com API Error " + str(r.status)
                     log.error(error_msg)
                     raise APIError(error_msg)
-        log.info(data)
         return data["output"]
 
     async def get_credentials(self) -> str:
