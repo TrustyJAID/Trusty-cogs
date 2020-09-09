@@ -1,11 +1,16 @@
 import discord
 import aiohttp
 import logging
+import re
 
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
+from redbot import version_info, VersionInfo
 from redbot.core.bot import Red
-from redbot.core import Config
+from redbot.core import Config, commands
+
+from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
+from discord.ext.commands.errors import BadArgument
 
 from .errors import (
     NoCredentials,
@@ -25,10 +30,73 @@ IO_API_URL = "https://cleverbot.io/1.0"
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
 
 
+class ChannelUserRole(IDConverter):
+    """
+    This will check to see if the provided argument is a channel, user, or role
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    """
+
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> Union[discord.TextChannel, discord.Member, discord.Role]:
+        guild = ctx.guild
+        result = None
+        id_match = self._get_id_match(argument)
+        channel_match = re.match(r"<#([0-9]+)>$", argument)
+        member_match = re.match(r"<@!?([0-9]+)>$", argument)
+        role_match = re.match(r"<@&([0-9]+)>$", argument)
+        for converter in ["channel", "role", "member"]:
+            if converter == "channel":
+                match = id_match or channel_match
+                if match:
+                    channel_id = match.group(1)
+                    result = guild.get_channel(int(channel_id))
+                else:
+                    result = discord.utils.get(guild.text_channels, name=argument)
+            if converter == "member":
+                match = id_match or member_match
+                if match:
+                    member_id = match.group(1)
+                    result = guild.get_member(int(member_id))
+                else:
+                    result = guild.get_member_named(argument)
+            if converter == "role":
+                match = id_match or role_match
+                if match:
+                    role_id = match.group(1)
+                    result = guild.get_role(int(role_id))
+                else:
+                    result = discord.utils.get(guild._roles.values(), name=argument)
+            if result:
+                break
+        if not result:
+            msg = ("{arg} is not a valid channel, user or role.").format(arg=argument)
+            raise BadArgument(msg)
+        return result
+
+
+class IntRange(Converter):
+
+    async def convert(self, ctx, argument) -> int:
+        try:
+            argument = int(argument)
+        except ValueError:
+            raise BadArgument("The provided input must be a number.")
+        if argument == -1:
+            return argument
+        if argument < -1:
+            raise BadArgument("You must provide a number greater than -1.")
+        return max(min(100, argument), 0)
+
+
 class CleverbotAPI:
     """
-        All API access for both cleverbot and cleverbot.io
+    All API access for both cleverbot and cleverbot.io
     """
+
     bot: Red
     config: Config
     instances: dict
@@ -36,6 +104,151 @@ class CleverbotAPI:
     def __init__(self, bot):
         self.bot = bot
         self.instances = {}
+
+    async def local_perms(self, message: discord.Message) -> bool:
+        """Check the user is/isn't locally whitelisted/blacklisted.
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        """
+        if await self.bot.is_owner(message.author):
+            return True
+        elif message.guild is None:
+            return True
+        if not getattr(message.author, "roles", None):
+            return False
+        try:
+            return await self.bot.allowed_by_whitelist_blacklist(
+                message.author,
+                who_id=message.author.id,
+                guild_id=message.guild.id,
+                role_ids=[r.id for r in message.author.roles],
+            )
+        except AttributeError:
+            guild_settings = self.bot.db.guild(message.guild)
+            local_blacklist = await guild_settings.blacklist()
+            local_whitelist = await guild_settings.whitelist()
+            author: discord.Member = cast(discord.Member, message.author)
+            _ids = [r.id for r in author.roles if not r.is_default()]
+            _ids.append(message.author.id)
+            if local_whitelist:
+                return any(i in local_whitelist for i in _ids)
+
+            return not any(i in local_blacklist for i in _ids)
+
+    async def build_tweak_msg(self, guild: Optional[discord.Guild] = None) -> str:
+        if guild:
+            g_tweak1 = await self.config.guild(guild).tweak1()
+            g_tweak2 = await self.config.guild(guild).tweak2()
+            g_tweak3 = await self.config.guild(guild).tweak3()
+        else:
+            g_tweak1, g_tweak2, g_tweak3 = -1, -1, -1
+        tweak1 = await self.config.tweak1() if g_tweak1 == -1 else g_tweak1
+        tweak2 = await self.config.tweak2() if g_tweak2 == -1 else g_tweak2
+        tweak3 = await self.config.tweak3() if g_tweak3 == -1 else g_tweak3
+        msg = "Alright, I will be "
+        if tweak1 < 50:
+            msg += f"{100-tweak1}% sensible, "
+        if tweak1 > 50:
+            msg += f"{tweak1}% wacky, "
+        if tweak1 == 50:
+            msg += f"{tweak1}% wacky and sensible, "
+
+        if tweak2 < 50:
+            msg += f"{100-tweak2}% shy, and "
+        if tweak2 > 50:
+            msg += f"{tweak2}% talkative, and "
+        if tweak2 == 50:
+            msg += f"{tweak2}% shy and talkative, and "
+
+        if tweak3 < 50:
+            msg += f"{100-tweak3}% self-centered."
+        if tweak3 > 50:
+            msg += f"{tweak3}% attentive."
+        if tweak3 == 50:
+            msg += f"{tweak3}% self-centered and attentive."
+        return msg
+
+
+    async def global_perms(self, message: discord.Message) -> bool:
+        """Check the user is/isn't globally whitelisted/blacklisted.
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        """
+        if await self.bot.is_owner(message.author):
+            return True
+        try:
+            return await self.bot.allowed_by_whitelist_blacklist(message.author)
+        except AttributeError:
+            whitelist = await self.bot.db.whitelist()
+            if whitelist:
+                return message.author.id in whitelist
+
+            return message.author.id not in await self.bot.db.blacklist()
+
+    async def check_bw_list(self, message: discord.Message) -> bool:
+        can_run = True
+        if not message.guild:
+            return can_run
+        global_perms = await self.global_perms(message)
+        if not global_perms:
+            return global_perms
+        whitelist = await self.config.guild(message.guild).whitelist()
+        blacklist = await self.config.guild(message.guild).blacklist()
+        if whitelist:
+            can_run = False
+            if message.channel.id in whitelist:
+                can_run = True
+            if message.author.id in whitelist:
+                can_run = True
+            for role in message.author.roles:
+                if role.is_default():
+                    continue
+                if role.id in whitelist:
+                    can_run = True
+            return can_run
+        else:
+            if message.channel.id in blacklist:
+                can_run = False
+            if message.author.id in blacklist:
+                can_run = False
+            for role in message.author.roles:
+                if role.is_default():
+                    continue
+                if role.id in blacklist:
+                    can_run = False
+        return can_run
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        guild = message.guild
+        if not await self.check_bw_list(message):
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if guild and await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        ctx = await self.bot.get_context(message)
+        author = message.author
+        text = message.clean_content
+        to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
+        is_mention = re.search(to_strip, message.content)
+        if is_mention:
+            text = text[len(ctx.me.display_name) + 2 :]
+            log.debug(text)
+        if not text:
+            log.debug("No text to send to cleverbot.")
+            return
+        if guild is None:
+            if await self.config.allow_dm() and message.author.id != self.bot.user.id:
+                if ctx.prefix:
+                    return
+                await self.send_cleverbot_response(text, message.author, ctx)
+            return
+
+        if message.author.id != self.bot.user.id:
+
+            if not is_mention and message.channel.id != await self.config.guild(guild).channel():
+                return
+            if not await self.config.guild(guild).toggle():
+                return
+            await self.send_cleverbot_response(text, author, ctx)
 
     async def get_response(self, author: discord.User, text: str) -> str:
         payload = {}

@@ -4,14 +4,12 @@ import re
 
 from typing import Optional, Union
 
-from discord.ext.commands.converter import Converter  # type: ignore[import]
-from discord.ext.commands.errors import BadArgument  # type: ignore[import]
-
 from redbot import version_info, VersionInfo
 from redbot.core import commands, checks, Config
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
-from .api import CleverbotAPI
+from .api import CleverbotAPI, ChannelUserRole, IntRange
 
 from .errors import (
     NoCredentials,
@@ -22,7 +20,7 @@ from .errors import (
 
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
 
-_ = Translator("ReTrigger", __file__)
+_ = Translator("cleverbot", __file__)
 
 
 @cog_i18n(_)
@@ -34,7 +32,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     """
 
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.2.0"
+    __version__ = "2.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -52,6 +50,8 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             "channel": None,
             "toggle": False,
             "mention": False,
+            "whitelist": [],
+            "blacklist": [],
             "tweak1": -1,
             "tweak2": -1,
             "tweak3": -1,
@@ -86,56 +86,167 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         """
         pass
 
-    class IntRange(Converter):
+    @cleverbotset.group(name="blocklist", aliases=["blacklist"])
+    @commands.guild_only()
+    async def blacklist(self, ctx: commands.Context):
+        """
+        Blacklist settings for cleverbot
+        """
+        pass
 
-        async def convert(self, ctx, argument) -> int:
-            try:
-                argument = int(argument)
-            except ValueError:
-                raise BadArgument("The provided input must be a number.")
-            if argument == -1:
-                return argument
-            if argument < -1:
-                raise BadArgument("You must provide a number greater than -1.")
-            return max(min(100, argument), 0)
+    @cleverbotset.group(name="allowlist", aliases=["whitelist"])
+    @commands.guild_only()
+    async def whitelist(self, ctx: commands.Context):
+        """
+        Whitelist settings for cleverbot
+        """
+        pass
 
-    async def build_tweak_msg(self, guild: Optional[discord.Guild] = None) -> str:
-        if guild:
-            g_tweak1 = await self.config.guild(guild).tweak1()
-            g_tweak2 = await self.config.guild(guild).tweak2()
-            g_tweak3 = await self.config.guild(guild).tweak3()
-        else:
-            g_tweak1, g_tweak2, g_tweak3 = -1, -1, -1
-        tweak1 = await self.config.tweak1() if g_tweak1 == -1 else g_tweak1
-        tweak2 = await self.config.tweak2() if g_tweak2 == -1 else g_tweak2
-        tweak3 = await self.config.tweak3() if g_tweak3 == -1 else g_tweak3
-        msg = "Alright, I will be "
-        if tweak1 < 50:
-            msg += f"{100-tweak1}% sensible, "
-        if tweak1 > 50:
-            msg += f"{tweak1}% wacky, "
-        if tweak1 == 50:
-            msg += f"{tweak1}% wacky and sensible, "
+    @whitelist.command(name="add")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_add(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ) -> None:
+        """
+        Add a channel, user, or role to cleverbots whitelist
 
-        if tweak2 < 50:
-            msg += f"{100-tweak2}% shy, and "
-        if tweak2 > 50:
-            msg += f"{tweak2}% talkative, and "
-        if tweak2 == 50:
-            msg += f"{tweak2}% shy and talkative, and "
+        `[channel_user_role...]` is the channel, user or role to whitelist
+        (You can supply more than one of any at a time)
 
-        if tweak3 < 50:
-            msg += f"{100-tweak3}% self-centered."
-        if tweak3 > 50:
-            msg += f"{tweak3}% attentive."
-        if tweak3 == 50:
-            msg += f"{tweak3}% self-centered and attentive."
-        return msg
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
+        async with self.config.guild(ctx.guild).whitelist() as whitelist:
+            for obj in channel_user_role:
+                if obj.id not in whitelist:
+                    whitelist.append(obj.id)
+        msg = _("`{list_type}` added to the whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @whitelist.command(name="remove", aliases=["rem", "del"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_remove(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ) -> None:
+        """
+        Remove a channel, user, or role from cleverbots whitelist
+
+        `[channel_user_role...]` is the channel, user or role to remove from the whitelist
+        (You can supply more than one of any at a time)
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
+        async with self.config.guild(ctx.guild).whitelist() as whitelist:
+            for obj in channel_user_role:
+                if obj.id in whitelist:
+                    whitelist.remove(obj.id)
+        msg = _("`{list_type}` removed from the whitelist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @whitelist.command(name="info")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def whitelist_info(self, ctx: commands.Context):
+        """
+        Show what's currently in cleverbots whitelist
+        """
+        msg = _("Cleverbot allowlist for {guild}:\n").format(guild=ctx.guild.name)
+        whitelist = await self.config.guild(ctx.guild).whitelist()
+        can_embed = ctx.channel.permissions_for(ctx.me).embed_links
+        for obj_id in whitelist:
+            obj = await ChannelUserRole().convert(ctx, str(obj_id))
+            if isinstance(obj, discord.TextChannel):
+                msg += f"{obj.mention}\n"
+                continue
+            if can_embed:
+                msg += f"{obj.mention}\n"
+                continue
+            else:
+                msg += f"{obj.name}\n"
+        for page in pagify(msg):
+            await ctx.maybe_send_embed(page)
+
+
+    @blacklist.command(name="add")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_add(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ) -> None:
+        """
+        Add a channel, user, or role to cleverbots blacklist
+
+        `[channel_user_role...]` is the channel, user or role to blacklist
+        (You can supply more than one of any at a time)
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
+        async with self.config.guild(ctx.guild).blacklist() as blacklist:
+            for obj in channel_user_role:
+                if obj.id not in blacklist:
+                    blacklist.append(obj.id)
+        msg = _("`{list_type}` added to the blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @blacklist.command(name="remove", aliases=["rem", "del"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_remove(
+        self, ctx: commands.Context, *channel_user_role: ChannelUserRole
+    ) -> None:
+        """
+        Remove a channel, user, or role from cleverbots blacklist
+
+        `[channel_user_role...]` is the channel, user or role to remove from the blacklist
+        (You can supply more than one of any at a time)
+
+        """
+        if len(channel_user_role) < 1:
+            return await ctx.send(
+                _("You must supply 1 or more channels users or roles to be whitelisted.")
+            )
+        async with self.config.guild(ctx.guild).blacklist() as blacklist:
+            for obj in channel_user_role:
+                if obj.id in blacklist:
+                    blacklist.remove(obj.id)
+        msg = _("`{list_type}` removed from the blacklist.")
+        list_type = humanize_list([c.name for c in channel_user_role])
+        await ctx.send(msg.format(list_type=list_type))
+
+    @blacklist.command(name="info")
+    @checks.mod_or_permissions(manage_messages=True)
+    async def blacklist_info(self, ctx: commands.Context):
+        """
+        Show what's currently in cleverbots blacklist
+        """
+        msg = _("Cleverbot blocklist for {guild}:\n").format(guild=ctx.guild.name)
+        blacklist = await self.config.guild(ctx.guild).blacklist()
+        can_embed = ctx.channel.permissions_for(ctx.me).embed_links
+        for obj_id in blacklist:
+            obj = await ChannelUserRole().convert(ctx, str(obj_id))
+            if isinstance(obj, discord.TextChannel):
+                msg += f"{obj.mention}\n"
+                continue
+            if can_embed:
+                msg += f"{obj.mention}\n"
+                continue
+            else:
+                msg += f"{obj.name}\n"
+        for page in pagify(msg):
+            await ctx.maybe_send_embed(page)
 
     @cleverbotset.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
-    async def guildtweaks(self, ctx: commands.Context, tweak1: IntRange, tweak2: IntRange, tweak3: IntRange):
+    async def guildtweaks(
+        self, ctx: commands.Context, tweak1: IntRange, tweak2: IntRange, tweak3: IntRange
+    ):
         """
         Set the response tweaks from cleverbot
 
@@ -153,7 +264,9 @@ class Cleverbot(CleverbotAPI, commands.Cog):
 
     @cleverbotset.command()
     @checks.is_owner()
-    async def tweaks(self, ctx: commands.Context, tweak1: IntRange, tweak2: IntRange, tweak3: IntRange):
+    async def tweaks(
+        self, ctx: commands.Context, tweak1: IntRange, tweak2: IntRange, tweak3: IntRange
+    ):
         """
         Set the response tweaks from cleverbot
 
@@ -291,35 +404,3 @@ class Cleverbot(CleverbotAPI, commands.Cog):
                 await ctx.send(f"{author.mention} {response}")
             else:
                 await ctx.send(response)
-
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
-        guild = message.guild
-        ctx = await self.bot.get_context(message)
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, ctx.guild):
-                return
-        author = message.author
-        text = message.clean_content
-        to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
-        is_mention = re.search(to_strip, message.content)
-        if is_mention:
-            text = text[len(ctx.me.display_name) + 2 :]
-            log.debug(text)
-        if not text:
-            log.debug("No text to send to cleverbot.")
-            return
-        if guild is None:
-            if await self.config.allow_dm() and message.author.id != self.bot.user.id:
-                if ctx.prefix:
-                    return
-                await self.send_cleverbot_response(text, message.author, ctx)
-            return
-
-        if message.author.id != self.bot.user.id:
-
-            if not is_mention and message.channel.id != await self.config.guild(guild).channel():
-                return
-            if not await self.config.guild(guild).toggle():
-                return
-            await self.send_cleverbot_response(text, author, ctx)
