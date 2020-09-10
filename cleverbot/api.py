@@ -198,7 +198,7 @@ class CleverbotAPI:
                 can_run = True
             if message.author.id in whitelist:
                 can_run = True
-            for role in message.author.roles:
+            for role in getattr(message.author, "roles", []):
                 if role.is_default():
                     continue
                 if role.id in whitelist:
@@ -209,7 +209,7 @@ class CleverbotAPI:
                 can_run = False
             if message.author.id in blacklist:
                 can_run = False
-            for role in message.author.roles:
+            for role in getattr(message.author, "roles", []):
                 if role.is_default():
                     continue
                 if role.id in blacklist:
