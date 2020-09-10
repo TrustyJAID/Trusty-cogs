@@ -222,7 +222,8 @@ class EventMixin:
             else:
                 role = _("Not Set\nADMIN")
         elif privs == "BOT_OWNER":
-            role = f"<@!{ctx.bot.owner_id}>\n{privs}"
+            role = humanize_list([f"<@!{_id}>" for _id in ctx.bot.owner_ids])
+            role += f"\n{privs}"
         elif privs == "GUILD_OWNER":
             role = guild.owner.mention + f"\n{privs}"
         else:
@@ -246,7 +247,7 @@ class EventMixin:
             )
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Can Run"), value=str(can_run))
-            embed.add_field(name=_("Required Role"), value=role)
+            embed.add_field(name=_("Requires"), value=role)
             author_title = _("{member} ({m_id})- Used a Command").format(
                 member=message.author, m_id=message.author.id
             )
