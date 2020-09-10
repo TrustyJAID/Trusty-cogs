@@ -19,10 +19,10 @@ log = logging.getLogger("red.Trusty-cogs.reddit")
 
 class Reddit(commands.Cog):
     """
-        A cog to get information from the Reddit API
+    A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -37,14 +37,14 @@ class Reddit(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -75,8 +75,8 @@ class Reddit(commands.Cog):
 
     async def _run_subreddit_stream(self, subreddit: Subreddit):
         """
-            A function to run the infinite loop of the subreddit stream and dispatch
-            new posts as an event.
+        A function to run the infinite loop of the subreddit stream and dispatch
+        new posts as an event.
         """
         try:
             async for submission in subreddit.new.stream(skip_existing=True):
@@ -119,7 +119,7 @@ class Reddit(commands.Cog):
         self, channel: discord.TextChannel, contents: dict, use_embed: bool
     ):
         """
-            A coroutine to handle multiple tasks at once
+        A coroutine to handle multiple tasks at once
         """
         post_url = contents["content"]
         em = contents["embed"]
@@ -170,7 +170,7 @@ class Reddit(commands.Cog):
     @commands.group()
     async def redditset(self, ctx: commands.Context):
         """
-            Commands for setting up the reddit cog
+        Commands for setting up the reddit cog
         """
 
     @redditset.command(name="post")
@@ -179,10 +179,10 @@ class Reddit(commands.Cog):
         self, ctx: commands.Context, subreddit: str, channel: Optional[discord.TextChannel] = None
     ):
         """
-            Setup a channel for automatically posting new subreddit submissions
+        Setup a channel for automatically posting new subreddit submissions
 
-            `<subreddit>` is the name of the subreddit you want to get updates on.
-            `<channel>` is the channel where you want new subreddit posts to be put.
+        `<subreddit>` is the name of the subreddit you want to get updates on.
+        `<channel>` is the channel where you want new subreddit posts to be put.
         """
         if not self.login:
             return await ctx.send(
@@ -192,6 +192,8 @@ class Reddit(commands.Cog):
         if not channel:
             channel = ctx.channel
         sub = await self.login.subreddit(subreddit)
+        if not getattr(sub, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         if sub.id not in self.subreddits:
@@ -218,10 +220,10 @@ class Reddit(commands.Cog):
         self, ctx: commands.Context, subreddit: str, channel: Optional[discord.TextChannel] = None
     ):
         """
-            Remove a channel from automatically posting new subreddit submissions
+        Remove a channel from automatically posting new subreddit submissions
 
-            `<subreddit>` is the name of the subreddit you want to get updates on.
-            `<channel>` is the channel where you want new subreddit posts to be put.
+        `<subreddit>` is the name of the subreddit you want to get updates on.
+        `<channel>` is the channel where you want new subreddit posts to be put.
         """
         if not self.login:
             return await ctx.send(
@@ -231,6 +233,8 @@ class Reddit(commands.Cog):
         if not channel:
             channel = ctx.channel
         sub = await self.login.subreddit(subreddit)
+        if not getattr(sub, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         if sub.id not in self.subreddits:
@@ -263,7 +267,7 @@ class Reddit(commands.Cog):
     @commands.is_owner()
     async def creds(self, ctx: commands.Context):
         """
-            How to setup login information for reddit.
+        How to setup login information for reddit.
         """
         msg = (
             "1. Go to https://www.reddit.com/prefs/apps and select create another app...\n"
@@ -285,7 +289,7 @@ class Reddit(commands.Cog):
     @reddit.command(name="hot")
     async def reddit_hot(self, ctx: commands.Context, subreddit: str):
         """
-            Show 25 hotest posts on the desired subreddit
+        Show 25 hotest posts on the desired subreddit
         """
         if not self.login:
             return await ctx.send(
@@ -293,6 +297,8 @@ class Reddit(commands.Cog):
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
         subreddit = await self.login.subreddit(subreddit)
+        if not getattr(subreddit, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if subreddit.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         submissions = subreddit.hot()
@@ -306,7 +312,7 @@ class Reddit(commands.Cog):
     @reddit.command(name="new")
     async def reddit_new(self, ctx: commands.Context, subreddit: str):
         """
-            Show 25 newest posts on the desired subreddit
+        Show 25 newest posts on the desired subreddit
         """
         if not self.login:
             return await ctx.send(
@@ -314,6 +320,8 @@ class Reddit(commands.Cog):
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
         subreddit = await self.login.subreddit(subreddit)
+        if not getattr(subreddit, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if subreddit.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         submissions = subreddit.new()
@@ -327,7 +335,7 @@ class Reddit(commands.Cog):
     @reddit.command(name="top")
     async def reddit_top(self, ctx: commands.Context, subreddit: str):
         """
-            Show 25 newest posts on the desired subreddit
+        Show 25 newest posts on the desired subreddit
         """
         if not self.login:
             return await ctx.send(
@@ -335,6 +343,8 @@ class Reddit(commands.Cog):
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
         subreddit = await self.login.subreddit(subreddit)
+        if not getattr(subreddit, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if subreddit.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         submissions = subreddit.top()
@@ -348,7 +358,7 @@ class Reddit(commands.Cog):
     @reddit.command(name="rising")
     async def reddit_rising(self, ctx: commands.Context, subreddit: str):
         """
-            Show 25 newest posts on the desired subreddit
+        Show 25 newest posts on the desired subreddit
         """
         if not self.login:
             return await ctx.send(
@@ -356,6 +366,8 @@ class Reddit(commands.Cog):
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
         subreddit = await self.login.subreddit(subreddit)
+        if not getattr(subreddit, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if subreddit.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         submissions = subreddit.rising()
@@ -369,7 +381,7 @@ class Reddit(commands.Cog):
     @reddit.command(name="random")
     async def reddit_random(self, ctx: commands.Context, subreddit: str):
         """
-            Show 25 newest posts on the desired subreddit
+        Show 25 newest posts on the desired subreddit
         """
         if not self.login:
             return await ctx.send(
@@ -377,6 +389,8 @@ class Reddit(commands.Cog):
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
         subreddit = await self.login.subreddit(subreddit)
+        if not getattr(subreddit, "dist", True):
+            return await ctx.send("That doesn't look like a valid subreddit.")
         if subreddit.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         submission = await subreddit.random()

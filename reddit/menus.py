@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, AsyncGenerator
+from typing import Any, AsyncGenerator
 from apraw.models import Submission, Subreddit
 
 import discord
-from redbot.core.commands import commands
-from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import escape, humanize_number
 from redbot.vendored.discord.ext import menus
 
-from .helpers import BASE_URL, make_embed_from_submission
+from .helpers import make_embed_from_submission
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
 

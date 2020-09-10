@@ -3,7 +3,6 @@ import logging
 import re
 
 from apraw.models import Subreddit, Submission
-from redbot.core import commands
 
 
 BASE_URL = "https://reddit.com"
@@ -14,11 +13,13 @@ log = logging.getLogger("red.Trusty-cogs.reddit")
 
 
 async def make_embed_from_submission(
-    channel: discord.TextChannel, subreddit: Subreddit, submission: Submission,
+    channel: discord.TextChannel,
+    subreddit: Subreddit,
+    submission: Submission,
 ):
     """
-            Generates a discord embed from a provided submission object.
-        """
+    Generates a discord embed from a provided submission object.
+    """
     em = None
     if submission.over_18 and not channel.is_nsfw():
         return None
@@ -26,10 +27,7 @@ async def make_embed_from_submission(
         post_url = f"||{BASE_URL}{submission.permalink}||"
     else:
         post_url = f"{BASE_URL}{submission.permalink}"
-    em = discord.Embed(
-        title=submission.title[:256],
-        timestamp=submission.created_utc
-    )
+    em = discord.Embed(title=submission.title[:256], timestamp=submission.created_utc)
     has_text, has_image = False, False
     kind = " post"
     if submission.is_self:
