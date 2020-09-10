@@ -33,7 +33,7 @@ except ImportError:
 
 class ImageMaker(commands.Cog):
     """
-        Create various fun images
+    Create various fun images
     """
 
     __author__ = [
@@ -49,14 +49,14 @@ class ImageMaker(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -74,9 +74,9 @@ class ImageMaker(commands.Cog):
         self, ctx: commands.Context, *, text: Union[discord.Member, str] = None
     ) -> None:
         """
-            Generate a wheeze image with text or a user avatar
+        Generate a wheeze image with text or a user avatar
 
-            `text` the text or user avatar who will be placed in the bottom pane
+        `text` the text or user avatar who will be placed in the bottom pane
         """
         if text is None:
             text = ctx.message.author
@@ -92,7 +92,7 @@ class ImageMaker(commands.Cog):
     @commands.command()
     async def facemerge(self, ctx: commands.Context, *, urls: ImageFinder) -> None:
         """
-            Generate a gif of two images fading into eachother
+        Generate a gif of two images fading into eachother
         """
         if len(urls) < 2:
             urls = await ImageFinder().search_for_images(ctx)
@@ -109,11 +109,11 @@ class ImageMaker(commands.Cog):
 
     @commands.command()
     @commands.check(lambda ctx: BANNER)
-    async def banner(
+    async def scrollbanner(
         self, ctx: commands.Context, colour: Optional[discord.Colour] = (255, 0, 0), *, text: str
     ) -> None:
         """
-            Generate a scrolling text gif banner
+        Generate a scrolling text gif banner
         """
         if isinstance(colour, discord.Colour):
             colour = colour.to_rgb() + (0,)
@@ -131,7 +131,7 @@ class ImageMaker(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def obama(self, ctx: commands.Context, *, text: str) -> None:
         """
-            Synthesize video clips of Obama
+        Synthesize video clips of Obama
         """
         text = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
         if len(text) > 280:
@@ -144,7 +144,9 @@ class ImageMaker(commands.Cog):
                         url="http://talkobamato.me/synthesize.py", data={"input_text": text}
                     ) as resp:
                         if resp.status != 200:
-                            return await ctx.send("Something went wrong while trying to get the video.")
+                            return await ctx.send(
+                                "Something went wrong while trying to get the video."
+                            )
                         url = resp.url
 
                     key = url.query["speech_key"]
@@ -152,7 +154,9 @@ class ImageMaker(commands.Cog):
                     await asyncio.sleep(len(text) // 5)
                     async with session.get(link) as resp:
                         if resp.status != 200:
-                            return await ctx.send("Something went wrong while trying to get the video.")
+                            return await ctx.send(
+                                "Something went wrong while trying to get the video."
+                            )
                     async with session.get(link) as r:
                         data = BytesIO(await r.read())
                 except aiohttp.ClientConnectionError:
@@ -165,10 +169,10 @@ class ImageMaker(commands.Cog):
     @commands.command()
     async def gwheeze(self, ctx: commands.Context, member: discord.Member = None) -> None:
         """
-            Generate a gif wheeze image if user has a gif avatar
+        Generate a gif wheeze image if user has a gif avatar
 
-            `member` the member whos avatar will be pasted on the image
-            defaults to author
+        `member` the member whos avatar will be pasted on the image
+        defaults to author
         """
         if member is None:
             member = ctx.message.author
@@ -186,10 +190,10 @@ class ImageMaker(commands.Cog):
         self, ctx: commands.Context, user: discord.Member = None, is_gif=False
     ) -> None:
         """
-            Generate a beautiful image using users avatar
+        Generate a beautiful image using users avatar
 
-            `user` the user whos avatar will be places on the image
-            `is_gif` True/False to create a gif if the user has a gif avatar
+        `user` the user whos avatar will be places on the image
+        `is_gif` True/False to create a gif if the user has a gif avatar
         """
         if user is None:
             user = ctx.message.author
@@ -207,10 +211,10 @@ class ImageMaker(commands.Cog):
         self, ctx: commands.Context, user: discord.Member = None, is_gif=False
     ) -> None:
         """
-            Generate a feels image using users avatar and role colour
+        Generate a feels image using users avatar and role colour
 
-            `user` the user whos avatar will be places on the image
-            `is_gif` True/False to create a gif if the user has a gif avatar
+        `user` the user whos avatar will be places on the image
+        `is_gif` True/False to create a gif if the user has a gif avatar
         """
         if user is None:
             user = ctx.message.author
@@ -227,9 +231,9 @@ class ImageMaker(commands.Cog):
     @commands.check(lambda ctx: TRUMP)
     async def trump(self, ctx: commands.Context, *, message) -> None:
         """
-            Generate isnowillegal gif image
+        Generate isnowillegal gif image
 
-            `message` will be what is pasted on the gif
+        `message` will be what is pasted on the gif
         """
         if not TRUMP:
             msg = (
@@ -304,9 +308,9 @@ class ImageMaker(commands.Cog):
     @commands.command()
     async def pill(self, ctx: commands.Context, colour="#FF0000") -> None:
         """
-            Generate a pill image to any colour with hex codes
+        Generate a pill image to any colour with hex codes
 
-            `colour` is a hexcode colour
+        `colour` is a hexcode colour
         """
         async with ctx.channel.typing():
             pill_image = await self.make_colour(colour)

@@ -11,8 +11,8 @@ ID_REGEX = re.compile(r"[0-9]{17,}")
 
 class ImageFinder(Converter):
     """
-        This is a class to convert notsobots image searching capabilities
-        into a more general converter class
+    This is a class to convert notsobots image searching capabilities
+    into a more general converter class
     """
 
     async def convert(self, ctx, argument):
