@@ -13,6 +13,7 @@ from redbot.core import Config
 
 from .constants import HEADSHOT_URL, TEAMS
 from .helper import check_to_post, get_team
+
 try:
     from .oilers import Oilers
 except ImportError:
@@ -138,7 +139,7 @@ class Goal:
 
     async def post_team_goal(self, bot, game_data):
         """
-            Creates embed and sends message if a team has scored a goal
+        Creates embed and sends message if a team has scored a goal
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         post_state = ["all", game_data.home_team, game_data.away_team]
@@ -239,7 +240,7 @@ class Goal:
     @staticmethod
     async def remove_goal_post(bot, goal, team, data):
         """
-            Attempt to delete a goal if it was pulled back
+        Attempt to delete a goal if it was pulled back
         """
         config = bot.get_cog("Hockey").config
         team_list = await config.teams()
@@ -255,9 +256,9 @@ class Goal:
                 if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
                         try:
-                            message = await channel.fetch_message(message_id)
+                            message = await channel.fetch_message_fast(message_id)
                         except AttributeError:
-                            message = await channel.get_message(message_id)
+                            message = await channel.fetch_message(message_id)
                         if message is not None:
                             await message.delete()
                     except Exception:
@@ -277,7 +278,7 @@ class Goal:
 
     async def edit_team_goal(self, bot, game_data, og_msg):
         """
-            When a goal scorer has changed we want to edit the original post
+        When a goal scorer has changed we want to edit the original post
         """
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
@@ -297,9 +298,9 @@ class Goal:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
             try:
-                message = await channel.fetch_message(message_id)
+                message = await channel.fetch_message_fast(message_id)
             except AttributeError:
-                message = await channel.get_message(message_id)
+                message = await channel.fetch_message(message_id)
             guild = message.guild
             game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
             role = None
@@ -319,7 +320,7 @@ class Goal:
 
     async def get_shootout_display(self, game):
         """
-            Gets a string for the shootout display
+        Gets a string for the shootout display
         """
         home_msg = ""
         away_msg = ""
@@ -348,7 +349,7 @@ class Goal:
 
     async def goal_post_embed(self, game):
         """
-            Gets the embed for goal posts
+        Gets the embed for goal posts
         """
         # h_emoji = game.home_emoji
         # a_emoji = game.away_emoji
@@ -421,7 +422,7 @@ class Goal:
 
     async def goal_post_text(self, game):
         """
-            Gets the text to send for goal posts
+        Gets the text to send for goal posts
         """
         if game.period_ord != "SO":
             text = (

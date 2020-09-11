@@ -7,7 +7,7 @@ from redbot.core import Config, checks, commands
 
 class Fenrir(commands.Cog):
     """
-        Various unreasonable commands inspired by Fenrir
+    Various unreasonable commands inspired by Fenrir
     """
 
     __version__ = "1.0.3"
@@ -26,14 +26,14 @@ class Fenrir(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -165,9 +165,9 @@ class Fenrir(commands.Cog):
                 return
             channel = guild.get_channel(payload.channel_id)
             try:
-                msg = await channel.fetch_message(payload.message_id)
+                msg = await channel.fetch_message_fast(payload.message_id)
             except AttributeError:
-                msg = await channel.get_message(payload.message_id)
+                msg = await channel.fetch_message(payload.message_id)
             except Exception:
                 return
             ctx = await self.bot.get_context(msg)

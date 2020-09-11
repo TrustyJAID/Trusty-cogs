@@ -71,10 +71,10 @@ class Standings:
     @staticmethod
     async def get_team_standings(style):
         """
-            Creates a list of standings when given a particular style
-            accepts Division names, Conference names, and Team names
-            returns a list of standings objects and the location of the given
-            style in the list
+        Creates a list of standings when given a particular style
+        accepts Division names, Conference names, and Team names
+        returns a list of standings objects and the location of the given
+        style in the list
         """
         async with aiohttp.ClientSession() as session:
             async with session.get(BASE_URL + "/api/v1/standings") as resp:
@@ -137,8 +137,8 @@ class Standings:
     @staticmethod
     async def post_automatic_standings(bot):
         """
-            Automatically update a standings embed with the latest stats
-            run when new games for the day is updated
+        Automatically update a standings embed with the latest stats
+        run when new games for the day is updated
         """
         log.debug("Updating Standings.")
         config = bot.get_cog("Hockey").config
@@ -163,6 +163,8 @@ class Standings:
                 if standings_msg is None:
                     continue
                 try:
+                    message = await channel.fetch_message_fast(standings_msg)
+                except AttributeError:
                     message = await channel.fetch_message(standings_msg)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     await config.guild(guild).post_standings.set(False)
@@ -212,7 +214,7 @@ class Standings:
     @staticmethod
     async def all_standing_embed(post_standings):
         """
-            Builds the standing embed when all TEAMS are selected
+        Builds the standing embed when all TEAMS are selected
         """
         em = discord.Embed()
         new_dict = {}
@@ -334,7 +336,7 @@ class Standings:
     @staticmethod
     async def build_standing_embed(post_list, page=0):
         """
-            Builds the standings type based on number of items in the list
+        Builds the standings type based on number of items in the list
         """
         team_stats = post_list[page]
 

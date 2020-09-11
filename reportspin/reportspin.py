@@ -390,11 +390,13 @@ class Reports(commands.Cog):
                 return
             channel = guild.get_channel(payload.channel_id)
             try:
+                message = await channel.fetch_message_fast(payload.message_id)
+            except AttributeError:
                 message = await channel.fetch_message(payload.message_id)
-                await message.remove_reaction(payload.emoji, reporter)
             except Exception:
                 print("errror")
                 return
+            await message.remove_reaction(payload.emoji, reporter)
 
             report_channel_id = await self.config.guild(guild).output_channel()
             report_channel = guild.get_channel(report_channel_id)

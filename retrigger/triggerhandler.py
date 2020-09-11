@@ -59,7 +59,7 @@ IMAGE_REGEX: Pattern = re.compile(
 
 class TriggerHandler:
     """
-        Handles all processing of triggers
+    Handles all processing of triggers
     """
 
     config: Config
@@ -100,7 +100,7 @@ class TriggerHandler:
 
     async def local_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't locally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
         if await self.bot.is_owner(message.author):
             return True
@@ -129,7 +129,7 @@ class TriggerHandler:
 
     async def global_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't globally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
         if await self.bot.is_owner(message.author):
             return True
@@ -541,11 +541,15 @@ class TriggerHandler:
             return
         if "bot" in payload.data["author"]:
             return
+        channel = self.bot.get_channel(int(payload.data["channel_id"]))
         try:
-            channel = self.bot.get_channel(int(payload.data["channel_id"]))
+            message = await channel.fetch_message_fast(int(payload.data["id"]))
+        except AttributeError:
             message = await channel.fetch_message(int(payload.data["id"]))
-        except discord.errors.Forbidden:
-            log.debug(_("I don't have permission to read channel history"))
+        except (discord.errors.Forbidden, discord.errors.NotFound):
+            log.debug(
+                _("I don't have permission to read channel history or cannot find the message.")
+            )
             return
         except Exception:
             log.info("Could not find channel or message", exc_info=True)
@@ -561,10 +565,10 @@ class TriggerHandler:
 
     async def check_triggers(self, message: discord.Message, edit: bool) -> None:
         """
-            This is where we iterate through the triggers and perform the
-            search. This does all the permission checks and cooldown checks
-            before actually running the regex to avoid possibly long regex
-            operations.
+        This is where we iterate through the triggers and perform the
+        search. This does all the permission checks and cooldown checks
+        before actually running the regex to avoid possibly long regex
+        operations.
         """
         guild: discord.Guild = cast(discord.Guild, message.guild)
         if guild.id not in self.triggers:
@@ -665,10 +669,10 @@ class TriggerHandler:
 
     async def get_image_text(self, message: discord.Message) -> str:
         """
-            This function is built to asynchronously search images for text using pytesseract
+        This function is built to asynchronously search images for text using pytesseract
 
-            It takes a discord message and searches for valid image links and all attachments on the message
-            then runs them through pytesseract. All contents from pytesseract are returned as a string.
+        It takes a discord message and searches for valid image links and all attachments on the message
+        then runs them through pytesseract. All contents from pytesseract are returned as a string.
         """
         content = " "
         for attachment in message.attachments:
@@ -695,12 +699,12 @@ class TriggerHandler:
         self, guild: discord.Guild, trigger: Trigger, content: str
     ) -> Tuple[bool, list]:
         """
-            Mostly safe regex search to prevent reDOS from user defined regex patterns
+        Mostly safe regex search to prevent reDOS from user defined regex patterns
 
-            This works by running the regex pattern inside a process pool defined at the
-            cog level and then checking that process in the default executor to keep
-            things asynchronous. If the process takes too long to complete we log a
-            warning and remove the trigger from trying to run again.
+        This works by running the regex pattern inside a process pool defined at the
+        cog level and then checking that process in the default executor to keep
+        things asynchronous. If the process takes too long to complete we log a
+        warning and remove the trigger from trying to run again.
         """
         if await self.config.guild(guild).bypass():
             # log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
@@ -1167,7 +1171,7 @@ class TriggerHandler:
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         all_guilds = await self.config.all_guilds()
         for guild_id, data in all_guilds.items():

@@ -276,13 +276,17 @@ class Events:
         if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
             old_id = await self.config.guild(guild).LAST_GREETING()
             if channel is not None and old_id is not None:
+                old_msg = None
                 try:
+                    old_msg = await channel.fetch_message_fast(old_id)
+                except AttributeError:
                     old_msg = await channel.fetch_message(old_id)
-                    await old_msg.delete()
                 except discord.errors.NotFound:
                     pass
                 except discord.errors.Forbidden:
                     await self.config.guild(guild).DELETE_PREVIOUS_GREETING.set(False)
+                if old_msg:
+                    await old_msg.delete()
         # whisper the user if needed
         if not await self.config.guild(guild).GROUPED():
             if await self.config.guild(guild).WHISPER():
@@ -371,14 +375,18 @@ class Events:
         if await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE():
             old_id = await self.config.guild(guild).LAST_GOODBYE()
             if channel is not None and old_id is not None:
+                old_msg = None
                 try:
+                    old_msg = await channel.fetch_message_fast(old_id)
+                except AttributeError:
                     old_msg = await channel.fetch_message(old_id)
-                    await old_msg.delete()
                 except discord.errors.NotFound:
                     log.debug(_("Message not found for deletion."))
                     pass
                 except discord.errors.Forbidden:
                     await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(False)
+                if old_msg:
+                    await old_msg.delete()
 
         if not channel.permissions_for(guild.me).send_messages:
             log.info(_("Permissions Error in {guild}"))

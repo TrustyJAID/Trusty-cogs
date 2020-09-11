@@ -17,7 +17,7 @@ from .constants import regionals, ball, emoji_dict
 class Fun(commands.Cog):
     """
     Module for fun/meme commands.
-    
+
     RedBot V3 conversion of Appu's Fun cog.
     """
 
@@ -32,7 +32,7 @@ class Fun(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -45,7 +45,7 @@ class Fun(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -125,11 +125,11 @@ class Fun(commands.Cog):
         self, ctx: commands.Context, msg_id: int = None, channel: discord.TextChannel = None
     ) -> None:
         """
-            React 🅾🇴🇫 to a message.
+        React 🅾🇴🇫 to a message.
 
-            `msg_id` must be the message ID for desited message within the channel.
-            `channel` must be the channel where the desired message is defaults to current channel
-            if the bot has manage messages permission it will attempt to delete the command.
+        `msg_id` must be the message ID for desited message within the channel.
+        `channel` must be the channel where the desired message is defaults to current channel
+        if the bot has manage messages permission it will attempt to delete the command.
         """
         if channel is None:
             channel = ctx.message.channel
@@ -138,6 +138,8 @@ class Fun(commands.Cog):
                 message = messages
         else:
             try:
+                message = await channel.fetch_message_fast(msg_id)
+            except AttributeError:
                 message = await channel.fetch_message(msg_id)
             except discord.NotFound:
                 return await ctx.send(
@@ -162,11 +164,11 @@ class Fun(commands.Cog):
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
-            Add letter(s) as reaction to previous message.
+        Add letter(s) as reaction to previous message.
 
-            `msg` is the word you would like to react, no spaces.
-            `msg_id` must be the message ID for desited message within the channel.
-            `channel` must be the channel where the desired message is defaults to current channel.
+        `msg` is the word you would like to react, no spaces.
+        `msg_id` must be the message ID for desited message within the channel.
+        `channel` must be the channel where the desired message is defaults to current channel.
         """
         if channel is None:
             channel = ctx.channel
@@ -177,6 +179,8 @@ class Fun(commands.Cog):
                 message = messages
         else:
             try:
+                message = await channel.fetch_message_fast(msg_id)
+            except AttributeError:
                 message = await channel.fetch_message(msg_id)
             except discord.NotFound:
                 return await ctx.send(

@@ -159,13 +159,13 @@ class StarboardEvents:
         orig_channel = self.bot.get_channel(message_entry.original_channel)
         new_channel = self.bot.get_channel(message_entry.new_channel)
         try:
-            orig_msg = await orig_channel.get_message(message_entry.original_message)
+            orig_msg = await orig_channel.fetch_message_fast(message_entry.original_message)
         except AttributeError:
             orig_msg = await orig_channel.fetch_message(message_entry.original_message)
         orig_reaction = [r for r in orig_msg.reactions if str(r.emoji) == str(starboard.emoji)]
         try:
             try:
-                new_msg = await new_channel.get_message(message_entry.new_message)
+                new_msg = await new_channel.fetch_message_fast(message_entry.new_message)
             except AttributeError:
                 new_msg = await new_channel.fetch_message(message_entry.new_message)
             new_reaction = [r for r in new_msg.reactions if str(r.emoji) == str(starboard.emoji)]
@@ -215,6 +215,8 @@ class StarboardEvents:
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         try:
+            msg = await channel.fetch_message_fast(id=payload.message_id)
+        except AttributeError:
             msg = await channel.fetch_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
@@ -241,9 +243,9 @@ class StarboardEvents:
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         try:
-            msg = await channel.fetch_message(id=payload.message_id)
+            msg = await channel.fetch_message_fast(id=payload.message_id)
         except AttributeError:
-            msg = await channel.get_message(id=payload.message_id)
+            msg = await channel.fetch_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
         member = guild.get_member(payload.user_id)
@@ -338,9 +340,9 @@ class StarboardEvents:
             if (same_message and same_channel) or (starboard_message and starboard_channel):
                 count = await self._get_count(messages, starboard)
                 try:
-                    message_edit = await star_channel.fetch_message(messages.new_message)
+                    message_edit = await star_channel.fetch_message_fast(messages.new_message)
                 except AttributeError:
-                    message_edit = await star_channel.get_message(messages.new_message)  # type: ignore
+                    message_edit = await star_channel.fetch_message(messages.new_message)  # type: ignore
                     # This is for backwards compatibility for older Red
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     # starboard message may have been deleted
