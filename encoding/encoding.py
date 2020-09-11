@@ -234,7 +234,10 @@ class Encoding(commands.Cog):
         """
         Decode a base 64 text
         """
-        await ctx.send(base64.b64decode(bytes(message, "utf-8")).decode("utf-8"))
+        try:
+            await ctx.send(base64.b64decode(bytes(message, "utf-8")).decode("utf-8"))
+        except UnicodeDecodeError:
+            await ctx.send("That does not look like valid base 64 characters.")
 
     @_encode.command(name="chr", aliases=["character"])
     async def encode_char(self, ctx: commands.Context, *, message: str) -> None:
