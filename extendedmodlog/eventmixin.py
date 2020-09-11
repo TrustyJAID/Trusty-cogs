@@ -1653,7 +1653,7 @@ class EventMixin:
                     worth_sending = True
                     msg += _("Before ") + f"{name} {before_attr}\n"
                     msg += _("After ") + f"{name} {after_attr}\n"
-                    embed.description = _("{author} changed thier nickname.").format(
+                    embed.description = _("{author} changed their nickname.").format(
                         author=after.mention
                     )
                     embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
