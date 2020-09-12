@@ -388,15 +388,18 @@ class Reports(commands.Cog):
             reporter = guild.get_member(payload.user_id)
             if reporter.bot:
                 return
+            if not await self.bot.allowed_by_whitelist_blacklist(reporter):
+                return
             channel = guild.get_channel(payload.channel_id)
             try:
                 message = await channel.fetch_message_fast(payload.message_id)
+                await message.remove_reaction(payload.emoji, reporter)
             except AttributeError:
                 message = await channel.fetch_message(payload.message_id)
+                await message.remove_reaction(payload.emoji, reporter)
             except Exception:
                 print("errror")
                 return
-            await message.remove_reaction(payload.emoji, reporter)
 
             report_channel_id = await self.config.guild(guild).output_channel()
             report_channel = guild.get_channel(report_channel_id)
