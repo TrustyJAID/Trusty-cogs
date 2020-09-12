@@ -32,7 +32,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     """
 
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -261,6 +261,15 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         await self.config.guild(ctx.guild).tweak3.set(tweak3)
         msg = await self.build_tweak_msg(ctx.guild)
         await ctx.send(msg + " In this guild.")
+
+    @cleverbotset.command()
+    @checks.mod_or_permissions(manage_messages=True)
+    async def tweakinfo(self, ctx: commands.Context):
+        """
+        Show the current cleverbot tweaks in this server
+        """
+        msg = await self.build_tweak_msg(ctx.guild)
+        return await ctx.send(msg + " In this guild.")
 
     @cleverbotset.command()
     @checks.is_owner()

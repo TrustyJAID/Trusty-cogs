@@ -145,21 +145,27 @@ class CleverbotAPI:
         tweak2 = await self.config.tweak2() if g_tweak2 == -1 else g_tweak2
         tweak3 = await self.config.tweak3() if g_tweak3 == -1 else g_tweak3
         msg = "Alright, I will be "
-        if tweak1 < 50:
+        if tweak1 < 0:
+            msg += f"{100}% sensible, "
+        if tweak1 >= 0 and tweak1 < 50:
             msg += f"{100-tweak1}% sensible, "
         if tweak1 > 50:
             msg += f"{tweak1}% wacky, "
         if tweak1 == 50:
             msg += f"{tweak1}% wacky and sensible, "
 
-        if tweak2 < 50:
+        if tweak2 < 0:
+            msg += f"{100}% shy, and "
+        if tweak2 >= 0 and tweak2 < 50:
             msg += f"{100-tweak2}% shy, and "
         if tweak2 > 50:
             msg += f"{tweak2}% talkative, and "
         if tweak2 == 50:
             msg += f"{tweak2}% shy and talkative, and "
 
-        if tweak3 < 50:
+        if tweak3 < 0:
+            msg += f"{100}% self-centered."
+        if tweak3 >= 0 and tweak3 < 50:
             msg += f"{100-tweak3}% self-centered."
         if tweak3 > 50:
             msg += f"{tweak3}% attentive."
