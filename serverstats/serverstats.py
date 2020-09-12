@@ -11,6 +11,7 @@ from redbot.core import checks, Config
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
+    box,
     bold,
     escape,
     humanize_number,
@@ -1362,8 +1363,16 @@ class ServerStats(commands.Cog):
                     new_msg += "{} {}#{} {}\n".format(
                         user.id, user.name, user.discriminator, reaction.emoji
                     )
+        temp_pages = []
+        pages = []
         for page in pagify(new_msg, shorten_by=20):
-            await ctx.send("```py\n{}\n```".format(page))
+            temp_pages.append(box(page, "py"))
+        max_i = len(temp_pages)
+        i = 1
+        for page in temp_pages:
+            pages.append(f"`Page {i}/{max_i}`\n" + page)
+            i += 1
+        await menu(ctx, pages, controls=DEFAULT_CONTROLS)
 
     @commands.command(name="serverstats")
     @checks.mod_or_permissions(manage_messages=True)
