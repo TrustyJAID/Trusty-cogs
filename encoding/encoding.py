@@ -26,7 +26,7 @@ class Encoding(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -222,6 +222,40 @@ class Encoding(commands.Cog):
         )
         await ctx.send(ascii_bin)
 
+    @_encode.command(name="b16", aliases=["base16"])
+    async def encode_b16(self, ctx: commands.Context, *, message: str) -> None:
+        """
+        Encode text into base 16
+        """
+        await ctx.send(base64.b16encode(bytes(message, "utf-8")).decode("utf-8"))
+
+    @_decode.command(name="b16", aliases=["base16"])
+    async def decode_b16(self, ctx: commands.Context, *, message: str) -> None:
+        """
+        Decode base16 text
+        """
+        try:
+            await ctx.send(base64.b16decode(bytes(message, "utf-8")).decode("utf-8"))
+        except UnicodeDecodeError:
+            await ctx.send("That does not look like valid base 16 characters.")
+
+    @_encode.command(name="b32", aliases=["base32"])
+    async def encode_b32(self, ctx: commands.Context, *, message: str) -> None:
+        """
+        Encode text into base 32
+        """
+        await ctx.send(base64.b32encode(bytes(message, "utf-8")).decode("utf-8"))
+
+    @_decode.command(name="b32", aliases=["base32"])
+    async def decode_b32(self, ctx: commands.Context, *, message: str) -> None:
+        """
+        Decode base32 text
+        """
+        try:
+            await ctx.send(base64.b32decode(bytes(message, "utf-8")).decode("utf-8"))
+        except UnicodeDecodeError:
+            await ctx.send("That does not look like valid base 32 characters.")
+
     @_encode.command(name="b64", aliases=["base64"])
     async def encode_b64(self, ctx: commands.Context, *, message: str) -> None:
         """
@@ -232,7 +266,7 @@ class Encoding(commands.Cog):
     @_decode.command(name="b64", aliases=["base64"])
     async def decode_b64(self, ctx: commands.Context, *, message: str) -> None:
         """
-        Decode a base 64 text
+        Decode base 64 text
         """
         try:
             await ctx.send(base64.b64decode(bytes(message, "utf-8")).decode("utf-8"))
