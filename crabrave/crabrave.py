@@ -28,7 +28,7 @@ class CrabRave(commands.Cog):
     """
 
     __author__ = ["DankMemer Team", "TrustyJAID", "thisisjvgrace"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -88,7 +88,8 @@ class CrabRave(commands.Cog):
         return True
 
     @commands.command(aliases=["crabrave"])
-    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.cooldown(1, 20, commands.BucketType.guild)
+    @commands.max_concurrency(2, commands.BucketType.default)
     @checks.bot_has_permissions(attach_files=True)
     async def crab(self, ctx: commands.Context, *, text: str) -> None:
         """Make crab rave videos
@@ -165,6 +166,7 @@ class CrabRave(commands.Cog):
 
     @commands.command(aliases=["mikurave"])
     @commands.cooldown(1, 20, commands.BucketType.guild)
+    @commands.max_concurrency(2, commands.BucketType.default)
     @checks.bot_has_permissions(attach_files=True)
     async def miku(self, ctx: commands.Context, *, text: str) -> None:
         """Make miku rave videos
@@ -238,4 +240,3 @@ class CrabRave(commands.Cog):
         clip.close()
         video.close()
         return True
-
