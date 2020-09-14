@@ -10,7 +10,7 @@ https://imagemagick.org/script/download.php
 http://docs.wand-py.org/en/0.4.4/guide/install.html#
 
 Install the latest source in Ubuntu with:
-`sudo apt-get install zlib1g-dev libffi-dev git libmagickwand-dev unzip libaa1-dev build-essential tk-dev libncurses5-dev libncursesw5-dev libreadline6-dev libdb5.3-dev libgdbm-dev libsqlite3-dev libssl-dev libbz2-dev libexpat1-dev liblzma-dev ffmpeg imagemagick`
+`sudo apt-get install libncurses5-dev libbz2-dev libpng-dev libffi-dev libssl-dev liblzma-dev tk-dev libfreetype6-dev libdb5.3-dev libsqlite3-dev libncursesw5-dev libmagickwand-dev git libgdbm-dev imagemagick zlib1g-dev build-essential unzip libexpat1-dev libjpeg-dev ffmpeg libreadline6-dev webp libaa1-dev`
 https://linuxconfig.org/how-to-install-imagemagick-7-on-ubuntu-18-04-linux
 
 
