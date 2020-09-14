@@ -4,6 +4,7 @@ import aiohttp
 import asyncio
 import logging
 import functools
+import youtube_dl
 
 from redbot.core import commands, checks
 from redbot.core.data_manager import cog_data_path
@@ -13,52 +14,62 @@ from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 logging.captureWarnings(False)
 
 
-CRAB_LINK = (
-    "https://github.com/DankMemer/meme-server"
-    "/raw/9ce10a61e133f5b87b24d425fc671c9295affa6a/assets/crab/template.mp4"
-)
-# Use a historical link incase something changes
-FONT_FILE = (
-    "https://github.com/matomo-org/travis-scripts/"
-    "raw/65cace9ce09dca617832cbac2bbae3dacdffa264/fonts/Verdana.ttf"
-)
+CRAB_LINK = "https://youtu.be/gDLE3LikgUs"
+
+FONT_FILE = "https://github.com/matomo-org/travis-scripts/raw/master/fonts/Verdana.ttf"
 log = logging.getLogger("red.trusty-cogs.crabrave")
 
 
 class CrabRave(commands.Cog):
     """
-        Create your very own crab rave
+    Create your very own crab rave
     """
+
     __author__ = ["DankMemer Team", "TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def __init__(self, bot):
         self.bot = bot
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
-    async def check_video_file(self) -> bool:
-        if not (cog_data_path(self) / "template.mp4").is_file():
+    async def check_video_file(self, link: str, name_template: str) -> bool:
+        if not (cog_data_path(self) / name_template).is_file():
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(CRAB_LINK) as resp:
-                        data = await resp.read()
-                with open(cog_data_path(self) / "template.mp4", "wb") as save_file:
-                    save_file.write(data)
+                task = functools.partial(
+                    self.dl_from_youtube, link=link, name_template=name_template
+                )
+                task = self.bot.loop.run_in_executor(None, task)
+                await asyncio.wait_for(task, timeout=60)
+            except asyncio.TimeoutError:
+                log.exception("Error downloading the crabrave video")
             except Exception:
                 log.error("Error downloading crabrave video template", exc_info=True)
                 return False
+        return True
+
+    def dl_from_youtube(self, link, name_template):
+        ydl_opts = {
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]",
+            "outtmpl": str(cog_data_path(self) / name_template),
+        }
+        try:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([link])
+        except Exception:
+            log.exception("Error downloading the video from youtube")
+            return False
         return True
 
     async def check_font_file(self) -> bool:
@@ -80,11 +91,11 @@ class CrabRave(commands.Cog):
     async def crab(self, ctx: commands.Context, *, text: str) -> None:
         """Make crab rave videos
 
-            There must be exactly 1 `,` to split the message
+        There must be exactly 1 `,` to split the message
         """
-        t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}"):]
+        t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
         t = t.upper().replace(", ", ",").split(",")
-        if not await self.check_video_file():
+        if not await self.check_video_file(CRAB_LINK, "crab_template.mp4"):
             return await ctx.send("I couldn't download the template file.")
         if not await self.check_font_file():
             return await ctx.send("I couldn't download the font file.")
@@ -118,7 +129,7 @@ class CrabRave(commands.Cog):
         https://github.com/DankMemer/meme-server/blob/master/endpoints/crab.py
         """
         fp = str(cog_data_path(self) / f"Verdana.ttf")
-        clip = VideoFileClip(str(cog_data_path(self)) + "/template.mp4")
+        clip = VideoFileClip(str(cog_data_path(self)) + "/crab_template.mp4")
         # clip.volume(0.5)
         text = TextClip(t[0], fontsize=48, color="white", font=fp)
         text2 = (
