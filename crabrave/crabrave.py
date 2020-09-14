@@ -28,7 +28,7 @@ class CrabRave(commands.Cog):
     """
 
     __author__ = ["DankMemer Team", "TrustyJAID", "thisisjvgrace"]
-    __version__ = "1.0.3"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
