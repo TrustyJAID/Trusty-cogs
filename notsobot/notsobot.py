@@ -974,24 +974,23 @@ class NotSoBot(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     async def minecraftachievement(self, ctx, *, txt: str):
         """Generate a Minecraft Achievement"""
-        api = "https://mcgen.herokuapp.com/a.php?i=1&h=Achievement-{0}&t={1}".format(
-            ctx.message.author.name, txt
-        )
-        b, mime = await self.bytes_download(api)
+
+        b, mime = await self.bytes_download("https://i.imgur.com/JtNJFZy.png")
         if b is False:
             await ctx.send(":warning: **Command download function failed...**")
             return
-        i = 0
-        while sys.getsizeof(b) == 88 and i != 10:
-            b, mime = await self.bytes_download(api)
-            if sys.getsizeof(b) != 0:
-                i = 10
-            else:
-                i += 1
-        if i == 10 and sys.getsizeof(b) == 88:
-            await ctx.send("Minecraft Achievement Generator API is bad, pls try again")
-            return
-        file = discord.File(b, filename="achievement.png")
+        if len(txt) > 20:
+            txt = txt[:20] + " ..."
+
+        image = Image.open(b).convert("RGBA")
+        draw = ImageDraw.Draw(image)
+        font_path = str(bundled_data_path(self)) + "/Minecraftia.ttf"
+        font = ImageFont.truetype(font_path, 17)
+        draw.text((60, 30), txt, (255, 255, 255), font=font)
+        final = BytesIO()
+        image.save(final, "png")
+        final.seek(0)
+        file = discord.File(final, filename="achievement.png")
         await ctx.send(file=file)
 
     @commands.command(aliases=["wm"])
