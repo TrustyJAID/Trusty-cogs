@@ -830,11 +830,11 @@ class NotSoBot(commands.Cog):
             if vertical:
                 # Vertical
                 max_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[1][1]
-                imgs_comb = np.vstack((np.asarray(i.resize(max_shape)) for i in imgs))
+                imgs_comb = np.vstack([np.asarray(i.resize(max_shape)) for i in imgs])
             else:
                 # Horizontal
                 min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-                imgs_comb = np.hstack((np.asarray(i.resize(min_shape)) for i in imgs))
+                imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
             imgs_comb = Image.fromarray(imgs_comb)
             final = BytesIO()
             imgs_comb.save(final, "png")
