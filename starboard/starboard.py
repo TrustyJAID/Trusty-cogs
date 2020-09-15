@@ -202,10 +202,7 @@ class Starboard(StarboardEvents, commands.Cog):
         if channel is None:
             channel = ctx.message.channel
         try:
-            try:
-                msg = await ctx.channel.fetch_message_fast(msg_id)
-            except AttributeError:
-                msg = await channel.fetch_message(msg_id)  # type: ignore
+            msg = await channel.fetch_message(msg_id)  # type: ignore
         except discord.errors.NotFound:
             error_msg = _("That message doesn't appear to exist in the specified channel.")
             return await ctx.send(error_msg)

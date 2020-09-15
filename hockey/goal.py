@@ -255,10 +255,7 @@ class Goal:
                 channel = bot.get_channel(id=int(channel_id))
                 if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
-                        try:
-                            message = await channel.fetch_message_fast(message_id)
-                        except AttributeError:
-                            message = await channel.fetch_message(message_id)
+                        message = await channel.fetch_message(message_id)
                         if message is not None:
                             await message.delete()
                     except Exception:
@@ -297,10 +294,7 @@ class Goal:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
-            try:
-                message = await channel.fetch_message_fast(message_id)
-            except AttributeError:
-                message = await channel.fetch_message(message_id)
+            message = await channel.fetch_message(message_id)
             guild = message.guild
             game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
             role = None

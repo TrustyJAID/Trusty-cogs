@@ -1347,8 +1347,6 @@ class ServerStats(commands.Cog):
         if channel is None:
             channel = ctx.message.channel
         try:
-            msg = await channel.fetch_message_fast(message_id)
-        except AttributeError:
             msg = await channel.fetch_message(message_id)
         except discord.errors.Forbidden:
             return

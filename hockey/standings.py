@@ -163,8 +163,6 @@ class Standings:
                 if standings_msg is None:
                     continue
                 try:
-                    message = await channel.fetch_message_fast(standings_msg)
-                except AttributeError:
                     message = await channel.fetch_message(standings_msg)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     await config.guild(guild).post_standings.set(False)

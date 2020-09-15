@@ -165,8 +165,6 @@ class Fenrir(commands.Cog):
                 return
             channel = guild.get_channel(payload.channel_id)
             try:
-                msg = await channel.fetch_message_fast(payload.message_id)
-            except AttributeError:
                 msg = await channel.fetch_message(payload.message_id)
             except Exception:
                 return

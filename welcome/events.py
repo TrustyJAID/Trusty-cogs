@@ -278,8 +278,6 @@ class Events:
             if channel is not None and old_id is not None:
                 old_msg = None
                 try:
-                    old_msg = await channel.fetch_message_fast(old_id)
-                except AttributeError:
                     old_msg = await channel.fetch_message(old_id)
                 except discord.errors.NotFound:
                     pass
@@ -377,8 +375,6 @@ class Events:
             if channel is not None and old_id is not None:
                 old_msg = None
                 try:
-                    old_msg = await channel.fetch_message_fast(old_id)
-                except AttributeError:
                     old_msg = await channel.fetch_message(old_id)
                 except discord.errors.NotFound:
                     log.debug(_("Message not found for deletion."))

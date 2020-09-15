@@ -61,12 +61,8 @@ class Mock(commands.Cog):
         mocker = ctx.message.author
         if type(msg) is int:
             try:
-                search_msg = await ctx.channel.fetch_message_fast(msg)
-            except AttributeError:
                 search_msg = await ctx.channel.fetch_message(msg)
-            except discord.errors.NotFound:
-                return
-            except discord.errors.Forbidden:
+            except (discord.errors.NotFound, discord.error.Forbidden):
                 return
             result = await self.cap_change(search_msg.content)
             if result == "" and len(search_msg.embeds) != 0:

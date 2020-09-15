@@ -40,8 +40,6 @@ class Event:
         if not channel:
             return None
         try:
-            message = await channel.fetch_message_fast(data["message"])
-        except AttributeError:
             message = await channel.fetch_message(data["message"])  # type: ignore
         except Exception:
             # Return None if we can't find the original events

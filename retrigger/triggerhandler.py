@@ -543,8 +543,6 @@ class TriggerHandler:
             return
         channel = self.bot.get_channel(int(payload.data["channel_id"]))
         try:
-            message = await channel.fetch_message_fast(int(payload.data["id"]))
-        except AttributeError:
             message = await channel.fetch_message(int(payload.data["id"]))
         except (discord.errors.Forbidden, discord.errors.NotFound):
             log.debug(

@@ -359,8 +359,6 @@ class Hockey(HockeyDev, commands.Cog):
         if str(guild.id) not in self.all_pickems:
             return
         try:
-            msg = await channel.fetch_message_fast(id=payload.message_id)
-        except AttributeError:
             msg = await channel.fetch_message(id=payload.message_id)
         except discord.errors.NotFound:
             return

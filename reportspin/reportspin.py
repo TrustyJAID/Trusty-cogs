@@ -392,9 +392,6 @@ class Reports(commands.Cog):
                 return
             channel = guild.get_channel(payload.channel_id)
             try:
-                message = await channel.fetch_message_fast(payload.message_id)
-                await message.remove_reaction(payload.emoji, reporter)
-            except AttributeError:
                 message = await channel.fetch_message(payload.message_id)
                 await message.remove_reaction(payload.emoji, reporter)
             except Exception:

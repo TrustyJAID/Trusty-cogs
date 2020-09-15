@@ -274,8 +274,6 @@ class GoogleTranslateAPI:
         if not await self.global_perms(reacted_user):
             return
         try:
-            message = await channel.fetch_message_fast(id=payload.message_id)
-        except AttributeError:
             message = await channel.fetch_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
