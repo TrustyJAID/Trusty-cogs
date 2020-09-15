@@ -995,7 +995,7 @@ class Tweets(commands.Cog):
         await self.config.api.set(api)
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
-        await ctx.send(_("Set the access credentials!"))
+        await ctx.send(_("Access credentials have been set!"))
 
     def cog_unload(self):
         log.debug("Unloading tweets...")
