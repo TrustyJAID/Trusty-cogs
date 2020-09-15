@@ -42,7 +42,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.15.3"
+    __version__ = "2.15.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -127,7 +127,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await self.red_delete_data_for_user(requester="owner", user_id=user_id)
         await ctx.tick()
 
-    @retrigger.group()
+    @retrigger.group(aliases=["blocklist"])
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist(self, ctx: commands.Context) -> None:
         """
@@ -137,7 +137,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
-    @retrigger.group()
+    @retrigger.group(aliases=["allowlist"])
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist(self, ctx: commands.Context) -> None:
         """

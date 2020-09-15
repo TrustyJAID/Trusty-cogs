@@ -145,9 +145,12 @@ class TriggerHandler:
     async def check_bw_list(self, trigger: Trigger, message: discord.Message) -> bool:
         can_run = True
         author: discord.Member = cast(discord.Member, message.author)
+        channel: discord.TextChannel = message.channel
         if trigger.whitelist:
             can_run = False
-            if message.channel.id in trigger.whitelist:
+            if channel.id in trigger.whitelist:
+                can_run = True
+            if channel.category_id and channel.category_id in trigger.whitelist:
                 can_run = True
             if message.author.id in trigger.whitelist:
                 can_run = True
@@ -158,7 +161,9 @@ class TriggerHandler:
                     can_run = True
             return can_run
         else:
-            if message.channel.id in trigger.blacklist:
+            if channel.id in trigger.blacklist:
+                can_run = False
+            if channel.category_id and channel.category_id in trigger.blacklist:
                 can_run = False
             if message.author.id in trigger.blacklist:
                 can_run = False
