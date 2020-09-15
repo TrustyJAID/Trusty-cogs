@@ -384,6 +384,8 @@ class Reports(commands.Cog):
         """
         guild = self.bot.get_guild(payload.guild_id)
         report_emoji = await self.config.guild(guild).report_emoji()
+        if not report_emoji:
+            return
         if report_emoji in str(payload.emoji):
             reporter = guild.get_member(payload.user_id)
             if reporter.bot:
