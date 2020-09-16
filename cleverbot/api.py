@@ -198,9 +198,12 @@ class CleverbotAPI:
             return global_perms
         whitelist = await self.config.guild(message.guild).whitelist()
         blacklist = await self.config.guild(message.guild).blacklist()
+        channel = message.channel
         if whitelist:
             can_run = False
-            if message.channel.id in whitelist:
+            if channel.id in whitelist:
+                can_run = True
+            if channel.category_id and channel.category_id in whitelist:
                 can_run = True
             if message.author.id in whitelist:
                 can_run = True
@@ -211,7 +214,9 @@ class CleverbotAPI:
                     can_run = True
             return can_run
         else:
-            if message.channel.id in blacklist:
+            if channel.id in blacklist:
+                can_run = False
+            if channel.category_id and channel.category_id in whitelist:
                 can_run = False
             if message.author.id in blacklist:
                 can_run = False
