@@ -63,12 +63,16 @@ class GoogleTranslateAPI:
     bot: Red
     cache: dict
     _key: Optional[str]
+    _guild_counter: Dict[int, Dict[str, int]]
+    _global_counter: Dict[str, int]
 
     def __init__(self, *_args):
         self.config: Config
         self.bot: Red
         self.cache: dict
         self._key: Optional[str]
+        self._guild_counter: Dict[int, Dict[str, int]]
+        self._global_counter: Dict[str, int]
 
     async def cleanup_cache(self) -> None:
         if version_info >= VersionInfo.from_str("3.2.0"):
@@ -79,6 +83,45 @@ class GoogleTranslateAPI:
             # cleanup the cache every 10 minutes
             self.cache["translations"] = []
             await asyncio.sleep(600)
+
+    async def save_usage(self) -> None:
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
+        while self is self.bot.get_cog("Translate"):
+            # Save usage stats every couple minutes
+            await self._save_usage_stats()
+            await asyncio.sleep(120)
+
+    async def _save_usage_stats(self):
+        async with self.config.count() as count:
+            for key, value in self._global_counter.items():
+                count[key] = value
+        for guild_id, data in self._guild_counter.items():
+            async with self.config.guild_from_id(guild_id).count() as count:
+                for key, value in data.items():
+                    count[key] = value
+
+    async def add_detect(self, guild: discord.Guild):
+        log.debug(f"adding detect to {guild.name}")
+        if guild.id not in self._guild_counter:
+            self._guild_counter[guild.id] = await self.config.guild(guild).count()
+        if not self._global_counter:
+            self._global_counter = await self.config.count()
+        self._guild_counter[guild.id]["detect"] += 1
+        self._global_counter["detect"] += 1
+
+    async def add_requests(self, guild: discord.Guild, message: str):
+        log.debug(f"Adding requests to {guild.name}")
+        if guild.id not in self._guild_counter:
+            self._guild_counter[guild.id] = await self.config.guild(guild).count()
+        if not self._global_counter:
+            self._global_counter = await self.config.count()
+        self._guild_counter[guild.id]["requests"] += 1
+        self._guild_counter[guild.id]["characters"] += len(message)
+        self._global_counter["requests"] += 1
+        self._global_counter["characters"] += len(message)
 
     async def _get_google_api_key(self) -> Optional[str]:
         key = {}
@@ -109,6 +152,8 @@ class GoogleTranslateAPI:
             can_run = False
             if channel.id in whitelist:
                 can_run = True
+            if channel.category_id and channel.category_id in whitelist:
+                can_run = True
             if member.id in whitelist:
                 can_run = True
             for role in member.roles:
@@ -119,6 +164,8 @@ class GoogleTranslateAPI:
             return can_run
         else:
             if channel.id in blacklist:
+                can_run = False
+            if channel.category_id and channel.category_id in blacklist:
                 can_run = False
             if member.id in blacklist:
                 can_run = False
@@ -131,7 +178,7 @@ class GoogleTranslateAPI:
 
     async def detect_language(self, text: str) -> List[List[Dict[str, str]]]:
         """
-            Detect the language from given text
+        Detect the language from given text
         """
         params = {"q": text, "key": self._key}
         url = BASE_URL + "/language/translate/v2/detect"
@@ -163,7 +210,7 @@ class GoogleTranslateAPI:
 
     async def translate_text(self, from_lang: str, target: str, text: str) -> Optional[str]:
         """
-            request to translate the text
+        request to translate the text
         """
         formatting = "text"
         params = {
@@ -190,8 +237,8 @@ class GoogleTranslateAPI:
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         """
-            Translates the message based off reactions
-            with country flags
+        Translates the message based off reactions
+        with country flags
         """
         if version_info >= VersionInfo.from_str("3.2.0"):
             await self.bot.wait_until_red_ready()
@@ -232,8 +279,8 @@ class GoogleTranslateAPI:
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """
-            Translates the message based off reactions
-            with country flags
+        Translates the message based off reactions
+        with country flags
         """
         if version_info >= VersionInfo.from_str("3.2.0"):
             await self.bot.wait_until_red_ready()
@@ -314,7 +361,11 @@ class GoogleTranslateAPI:
         target = FLAGS[str(flag)]["code"]
         try:
             detected_lang = await self.detect_language(to_translate)
+            await self.add_detect(guild)
         except GoogleTranslateAPIError:
+            return
+        except Exception:
+            log.exception("Error detecting language")
             return
         original_lang = detected_lang[0][0]["language"]
         if target == original_lang:
@@ -323,7 +374,9 @@ class GoogleTranslateAPI:
             translated_text = filter_mass_mentions(
                 await self.translate_text(original_lang, target, to_translate)
             )
+            await self.add_requests(guild, to_translate)
         except Exception:
+            log.exception("Error translating message")
             return
         if not translated_text:
             return
@@ -358,7 +411,7 @@ class GoogleTranslateAPI:
 
     async def local_perms(self, guild: discord.Guild, author: discord.Member) -> bool:
         """Check the user is/isn't locally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
         try:
             return await self.bot.allowed_by_whitelist_blacklist(
@@ -382,7 +435,7 @@ class GoogleTranslateAPI:
 
     async def global_perms(self, author: discord.Member) -> bool:
         """Check the user is/isn't globally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
         try:
             return await self.bot.allowed_by_whitelist_blacklist(author)
