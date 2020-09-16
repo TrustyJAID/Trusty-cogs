@@ -28,7 +28,7 @@ class CrabRave(commands.Cog):
     """
 
     __author__ = ["DankMemer Team", "TrustyJAID", "thisisjvgrace"]
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -96,35 +96,37 @@ class CrabRave(commands.Cog):
 
         There must be exactly 1 `,` to split the message
         """
-        t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
-        t = t.upper().replace(", ", ",").split(",")
-        if not await self.check_video_file(CRAB_LINK, "crab_template.mp4"):
-            return await ctx.send("I couldn't download the template file.")
-        if not await self.check_font_file():
-            return await ctx.send("I couldn't download the font file.")
-        if len(t) != 2:
-            return await ctx.send("You must submit exactly two strings split by comma")
-        if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
-            return await ctx.send("Cannot render empty text")
-        fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.message.id)
-        task = self.bot.loop.run_in_executor(None, fake_task)
         async with ctx.typing():
+            t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
+            t = t.upper().replace(", ", ",").split(",")
+            if not await self.check_video_file(CRAB_LINK, "crab_template.mp4"):
+                return await ctx.send("I couldn't download the template file.")
+            if not await self.check_font_file():
+                return await ctx.send("I couldn't download the font file.")
+            if len(t) != 2:
+                return await ctx.send("You must submit exactly two strings split by comma")
+            if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
+                return await ctx.send("Cannot render empty text")
+            fake_task = functools.partial(self.make_crab, t=t, u_id=ctx.message.id)
+            task = self.bot.loop.run_in_executor(None, fake_task)
+
             try:
                 await asyncio.wait_for(task, timeout=300)
             except asyncio.TimeoutError:
-                log.error("Error generating crabrave video", exc_info=True)
+                # log.error("Error generating crabrave video", exc_info=True)
+                await ctx.send("Crabrave Video took too long to generate.")
                 return
-        fp = cog_data_path(self) / f"{ctx.message.id}crabrave.mp4"
-        file = discord.File(str(fp), filename="crabrave.mp4")
-        try:
-            await ctx.send(files=[file])
-        except Exception:
-            log.error("Error sending crabrave video", exc_info=True)
-            pass
-        try:
-            os.remove(fp)
-        except Exception:
-            log.error("Error deleting crabrave video", exc_info=True)
+            fp = cog_data_path(self) / f"{ctx.message.id}crabrave.mp4"
+            file = discord.File(str(fp), filename="crabrave.mp4")
+            try:
+                await ctx.send(files=[file])
+            except Exception:
+                log.error("Error sending crabrave video", exc_info=True)
+                pass
+            try:
+                os.remove(fp)
+            except Exception:
+                log.error("Error deleting crabrave video", exc_info=True)
 
     def make_crab(self, t: str, u_id: int) -> bool:
         """Non blocking crab rave video generation from DankMemer bot
@@ -134,15 +136,24 @@ class CrabRave(commands.Cog):
         fp = str(cog_data_path(self) / f"Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + "/crab_template.mp4")
         # clip.volume(0.5)
-        text = TextClip(t[0], fontsize=48, color="white", font=fp)
+        text = TextClip(
+            t[0], fontsize=48, color="white", stroke_width=2, stroke_color="black", font=fp
+        )
         text2 = (
-            TextClip("____________________", fontsize=48, color="white", font=fp)
+            TextClip(
+                "____________________",
+                fontsize=48,
+                color="white",
+                font=fp,
+            )
             .set_position(("center", 210))
             .set_duration(15.4)
         )
         text = text.set_position(("center", 200)).set_duration(15.4)
         text3 = (
-            TextClip(t[1], fontsize=48, color="white", font=fp)
+            TextClip(
+                t[1], fontsize=48, color="white", stroke_width=2, stroke_color="black", font=fp
+            )
             .set_position(("center", 270))
             .set_duration(15.4)
         )
@@ -173,35 +184,37 @@ class CrabRave(commands.Cog):
 
         There must be exactly 1 `,` to split the message
         """
-        t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
-        t = t.upper().replace(", ", ",").split(",")
-        if not await self.check_video_file(MIKU_LINK, "miku_template.mp4"):
-            return await ctx.send("I couldn't download the template file.")
-        if not await self.check_font_file():
-            return await ctx.send("I couldn't download the font file.")
-        if len(t) != 2:
-            return await ctx.send("You must submit exactly two strings split by comma")
-        if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
-            return await ctx.send("Cannot render empty text")
-        fake_task = functools.partial(self.make_miku, t=t, u_id=ctx.message.id)
-        task = self.bot.loop.run_in_executor(None, fake_task)
         async with ctx.typing():
+            t = ctx.message.clean_content[len(f"{ctx.prefix}{ctx.invoked_with}") :]
+            t = t.upper().replace(", ", ",").split(",")
+            if not await self.check_video_file(MIKU_LINK, "miku_template.mp4"):
+                return await ctx.send("I couldn't download the template file.")
+            if not await self.check_font_file():
+                return await ctx.send("I couldn't download the font file.")
+            if len(t) != 2:
+                return await ctx.send("You must submit exactly two strings split by comma")
+            if (not t[0] and not t[0].strip()) or (not t[1] and not t[1].strip()):
+                return await ctx.send("Cannot render empty text")
+            fake_task = functools.partial(self.make_miku, t=t, u_id=ctx.message.id)
+            task = self.bot.loop.run_in_executor(None, fake_task)
+
             try:
                 await asyncio.wait_for(task, timeout=300)
             except asyncio.TimeoutError:
-                log.error("Error generating mikurave video", exc_info=True)
+                # log.error("Error generating mikurave video", exc_info=True)
+                await ctx.send("Mikurave Video took too long to generate.")
                 return
-        fp = cog_data_path(self) / f"{ctx.message.id}mikurave.mp4"
-        file = discord.File(str(fp), filename="mikurave.mp4")
-        try:
-            await ctx.send(files=[file])
-        except Exception:
-            log.error("Error sending mikurave video", exc_info=True)
-            pass
-        try:
-            os.remove(fp)
-        except Exception:
-            log.error("Error deleting mikurave video", exc_info=True)
+            fp = cog_data_path(self) / f"{ctx.message.id}mikurave.mp4"
+            file = discord.File(str(fp), filename="mikurave.mp4")
+            try:
+                await ctx.send(files=[file])
+            except Exception:
+                log.error("Error sending mikurave video", exc_info=True)
+                pass
+            try:
+                os.remove(fp)
+            except Exception:
+                log.error("Error deleting mikurave video", exc_info=True)
 
     def make_miku(self, t: str, u_id: int) -> bool:
         """Non blocking miku rave video generation from DankMemer bot
@@ -211,15 +224,27 @@ class CrabRave(commands.Cog):
         fp = str(cog_data_path(self) / f"Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + "/miku_template.mp4")
         # clip.volume(1.0)
-        text = TextClip(t[0], fontsize=48, color="DarkSlateGrey", font=fp)
+        text = TextClip(
+            t[0], fontsize=48, color="DarkSlateGrey", font=fp
+        )
         text2 = (
-            TextClip("____________________", fontsize=48, color="DarkSlateGrey", font=fp)
+            TextClip(
+                "____________________",
+                fontsize=48,
+                color="DarkSlateGrey",
+                font=fp,
+            )
             .set_position(("center", 210))
             .set_duration(40.0)
         )
         text = text.set_position(("center", 200)).set_duration(40.0)
         text3 = (
-            TextClip(t[1], fontsize=48, color="DarkSlateGrey", font=fp)
+            TextClip(
+                t[1],
+                fontsize=48,
+                color="DarkSlateGrey",
+                font=fp,
+            )
             .set_position(("center", 270))
             .set_duration(40.0)
         )
