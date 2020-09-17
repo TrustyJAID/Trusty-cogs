@@ -9,6 +9,8 @@ from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from redbot.vendored.discord.ext import menus
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 
 
 from .converters import Trigger, ChannelUserRole
@@ -170,9 +172,7 @@ class ReTriggerMenu(menus.ListPageSource):
         if trigger.ignore_edits:
             info += _("Ignoring edits: **Enabled**\n")
         if trigger.delete_after:
-            info += _("Message deleted after: {time} seconds.\n").format(
-                time=trigger.delete_after
-            )
+            info += _("Message deleted after: {time} seconds.\n").format(time=trigger.delete_after)
         if trigger.read_filenames:
             info += _("Read filenames: **Enabled**\n")
 
@@ -343,7 +343,9 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         self.stop()
         await self.message.delete()
 
-    @menus.button("\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}")
+    @menus.button(
+        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+    )
     async def toggle_trigger(self, payload: discord.RawReactionActionEvent) -> None:
         """Enables and disables triggers"""
         member = self.ctx.guild.get_member(payload.user_id)
@@ -372,12 +374,24 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         """Enables and disables triggers"""
         member = self.ctx.guild.get_member(payload.user_id)
         if await self.cog.can_edit(member, self.source.selection):
-            self.source.selection.disable()
-            done = await self.cog.remove_trigger(payload.guild_id, self.source.selection.name)
-            if done:
-                page = await self._source.get_page(self.current_page)
-                kwargs = await self._get_kwargs_from_page(page)
-                await self.message.edit(content=_("This trigger has beend deleted."), embed=kwargs["embed"])
-                for t in self.cog.triggers[self.ctx.guild.id]:
-                    if t.name == self.source.selection.name:
-                        self.cog.triggers[self.ctx.guild.id].remove(t)
+            msg = await self.ctx.send(
+                _("Are you sure you want to delete trigger {name}?").format(
+                    name=self.source.selection.name
+                )
+            )
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, self.ctx.author)
+            await self.ctx.bot.wait_for("reaction_add", check=pred)
+            if pred.result:
+                await msg.delete()
+                self.source.selection.disable()
+                done = await self.cog.remove_trigger(payload.guild_id, self.source.selection.name)
+                if done:
+                    page = await self._source.get_page(self.current_page)
+                    kwargs = await self._get_kwargs_from_page(page)
+                    await self.message.edit(
+                        content=_("This trigger has beend deleted."), embed=kwargs["embed"]
+                    )
+                    for t in self.cog.triggers[self.ctx.guild.id]:
+                        if t.name == self.source.selection.name:
+                            self.cog.triggers[self.ctx.guild.id].remove(t)

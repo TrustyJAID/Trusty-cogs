@@ -42,7 +42,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.15.4"
+    __version__ = "2.15.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -867,6 +867,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         List information about triggers.
 
         `[trigger]` if supplied provides information about named trigger.
+        \N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16} will toggle the displayed triggers active setting
+        \N{NEGATIVE SQUARED CROSS MARK} will toggle the displayed trigger to be not active
+        \N{WHITE HEAVY CHECK MARK} will toggle the displayed trigger to be active
+        \N{PUT LITTER IN ITS PLACE SYMBOL} will delete the displayed trigger
 
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
