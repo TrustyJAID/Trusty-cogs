@@ -414,7 +414,7 @@ class Hockey(HockeyDev, commands.Cog):
         constants_string = (
             f'BASE_URL = "{BASE_URL}"\n'
             f'HEADSHOT_URL = "{HEADSHOT_URL}"\n'
-            f'CONTENT_URL = "{CONTENT_URL}\n"'
+            f'CONTENT_URL = "{CONTENT_URL}"\n"'
             f"CONFIG_ID = {CONFIG_ID}\n"
             f"TEAMS = {team_data}"
         )
