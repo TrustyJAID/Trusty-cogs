@@ -282,7 +282,7 @@ class Game:
                 first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
                 second_goals = [goal for goal in self.goals if goal.period_ord == "2nd"]
                 third_goals = [goal for goal in self.goals if goal.period_ord == "3rd"]
-                ot_goals = [goal for goal in self.goals if goal.period_ord == "OT"]
+                ot_goals = [goal for goal in self.goals if "OT" in goal.period_ord]
                 so_goals = [goal for goal in self.goals if goal.period_ord == "SO"]
                 list_goals = {
                     "1st": first_goals,
