@@ -203,6 +203,11 @@ class Events:
         msg = bot_welcome or rand_choice(await self.config.guild(guild).GREETING())
         channel = await self.get_welcome_channel(member, guild)
         is_embed = await self.config.guild(guild).EMBED()
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            mentions = await self.config.guild(guild).MENTIONS()
+            sanitize = {"allowed_mentions": discord.AllowedMentions(**mentions)}
+        else:
+            sanitize = {}
 
         if bot_role:
             try:
@@ -224,14 +229,12 @@ class Events:
             if is_embed and channel.permissions_for(guild.me).embed_links:
                 em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
-                    await channel.send(member.mention, embed=em)
+                    await channel.send(member.mention, embed=em, **sanitize)
                 else:
                     await channel.send(embed=em)
             else:
                 await channel.send(
-                    filter_mass_mentions(
-                        await self.convert_parms(member, guild, bot_welcome, False)
-                    )
+                    await self.convert_parms(member, guild, bot_welcome, False), **sanitize
                 )
 
     async def get_welcome_channel(
@@ -272,6 +275,11 @@ class Events:
         is_embed = await self.config.guild(guild).EMBED()
         delete_after = await self.config.guild(guild).DELETE_AFTER_GREETING()
         save_msg = None
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            mentions = await self.config.guild(guild).MENTIONS()
+            sanitize = {"allowed_mentions": discord.AllowedMentions(**mentions)}
+        else:
+            sanitize = {}
 
         if await self.config.guild(guild).DELETE_PREVIOUS_GREETING():
             old_id = await self.config.guild(guild).LAST_GREETING()
@@ -320,18 +328,27 @@ class Events:
                         humanize_list([m.mention for m in members]),
                         embed=em,
                         delete_after=delete_after,
+                        **sanitize,
                     )
                 else:
                     member = cast(discord.Member, member)
                     save_msg = await channel.send(
-                        str(member.mention), embed=em, delete_after=delete_after
+                        str(member.mention),
+                        embed=em,
+                        delete_after=delete_after,
+                        **sanitize,
                     )
             else:
-                save_msg = await channel.send(embed=em, delete_after=delete_after)
+                save_msg = await channel.send(
+                    embed=em,
+                    delete_after=delete_after,
+                    **sanitize,
+                )
         else:
             save_msg = await channel.send(
-                filter_mass_mentions(await self.convert_parms(member, guild, msg, True)),
+                await self.convert_parms(member, guild, msg, True),
                 delete_after=delete_after,
+                **sanitize,
             )
         if save_msg is not None:
             await self.config.guild(guild).LAST_GREETING.set(save_msg.id)
@@ -358,6 +375,11 @@ class Events:
         is_embed = await self.config.guild(guild).EMBED()
         delete_after = await self.config.guild(guild).DELETE_AFTER_GOODBYE()
         save_msg = None
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            mentions = await self.config.guild(guild).GOODBYE_MENTIONS()
+            sanitize = {"allowed_mentions": discord.AllowedMentions(**mentions)}
+        else:
+            sanitize = {}
 
         # grab the welcome channel
         # guild_settings = await self.config.guild(guild).guild_settings()
@@ -392,14 +414,15 @@ class Events:
                 em = await self.make_embed(member, guild, msg, False)
                 if await self.config.guild(guild).EMBED_DATA.mention():
                     save_msg = await channel.send(
-                        member.mention, embed=em, delete_after=delete_after
+                        member.mention, embed=em, delete_after=delete_after, **sanitize
                     )
                 else:
                     save_msg = await channel.send(embed=em, delete_after=delete_after)
             else:
                 save_msg = await channel.send(
-                    filter_mass_mentions(await self.convert_parms(member, guild, msg, False)),
+                    await self.convert_parms(member, guild, msg, False),
                     delete_after=delete_after,
+                    **sanitize,
                 )
         if save_msg is not None:
             await self.config.guild(guild).LAST_GOODBYE.set(save_msg.id)
@@ -414,6 +437,11 @@ class Events:
         guild = ctx.message.guild
         guild_settings = await self.config.guild(guild).get_raw()
         # log.info(guild_settings)
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            mentions = await self.config.guild(guild).MENTIONS()
+            sanitize = {"allowed_mentions": discord.AllowedMentions(**mentions)}
+        else:
+            sanitize = {}
         channel = guild.get_channel(guild_settings["CHANNEL"])
         if leave:
             channel = guild.get_channel(guild_settings["LEAVE_CHANNEL"])
@@ -437,16 +465,20 @@ class Events:
             await ctx.send(msg)
             return
         if channel is None:
-            await ctx.send(_("`Sending a testing message to ") + "` DM")
+            await ctx.send(_("`Sending a testing message to ") + "` DM", **sanitize)
         else:
-            await ctx.send(_("`Sending a testing message to ") + "`{0.mention}".format(channel))
+            await ctx.send(
+                _("`Sending a testing message to ") + "`{0.mention}".format(channel), **sanitize
+            )
         if not bot and guild_settings["WHISPER"]:
             if is_embed:
                 em = await self.make_embed(member, guild, rand_msg, is_welcome)
                 await ctx.author.send(embed=em, delete_after=60)
             else:
                 await ctx.author.send(
-                    await self.convert_parms(member, guild, rand_msg, is_welcome), delete_after=60
+                    await self.convert_parms(member, guild, rand_msg, is_welcome),
+                    delete_after=60,
+                    **sanitize,
                 )
             if guild_settings["WHISPER"] != "BOTH":
                 return
@@ -463,13 +495,12 @@ class Events:
                             humanize_list([m.mention for m in member]), embed=em, delete_after=60
                         )
                     else:
-                        await channel.send(member.mention, embed=em, delete_after=60)
+                        await channel.send(member.mention, embed=em, delete_after=60, **sanitize)
                 else:
-                    await channel.send(embed=em, delete_after=60)
+                    await channel.send(embed=em, delete_after=60, **sanitize)
             else:
                 await channel.send(
-                    filter_mass_mentions(
-                        await self.convert_parms(member, guild, rand_msg, is_welcome)
-                    ),
+                    await self.convert_parms(member, guild, rand_msg, is_welcome),
                     delete_after=60,
+                    **sanitize,
                 )

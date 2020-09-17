@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 from redbot.core import commands, Config, checks, VersionInfo, version_info
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.predicates import MessagePredicate
 
@@ -37,6 +37,8 @@ default_settings = {
     "LAST_GREETING": None,
     "FILTER_SETTING": None,
     "LAST_GOODBYE": None,
+    "MENTIONS": {"users": True, "roles": False, "everyone": False},
+    "GOODBYE_MENTIONS": {"users": True, "roles": False, "everyone": False},
     "EMBED_DATA": {
         "title": None,
         "colour": 0,
@@ -64,7 +66,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.3.1"
+    __version__ = "2.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -171,6 +173,42 @@ class Welcome(Events, commands.Cog):
         Manage welcome messages
         """
         pass
+
+    @welcomeset_greeting.command()
+    @checks.mod_or_permissions(mention_everyone=True)
+    @checks.bot_has_permissions(mention_everyone=True)
+    async def allowedmentions(self, ctx: commands.Context, set_to: bool, *allowed) -> None:
+        """
+        Determine the bots allowed mentions for welcomes
+
+        `<set_to>` What to set the allowed mentions to either `True` or `False`.
+        `[allowed...]` must be either `everyone`, `users`, or `roles` and can include more than one.
+
+        Note: This will only function on Red 3.4.0 or higher.
+        """
+        if not allowed:
+            return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
+        for i in set(allowed):
+            if i not in ["everyone", "users", "roles"]:
+                return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
+        if (
+            "everyone" in set(allowed)
+            or "roles" in set(allowed)
+            and not ctx.guild.me.guild_permissions.mention_everyone()
+        ):
+            await ctx.send(
+                _(
+                    "I don't have mention everyone permissions so these settings may not work properly."
+                )
+            )
+        async with self.config.guild(ctx.guild).MENTIONS() as mention_settings:
+            for setting in set(allowed):
+                mention_settings[setting] = set_to
+        await ctx.send(
+            _("Mention settings have been set to {set_to} for {settings}").format(
+                set_to=str(set_to), settings=humanize_list(list(set(allowed)))
+            )
+        )
 
     @welcomeset_greeting.command(name="grouped")
     async def welcomeset_greeting_grouped(self, ctx: commands.Context, grouped: bool) -> None:
@@ -398,6 +436,41 @@ class Welcome(Events, commands.Cog):
         Manage goodbye messages
         """
         pass
+
+    @welcomeset_goodbye.command(name="allowedmentions")
+    @checks.mod_or_permissions(mention_everyone=True)
+    async def goodbye_allowedmentions(self, ctx: commands.Context, set_to: bool, *allowed) -> None:
+        """
+        Determine the bots allowed mentions for welcomes
+
+        `<set_to>` What to set the allowed mentions to either `True` or `False`.
+        `[allowed...]` must be either `everyone`, `users`, or `roles` and can include more than one.
+
+        Note: This will only function on Red 3.4.0 or higher.
+        """
+        if not allowed:
+            return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
+        for i in set(allowed):
+            if i not in ["everyone", "users", "roles"]:
+                return await ctx.send(_("You must provide either `users`, `roles` or `everyone`."))
+        if (
+            "everyone" in set(allowed)
+            or "roles" in set(allowed)
+            and not ctx.guild.me.guild_permissions.mention_everyone()
+        ):
+            await ctx.send(
+                _(
+                    "I don't have mention everyone permissions so these settings may not work properly."
+                )
+            )
+        async with self.config.guild(ctx.guild).GOODBYE_MENTIONS() as mention_settings:
+            for setting in set(allowed):
+                mention_settings[setting] = set_to
+        await ctx.send(
+            _("Mention settings have been set to {set_to} for {settings}").format(
+                set_to=str(set_to), settings=humanize_list(list(set(allowed)))
+            )
+        )
 
     @welcomeset_goodbye.command(name="add")
     async def welcomeset_goodbye_add(self, ctx: commands.Context, *, format_msg: str) -> None:
