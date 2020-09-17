@@ -585,8 +585,8 @@ TEAMS = {
       "tri_code": "WPG"
    },
    "Montreal Wanderers": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 41,
       "logo": "https://imgur.com/6ksA0hH.png",
       "tri_code": "MWN",
@@ -601,8 +601,8 @@ TEAMS = {
       "invite": ""
    },
    "St. Louis Eagles": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 36,
       "logo": "https://imgur.com/ehHaKTP.png",
       "tri_code": "SLE",
@@ -617,8 +617,8 @@ TEAMS = {
       "invite": ""
    },
    "Hamilton Tigers": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 37,
       "logo": "https://imgur.com/le8g7kW.png",
       "tri_code": "HAM",
@@ -633,8 +633,8 @@ TEAMS = {
       "invite": ""
    },
    "Montreal Maroons": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 43,
       "logo": "https://imgur.com/LGotJwK.png",
       "tri_code": "MMR",
@@ -649,8 +649,8 @@ TEAMS = {
       "invite": ""
    },
    "Brooklyn Americans": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 44,
       "logo": "https://imgur.com/b7wDd9v.png",
       "tri_code": "NYA",
@@ -665,8 +665,8 @@ TEAMS = {
       "invite": ""
    },
    "Philadelphia Quakers": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 38,
       "logo": "https://imgur.com/RIyBZmz.png",
       "tri_code": "PIR",
@@ -681,8 +681,8 @@ TEAMS = {
       "invite": ""
    },
    "Cleveland Barons": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 46,
       "logo": "https://imgur.com/ummTel7.png",
       "tri_code": "OAK",
@@ -697,8 +697,8 @@ TEAMS = {
       "invite": ""
    },
    "Ottawa Senators (1917)": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 36,
       "logo": "https://imgur.com/wLtNlq0.png",
       "tri_code": "SEN",
@@ -713,8 +713,8 @@ TEAMS = {
       "invite": ""
    },
    "Quebec Bulldogs": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 42,
       "logo": "https://imgur.com/vbxASOv.png",
       "tri_code": "QBD",
@@ -729,8 +729,8 @@ TEAMS = {
       "invite": ""
    },
    "Toronto Arenas": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 57,
       "logo": "https://imgur.com/auKTjWh.png",
       "tri_code": "TAN",
@@ -745,8 +745,8 @@ TEAMS = {
       "invite": ""
    },
    "Toronto St. Patricks": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 58,
       "logo": "https://imgur.com/xQp3Hqn.png",
       "tri_code": "TSP",
@@ -761,8 +761,8 @@ TEAMS = {
       "invite": ""
    },
    "New York Americans": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 44,
       "logo": "https://imgur.com/q7YXoLM.png",
       "tri_code": "NYA",
@@ -777,8 +777,8 @@ TEAMS = {
       "invite": ""
    },
    "Pittsburgh Pirates": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 38,
       "logo": "https://imgur.com/dsFuIsp.png",
       "tri_code": "PIR",
@@ -793,8 +793,8 @@ TEAMS = {
       "invite": ""
    },
    "Detroit Cougars": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 40,
       "logo": "https://imgur.com/r63YuFI.png",
       "tri_code": "DCG",
@@ -809,8 +809,8 @@ TEAMS = {
       "invite": ""
    },
    "Detroit Falcons": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 50,
       "logo": "https://imgur.com/WDZdGXV.png",
       "tri_code": "DFL",
@@ -825,8 +825,8 @@ TEAMS = {
       "invite": ""
    },
    "Oakland Seals": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 46,
       "logo": "https://imgur.com/Qf8QS5q.png",
       "tri_code": "OAK",
@@ -841,8 +841,8 @@ TEAMS = {
       "invite": ""
    },
    "California Golden Seals": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 56,
       "logo": "https://imgur.com/RFNfdkj.png",
       "tri_code": "CGS",
@@ -873,8 +873,8 @@ TEAMS = {
       "invite": ""
    },
    "Atlanta Flames": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 47,
       "logo": "https://imgur.com/SuPIGnQ.png",
       "tri_code": "AFM",
@@ -889,8 +889,8 @@ TEAMS = {
       "invite": ""
    },
    "Colorado Rockies": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 35,
       "logo": "https://imgur.com/u7099Fp.png",
       "tri_code": "CLR",
@@ -905,8 +905,8 @@ TEAMS = {
       "invite": ""
    },
    "Kansas City Scouts": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 48,
       "logo": "https://imgur.com/Z05dKee.png",
       "tri_code": "KCS",
@@ -985,8 +985,8 @@ TEAMS = {
       "invite": ""
    },
    "Atlanta Thrashers": {
-      "conference": None,
-      "division": None,
+      "conference": "",
+      "division": "",
       "id": 11,
       "logo": "https://imgur.com/7jYCLTD.png",
       "tri_code": "ATL",
