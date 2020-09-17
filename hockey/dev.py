@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, date
 
 from redbot.core.bot import Red
 from redbot.core import commands, checks, Config
+from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 
 from .errors import InvalidFileError
@@ -231,7 +232,9 @@ class HockeyDev:
                 await ctx.send(_("That file doesn't seem to be formatted correctly."))
                 return
         new_msg = "".join(("<:" + TEAMS[e]["emoji"] + ">") for e in TEAMS)
-        await ctx.send(_("New emojis set to: ") + new_msg)
+        msg = _("New emojis set to: ") + new_msg
+        for page in pagify(msg):
+            await ctx.send(page)
         await ctx.send("You should reload the cog for everything to work correctly.")
 
     @hockeydev.command()
