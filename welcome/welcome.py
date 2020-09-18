@@ -66,7 +66,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -194,7 +194,7 @@ class Welcome(Events, commands.Cog):
         if (
             "everyone" in set(allowed)
             or "roles" in set(allowed)
-            and not ctx.guild.me.guild_permissions.mention_everyone()
+            and not ctx.guild.me.guild_permissions.mention_everyone
         ):
             await ctx.send(
                 _(
@@ -456,7 +456,7 @@ class Welcome(Events, commands.Cog):
         if (
             "everyone" in set(allowed)
             or "roles" in set(allowed)
-            and not ctx.guild.me.guild_permissions.mention_everyone()
+            and not ctx.guild.me.guild_permissions.mention_everyone
         ):
             await ctx.send(
                 _(
