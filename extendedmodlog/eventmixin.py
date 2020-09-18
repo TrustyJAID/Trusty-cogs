@@ -501,7 +501,10 @@ class EventMixin:
                     if invite.uses > uses:
                         possible_link = _(
                             "https://discord.gg/{code}\nInvited by: {inviter}"
-                        ).format(code=invite.code, inviter=str(invite.inviter))
+                        ).format(
+                            code=invite.code,
+                            inviter=str(getattr(invite, "inviter", _("Widget Integration"))),
+                        )
 
             if not possible_link:
                 for code, data in invites.items():
