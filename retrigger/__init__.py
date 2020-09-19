@@ -1,14 +1,22 @@
+import logging
+import json
+
+from pathlib import Path
+
 from .retrigger import ReTrigger
 
 
-__red_end_user_data_statement__ = (
-    "This cog may store attachments and command information provided by Users for the purposes of performing actions."
-    "Some User ID's may be stored in the bots logging information."
-    "Users may delete their own data with or without making a data request."
-)
+with open(Path(__file__).parent / "info.json") as fp:
+    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
+
+log = logging.getLogger("red.trusty-cogs.retrigger")
 
 
 async def setup(bot):
     cog = ReTrigger(bot)
-    await cog.initialize()
+    try:
+        await cog.initialize()
+    except Exception:
+        log.exception("Error loading ReTrigger")
+        raise
     bot.add_cog(cog)

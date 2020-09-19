@@ -30,7 +30,7 @@ from .message import ReTriggerMessage
 
 try:
     from PIL import Image
-
+    from PIL import ImageSequence
     try:
         import pytesseract
 
@@ -290,6 +290,21 @@ class TriggerHandler:
             im.save(byte_array, format="PNG")
             byte_array.seek(0)
             return discord.File(byte_array, filename="resize.png")
+
+    def resize_gif(self, size: int, image: str) -> discord.File:
+        img_list = []
+        with Image.open(image) as im:
+            if size <= 0:
+                size = 1
+            length, width = (16 * size, 16 * size)
+            start_list = [frame.copy() for frame in ImageSequence.Iterator(im)]
+            for frame in start_list:
+                frame.thumbnail((length, width), Image.ANTIALIAS)
+                img_list.append(frame)
+        byte_array = BytesIO()
+        img_list[0].save(byte_array, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+        byte_array.seek(0)
+        return discord.File(byte_array, filename="resize.gif")
 
     async def trigger_embed(
         self, ctx: commands.Context, trigger_list: List[dict]
@@ -759,7 +774,10 @@ class TriggerHandler:
         if "resize" in trigger.response_type and own_permissions.attach_files and ALLOW_RESIZE:
             await channel.trigger_typing()
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
-            task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
+            if path.lower().endswith(".gif"):
+                task = functools.partial(self.resize_gif, size=len(find[0]) - 3, image=path)
+            else:
+                task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
             new_task = self.bot.loop.run_in_executor(None, task)
             try:
                 file: discord.File = await asyncio.wait_for(new_task, timeout=60)
@@ -785,7 +803,7 @@ class TriggerHandler:
                     )
                 else:
                     text_response = str(trigger.text)
-                response = await self.convert_parms(message, text_response, trigger)
+                response = await self.convert_parms(message, text_response, trigger, find)
                 if response and not channel.permissions_for(author).mention_everyone:
                     response = escape(response, mass_mentions=True)
                 try:
@@ -808,7 +826,7 @@ class TriggerHandler:
                 text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
                 text_response = str(trigger.text)
-            response = await self.convert_parms(message, text_response, trigger)
+            response = await self.convert_parms(message, text_response, trigger, find)
             if response and not channel.permissions_for(author).mention_everyone:
                 response = escape(response, mass_mentions=True)
             try:
@@ -821,7 +839,9 @@ class TriggerHandler:
         if "randtext" in trigger.response_type and own_permissions.send_messages:
             await channel.trigger_typing()
             rand_text_response: str = random.choice(trigger.text)
-            crand_text_response = await self.convert_parms(message, rand_text_response, trigger)
+            crand_text_response = await self.convert_parms(
+                message, rand_text_response, trigger, find
+            )
             if crand_text_response and not channel.permissions_for(author).mention_everyone:
                 crand_text_response = escape(crand_text_response, mass_mentions=True)
             try:
@@ -838,7 +858,7 @@ class TriggerHandler:
             image_text_response = trigger.text
             if image_text_response:
                 image_text_response = await self.convert_parms(
-                    message, image_text_response, trigger
+                    message, image_text_response, trigger, find
                 )
             if image_text_response and not channel.permissions_for(author).mention_everyone:
                 image_text_response = escape(image_text_response, mass_mentions=True)
@@ -857,7 +877,7 @@ class TriggerHandler:
             rimage_text_response = trigger.text
             if rimage_text_response:
                 rimage_text_response = await self.convert_parms(
-                    message, rimage_text_response, trigger
+                    message, rimage_text_response, trigger, find
                 )
 
             if rimage_text_response and not channel.permissions_for(author).mention_everyone:
@@ -874,7 +894,7 @@ class TriggerHandler:
                 dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
             else:
                 dm_response = str(trigger.text)
-            response = await self.convert_parms(message, dm_response, trigger)
+            response = await self.convert_parms(message, dm_response, trigger, find)
             try:
                 await author.send(response)
             except discord.errors.Forbidden:
@@ -887,7 +907,7 @@ class TriggerHandler:
                 dm_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dmme")
             else:
                 dm_response = str(trigger.text)
-            response = await self.convert_parms(message, dm_response, trigger)
+            response = await self.convert_parms(message, dm_response, trigger, find)
             try:
                 trigger_author = await self.bot.fetch_user(trigger.author)
             except AttributeError:
@@ -993,7 +1013,7 @@ class TriggerHandler:
             if trigger.multi_payload:
                 command_response = [t[1] for t in trigger.multi_payload if t[0] == "command"]
                 for command in command_response:
-                    command = await self.convert_parms(message, command, trigger)
+                    command = await self.convert_parms(message, command, trigger, find)
                     msg = copy(message)
                     prefix_list = await self.bot.command_prefix(self.bot, message)
                     msg.content = prefix_list[0] + command
@@ -1001,7 +1021,7 @@ class TriggerHandler:
                     self.bot.dispatch("message", msg)
             else:
                 msg = copy(message)
-                command = await self.convert_parms(message, str(trigger.text), trigger)
+                command = await self.convert_parms(message, str(trigger.text), trigger, find)
                 prefix_list = await self.bot.command_prefix(self.bot, message)
                 msg.content = prefix_list[0] + command
                 msg = ReTriggerMessage(message=msg)
@@ -1010,7 +1030,7 @@ class TriggerHandler:
             if trigger.multi_payload:
                 mock_response = [t[1] for t in trigger.multi_payload if t[0] == "mock"]
                 for command in mock_response:
-                    command = await self.convert_parms(message, command, trigger)
+                    command = await self.convert_parms(message, command, trigger, find)
                     msg = copy(message)
                     mocker = guild.get_member(trigger.author)
                     if not mocker:
@@ -1023,7 +1043,7 @@ class TriggerHandler:
             else:
                 msg = copy(message)
                 mocker = guild.get_member(trigger.author)
-                command = await self.convert_parms(message, str(trigger.text), trigger)
+                command = await self.convert_parms(message, str(trigger.text), trigger, find)
                 if not mocker:
                     return  # We'll exit early if the author isn't on the server anymore
                 msg.author = mocker
@@ -1047,7 +1067,7 @@ class TriggerHandler:
                 log.error(error_in, exc_info=True)
 
     async def convert_parms(
-        self, message: discord.Message, raw_response: str, trigger: Trigger
+        self, message: discord.Message, raw_response: str, trigger: Trigger, find: List[str]
     ) -> str:
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/customcom/customcom.py
         # ctx = await self.bot.get_context(message)
@@ -1077,6 +1097,9 @@ class TriggerHandler:
             prefixes = await self.bot.get_prefix(message.channel)
             raw_response = raw_response.replace("{p}", prefixes[0])
             raw_response = raw_response.replace("{pp}", humanize_list(prefixes))
+            raw_response = raw_response.replace("{nummatch}", str(len(find)))
+            raw_response = raw_response.replace("{lenmatch}", str(len(max(find))))
+            raw_response = raw_response.replace("{lenmessage}", str(len(message.content)))
         return raw_response
         # await ctx.send(raw_response)
 
