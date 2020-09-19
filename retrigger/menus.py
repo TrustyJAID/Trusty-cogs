@@ -29,7 +29,9 @@ class ExplainReTriggerPages(menus.ListPageSource):
 
     async def format_page(self, menu: menus.MenuPages, page):
         if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
-            em = discord.Embed(description=page)
+            em = discord.Embed(
+                description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+            )
             em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
         else:
