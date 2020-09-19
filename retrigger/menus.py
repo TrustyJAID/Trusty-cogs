@@ -39,10 +39,11 @@ class ExplainReTriggerPages(menus.ListPageSource):
 
 
 class ReTriggerPages(menus.ListPageSource):
-    def __init__(self, triggers: List[Trigger]):
+    def __init__(self, triggers: List[Trigger], guild: discord.Guild):
         super().__init__(triggers, per_page=1)
         self.active_triggers = triggers
         self.selection = None
+        self.guild = guild
 
     def is_paginating(self):
         return True
@@ -51,17 +52,18 @@ class ReTriggerPages(menus.ListPageSource):
         self.selection = trigger
         msg_list = []
         embeds = menu.ctx.channel.permissions_for(menu.ctx.me).embed_links
-        page = 1
         good = "\N{WHITE HEAVY CHECK MARK}"
         bad = "\N{NEGATIVE SQUARED CROSS MARK}"
         # trigger = await Trigger.from_json(triggers)
-        author = menu.ctx.guild.get_member(trigger.author)
-        active_triggers = self.active_triggers
+        author = self.guild.get_member(trigger.author)
         if not author:
             try:
-                author = await self.bot.fetch_user(trigger.author)
-            except AttributeError:
-                author = await self.bot.get_user_info(trigger.author)
+                author = await menu.ctx.bot.fetch_user(trigger.author)
+            except Exception:
+                author = discord.Object(id=trigger.author)
+                author.name = _("Unknown or Deleted User")
+                author.mention = _("Unknown or Deleted User")
+                author.avatar_url = "https://cdn.discordapp.com/embed/avatars/1.png"
         blacklist = []
         for y in trigger.blacklist:
             try:
@@ -200,7 +202,7 @@ class ReTriggerPages(menus.ListPageSource):
             em = discord.Embed(
                 timestamp=menu.ctx.message.created_at,
                 colour=await menu.ctx.embed_colour(),
-                title=_("Triggers for {guild}").format(guild=menu.ctx.guild.name),
+                title=_("Triggers for {guild}").format(guild=self.guild.name),
             )
             em.set_author(name=author, icon_url=author.avatar_url)
             if trigger.created_at == 0:

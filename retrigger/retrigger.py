@@ -44,7 +44,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.16.0"
+    __version__ = "2.16.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -992,6 +992,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await ReTriggerMenu(
             source=ReTriggerPages(
                 triggers=self.triggers[guild.id],
+                guild=guild,
             ),
             delete_message_after=False,
             clear_reactions_after=True,
