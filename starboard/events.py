@@ -312,7 +312,9 @@ class StarboardEvents:
                 for message in entry.messages:
                     if message["author"] == user_id:
                         self.starboards[guild_id][starboard].messages.remove(message)
-            await self.config.guild_from_id(guild_id).starboards.set(self.starboard[guild_id])
+            await self.config.guild_from_id(guild_id).starboards.set(
+                {n: s.to_json() for n, s in self.starboards[guild_id].items()}
+            )
 
     async def _loop_messages(
         self,
