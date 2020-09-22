@@ -5,9 +5,13 @@ import aiohttp
 import itertools
 import logging
 
+import time  # this is to be removed before commit
+
 from io import BytesIO
-from redbot.core import commands
-from redbot.core import checks, Config
+from copy import copy
+from typing import Union, Optional, List, Tuple, cast, Dict, Literal
+
+from redbot.core import checks, Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
@@ -22,9 +26,8 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
-from typing import Union, Optional, List, Tuple, cast
 
-from .converters import FuzzyMember, GuildConverter, ChannelConverter
+from .converters import FuzzyMember, GuildConverter, MultiGuildConverter, ChannelConverter
 
 
 _ = Translator("ServerStats", __file__)
@@ -34,37 +37,55 @@ log = logging.getLogger("red.trusty-cogs.ServerStats")
 @cog_i18n(_)
 class ServerStats(commands.Cog):
     """
-        Gather useful information about servers the bot is in
-        A lot of commands are bot owner only
+    Gather useful information about servers the bot is in
+    A lot of commands are bot owner only
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.4.4"
+    __version__ = "1.5.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
         default_global: dict = {"join_channel": None}
-        self.config: Config = Config.get_conf(self, 54853421465543)
+        default_guild: dict = {"last_checked": 0, "members": {}, "total": 0, "channels": {}}
+        self.config: Config = Config.get_conf(self, 54853421465543, force_registration=True)
         self.config.register_global(**default_global)
+        self.config.register_guild(**default_guild)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def red_delete_data_for_user(self, **kwargs):
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
         """
-            Nothing to delete
+        Method for finding users data inside the cog and deleting it.
         """
-        return
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            save = False
+            if str(user_id) in data["members"]:
+                del data["members"][str(user_id)]
+                save = True
+            for channel_id, chan_data in data["channels"].items():
+                if str(user_id) in chan_data["members"]:
+                    del chan_data["members"][str(user_id)]
+                    save = True
+            if save:
+                await self.config.guild_from_id(guild_id).set(data)
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def avatar(self, ctx: commands.Context, *members: FuzzyMember):
         """
-            Display a users avatar in chat
+        Display a users avatar in chat
         """
         embed_list = []
         if members == ([None],):
@@ -113,7 +134,7 @@ class ServerStats(commands.Cog):
         ).format(
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
-            users=humanize_number(sum(len(s.members) for s in self.bot.guilds)),
+            users=humanize_number(len(self.bot.users)),
             since=guild.created_at.strftime("%d %b %Y %H:%M:%S"),
             passed=passed,
         )
@@ -126,7 +147,7 @@ class ServerStats(commands.Cog):
 
     async def guild_embed(self, guild: discord.Guild) -> discord.Embed:
         """
-            Builds the guild embed information used throughout the cog
+        Builds the guild embed information used throughout the cog
         """
 
         def _size(num):
@@ -352,7 +373,7 @@ class ServerStats(commands.Cog):
         ).format(
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
-            users=humanize_number(sum(len(s.members) for s in self.bot.guilds)),
+            users=humanize_number(len(self.bot.users)),
             since=guild.created_at.strftime("%d %b %Y %H:%M"),
             passed=passed,
         )
@@ -368,7 +389,7 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]
     ) -> None:
         """
-            Post a large size emojis in chat
+        Post a large size emojis in chat
         """
         await ctx.channel.trigger_typing()
         if type(emoji) in [discord.PartialEmoji, discord.Emoji]:
@@ -423,7 +444,8 @@ class ServerStats(commands.Cog):
                 )
             else:
                 em.set_author(
-                    name=f"{ctx.me}", icon_url=ctx.me.avatar_url,
+                    name=f"{ctx.me}",
+                    icon_url=ctx.me.avatar_url,
                 )
             em.set_thumbnail(url=ctx.me.avatar_url)
             if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -438,10 +460,10 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, channel: Optional[discord.TextChannel], *, topic: str = ""
     ) -> None:
         """
-            Sets a specified channels topic
+        Sets a specified channels topic
 
-            `channel` is optional and if not supplied will use the current channel
-            Note: The maximum number of characters is 1024
+        `channel` is optional and if not supplied will use the current channel
+        Note: The maximum number of characters is 1024
         """
         if channel is None:
             channel = ctx.channel
@@ -582,8 +604,8 @@ class ServerStats(commands.Cog):
 
     async def ask_for_invite(self, ctx: commands.Context) -> Optional[str]:
         """
-            Ask the user to provide an invite link
-            if reinvite is True
+        Ask the user to provide an invite link
+        if reinvite is True
         """
         msg_send = _(
             "Please provide a reinvite link/message.\n" "Type `exit` for no invite link/message."
@@ -632,17 +654,17 @@ class ServerStats(commands.Cog):
     @checks.bot_has_permissions(add_reactions=True)
     async def pruneroles(self, ctx: commands.Context) -> None:
         """
-            Perform various actions on users who haven't spoken in x days
+        Perform various actions on users who haven't spoken in x days
 
-            Note: This will only check if a user has talked in the past x days whereas
-            discords built in Prune checks online status
+        Note: This will only check if a user has talked in the past x days whereas
+        discords built in Prune checks online status
         """
         pass
 
     @pruneroles.command()
     async def list(self, ctx: commands.Context, days: int, role: discord.Role = None) -> None:
         """
-            List the users who have not talked in x days
+        List the users who have not talked in x days
         """
         if days < 1:
             return await ctx.send(_("You must provide a value of more than 0 days."))
@@ -693,11 +715,11 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, days: int, role: discord.Role = None, reinvite: bool = True
     ) -> None:
         """
-            Kick users from the server who have been inactive for x days
+        Kick users from the server who have been inactive for x days
 
-            `days` is the number of days since last seen talking on the server
-            `role` is the specified role you would like to kick defaults to everyone
-            `reinvite` True/False whether to try to send the user a message before kicking
+        `days` is the number of days since last seen talking on the server
+        `role` is the specified role you would like to kick defaults to everyone
+        `reinvite` True/False whether to try to send the user a message before kicking
         """
         if days < 1:
             return await ctx.send(_("You must provide a value of more than 0 days."))
@@ -741,10 +763,10 @@ class ServerStats(commands.Cog):
     @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
     async def add(self, ctx: commands.Context, days: int, *new_roles: discord.Role) -> None:
         """
-            Give roles to users who haven't spoken in x days
+        Give roles to users who haven't spoken in x days
 
-            `days` is the number of days since last seen talking on the server
-            `new_roles` The new roles to apply to a user who is inactive
+        `days` is the number of days since last seen talking on the server
+        `new_roles` The new roles to apply to a user who is inactive
         """
         if days < 1:
             return await ctx.send(_("You must provide a value of more than 0 days."))
@@ -782,11 +804,11 @@ class ServerStats(commands.Cog):
     @checks.bot_has_permissions(manage_roles=True, add_reactions=True)
     async def remove(self, ctx: commands.Context, days: int, *removed_roles: discord.Role) -> None:
         """
-            Remove roles from users who haven't spoken in x days
+        Remove roles from users who haven't spoken in x days
 
-            `days` is the number of days since last seen talking on the server
-            `role` is the specified role you would like to remove roles defaults to everyone
-            `removed_roles` the roles to remove from inactive users
+        `days` is the number of days since last seen talking on the server
+        `role` is the specified role you would like to remove roles defaults to everyone
+        `removed_roles` the roles to remove from inactive users
         """
         if days < 1:
             return await ctx.send(_("You must provide a value of more than 0 days."))
@@ -827,7 +849,7 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, channel: discord.TextChannel = None
     ) -> None:
         """
-            Set a channel to see new servers the bot is joining
+        Set a channel to see new servers the bot is joining
         """
         if channel is None:
             channel = ctx.message.channel
@@ -839,7 +861,7 @@ class ServerStats(commands.Cog):
     @checks.is_owner()
     async def removeguildjoin(self, ctx: commands.Context) -> None:
         """
-            Stop bots join/leave server messages
+        Stop bots join/leave server messages
         """
         await self.config.join_channel.set(None)
         await ctx.send(_("No longer posting joined or left servers."))
@@ -848,26 +870,28 @@ class ServerStats(commands.Cog):
     @checks.is_owner()
     async def checkcheater(self, ctx: commands.Context, user_id: int) -> None:
         """
-            Checks for possible cheaters abusing the global bank and server powers
+        Checks for possible cheaters abusing the global bank and server powers
         """
         is_cheater = False
+        msg = ""
         for guild in self.bot.guilds:
-            print(guild.owner.id)
             if guild.owner.id == user_id:
                 is_cheater = True
-                msg = guild.owner.mention + _(" is guild owner of ") + guild.name
-                await ctx.send(msg)
+                msg += guild.owner.mention + _(" is guild owner of ") + guild.name + "\n"
+        if is_cheater:
+            for page in pagify(msg):
+                await ctx.maybe_send_embed(page)
         if not is_cheater:
             await ctx.send(_("Not a cheater"))
 
-    @commands.command(hidden=True)
+    @commands.command()
     async def whois(
         self, ctx: commands.Context, *, user_id: Union[int, discord.Member, discord.User]
     ) -> None:
         """
-            Display servers a user shares with the bot
+        Display servers a user shares with the bot
 
-            `member` can be a user ID or mention
+        `member` can be a user ID or mention
         """
         if not user_id:
             return await ctx.send(_("You need to supply a user ID for this to work properly."))
@@ -903,8 +927,14 @@ class ServerStats(commands.Cog):
             embed_list = ""
             for m in guild_list:
                 # m = guild.get_member(member.id)
-                msg += f"{m.nick if m.nick else ''} in __{m.guild.name}__ ({m.guild.id})\n"
-                embed_list += f"{m.nick if m.nick else ''} in __{m.guild.name}__ ({m.guild.id})\n"
+                is_owner = ""
+                nick = ""
+                if m.id == m.guild.owner_id:
+                    is_owner = "\N{CROWN}"
+                if m.nick:
+                    nick = f"`{m.nick}` in"
+                msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
+                embed_list += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 for page in pagify(embed_list, ["\n"], shorten_by=1000):
                     embed.add_field(name=_("Shared Servers"), value=page)
@@ -923,7 +953,7 @@ class ServerStats(commands.Cog):
     @checks.is_owner()
     async def topservers(self, ctx: commands.Context) -> None:
         """
-            Lists servers by number of users and shows number of users
+        Lists servers by number of users and shows number of users
         """
         guilds = sorted(list(self.bot.guilds), key=lambda s: s.member_count, reverse=True)
         msg = ""
@@ -943,7 +973,7 @@ class ServerStats(commands.Cog):
     @checks.is_owner()
     async def newservers(self, ctx: commands.Context) -> None:
         """
-            Lists servers by when the bot was added to the server
+        Lists servers by when the bot was added to the server
         """
         guilds = sorted(list(self.bot.guilds), key=lambda s: s.me.joined_at)
         msg = ""
@@ -981,10 +1011,10 @@ class ServerStats(commands.Cog):
     @guildedit.command(name="verificationlevel", aliases=["verification"])
     async def verifivation_level(self, ctx: commands.Context, *, level: str) -> None:
         """
-            Modify the guilds verification level
+        Modify the guilds verification level
 
-            `level` must be one of:
-            `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`)
+        `level` must be one of:
+        `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`)
         """
 
         levels = {
@@ -1061,10 +1091,10 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, number: int = 10, guild: GuildConverter = None
     ) -> None:
         """
-            Lists top members on the server by join date
+        Lists top members on the server by join date
 
-            `number` optional[int] number of members to display at a time maximum of 50
-            `guild` can be either the server ID or name
+        `number` optional[int] number of members to display at a time maximum of 50
+        `guild` can be either the server ID or name
         """
         if not guild:
             guild = ctx.guild
@@ -1109,9 +1139,9 @@ class ServerStats(commands.Cog):
     @checks.is_owner()
     async def listchannels(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
-            Lists channels and their position and ID for a server
+        Lists channels and their position and ID for a server
 
-            `guild` can be either the server ID or name
+        `guild` can be either the server ID or name
         """
 
         if not guild:
@@ -1140,10 +1170,16 @@ class ServerStats(commands.Cog):
         timeout: int = 30,
     ) -> None:
         """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
+        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         guild = post_list[page]
         em = await self.guild_embed(guild)
-        emojis = ["\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
+        emojis = [
+            "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}",
+            "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
+            "❌",
+            "\N{OUTBOX TRAY}",
+            "\N{INBOX TRAY}",
+        ]
         if not message:
             message = await ctx.send(embed=em)
             start_adding_reactions(message, emojis)
@@ -1152,7 +1188,14 @@ class ServerStats(commands.Cog):
             await message.edit(embed=em)
         check = (
             lambda react, user: user == ctx.message.author
-            and react.emoji in ["\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", "❌", "\N{OUTBOX TRAY}", "\N{INBOX TRAY}"]
+            and react.emoji
+            in [
+                "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}",
+                "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
+                "❌",
+                "\N{OUTBOX TRAY}",
+                "\N{INBOX TRAY}",
+            ]
             and react.message.id == message.id
         )
         try:
@@ -1172,7 +1215,9 @@ class ServerStats(commands.Cog):
                 else:
                     next_page = page + 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
-                    await message.remove_reaction("\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author)
+                    await message.remove_reaction(
+                        "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author
+                    )
                 return await self.guild_menu(
                     ctx, post_list, message=message, page=next_page, timeout=timeout
                 )
@@ -1183,20 +1228,24 @@ class ServerStats(commands.Cog):
                 else:
                     next_page = page - 1
                 if ctx.channel.permissions_for(ctx.me).manage_messages:
-                    await message.remove_reaction("\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author)
+                    await message.remove_reaction(
+                        "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", ctx.message.author
+                    )
                 return await self.guild_menu(
                     ctx, post_list, message=message, page=next_page, timeout=timeout
                 )
             elif react.emoji == "\N{OUTBOX TRAY}":
                 try:
                     await self.confirm_leave_guild(ctx, guild)
-                except:
+                except Exception:
                     pass
             elif react.emoji == "\N{INBOX TRAY}":
                 invite = await self.get_guild_invite(guild)
                 if invite:
                     await ctx.send(str(invite))
                 else:
+                    log.debug(type(guild))
+                    log.debug(type(guild.name))
                     await ctx.send(
                         _("I cannot find or create an invite for `{guild}`").format(
                             guild=guild.name
@@ -1239,7 +1288,10 @@ class ServerStats(commands.Cog):
         if my_perms.manage_guild or my_perms.administrator:
             if "VANITY_URL" in guild.features:
                 # guild has a vanity url so use it as the one to send
-                return await guild.vanity_invite()
+                try:
+                    return await guild.vanity_invite()
+                except discord.errors.Forbidden:
+                    invites = []
             invites = await guild.invites()
         else:
             invites = []
@@ -1270,9 +1322,9 @@ class ServerStats(commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def getguild(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
-            Display info about servers the bot is on
+        Display info about servers the bot is on
 
-            `guild_name` can be either the server ID or partial name
+        `guild_name` can be either the server ID or partial name
         """
         if guild or await ctx.bot.is_owner(ctx.author):
             if not ctx.guild:
@@ -1285,12 +1337,31 @@ class ServerStats(commands.Cog):
                 await ctx.send(embed=await self.guild_embed(ctx.guild))
 
     @commands.command()
+    @commands.bot_has_permissions(embed_links=True)
+    @checks.admin()
+    async def getguilds(self, ctx: commands.Context, *guilds: MultiGuildConverter) -> None:
+        """
+        Display info about multiple servers
+
+        `guild_name` can be either the server ID or partial name
+        """
+        log.debug(list(itertools.chain.from_iterable(guilds)))
+        if not guilds:
+            if not ctx.guild:
+                page = 0
+            else:
+                page = ctx.bot.guilds.index(ctx.guild)
+            return await self.guild_menu(ctx, ctx.bot.guilds, None, page)
+        else:
+            await self.guild_menu(ctx, list(itertools.chain.from_iterable(guilds)), None, 0)
+
+    @commands.command()
     @checks.mod_or_permissions(manage_messages=True)
     async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
-            Display number of users on a server
+        Display number of users on a server
 
-            `guild_name` can be either the server ID or partial name
+        `guild_name` can be either the server ID or partial name
         """
         if not guild:
             guild = ctx.guild
@@ -1302,10 +1373,10 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
-            Displays all roles their ID and number of members in order of
-            hierarchy
+        Displays all roles their ID and number of members in order of
+        hierarchy
 
-            `guild_name` can be either the server ID or partial name
+        `guild_name` can be either the server ID or partial name
         """
         if not guild:
             guild = ctx.guild
@@ -1341,8 +1412,8 @@ class ServerStats(commands.Cog):
         self, ctx: commands.Context, message_id: int, channel: discord.TextChannel = None
     ) -> None:
         """
-            Gets a list of all reactions from specified message and displays the user ID,
-            Username, and Discriminator and the emoji name.
+        Gets a list of all reactions from specified message and displays the user ID,
+        Username, and Discriminator and the emoji name.
         """
         if channel is None:
             channel = ctx.message.channel
@@ -1372,101 +1443,184 @@ class ServerStats(commands.Cog):
             i += 1
         await menu(ctx, pages, controls=DEFAULT_CONTROLS)
 
-    @commands.command(name="serverstats")
-    @checks.mod_or_permissions(manage_messages=True)
-    @commands.bot_has_permissions(embed_links=True)
-    @commands.guild_only()
-    async def server_stats(
-        self, ctx: commands.Context, limit: Optional[int] = None, *, guild: GuildConverter = None
-    ) -> None:
+    async def get_server_stats(
+        self, guild: discord.Guild
+    ) -> Dict[str, Union[str, Dict[str, int]]]:
         """
-            Gets total messages on the server and displays each channel
-            separately as well as the user who has posted the most in each channel
+        This is a very expensive function but handles only pulling new
+        data into config since the last time the command has been run.
+        """
 
-            `limit` must be a number of messages to check, defaults to all messages
-            Note: This is a very slow function and may take some time to complete
-        """
-        if not guild:
-            guild = ctx.guild
-        total_msgs = 0
-        msg = ""
-        warning_msg = None
-        total_contribution = {m: 0 for m in guild.members}
-        if limit is None or limit > 1000:
-            warning_msg = await ctx.send(_("This might take a while!"))
-        async with ctx.channel.typing():
-            for chn in guild.channels:
-                channel_msgs = 0
+        # to_return: Dict[str, Union[int, Dict[int, int]]] = {
+        # "last_checked": 0,
+        # "members": {m.id: 0 for m in guild.members},
+        # "total_posts": 0,
+        # "channels": {},
+        # } This is the data schema for saved data
+        # It's all formatted easily for end user data request and deletion
+        # to_return = await self.config.guild(guild).all()
+        async with self.config.guild(guild).all() as to_return:
+            for channel in guild.text_channels:
+                my_perms = channel.permissions_for(guild.me)
+                set_new_last_read = False
+
+                if str(channel.id) not in to_return["channels"]:
+                    to_return["channels"][str(channel.id)] = {}
+                    to_return["channels"][str(channel.id)]["members"] = {}
+                    to_return["channels"][str(channel.id)]["total"] = 0
+                    to_return["channels"][str(channel.id)]["last_checked"] = 0
+                    check_after = None
+                else:
+                    check_after = discord.Object(
+                        id=to_return["channels"][str(channel.id)]["last_checked"]
+                    )
+                if not my_perms.read_message_history or not my_perms.read_messages:
+                    continue
                 try:
-                    channel_contribution = {m: 0 for m in chn.members}
-                    async for message in chn.history(limit=limit):
+                    log.debug(check_after)
+                    async for message in channel.history(
+                        limit=None, after=check_after, oldest_first=False
+                    ):
+                        if not set_new_last_read:
+                            log.debug(f"Setting last_checked to {message.id}")
+                            to_return["channels"][str(channel.id)]["last_checked"] = message.id
+                            set_new_last_read = True
                         author = message.author
                         if author.discriminator == "0000" and author.bot:
                             continue
-                        channel_msgs += 1
-                        total_msgs += 1
-                        if author not in total_contribution:
-                            total_contribution[author] = 0
-                        if author not in channel_contribution:
-                            channel_contribution[author] = 0
-                        channel_contribution[author] += 1
-                        total_contribution[author] += 1
-                    highest, user = await self.check_highest(channel_contribution)
-                    maybe_guild = (
-                        f"{user.mention if user.id in [member.id for member in ctx.guild.members] else inline(user.name)}: {bold(humanize_number(highest))}\n"
-                        if guild
-                        else f"{user}: {bold(humanize_number(highest))}\n"
-                    )
-                    msg += (
-                        _("**Most posts in {}**\nTotal Messages: ").format(chn.mention)
-                        + bold(humanize_number(channel_msgs))
-                        + _("\nMost posts by {}".format(maybe_guild))
-                    )
+                        if str(author.id) not in to_return["members"]:
+                            to_return["members"][str(author.id)] = 0
+                        if str(author.id) not in to_return["channels"][str(channel.id)]["members"]:
+                            to_return["channels"][str(channel.id)]["members"][str(author.id)] = 0
+                        to_return["channels"][str(channel.id)]["members"][str(author.id)] += 1
+                        to_return["channels"][str(channel.id)]["total"] += 1
+                        to_return["members"][str(author.id)] += 1
+                        to_return["total"] += 1
+
                 except (AttributeError, discord.Forbidden):
+                    log.debug("the heck", exc_info=True)
                     pass
-            highest, user = await self.check_highest(total_contribution)
+            _ret = copy(to_return)
+            # copy the data to prevent context manager from removing the reference
+            log.debug(_ret)
+        return _ret
+
+    async def get_channel_stats(self, channel: discord.TextChannel) -> dict:
+        """
+        This is another expensive function but handles only pulling
+        new data into config since the last time the command has been run.
+        """
+        guild = channel.guild
+        async with self.config.guild(guild).all() as to_return:
+            my_perms = channel.permissions_for(guild.me)
+            set_new_last_read = False
+            if channel.id not in to_return["channels"]:
+                to_return["channels"][str(channel.id)] = {}
+                to_return["channels"][str(channel.id)]["members"] = {}
+                to_return["channels"][str(channel.id)]["total"] = 0
+                to_return["channels"][str(channel.id)]["last_checked"] = 0
+                check_after = None
+            else:
+                check_after = to_return["channels"][str(channel.id)]["last_checked"]
+            if not my_perms.read_message_history or not my_perms.read_messages:
+                return {}  # we shouldn't have even reached this far before
+            try:
+                async for message in channel.history(
+                    limit=None, after=check_after, oldest_first=False
+                ):
+                    if not set_new_last_read:
+                        to_return["channels"][str(channel.id)]["last_checked"] = message.id
+                        set_new_last_read = True
+                    author = message.author
+                    if author.discriminator == "0000" and author.bot:
+                        continue
+                    if str(author.id) not in to_return["members"]:
+                        to_return["members"][str(author.id)] = 0
+                    if str(author.id) not in to_return["channels"][str(channel.id)]["members"]:
+                        to_return["channels"][str(channel.id)]["members"][str(author.id)] = 0
+                    to_return["channels"][str(channel.id)]["members"][str(author.id)] += 1
+                    to_return["channels"][str(channel.id)]["total"] += 1
+                    to_return["members"][str(author.id)] += 1
+                    to_return["total"] += 1
+                    # we still want to update the guild totals if we happened to  pull a specific channel
+            except (AttributeError, discord.Forbidden):
+                pass
+            _ret = copy(to_return)
+        return _ret
+
+    @commands.command(name="serverstats")
+    @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.guild_only()
+    async def server_stats(
+        self,
+        ctx: commands.Context,
+    ) -> None:
+        """
+        Gets total messages on the server and displays each channel
+        separately as well as the user who has posted the most in each channel
+
+        Note: This is a very slow function and may take some time to complete
+        """
+
+        warning_msg = await ctx.send(
+            _(
+                "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
+            )
+        )
+        pred = ReactionPredicate.yes_or_no(warning_msg, ctx.author)
+        start_adding_reactions(warning_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+
+        try:
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        if not pred.result:
+            return await ctx.send(_("Alright I will not gather data."))
+        async with ctx.channel.typing():
+            guild_data = await self.get_server_stats(ctx.guild)
+            channel_messages = []
+            member_messages = []
+
+            sorted_chans = sorted(
+                guild_data["channels"].items(), key=lambda x: x[1]["total"], reverse=True
+            )
+            sorted_members = sorted(
+                guild_data["members"].items(), key=lambda x: x[1], reverse=True
+            )
+            for member_id, value in sorted_members[:5]:
+                member_messages.append(f"<@!{member_id}>: {bold(humanize_number(value))}\n")
+
+            most_messages_user_id = sorted_members[0][0]
+            most_messages_user_num = sorted_members[0][1]
             new_msg = (
                 _("**Most posts on the server**\nTotal Messages: ")
-                + bold(humanize_number(total_msgs))
+                + bold(humanize_number(guild_data["total"]))
                 + _("\nMost posts by ")
-                + f"{user.mention if guild is ctx.guild else user} {bold(humanize_number(highest))}\n\n{msg}"
+                + f"<@!{most_messages_user_id}> {bold(humanize_number(most_messages_user_num))}\n\n"
             )
 
-            x = sorted(total_contribution.items(), key=lambda x: x[1], reverse=True)
-            x = [x[i : i + 10] for i in range(0, len(x), 10)]
-            msg_list = []
-            pages = 1
-            for page in x:
-                if guild is ctx.guild:
-                    members = "\n".join(
-                        f"{k.mention if k.id in [member.id for member in ctx.guild.members] else inline(k.name)} {humanize_number(v)}"
-                        for k, v in page
-                    )
-                else:
-                    members = "\n".join(f"{k} {humanize_number(v)}" for k, v in page)
-                total = len(members)
-                em = discord.Embed(colour=await ctx.embed_colour())
-                em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
-                pg_count = 0
-                for chn_page in pagify(new_msg, ["\n"], page_length=1000):
-                    if total + len(chn_page) >= 5000:
-                        break
-                    if pg_count == 0:
-                        em.description = chn_page
-                    else:
-                        em.add_field(name=_("Most posts (continued)"), value=chn_page)
-                    pg_count += 1
-                    total += len(chn_page)
-
-                em.add_field(name=_("Members List"), value=members)
-                em.set_footer(
-                    text=_("Page {}/{}").format(humanize_number(pages), humanize_number(len(x)))
+            for channel_id, value in sorted_chans[:5]:
+                sorted_members = sorted(
+                    guild_data["channels"][channel_id]["members"].items(),
+                    key=lambda x: x[1],
+                    reverse=True,
                 )
-                pages += 1
-                msg_list.append(em)
-            if warning_msg:
-                await warning_msg.delete()
-        return await menu(ctx, msg_list, DEFAULT_CONTROLS)
+                most_messages_user_id = sorted_members[0][0]
+                most_messages_user_num = sorted_members[0][1]
+                maybe_guild = f"<@!{most_messages_user_id}>: {bold(humanize_number(int(most_messages_user_num)))}\n"
+                channel_messages.append(
+                    _("**Most posts in <#{}>**\nTotal Messages: ").format(channel_id)
+                    + bold(humanize_number(int(value["total"])))
+                    + _("\nMost posts by {}\n".format(maybe_guild))
+                )
+            em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.description = f"{new_msg}{''.join(i for i in channel_messages)}"
+
+            em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
+        await ctx.send(embed=em)
 
     @commands.command(name="channelstats")
     @commands.guild_only()
@@ -1474,73 +1628,58 @@ class ServerStats(commands.Cog):
     async def channel_stats(
         self,
         ctx: commands.Context,
-        limit: Optional[int] = None,
         channel: discord.TextChannel = None,
     ) -> None:
         """
-            Gets total messages in a specific channel as well as the user who
-            has posted the most in that channel
+        Gets total messages in a specific channel as well as the user who
+        has posted the most in that channel
 
-            `limit` must be a number of messages to check, defaults to all messages
-            Note: This can be a very slow function and may take some time to complete
+        `limit` must be a number of messages to check, defaults to all messages
+        Note: This can be a very slow function and may take some time to complete
         """
+        warning_msg = await ctx.send(
+            _(
+                "This can take a long time to gather all information for the first time! Are you sure you want to continue?"
+            )
+        )
+        pred = ReactionPredicate.yes_or_no(warning_msg, ctx.author)
+        start_adding_reactions(warning_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+
+        try:
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send(_("I guess not."), delete_after=30)
+            return
+        if not pred.result:
+            return await ctx.send(_("Alright I will not gather data."))
         if not channel:
             channel = ctx.channel
-        total_msgs = 0
-        msg = ""
-        warning_msg = None
-        if limit is None or limit > 1000:
-            warning_msg = await ctx.send(_("This might take a while!"))
         async with ctx.channel.typing():
-            channel_msgs = 0
-            channel_contribution: dict = {}
-            try:
-                async for message in channel.history(limit=limit):
-                    author = message.author
-                    channel_msgs += 1
-                    total_msgs += 1
-                    if author not in channel_contribution:
-                        channel_contribution[author] = 1
-                    else:
-                        channel_contribution[author] += 1
-                highest, user = await self.check_highest(channel_contribution)
-                if not limit:
-                    msg += (
-                        _("**Most posts in {}**\nTotal Messages: ").format(channel.mention)
-                        + f"{bold(humanize_number(channel_msgs))}\n"
-                    )
-                else:
-                    msg += "**Most posts in {channel} for the last {msgs} messages**\n".format(
-                        channel=channel.mention, msgs=humanize_number(limit)
-                    )
-                msg += (
-                    _("Most posts by ")
-                    + f"{user.mention if user.id in [member.id for member in ctx.guild.members] else inline(user.name)}: **{humanize_number(highest)} "
-                    + _("messages**\n\n")
-                )
-            except (AttributeError, discord.Forbidden):
-                pass
-            # User get_user_info incase the top posts is by someone no longer
-            # in the guild
-            x = sorted(channel_contribution.items(), key=lambda x: x[1], reverse=True)
-            x = [x[i : i + 10] for i in range(0, len(x), 10)]
-            msg_list = []
-            pages = 1
-            for page in x:
-                em = discord.Embed(colour=await ctx.embed_colour())
-                em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
-                em.description = msg + "\n".join(
-                    f"{k.mention if k.id in [member.id for member in ctx.guild.members] else inline(k.name)} {humanize_number(v)}"
-                    for k, v in page
-                )
-                em.set_footer(
-                    text=_("Page {}/{}").format(humanize_number(pages), humanize_number(len(x)))
-                )
-                pages += 1
-                msg_list.append(em)
-            if warning_msg:
-                await warning_msg.delete()
-        return await menu(ctx, msg_list, DEFAULT_CONTROLS)
+            channel_data = await self.get_channel_stats(channel)
+            member_messages = []
+            sorted_members = sorted(
+                channel_data["channels"][str(channel.id)]["members"].items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+            log.info(channel_data)
+            for member_id, value in sorted_members[:5]:
+                member_messages.append(f"<@!{member_id}>: {bold(humanize_number(value))}\n")
+            most_messages_user_id = sorted_members[0][0]
+            most_messages_user_num = sorted_members[0][1]
+            maybe_guild = f"<@!{most_messages_user_id}>: {bold(humanize_number(int(most_messages_user_num)))}\n"
+            new_msg = (
+                _("**Most posts in <#{}>**\nTotal Messages: ").format(channel.id)
+                + bold(humanize_number(int(channel_data["channels"][str(channel.id)]["total"])))
+                + _("\nMost posts by {}\n".format(maybe_guild))
+            )
+
+            em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.description = f"{new_msg}"
+
+            em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
+        await ctx.send(embed=em)
 
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
@@ -1552,11 +1691,11 @@ class ServerStats(commands.Cog):
         guild: GuildConverter = None,
     ) -> None:
         """
-            Display all server emojis in a menu that can be scrolled through
+        Display all server emojis in a menu that can be scrolled through
 
-            `id_emojis` return the id of emojis. Default to False, set True
-             if you want to see emojis ID's.
-            `guild_name` can be either the server ID or partial name
+        `id_emojis` return the id of emojis. Default to False, set True
+         if you want to see emojis ID's.
+        `guild_name` can be either the server ID or partial name
         """
         if not guild:
             guild = ctx.guild

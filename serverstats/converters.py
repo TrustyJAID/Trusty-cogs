@@ -80,7 +80,7 @@ class GuildConverter(IDConverter):
         if match is None:
             # Not a mention
             for g in bot.guilds:
-                if argument.lower() in g.name.lower():
+                if argument.lower() in unidecode.unidecode(g.name.lower()):
                     # display_name so we can get the nick of the user first
                     # without being NoneType and then check username if that matches
                     # what we're expecting
@@ -90,6 +90,43 @@ class GuildConverter(IDConverter):
             result = bot.get_guild(guild_id)
 
         if result is None:
+            raise BadArgument('Guild "{}" not found'.format(argument))
+
+        return result
+
+
+class MultiGuildConverter(IDConverter):
+    """
+    This is a guild converter for fuzzy guild names which is used throughout
+    this cog to search for guilds by part of their name and will also
+    accept guild ID's
+
+    Guidance code on how to do this from:
+    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
+    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
+    """
+
+    async def convert(self, ctx: commands.Context, argument: str) -> List[discord.Guild]:
+        bot = ctx.bot
+        match = self._get_id_match(argument)
+        result = []
+        if not await bot.is_owner(ctx.author):
+            # Don't need to be snooping other guilds unless we're
+            # the bot owner
+            raise BadArgument(_("That option is only available for the bot owner."))
+        if not match:
+            # Not a mention
+            for g in bot.guilds:
+                if argument.lower() in unidecode.unidecode(g.name.lower()):
+                    # display_name so we can get the nick of the user first
+                    # without being NoneType and then check username if that matches
+                    # what we're expecting
+                    result.append(g)
+        else:
+            guild_id = int(match.group(1))
+            result.append(bot.get_guild(guild_id))
+
+        if not result:
             raise BadArgument('Guild "{}" not found'.format(argument))
 
         return result
