@@ -79,7 +79,6 @@ class ChannelUserRole(IDConverter):
 
 
 class IntRange(Converter):
-
     async def convert(self, ctx, argument) -> int:
         try:
             argument = int(argument)
@@ -172,7 +171,6 @@ class CleverbotAPI:
         if tweak3 == 50:
             msg += f"{tweak3}% self-centered and attentive."
         return msg
-
 
     async def global_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't globally whitelisted/blacklisted.

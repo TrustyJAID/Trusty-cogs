@@ -86,14 +86,14 @@ class AdventureAlert(
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -104,7 +104,7 @@ class AdventureAlert(
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
         all_guilds = await self.config.all_guilds()
@@ -143,7 +143,7 @@ class AdventureAlert(
     @adventurealert.command(name="settings", aliases=["setting"])
     async def alert_settings(self, ctx: commands.Context):
         """
-            Shows a list of servers you have alerts
+        Shows a list of servers you have alerts
         """
         global_settings = await self.config.user(ctx.author).all()
         msg = ""

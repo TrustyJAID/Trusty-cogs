@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 phue by Nathanaël Lécaudé - A Philips Hue Python library
 Contributions by Marshall Perrin, Justin Lintz
 https://github.com/studioimaginaire/phue
@@ -14,7 +14,7 @@ I am in no way affiliated with the Philips organization.
 
 Slight modification of this PR on phue
 https://github.com/andofrjando/phue/tree/remote
-'''
+"""
 
 import calendar
 import hashlib
@@ -27,6 +27,7 @@ import sys
 import socket
 from copy import deepcopy
 from datetime import datetime, timedelta
+
 if sys.version_info[0] > 2:
     PY3K = True
 else:
@@ -47,8 +48,10 @@ else:
     class UTC(tzinfo):
         def utcoffset(self, dt):
             return timedelta(0)
+
         def tzname(self, dt):
             return "UTC"
+
         def dst(self, dt):
             return timedelta(0)
 
@@ -56,15 +59,15 @@ else:
     input = raw_input
     UTC = UTC()
 
-logger = logging.getLogger('phue')
+logger = logging.getLogger("phue")
 
 
-if platform.system() == 'Windows':
-    USER_HOME = 'USERPROFILE'
+if platform.system() == "Windows":
+    USER_HOME = "USERPROFILE"
 else:
-    USER_HOME = 'HOME'
+    USER_HOME = "HOME"
 
-__version__ = '1.1'
+__version__ = "1.1"
 
 
 def is_string(data):
@@ -76,7 +79,6 @@ def is_string(data):
 
 
 class PhueException(Exception):
-
     def __init__(self, id, message):
         self.id = id
         self.message = message
@@ -92,11 +94,12 @@ class PhueRequestTimeout(PhueException):
 
 class Light(object):
 
-    """ Hue Light object
+    """Hue Light object
 
     Light settings can be accessed or set via the properties of this object.
 
     """
+
     def __init__(self, bridge, light_id):
         self.bridge = bridge
         self.light_id = light_id
@@ -119,10 +122,8 @@ class Light(object):
     def __repr__(self):
         # like default python repr function, but add light name
         return '<{0}.{1} object "{2}" at {3}>'.format(
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.name,
-            hex(id(self)))
+            self.__class__.__module__, self.__class__.__name__, self.name, hex(id(self))
+        )
 
     # Wrapper functions for get/set through the bridge, adding support for
     # remembering the transitiontime parameter if the user has set it
@@ -132,40 +133,41 @@ class Light(object):
     def _set(self, *args, **kwargs):
 
         if self.transitiontime is not None:
-            kwargs['transitiontime'] = self.transitiontime
-            logger.debug("Setting with transitiontime = {0} ds = {1} s".format(
-                self.transitiontime, float(self.transitiontime) / 10))
+            kwargs["transitiontime"] = self.transitiontime
+            logger.debug(
+                "Setting with transitiontime = {0} ds = {1} s".format(
+                    self.transitiontime, float(self.transitiontime) / 10
+                )
+            )
 
-            if (args[0] == 'on' and args[1] is False) or (
-                    kwargs.get('on', True) is False):
+            if (args[0] == "on" and args[1] is False) or (kwargs.get("on", True) is False):
                 self._reset_bri_after_on = True
         return self.bridge.set_light(self.light_id, *args, **kwargs)
 
     @property
     def name(self):
-        '''Get or set the name of the light [string]'''
+        """Get or set the name of the light [string]"""
         if PY3K:
-            self._name = self._get('name')
+            self._name = self._get("name")
         else:
-            self._name = self._get('name').encode('utf-8')
+            self._name = self._get("name").encode("utf-8")
         return self._name
 
     @name.setter
     def name(self, value):
         old_name = self.name
         self._name = value
-        self._set('name', self._name)
+        self._set("name", self._name)
 
-        logger.debug("Renaming light from '{0}' to '{1}'".format(
-            old_name, value))
+        logger.debug("Renaming light from '{0}' to '{1}'".format(old_name, value))
 
         self.bridge.lights_by_name[self.name] = self
         del self.bridge.lights_by_name[old_name]
 
     @property
     def on(self):
-        '''Get or set the state of the light [True|False]'''
-        self._on = self._get('on')
+        """Get or set the state of the light [True|False]"""
+        self._on = self._get("on")
         return self._on
 
     @on.setter
@@ -182,15 +184,17 @@ class Light(object):
             self._reset_bri_after_on = self.transitiontime is not None
             if self._reset_bri_after_on:
                 logger.warning(
-                    'Turned off light with transitiontime specified, brightness will be reset on power on')
+                    "Turned off light with transitiontime specified, brightness will be reset on power on"
+                )
 
-        self._set('on', value)
+        self._set("on", value)
 
         # work around bug by resetting brightness after a power on
         if self._on is False and value is True:
             if self._reset_bri_after_on:
                 logger.warning(
-                    'Light was turned off with transitiontime specified, brightness needs to be reset now.')
+                    "Light was turned off with transitiontime specified, brightness needs to be reset now."
+                )
                 self.brightness = self._brightness
                 self._reset_bri_after_on = False
 
@@ -198,92 +202,92 @@ class Light(object):
 
     @property
     def colormode(self):
-        '''Get the color mode of the light [hs|xy|ct]'''
-        self._colormode = self._get('colormode')
+        """Get the color mode of the light [hs|xy|ct]"""
+        self._colormode = self._get("colormode")
         return self._colormode
 
     @property
     def brightness(self):
-        '''Get or set the brightness of the light [0-254].
+        """Get or set the brightness of the light [0-254].
 
-        0 is not off'''
+        0 is not off"""
 
-        self._brightness = self._get('bri')
+        self._brightness = self._get("bri")
         return self._brightness
 
     @brightness.setter
     def brightness(self, value):
         self._brightness = value
-        self._set('bri', self._brightness)
+        self._set("bri", self._brightness)
 
     @property
     def hue(self):
-        '''Get or set the hue of the light [0-65535]'''
-        self._hue = self._get('hue')
+        """Get or set the hue of the light [0-65535]"""
+        self._hue = self._get("hue")
         return self._hue
 
     @hue.setter
     def hue(self, value):
         self._hue = int(value)
-        self._set('hue', self._hue)
+        self._set("hue", self._hue)
 
     @property
     def saturation(self):
-        '''Get or set the saturation of the light [0-254]
+        """Get or set the saturation of the light [0-254]
 
         0 = white
         254 = most saturated
-        '''
-        self._saturation = self._get('sat')
+        """
+        self._saturation = self._get("sat")
         return self._saturation
 
     @saturation.setter
     def saturation(self, value):
         self._saturation = value
-        self._set('sat', self._saturation)
+        self._set("sat", self._saturation)
 
     @property
     def xy(self):
-        '''Get or set the color coordinates of the light [ [0.0-1.0, 0.0-1.0] ]
+        """Get or set the color coordinates of the light [ [0.0-1.0, 0.0-1.0] ]
 
         This is in a color space similar to CIE 1931 (but not quite identical)
-        '''
-        self._xy = self._get('xy')
+        """
+        self._xy = self._get("xy")
         return self._xy
 
     @xy.setter
     def xy(self, value):
         self._xy = value
-        self._set('xy', self._xy)
+        self._set("xy", self._xy)
 
     @property
     def colortemp(self):
-        '''Get or set the color temperature of the light, in units of mireds [154-500]'''
-        self._colortemp = self._get('ct')
+        """Get or set the color temperature of the light, in units of mireds [154-500]"""
+        self._colortemp = self._get("ct")
         return self._colortemp
 
     @colortemp.setter
     def colortemp(self, value):
         if value < 154:
-            logger.warn('154 mireds is coolest allowed color temp')
+            logger.warn("154 mireds is coolest allowed color temp")
         elif value > 500:
-            logger.warn('500 mireds is warmest allowed color temp')
+            logger.warn("500 mireds is warmest allowed color temp")
         self._colortemp = value
-        self._set('ct', self._colortemp)
+        self._set("ct", self._colortemp)
 
     @property
     def colortemp_k(self):
-        '''Get or set the color temperature of the light, in units of Kelvin [2000-6500]'''
-        self._colortemp = self._get('ct')
+        """Get or set the color temperature of the light, in units of Kelvin [2000-6500]"""
+        self._colortemp = self._get("ct")
         return int(round(1e6 / self._colortemp))
 
     @colortemp_k.setter
     def colortemp_k(self, value):
         if value > 6500:
-            logger.warn('6500 K is max allowed color temp')
+            logger.warn("6500 K is max allowed color temp")
             value = 6500
         elif value < 2000:
-            logger.warn('2000 K is min allowed color temp')
+            logger.warn("2000 K is min allowed color temp")
             value = 2000
 
         colortemp_mireds = int(round(1e6 / value))
@@ -292,38 +296,38 @@ class Light(object):
 
     @property
     def effect(self):
-        '''Check the effect setting of the light. [none|colorloop]'''
-        self._effect = self._get('effect')
+        """Check the effect setting of the light. [none|colorloop]"""
+        self._effect = self._get("effect")
         return self._effect
 
     @effect.setter
     def effect(self, value):
         self._effect = value
-        self._set('effect', self._effect)
+        self._set("effect", self._effect)
 
     @property
     def alert(self):
-        '''Get or set the alert state of the light [select|lselect|none]'''
-        self._alert = self._get('alert')
+        """Get or set the alert state of the light [select|lselect|none]"""
+        self._alert = self._get("alert")
         return self._alert
 
     @alert.setter
     def alert(self, value):
         if value is None:
-            value = 'none'
+            value = "none"
         self._alert = value
-        self._set('alert', self._alert)
+        self._set("alert", self._alert)
 
     @property
     def reachable(self):
-        '''Get the reachable state of the light [boolean]'''
-        self._reachable = self._get('reachable')
+        """Get the reachable state of the light [boolean]"""
+        self._reachable = self._get("reachable")
         return self._reachable
 
     @property
     def type(self):
-        '''Get the type of the light [string]'''
-        self._type = self._get('type')
+        """Get the type of the light [string]"""
+        self._type = self._get("type")
         return self._type
 
 
@@ -349,11 +353,12 @@ class SensorConfig(dict):
 
 class Sensor(object):
 
-    """ Hue Sensor object
+    """Hue Sensor object
 
     Sensor config and state can be read and updated via the properties of this object
 
     """
+
     def __init__(self, bridge, sensor_id):
         self.bridge = bridge
         self.sensor_id = sensor_id
@@ -371,10 +376,8 @@ class Sensor(object):
     def __repr__(self):
         # like default python repr function, but add sensor name
         return '<{0}.{1} object "{2}" at {3}>'.format(
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.name,
-            hex(id(self)))
+            self.__class__.__module__, self.__class__.__name__, self.name, hex(id(self))
+        )
 
     # Wrapper functions for get/set through the bridge
     def _get(self, *args, **kwargs):
@@ -385,59 +388,58 @@ class Sensor(object):
 
     @property
     def name(self):
-        '''Get or set the name of the sensor [string]'''
+        """Get or set the name of the sensor [string]"""
         if PY3K:
-            self._name = self._get('name')
+            self._name = self._get("name")
         else:
-            self._name = self._get('name').encode('utf-8')
+            self._name = self._get("name").encode("utf-8")
         return self._name
 
     @name.setter
     def name(self, value):
         old_name = self.name
         self._name = value
-        self._set('name', self._name)
+        self._set("name", self._name)
 
-        logger.debug("Renaming sensor from '{0}' to '{1}'".format(
-            old_name, value))
+        logger.debug("Renaming sensor from '{0}' to '{1}'".format(old_name, value))
 
         self.bridge.sensors_by_name[self.name] = self
         del self.bridge.sensors_by_name[old_name]
 
     @property
     def modelid(self):
-        '''Get a unique identifier of the hardware model of this sensor [string]'''
-        self._modelid = self._get('modelid')
+        """Get a unique identifier of the hardware model of this sensor [string]"""
+        self._modelid = self._get("modelid")
         return self._modelid
 
     @property
     def swversion(self):
-        '''Get the software version identifier of the sensor's firmware [string]'''
-        self._swversion = self._get('swversion')
+        """Get the software version identifier of the sensor's firmware [string]"""
+        self._swversion = self._get("swversion")
         return self._swversion
 
     @property
     def type(self):
-        '''Get the sensor type of this device [string]'''
-        self._type = self._get('type')
+        """Get the sensor type of this device [string]"""
+        self._type = self._get("type")
         return self._type
 
     @property
     def uniqueid(self):
-        '''Get the unique device ID of this sensor [string]'''
-        self._uniqueid = self._get('uniqueid')
+        """Get the unique device ID of this sensor [string]"""
+        self._uniqueid = self._get("uniqueid")
         return self._uniqueid
 
     @property
     def manufacturername(self):
-        '''Get the name of the manufacturer [string]'''
-        self._manufacturername = self._get('manufacturername')
+        """Get the name of the manufacturer [string]"""
+        self._manufacturername = self._get("manufacturername")
         return self._manufacturername
 
     @property
     def state(self):
-        ''' A dictionary of sensor state. Some values can be updated, some are read-only. [dict]'''
-        data = self._get('state')
+        """ A dictionary of sensor state. Some values can be updated, some are read-only. [dict]"""
+        data = self._get("state")
         self._state.clear()
         self._state.update(data)
         return self._state
@@ -449,8 +451,8 @@ class Sensor(object):
 
     @property
     def config(self):
-        ''' A dictionary of sensor config. Some values can be updated, some are read-only. [dict]'''
-        data = self._get('config')
+        """ A dictionary of sensor config. Some values can be updated, some are read-only. [dict]"""
+        data = self._get("config")
         self._config.clear()
         self._config.update(data)
         return self._config
@@ -462,14 +464,14 @@ class Sensor(object):
 
     @property
     def recycle(self):
-        ''' True if this resource should be automatically removed when the last reference to it disappears [bool]'''
-        self._recycle = self._get('manufacturername')
+        """ True if this resource should be automatically removed when the last reference to it disappears [bool]"""
+        self._recycle = self._get("manufacturername")
         return self._manufacturername
 
 
 class Group(Light):
 
-    """ A group of Hue lights, tracked as a group on the bridge
+    """A group of Hue lights, tracked as a group on the bridge
 
     Example:
 
@@ -494,11 +496,11 @@ class Group(Light):
             groups = bridge.get_group()
             for idnumber, info in groups.items():
                 if PY3K:
-                    if info['name'] == name:
+                    if info["name"] == name:
                         self.group_id = int(idnumber)
                         break
                 else:
-                    if info['name'] == name.decode('utf-8'):
+                    if info["name"] == name.decode("utf-8"):
                         self.group_id = int(idnumber)
                         break
             else:
@@ -513,50 +515,50 @@ class Group(Light):
         # let's get basic group functionality working first before adding
         # transition time...
         if self.transitiontime is not None:
-            kwargs['transitiontime'] = self.transitiontime
-            logger.debug("Setting with transitiontime = {0} ds = {1} s".format(
-                self.transitiontime, float(self.transitiontime) / 10))
+            kwargs["transitiontime"] = self.transitiontime
+            logger.debug(
+                "Setting with transitiontime = {0} ds = {1} s".format(
+                    self.transitiontime, float(self.transitiontime) / 10
+                )
+            )
 
-            if (args[0] == 'on' and args[1] is False) or (
-                    kwargs.get('on', True) is False):
+            if (args[0] == "on" and args[1] is False) or (kwargs.get("on", True) is False):
                 self._reset_bri_after_on = True
         return self.bridge.set_group(self.group_id, *args, **kwargs)
 
     @property
     def name(self):
-        '''Get or set the name of the light group [string]'''
+        """Get or set the name of the light group [string]"""
         if PY3K:
-            self._name = self._get('name')
+            self._name = self._get("name")
         else:
-            self._name = self._get('name').encode('utf-8')
+            self._name = self._get("name").encode("utf-8")
         return self._name
 
     @name.setter
     def name(self, value):
         old_name = self.name
         self._name = value
-        logger.debug("Renaming light group from '{0}' to '{1}'".format(
-            old_name, value))
-        self._set('name', self._name)
+        logger.debug("Renaming light group from '{0}' to '{1}'".format(old_name, value))
+        self._set("name", self._name)
 
     @property
     def lights(self):
         """ Return a list of all lights in this group"""
         # response = self.bridge.request('GET', '/api/{0}/groups/{1}'.format(self.bridge.username, self.group_id))
         # return [Light(self.bridge, int(l)) for l in response['lights']]
-        return [Light(self.bridge, int(l)) for l in self._get('lights')]
+        return [Light(self.bridge, int(l)) for l in self._get("lights")]
 
     @lights.setter
     def lights(self, value):
         """ Change the lights that are in this group"""
-        logger.debug("Setting lights in group {0} to {1}".format(
-            self.group_id, str(value)))
-        self._set('lights', value)
+        logger.debug("Setting lights in group {0} to {1}".format(self.group_id, str(value)))
+        self._set("lights", value)
 
 
 class AllLights(Group):
 
-    """ All the Hue lights connected to your bridge
+    """All the Hue lights connected to your bridge
 
     This makes use of the semi-documented feature that
     "Group 0" of lights appears to be a group automatically
@@ -564,6 +566,7 @@ class AllLights(Group):
     listing the groups, but is accessible if you explicitly
     ask for group 0.
     """
+
     def __init__(self, bridge=None):
         if bridge is None:
             bridge = Bridge()
@@ -573,9 +576,19 @@ class AllLights(Group):
 class Scene(object):
     """ Container for Scene """
 
-    def __init__(self, sid, appdata=None, lastupdated=None,
-                 lights=None, locked=False, name="", owner="",
-                 picture="", recycle=False, version=0):
+    def __init__(
+        self,
+        sid,
+        appdata=None,
+        lastupdated=None,
+        lights=None,
+        locked=False,
+        name="",
+        owner="",
+        picture="",
+        recycle=False,
+        version=0,
+    ):
         self.scene_id = sid
         self.appdata = appdata or {}
         self.lastupdated = lastupdated
@@ -597,12 +610,13 @@ class Scene(object):
             self.__class__.__name__,
             self.scene_id,
             self.name,
-            self.lights)
+            self.lights,
+        )
 
 
 class Bridge(object):
 
-    """ Interface to the Hue ZigBee bridge
+    """Interface to the Hue ZigBee bridge
 
     You can obtain Light objects by calling the get_light_objects method:
 
@@ -621,8 +635,9 @@ class Bridge(object):
 
 
     """
-    def __init__(self, ip=None, username=None, config_file_path=None, api='/api/'):
-        """ Initialization function.
+
+    def __init__(self, ip=None, username=None, config_file_path=None, api="/api/"):
+        """Initialization function.
 
         Parameters:
         ------------
@@ -635,11 +650,15 @@ class Bridge(object):
         if config_file_path is not None:
             self.config_file_path = config_file_path
         elif os.getenv(USER_HOME) is not None and os.access(os.getenv(USER_HOME), os.W_OK):
-            self.config_file_path = os.path.join(os.getenv(USER_HOME), '.python_hue')
-        elif 'iPad' in platform.machine() or 'iPhone' in platform.machine() or 'iPad' in platform.machine():
-            self.config_file_path = os.path.join(os.getenv(USER_HOME), 'Documents', '.python_hue')
+            self.config_file_path = os.path.join(os.getenv(USER_HOME), ".python_hue")
+        elif (
+            "iPad" in platform.machine()
+            or "iPhone" in platform.machine()
+            or "iPad" in platform.machine()
+        ):
+            self.config_file_path = os.path.join(os.getenv(USER_HOME), "Documents", ".python_hue")
         else:
-            self.config_file_path = os.path.join(os.getcwd(), '.python_hue')
+            self.config_file_path = os.path.join(os.getcwd(), ".python_hue")
 
         self.ip = ip
         self.username = username
@@ -657,38 +676,32 @@ class Bridge(object):
 
     @property
     def name(self):
-        '''Get or set the name of the bridge [string]'''
-        self._name = self.request(
-            'GET', self.api + self.username + '/config')['name']
+        """Get or set the name of the bridge [string]"""
+        self._name = self.request("GET", self.api + self.username + "/config")["name"]
         return self._name
 
     @name.setter
     def name(self, value):
         self._name = value
-        data = {'name': self._name}
-        self.request(
-            'PUT', self.api + self.username + '/config', data)
+        data = {"name": self._name}
+        self.request("PUT", self.api + self.username + "/config", data)
 
-    def request(self, mode='GET', address=None, data=None):
+    def request(self, mode="GET", address=None, data=None):
         """ Utility function for HTTP GET/PUT requests for the API"""
-        if hasattr(self, 'token'):
+        if hasattr(self, "token"):
             connection = httplib.HTTPSConnection(self.ip, timeout=20)
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': self.token.bearer()
-            }
+            headers = {"Content-Type": "application/json", "Authorization": self.token.bearer()}
         else:
             connection = httplib.HTTPConnection(self.ip, timeout=10)
             headers = {}
 
         try:
-            if mode == 'GET' or mode == 'DELETE':
+            if mode == "GET" or mode == "DELETE":
                 connection.request(mode, address, None, headers)
-            if mode == 'PUT' or mode == 'POST':
+            if mode == "PUT" or mode == "POST":
                 connection.request(mode, address, json.dumps(data), headers)
 
-            logger.debug("{0} {1} {2} {3}".format(mode, address,
-                                                  str(data), str(headers)))
+            logger.debug("{0} {1} {2} {3}".format(mode, address, str(data), str(headers)))
 
         except socket.timeout:
             error = "{} Request to {}{} timed out.".format(mode, self.ip, address)
@@ -700,7 +713,7 @@ class Bridge(object):
         response = result.read()
         connection.close()
         if PY3K:
-            return json.loads(response.decode('utf-8'))
+            return json.loads(response.decode("utf-8"))
         else:
             logger.debug(response)
             return json.loads(response)
@@ -709,15 +722,15 @@ class Bridge(object):
 
         """ Get the bridge ip address from the meethue.com nupnp api """
 
-        connection = httplib.HTTPSConnection('www.meethue.com')
-        connection.request('GET', '/api/nupnp')
+        connection = httplib.HTTPSConnection("www.meethue.com")
+        connection.request("GET", "/api/nupnp")
 
-        logger.info('Connecting to meethue.com/api/nupnp')
+        logger.info("Connecting to meethue.com/api/nupnp")
 
         result = connection.getresponse()
 
         if PY3K:
-            data = json.loads(str(result.read(), encoding='utf-8'))
+            data = json.loads(str(result.read(), encoding="utf-8"))
         else:
             result_str = result.read()
             data = json.loads(result_str)
@@ -726,9 +739,9 @@ class Bridge(object):
 
         connection.close()
 
-        ip = str(data[0]['internalipaddress'])
+        ip = str(data[0]["internalipaddress"])
 
-        if ip is not '':
+        if ip is not "":
             if set_result:
                 self.ip = ip
 
@@ -739,32 +752,32 @@ class Bridge(object):
     def register_app(self):
         """ Register this computer with the Hue bridge hardware and save the resulting access token """
         registration_request = {"devicetype": "python_hue"}
-        response = self.request('POST', self.api, registration_request)
+        response = self.request("POST", self.api, registration_request)
         for line in response:
             for key in line:
-                if 'success' in key:
-                    with open(self.config_file_path, 'w') as f:
-                        logger.info(
-                            'Writing configuration file to ' + self.config_file_path)
-                        f.write(json.dumps({self.ip: line['success']}))
-                        logger.info('Reconnecting to the bridge')
+                if "success" in key:
+                    with open(self.config_file_path, "w") as f:
+                        logger.info("Writing configuration file to " + self.config_file_path)
+                        f.write(json.dumps({self.ip: line["success"]}))
+                        logger.info("Reconnecting to the bridge")
                     self.connect()
-                if 'error' in key:
-                    error_type = line['error']['type']
+                if "error" in key:
+                    error_type = line["error"]["type"]
                     if error_type == 101:
-                        raise PhueRegistrationException(error_type,
-                                                        'The link button has not been pressed in the last 30 seconds.')
+                        raise PhueRegistrationException(
+                            error_type,
+                            "The link button has not been pressed in the last 30 seconds.",
+                        )
                     if error_type == 7:
-                        raise PhueException(error_type,
-                                            'Unknown username')
+                        raise PhueException(error_type, "Unknown username")
 
     def connect(self):
         """ Connect to the Hue bridge """
-        logger.info('Attempting to connect to the bridge...')
+        logger.info("Attempting to connect to the bridge...")
         # If the ip and username were provided at class init
         if self.ip is not None and self.username is not None:
-            logger.info('Using ip: ' + self.ip)
-            logger.info('Using username: ' + self.username)
+            logger.info("Using ip: " + self.ip)
+            logger.info("Using username: " + self.username)
             return
 
         if self.ip is None or self.username is None:
@@ -773,18 +786,16 @@ class Bridge(object):
                     config = json.loads(f.read())
                     if self.ip is None:
                         self.ip = list(config.keys())[0]
-                        logger.info('Using ip from config: ' + self.ip)
+                        logger.info("Using ip from config: " + self.ip)
                     else:
-                        logger.info('Using ip: ' + self.ip)
+                        logger.info("Using ip: " + self.ip)
                     if self.username is None:
-                        self.username = config[self.ip]['username']
-                        logger.info(
-                            'Using username from config: ' + self.username)
+                        self.username = config[self.ip]["username"]
+                        logger.info("Using username from config: " + self.username)
                     else:
-                        logger.info('Using username: ' + self.username)
+                        logger.info("Using username: " + self.username)
             except Exception as e:
-                logger.info(
-                    'Error opening config file, will attempt bridge registration')
+                logger.info("Error opening config file, will attempt bridge registration")
                 self.register_app()
 
     def get_light_id_by_name(self, name):
@@ -792,28 +803,27 @@ class Bridge(object):
         lights = self.get_light()
         for light_id in lights:
             if PY3K:
-                if name == lights[light_id]['name']:
+                if name == lights[light_id]["name"]:
                     return light_id
             else:
-                if name.decode('utf-8') == lights[light_id]['name']:
+                if name.decode("utf-8") == lights[light_id]["name"]:
                     return light_id
         return False
 
-    def get_light_objects(self, mode='list'):
+    def get_light_objects(self, mode="list"):
         """Returns a collection containing the lights, either by name or id (use 'id' or 'name' as the mode)
         The returned collection can be either a list (default), or a dict.
-        Set mode='id' for a dict by light ID, or mode='name' for a dict by light name.   """
+        Set mode='id' for a dict by light ID, or mode='name' for a dict by light name."""
         if self.lights_by_id == {}:
-            lights = self.request('GET', self.api + self.username + '/lights/')
+            lights = self.request("GET", self.api + self.username + "/lights/")
             for light in lights:
                 self.lights_by_id[int(light)] = Light(self, int(light))
-                self.lights_by_name[lights[light][
-                    'name']] = self.lights_by_id[int(light)]
-        if mode == 'id':
+                self.lights_by_name[lights[light]["name"]] = self.lights_by_id[int(light)]
+        if mode == "id":
             return self.lights_by_id
-        if mode == 'name':
+        if mode == "name":
             return self.lights_by_name
-        if mode == 'list':
+        if mode == "list":
             # return ligts in sorted id order, dicts have no natural order
             return [self.lights_by_id[id] for id in sorted(self.lights_by_id)]
 
@@ -822,33 +832,32 @@ class Bridge(object):
         sensors = self.get_sensor()
         for sensor_id in sensors:
             if PY3K:
-                if name == sensors[sensor_id]['name']:
+                if name == sensors[sensor_id]["name"]:
                     return sensor_id
             else:
-                if name.decode('utf-8') == sensors[sensor_id]['name']:
+                if name.decode("utf-8") == sensors[sensor_id]["name"]:
                     return sensor_id
         return False
 
-    def get_sensor_objects(self, mode='list'):
+    def get_sensor_objects(self, mode="list"):
         """Returns a collection containing the sensors, either by name or id (use 'id' or 'name' as the mode)
         The returned collection can be either a list (default), or a dict.
-        Set mode='id' for a dict by sensor ID, or mode='name' for a dict by sensor name.   """
+        Set mode='id' for a dict by sensor ID, or mode='name' for a dict by sensor name."""
         if self.sensors_by_id == {}:
-            sensors = self.request('GET', self.api + self.username + '/sensors/')
+            sensors = self.request("GET", self.api + self.username + "/sensors/")
             for sensor in sensors:
                 self.sensors_by_id[int(sensor)] = Sensor(self, int(sensor))
-                self.sensors_by_name[sensors[sensor][
-                    'name']] = self.sensors_by_id[int(sensor)]
-        if mode == 'id':
+                self.sensors_by_name[sensors[sensor]["name"]] = self.sensors_by_id[int(sensor)]
+        if mode == "id":
             return self.sensors_by_id
-        if mode == 'name':
+        if mode == "name":
             return self.sensors_by_name
-        if mode == 'list':
+        if mode == "list":
             return self.sensors_by_id.values()
 
     def __getitem__(self, key):
-        """ Lights are accessibly by indexing the bridge either with
-        an integer index or string name. """
+        """Lights are accessibly by indexing the bridge either with
+        an integer index or string name."""
         if self.lights_by_id == {}:
             self.get_light_objects()
 
@@ -859,10 +868,11 @@ class Bridge(object):
                 if PY3K:
                     return self.lights_by_name[key]
                 else:
-                    return self.lights_by_name[key.decode('utf-8')]
+                    return self.lights_by_name[key.decode("utf-8")]
             except:
                 raise KeyError(
-                    'Not a valid key (integer index starting with 1, or light name): ' + str(key))
+                    "Not a valid key (integer index starting with 1, or light name): " + str(key)
+                )
 
     @property
     def lights(self):
@@ -871,7 +881,7 @@ class Bridge(object):
 
     def get_api(self):
         """ Returns the full api dictionary """
-        return self.request('GET', self.api + self.username)
+        return self.request("GET", self.api + self.username)
 
     def get_light(self, light_id=None, parameter=None):
         """ Gets state by light_id and parameter"""
@@ -879,23 +889,23 @@ class Bridge(object):
         if is_string(light_id):
             light_id = self.get_light_id_by_name(light_id)
         if light_id is None:
-            return self.request('GET', self.api + self.username + '/lights/')
-        state = self.request(
-            'GET', self.api + self.username + '/lights/' + str(light_id))
+            return self.request("GET", self.api + self.username + "/lights/")
+        state = self.request("GET", self.api + self.username + "/lights/" + str(light_id))
         if parameter is None:
             return state
-        if parameter in ['name', 'type', 'uniqueid', 'swversion']:
+        if parameter in ["name", "type", "uniqueid", "swversion"]:
             return state[parameter]
         else:
             try:
-                return state['state'][parameter]
+                return state["state"][parameter]
             except KeyError as e:
                 raise KeyError(
-                    'Not a valid key, parameter %s is not associated with light %s)'
-                    % (parameter, light_id))
+                    "Not a valid key, parameter %s is not associated with light %s)"
+                    % (parameter, light_id)
+                )
 
     def set_light(self, light_id, parameter, value=None, transitiontime=None):
-        """ Adjust properties of one or more lights.
+        """Adjust properties of one or more lights.
 
         light_id can be a single lamp or an array of lamps
         parameters: 'on' : True|False , 'bri' : 0-254, 'sat' : 0-254, 'ct': 154-500
@@ -913,8 +923,7 @@ class Bridge(object):
             data = {parameter: value}
 
         if transitiontime is not None:
-            data['transitiontime'] = int(round(
-                transitiontime))  # must be int for request format
+            data["transitiontime"] = int(round(transitiontime))  # must be int for request format
 
         light_id_array = light_id
         if isinstance(light_id, int) or is_string(light_id):
@@ -922,19 +931,28 @@ class Bridge(object):
         result = []
         for light in light_id_array:
             logger.debug(str(data))
-            if parameter == 'name':
-                result.append(self.request('PUT', self.api + self.username + '/lights/' + str(
-                    light_id), data))
+            if parameter == "name":
+                result.append(
+                    self.request(
+                        "PUT", self.api + self.username + "/lights/" + str(light_id), data
+                    )
+                )
             else:
                 if is_string(light):
                     converted_light = self.get_light_id_by_name(light)
                 else:
                     converted_light = light
-                result.append(self.request('PUT', self.api + self.username + '/lights/' + str(
-                    converted_light) + '/state', data))
-            if 'error' in list(result[-1][0].keys()):
-                logger.warn("ERROR: {0} for light {1}".format(
-                    result[-1][0]['error']['description'], light))
+                result.append(
+                    self.request(
+                        "PUT",
+                        self.api + self.username + "/lights/" + str(converted_light) + "/state",
+                        data,
+                    )
+                )
+            if "error" in list(result[-1][0].keys()):
+                logger.warn(
+                    "ERROR: {0} for light {1}".format(result[-1][0]["error"]["description"], light)
+                )
 
         logger.debug(result)
         return result
@@ -946,7 +964,18 @@ class Bridge(object):
         """ Access sensors as a list """
         return self.get_sensor_objects()
 
-    def create_sensor(self, name, modelid, swversion, sensor_type, uniqueid, manufacturername, state={}, config={}, recycle=False):
+    def create_sensor(
+        self,
+        name,
+        modelid,
+        swversion,
+        sensor_type,
+        uniqueid,
+        manufacturername,
+        state={},
+        config={},
+        recycle=False,
+    ):
         """ Create a new sensor in the bridge. Returns (ID,None) of the new sensor or (None,message) if creation failed. """
         data = {
             "name": name,
@@ -955,17 +984,17 @@ class Bridge(object):
             "type": sensor_type,
             "uniqueid": uniqueid,
             "manufacturername": manufacturername,
-            "recycle": recycle
+            "recycle": recycle,
         }
-        if (isinstance(state, dict) and state != {}):
+        if isinstance(state, dict) and state != {}:
             data["state"] = state
 
-        if (isinstance(config, dict) and config != {}):
+        if isinstance(config, dict) and config != {}:
             data["config"] = config
 
-        result = self.request('POST', self.api + self.username + '/sensors/', data)
+        result = self.request("POST", self.api + self.username + "/sensors/", data)
 
-        if ("success" in result[0].keys()):
+        if "success" in result[0].keys():
             new_id = result[0]["success"]["id"]
             logger.debug("Created sensor with ID " + new_id)
             new_sensor = Sensor(self, int(new_id))
@@ -982,9 +1011,8 @@ class Bridge(object):
         if is_string(sensor_id):
             sensor_id = self.get_sensor_id_by_name(sensor_id)
         if sensor_id is None:
-            return self.request('GET', self.api + self.username + '/sensors/')
-        data = self.request(
-            'GET', self.api + self.username + '/sensors/' + str(sensor_id))
+            return self.request("GET", self.api + self.username + "/sensors/")
+        data = self.request("GET", self.api + self.username + "/sensors/" + str(sensor_id))
 
         if isinstance(data, list):
             logger.debug("Unable to read sensor with ID {0}: {1}".format(sensor_id, repr(data)))
@@ -995,7 +1023,7 @@ class Bridge(object):
         return data[parameter]
 
     def set_sensor(self, sensor_id, parameter, value=None):
-        """ Adjust properties of a sensor
+        """Adjust properties of a sensor
 
         sensor_id must be a single sensor.
         parameters: 'name' : string
@@ -1008,17 +1036,17 @@ class Bridge(object):
 
         result = None
         logger.debug(str(data))
-        result = self.request('PUT', self.api + self.username + '/sensors/' + str(
-            sensor_id), data)
-        if 'error' in list(result[0].keys()):
-            logger.warn("ERROR: {0} for sensor {1}".format(
-                result[0]['error']['description'], sensor_id))
+        result = self.request("PUT", self.api + self.username + "/sensors/" + str(sensor_id), data)
+        if "error" in list(result[0].keys()):
+            logger.warn(
+                "ERROR: {0} for sensor {1}".format(result[0]["error"]["description"], sensor_id)
+            )
 
         logger.debug(result)
         return result
 
     def set_sensor_state(self, sensor_id, parameter, value=None):
-        """ Adjust the "state" object of a sensor
+        """Adjust the "state" object of a sensor
 
         sensor_id must be a single sensor.
         parameters: any parameter(s) present in the sensor's "state" dictionary.
@@ -1027,7 +1055,7 @@ class Bridge(object):
         self.set_sensor_content(sensor_id, parameter, value, "state")
 
     def set_sensor_config(self, sensor_id, parameter, value=None):
-        """ Adjust the "config" object of a sensor
+        """Adjust the "config" object of a sensor
 
         sensor_id must be a single sensor.
         parameters: any parameter(s) present in the sensor's "config" dictionary.
@@ -1036,9 +1064,8 @@ class Bridge(object):
         self.set_sensor_content(sensor_id, parameter, value, "config")
 
     def set_sensor_content(self, sensor_id, parameter, value=None, structure="state"):
-        """ Adjust the "state" or "config" structures of a sensor
-        """
-        if (structure != "state" and structure != "config"):
+        """Adjust the "state" or "config" structures of a sensor"""
+        if structure != "state" and structure != "config":
             logger.debug("set_sensor_current expects structure 'state' or 'config'.")
             return False
 
@@ -1053,18 +1080,20 @@ class Bridge(object):
 
         result = None
         logger.debug(str(data))
-        result = self.request('PUT', self.api + self.username + '/sensors/' + str(
-            sensor_id) + "/" + structure, data)
-        if 'error' in list(result[0].keys()):
-            logger.warn("ERROR: {0} for sensor {1}".format(
-                result[0]['error']['description'], sensor_id))
+        result = self.request(
+            "PUT", self.api + self.username + "/sensors/" + str(sensor_id) + "/" + structure, data
+        )
+        if "error" in list(result[0].keys()):
+            logger.warn(
+                "ERROR: {0} for sensor {1}".format(result[0]["error"]["description"], sensor_id)
+            )
 
         logger.debug(result)
         return result
 
     def delete_scene(self, scene_id):
         try:
-            return self.request('DELETE', self.api + self.username + '/scenes/' + str(scene_id))
+            return self.request("DELETE", self.api + self.username + "/scenes/" + str(scene_id))
         except:
             logger.debug("Unable to delete scene with ID {0}".format(scene_id))
 
@@ -1073,7 +1102,7 @@ class Bridge(object):
             name = self.sensors_by_id[sensor_id].name
             del self.sensors_by_name[name]
             del self.sensors_by_id[sensor_id]
-            return self.request('DELETE', self.api + self.username + '/sensors/' + str(sensor_id))
+            return self.request("DELETE", self.api + self.username + "/sensors/" + str(sensor_id))
         except:
             logger.debug("Unable to delete nonexistent sensor with ID {0}".format(sensor_id))
 
@@ -1088,10 +1117,10 @@ class Bridge(object):
         groups = self.get_group()
         for group_id in groups:
             if PY3K:
-                if name == groups[group_id]['name']:
+                if name == groups[group_id]["name"]:
                     return group_id
             else:
-                if name.decode('utf-8') == groups[group_id]['name']:
+                if name.decode("utf-8") == groups[group_id]["name"]:
                     return group_id
         return False
 
@@ -1099,19 +1128,23 @@ class Bridge(object):
         if is_string(group_id):
             group_id = self.get_group_id_by_name(group_id)
         if group_id is False:
-            logger.error('Group name does not exit')
+            logger.error("Group name does not exit")
             return
         if group_id is None:
-            return self.request('GET', self.api + self.username + '/groups/')
+            return self.request("GET", self.api + self.username + "/groups/")
         if parameter is None:
-            return self.request('GET', self.api + self.username + '/groups/' + str(group_id))
-        elif parameter == 'name' or parameter == 'lights':
-            return self.request('GET', self.api + self.username + '/groups/' + str(group_id))[parameter]
+            return self.request("GET", self.api + self.username + "/groups/" + str(group_id))
+        elif parameter == "name" or parameter == "lights":
+            return self.request("GET", self.api + self.username + "/groups/" + str(group_id))[
+                parameter
+            ]
         else:
-            return self.request('GET', self.api + self.username + '/groups/' + str(group_id))['action'][parameter]
+            return self.request("GET", self.api + self.username + "/groups/" + str(group_id))[
+                "action"
+            ][parameter]
 
     def set_group(self, group_id, parameter, value=None, transitiontime=None):
-        """ Change light settings for a group
+        """Change light settings for a group
 
         group_id : int, id number for group
         parameter : 'name' or 'lights'
@@ -1121,7 +1154,7 @@ class Bridge(object):
 
         if isinstance(parameter, dict):
             data = parameter
-        elif parameter == 'lights' and (isinstance(value, list) or isinstance(value, int)):
+        elif parameter == "lights" and (isinstance(value, list) or isinstance(value, int)):
             if isinstance(value, int):
                 value = [value]
             data = {parameter: [str(x) for x in value]}
@@ -1129,8 +1162,7 @@ class Bridge(object):
             data = {parameter: value}
 
         if transitiontime is not None:
-            data['transitiontime'] = int(round(
-                transitiontime))  # must be int for request format
+            data["transitiontime"] = int(round(transitiontime))  # must be int for request format
 
         group_id_array = group_id
         if isinstance(group_id, int) or is_string(group_id):
@@ -1143,22 +1175,33 @@ class Bridge(object):
             else:
                 converted_group = group
             if converted_group is False:
-                logger.error('Group name does not exit')
+                logger.error("Group name does not exit")
                 return
-            if parameter == 'name' or parameter == 'lights':
-                result.append(self.request('PUT', self.api + self.username + '/groups/' + str(converted_group), data))
+            if parameter == "name" or parameter == "lights":
+                result.append(
+                    self.request(
+                        "PUT", self.api + self.username + "/groups/" + str(converted_group), data
+                    )
+                )
             else:
-                result.append(self.request('PUT', self.api + self.username + '/groups/' + str(converted_group) + '/action', data))
+                result.append(
+                    self.request(
+                        "PUT",
+                        self.api + self.username + "/groups/" + str(converted_group) + "/action",
+                        data,
+                    )
+                )
 
-        if 'error' in list(result[-1][0].keys()):
-            logger.warn("ERROR: {0} for group {1}".format(
-                result[-1][0]['error']['description'], group))
+        if "error" in list(result[-1][0].keys()):
+            logger.warn(
+                "ERROR: {0} for group {1}".format(result[-1][0]["error"]["description"], group)
+            )
 
         logger.debug(result)
         return result
 
     def create_group(self, name, lights=None):
-        """ Create a group of lights
+        """Create a group of lights
 
         Parameters
         ------------
@@ -1168,11 +1211,11 @@ class Bridge(object):
             List of lights to be in the group.
 
         """
-        data = {'lights': [str(x) for x in lights], 'name': name}
-        return self.request('POST', self.api + self.username + '/groups/', data)
+        data = {"lights": [str(x) for x in lights], "name": name}
+        return self.request("POST", self.api + self.username + "/groups/", data)
 
     def delete_group(self, group_id):
-        return self.request('DELETE', self.api + self.username + '/groups/' + str(group_id))
+        return self.request("DELETE", self.api + self.username + "/groups/" + str(group_id))
 
     # Scenes #####
     @property
@@ -1180,12 +1223,14 @@ class Bridge(object):
         return [Scene(k, **v) for k, v in self.get_scene().items()]
 
     def get_scene(self):
-        return self.request('GET', self.api + self.username + '/scenes')
+        return self.request("GET", self.api + self.username + "/scenes")
 
     def activate_scene(self, group_id, scene_id):
-        return self.request('PUT', self.api + self.username + '/groups/' +
-                            str(group_id) + '/action',
-                            {"scene": scene_id})
+        return self.request(
+            "PUT",
+            self.api + self.username + "/groups/" + str(group_id) + "/action",
+            {"scene": scene_id},
+        )
 
     def run_scene(self, group_name, scene_name):
         """Run a scene by group and scene name.
@@ -1225,56 +1270,56 @@ class Bridge(object):
             if group_lights == scene.lights:
                 self.activate_scene(group.group_id, scene.scene_id)
                 return True
-        logger.warn("run_scene: did not find a scene: {} "
-                    "that shared lights with group {}".format(scene_name, group_name))
+        logger.warn(
+            "run_scene: did not find a scene: {} "
+            "that shared lights with group {}".format(scene_name, group_name)
+        )
         return False
 
     # Schedules #####
     def get_schedule(self, schedule_id=None, parameter=None):
         if schedule_id is None:
-            return self.request('GET', self.api + self.username + '/schedules')
+            return self.request("GET", self.api + self.username + "/schedules")
         if parameter is None:
-            return self.request('GET', self.api + self.username + '/schedules/' + str(schedule_id))
+            return self.request("GET", self.api + self.username + "/schedules/" + str(schedule_id))
 
-    def create_schedule(self, name, time, light_id, data, description=' '):
+    def create_schedule(self, name, time, light_id, data, description=" "):
         schedule = {
-            'name': name,
-            'localtime': time,
-            'description': description,
-            'command':
-            {
-                'method': 'PUT',
-                'address': (self.api + self.username +
-                            '/lights/' + str(light_id) + '/state'),
-                'body': data
-            }
+            "name": name,
+            "localtime": time,
+            "description": description,
+            "command": {
+                "method": "PUT",
+                "address": (self.api + self.username + "/lights/" + str(light_id) + "/state"),
+                "body": data,
+            },
         }
-        return self.request('POST', self.api + self.username + '/schedules', schedule)
+        return self.request("POST", self.api + self.username + "/schedules", schedule)
 
     def set_schedule_attributes(self, schedule_id, attributes):
         """
         :param schedule_id: The ID of the schedule
         :param attributes: Dictionary with attributes and their new values
         """
-        return self.request('PUT', self.api + self.username + '/schedules/' + str(schedule_id), data=attributes)
+        return self.request(
+            "PUT", self.api + self.username + "/schedules/" + str(schedule_id), data=attributes
+        )
 
-    def create_group_schedule(self, name, time, group_id, data, description=' '):
+    def create_group_schedule(self, name, time, group_id, data, description=" "):
         schedule = {
-            'name': name,
-            'localtime': time,
-            'description': description,
-            'command':
-            {
-                'method': 'PUT',
-                'address': (self.api + self.username +
-                            '/groups/' + str(group_id) + '/action'),
-                'body': data
-            }
+            "name": name,
+            "localtime": time,
+            "description": description,
+            "command": {
+                "method": "PUT",
+                "address": (self.api + self.username + "/groups/" + str(group_id) + "/action"),
+                "body": data,
+            },
         }
-        return self.request('POST', self.api + self.username + '/schedules', schedule)
+        return self.request("POST", self.api + self.username + "/schedules", schedule)
 
     def delete_schedule(self, schedule_id):
-        return self.request('DELETE', self.api + self.username + '/schedules/' + str(schedule_id))
+        return self.request("DELETE", self.api + self.username + "/schedules/" + str(schedule_id))
 
 
 class PhueAuthorisationError(PhueException):
@@ -1290,43 +1335,50 @@ class PhueInvalidToken(PhueException):
 
 
 class RemoteBridge(Bridge):
-
     def __init__(self, username=None, config_file_path=None, token_path=None):
         if config_file_path is None:
             if os.getenv(USER_HOME) is not None and os.access(os.getenv(USER_HOME), os.W_OK):
-                config_file_path = os.path.join(os.getenv(USER_HOME), '.python_hue_remote')
-            elif 'iPad' in platform.machine() or 'iPhone' in platform.machine() or 'iPad' in platform.machine():
-                config_file_path = os.path.join(os.getenv(USER_HOME), 'Documents', '.python_hue_remote')
+                config_file_path = os.path.join(os.getenv(USER_HOME), ".python_hue_remote")
+            elif (
+                "iPad" in platform.machine()
+                or "iPhone" in platform.machine()
+                or "iPad" in platform.machine()
+            ):
+                config_file_path = os.path.join(
+                    os.getenv(USER_HOME), "Documents", ".python_hue_remote"
+                )
             else:
-                config_file_path = os.path.join(os.getcwd(), '.python_hue_remote')
+                config_file_path = os.path.join(os.getcwd(), ".python_hue_remote")
         self.token = self.get_token(token_path)
         super(RemoteBridge, self).__init__(
-            ip='api.meethue.com', username=username,
-            config_file_path=config_file_path, api='/bridge/')
+            ip="api.meethue.com",
+            username=username,
+            config_file_path=config_file_path,
+            api="/bridge/",
+        )
 
     def get_token(self, token_path=None):
         if token_path is None:
             if os.getenv(USER_HOME) is not None and os.access(os.getenv(USER_HOME), os.W_OK):
-                token_path = os.path.join(os.getenv(USER_HOME), '.python_hue_token')
-            elif 'iPad' in platform.machine() or 'iPhone' in platform.machine() or 'iPad' in platform.machine():
-                token_path = os.path.join(os.getenv(USER_HOME), 'Documents', '.python_hue_token')
+                token_path = os.path.join(os.getenv(USER_HOME), ".python_hue_token")
+            elif (
+                "iPad" in platform.machine()
+                or "iPhone" in platform.machine()
+                or "iPad" in platform.machine()
+            ):
+                token_path = os.path.join(os.getenv(USER_HOME), "Documents", ".python_hue_token")
             else:
-                token_path = os.path.join(os.getcwd(), '.python_hue_token')
+                token_path = os.path.join(os.getcwd(), ".python_hue_token")
         return RemoteToken(load=token_path)
 
     def press_link_button(self):
-        logger.info('Pressing remote virtual link button..')
-        data = {'linkbutton': True}
+        logger.info("Pressing remote virtual link button..")
+        data = {"linkbutton": True}
         connection = httplib.HTTPSConnection(self.ip, timeout=10)
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': self.token.bearer()
-        }
-        connection.request('PUT', '{}{}'.format(self.api, '0/config'),
-                           json.dumps(data), headers)
+        headers = {"Content-Type": "application/json", "Authorization": self.token.bearer()}
+        connection.request("PUT", "{}{}".format(self.api, "0/config"), json.dumps(data), headers)
         result = connection.getresponse()
-        logger.debug('Response from API: {} {}'.format(
-            result.status, result.reason))
+        logger.debug("Response from API: {} {}".format(result.status, result.reason))
         if result.status != 200:
             raise PhueRegistrationException(result.status, result.read())
 
@@ -1339,21 +1391,20 @@ class RemoteBridge(Bridge):
 
 
 class RemoteToken(object):
-    """ A Python Class to interact with the Philips Hue remote access API to
+    """A Python Class to interact with the Philips Hue remote access API to
     manage the associated OAuth2 tokens.
 
     You will need to provide your own account credentials from
     https://developers.meethue.com/user/me/apps
     """
 
-    API =               'api.meethue.com'
-    ENDPOINT_AUTH =     '/oauth2/auth'
-    ENDPOINT_TOKEN =    '/oauth2/token'
-    ENDPOINT_REFRESH =  '/oauth2/refresh'
+    API = "api.meethue.com"
+    ENDPOINT_AUTH = "/oauth2/auth"
+    ENDPOINT_TOKEN = "/oauth2/token"
+    ENDPOINT_REFRESH = "/oauth2/refresh"
 
-    def __init__(self, clientid=None, clientsecret=None, appid=None,
-                 saveto=None, load=None):
-        """ A new token object requires your own credentials from
+    def __init__(self, clientid=None, clientsecret=None, appid=None, saveto=None, load=None):
+        """A new token object requires your own credentials from
         https://developers.meethue.com/user/me/apps
         You will be required to visit a URL (generated by this object) and
         paste in the callback URL that is created after authorisation through
@@ -1380,7 +1431,7 @@ class RemoteToken(object):
 
         if load:
             self.load(load)
-        elif (clientid and clientsecret and appid):
+        elif clientid and clientsecret and appid:
             self.clientid = clientid
             self.clientsecret = clientsecret
             self.appid = appid
@@ -1388,15 +1439,16 @@ class RemoteToken(object):
             # self.state = binascii.b2a_hex(os.urandom(16))
             self.__get_auth_url__()
         else:
-            raise ValueError('Missing required argumets clientid, clientsecret and appid')
+            raise ValueError("Missing required argumets clientid, clientsecret and appid")
 
     def __get_auth_url__(self):
-        URL = 'https://{}{}?clientid={}&appid={}&deviceid=phuepy&devicename=phuepy&response_type=code'.format(
-            self.API, self.ENDPOINT_AUTH, self.clientid, self.appid)
+        URL = "https://{}{}?clientid={}&appid={}&deviceid=phuepy&devicename=phuepy&response_type=code".format(
+            self.API, self.ENDPOINT_AUTH, self.clientid, self.appid
+        )
         return URL
 
     def __authorise__(self, resp):
-        """ Obtains new access and refresh tokens from the Philips Hue API
+        """Obtains new access and refresh tokens from the Philips Hue API
 
         This method is intended to be called from the `__init__` method.
 
@@ -1404,76 +1456,73 @@ class RemoteToken(object):
             None
         """
         parsed = urlparse(resp)
-        code = parse_qs(parsed.query)['code'][0]
+        code = parse_qs(parsed.query)["code"][0]
         # Use the `code` from the callback URL to obtain an nonce from the API
-        params = urlencode({'code': code, 'grant_type': 'authorization_code'})
+        params = urlencode({"code": code, "grant_type": "authorization_code"})
         www_authenticate = self.__get_nonce__(self.ENDPOINT_TOKEN, params)
         # Now exchange the `nonce` and `code` for our tokens.
-        headers = {'Authorization': self.__digest__(
-            self.ENDPOINT_TOKEN, www_authenticate)}
+        headers = {"Authorization": self.__digest__(self.ENDPOINT_TOKEN, www_authenticate)}
         connection = httplib.HTTPSConnection(self.API, timeout=20)
-        connection.request('POST',
-                           self.ENDPOINT_TOKEN + '?' + params,
-                           None,
-                           headers)
+        connection.request("POST", self.ENDPOINT_TOKEN + "?" + params, None, headers)
         self.__parse_token_json__(connection.getresponse())
         connection.close()
 
     def __get_nonce__(self, url, params):
-        """ Obtains an nonce from the Philips Hue API to be used in the
+        """Obtains an nonce from the Philips Hue API to be used in the
         digest calculations.
         Returns a dict containing the `realm` and `nonce` from the
         `WWW-Authenticate` header.
         """
 
         connection = httplib.HTTPSConnection(self.API, timeout=20)
-        connection.request('POST', url + '?' + params)
+        connection.request("POST", url + "?" + params)
         response = connection.getresponse()
-        www_authenticate = response.getheader('WWW-Authenticate')
+        www_authenticate = response.getheader("WWW-Authenticate")
         # Use a regex to parse the string contained in the `WWW-Authenticate`
         # header and obtain the `realm` and `nonce` values.
         # Example header: WWW-Authenticate: Digest realm="oauth2_client@api.meethue.com", nonce="7b6e45de18ac4ee452ee0a0de91dbb10"
         reg = re.compile(r'(\w+)[:=][\s"]?([^",]+)"?')
         www_authenticate = dict(reg.findall(www_authenticate))
-        logger.debug('Obtained nonce: {}, realm: {}'
-                     .format(www_authenticate['nonce'],
-                             www_authenticate['realm']))
+        logger.debug(
+            "Obtained nonce: {}, realm: {}".format(
+                www_authenticate["nonce"], www_authenticate["realm"]
+            )
+        )
         connection.close()
         return www_authenticate
 
     def __parse_token_json__(self, resp):
-        """ Parses the JSON string from the Philips Hue API that is received
+        """Parses the JSON string from the Philips Hue API that is received
         when obtaining a new token or refreshing the tokens.
 
         The expiry time is caluclated and recorded in UTC in the
         `access_token_exp` and `refresh_token_exp` attributes.
         """
 
-        logger.debug('Response from API: {} {}'.format(resp.status, resp.reason))
+        logger.debug("Response from API: {} {}".format(resp.status, resp.reason))
         token = json.loads(resp.read())
-        logger.debug('Text from API: {}'.format(token))
+        logger.debug("Text from API: {}".format(token))
         if resp.status == 200:
-            if token['access_token']:  # All values will be blank if failed due to query error.
-                self.access_token = token['access_token']
-                self.refresh_token = token['refresh_token']
+            if token["access_token"]:  # All values will be blank if failed due to query error.
+                self.access_token = token["access_token"]
+                self.refresh_token = token["refresh_token"]
                 self.access_token_exp = datetime.utcnow() + timedelta(
-                    seconds=(int(token['access_token_expires_in'])))
+                    seconds=(int(token["access_token_expires_in"]))
+                )
                 self.refresh_token_exp = datetime.utcnow() + timedelta(
-                    seconds=(int(token['refresh_token_expires_in'])))
-                self.access_token_exp = self.access_token_exp.replace(
-                    tzinfo=UTC)
-                self.refresh_token_exp = self.refresh_token_exp.replace(
-                    tzinfo=UTC)
+                    seconds=(int(token["refresh_token_expires_in"]))
+                )
+                self.access_token_exp = self.access_token_exp.replace(tzinfo=UTC)
+                self.refresh_token_exp = self.refresh_token_exp.replace(tzinfo=UTC)
                 if self.saveto:
                     self.__save__()
             else:
-                raise PhueAuthorisationError(None,
-                                             'Unable to obtain tokens from API')
+                raise PhueAuthorisationError(None, "Unable to obtain tokens from API")
         else:
-            raise PhueAuthorisationError(token['ErrorCode'], token['Error'])
+            raise PhueAuthorisationError(token["ErrorCode"], token["Error"])
 
     def __utc_to_local__(self, utc_dt):
-        """ Converts a UTC datetime object to an unaware datetime object in
+        """Converts a UTC datetime object to an unaware datetime object in
         local time
         """
 
@@ -1481,8 +1530,8 @@ class RemoteToken(object):
         local_dt = datetime.fromtimestamp(timestamp)
         return local_dt.replace(microsecond=utc_dt.microsecond)
 
-    def __digest__(self, url, www_authenticate, verb='POST'):
-        """ Returns an Authorization header that includes the digest hash
+    def __digest__(self, url, www_authenticate, verb="POST"):
+        """Returns an Authorization header that includes the digest hash
 
         Args:
             url (str): The API endpoint the request will be sent to
@@ -1494,49 +1543,49 @@ class RemoteToken(object):
             header: The Authorization header
         """
 
-        part1 = ':'.join([
-            self.clientid,
-            www_authenticate['realm'],
-            self.clientsecret,
-        ])
-        part3 = ':'.join([verb, url])
+        part1 = ":".join(
+            [
+                self.clientid,
+                www_authenticate["realm"],
+                self.clientsecret,
+            ]
+        )
+        part3 = ":".join([verb, url])
         if PY3K:
             part1 = part1.encode()
             part3 = part3.encode()
-        digest_plain = ':'.join([
-            hashlib.md5(part1).hexdigest(),
-            www_authenticate['nonce'],
-            hashlib.md5(part3).hexdigest(),
-        ])
+        digest_plain = ":".join(
+            [
+                hashlib.md5(part1).hexdigest(),
+                www_authenticate["nonce"],
+                hashlib.md5(part3).hexdigest(),
+            ]
+        )
         if PY3K:
             digest_plain = digest_plain.encode()
-        return ('Digest username="{}", realm="{}", nonce="{}", uri="{}", response="{}"'
-                .format(
-                    self.clientid,
-                    www_authenticate['realm'],
-                    www_authenticate['nonce'],
-                    url,
-                    hashlib.md5(digest_plain).hexdigest()
-                    )
-                )
+        return 'Digest username="{}", realm="{}", nonce="{}", uri="{}", response="{}"'.format(
+            self.clientid,
+            www_authenticate["realm"],
+            www_authenticate["nonce"],
+            url,
+            hashlib.md5(digest_plain).hexdigest(),
+        )
 
     @property
     def access_expires(self):
-        """ Returns a human friendly expiry time in local time.
-        """
+        """Returns a human friendly expiry time in local time."""
 
-        return self.__utc_to_local__(self.access_token_exp).strftime('%c')
+        return self.__utc_to_local__(self.access_token_exp).strftime("%c")
 
     @property
     def refresh_expires(self):
-        """ Returns a human friendly expiry time in local time.
-        """
+        """Returns a human friendly expiry time in local time."""
 
-        return self.__utc_to_local__(self.refresh_token_exp).strftime('%c')
+        return self.__utc_to_local__(self.refresh_token_exp).strftime("%c")
 
     @property
     def refresh_required(self):
-        """ Returns a boolean, `True` if the access token has expired (or will
+        """Returns a boolean, `True` if the access token has expired (or will
         expire in the next 30 minutes) and can be refreshed,
         `False` if the access token is still valid.
         """
@@ -1548,7 +1597,7 @@ class RemoteToken(object):
 
     @property
     def valid(self):
-        """ Returns a boolean, `True` if the access or refresh tokens
+        """Returns a boolean, `True` if the access or refresh tokens
         are still valid, `False` if they are both expired. If `False`, then a
         new `Token` object will need to be created.
         """
@@ -1559,7 +1608,7 @@ class RemoteToken(object):
             return False
 
     def __save__(self, saveto=None):
-        """ Save the token data so it can be loaded later. This is meant to be
+        """Save the token data so it can be loaded later. This is meant to be
         a private method. For normal interaction, use the `save()` method, not
         this `__save__()` method.
 
@@ -1584,20 +1633,22 @@ class RemoteToken(object):
             self.saveto = saveto
         if self.saveto:
             current_state = deepcopy(self.__dict__)
-            current_state.pop('saveto')
-            current_state['access_token_exp'] = (current_state['access_token_exp']
-                                                 .replace(tzinfo=None).isoformat())
-            current_state['refresh_token_exp'] = (current_state['refresh_token_exp']
-                                                  .replace(tzinfo=None).isoformat())
-            with open(self.saveto, 'w') as f:
+            current_state.pop("saveto")
+            current_state["access_token_exp"] = (
+                current_state["access_token_exp"].replace(tzinfo=None).isoformat()
+            )
+            current_state["refresh_token_exp"] = (
+                current_state["refresh_token_exp"].replace(tzinfo=None).isoformat()
+            )
+            with open(self.saveto, "w") as f:
                 text = json.dumps(current_state)
-                logger.debug('Saving text to token file: {}'.format(text))
+                logger.debug("Saving text to token file: {}".format(text))
                 f.write(text)
         else:
-            raise AttributeError('No save location is defined.')
+            raise AttributeError("No save location is defined.")
 
     def save(self, saveto):
-        """ A public method to change (or set) the location for the token file.
+        """A public method to change (or set) the location for the token file.
         The positional parameter `saveto` is required.
 
         If the token file location is updated using this method, the old token
@@ -1613,7 +1664,7 @@ class RemoteToken(object):
         self.refresh(force=True)
 
     def load(self, loadfrom):
-        """ Loads attributes from a JSON string stored in a file written by the
+        """Loads attributes from a JSON string stored in a file written by the
         save method.
 
         Args:
@@ -1621,31 +1672,31 @@ class RemoteToken(object):
         """
 
         try:
-            with open(loadfrom, 'r') as f:
+            with open(loadfrom, "r") as f:
                 text = f.read()
                 current_state = json.loads(text)
-                logger.debug('Loading token from file: {}'.format(text))
+                logger.debug("Loading token from file: {}".format(text))
         except FileNotFoundError:
-            raise PhueInvalidToken(None, 'No token exists yet. Generate one first')
+            raise PhueInvalidToken(None, "No token exists yet. Generate one first")
         try:
             self.saveto = loadfrom
-            self.clientid = current_state['clientid']
-            self.clientsecret = current_state['clientsecret']
-            self.appid = current_state['appid']
-            self.access_token = current_state['access_token']
-            self.refresh_token = current_state['refresh_token']
+            self.clientid = current_state["clientid"]
+            self.clientsecret = current_state["clientsecret"]
+            self.appid = current_state["appid"]
+            self.access_token = current_state["access_token"]
+            self.refresh_token = current_state["refresh_token"]
             self.access_token_exp = datetime.strptime(
-                current_state['access_token_exp'],
-                '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
+                current_state["access_token_exp"], "%Y-%m-%dT%H:%M:%S.%f"
+            ).replace(tzinfo=UTC)
             self.refresh_token_exp = datetime.strptime(
-                current_state['refresh_token_exp'],
-                '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=UTC)
+                current_state["refresh_token_exp"], "%Y-%m-%dT%H:%M:%S.%f"
+            ).replace(tzinfo=UTC)
         except KeyError:
-            raise PhueInvalidToken(None, 'This token file is corrupt or invalid')
+            raise PhueInvalidToken(None, "This token file is corrupt or invalid")
         self.refresh()
 
     def refresh(self, force=False):
-        """ Refreshes the current tokens.
+        """Refreshes the current tokens.
 
         If the access token is still valid (i.e. doesn't expire in the next 30
         minutes), then the tokens won't be refreshed unless the `force`
@@ -1663,36 +1714,33 @@ class RemoteToken(object):
 
         if self.valid:
             if force or self.refresh_required:
-                params = urlencode({'grant_type': 'refresh_token'})
-                www_authenticate = self.__get_nonce__(
-                    self.ENDPOINT_REFRESH, params)
-                data = urlencode({'refresh_token': self.refresh_token})
+                params = urlencode({"grant_type": "refresh_token"})
+                www_authenticate = self.__get_nonce__(self.ENDPOINT_REFRESH, params)
+                data = urlencode({"refresh_token": self.refresh_token})
                 headers = {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': self.__digest__(self.ENDPOINT_REFRESH,
-                                                     www_authenticate)
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": self.__digest__(self.ENDPOINT_REFRESH, www_authenticate),
                 }
                 connection = httplib.HTTPSConnection(self.API, timeout=20)
-                connection.request('POST',
-                                   self.ENDPOINT_REFRESH + '?' + params,
-                                   data,
-                                   headers)
+                connection.request("POST", self.ENDPOINT_REFRESH + "?" + params, data, headers)
                 self.__parse_token_json__(connection.getresponse())
-                logger.info('Token refreshed. Access expires: {}, Refresh Expires: {}'
-                            .format(self.access_token_exp.isoformat(),
-                                    self.refresh_token_exp.isoformat()))
+                logger.info(
+                    "Token refreshed. Access expires: {}, Refresh Expires: {}".format(
+                        self.access_token_exp.isoformat(), self.refresh_token_exp.isoformat()
+                    )
+                )
                 connection.close()
                 return True
             else:
-                logger.info('Refresh not required.')
+                logger.info("Refresh not required.")
                 return False
         else:
-            msg = 'This token has expired. Please generate a new token.'
+            msg = "This token has expired. Please generate a new token."
             logger.exception(msg)
             raise PhueTokenExpired(None, msg)
 
     def bearer(self):
-        """ A convinence method to get the current access token in a format to
+        """A convinence method to get the current access token in a format to
         use in an Authorization header
 
         If the access token needs refreshing, this method will refresh it first,
@@ -1708,44 +1756,48 @@ class RemoteToken(object):
 
         if self.valid:
             self.refresh(force=False)
-            return 'Bearer {}'.format(self.access_token)
+            return "Bearer {}".format(self.access_token)
         else:
-            msg = 'This token has expired. Please generate a new token.'
+            msg = "This token has expired. Please generate a new token."
             logger.exception(msg)
             raise PhueTokenExpired(None, msg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
     logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config-file-path', required=False)
+    parser.add_argument("--config-file-path", required=False)
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--token', action='store_true')
-    group.add_argument('--host')
+    group.add_argument("--token", action="store_true")
+    group.add_argument("--host")
     args = parser.parse_args()
 
     if args.token:
         if os.getenv(USER_HOME) is not None and os.access(os.getenv(USER_HOME), os.W_OK):
-            token_path = os.path.join(os.getenv(USER_HOME), '.python_hue_token')
-        elif 'iPad' in platform.machine() or 'iPhone' in platform.machine() or 'iPad' in platform.machine():
-            token_path = os.path.join(os.getenv(USER_HOME), 'Documents', '.python_hue_token')
+            token_path = os.path.join(os.getenv(USER_HOME), ".python_hue_token")
+        elif (
+            "iPad" in platform.machine()
+            or "iPhone" in platform.machine()
+            or "iPad" in platform.machine()
+        ):
+            token_path = os.path.join(os.getenv(USER_HOME), "Documents", ".python_hue_token")
         else:
-            token_path = os.path.join(os.getcwd(), '.python_hue_token')
-        clientid = input('Client ID: ')
-        clientsecret = input('Client Secret: ')
-        appid = input('App ID: ')
-        saveto = input('Save token to (default: {}): '.format(token_path))
+            token_path = os.path.join(os.getcwd(), ".python_hue_token")
+        clientid = input("Client ID: ")
+        clientsecret = input("Client Secret: ")
+        appid = input("App ID: ")
+        saveto = input("Save token to (default: {}): ".format(token_path))
         if not saveto:
             saveto = token_path
         RemoteToken(clientid, clientsecret, appid, saveto=saveto)
-        print('Saved token to {}'.format(saveto))
+        print("Saved token to {}".format(saveto))
     else:
         while True:
             try:
                 b = Bridge(args.host, config_file_path=args.config_file_path)
                 break
             except PhueRegistrationException as e:
-                input('Press button on Bridge then hit Enter to try again')
+                input("Press button on Bridge then hit Enter to try again")

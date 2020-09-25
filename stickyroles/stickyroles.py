@@ -15,10 +15,11 @@ log = logging.getLogger("red.trusty-cogs.stickyroles")
 @cog_i18n(_)
 class StickyRoles(commands.Cog):
     """
-        Reapplies specific roles on join. Rewritten for V3 from
+    Reapplies specific roles on join. Rewritten for V3 from
 
-        https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py
+    https://github.com/Twentysix26/26-Cogs/blob/master/stickyroles/stickyroles.py
     """
+
     __author__ = ["Twentysix", "TrustyJAID"]
     __version__ = "2.0.1"
 
@@ -29,7 +30,7 @@ class StickyRoles(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -41,7 +42,7 @@ class StickyRoles(commands.Cog):
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         all_guilds = await self.config.all_guilds()
         for guild_id, data in all_guilds.items():

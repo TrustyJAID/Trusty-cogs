@@ -21,7 +21,7 @@ LINK_REGEX = re.compile(
 
 class Chatter(commands.Cog):
     """
-        Train the bot to speak automatically by watching guilds
+    Train the bot to speak automatically by watching guilds
     """
 
     def __init__(self, bot):
@@ -84,7 +84,7 @@ class Chatter(commands.Cog):
 
     async def train_message(self, message):
         """
-            This will handle training the bot on messages
+        This will handle training the bot on messages
         """
         last_author = await self.config.channel(channel).author()
         last_message = await self.config.channel(channel).message()
@@ -103,7 +103,7 @@ class Chatter(commands.Cog):
 
     async def respond_message(self, message):
         """
-            This will handle responding with a message
+        This will handle responding with a message
         """
         pass
 

@@ -76,15 +76,10 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
             team = ""
             if self.source.team:
                 team = _("for {teams} ").format(teams=humanize_list(self.source.team))
-            msg = _(
-                "No schedule could be found {team}in dates between {last_searched}"
-            ).format(
-                team=team,
-                last_searched=self.source._last_searched
+            msg = _("No schedule could be found {team}in dates between {last_searched}").format(
+                team=team, last_searched=self.source._last_searched
             )
-            await self.message.edit(
-                content=msg, embed=None
-            )
+            await self.message.edit(content=msg, embed=None)
             return
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
@@ -108,11 +103,8 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         team = ""
         if self.source.team:
             team = _("for {teams} ").format(teams=humanize_list(self.source.team))
-        msg = _(
-            "No schedule could be found {team}in dates between {last_searched}"
-        ).format(
-            team=team,
-            last_searched=self.source._last_searched
+        msg = _("No schedule could be found {team}in dates between {last_searched}").format(
+            team=team, last_searched=self.source._last_searched
         )
         return msg
 

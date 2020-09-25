@@ -1,7 +1,12 @@
+import json
+
+from pathlib import Path
+
 from .destiny import Destiny
 
 
-__red_end_user_data_statement__ = "This cog stores User ID's linked to an external API token for the purposes of granting OAuth access and information about the external API for the user."
+with open(Path(__file__).parent / "info.json") as fp:
+    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
 
 
 def setup(bot):

@@ -189,7 +189,7 @@ def horizon(background_path, im):
 
 def insert_pic(foreground_path, im, k=0, x=0, y=1000):
     """add Vaporwaveは音楽のジャンルや芸術運動である style pic. k is for nuanced
-	transformations such as rotation and oscillation"""
+    transformations such as rotation and oscillation"""
     print("adding pic:", foreground_path)
 
     foreground = Image.open(foreground_path)

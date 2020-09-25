@@ -13,8 +13,8 @@ log = logging.getLogger("red.trusty-cogs.conversions")
 
 class Conversions(commands.Cog):
     """
-        Gather information about various crypto currencies,
-        rare metals, stocks, and converts to different currencies
+    Gather information about various crypto currencies,
+    rare metals, stocks, and converts to different currencies
     """
 
     __author__ = ["TrustyJAID"]
@@ -29,14 +29,14 @@ class Conversions(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -75,12 +75,12 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            converts from BTC to a given currency.
+        converts from BTC to a given currency.
 
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, "BTC", ammount, currency, full)
@@ -102,12 +102,12 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            converts from ETH to a given currency.
+        converts from ETH to a given currency.
 
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, "ETH", ammount, currency, full)
@@ -129,12 +129,12 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            converts from LTC to a given currency.
+        converts from LTC to a given currency.
 
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, "LTC", ammount, currency, full)
@@ -156,12 +156,12 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            converts from XMR to a given currency.
+        converts from XMR to a given currency.
 
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, "XMR", ammount, currency, full)
@@ -190,12 +190,12 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            converts from BCH to a given currency.
+        converts from BCH to a given currency.
 
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, "BCH", ammount, currency, full)
@@ -223,10 +223,10 @@ class Conversions(commands.Cog):
     @commands.command()
     async def multicoin(self, ctx: commands.Context, *, coins: Optional[str] = None) -> None:
         """
-            Gets the current USD value for a list of coins
+        Gets the current USD value for a list of coins
 
-            `coins` must be a list of white space separated crypto coins
-            e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`
+        `coins` must be a list of white space separated crypto coins
+        e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`
         """
         coin_list = []
         if coins is None:
@@ -246,9 +246,7 @@ class Conversions(commands.Cog):
                         await ctx.send(
                             "The bot owner has not set an API key. "
                             "Please use `{prefix}cryptoapi` to see "
-                            "how to create and setup an API key.".format(
-                                prefix=ctx.clean_prefix
-                            )
+                            "how to create and setup an API key.".format(prefix=ctx.clean_prefix)
                         )
                         return
             for coin in data["data"]:
@@ -285,13 +283,13 @@ class Conversions(commands.Cog):
         full: bool = True,
     ) -> None:
         """
-            Displays the latest information about a specified crypto currency
+        Displays the latest information about a specified crypto currency
 
-            `coin` must be the name or symbol of a crypto coin
-            `[ammount]` is any number to convert the value of defaults to 1 coin
-            `[currency]` is the desired currency you want to convert defaults to USD
-            `[full]` is a True/False value whether to display just the converted amount
-            or the full display for the currency
+        `coin` must be the name or symbol of a crypto coin
+        `[ammount]` is any number to convert the value of defaults to 1 coin
+        `[currency]` is the desired currency you want to convert defaults to USD
+        `[full]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
         """
         if ammount == 1.0:
             embed = await self.crypto_embed(ctx, coin, ammount, currency, full)
@@ -328,9 +326,7 @@ class Conversions(commands.Cog):
                 await ctx.send(
                     "The bot owner has not set an API key. "
                     "Please use `{prefix}cryptoapi` to see "
-                    "how to create and setup an API key.".format(
-                        prefix=ctx.clean_prefix
-                    )
+                    "how to create and setup an API key.".format(prefix=ctx.clean_prefix)
                 )
                 return None
         if coin_data == {}:
@@ -412,10 +408,10 @@ class Conversions(commands.Cog):
     @commands.command()
     async def gold(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
         """
-            Converts gold in ounces to a given currency.
+        Converts gold in ounces to a given currency.
 
-            `ammount` must be a number of ounces to convert defaults to 1 ounce
-            `[currency]` must be a valid currency defaults to USD
+        `ammount` must be a number of ounces to convert defaults to 1 ounce
+        `[currency]` must be a valid currency defaults to USD
         """
         GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key="
         api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
@@ -439,10 +435,10 @@ class Conversions(commands.Cog):
     @commands.command()
     async def silver(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
         """
-            Converts silver in ounces to a given currency.
+        Converts silver in ounces to a given currency.
 
-            `[ammount]` must be a number of ounces to convert defaults to 1 ounce
-            `[currency]` must be a valid currency defaults to USD
+        `[ammount]` must be a number of ounces to convert defaults to 1 ounce
+        `[currency]` must be a valid currency defaults to USD
         """
         SILVER = "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key={}"
         api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
@@ -470,10 +466,10 @@ class Conversions(commands.Cog):
         self, ctx: commands.Context, ammount: int = 1, currency: str = "USD"
     ) -> None:
         """
-            Converts platinum in ounces to a given currency.
+        Converts platinum in ounces to a given currency.
 
-            `[ammount]` must be a number of ounces to convert defaults to 1 ounce
-            `[currency]` must be a valid currency defaults to USD
+        `[ammount]` must be a number of ounces to convert defaults to 1 ounce
+        `[currency]` must be a valid currency defaults to USD
         """
         PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key={}"
         api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
@@ -499,10 +495,10 @@ class Conversions(commands.Cog):
     @commands.command(aliases=["ticker"])
     async def stock(self, ctx: commands.Context, ticker: str, currency: str = "USD") -> None:
         """
-            Gets current ticker symbol price.
+        Gets current ticker symbol price.
 
-            `<ticker>` is the ticker symbol you want to look up
-            `[currency]` is the currency you want to convert to defaults to USD
+        `<ticker>` is the ticker symbol you want to look up
+        `[currency]` is the currency you want to convert to defaults to USD
         """
         stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key={}"
         api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
@@ -531,7 +527,7 @@ class Conversions(commands.Cog):
     @commands.is_owner()
     async def cryptoapi(self, ctx: commands.Context) -> None:
         """
-            Instructions for how to setup the stock API
+        Instructions for how to setup the stock API
         """
         msg = (
             "1. Go to https://coinmarketcap.com/api/ sign up for an account.\n"
@@ -544,7 +540,7 @@ class Conversions(commands.Cog):
     @commands.is_owner()
     async def stockapi(self, ctx: commands.Context) -> None:
         """
-            Instructions for how to setup the stock API
+        Instructions for how to setup the stock API
         """
         msg = (
             "1. Go to https://www.quandl.com/ sign up for an account.\n"
@@ -562,11 +558,11 @@ class Conversions(commands.Cog):
         currency2: str = "GBP",
     ) -> None:
         """
-            Converts a value between 2 different currencies
+        Converts a value between 2 different currencies
 
-            `[ammount]` is the ammount you want to convert default is 1
-            `[currency1]` is the currency you have default is USD
-            `[currency2]` is the currency you want to convert to default is GBP
+        `[ammount]` is the ammount you want to convert default is 1
+        `[currency1]` is the currency you have default is USD
+        `[currency2]` is the currency you want to convert to default is GBP
         """
         currency1 = currency1.upper()
         currency2 = currency2.upper()

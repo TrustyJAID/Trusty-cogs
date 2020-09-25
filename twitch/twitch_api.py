@@ -21,7 +21,7 @@ BASE_URL = "https://api.twitch.tv/helix"
 
 class TwitchAPI:
     """
-        Get twitch user information and post when a user gets new followers
+    Get twitch user information and post when a user gets new followers
     """
 
     config: Config
@@ -146,9 +146,7 @@ class TwitchAPI:
         em = discord.Embed(colour=int("6441A4", 16))
         em.description = profile.description
         url = "https://twitch.tv/{}".format(profile.login)
-        em.set_author(
-            name=profile.display_name, url=url, icon_url=profile.profile_image_url
-        )
+        em.set_author(name=profile.display_name, url=url, icon_url=profile.profile_image_url)
         em.set_image(url=profile.offline_image_url)
         em.set_thumbnail(url=profile.profile_image_url)
         footer_text = "{} Viewer count".format(profile.view_count)

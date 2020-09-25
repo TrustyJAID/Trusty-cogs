@@ -9,8 +9,9 @@ from typing import Optional
 
 class TarotReading(commands.Cog):
     """
-        Post information about tarot cards and readings
+    Post information about tarot cards and readings
     """
+
     __author__ = ["TrustyJAID"]
     __version__ = "1.0.0"
 
@@ -20,14 +21,14 @@ class TarotReading(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 

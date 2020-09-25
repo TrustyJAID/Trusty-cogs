@@ -11,7 +11,7 @@ numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 
 class Halo(commands.Cog):
     """
-        Display Halo 5 and Halo Wars 2 stats and information
+    Display Halo 5 and Halo Wars 2 stats and information
     """
 
     def __init__(self, bot):
@@ -23,7 +23,7 @@ class Halo(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -55,7 +55,7 @@ class Halo(commands.Cog):
         self, ctx, post_list: list, message: discord.Message = None, page=0, timeout: int = 30
     ):
         """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
+        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         s = post_list[page]
         created_at = ctx.message.created_at
         desc = "Created at: {}".format(created_at)
@@ -123,7 +123,7 @@ class Halo(commands.Cog):
         self, ctx, post_list: list, message: discord.Message = None, page=0, timeout: int = 30
     ):
         """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
+        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         s = post_list[page]
         created_at = ctx.message.created_at
         desc = "Created at: {}".format(created_at)

@@ -44,6 +44,7 @@ class Oilers:
                 await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
+
         return self.bot.loop.create_task(task())
 
     def reset_light_setting(self):

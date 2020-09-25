@@ -13,7 +13,7 @@ UNICODE_RE = re.compile("|".join(rf"{re.escape(w)}" for w in UNICODE_EMOJI.keys(
 @cog_i18n(_)
 class EmojiReactions(commands.Cog):
     """
-        Automatically react to messages with emojis in them with the emoji
+    Automatically react to messages with emojis in them with the emoji
     """
 
     def __init__(self, bot):
@@ -24,7 +24,7 @@ class EmojiReactions(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -32,7 +32,7 @@ class EmojiReactions(commands.Cog):
     @checks.admin_or_permissions(manage_messages=True)
     async def emojireact(self, ctx):
         """
-            Automatically react to messages with emojis in them with the emoji
+        Automatically react to messages with emojis in them with the emoji
         """
         if ctx.invoked_subcommand is None:
             guild = ctx.message.guild

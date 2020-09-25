@@ -168,7 +168,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         tr_keys = {
             "requests": _("API Requests:"),
             "detect": _("API Detect Language:"),
-            "characters": _("Characters requested:")
+            "characters": _("Characters requested:"),
         }
         count = (
             self._guild_counter[guild.id]

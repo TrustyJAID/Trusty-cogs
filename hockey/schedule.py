@@ -66,11 +66,11 @@ class Schedule(menus.PageSource):
 
     async def next(self, skip: bool = False):
         """
-            Returns the next element from the list
+        Returns the next element from the list
 
-            If all elements have been traversed attempt to pull new data
+        If all elements have been traversed attempt to pull new data
 
-            If no new data can be found within a reasonable number of calls stop
+        If no new data can be found within a reasonable number of calls stop
         """
         self._index += 1
         if self._index > (len(self._cache) - 1) or skip:
@@ -89,13 +89,13 @@ class Schedule(menus.PageSource):
 
     async def prev(self, skip: bool = False):
         """
-            Returns the previous element from the list
+        Returns the previous element from the list
 
-            If all elements have been traversed pull new data
+        If all elements have been traversed pull new data
 
-            If no new data can be found within a reasonable number of calls stop
-            (this one is expected to have more time between calls)
-            I wonder if I should traverse weekly instead of daily :blobthink:
+        If no new data can be found within a reasonable number of calls stop
+        (this one is expected to have more time between calls)
+        I wonder if I should traverse weekly instead of daily :blobthink:
         """
         self._index -= 1
         if self._index < 0 or skip:
@@ -130,7 +130,7 @@ class Schedule(menus.PageSource):
         _prev: bool = False,
     ):
         """
-            Actually grab the list of games.
+        Actually grab the list of games.
         """
         # compare_date = datetime.utcnow().strftime("%Y-%m-%d")
         if date:

@@ -25,8 +25,9 @@ log = logging.getLogger("red.Trusty-cogs.badges")
 @cog_i18n(_)
 class Badges(commands.Cog):
     """
-        Create fun fake badges based on your discord profile
+    Create fun fake badges based on your discord profile
     """
+
     __author__ = ["TrustyJAID"]
     __version__ = "1.1.1"
 
@@ -40,14 +41,14 @@ class Badges(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -243,10 +244,10 @@ class Badges(commands.Cog):
     @commands.command(aliases=["badge"])
     async def badges(self, ctx: commands.Context, *, badge: str) -> None:
         """
-            Creates a fun fake badge based on your discord profile
+        Creates a fun fake badge based on your discord profile
 
-            `badge` is the name of the badges
-            do `[p]listbadges` to see available badges
+        `badge` is the name of the badges
+        do `[p]listbadges` to see available badges
         """
         guild = ctx.message.guild
         user = ctx.message.author
@@ -270,11 +271,11 @@ class Badges(commands.Cog):
     @commands.command(aliases=["gbadge"])
     async def gbadges(self, ctx: commands.Context, *, badge: str) -> None:
         """
-            Creates a fun fake gif badge based on your discord profile
-            this only works if you have a gif avatar
+        Creates a fun fake gif badge based on your discord profile
+        this only works if you have a gif avatar
 
-            `badge` is the name of the badges
-            do `[p]listbadges` to see available badges
+        `badge` is the name of the badges
+        do `[p]listbadges` to see available badges
         """
         guild = ctx.message.guild
         user = ctx.message.author
@@ -296,7 +297,7 @@ class Badges(commands.Cog):
     @commands.command()
     async def listbadges(self, ctx: commands.Context) -> None:
         """
-            List the available badges that can be created
+        List the available badges that can be created
         """
         # guild = ctx.message.guild
         global_badges = await self.config.badges()

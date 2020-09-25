@@ -26,7 +26,9 @@ class ImmortalAlert(MixinMeta):
             async with self.config.guild(ctx.guild).immortal_roles() as data:
                 data.remove(role.id)
             await ctx.send(
-                _("{role} will no longer receive notifications on immortals.").format(role=role.name)
+                _("{role} will no longer receive notifications on immortals.").format(
+                    role=role.name
+                )
             )
         else:
             async with self.config.guild(ctx.guild).immortal_roles() as data:

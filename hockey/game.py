@@ -27,8 +27,8 @@ GAME_TYPES = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Seas
 
 class Game:
     """
-        This is the object that handles game information
-        game state updates and goal posts
+    This is the object that handles game information
+    game state updates and goal posts
     """
 
     game_id: int
@@ -139,13 +139,13 @@ class Game:
     @staticmethod
     async def get_games(team=None, start_date: datetime = None, end_date: datetime = None):
         """
-            Get a specified days games, defaults to the current day
-            requires a datetime object
-            returns a list of game objects
-            if a start date and an end date are not provided to the url
-            it returns only todays games
+        Get a specified days games, defaults to the current day
+        requires a datetime object
+        returns a list of game objects
+        if a start date and an end date are not provided to the url
+        it returns only todays games
 
-            returns a list of game objects
+        returns a list of game objects
         """
         games_list = await Game.get_games_list(team, start_date, end_date)
         return_games_list = []
@@ -165,13 +165,13 @@ class Game:
     @staticmethod
     async def get_games_list(team=None, start_date: datetime = None, end_date: datetime = None):
         """
-            Get a specified days games, defaults to the current day
-            requires a datetime object
-            returns a list of game objects
-            if a start date and an end date are not provided to the url
-            it returns only todays games
+        Get a specified days games, defaults to the current day
+        requires a datetime object
+        returns a list of game objects
+        if a start date and an end date are not provided to the url
+        it returns only todays games
 
-            returns a list of games
+        returns a list of games
         """
         start_date_str = start_date.strftime("%Y-%m-%d") if start_date is not None else None
         end_date_str = end_date.strftime("%Y-%m-%d") if end_date is not None else None
@@ -200,7 +200,7 @@ class Game:
     @staticmethod
     async def get_game_embed(post_list, page):
         """
-            Makes the game object from provided URL
+        Makes the game object from provided URL
         """
         game = post_list[page]
 
@@ -221,8 +221,8 @@ class Game:
         period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
     ):
         """
-            Builds the game embed when the command is called
-            provides as much data as possible
+        Builds the game embed when the command is called
+        provides as much data as possible
         """
         team_url = (
             TEAMS[self.home_team]["team_url"] if self.home_team in TEAMS else "https://nhl.com"
@@ -350,7 +350,7 @@ class Game:
 
     async def game_state_embed(self):
         """
-            Makes the game state embed based on the game self provided
+        Makes the game state embed based on the game self provided
         """
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
@@ -413,7 +413,7 @@ class Game:
 
     async def get_stats_msg(self):
         """
-            returns team stats on the season from standings object
+        returns team stats on the season from standings object
         """
         msg = "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
         streak_types = {"wins": "W", "losses": "L", "ot": "OT"}
@@ -457,7 +457,7 @@ class Game:
         end_third = self.period_time_left == "END" and self.period == 3
         if self.game_state == "Preview":
             """Checks if the the game state has changes from Final to Preview
-               Could be unnecessary since after Game Final it will check for next game
+            Could be unnecessary since after Game Final it will check for next game
             """
             time_now = datetime.utcnow()
             # game_time = datetime.strptime(data.game_start, "%Y-%m-%dT%H:%M:%SZ")
@@ -537,7 +537,7 @@ class Game:
 
     async def period_recap(self, bot, period: Literal["1st", "2nd", "3rd"]):
         """
-            Builds the period recap
+        Builds the period recap
         """
         em = await self.make_game_embed(False, period)
         tasks = []
@@ -561,7 +561,7 @@ class Game:
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
     ):
         """
-            Posts the period recap in designated channels
+        Posts the period recap in designated channels
         """
         if not channel.permissions_for(channel.guild.me).send_messages:
             log.debug(
@@ -585,8 +585,8 @@ class Game:
 
     async def post_game_state(self, bot):
         """
-            When a game state has changed this is called to create the embed
-            and post in all channels
+        When a game state has changed this is called to create the embed
+        and post in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
         state_embed = await self.game_state_embed()
@@ -712,7 +712,7 @@ class Game:
 
     async def check_team_goals(self, bot):
         """
-            Checks to see if a goal needs to be posted
+        Checks to see if a goal needs to be posted
         """
         home_team_data = await get_team(bot, self.home_team)
         away_team_data = await get_team(bot, self.away_team)
@@ -758,7 +758,7 @@ class Game:
 
     async def save_game_state(self, bot, time_to_game_start: str = "0"):
         """
-            Saves the data do the config to compare against new data
+        Saves the data do the config to compare against new data
         """
         home = await get_team(bot, self.home_team)
         away = await get_team(bot, self.away_team)
@@ -798,7 +798,7 @@ class Game:
 
     async def post_time_to_game_start(self, bot, time_left):
         """
-            Post when there is 60, 30, and 10 minutes until the game starts in all channels
+        Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
         msg = _("{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!").format(

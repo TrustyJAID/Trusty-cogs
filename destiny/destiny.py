@@ -27,7 +27,7 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 @cog_i18n(_)
 class Destiny(DestinyAPI, commands.Cog):
     """
-        Get information from the Destiny 2 API
+    Get information from the Destiny 2 API
     """
 
     __version__ = "1.3.4"
@@ -48,7 +48,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -60,7 +60,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
 
@@ -109,7 +109,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @destiny.group(aliases=["s"])
     async def search(self, ctx: commands.Context) -> None:
         """
-            Search for a destiny item, vendor, record, etc.
+        Search for a destiny item, vendor, record, etc.
         """
         pass
 
@@ -117,7 +117,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def items(self, ctx: commands.Context, *, search: str) -> None:
         """
-            Search for a specific item in Destiny 2
+        Search for a specific item in Destiny 2
         """
         try:
             items = await self.search_definition("DestinyInventoryItemDefinition", search)
@@ -156,8 +156,8 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def user(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
-            Display a menu of your basic characters info
-            `[user]` A member on the server who has setup their account on this bot.
+        Display a menu of your basic characters info
+        `[user]` A member on the server who has setup their account on this bot.
         """
         if not await self.has_oauth(ctx, user):
             return
@@ -223,7 +223,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def lore(self, ctx: commands.Context, entry: str = None) -> None:
         """
-            Find Destiny Lore
+        Find Destiny Lore
         """
         if not await self.config.manifest_version():
             return await ctx.send(_("The manifest needs to be downloaded for this to work."))
@@ -256,9 +256,9 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def xur(self, ctx: commands.Context, full: bool = False) -> None:
         """
-            Display a menu of Xûr's current wares
+        Display a menu of Xûr's current wares
 
-            `[full=False]` Show perk definition on Xûr's current wares
+        `[full=False]` Show perk definition on Xûr's current wares
         """
         if not await self.has_oauth(ctx):
             return
@@ -336,7 +336,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def eververse(self, ctx: commands.Context) -> None:
         """
-            Display items available on the eververse right now
+        Display items available on the eververse right now
         """
         if not await self.has_oauth(ctx):
             return
@@ -382,10 +382,10 @@ class Destiny(DestinyAPI, commands.Cog):
         self, ctx: commands.Context, full: Optional[bool] = False, user: discord.Member = None
     ) -> None:
         """
-            Display a menu of each characters equipped weapons and their info
+        Display a menu of each characters equipped weapons and their info
 
-            `[full=False]` Display full information about weapons equipped.
-            `[user]` A member on the server who has setup their account on this bot.
+        `[full=False]` Display full information about weapons equipped.
+        `[user]` A member on the server who has setup their account on this bot.
         """
         if not await self.has_oauth(ctx, user):
             return
@@ -492,7 +492,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def gambit(self, ctx: commands.Context) -> None:
         """
-            Display a menu of each characters gambit stats
+        Display a menu of each characters gambit stats
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny stats gambit"
@@ -502,7 +502,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def pvp(self, ctx: commands.Context) -> None:
         """
-            Display a menu of each characters pvp stats
+        Display a menu of each characters pvp stats
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny stats pvp"
@@ -512,7 +512,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def raid(self, ctx: commands.Context) -> None:
         """
-            Display a menu for each characters RAID stats
+        Display a menu for each characters RAID stats
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny stats raid"
@@ -522,7 +522,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def quickplay(self, ctx: commands.Context) -> None:
         """
-            Display a menu of past quickplay matches
+        Display a menu of past quickplay matches
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny history pvpquickplay"
@@ -532,20 +532,20 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def history(self, ctx: commands.Context, activity: DestinyActivity) -> None:
         """
-            Display a meny of each characters last 5 activities
+        Display a meny of each characters last 5 activities
 
-            `<activity>` The activity type to display stats on available types include:
-            all, story, strike, raid, allpvp, patrol, allpve, control, clash,
-            crimsondoubles, nightfall, heroicnightfall, allstrikes, ironbanner, allmayhem,
-            supremacy, privatematchesall, survival, countdown, trialsofthenine, social,
-            trialscountdown, trialssurvival, ironbannercontrol, ironbannerclash,
-            ironbannersupremacy, scorednightfall, scoredheroicnightfall, rumble, alldoubles,
-            doubles, privatematchesclash, privatematchescontrol, privatematchessupremacy,
-            privatematchescountdown, privatematchessurvival, privatematchesmayhem,
-            privatematchesrumble, heroicadventure, showdown, lockdown, scorched,
-            scorchedteam, gambit, allpvecompetitive, breakthrough, blackarmoryrun,
-            salvage, ironbannersalvage, pvpcompetitive, pvpquickplay, clashquickplay,
-            clashcompetitive, controlquickplay, and controlcompetitive
+        `<activity>` The activity type to display stats on available types include:
+        all, story, strike, raid, allpvp, patrol, allpve, control, clash,
+        crimsondoubles, nightfall, heroicnightfall, allstrikes, ironbanner, allmayhem,
+        supremacy, privatematchesall, survival, countdown, trialsofthenine, social,
+        trialscountdown, trialssurvival, ironbannercontrol, ironbannerclash,
+        ironbannersupremacy, scorednightfall, scoredheroicnightfall, rumble, alldoubles,
+        doubles, privatematchesclash, privatematchescontrol, privatematchessupremacy,
+        privatematchescountdown, privatematchessurvival, privatematchesmayhem,
+        privatematchesrumble, heroicadventure, showdown, lockdown, scorched,
+        scorchedteam, gambit, allpvecompetitive, breakthrough, blackarmoryrun,
+        salvage, ironbannersalvage, pvpcompetitive, pvpquickplay, clashquickplay,
+        clashcompetitive, controlquickplay, and controlcompetitive
         """
         if not await self.has_oauth(ctx):
             return
@@ -837,9 +837,9 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True) -> None:
         """
-            Display each characters stats for a specific activity
-            `<activity>` The type of stats to display, available options are:
-            `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
+        Display each characters stats for a specific activity
+        `<activity>` The type of stats to display, available options are:
+        `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
         if not await self.has_oauth(ctx):
             return
@@ -864,7 +864,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def manifest(self, ctx: commands.Context) -> None:
         """
-            See the current manifest version and optionally re-download it
+        See the current manifest version and optionally re-download it
         """
         version = await self.config.manifest_version()
         if not version:

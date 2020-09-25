@@ -34,9 +34,7 @@ class MinibossAlert(MixinMeta):
             async with self.config.guild(ctx.guild).miniboss_roles() as data:
                 data.append(role.id)
             await ctx.send(
-                _("{role} will now receive notifications on minibosses.").format(
-                    role=role.name
-                )
+                _("{role} will now receive notifications on minibosses.").format(role=role.name)
             )
 
     @commands.guild_only()

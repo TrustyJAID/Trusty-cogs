@@ -23,14 +23,14 @@ class APNGFilter(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -39,7 +39,7 @@ class APNGFilter(commands.Cog):
     @commands.bot_has_permissions(manage_messages=True)
     async def apngfilter(self, ctx: commands.Context) -> None:
         """
-            Toggle APNG filters on the server
+        Toggle APNG filters on the server
         """
         if await self.config.guild(ctx.guild).enabled():
             await self.config.guild(ctx.guild).enabled.set(False)

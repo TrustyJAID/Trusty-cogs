@@ -1,4 +1,3 @@
-
 class TweetEntry:
     def __init__(
         self,

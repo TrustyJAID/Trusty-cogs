@@ -1,9 +1,12 @@
+import json
+
+from pathlib import Path
+
 from .chatter import Chatter
 
 
-__red_end_user_data_statement__ = (
-    "This cog extracts user messages for the purposes of training the chat response algorithm."
-)
+with open(Path(__file__).parent / "info.json") as fp:
+    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
 
 
 def setup(bot):

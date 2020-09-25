@@ -437,7 +437,7 @@ FACES = [
 
 class Faces(commands.Cog):
     """
-        Generate fun/random unicode faces courtesy of the CIA files
+    Generate fun/random unicode faces courtesy of the CIA files
     """
 
     def __init__(self, bot):
@@ -445,7 +445,7 @@ class Faces(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 

@@ -23,7 +23,8 @@ class LoadDev(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828)
         self.config.register_global(
-            replace_mock=None, auto_load_dev=False,
+            replace_mock=None,
+            auto_load_dev=False,
         )
         self.bot.loop.create_task(self.initialize())
 
@@ -48,14 +49,14 @@ class LoadDev(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -63,16 +64,16 @@ class LoadDev(commands.Cog):
     @checks.is_owner()
     async def devset(self, ctx: commands.Context):
         """
-            Settings for automatically loading/unloading cores dev
-            using this cog
+        Settings for automatically loading/unloading cores dev
+        using this cog
         """
 
     @devset.command()
     async def autoload(self, ctx: commands.Context, auto_load: bool):
         """
-            Whether or not to automatically load dev when this cog is loaded.
+        Whether or not to automatically load dev when this cog is loaded.
 
-            Note: This does not affect the CLI flag `--dev`
+        Note: This does not affect the CLI flag `--dev`
         """
         await self.config.auto_load_dev.set(auto_load)
         if auto_load:
@@ -83,7 +84,7 @@ class LoadDev(commands.Cog):
     @devset.command()
     async def replacemock(self, ctx: commands.Context, replacement: Optional[str]):
         """
-            Set an automatic replacemetn for `[p]mock` when auto loading dev.
+        Set an automatic replacemetn for `[p]mock` when auto loading dev.
         """
         await self.config.replace_mock.set(replacement)
         if replacement:
@@ -99,10 +100,10 @@ class LoadDev(commands.Cog):
     @checks.is_owner()
     async def load_dev(self, ctx: commands.Context, replace_mock: Optional[str] = None):
         """
-            Dynamically loads dev cog
+        Dynamically loads dev cog
 
-            `[replace_mock]` the replacement command name for `[p]mock`
-            If nothing is provided this will not replace `[p]mock`.
+        `[replace_mock]` the replacement command name for `[p]mock`
+        If nothing is provided this will not replace `[p]mock`.
         """
         dev = Dev()
         # log.debug(dir(dev))
@@ -125,7 +126,7 @@ class LoadDev(commands.Cog):
     @checks.is_owner()
     async def unload_dev(self, ctx: commands.Context):
         """
-            Unload Dev
+        Unload Dev
         """
         self.bot.remove_cog("Dev")
         await ctx.send(_("The following package was unloaded: `{pack}`").format(pack="dev"))

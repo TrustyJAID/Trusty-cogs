@@ -59,7 +59,7 @@ class TweetListener(tw.StreamListener):
 @cog_i18n(_)
 class Tweets(commands.Cog):
     """
-        Cog for displaying info from Twitter's API
+    Cog for displaying info from Twitter's API
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
@@ -88,14 +88,14 @@ class Tweets(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -329,7 +329,7 @@ class Tweets(commands.Cog):
         timeout: int = 30,
     ) -> None:
         """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
+        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         s = post_list[page]
         em = None
         if ctx.channel.permissions_for(ctx.me).embed_links:
@@ -397,9 +397,9 @@ class Tweets(commands.Cog):
     @checks.is_owner()
     async def send_tweet(self, ctx: commands.Context, *, message: str) -> None:
         """
-            Allows the owner to send tweets through discord
+        Allows the owner to send tweets through discord
 
-            Upload an image to send an image with it as well.
+        Upload an image to send an image with it as well.
         """
         try:
             api = await self.authenticate()
@@ -428,11 +428,11 @@ class Tweets(commands.Cog):
     @_tweets.command(name="trends")
     async def trends(self, ctx: commands.Context, *, location: str = "United States") -> None:
         """
-            Gets twitter trends for a given location
+        Gets twitter trends for a given location
 
-            You can provide a location and it will try to get
-            different trend information from that location
-            default is `United States`
+        You can provide a location and it will try to get
+        different trend information from that location
+        default is `United States`
         """
         api = await self.authenticate()
         try:
@@ -551,9 +551,9 @@ class Tweets(commands.Cog):
         self, ctx: commands.context, username: str, count: Optional[int] = 10, replies: bool = True
     ) -> None:
         """
-            Display a users tweets as a scrollable message
+        Display a users tweets as a scrollable message
 
-            defaults to 10 tweets
+        defaults to 10 tweets
         """
         msg_list = []
         api = await self.authenticate()
@@ -620,9 +620,9 @@ class Tweets(commands.Cog):
     @_autotweet.command(name="embeds")
     async def set_custom_embeds(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
         """
-            Set a channel to use custom embeds for tweets or discords automatic ones.
+        Set a channel to use custom embeds for tweets or discords automatic ones.
 
-            (default is enabled for custom embeds)
+        (default is enabled for custom embeds)
         """
         current = await self.config.channel(channel).custom_embeds()
         if current:
@@ -650,9 +650,9 @@ class Tweets(commands.Cog):
     @_autotweet.command(name="replies")
     async def _replies(self, ctx: commands.context, username: str) -> None:
         """
-            Toggle an accounts replies being posted
+        Toggle an accounts replies being posted
 
-            This is checked on `autotweet` as well as `gettweets`
+        This is checked on `autotweet` as well as `gettweets`
         """
         username = username.lower()
         edited_account = None
@@ -686,10 +686,10 @@ class Tweets(commands.Cog):
         self, ctx: commands.context, username: str, channel: discord.TextChannel = None
     ) -> None:
         """
-            Adds a twitter username to the specified channel
+        Adds a twitter username to the specified channel
 
-            `username` needs to be the @handle for the twitter username
-            `channel` has to be a valid server channel, defaults to the current channel
+        `username` needs to be the @handle for the twitter username
+        `channel` has to be a valid server channel, defaults to the current channel
         """
         user_id = None
         screen_name = None
@@ -764,8 +764,8 @@ class Tweets(commands.Cog):
         self, channel: discord.TextChannel, user_id: int, screen_name: str
     ) -> bool:
         """
-            Adds a twitter account to the specified channel.
-            Returns False if it is already in the channel.
+        Adds a twitter account to the specified channel.
+        Returns False if it is already in the channel.
         """
         # followed_accounts = await self.config.accounts()
 
@@ -801,12 +801,12 @@ class Tweets(commands.Cog):
         channel: discord.TextChannel = None,
     ) -> None:
         """
-            Add an entire twitter list to a specified channel.
+        Add an entire twitter list to a specified channel.
 
-            The list must be public or the bot owner must own it.
-            `owner` is the owner of the list's @handle
-            `list_name` is the name of the list
-            `channel` is the channel where the tweets will be posted
+        The list must be public or the bot owner must own it.
+        `owner` is the owner of the list's @handle
+        `list_name` is the name of the list
+        `channel` is the channel where the tweets will be posted
         """
         api = await self.authenticate()
         try:
@@ -873,12 +873,12 @@ class Tweets(commands.Cog):
         channel: discord.TextChannel = None,
     ) -> None:
         """
-            Remove an entire twitter list from a specified channel.
+        Remove an entire twitter list from a specified channel.
 
-            The list must be public or the bot owner must own it.
-            `owner` is the owner of the list's @handle
-            `list_name` is the name of the list
-            `channel` is the channel where the tweets will be posted
+        The list must be public or the bot owner must own it.
+        `owner` is the owner of the list's @handle
+        `list_name` is the name of the list
+        `channel` is the channel where the tweets will be posted
         """
         api = await self.authenticate()
         try:
@@ -944,10 +944,10 @@ class Tweets(commands.Cog):
         self, ctx, username: str, channel: Optional[discord.TextChannel] = None
     ) -> None:
         """
-            Removes a twitter username to the specified channel
+        Removes a twitter username to the specified channel
 
-            `username` must be the users @handle
-            `channel` is the channel where the username is currently being posted
+        `username` must be the users @handle
+        `channel` is the channel where the username is currently being posted
         """
         username = username.lower()
         api = await self.authenticate()

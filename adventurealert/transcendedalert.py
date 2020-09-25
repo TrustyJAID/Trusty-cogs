@@ -26,7 +26,9 @@ class TranscendedAlert(MixinMeta):
             async with self.config.guild(ctx.guild).transcended_roles() as data:
                 data.remove(role.id)
             await ctx.send(
-                _("{role} will no longer receive notifications on transcendeds.").format(role=role.name)
+                _("{role} will no longer receive notifications on transcendeds.").format(
+                    role=role.name
+                )
             )
         else:
             async with self.config.guild(ctx.guild).transcended_roles() as data:
@@ -72,7 +74,9 @@ class TranscendedAlert(MixinMeta):
             )
         else:
             await ctx.send(
-                _("{user_id} is not receiving notifications on transcendeds.").format(user_id=user_id)
+                _("{user_id} is not receiving notifications on transcendeds.").format(
+                    user_id=user_id
+                )
             )
 
     @commands.Cog.listener()

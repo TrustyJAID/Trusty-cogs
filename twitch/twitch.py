@@ -22,7 +22,7 @@ BASE_URL = "https://api.twitch.tv/helix"
 
 class Twitch(TwitchAPI, commands.Cog):
     """
-        Get twitch user information and post when a user gets new followers
+    Get twitch user information and post when a user gets new followers
     """
 
     __author__ = ["TrustyJAID"]
@@ -44,7 +44,7 @@ class Twitch(TwitchAPI, commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -56,7 +56,7 @@ class Twitch(TwitchAPI, commands.Cog):
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
 
@@ -72,7 +72,9 @@ class Twitch(TwitchAPI, commands.Cog):
         if not central_key:
             try:
                 await self.bot.set_shared_api_tokens(
-                    "twitch", client_id=keys["client_id"], client_secret=keys["client_secret"],
+                    "twitch",
+                    client_id=keys["client_id"],
+                    client_secret=keys["client_secret"],
                 )
             except AttributeError:
                 await self.bot.db.api_tokens.set_raw(
@@ -99,7 +101,7 @@ class Twitch(TwitchAPI, commands.Cog):
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
-            Setup a channel for automatic follow notifications
+        Setup a channel for automatic follow notifications
         """
         if channel is None:
             channel = ctx.channel
@@ -148,7 +150,7 @@ class Twitch(TwitchAPI, commands.Cog):
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
-            Test channel for automatic follow notifications
+        Test channel for automatic follow notifications
         """
         if channel is None:
             channel = ctx.channel
@@ -170,10 +172,7 @@ class Twitch(TwitchAPI, commands.Cog):
         if channel.permissions_for(channel.guild.me).embed_links:
             await channel.send(embed=em)
         else:
-            text_msg = (
-                f"{profile.display_name} has just "
-                f"followed {account.display_name}!"
-            )
+            text_msg = f"{profile.display_name} has just " f"followed {account.display_name}!"
             await channel.send(text_msg)
 
     @twitchhelp.command(name="remfollow", aliases=["remove", "delete", "del"])
@@ -183,8 +182,8 @@ class Twitch(TwitchAPI, commands.Cog):
         self, ctx: commands.Context, twitch_name: str, channel: discord.TextChannel = None
     ) -> None:
         """
-            Remove an account from follow notifications in the specified channel
-            defaults to the current channel
+        Remove an account from follow notifications in the specified channel
+        defaults to the current channel
         """
         if channel is None:
             channel = ctx.channel
@@ -224,7 +223,7 @@ class Twitch(TwitchAPI, commands.Cog):
     @twitchhelp.command(name="set")
     async def twitch_set(self, ctx: commands.Context, twitch_name: str) -> None:
         """
-            Sets the twitch user info for individual users to make commands easier
+        Sets the twitch user info for individual users to make commands easier
         """
         await ctx.trigger_typing()
         try:
@@ -241,7 +240,7 @@ class Twitch(TwitchAPI, commands.Cog):
         self, ctx: commands.Context, twitch_name: Optional[str] = None
     ) -> None:
         """
-            Get latest Twitch followers
+        Get latest Twitch followers
         """
         await ctx.trigger_typing()
         try:
@@ -258,7 +257,7 @@ class Twitch(TwitchAPI, commands.Cog):
     @twitchhelp.command(name="user", aliases=["profile"])
     async def get_user(self, ctx: commands.Context, twitch_name: Optional[str] = None) -> None:
         """
-            Shows basic Twitch profile information
+        Shows basic Twitch profile information
         """
         await ctx.trigger_typing()
         try:
@@ -282,7 +281,7 @@ class Twitch(TwitchAPI, commands.Cog):
         timeout: int = 30,
     ):
         """menu control logic for this taken from
-           https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
+        https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         user_id = post_list[page].from_id
         followed_at = post_list[page].followed_at
         url = "{}/users?id={}".format(BASE_URL, user_id)
@@ -360,7 +359,7 @@ class Twitch(TwitchAPI, commands.Cog):
     @checks.is_owner()
     async def twitch_creds(self, ctx: commands.Context) -> None:
         """
-            Set twitch client_id and client_secret if required for larger followings
+        Set twitch client_id and client_secret if required for larger followings
         """
         msg = (
             "1. Go to https://glass.twitch.tv/console/apps login and select"

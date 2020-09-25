@@ -41,9 +41,9 @@ def utc_to_local(utc_dt, new_timezone="US/Eastern"):
 
 class DateFinder(Converter):
     """
-        Converter for `YYYY-MM-DD` date formats
+    Converter for `YYYY-MM-DD` date formats
 
-        for use in the `[p]nhl games` command to pull up specific dates
+    for use in the `[p]nhl games` command to pull up specific dates
     """
 
     async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
@@ -58,7 +58,7 @@ class DateFinder(Converter):
 
 class TeamDateFinder(Converter):
     """
-        Converter to get both a team and a date from a string
+    Converter to get both a team and a date from a string
     """
 
     async def convert(
@@ -77,9 +77,7 @@ class TeamDateFinder(Converter):
                 continue
             nick = data["nickname"]
             short = data["tri_code"]
-            pattern = (
-                fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
-            )
+            pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
             if nick:
                 pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
             # log.debug(pattern)
@@ -259,8 +257,8 @@ async def get_team(bot, team: str):
 
 async def check_valid_team(team_name: str, standings: bool = False) -> str:
     """
-        Checks if this is a valid team name or all teams
-        useful for game day channel creation should impliment elsewhere
+    Checks if this is a valid team name or all teams
+    useful for game day channel creation should impliment elsewhere
     """
     is_team = []
     conference = ["eastern", "western", "conference"]

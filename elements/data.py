@@ -216,5 +216,5 @@ UNITS = {
     },
     "vdw_radius_truhlar": {"name": "Van der Waals radius according to Truhlar", "units": "pm"},
     "vdw_radius_uff": {"name": "Van der Waals radius from the UFF", "units": "pm"},
-    "xrf": {"name": "X-Ray Fluorescence", "units": "nm"}
+    "xrf": {"name": "X-Ray Fluorescence", "units": "nm"},
 }

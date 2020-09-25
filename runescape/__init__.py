@@ -1,10 +1,12 @@
+import json
+
+from pathlib import Path
+
 from .runescape import Runescape
 
 
-__red_end_user_data_statement__ = (
-    "This cog may store User ID's linked with an external API name for the purposes of simplifying command usage."
-    "Users may clear this saved information at any time by command."
-)
+with open(Path(__file__).parent / "info.json") as fp:
+    __red_end_user_data_statement__ = json.load(fp)["end_user_data_statement"]
 
 
 def setup(bot):

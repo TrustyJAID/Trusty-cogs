@@ -15,14 +15,14 @@ class Mock(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context):
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -42,16 +42,16 @@ class Mock(commands.Cog):
         ctx: commands.Context,
         channel: Optional[discord.TextChannel] = None,
         *,
-        msg: Optional[Union[discord.Member, int, str]] = None
+        msg: Optional[Union[discord.Member, int, str]] = None,
     ) -> None:
         """
-            Mock a user with the spongebob meme
+        Mock a user with the spongebob meme
 
-            `channel` Optional channel to retrieve messages from and post the mock message
-            `msg` Optional either member, message ID, or string
-            if no `msg` is provided the command will use the last message in channel before the command
-            is `msg` is a member it will look through the past 10 messages in
-            the `channel` and put them all together
+        `channel` Optional channel to retrieve messages from and post the mock message
+        `msg` Optional either member, message ID, or string
+        if no `msg` is provided the command will use the last message in channel before the command
+        is `msg` is a member it will look through the past 10 messages in
+        the `channel` and put them all together
         """
         if not channel:
             send_channel = ctx.channel

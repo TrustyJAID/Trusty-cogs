@@ -58,8 +58,8 @@ class DestinyAPI:
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
     ) -> dict:
         """
-            Helper to make requests from formed headers and params elsewhere
-            and apply rate limiting to prevent issues
+        Helper to make requests from formed headers and params elsewhere
+        and apply rate limiting to prevent issues
         """
         time_now = datetime.now().timestamp()
         if self.throttle > time_now:
@@ -87,7 +87,7 @@ class DestinyAPI:
 
     async def get_access_token(self, code: str) -> dict:
         """
-            Called once the OAuth flow is complete and acquires an access token
+        Called once the OAuth flow is complete and acquires an access token
         """
         client_id = await self.config.api_token.client_id()
         client_secret = await self.config.api_token.client_secret()
@@ -110,7 +110,7 @@ class DestinyAPI:
 
     async def get_refresh_token(self, user: discord.User) -> dict:
         """
-            Generate a refresh token if the token is expired
+        Generate a refresh token if the token is expired
         """
         client_id = await self.config.api_token.client_id()
         client_secret = await self.config.api_token.client_secret()
@@ -135,7 +135,7 @@ class DestinyAPI:
 
     async def get_o_auth(self, ctx: commands.Context) -> Optional[dict]:
         """
-            This sets up the OAuth flow for logging into the API
+        This sets up the OAuth flow for logging into the API
         """
         client_id = await self.config.api_token.client_id()
         if not client_id:
@@ -164,9 +164,9 @@ class DestinyAPI:
 
     async def build_headers(self, user: discord.User = None) -> dict:
         """
-            Build the headers for each API call from a discord User
-            if present, if a function doesn't require OAuth it won't pass
-            the user object
+        Build the headers for each API call from a discord User
+        if present, if a function doesn't require OAuth it won't pass
+        the user object
         """
         if not await self.config.api_token.api_key():
             raise Destiny2MissingAPITokens("The Bot owner needs to set an API Key first.")
@@ -195,9 +195,9 @@ class DestinyAPI:
 
     async def check_expired_token(self, user: discord.User):
         """
-            Sending the expired token results in an HTTP error stating invalid credentials
-            We need to keep track of when the token actually expires and check when used
-            Good place to check is when building the Authorization headers
+        Sending the expired token results in an HTTP error stating invalid credentials
+        We need to keep track of when the token actually expires and check when used
+        Good place to check is when building the Authorization headers
         """
         now = datetime.now().timestamp()
         user_oauth = await self.config.user(user).oauth()
@@ -234,7 +234,7 @@ class DestinyAPI:
 
     async def get_characters(self, user: discord.User) -> dict:
         """
-            This pulls the data for each character from the API given a user object
+        This pulls the data for each character from the API given a user object
         """
         try:
             headers = await self.build_headers(user)
@@ -249,7 +249,7 @@ class DestinyAPI:
 
     async def get_entities(self, entity: str) -> dict:
         """
-            This loads the entity from the saved manifest
+        This loads the entity from the saved manifest
         """
         path = cog_data_path(self) / f"{entity}.json"
         with path.open(encoding="utf-8", mode="r") as f:
@@ -258,9 +258,9 @@ class DestinyAPI:
 
     async def get_definition(self, entity: str, entity_hash: list) -> List[dict]:
         """
-            This will attempt to get a definition from the manifest
-            if the manifest is missing it will try and pull the data
-            from the API
+        This will attempt to get a definition from the manifest
+        if the manifest is missing it will try and pull the data
+        from the API
         """
         items = []
         try:
@@ -278,7 +278,7 @@ class DestinyAPI:
 
     async def get_definition_from_api(self, entity: str, entity_hash) -> List[dict]:
         """
-            This will acquire definition data from the API when the manifest is missing
+        This will acquire definition data from the API when the manifest is missing
         """
         try:
             headers = await self.build_headers()
@@ -293,7 +293,7 @@ class DestinyAPI:
 
     async def search_definition(self, entity: str, entity_hash: str) -> List[dict]:
         """
-            This is a helper to search clean names for a given definition of data
+        This is a helper to search clean names for a given definition of data
         """
         try:
             data = await self.get_entities(entity)
@@ -311,7 +311,7 @@ class DestinyAPI:
 
     async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
         """
-            This gets the inventory of a specified Vendor
+        This gets the inventory of a specified Vendor
         """
         try:
             headers = await self.build_headers(user)
@@ -325,7 +325,7 @@ class DestinyAPI:
 
     async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
         """
-            This retreieves the activity history for a users character
+        This retreieves the activity history for a users character
 
         """
         try:
@@ -348,11 +348,11 @@ class DestinyAPI:
         daystart: Optional[str] = None,
     ) -> dict:
         """
-            Setup access to historical data
-            requires a user object, character hash, and mode type
+        Setup access to historical data
+        requires a user object, character hash, and mode type
 
-            can accept period between Daily, AllTime, and Activity
-            Can also accept a YYYY-MM-DD formatted string for daystart and dayend
+        can accept period between Daily, AllTime, and Activity
+        Can also accept a YYYY-MM-DD formatted string for daystart and dayend
         """
         try:
             headers = await self.build_headers(user)
@@ -371,10 +371,10 @@ class DestinyAPI:
 
     async def get_historical_stats_account(self, user: discord.User) -> dict:
         """
-            This works the same as get_historical_stats but gets
-            stats for all characters merged together
+        This works the same as get_historical_stats but gets
+        stats for all characters merged together
 
-            This does not provide Gambit stats though
+        This does not provide Gambit stats though
         """
         try:
             headers = await self.build_headers(user)
@@ -388,8 +388,8 @@ class DestinyAPI:
 
     async def has_oauth(self, ctx: commands.Context, user: discord.Member = None) -> bool:
         """
-            Basic checks to see if the user has OAuth setup
-            if not or the OAuth keys are expired this will call the refresh
+        Basic checks to see if the user has OAuth setup
+        if not or the OAuth keys are expired this will call the refresh
         """
         if user:
             if not (
@@ -449,8 +449,8 @@ class DestinyAPI:
 
     async def pick_account(self, ctx: commands.Context, memberships: list) -> tuple:
         """
-            Have the user pick which account they want to pull data
-            from if they have multiple accounts across platforms
+        Have the user pick which account they want to pull data
+        from if they have multiple accounts across platforms
         """
         msg = _(
             "There are multiple destiny memberships "
@@ -468,9 +468,7 @@ class DestinyAPI:
             await ctx.send(msg)
         try:
             pred = MessagePredicate.valid_int(ctx)
-            msg = await ctx.bot.wait_for(
-                "message", check=pred, timeout=60
-            )
+            msg = await ctx.bot.wait_for("message", check=pred, timeout=60)
         except asyncio.TimeoutError:
             return None, None
         membership = memberships[int(pred.result) - 1]
@@ -479,7 +477,7 @@ class DestinyAPI:
 
     async def get_manifest(self) -> None:
         """
-            Checks if the manifest is up to date and downloads if it's not
+        Checks if the manifest is up to date and downloads if it's not
         """
         if version_info >= VersionInfo.from_str("3.2.0"):
             await self.bot.wait_until_red_ready()

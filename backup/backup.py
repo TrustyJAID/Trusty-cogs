@@ -15,7 +15,7 @@ class GuildNotFoundError(Exception):
 
 class Backup(commands.Cog):
     """
-        Create a set of json backups of a server
+    Create a set of json backups of a server
     """
 
     def __init__(self, bot):
@@ -79,10 +79,10 @@ class Backup(commands.Cog):
     @commands.guild_only()
     async def channellogs(self, ctx, *, channel: discord.TextChannel = None):
         """
-            Creat a backup of all channel data as json files This might take a long time
+        Creat a backup of all channel data as json files This might take a long time
 
-            `channel` is partial name or ID of the server you want to backup
-            defaults to the server the command was run in
+        `channel` is partial name or ID of the server you want to backup
+        defaults to the server the command was run in
         """
         if channel is None:
             channel = ctx.channel
@@ -154,10 +154,10 @@ class Backup(commands.Cog):
     @commands.guild_only()
     async def serverlogs(self, ctx, *, guild_name: Union[int, str] = None):
         """
-            Creat a backup of all server data as json files This might take a long time
+        Creat a backup of all server data as json files This might take a long time
 
-            `guild_name` is partial name or ID of the server you want to backup
-            defaults to the server the command was run in
+        `guild_name` is partial name or ID of the server you want to backup
+        defaults to the server the command was run in
         """
         guild = ctx.guild
         if guild_name is not None:

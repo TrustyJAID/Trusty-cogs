@@ -88,7 +88,7 @@ class DataProtocol(asyncio.SubprocessProtocol):
 
 class NotSoBot(commands.Cog):
     """
-        Rewrite of many NotSoBot commands to work on RedBot V3
+    Rewrite of many NotSoBot commands to work on RedBot V3
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
@@ -151,14 +151,14 @@ class NotSoBot(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -293,9 +293,7 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(
-                None, self.do_magik, scale, b
-            )
+            task = self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
             try:
                 final, content_msg, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -425,14 +423,14 @@ class NotSoBot(commands.Cog):
         y: int = 0,
     ):
         """
-            Add caption to an image
+        Add caption to an image
 
-            `[urls]` are the image urls or users or previous images in chat to add a caption to.
-            `[text=Caption]` is the text to caption on the image.
-            `[color=white]` is the color of the text.
-            `[size=40]` is the size of the text
-            `[x=0]` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
-            `[y=0]` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.
+        `[urls]` are the image urls or users or previous images in chat to add a caption to.
+        `[text=Caption]` is the text to caption on the image.
+        `[color=white]` is the color of the text.
+        `[size=40]` is the size of the text
+        `[x=0]` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
+        `[y=0]` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.
         """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
@@ -1005,13 +1003,13 @@ class NotSoBot(commands.Cog):
         transparency: Union[int, float] = 0,
     ):
         """
-            Add a watermark to an image
+        Add a watermark to an image
 
-            `[urls]` are the image urls or users or previous images in chat to add a watermark to.
-            `[mark]` is the image to use as the watermark. By default the brazzers icon is used.
-            `[x=0]` is the height the watermark will be at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
-            `[y=0]` is the width the watermark will be at between 0 and 100% where 0 is the left and 100 is the right of the image.
-            `[transparency=0]` is a value from 0 to 100 which determines the percentage the watermark will be transparent.
+        `[urls]` are the image urls or users or previous images in chat to add a watermark to.
+        `[mark]` is the image to use as the watermark. By default the brazzers icon is used.
+        `[x=0]` is the height the watermark will be at between 0 and 100% where 0 is the top and 100 is the bottom of the image.
+        `[y=0]` is the width the watermark will be at between 0 and 100% where 0 is the left and 100 is the right of the image.
+        `[transparency=0]` is a value from 0 to 100 which determines the percentage the watermark will be transparent.
         """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
@@ -1220,9 +1218,7 @@ class NotSoBot(commands.Cog):
                 if len(img_urls) > 1:
                     await ctx.send(":warning: **Command download function failed...**")
                     return
-            task = ctx.bot.loop.run_in_executor(
-                None, self.make_pixel, b, pixels, scale_msg
-            )
+            task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels, scale_msg)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:

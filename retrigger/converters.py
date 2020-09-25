@@ -115,7 +115,7 @@ class MultiResponse(Converter):
 
 class Trigger:
     """
-        Trigger class to handle trigger objects
+    Trigger class to handle trigger objects
     """
 
     name: str

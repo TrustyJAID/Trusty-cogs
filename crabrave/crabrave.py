@@ -224,9 +224,7 @@ class CrabRave(commands.Cog):
         fp = str(cog_data_path(self) / f"Verdana.ttf")
         clip = VideoFileClip(str(cog_data_path(self)) + "/miku_template.mp4")
         # clip.volume(1.0)
-        text = TextClip(
-            t[0], fontsize=48, color="DarkSlateGrey", font=fp
-        )
+        text = TextClip(t[0], fontsize=48, color="DarkSlateGrey", font=fp)
         text2 = (
             TextClip(
                 "____________________",

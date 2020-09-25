@@ -19,7 +19,7 @@ log = logging.getLogger("red.trusty-cogs.runescape")
 
 class Runescape(commands.Cog):
     """
-        Display Runescape account info
+    Display Runescape account info
     """
 
     __author__ = ["TrustyJAID"]
@@ -33,7 +33,7 @@ class Runescape(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
@@ -45,7 +45,7 @@ class Runescape(commands.Cog):
         user_id: int,
     ):
         """
-            Method for finding users data inside the cog and deleting it.
+        Method for finding users data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
 
@@ -77,11 +77,13 @@ class Runescape(commands.Cog):
             await ctx.send(box(page, lang="css"))
 
     @osrs.command(name="set")
-    async def osrs_set(self, ctx: commands.Context, *, runescape_name: Optional[str] = None) -> None:
+    async def osrs_set(
+        self, ctx: commands.Context, *, runescape_name: Optional[str] = None
+    ) -> None:
         """
-            Set your runescape name for easer commands.
+        Set your runescape name for easer commands.
 
-            Use this command without a name to clear your settings.
+        Use this command without a name to clear your settings.
         """
         if not runescape_name:
             await self.config.user(ctx.author).clear()
@@ -93,9 +95,9 @@ class Runescape(commands.Cog):
     @runescape.command()
     async def set(self, ctx: commands.Context, *, runescape_name: Optional[str] = None) -> None:
         """
-            Set your runescape name for easer commands.
+        Set your runescape name for easer commands.
 
-            Use this command without a name to clear your settings.
+        Use this command without a name to clear your settings.
         """
         if not runescape_name:
             await self.config.user(ctx.author).clear()
@@ -117,8 +119,10 @@ class Runescape(commands.Cog):
                 return await resp.read()
 
     async def make_url_profile(self, runescape_name: str, activities: int) -> str:
-        url = "https://apps.runescape.com/runemetrics/profile/profile?user={}&activities={}".format(
-            runescape_name, activities
+        url = (
+            "https://apps.runescape.com/runemetrics/profile/profile?user={}&activities={}".format(
+                runescape_name, activities
+            )
         )
         log.debug(url)
         return url
@@ -254,9 +258,7 @@ class Runescape(commands.Cog):
             "```css\n{top_row}\n|{spaces}"
             "RS3 STATS FOR {user}{spaces}|"
             "\n{top_row}\n{skills}\n{top_row}```"
-            ).format(
-                spaces=spaces, top_row=top_row, user=p.name, skills=table
-            )
+        ).format(spaces=spaces, top_row=top_row, user=p.name, skills=table)
         return skills
 
     async def osrs_stats_page(self, data: dict, runescape_name: str) -> str:
@@ -268,9 +270,7 @@ class Runescape(commands.Cog):
             "{top_row}\n|{spaces}OSRS STATS FOR "
             "{user}{spaces}|\n{top_row}\n"
             "{skills}\n{top_row}"
-        ).format(
-            spaces=spaces, top_row=top_row, user=runescape_name, skills=table
-        )
+        ).format(spaces=spaces, top_row=top_row, user=runescape_name, skills=table)
         return skills
 
     async def profile_embed(self, profile: Profile, details: dict) -> discord.Embed:

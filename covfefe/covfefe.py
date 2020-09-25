@@ -5,7 +5,7 @@ import re
 
 class Covfefe(commands.Cog):
     """
-        Convert almost any word into covfefe
+    Convert almost any word into covfefe
     """
 
     def __init__(self, bot):
@@ -13,7 +13,7 @@ class Covfefe(commands.Cog):
 
     async def covfefe(self, x, k="aeiouy])"):
         """
-            https://codegolf.stackexchange.com/a/123697
+        https://codegolf.stackexchange.com/a/123697
         """
         try:
             b, c, v = re.findall(f"(.*?[{k}([^{k}.*?([{k}", x)[0]
@@ -23,7 +23,7 @@ class Covfefe(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 

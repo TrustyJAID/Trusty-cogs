@@ -16,7 +16,7 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 
 class Pickems:
     """
-        Pickems object for handling votes on games for the day
+    Pickems object for handling votes on games for the day
     """
 
     message: list
@@ -85,7 +85,7 @@ class Pickems:
 
     async def set_pickem_winner(self, game):
         """
-            Sets the pickem object winner from game object
+        Sets the pickem object winner from game object
         """
         if not game:
             return self
@@ -97,7 +97,7 @@ class Pickems:
 
     async def check_winner(self):
         """
-            allow the pickems objects to check winner on their own
+        allow the pickems objects to check winner on their own
         """
         return self
         after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=3))
@@ -120,7 +120,7 @@ class Pickems:
     @staticmethod
     async def find_pickems_object(bot, game):
         """
-            Returns a list of all pickems on the bot for that game
+        Returns a list of all pickems on the bot for that game
         """
         return_pickems = []
         new_name = f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
@@ -152,8 +152,8 @@ class Pickems:
     @staticmethod
     async def create_pickem_object(bot, guild, message, channel, game):
         """
-            Checks to see if a pickem object is already created for the game
-            if not it creates one or adds the message, channel to the current ones
+        Checks to see if a pickem object is already created for the game
+        if not it creates one or adds the message, channel to the current ones
         """
         pickems = bot.get_cog("Hockey").all_pickems.get(str(guild.id), None)
         new_name = Pickems.pickems_name(game)
@@ -336,8 +336,8 @@ class Pickems:
     @staticmethod
     async def tally_leaderboard(bot):
         """
-            This should be where the pickems is removed and tallies are added
-            to the leaderboard
+        This should be where the pickems is removed and tallies are added
+        to the leaderboard
         """
         config = bot.get_cog("Hockey").config
 

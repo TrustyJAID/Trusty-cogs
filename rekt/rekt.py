@@ -95,8 +95,9 @@ rektlist: List[str] = [
 @cog_i18n(_)
 class Rekt(commands.Cog):
     """
-        Post embed with random rekt messages
+    Post embed with random rekt messages
     """
+
     __author__ = ["TrustyJAID"]
     __version__ = "1.0.0"
 
@@ -105,14 +106,14 @@ class Rekt(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 

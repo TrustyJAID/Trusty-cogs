@@ -72,9 +72,7 @@ class CartAlert(MixinMeta):
             )
         else:
             await ctx.send(
-                _("{user_id} is not receiving notifications on carts.").format(
-                    user_id=user_id
-                )
+                _("{user_id} is not receiving notifications on carts.").format(user_id=user_id)
             )
 
     @commands.Cog.listener()

@@ -85,7 +85,7 @@ class ValidEmoji(IDConverter):
 @cog_i18n(_)
 class Reports(commands.Cog):
     """
-        Redbot Core's default reports cog with some modifications
+    Redbot Core's default reports cog with some modifications
     """
 
     default_guild_settings = {
@@ -125,7 +125,7 @@ class Reports(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
@@ -406,10 +406,9 @@ class Reports(commands.Cog):
                 em = await self._build_embed(reporter, message)
                 await report_channel.send(embed=em)
             else:
-                msg = (
-                    f"{reporter} has reported {message.author}\n"
-                    f"> {message.content}"
-                )[:len(message.jump_url)+5]
+                msg = (f"{reporter} has reported {message.author}\n" f"> {message.content}")[
+                    : len(message.jump_url) + 5
+                ]
                 await report_channel.send(msg + f"\n\n{message.jump_url}")
 
         if not str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
@@ -427,7 +426,9 @@ class Reports(commands.Cog):
             )
             self.tunnel_store.pop(t[0], None)
 
-    async def _build_embed(self, reporter: discord.Member, message: discord.Message) -> discord.Embed:
+    async def _build_embed(
+        self, reporter: discord.Member, message: discord.Message
+    ) -> discord.Embed:
         channel = message.channel
         author = message.author
         em = discord.Embed(timestamp=message.created_at)
@@ -435,7 +436,7 @@ class Reports(commands.Cog):
         em.set_author(
             name=f"{reporter} has reported {author}",
             url=message.jump_url,
-            icon_url=str(author.avatar_url)
+            icon_url=str(author.avatar_url),
         )
         if message.attachments != []:
             em.set_image(url=message.attachments[0].url)

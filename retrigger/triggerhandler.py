@@ -31,6 +31,7 @@ from .message import ReTriggerMessage
 try:
     from PIL import Image
     from PIL import ImageSequence
+
     try:
         import pytesseract
 
@@ -302,7 +303,9 @@ class TriggerHandler:
                 frame.thumbnail((length, width), Image.ANTIALIAS)
                 img_list.append(frame)
         byte_array = BytesIO()
-        img_list[0].save(byte_array, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
+        img_list[0].save(
+            byte_array, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+        )
         byte_array.seek(0)
         return discord.File(byte_array, filename="resize.gif")
 

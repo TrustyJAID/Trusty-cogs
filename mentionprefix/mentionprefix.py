@@ -22,6 +22,7 @@ _ = lambda s: s
 
 class MentionPrefix(commands.Cog):
     """Ping the bot to see its prefixes."""
+
     intervals = [
         (timedelta(seconds=30), 1),
         (timedelta(minutes=5), 2),
@@ -42,7 +43,7 @@ class MentionPrefix(commands.Cog):
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 

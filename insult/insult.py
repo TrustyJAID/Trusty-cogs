@@ -347,23 +347,23 @@ class Insult(commands.Cog):
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
-            Thanks Sinbad!
+        Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def red_delete_data_for_user(self, **kwargs):
         """
-            Nothing to delete
+        Nothing to delete
         """
         return
 
     @commands.command(aliases=["takeitback"])
     async def insult(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
-            Insult the user
+        Insult the user
 
-            `user` the user you would like to insult
+        `user` the user you would like to insult
         """
 
         msg = " "

@@ -294,8 +294,8 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     async def make_colour(self, colour):
-        template = "https://i.imgur.com/n6r04O8.png"
-        template = Image.open(await self.dl_image(template))
+        template_str = "https://i.imgur.com/n6r04O8.png"
+        template = Image.open(await self.dl_image(template_str))
         task = functools.partial(self.colour_convert, template=template, colour=colour)
         task = self.bot.loop.run_in_executor(None, task)
         try:
@@ -303,6 +303,7 @@ class ImageMaker(commands.Cog):
         except asyncio.TimeoutError:
             return
         image.seek(0)
+        template.close()
         return image
 
     @commands.command()
@@ -323,8 +324,8 @@ class ImageMaker(commands.Cog):
     # Below are all the task handlers so the code is not blocking
 
     async def make_beautiful(self, user: discord.User, is_gif: bool) -> Optional[BytesIO]:
-        template = "https://i.imgur.com/kzE9XBE.png"
-        template = Image.open(await self.dl_image(template))
+        template_str = "https://i.imgur.com/kzE9XBE.png"
+        template = Image.open(await self.dl_image(template_str))
         if user.is_avatar_animated() and is_gif:
             avatar = Image.open(
                 await self.dl_image(str(user.avatar_url_as(format="gif", size=128)))
@@ -340,13 +341,17 @@ class ImageMaker(commands.Cog):
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
+            avatar.close()
+            template.close()
             return None
+        avatar.close()
+        template.close()
         temp.seek(0)
         return temp
 
     async def make_feels(self, user: discord.User, is_gif: bool) -> Optional[BytesIO]:
-        template = "https://i.imgur.com/4xr6cdw.png"
-        template = Image.open(await self.dl_image(template))
+        template_str = "https://i.imgur.com/4xr6cdw.png"
+        template = Image.open(await self.dl_image(template_str))
         colour = user.colour.to_rgb()
         if user.is_avatar_animated() and is_gif:
             avatar = Image.open(
@@ -366,15 +371,19 @@ class ImageMaker(commands.Cog):
         try:
             temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
+            avatar.close()
+            template.close()
             return None
+        avatar.close()
+        template.close()
         temp.seek(0)
         return temp
 
     async def make_wheeze(
         self, text: Union[discord.Member, str], is_gif=False
     ) -> Optional[BytesIO]:
-        template = "https://i.imgur.com/c5uoDcd.jpg"
-        template = Image.open(await self.dl_image(template))
+        template_path = "https://i.imgur.com/c5uoDcd.jpg"
+        template = Image.open(await self.dl_image(template_path))
         if type(text) == discord.Member:
             user = cast(discord.User, text)
             if user.is_avatar_animated() and is_gif:
@@ -393,6 +402,8 @@ class ImageMaker(commands.Cog):
             try:
                 temp: BytesIO = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
+                avatar.close()
+                template.close()
                 return None
         else:
             task = functools.partial(self.make_wheeze_img, template=template, avatar=text)
@@ -400,7 +411,11 @@ class ImageMaker(commands.Cog):
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
+                avatar.close()
+                template.close()
                 return None
+        avatar.close()
+        template.close()
         temp.seek(0)
         return temp
 
@@ -471,6 +486,8 @@ class ImageMaker(commands.Cog):
         temp = BytesIO()
         temp.name = "merge.gif"
         imageio.mimwrite(temp, img_list, "gif", duration=0.02)
+        overlay.close()
+        base_img.close()
         return temp
 
     def make_banner(self, text: str, colour: str) -> BytesIO:
@@ -492,6 +509,7 @@ class ImageMaker(commands.Cog):
         temp.name = "temp.gif"
         imageio.mimwrite(temp, images, "gif", duration=0.02)
         temp.seek(0)
+        im.close()
         return temp
 
     def make_beautiful_img(self, template: Image, avatar: Image) -> BytesIO:
@@ -605,6 +623,7 @@ class ImageMaker(commands.Cog):
         temp = BytesIO()
         temp2.save(temp, format="PNG")
         temp.name = "feels.png"
+        temp2.close()
         return temp
 
     def colour_convert(self, template: Image, colour: Optional[str] = "#FF0000") -> BytesIO:
@@ -618,6 +637,7 @@ class ImageMaker(commands.Cog):
         temp = BytesIO()
         im2.save(temp, format="PNG")
         temp.name = "pill.png"
+        im2.close()
         return temp
 
     """Code is from http://isnowillegal.com/ and made to work on redbot"""
@@ -665,6 +685,7 @@ class ImageMaker(commands.Cog):
         )
         temp.name = "Trump.gif"
         temp.seek(0)
+        finalFrame.close()
         return temp
 
     def rotoscope(self, dst, warp, properties: dict):

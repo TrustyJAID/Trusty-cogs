@@ -171,7 +171,6 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         for page in pagify(msg):
             await ctx.maybe_send_embed(page)
 
-
     @blacklist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_add(
