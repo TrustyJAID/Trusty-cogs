@@ -40,6 +40,12 @@ class InviteBlocklist(commands.Cog):
         self.config = Config.get_conf(self, identifier=218773382617890828)
         self.config.register_guild(blacklist=[], whitelist=[], all_invites=False)
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """
+        Nothing to delete
+        """
+        return
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
