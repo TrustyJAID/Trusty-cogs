@@ -22,7 +22,7 @@
     "requirements" : [
         "tabulate"
     ],
-    "short" : "Runescape",
+    "short" : "Show your Runescape stats in discord!",
     "tags" : [
         "runescape",
         "games",

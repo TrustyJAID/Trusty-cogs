@@ -3,7 +3,7 @@
         "NotSoSuper",
         "TrustyJAID"
     ],
-    "description" : "Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot.",
+    "description" : "Magick, trigger and manipulate images with many commands from NotSoSuper's NotSoBot. This cog has a lot of requirements, view the [cog README.md](https://github.com/TrustyJAID/Trusty-cogs/blob/master/notsobot/README.md) for details. ",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
@@ -25,7 +25,8 @@
         "numpy",
         "pillow",
         "git+https://github.com/Kareeeeem/jpglitch",
-        "wand"
+        "wand",
+        "unidecode"
     ],
     "short" : "Some working commands from NotSoBot",
     "tags" : [

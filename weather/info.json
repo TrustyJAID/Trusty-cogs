@@ -14,13 +14,13 @@
         7,
         2
     ],
-    "name" : "weather",
+    "name" : "Weather",
     "permissions" : [
         "embed_links"
     ],
     "required_cogs" : {},
     "requirements" : [],
-    "short" : "Weather",
+    "short" : "Show the current weather in specified locations!",
     "tags" : [
         "weather",
         "utility"

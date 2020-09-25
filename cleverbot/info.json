@@ -3,7 +3,7 @@
         "Twentysix",
         "TrustyJAID"
     ],
-    "description" : "Have your bot respond with cleverbot responses.",
+    "description" : "Have your bot respond with cleverbot responses. Supports tweaks to customize the responses!",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users. However, this cog does pass user data to an external API for the purposes of simulated conversation responses.",
     "hidden" : false,

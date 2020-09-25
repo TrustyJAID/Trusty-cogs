@@ -14,13 +14,13 @@
         7,
         2
     ],
-    "name" : "rekt",
+    "name" : "Rekt",
     "permissions" : [
         "embed_links"
     ],
     "required_cogs" : {},
     "requirements" : [],
-    "short" : "REKT",
+    "short" : "Get REKT",
     "tags" : [
         "rekt"
     ],

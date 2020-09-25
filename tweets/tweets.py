@@ -974,7 +974,7 @@ class Tweets(commands.Cog):
         """Command for setting required access information for the API.
 
         1. Visit https://apps.twitter.com and apply for a developer account.
-        2. Once your account is approved setup an application and follout the form
+        2. Once your account is approved setup an application and fillout the form
         3. Do `[p]tweetset creds consumer_key consumer_secret access_token access_secret`
         to the bot in a private channel (DM's preferred).
         """

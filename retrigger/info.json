@@ -2,7 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "description" : "Trigger events based on regex!",
+    "description" : "Trigger events based on regex! Check out <https://regex101.com/> and <https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md> for help setting up the cog. Note: This cog can become quite resource heavy. Optional features are available if the requirements are present such as pillow for image resizing and pytesseract to scan images for text (OCR).",
     "disabled" : false,
     "end_user_data_statement" : "This cog may store attachments and command information provided by Users for the purposes of performing actions.\nSome User ID's may be stored in the bots logging information.\nUsers may delete their own data with or without making a data request.",
     "hidden" : false,
@@ -14,13 +14,13 @@
         7,
         2
     ],
-    "name" : "Trigger events via regular expressions",
+    "name" : "ReTrigger",
     "permissions" : [
         "embed_links"
     ],
     "required_cogs" : {},
     "requirements" : [],
-    "short" : "ReTrigger",
+    "short" : "Trigger events via Regular Expressions!",
     "tags" : [
         "trigger",
         "reactions"

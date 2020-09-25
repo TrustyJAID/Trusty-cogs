@@ -28,6 +28,8 @@ class MentionPrefix(commands.Cog):
         (timedelta(hours=1), 10),
         (timedelta(days=1), 24),
     ]
+    __version__ = "1.0.0"
+    __author__ = ["Draper"]
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot

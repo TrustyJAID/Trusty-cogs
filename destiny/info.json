@@ -2,7 +2,7 @@
     "author" : [
         "TrustyJAID"
     ],
-    "description" : "Show Destiny 2 information from the Bungie's API.",
+    "description" : "Show Information from the Destin 2 API. Note: This cog requires downloading a manifest ~160 MB. You must acquire an API key from https://www.bungie.net/en/Application. select create a new application choose **Confidential** OAuth client type. Select the scope you would like the bot to have access to. Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
     "disabled" : false,
     "end_user_data_statement" : "This cog stores User ID's linked to an external API token for the purposes of granting OAuth access and information about the external API for the user.",
     "hidden" : false,

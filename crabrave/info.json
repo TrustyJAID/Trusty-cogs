@@ -4,7 +4,7 @@
         "TrustyJAID",
         "thisisjvgrace"
     ],
-    "description" : "Create your very own Crab Rave videos with custom text!",
+    "description" : "Create your very own Crab Rave videos with custom text! This cog requires FFMPEG, moviepy (https://github.com/Zulko/moviepy), and imagemagick to work. This cog downloads a template video and font file which is then saved locally and generates crab rave videos from the template. Old videos are deleted after uploading. This cog may consume heavy resources rendering videos.",
     "disabled" : false,
     "end_user_data_statement" : "This cog does not persistently store data or metadata about users.",
     "hidden" : false,
