@@ -177,8 +177,6 @@ class Fun(commands.Cog):
                 message = messages
         else:
             try:
-                message = await channel.fetch_message_fast(msg_id)
-            except AttributeError:
                 message = await channel.fetch_message(msg_id)
             except discord.NotFound:
                 return await ctx.send(
