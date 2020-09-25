@@ -8,6 +8,7 @@ from typing import Optional, Literal
 
 from redbot.core import Config, checks, commands
 from redbot.core.commands import Context
+from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
 
 from .twitch_api import TwitchAPI
 from .twitch_profile import TwitchProfile
@@ -26,7 +27,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -34,6 +35,7 @@ class Twitch(TwitchAPI, commands.Cog):
         global_defaults = {
             "access_token": {},
             "twitch_accounts": [],
+            "twitch_clips": {},
         }
         user_defaults = {"id": "", "login": "", "display_name": ""}
         self.config.register_global(**global_defaults, force_registration=True)
@@ -137,6 +139,95 @@ class Twitch(TwitchAPI, commands.Cog):
             await ctx.send(
                 "{} has been setup for twitch follow notifications in {}".format(
                     profile.display_name, channel.mention
+                )
+            )
+
+    @twitchhelp.command(name="setclips")
+    @checks.admin_or_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def set_clips(
+        self,
+        ctx: commands.Context,
+        twitch_name: str,
+        channel: Optional[discord.TextChannel] = None,
+    ) -> None:
+        """
+        Setup a channel for automatic clip notifications
+        """
+        if channel is None:
+            channel = ctx.channel
+        if not channel.permissions_for(ctx.me).embed_links:
+            return await ctx.send(f"I don't have embed links permission in {channel.mention}")
+        await ctx.trigger_typing()
+        try:
+            profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
+        except TwitchError as e:
+            await ctx.send(e)
+            return
+        async with self.config.twitch_clips() as cur_accounts:
+            if str(profile.id) not in cur_accounts:
+                try:
+                    clips = await self.get_new_clips(profile.id)
+                except TwitchError as e:
+                    return await ctx.send(e)
+                user_data = {
+                    "id": profile.id,
+                    "login": profile.login,
+                    "display_name": profile.display_name,
+                    "channels": [channel.id],
+                    "clips": [c["id"] for c in clips]
+                }
+
+                cur_accounts[str(profile.id)] = user_data
+            else:
+                cur_accounts[str(profile.id)]["channels"].append(channel.id)
+        await ctx.send(
+            "{} has been setup for twitch follow notifications in {}".format(
+                profile.display_name, channel.mention
+            )
+        )
+
+    @twitchhelp.command(name="remclips", aliases=["removeclips", "deleteclips", "delclips"])
+    @checks.admin_or_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def remove_clips(
+        self, ctx: commands.Context, twitch_name: str, channel: discord.TextChannel = None
+    ) -> None:
+        """
+        Remove an account from new clip notifications in the specified channel
+        defaults to the current channel
+        """
+        if channel is None:
+            channel = ctx.channel
+        await ctx.trigger_typing()
+        try:
+            profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
+        except TwitchError as e:
+            return await ctx.send(e)
+        async with self.config.twitch_clips() as cur_accounts:
+            if str(profile.id) not in cur_accounts:
+                await ctx.send(
+                    "{} is not currently posting clip notifications in {}".format(
+                        profile.login, channel.mention
+                    )
+                )
+                return
+            else:
+                if channel.id not in cur_accounts[str(profile.id)]["channels"]:
+                    await ctx.send(
+                        "{} is not currently posting follow notifications in {}".format(
+                            profile.login, channel.mention
+                        )
+                    )
+                    return
+                else:
+                    cur_accounts[str(profile.id)]["channels"].remove(channel.id)
+                    if len(cur_accounts[str(profile.id)]["channels"]) == 0:
+                        # We don't need to be checking if there's no channels to post in
+                        del cur_accounts[str(profile.id)]
+            await ctx.send(
+                "Done, {}'s new followers won't be posted in {} anymore.".format(
+                    profile.login, channel.mention
                 )
             )
 
@@ -254,6 +345,26 @@ class Twitch(TwitchAPI, commands.Cog):
         total = data["total"]
         await self.twitch_menu(ctx, follows, total)
 
+    @twitchhelp.command(name="clips", aliases=["clip"])
+    async def get_user_clips(
+        self, ctx: commands.Context, twitch_name: Optional[str] = None
+    ) -> None:
+        """
+        Get latest twitch clips from a user
+        """
+        await ctx.trigger_typing()
+        try:
+            profile = await self.maybe_get_twitch_profile(ctx, twitch_name)
+        except TwitchError as e:
+            await ctx.send(e)
+            return
+        clips = await self.get_new_clips(profile.id)
+        if not clips:
+            return await ctx.send(f"{profile.display_name} does not have any public clips available.")
+        log.debug(clips)
+        urls = [c["url"] for c in clips]
+        await menu(ctx, urls, DEFAULT_CONTROLS)
+
     @twitchhelp.command(name="user", aliases=["profile"])
     async def get_user(self, ctx: commands.Context, twitch_name: Optional[str] = None) -> None:
         """
@@ -284,14 +395,8 @@ class Twitch(TwitchAPI, commands.Cog):
         https://github.com/Lunar-Dust/Dusty-Cogs/blob/master/menu/menu.py"""
         user_id = post_list[page].from_id
         followed_at = post_list[page].followed_at
-        url = "{}/users?id={}".format(BASE_URL, user_id)
-        keys = await self._get_api_tokens()
-        header = {"Client-ID": keys["client_id"]}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=header) as resp:
-                data = await resp.json()
 
-        profile = TwitchProfile.from_json(data)
+        profile = await self.get_profile_from_id(user_id)
         em = None
         if ctx.channel.permissions_for(ctx.me).embed_links:
             em = await self.make_user_embed(profile)
