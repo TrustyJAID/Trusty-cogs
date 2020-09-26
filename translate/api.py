@@ -139,7 +139,10 @@ class GoogleTranslateAPI:
         self.cache["guild_whitelist"][guild.id] = await self.config.guild(guild).whitelist()
 
     async def check_bw_list(
-        self, guild: discord.Guild, channel: discord.TextChannel, member: discord.Member
+        self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        member: Union[discord.Member, discord.User],
     ) -> bool:
         can_run = True
         if guild.id not in self.cache["guild_blacklist"]:
@@ -169,6 +172,8 @@ class GoogleTranslateAPI:
                 can_run = False
             if member.id in blacklist:
                 can_run = False
+            if isinstance(member, discord.User):
+                return True
             for role in member.roles:
                 if role.is_default():
                     continue
