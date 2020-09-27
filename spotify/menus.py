@@ -333,8 +333,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                     await user_spotify.playback_resume()
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -361,8 +364,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.playback_repeat(state)
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -391,8 +397,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.playback_shuffle(state)
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -413,8 +422,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.saved_tracks_add([cur.item.id])
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -434,8 +446,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.playback_next()
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -456,8 +471,11 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.playback_previous()
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -612,8 +630,11 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                         await user_spotify.playback_start_context(self.source.current_track.uri)
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
@@ -632,8 +653,11 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                 await user_spotify.saved_tracks_add([cur.item.id])
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await self.ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await self.ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(

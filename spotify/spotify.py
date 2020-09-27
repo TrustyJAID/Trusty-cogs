@@ -51,7 +51,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -208,7 +208,7 @@ class Spotify(commands.Cog):
             self._tokens = (
                 tokens.get("client_id"),
                 tokens.get("client_secret"),
-                tokens.get("redirect_uri", "https://localhost"),
+                tokens.get("redirect_uri", "https://localhost/"),
             )
             self._credentials = tekore.Credentials(*self._tokens, sender=self._sender)
             self._app_token = tekore.request_client_token(*self._tokens[:2])
@@ -502,8 +502,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -530,8 +533,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -554,8 +560,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -578,8 +587,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -632,8 +644,11 @@ class Spotify(commands.Cog):
                 await ctx.send("I could not find any URL's or matching playlist names.")
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -665,8 +680,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -701,8 +719,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -730,8 +751,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -756,8 +780,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -783,8 +810,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
@@ -817,8 +847,11 @@ class Spotify(commands.Cog):
             await ctx.tick()
         except tekore.NotFound:
             await ctx.send("I could not find an active device to send requests for.")
-        except tekore.Forbidden:
-            await ctx.send("This action is prohibited for non-premium users.")
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await ctx.send("This action is prohibited for non-premium users.")
+            else:
+                await ctx.send("I couldn't perform that action for you.")
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
