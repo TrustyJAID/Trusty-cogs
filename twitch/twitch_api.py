@@ -5,7 +5,7 @@ import time
 import logging
 
 from typing import Tuple, Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from redbot.core import Config, commands, VersionInfo, version_info
 from redbot.core.bot import Red
@@ -198,12 +198,16 @@ class TwitchAPI:
         total = data["total"]
         return follows, total
 
-    async def get_new_clips(self, user_id: str) -> List[dict]:
+    async def get_new_clips(self, user_id: str, started_at: Optional[datetime] = None) -> List[dict]:
         """
         Gets and returns the last 20 clips generated for a user
         """
         url = f"{BASE_URL}/clips?broadcaster_id={user_id}"
+        if started_at:
+            url += f"&started_at={started_at.isoformat()}Z"
+            url += f"&ended_at={datetime.utcnow().isoformat()}Z"
         data = await self.get_response(url)
+        log.debug(data)
         clips = data["data"]
         return clips
 
@@ -282,7 +286,8 @@ class TwitchAPI:
         followed = await self.config.twitch_clips()
         for user_id, clip_data in followed.items():
             try:
-                clips = await self.get_new_clips(user_id)
+                now = datetime.utcnow() + timedelta(days=-8)
+                clips = await self.get_new_clips(user_id, now)
             except Exception:
                 log.exception(
                     f"Error getting twitch clips {user_id}", exc_info=True
