@@ -182,7 +182,7 @@ class Twitch(TwitchAPI, commands.Cog):
             else:
                 cur_accounts[str(profile.id)]["channels"].append(channel.id)
         await ctx.send(
-            "{} has been setup for twitch follow notifications in {}".format(
+            "{} has been setup for new clip notifications in {}".format(
                 profile.display_name, channel.mention
             )
         )
@@ -215,7 +215,7 @@ class Twitch(TwitchAPI, commands.Cog):
             else:
                 if channel.id not in cur_accounts[str(profile.id)]["channels"]:
                     await ctx.send(
-                        "{} is not currently posting follow notifications in {}".format(
+                        "{} is not currently posting new clips in {}".format(
                             profile.login, channel.mention
                         )
                     )
@@ -226,7 +226,7 @@ class Twitch(TwitchAPI, commands.Cog):
                         # We don't need to be checking if there's no channels to post in
                         del cur_accounts[str(profile.id)]
             await ctx.send(
-                "Done, {}'s new followers won't be posted in {} anymore.".format(
+                "Done, {}'s new clips won't be posted in {} anymore.".format(
                     profile.login, channel.mention
                 )
             )
@@ -361,7 +361,6 @@ class Twitch(TwitchAPI, commands.Cog):
         clips = await self.get_new_clips(profile.id)
         if not clips:
             return await ctx.send(f"{profile.display_name} does not have any public clips available.")
-        log.debug(clips)
         urls = [c["url"] for c in clips]
         await menu(ctx, urls, DEFAULT_CONTROLS)
 

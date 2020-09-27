@@ -207,7 +207,6 @@ class TwitchAPI:
             url += f"&started_at={started_at.isoformat()}Z"
             url += f"&ended_at={datetime.utcnow().isoformat()}Z"
         data = await self.get_response(url)
-        log.debug(data)
         clips = data["data"]
         return clips
 
