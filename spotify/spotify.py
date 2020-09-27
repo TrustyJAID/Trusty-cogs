@@ -51,7 +51,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.2"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -375,6 +375,10 @@ class Spotify(commands.Cog):
     async def playlist_list(self, ctx: commands.Context):
         """
         List your Spotify Playlists
+
+        If this command is done in DM with the bot it will show private playlists
+        otherwise this will not display private playlists unless showprivate
+        has been toggled on.
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
@@ -382,7 +386,10 @@ class Spotify(commands.Cog):
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             playlists = await user_spotify.followed_playlists(limit=50)
-        show_private = await self.config.user(ctx.author).show_private()
+        show_private = (
+            await self.config.user(ctx.author).show_private()
+            or isinstance(ctx.channel, discord.DMChannel)
+        )
         if show_private:
             playlist_list = playlists.items
         else:
@@ -435,6 +442,39 @@ class Spotify(commands.Cog):
         artists = cur.items
         await SpotifyBaseMenu(
             source=SpotifyTopArtistsPages(artists),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            user_token=user_token,
+        ).start(ctx=ctx)
+
+    @spotify_playlist.command(name="view")
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    async def spotify_view(self, ctx: commands.Context):
+        """
+        View details about your spotify playlists
+
+        If this command is done in DM with the bot it will show private playlists
+        otherwise this will not display private playlists unless showprivate
+        has been toggled on.
+        """
+        user_token = await self.get_user_auth(ctx)
+        if not user_token:
+            return await ctx.send("You need to authorize me to interact with spotify.")
+        user_spotify = tekore.Spotify(sender=self._sender)
+        with user_spotify.token_as(user_token):
+            playlists = await user_spotify.followed_playlists(limit=50)
+        show_private = (
+            await self.config.user(ctx.author).show_private()
+            or isinstance(ctx.channel, discord.DMChannel)
+        )
+        if show_private:
+            playlist_list = playlists.items
+        else:
+            playlist_list = [p for p in playlists.items if p.public]
+        await SpotifySearchMenu(
+            source=SpotifyPlaylistPages(playlist_list),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,

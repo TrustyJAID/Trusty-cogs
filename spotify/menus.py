@@ -26,6 +26,9 @@ class SpotifySongPages(menus.ListPageSource):
         super().__init__(tracks, per_page=1)
         self.current_track = None
 
+    def is_paginating(self):
+        return True
+
     async def format_page(self, menu: menus.MenuPages, track: tekore.model.FullTrack):
         self.current_track = track
         em = None
@@ -47,6 +50,9 @@ class SpotifyPlaylistPages(menus.ListPageSource):
     def __init__(self, playlists: List[tekore.model.SimplePlaylist]):
         super().__init__(playlists, per_page=1)
         self.current_track = None
+
+    def is_paginating(self):
+        return True
 
     async def format_page(self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist):
         self.current_track = playlist
@@ -574,7 +580,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         """Just extends the default reaction_check to use owner_ids"""
         if payload.message_id != self.message.id:
             return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
+        if payload.user_id != self._author_id:
             return False
         return payload.emoji in self.buttons
 
