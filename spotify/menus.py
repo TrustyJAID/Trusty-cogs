@@ -52,7 +52,7 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         self.current_track = playlist
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        url = f"{playlist.href}"
+        url = f"https://open.spotify.com/playlist/{playlist.id}"
         artists = getattr(playlist, "artists", [])
         artist = humanize_list([a.name for a in artists])[:256]
         em.set_author(
@@ -65,12 +65,12 @@ class SpotifyPlaylistPages(menus.ListPageSource):
             if playlist.type == "playlist":
                 cur = await user_spotify.playlist_items(playlist.id)
                 for track in cur.items[:10]:
-                    description += f"[{track.track.name}]({track.track.href})\n"
+                    description += f"[{track.track.name}](https://open.spotify.com/playlist/{track.track.id})\n"
             if playlist.type == "album":
                 album = await user_spotify.album(playlist.id)
                 cur = album.tracks
                 for track in cur.items[:10]:
-                    description += f"[{track.name}]({track.href})\n"
+                    description += f"[{track.name}](https://open.spotify.com/album/{track.id})\n"
 
         em.description = description
         if playlist.images:
@@ -92,7 +92,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
         msg = ""
         for playlist in playlists:
             if playlist.public:
-                msg += f"[{playlist.name}]({playlist.href})\n"
+                msg += f"[{playlist.name}](https://open.spotify.com/playlist/{playlist.id})\n"
             else:
                 msg += f"{playlist.name}\n"
         em.description = msg
@@ -111,7 +111,7 @@ class SpotifyTopTracksPages(menus.ListPageSource):
         msg = ""
         for track in tracks:
             artist = humanize_list([a.name for a in track.artists])
-            msg += f"[{track.name} by {artist}]({track.href})\n"
+            msg += f"[{track.name} by {artist}](https://open.spotify.com/artist{track.id})\n"
         em.description = msg
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
@@ -127,7 +127,7 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
         em.set_author(name=f"{menu.ctx.author.display_name}'s Top Artists")
         msg = ""
         for artist in artists:
-            msg += f"[{artist.name}]({artist.href})\n"
+            msg += f"[{artist.name}](https://open.spotify.com/artist/{artist.id})\n"
         em.description = msg
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
@@ -145,8 +145,12 @@ class SpotifyPages(menus.PageSource):
         cur_state: Tuple[discord.Spotify, tekore.CurrentlyPlayingContext, bool],
     ) -> discord.Embed:
         activity = cur_state[0]
+        spot_context = cur_state[1]
         em = discord.Embed(color=activity.color)
-        url = f"https://open.spotify.com/track/{activity.track_id}"
+        if spot_context.item.type == "episode":
+            url = f"https://open.spotify.com/episode/{activity.track_id}"
+        else:
+            url = f"https://open.spotify.com/track/{activity.track_id}"
         artist_title = f"{activity.title} by " + ", ".join(a for a in activity.artists)
         limit = 256 - (len(menu.ctx.author.display_name) + 27)
         em.set_author(

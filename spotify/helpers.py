@@ -37,12 +37,19 @@ def _draw_play(song: discord.Spotify) -> str:
 def _tekore_to_discord(song) -> discord.Spotify:
         start = song.timestamp
         end = start + song.item.duration_ms
-        art = "spotify:" + song.item.album.images[0].url.split("/")[-1]
+        if song.item.type == "track":
+            art = "spotify:" + song.item.album.images[0].url.split("/")[-1]
+            text = song.item.album.name
+            artists = "; ".join(i.name for i in song.item.artists)
+        elif song.item.type == "episode":
+            art = "spotify:" + song.item.images[0].url.split("/")[-1]
+            text = song.item.show.name
+            artists = song.item.description
         fake_spot = discord.Spotify(
-            state="; ".join(i.name for i in song.item.artists),
+            state=artists,
             details=song.item.name,
             timestamps={"start": start, "end": end},
-            assets={"large_text": song.item.album.name, "large_image": art},
+            assets={"large_text": text, "large_image": art},
             party={},
             sync_id=song.item.id,
             session_id=None,

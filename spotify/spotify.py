@@ -51,7 +51,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -713,7 +713,7 @@ class Spotify(commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def spotify_shuffle(self, ctx: commands.Context, state: Optional[bool] = None):
         """
-        Repeats your current song on spotify
+        Shuffles your current song list
 
         `<state>` either true or false. Not providing this will toggle the current setting.
         """
@@ -872,6 +872,13 @@ class Spotify(commands.Cog):
         except asyncio.TimeoutError:
             await ctx.send("Alright I won't interact with spotify for you.")
             return
+        reply_msg = "Your authorization has been set!"
+        try:
+            await author.send(reply_msg)
+            # pred = MessagePredicate.same_context(user=ctx.author)
+        except discord.errors.Forbidden:
+            # pre = MessagePredicate.same_context(ctx)
+            await ctx.send(reply_msg)
         redirected = msg.clean_content.strip()
         user_token = await auth.request_token(url=redirected)
         await self.save_token(ctx.author, user_token)
