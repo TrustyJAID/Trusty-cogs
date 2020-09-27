@@ -31,7 +31,7 @@ log = logging.getLogger("red.trusty-cogs.spotify")
 
 
 SPOTIFY_RE = re.compile(
-    r"(https?:\/\/open\.spotify\.com\/|spotify:)(track|playlist|album|artist)\/?:?([^?\s]+)"
+    r"(https?:\/\/open\.spotify\.com\/|spotify:)(track|playlist|album|artist|episode)\/?:?([^?\(\)\s]+)"
 )
 
 ACTION_EMOJIS = {
@@ -51,7 +51,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -115,7 +115,10 @@ class Spotify(commands.Cog):
         action = lookup[str(payload.emoji)]
         if action == "play":
             # play the song if it exists
-            song_data = SPOTIFY_RE.finditer(message.content)
+            content = message.content
+            if message.embeds:
+                content += " ".join(v for k, v in message.embeds[0].to_dict().items() if k in ["title", "description"])
+            song_data = SPOTIFY_RE.finditer(content)
             tracks = []
             new_uri = ""
             if song_data:
@@ -159,7 +162,10 @@ class Spotify(commands.Cog):
                 log.exception("Error on reaction add play")
                 return
         if action == "like":
-            song_data = SPOTIFY_RE.finditer(message.content)
+            content = message.content
+            if message.embeds:
+                content += " ".join(v for k, v in message.embeds[0].to_dict().items() if k in ["title", "description"])
+            song_data = SPOTIFY_RE.finditer(content)
             tracks = []
             albums = []
             playlists = []
@@ -945,6 +951,9 @@ class Spotify(commands.Cog):
         except asyncio.TimeoutError:
             await ctx.send("Alright I won't interact with spotify for you.")
             return
+        redirected = msg.clean_content.strip()
+        if self._tokens[-1] not in redirected:
+            return await ctx.send("Credentials not valid")
         reply_msg = "Your authorization has been set!"
         try:
             await author.send(reply_msg)
@@ -952,7 +961,7 @@ class Spotify(commands.Cog):
         except discord.errors.Forbidden:
             # pre = MessagePredicate.same_context(ctx)
             await ctx.send(reply_msg)
-        redirected = msg.clean_content.strip()
+
         user_token = await auth.request_token(url=redirected)
         await self.save_token(ctx.author, user_token)
 
