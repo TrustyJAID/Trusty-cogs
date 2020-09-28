@@ -4,34 +4,31 @@ import asyncio
 import discord
 import logging
 import tekore
+from tabulate import tabulate
 
-from typing import Any, AsyncGenerator
+from typing import Any, List, Tuple
 
 from redbot.vendored.discord.ext import menus
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, box, pagify
 
-from .helpers import _tekore_to_discord, _draw_play, NotPlaying
+from .helpers import _draw_play, NotPlaying, make_details, REPEAT_STATES
 
-log = logging.getLogger("red.Trusty-cogs.reddit")
-
-REPEAT_STATES = {
-    "context": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
-    "track": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}",
-    "off": "",
-}
+log = logging.getLogger("red.Trusty-cogs.spotify")
 
 
-class SpotifySongPages(menus.ListPageSource):
-    def __init__(self, tracks: List[tekore.model.FullTrack]):
-        super().__init__(tracks, per_page=1)
+class SpotifyTrackPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.FullTrack], detailed: bool):
+        super().__init__(items, per_page=1)
         self.current_track = None
+        self.detailed = detailed
 
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, track: tekore.model.FullTrack):
+    async def format_page(
+        self, menu: menus.MenuPages, track: tekore.model.FullTrack
+    ) -> discord.Embed:
         self.current_track = track
-        em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         url = f"https://open.spotify.com/track/{track.id}"
         artist_title = f"{track.name} by " + ", ".join(a.name for a in track.artists)
@@ -42,19 +39,131 @@ class SpotifySongPages(menus.ListPageSource):
         em.description = f"[{artist_title}]({url})\n"
         if track.album.images:
             em.set_thumbnail(url=track.album.images[0].url)
+        if self.detailed:
+            sp = tekore.Spotify(sender=menu.cog._sender)
+            with sp.token_as(menu.user_token):
+                details = await sp.track_audio_features(track.id)
+
+            msg = await make_details(track, details)
+            em.add_field(name="Details", value=box(msg[:1000], lang="css"))
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
-class SpotifyPlaylistPages(menus.ListPageSource):
-    def __init__(self, playlists: List[tekore.model.SimplePlaylist]):
-        super().__init__(playlists, per_page=1)
+class SpotifyArtistPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.FullArtist], detailed: bool):
+        super().__init__(items, per_page=1)
         self.current_track = None
 
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist):
+    async def format_page(
+        self, menu: menus.MenuPages, artist: tekore.model.FullArtist
+    ) -> discord.Embed:
+        self.current_track = artist
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+        url = f"https://open.spotify.com/artist/{artist.id}"
+        artist_title = f"{artist.name}"
+        em.set_author(
+            name=artist_title,
+            url=url,
+        )
+        sp = tekore.Spotify(sender=menu.cog._sender)
+        with sp.token_as(menu.user_token):
+            cur = await sp.artist_top_tracks(artist.id, "from_token")
+        msg = "Top Tracks\n"
+        for track in cur:
+            msg += f"[{track.name}](https://open.spotify.com/{track.id})\n"
+        em.description = msg
+        if artist.images:
+            em.set_thumbnail(url=artist.images[0].url)
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class SpotifyAlbumPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.FullAlbum], detailed: bool):
+        super().__init__(items, per_page=1)
+        self.current_track = None
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, album: tekore.model.FullAlbum
+    ) -> discord.Embed:
+        self.current_track = album
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+        url = f"https://open.spotify.com/album/{album.id}"
+        title = f"{album.name} by {humanize_list([a.name for a in album.artists])}"
+        if len(title) > 256:
+            title = title[:253] + "..."
+        em.set_author(
+            name=title,
+            url=url,
+        )
+        msg = "Tracks:\n"
+        sp = tekore.Spotify(sender=menu.cog._sender)
+        with sp.token_as(menu.user_token):
+            cur = await sp.album(album.id)
+        for track in cur.tracks.items:
+            msg += f"[{track.name}](https://open.spotify.com/{track.id})\n"
+        em.description = msg
+        if album.images:
+            em.set_thumbnail(url=album.images[0].url)
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class SpotifyPlaylistPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.SimplePlaylist], detailed: bool):
+        super().__init__(items, per_page=1)
+        self.current_track = None
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist
+    ) -> discord.Embed:
+        self.current_track = playlist
+        em = None
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+        url = f"https://open.spotify.com/playlist/{playlist.id}"
+        artists = getattr(playlist, "artists", [])
+        artist = humanize_list([a.name for a in artists])[:256]
+        em.set_author(
+            name=artist or playlist.name,
+            url=url,
+        )
+        user_spotify = tekore.Spotify(sender=menu.cog._sender)
+        description = ""
+        with user_spotify.token_as(menu.user_token):
+            cur = await user_spotify.playlist_items(playlist.id)
+            for track in cur.items[:10]:
+                description += (
+                    f"[{track.track.name}](https://open.spotify.com/playlist/{track.track.id})\n"
+                )
+
+        em.description = description
+        if playlist.images:
+            em.set_thumbnail(url=playlist.images[0].url)
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class SpotifyNewPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.SimplePlaylist]):
+        super().__init__(items, per_page=1)
+        self.current_track = None
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist
+    ) -> discord.Embed:
         self.current_track = playlist
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
@@ -85,13 +194,104 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         return em
 
 
+class SpotifyEpisodePages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.FullEpisode], detailed: bool):
+        super().__init__(items, per_page=1)
+        self.current_track = None
+        self.detailed = detailed
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, episode: tekore.model.FullEpisode
+    ) -> discord.Embed:
+        self.current_track = episode
+        show = episode.show
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+        url = f"https://open.spotify.com/episode/{episode.id}"
+        artist_title = f"{show.name} by {show.publisher}"
+        em.set_author(
+            name=artist_title[:256],
+            url=url,
+        )
+        em.description = f"[{episode.description[:1900]}]({url})\n"
+        if episode.images:
+            em.set_thumbnail(url=episode.images[0].url)
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class SpotifyShowPages(menus.ListPageSource):
+    def __init__(self, items: List[tekore.model.FullShow], detailed: bool):
+        super().__init__(items, per_page=1)
+        self.current_track = None
+        self.detailed = detailed
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, show: tekore.model.FullShow
+    ) -> discord.Embed:
+        self.current_track = show
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+        url = f"https://open.spotify.com/show/{show.id}"
+        artist_title = f"{show.name} by {show.publisher}"
+        em.set_author(
+            name=artist_title[:256],
+            url=url,
+        )
+        em.description = f"[{show.description[:1900]}]({url})\n"
+        if show.images:
+            em.set_thumbnail(url=show.images[0].url)
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class SpotifyRecentSongPages(menus.ListPageSource):
+    def __init__(self, tracks: List[tekore.model.PlayHistory], detailed: bool):
+        super().__init__(tracks, per_page=1)
+        self.current_track = None
+        self.detailed = detailed
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(
+        self, menu: menus.MenuPages, history: tekore.model.PlayHistory
+    ) -> discord.Embed:
+        track = history.track
+        self.current_track = track
+        em = None
+        em = discord.Embed(color=discord.Colour(0x1DB954), timestamp=history.played_at)
+        url = f"https://open.spotify.com/track/{track.id}"
+        artist_title = f"{track.name} by " + ", ".join(a.name for a in track.artists)
+        em.set_author(
+            name=track.name[:256],
+            url=url,
+        )
+        em.description = f"[{artist_title}]({url})\n"
+        if track.album.images:
+            em.set_thumbnail(url=track.album.images[0].url)
+        if self.detailed:
+            sp = tekore.Spotify(sender=menu.cog._sender)
+            with sp.token_as(menu.user_token):
+                details = await sp.track_audio_features(history.track.id)
+
+            msg = await make_details(track, details)
+            em.add_field(name="Details", value=box(msg[:1000], lang="css"))
+        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Played at")
+        return em
+
+
 class SpotifyPlaylistsPages(menus.ListPageSource):
     def __init__(self, playlists: List[tekore.model.SimplePlaylist]):
         super().__init__(playlists, per_page=10)
 
     async def format_page(
         self, menu: menus.MenuPages, playlists: List[tekore.model.SimplePlaylist]
-    ):
+    ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(name=f"{menu.ctx.author.display_name}'s Spotify Playlists")
@@ -110,7 +310,9 @@ class SpotifyTopTracksPages(menus.ListPageSource):
     def __init__(self, playlists: List[tekore.model.FullTrack]):
         super().__init__(playlists, per_page=10)
 
-    async def format_page(self, menu: menus.MenuPages, tracks: List[tekore.model.FullTrack]):
+    async def format_page(
+        self, menu: menus.MenuPages, tracks: List[tekore.model.FullTrack]
+    ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(name=f"{menu.ctx.author.display_name}'s Top Tracks")
@@ -127,7 +329,9 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
     def __init__(self, playlists: List[tekore.model.FullArtist]):
         super().__init__(playlists, per_page=10)
 
-    async def format_page(self, menu: menus.MenuPages, artists: List[tekore.model.FullArtist]):
+    async def format_page(
+        self, menu: menus.MenuPages, artists: List[tekore.model.FullArtist]
+    ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(name=f"{menu.ctx.author.display_name}'s Top Artists")
@@ -140,36 +344,60 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
 
 
 class SpotifyPages(menus.PageSource):
-    def __init__(self, user_token: tekore.Token, sender: tekore.AsyncSender):
+    def __init__(
+        self, user_token: tekore.Token, sender: tekore.AsyncSender, detailed: bool
+    ) -> discord.Embed:
         super().__init__()
         self.user_token = user_token
         self.sender = sender
+        self.detailed = detailed
 
     async def format_page(
         self,
         menu: menus.MenuPages,
-        cur_state: Tuple[discord.Spotify, tekore.CurrentlyPlayingContext, bool],
+        cur_state: Tuple[tekore.model.CurrentlyPlayingContext, bool],
     ) -> discord.Embed:
-        activity = cur_state[0]
-        spot_context = cur_state[1]
-        em = discord.Embed(color=activity.color)
-        if spot_context.item.type == "episode":
-            url = f"https://open.spotify.com/episode/{activity.track_id}"
+
+        state = cur_state[0]
+        is_liked = cur_state[1]
+        em = discord.Embed(color=discord.Colour(0x1DB954))
+
+        if state.item.type == "episode":
+            url = f"https://open.spotify.com/episode/{state.item.id}"
+            artist_title = state.item.name
+            image = state.item.images[0].url
         else:
-            url = f"https://open.spotify.com/track/{activity.track_id}"
-        artist_title = f"{activity.title} by " + ", ".join(a for a in activity.artists)
-        limit = 256 - (len(menu.ctx.author.display_name) + 27)
+            url = f"https://open.spotify.com/track/{state.item.id}"
+            artist_title = f"{state.item.name} by " + ", ".join(a.name for a in state.item.artists)
+            image = state.item.album.images[0].url
+        album = getattr(state.item, "album", "")
+        if album:
+            album = f"[{album.name}](https://open.spotify.com/track/{album.id})"
         em.set_author(
             name=f"{menu.ctx.author.display_name} is currently listening to",
             icon_url=menu.ctx.author.avatar_url,
             url=url,
         )
-        repeat = REPEAT_STATES[cur_state[1].repeat_state]
-        shuffle = "\N{TWISTED RIGHTWARDS ARROWS}" if cur_state[1].shuffle_state else ""
-        liked = "| \N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}" if cur_state[2] else ""
-        em.set_footer(text=f"Repeat: {repeat} | Shuffle {shuffle}{liked}")
-        em.description = f"[{artist_title}]({url})\n" f"{_draw_play(activity)}"
-        em.set_thumbnail(url=activity.album_cover_url)
+        repeat = (
+            f"Repeat: {REPEAT_STATES[state.repeat_state]} |" if state.repeat_state != "off" else ""
+        )
+        shuffle = "Shuffle: \N{TWISTED RIGHTWARDS ARROWS} |" if state.shuffle_state else ""
+        liked = "Liked: \N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}" if is_liked else ""
+        footer = f"{repeat}{shuffle}{liked}"
+        if footer:
+            em.set_footer(text=footer)
+        em.description = f"[{artist_title}]({url})\n\n{album}\n{_draw_play(state)}"
+        try:
+            if self.detailed:
+                sp = tekore.Spotify(sender=self.sender)
+                with sp.token_as(self.user_token):
+                    details = await sp.track_audio_features(state.item.id)
+
+                msg = await make_details(state.item, details)
+                em.add_field(name="Details", value=box(msg[:1000], lang="css"))
+        except tekore.NotFound:
+            pass
+        em.set_thumbnail(url=image)
         return em
 
     def is_paginating(self):
@@ -220,8 +448,7 @@ class SpotifyPages(menus.PageSource):
             song = cur_state.item.id
             liked = await user_spotify.saved_tracks_contains([song])
             is_liked = liked[0]
-        fake_spot = _tekore_to_discord(cur_state)
-        return fake_spot, cur_state, is_liked
+        return cur_state, is_liked
 
 
 class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
@@ -279,7 +506,9 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         """
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        msg = await channel.send(**kwargs)
+        self.cog.current_menus[msg.id] = ctx.author.id
+        return msg
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
@@ -425,7 +654,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
-                await user_spotify.saved_tracks_add([cur.item.id])
+                await user_spotify.saved_tracks_add([self.source.current_track.id])
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
         except tekore.Forbidden as e:
@@ -467,7 +696,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
 
     @menus.button(
         "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
+        position=menus.First(2),
     )
     async def go_to_last_page(self, payload):
         """go to the last page"""
@@ -494,6 +723,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
+        del self.cog.current_menus[self.message.ids]
         await self.message.delete()
 
 
@@ -552,7 +782,9 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         """
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        msg = await channel.send(**kwargs)
+        self.cog.current_menus[msg.id] = ctx.author.id
+        return msg
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
@@ -622,6 +854,9 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    await ctx.send("I could not find an active device to send requests for.")
+                    return
                 if cur.item.id == self.source.current_track.id:
                     if cur.is_playing:
                         await user_spotify.playback_pause()
@@ -630,9 +865,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                 else:
                     if self.source.current_track.type == "track":
                         await user_spotify.playback_start_tracks([self.source.current_track.id])
-                    if self.source.current_track.type == "playlist":
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
-                    if self.source.current_track.type == "album":
+                    else:
                         await user_spotify.playback_start_context(self.source.current_track.uri)
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
@@ -655,8 +888,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                await user_spotify.saved_tracks_add([cur.item.id])
+                await user_spotify.saved_tracks_add([self.source.current_track.id])
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
         except tekore.Forbidden as e:
@@ -694,6 +926,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
+        del self.cog.current_menus[self.message.id]
         await self.message.delete()
 
 
@@ -752,7 +985,9 @@ class SpotifyBaseMenu(menus.MenuPages, inherit_buttons=False):
         """
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        msg = await channel.send(**kwargs)
+        self.cog.current_menus[msg.id] = ctx.author.id
+        return msg
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
@@ -835,4 +1070,5 @@ class SpotifyBaseMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
+        del self.cog.current_menus[self.message.id]
         await self.message.delete()

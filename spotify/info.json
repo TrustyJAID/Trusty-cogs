@@ -15,7 +15,7 @@
     "name" : "Spotify",
     "permissions" : [],
     "required_cogs" : {},
-    "requirements" : ["tekore"],
+    "requirements" : ["tekore", "tabulate"],
     "short" : "Control Spotify through Discord!",
     "tags" : ["spotify"],
     "type" : "COG"
