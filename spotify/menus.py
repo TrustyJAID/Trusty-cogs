@@ -449,7 +449,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
-                await user_spotify.playback_next()
+                await user_spotify.playback_previous()
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
         except tekore.Forbidden as e:
@@ -474,7 +474,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
-                await user_spotify.playback_previous()
+                await user_spotify.playback_next()
         except tekore.NotFound:
             await self.ctx.send("I could not find an active device to send requests for.")
         except tekore.Forbidden as e:
