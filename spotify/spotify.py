@@ -468,7 +468,7 @@ class Spotify(commands.Cog):
             ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
         if isinstance(ctx.channel, discord.DMChannel):
             private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
-                country=cur.country, id=cur.id, emaile=cur.email
+                country=cur.country, id=cur.id, email=cur.email
             )
             em.add_field(name=_("Private Data"), value=private)
 
