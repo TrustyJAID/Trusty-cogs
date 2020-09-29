@@ -353,6 +353,7 @@ class SpotifyPages(menus.PageSource):
         self.user_token = user_token
         self.sender = sender
         self.detailed = detailed
+        self.current_track = None
 
     async def format_page(
         self,
@@ -363,7 +364,7 @@ class SpotifyPages(menus.PageSource):
         state = cur_state[0]
         is_liked = cur_state[1]
         em = discord.Embed(color=discord.Colour(0x1DB954))
-
+        self.current_track = state.item
         if state.item.type == "episode":
             url = f"https://open.spotify.com/episode/{state.item.id}"
             artist_title = state.item.name
