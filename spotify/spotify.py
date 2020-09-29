@@ -10,8 +10,18 @@ from typing import Tuple, Optional, Literal, Mapping
 
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.i18n import Translator, cog_i18n
 
-from .helpers import NotPlaying, SPOTIFY_RE, LOOKUP, ACTION_EMOJIS, SCOPE, SearchTypes
+from .helpers import (
+    NotPlaying,
+    SPOTIFY_RE,
+    LOOKUP,
+    ACTION_EMOJIS,
+    SCOPE,
+    SearchTypes,
+    SpotifyURIConverter,
+    RecommendationsConverter,
+)
 from .menus import (
     SpotifyUserMenu,
     SpotifyPages,
@@ -27,18 +37,23 @@ from .menus import (
     SpotifyAlbumPages,
     SpotifyShowPages,
     SpotifyEpisodePages,
+    SpotifyNewPages,
 )
 
 log = logging.getLogger("red.trusty-cogs.spotify")
+_ = Translator("Spotify", __file__)
+
+TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
 
 
+@cog_i18n(_)
 class Spotify(commands.Cog):
     """
-    Display information from Spotifies API
+    Display information from Spotify's API
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -105,8 +120,9 @@ class Spotify(commands.Cog):
         author = user or ctx.author
         if not self._credentials:
             await ctx.send(
-                (
-                    "The bot owner needs to set their Spotify credentials before this command can be used."
+                _(
+                    "The bot owner needs to set their Spotify credentials "
+                    "before this command can be used."
                     " See `{prefix}spotify set creds` for more details."
                 ).format(prefix=ctx.clean_prefix)
             )
@@ -126,10 +142,10 @@ class Spotify(commands.Cog):
             return user_token
 
         auth = tekore.UserAuth(self._credentials, scope=SCOPE)
-        msg = (
+        msg = _(
             "Please accept the authorization in the following link and reply "
-            f"to me with the full url\n\n {auth.url}"
-        )
+            "to me with the full url\n\n {auth}"
+        ).format(auth=auth.url)
 
         def check(message):
             return message.author.id == author.id and self._tokens[-1] in message.content
@@ -143,12 +159,12 @@ class Spotify(commands.Cog):
         try:
             check_msg = await ctx.bot.wait_for("message", check=check, timeout=120)
         except asyncio.TimeoutError:
-            await ctx.send("Alright I won't interact with spotify for you.")
+            await ctx.send(_("Alright I won't interact with spotify for you."))
             return
         redirected = check_msg.clean_content.strip()
         if self._tokens[-1] not in redirected:
-            return await ctx.send("Credentials not valid")
-        reply_msg = "Your authorization has been set!"
+            return await ctx.send(_("Credentials not valid"))
+        reply_msg = _("Your authorization has been set!")
         try:
             await author.send(reply_msg)
             # pred = MessagePredicate.same_context(user=ctx.author)
@@ -176,8 +192,8 @@ class Spotify(commands.Cog):
         Handles listening for reactions and parsing
         """
         if payload.message_id in self.current_menus:
-            log.debug("Reaction in menus")
             if self.current_menus[payload.message_id] == payload.user_id:
+                log.debug("Menu reaction from the same user ignoring")
                 return
         if str(payload.emoji) not in LOOKUP.keys():
             return
@@ -344,7 +360,10 @@ class Spotify(commands.Cog):
         ]
         if not any([i in allowed for i in listen_for]):
             return await ctx.send(
-                "One of the values you supplied for `listen_for` is not valid. Only `play` and `like` are accepted."
+                _(
+                    "One of the values you supplied for `listen_for` is not valid. "
+                    "Only `play` and `like` are accepted."
+                )
             )
         added = []
         removed = []
@@ -359,8 +378,10 @@ class Spotify(commands.Cog):
                 else:
                     current.append(_to_set)
                     added.append(_to_set)
-        add = f"I will now listen for {humanize_list(added)} reactions.\n"
-        remove = f"I will stop listening for {humanize_list(removed)} reactions.\n"
+        add = _("I will now listen for {adds} reactions.\n").format(adds=humanize_list(added))
+        remove = _("I will stop listening for {rem} reactions.\n").format(
+            rem=humanize_list(removed)
+        )
         to_send = ""
         if added:
             to_send += add
@@ -372,19 +393,22 @@ class Spotify(commands.Cog):
     async def show_private(self, ctx: commands.Context, show_private: bool):
         """
         Set whether or not to show private playlists
+
+        This will also display your spotify username and a link
+        to your profile if you use `[p]spotify me` command in public channels.
         """
         await self.config.user(ctx.author).show_private.set(show_private)
         if show_private:
-            msg = "I will show private playlists now."
+            msg = _("I will show private playlists now.")
         else:
-            msg = "I will stop showing private playlists now."
+            msg = _("I will stop showing private playlists now.")
         await ctx.send(msg)
 
     @spotify_set.command(name="creds")
     @commands.is_owner()
     async def command_audioset_spotifyapi(self, ctx: commands.Context):
         """Instructions to set the Spotify API tokens."""
-        message = (
+        message = _(
             "1. Go to Spotify developers and log in with your Spotify account.\n"
             "(https://developer.spotify.com/dashboard/applications)\n"
             '2. Click "Create An App".\n'
@@ -396,7 +420,9 @@ class Spotify(commands.Cog):
             "client_secret <your_client_secret_here>`\n"
             "You may also provide `redirect_uri` in this command with "
             "a different redirect you would like to use but this is optional. "
-            "the default redirect_uri is https://localhost"
+            "the default redirect_uri is https://localhost/\n\n"
+            "Note: The redirect URI Must be set in the Spotify Dashboard and must "
+            "match either `https://localhost/` or the one you set with the `[p]set api` command"
         ).format(prefix=ctx.prefix)
         await ctx.maybe_send_embed(message)
 
@@ -406,7 +432,7 @@ class Spotify(commands.Cog):
         Forget all your spotify settings and credentials on the bot
         """
         await self.config.user(ctx.author).clear()
-        await ctx.send("All spotify user data deleted.")
+        await ctx.send(_("All your spotify data deleted from my settings."))
 
     @spotify_com.command(name="me")
     @commands.bot_has_permissions(embed_links=True)
@@ -416,7 +442,7 @@ class Spotify(commands.Cog):
         """
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=f"{ctx.author.display_name} Spotify Profile", icon_url=ctx.author.avatar_url
+            name=ctx.author.display_name + _(" Spotify Profile"), icon_url=ctx.author.avatar_url
         )
         msg = ""
         cog_settings = await self.config.user(ctx.author).all()
@@ -424,8 +450,8 @@ class Spotify(commands.Cog):
         if not listen_emojis:
             listen_emojis = "Nothing"
         show_private = cog_settings["show_private"]
-        msg += f"Watching for Emojis: {listen_emojis}\n"
-        msg += f"Show Private Playlists: {show_private}\n"
+        msg += _("Watching for Emojis: {listen_emojis}\n").format(listen_emojis=listen_emojis)
+        msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
         if not cog_settings["token"]:
             em.description = msg
             await ctx.send(embed=em)
@@ -435,10 +461,16 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 cur = await user_spotify.current_user()
-        msg += f"Spotify Name: {cur.display_name}\nSubscription: {cur.product}\n"
+        if show_private or isinstance(ctx.channel, discord.DMChannel):
+            msg += _(
+                "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
+                "Subscription: {product}\n"
+            ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
         if isinstance(ctx.channel, discord.DMChannel):
-            private = f"Country: {cur.country}\nSpotify ID: {cur.id}\nEmail: {cur.email}\n"
-            em.add_field(name="Private Data", value=private)
+            private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
+                country=cur.country, id=cur.id, emaile=cur.email
+            )
+            em.add_field(name=_("Private Data"), value=private)
 
         em.description = msg
         await ctx.send(embed=em)
@@ -452,7 +484,7 @@ class Spotify(commands.Cog):
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             await SpotifyUserMenu(
                 source=SpotifyPages(user_token=user_token, sender=self._sender, detailed=detailed),
@@ -463,7 +495,7 @@ class Spotify(commands.Cog):
                 user_token=user_token,
             ).start(ctx=ctx)
         except NotPlaying:
-            await ctx.send("It appears you're not currently listening to Spotify.")
+            await ctx.send(_("It appears you're not currently listening to Spotify."))
 
     @spotify_com.command(name="share")
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
@@ -474,7 +506,7 @@ class Spotify(commands.Cog):
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -486,19 +518,19 @@ class Spotify(commands.Cog):
                     await ctx.tick()
                 else:
                     return await ctx.send(
-                        "You don't appear to be listening to something I can play in audio."
+                        _("You don't appear to be listening to something I can play in audio.")
                     )
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="search")
@@ -534,15 +566,79 @@ class Spotify(commands.Cog):
         }
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             search = await user_spotify.search(query, (search_type,), limit=50)
             items = search[0].items
         if not search[0].items:
-            return await ctx.send(f"No {search_type} could be found matching that query.")
+            return await ctx.send(
+                _("No {search_type} could be found matching that query.").format(
+                    search_type=search_type
+                )
+            )
         await SpotifySearchMenu(
             source=search_types[search_type](items=items, detailed=detailed),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            user_token=user_token,
+        ).start(ctx=ctx)
+
+    @spotify_com.command(name="recommendations", aliases=["recommend", "recommendation"])
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    async def spotify_recommendations(
+        self,
+        ctx: commands.Context,
+        detailed: Optional[bool] = False,
+        *,
+        recommendations: RecommendationsConverter = {},
+    ):
+        """
+        Get Spotify Recommendations
+
+        `<recommendations>` Requires at least 1 of the following matching objects:
+         - `genre` Must be a valid genre type.
+         - `tracks` Any spotify URL or URI leading to tracks will be added to the seed
+         - `artists` Any spotify URL or URI leading to artists will be added to the seed
+         The following parameters also exist and must include some additional parameter:
+         - `acousticness` + a value from 0-100
+         - `danceability` + a value from 0-100
+         - `duration_ms` the duration target of the tracks
+         - `energy` + a value from 0-100
+         - `instrumentalness` + a value from 0-100
+         - `key` A value from 0-11 representing Pitch Class notation
+         - `liveness` + a value from 0-100
+         - `loudness` A value from -60 to 0 represending dB
+         - `mode` either major or minor
+         - `popularity` + a value from 0-100
+         - `speechiness` + a value from 0-100
+         - `tempo` the tempo in BPM
+         - `time_signature` the measure of bars
+         - `valence` + a value from 0-100
+        """
+
+        log.debug(recommendations)
+        user_token = await self.get_user_auth(ctx)
+        if not user_token:
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
+        user_spotify = tekore.Spotify(sender=self._sender)
+        with user_spotify.token_as(user_token):
+            try:
+                search = await user_spotify.recommendations(**recommendations)
+            except Exception:
+                log.exception("Error getting recommendations")
+                return await ctx.send(
+                    _("I could not find any recommendations with those parameters")
+                )
+            items = search.tracks
+        if not items:
+            return await ctx.send(
+                _("No recommendations could be found that query.")
+            )
+        await SpotifySearchMenu(
+            source=SpotifyTrackPages(items=items, detailed=detailed),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -561,7 +657,7 @@ class Spotify(commands.Cog):
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             search = await user_spotify.playback_recently_played(limit=50)
@@ -583,7 +679,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             cur = await user_spotify.current_user_top_tracks(limit=50)
@@ -606,7 +702,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             cur = await user_spotify.current_user_top_artists(limit=50)
@@ -629,7 +725,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             playlists = await user_spotify.new_releases(limit=50)
@@ -651,23 +747,23 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_pause()
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="resume")
@@ -678,7 +774,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -686,19 +782,19 @@ class Spotify(commands.Cog):
                 if not cur or not cur.is_playing:
                     await user_spotify.playback_resume()
                 else:
-                    return await ctx.send("You are already playing music on Spotify.")
+                    return await ctx.send(_("You are already playing music on Spotify."))
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="next", aliases=["skip"])
@@ -709,23 +805,23 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_next()
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="previous", aliases=["prev"])
@@ -736,23 +832,23 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_previous()
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="play")
@@ -781,7 +877,7 @@ class Spotify(commands.Cog):
             log.debug(new_uri)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -822,54 +918,54 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
                     await ctx.tick()
                     return
-                await ctx.send("I could not find any URL's or matching playlist names.")
+                await ctx.send(_("I could not find any URL's or matching playlist names."))
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="queue")
     @commands.bot_has_permissions(add_reactions=True)
-    async def spotify_queue_add(self, ctx: commands.Context, song: str):
+    async def spotify_queue_add(self, ctx: commands.Context, song: SpotifyURIConverter):
         """
         Queue a song to play next in Spotify
 
         `<song>` is a spotify track URL or URI for the song to add to the queue
         """
-        song_data = SPOTIFY_RE.match(song)
-        if not song_data:
-            return await ctx.send("That does not look like a spotify link.")
-        if song_data.group(2) != "track":
-            return await ctx.send("I can only append 1 track at a time right now to the queue.")
-        new_uri = f"spotify:{song_data.group(2)}:{song_data.group(3)}"
+        # song_data = SPOTIFY_RE.match(song)
+        # if not song_data:
+        # return await ctx.send(_("That does not look like a spotify link."))
+        if song.group(2) != "track":
+            return await ctx.send(_("I can only append 1 track at a time right now to the queue."))
+        new_uri = f"spotify:{song.group(2)}:{song.group(3)}"
         log.debug(new_uri)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_queue_add(new_uri)
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="repeat")
@@ -881,10 +977,10 @@ class Spotify(commands.Cog):
         `<state>` must accept one of `off`, `track`, or `context`.
         """
         if state and state.lower() not in ["off", "track", "context"]:
-            return await ctx.send("Repeat must accept either `off`, `track`, or `context`.")
+            return await ctx.send(_("Repeat must accept either `off`, `track`, or `context`."))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -892,7 +988,7 @@ class Spotify(commands.Cog):
                     cur = await user_spotify.playback()
                     if not cur:
                         return await ctx.send(
-                            "I could not find an active device to send requests for."
+                            _("I could not find an active device to send requests for.")
                         )
                     if cur.repeat_state == "off":
                         state = "track"
@@ -903,16 +999,16 @@ class Spotify(commands.Cog):
                 await user_spotify.playback_repeat(state.lower())
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="shuffle")
@@ -925,28 +1021,30 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 if state is None:
                     cur = await user_spotify.playback()
                     if not cur:
-                        await ctx.send("I could not find an active device to send requests for.")
+                        await ctx.send(
+                            _("I could not find an active device to send requests for.")
+                        )
                     state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="seek")
@@ -959,23 +1057,23 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_seek(int(time * 1000))
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="volume")
@@ -989,23 +1087,23 @@ class Spotify(commands.Cog):
         volume = max(min(100, volume), 0)  # constrains volume to be within 100
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_volume(volume)
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_com.command(name="device", hidden=True)
@@ -1018,7 +1116,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             is_playing = False
             user_spotify = tekore.Spotify(sender=self._sender)
@@ -1033,16 +1131,16 @@ class Spotify(commands.Cog):
                     break
             await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_playlist.command(name="featured")
@@ -1053,7 +1151,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             playlists = await user_spotify.featured_playlists(limit=50)
@@ -1079,7 +1177,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             cur = await user_spotify.followed_playlists(limit=50)
@@ -1116,7 +1214,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             cur = await user_spotify.followed_playlists(limit=50)
@@ -1163,7 +1261,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1171,16 +1269,16 @@ class Spotify(commands.Cog):
                 await user_spotify.playlist_create(user.id, name, public, description)
                 await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_playlist.command(name="add")
@@ -1189,8 +1287,7 @@ class Spotify(commands.Cog):
         self,
         ctx: commands.Context,
         name: str,
-        *,
-        to_add: str,
+        *to_add: SpotifyURIConverter,
     ):
         """
         Add 1 (or more) tracks to a spotify playlist
@@ -1198,19 +1295,19 @@ class Spotify(commands.Cog):
         `<name>` The name of playlist you want to add songs to
         `<to_remove>` The song links or URI's you want to add
         """
-        song_data = SPOTIFY_RE.finditer(to_add)
         tracks = []
         new_uri = ""
-        if song_data:
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                if match.group(2) == "track":
-                    tracks.append(new_uri)
+        for match in to_add:
+            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+            if match.group(2) == "track":
+                tracks.append(new_uri)
         if not tracks:
-            return await ctx.send("You did not provide any tracks for me to add to the playlist.")
+            return await ctx.send(
+                _("You did not provide any tracks for me to add to the playlist.")
+            )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1225,18 +1322,18 @@ class Spotify(commands.Cog):
                         await user_spotify.playlist_add(playlist.id, tracks)
                         await ctx.tick()
                         return
-            await ctx.send(f"I could not find a playlist matching {name}.")
+            await ctx.send(_("I could not find a playlist matching {name}.").format(name=name))
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_playlist.command(name="remove")
@@ -1245,8 +1342,7 @@ class Spotify(commands.Cog):
         self,
         ctx: commands.Context,
         name: str,
-        *,
-        to_remove: str,
+        *to_remove: SpotifyURIConverter,
     ):
         """
         Remove 1 (or more) tracks to a spotify playlist
@@ -1254,19 +1350,19 @@ class Spotify(commands.Cog):
         `<name>` The name of playlist you want to remove songs from
         `<to_remove>` The song links or URI's you want to have removed
         """
-        song_data = SPOTIFY_RE.finditer(to_remove)
         tracks = []
         new_uri = ""
-        if song_data:
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                if match.group(2) == "track":
-                    tracks.append(new_uri)
+        for match in to_remove:
+            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+            if match.group(2) == "track":
+                tracks.append(new_uri)
         if not tracks:
-            return await ctx.send("You did not provide any tracks for me to add to the playlist.")
+            return await ctx.send(
+                _("You did not provide any tracks for me to add to the playlist.")
+            )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1281,18 +1377,18 @@ class Spotify(commands.Cog):
                         await user_spotify.playlist_remove(playlist.id, tracks)
                         await ctx.tick()
                         return
-            await ctx.send(f"I could not find a playlist matching {name}.")
+            await ctx.send(_("I could not find a playlist matching {name}.").format(name=name))
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_playlist.command(name="follow")
@@ -1301,8 +1397,7 @@ class Spotify(commands.Cog):
         self,
         ctx: commands.Context,
         public: Optional[bool] = False,
-        *,
-        to_follow: str,
+        *to_follow: SpotifyURIConverter,
     ):
         """
         Add a playlist to your spotify library
@@ -1310,21 +1405,19 @@ class Spotify(commands.Cog):
         `[public]` Whether or not the followed playlist should be public after
         `<to_follow>` The song links or URI's you want to have removed
         """
-        song_data = SPOTIFY_RE.finditer(to_follow)
         tracks = []
         new_uri = ""
-        if song_data:
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                if match.group(2) == "playlist":
-                    tracks.append(match.group(3))
+        for match in to_follow:
+            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+            if match.group(2) == "playlist":
+                tracks.append(match.group(3))
         if not tracks:
             return await ctx.send(
-                "You did not provide any playlists for me to add to your library."
+                _("You did not provide any playlists for me to add to your library.")
             )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1332,16 +1425,16 @@ class Spotify(commands.Cog):
                     await user_spotify.playlist_follow(playlist, public)
                 await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_artist.command(name="follow")
@@ -1349,25 +1442,22 @@ class Spotify(commands.Cog):
     async def spotify_artist_follow(
         self,
         ctx: commands.Context,
-        *,
-        to_follow: str,
+        *to_follow: SpotifyURIConverter,
     ):
         """
         Add an artist to your spotify library
 
         `<to_follow>` The song links or URI's you want to have removed
         """
-        song_data = SPOTIFY_RE.finditer(to_follow)
         tracks = []
         new_uri = ""
-        if song_data:
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                if match.group(2) == "artist":
-                    tracks.append(match.group(3))
+        for match in to_follow:
+            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+            if match.group(2) == "artist":
+                tracks.append(match.group(3))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1375,16 +1465,16 @@ class Spotify(commands.Cog):
                     await user_spotify.artist_follow(playlist)
                 await ctx.tick()
         except tekore.NotFound:
-            await ctx.send("I could not find an active device to send requests for.")
+            await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await ctx.send("This action is prohibited for non-premium users.")
+                await ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await ctx.send("I couldn't perform that action for you.")
+                await ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @spotify_artist.command(name="albums", aliases=["album"])
@@ -1392,27 +1482,24 @@ class Spotify(commands.Cog):
     async def spotify_artist_albums(
         self,
         ctx: commands.Context,
-        *,
-        to_follow: str,
+        *to_follow: SpotifyURIConverter,
     ):
         """
         View an artists albums
 
         `<to_follow>` The artis links or URI's you want to view the albums of
         """
-        song_data = SPOTIFY_RE.finditer(to_follow)
         tracks = []
         new_uri = ""
-        if song_data:
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                if match.group(2) == "artist":
-                    tracks.append(match.group(3))
+        for match in to_follow:
+            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+            if match.group(2) == "artist":
+                tracks.append(match.group(3))
         if not tracks:
-            return await ctx.send("You did not provide an artist link or URI.")
+            return await ctx.send(_("You did not provide an artist link or URI."))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send("You need to authorize me to interact with spotify.")
+            return await ctx.send(_("You need to authorize me to interact with spotify."))
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             search = await user_spotify.artist_albums(tracks[0], limit=50)

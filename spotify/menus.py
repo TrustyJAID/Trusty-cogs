@@ -4,16 +4,18 @@ import asyncio
 import discord
 import logging
 import tekore
-from tabulate import tabulate
 
 from typing import Any, List, Tuple
 
 from redbot.vendored.discord.ext import menus
-from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, box, pagify
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import humanize_list, box
+from redbot.core.i18n import Translator
 
 from .helpers import _draw_play, NotPlaying, make_details, REPEAT_STATES
 
 log = logging.getLogger("red.Trusty-cogs.spotify")
+_ = Translator("Spotify", __file__)
 
 
 class SpotifyTrackPages(menus.ListPageSource):
@@ -46,7 +48,7 @@ class SpotifyTrackPages(menus.ListPageSource):
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -72,13 +74,13 @@ class SpotifyArtistPages(menus.ListPageSource):
         sp = tekore.Spotify(sender=menu.cog._sender)
         with sp.token_as(menu.user_token):
             cur = await sp.artist_top_tracks(artist.id, "from_token")
-        msg = "Top Tracks\n"
+        msg = _("Top Tracks\n")
         for track in cur:
-            msg += f"[{track.name}](https://open.spotify.com/{track.id})\n"
+            msg += f"[{track.name}](https://open.spotify.com/track/{track.id})\n"
         em.description = msg
         if artist.images:
             em.set_thumbnail(url=artist.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -108,11 +110,11 @@ class SpotifyAlbumPages(menus.ListPageSource):
         with sp.token_as(menu.user_token):
             cur = await sp.album(album.id)
         for track in cur.tracks.items:
-            msg += f"[{track.name}](https://open.spotify.com/{track.id})\n"
+            msg += f"[{track.name}](https://open.spotify.com/track/{track.id})\n"
         em.description = msg
         if album.images:
             em.set_thumbnail(url=album.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -143,13 +145,13 @@ class SpotifyPlaylistPages(menus.ListPageSource):
             cur = await user_spotify.playlist_items(playlist.id)
             for track in cur.items[:10]:
                 description += (
-                    f"[{track.track.name}](https://open.spotify.com/playlist/{track.track.id})\n"
+                    f"[{track.track.name}](https://open.spotify.com/track/{track.track.id})\n"
                 )
 
         em.description = description
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -190,7 +192,7 @@ class SpotifyNewPages(menus.ListPageSource):
         em.description = description
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -218,7 +220,7 @@ class SpotifyEpisodePages(menus.ListPageSource):
         em.description = f"[{episode.description[:1900]}]({url})\n"
         if episode.images:
             em.set_thumbnail(url=episode.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -245,7 +247,7 @@ class SpotifyShowPages(menus.ListPageSource):
         em.description = f"[{show.description[:1900]}]({url})\n"
         if show.images:
             em.set_thumbnail(url=show.images[0].url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -294,7 +296,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}'s Spotify Playlists")
+        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Spotify Playlists"))
         msg = ""
         for playlist in playlists:
             if playlist.public:
@@ -302,7 +304,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
             else:
                 msg += f"{playlist.name}\n"
         em.description = msg
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -315,13 +317,13 @@ class SpotifyTopTracksPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}'s Top Tracks")
+        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Top Tracks"))
         msg = ""
         for track in tracks:
             artist = humanize_list([a.name for a in track.artists])
-            msg += f"[{track.name} by {artist}](https://open.spotify.com/artist{track.id})\n"
+            msg += f"[{track.name} by {artist}](https://open.spotify.com/track/{track.id})\n"
         em.description = msg
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -334,19 +336,19 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}'s Top Artists")
+        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Top Artists"))
         msg = ""
         for artist in artists:
             msg += f"[{artist.name}](https://open.spotify.com/artist/{artist.id})\n"
         em.description = msg
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
 class SpotifyPages(menus.PageSource):
     def __init__(
         self, user_token: tekore.Token, sender: tekore.AsyncSender, detailed: bool
-    ) -> discord.Embed:
+    ):
         super().__init__()
         self.user_token = user_token
         self.sender = sender
@@ -372,9 +374,9 @@ class SpotifyPages(menus.PageSource):
             image = state.item.album.images[0].url
         album = getattr(state.item, "album", "")
         if album:
-            album = f"[{album.name}](https://open.spotify.com/track/{album.id})"
+            album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
         em.set_author(
-            name=f"{menu.ctx.author.display_name} is currently listening to",
+            name=f"{menu.ctx.author.display_name}" + _(" is currently listening to"),
             icon_url=menu.ctx.author.avatar_url,
             url=url,
         )
@@ -562,21 +564,25 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
                 if cur.is_playing:
                     await user_spotify.playback_pause()
                 else:
                     await user_spotify.playback_resume()
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
@@ -598,16 +604,16 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                     state = "off"
                 await user_spotify.playback_repeat(state)
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
@@ -628,19 +634,23 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
                 state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
@@ -654,18 +664,22 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
                 await user_spotify.saved_tracks_add([self.source.current_track.id])
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await self.show_checked_page(0)
 
@@ -680,16 +694,16 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_previous()
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await asyncio.sleep(1)
         await self.show_page(0)
@@ -705,16 +719,16 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_next()
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await asyncio.sleep(1)
         await self.show_page(0)
@@ -828,6 +842,11 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             return True
         return max_pages <= 2
 
+    def _skip_play_all(self):
+        if isinstance(self._source.entries[0], tekore.model.FullTrack):
+            return False
+        return True
+
     @menus.button(
         "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
         position=menus.First(1),
@@ -855,7 +874,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await ctx.send("I could not find an active device to send requests for.")
+                    await ctx.send(_("I could not find an active device to send requests for."))
                     return
                 if cur.item.id == self.source.current_track.id:
                     if cur.is_playing:
@@ -868,16 +887,50 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                     else:
                         await user_spotify.playback_start_context(self.source.current_track.uri)
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
+            )
+
+    @menus.button(
+        "\N{EJECT SYMBOL}\N{VARIATION SELECTOR-16}",
+        position=menus.First(1),
+        skip_if=_skip_play_all,
+    )
+    async def play_pause_all(self, payload):
+        """go to the previous page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await ctx.send(_("I could not find an active device to send requests for."))
+                    return
+                else:
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_start_tracks(
+                            [i.id for i in self.source.entries]
+                        )
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.NotFound:
+            await self.ctx.send(_("I could not find an active device to send requests for."))
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
+            else:
+                await self.ctx.send(_("I couldn't perform that action for you."))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.ctx.send(
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
     @menus.button(
@@ -890,16 +943,16 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 await user_spotify.saved_tracks_add([self.source.current_track.id])
         except tekore.NotFound:
-            await self.ctx.send("I could not find an active device to send requests for.")
+            await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
             if "non-premium" in str(e):
-                await self.ctx.send("This action is prohibited for non-premium users.")
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
             else:
-                await self.ctx.send("I couldn't perform that action for you.")
+                await self.ctx.send(_("I couldn't perform that action for you."))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
-                "An exception has occured, please contact the bot owner for more assistance."
+                _("An exception has occured, please contact the bot owner for more assistance.")
             )
         await self.show_checked_page(0)
 
