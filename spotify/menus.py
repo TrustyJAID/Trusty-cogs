@@ -737,7 +737,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
-        del self.cog.current_menus[self.message.ids]
+        del self.cog.current_menus[self.message.id]
         await self.message.delete()
 
 
