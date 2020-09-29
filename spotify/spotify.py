@@ -53,7 +53,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1190,7 +1190,7 @@ class Spotify(commands.Cog):
             ctx.channel, discord.DMChannel
         )
         if show_private:
-            playlist_list = playlists.items
+            playlist_list = playlists
         else:
             playlist_list = [p for p in playlists if p.public is not False]
         await SpotifyBaseMenu(
