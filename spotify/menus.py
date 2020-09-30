@@ -322,7 +322,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=f"{menu.ctx.author.display_name}" + _("'s Spotify Playlists"),
-            icon_url=ctx.author.avatar_url,
+            icon_url=menu.ctx.author.avatar_url,
         )
         msg = ""
         for playlist in playlists:
@@ -349,7 +349,7 @@ class SpotifyTopTracksPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=f"{menu.ctx.author.display_name}" + _("'s Top Tracks"),
-            icon_url=ctx.author.avatar_url,
+            icon_url=menu.ctx.author.avatar_url,
         )
         msg = ""
         for track in tracks:
@@ -374,7 +374,7 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
             name=f"{menu.ctx.author.display_name}" + _("'s Top Artists"),
-            icon_url=ctx.author.avatar_url,
+            icon_url=menu.ctx.author.avatar_url,
         )
         msg = ""
         for artist in artists:

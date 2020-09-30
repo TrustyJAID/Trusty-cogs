@@ -54,7 +54,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.6"
+    __version__ = "1.3.7"
 
     def __init__(self, bot):
         self.bot = bot
@@ -608,7 +608,7 @@ class Spotify(commands.Cog):
                     ).format(prefix=ctx.clean_prefix)
                 )
         await ctx.maybe_send_embed(
-            _("The following are available genres for Spotifies recommendations:\n\n {genres}").format(
+            _("The following are available genres for Spotify's recommendations:\n\n {genres}").format(
                 genres=humanize_list(self.GENRES)
             )
         )
