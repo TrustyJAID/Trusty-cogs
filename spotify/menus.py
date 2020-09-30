@@ -12,7 +12,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_list, box
 from redbot.core.i18n import Translator
 
-from .helpers import _draw_play, NotPlaying, make_details, REPEAT_STATES
+from .helpers import _draw_play, NotPlaying, make_details, REPEAT_STATES, SPOTIFY_LOGO
 
 log = logging.getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -37,6 +37,7 @@ class SpotifyTrackPages(menus.ListPageSource):
         em.set_author(
             name=track.name[:256],
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         em.description = f"[{artist_title}]({url})\n"
         if track.album.images:
@@ -48,7 +49,9 @@ class SpotifyTrackPages(menus.ListPageSource):
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -70,6 +73,7 @@ class SpotifyArtistPages(menus.ListPageSource):
         em.set_author(
             name=artist_title,
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         sp = tekore.Spotify(sender=menu.cog._sender)
         with sp.token_as(menu.user_token):
@@ -80,7 +84,9 @@ class SpotifyArtistPages(menus.ListPageSource):
         em.description = msg
         if artist.images:
             em.set_thumbnail(url=artist.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -104,6 +110,7 @@ class SpotifyAlbumPages(menus.ListPageSource):
         em.set_author(
             name=title,
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         msg = "Tracks:\n"
         sp = tekore.Spotify(sender=menu.cog._sender)
@@ -114,7 +121,9 @@ class SpotifyAlbumPages(menus.ListPageSource):
         em.description = msg
         if album.images:
             em.set_thumbnail(url=album.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -138,6 +147,7 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         em.set_author(
             name=artist or playlist.name,
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         user_spotify = tekore.Spotify(sender=menu.cog._sender)
         description = ""
@@ -151,7 +161,9 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         em.description = description
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -175,6 +187,7 @@ class SpotifyNewPages(menus.ListPageSource):
         em.set_author(
             name=artist or playlist.name,
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         user_spotify = tekore.Spotify(sender=menu.cog._sender)
         description = ""
@@ -192,7 +205,9 @@ class SpotifyNewPages(menus.ListPageSource):
         em.description = description
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -216,11 +231,14 @@ class SpotifyEpisodePages(menus.ListPageSource):
         em.set_author(
             name=artist_title[:256],
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         em.description = f"[{episode.description[:1900]}]({url})\n"
         if episode.images:
             em.set_thumbnail(url=episode.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -243,11 +261,14 @@ class SpotifyShowPages(menus.ListPageSource):
         em.set_author(
             name=artist_title[:256],
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         em.description = f"[{show.description[:1900]}]({url})\n"
         if show.images:
             em.set_thumbnail(url=show.images[0].url)
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+        )
         return em
 
 
@@ -272,6 +293,7 @@ class SpotifyRecentSongPages(menus.ListPageSource):
         em.set_author(
             name=track.name[:256],
             url=url,
+            icon_url=SPOTIFY_LOGO,
         )
         em.description = f"[{artist_title}]({url})\n"
         if track.album.images:
@@ -283,7 +305,9 @@ class SpotifyRecentSongPages(menus.ListPageSource):
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Played at")
+        em.set_footer(
+            text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Played at",
+        )
         return em
 
 
@@ -296,7 +320,10 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Spotify Playlists"))
+        em.set_author(
+            name=f"{menu.ctx.author.display_name}" + _("'s Spotify Playlists"),
+            icon_url=ctx.author.avatar_url,
+        )
         msg = ""
         for playlist in playlists:
             if playlist.public:
@@ -304,7 +331,10 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
             else:
                 msg += f"{playlist.name}\n"
         em.description = msg
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            icon_url=SPOTIFY_LOGO,
+        )
         return em
 
 
@@ -317,13 +347,19 @@ class SpotifyTopTracksPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Top Tracks"))
+        em.set_author(
+            name=f"{menu.ctx.author.display_name}" + _("'s Top Tracks"),
+            icon_url=ctx.author.avatar_url,
+        )
         msg = ""
         for track in tracks:
             artist = humanize_list([a.name for a in track.artists])
             msg += f"[{track.name} by {artist}](https://open.spotify.com/track/{track.id})\n"
         em.description = msg
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            icon_url=SPOTIFY_LOGO,
+        )
         return em
 
 
@@ -336,19 +372,23 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
-        em.set_author(name=f"{menu.ctx.author.display_name}" + _("'s Top Artists"))
+        em.set_author(
+            name=f"{menu.ctx.author.display_name}" + _("'s Top Artists"),
+            icon_url=ctx.author.avatar_url,
+        )
         msg = ""
         for artist in artists:
             msg += f"[{artist.name}](https://open.spotify.com/artist/{artist.id})\n"
         em.description = msg
-        em.set_footer(text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(
+            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            icon_url=SPOTIFY_LOGO,
+        )
         return em
 
 
 class SpotifyPages(menus.PageSource):
-    def __init__(
-        self, user_token: tekore.Token, sender: tekore.AsyncSender, detailed: bool
-    ):
+    def __init__(self, user_token: tekore.Token, sender: tekore.AsyncSender, detailed: bool):
         super().__init__()
         self.user_token = user_token
         self.sender = sender
@@ -365,7 +405,11 @@ class SpotifyPages(menus.PageSource):
         is_liked = cur_state[1]
         em = discord.Embed(color=discord.Colour(0x1DB954))
         self.current_track = state.item
-        if state.item.type == "episode":
+        if state.item.is_local:
+            url = "https://open.spotify.com/"
+            artist_title = f"{state.item.name} by " + ", ".join(a.name for a in state.item.artists)
+            image = SPOTIFY_LOGO
+        elif state.item.type == "episode":
             url = f"https://open.spotify.com/episode/{state.item.id}"
             artist_title = state.item.name
             image = state.item.images[0].url
@@ -387,11 +431,10 @@ class SpotifyPages(menus.PageSource):
         shuffle = "Shuffle: \N{TWISTED RIGHTWARDS ARROWS} |" if state.shuffle_state else ""
         liked = "Liked: \N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}" if is_liked else ""
         footer = f"{repeat}{shuffle}{liked}"
-        if footer:
-            em.set_footer(text=footer)
+        em.set_footer(text=footer, icon_url=SPOTIFY_LOGO)
         em.description = f"[{artist_title}]({url})\n\n{album}\n{_draw_play(state)}"
         try:
-            if self.detailed:
+            if self.detailed and not state.item.is_local:
                 sp = tekore.Spotify(sender=self.sender)
                 with sp.token_as(self.user_token):
                     details = await sp.track_audio_features(state.item.id)
@@ -448,9 +491,11 @@ class SpotifyPages(menus.PageSource):
             cur_state = await user_spotify.playback()
             if not cur_state:
                 raise NotPlaying
-            song = cur_state.item.id
-            liked = await user_spotify.saved_tracks_contains([song])
-            is_liked = liked[0]
+            is_liked = False
+            if not cur_state.item.is_local:
+                song = cur_state.item.id
+                liked = await user_spotify.saved_tracks_contains([song])
+                is_liked = liked[0]
         return cur_state, is_liked
 
 

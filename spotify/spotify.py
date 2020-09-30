@@ -6,7 +6,7 @@ import asyncio
 import time
 
 from copy import copy
-from typing import Tuple, Optional, Literal, Mapping
+from typing import Tuple, Optional, Literal, Mapping, Union
 
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import humanize_list
@@ -21,6 +21,7 @@ from .helpers import (
     SearchTypes,
     SpotifyURIConverter,
     RecommendationsConverter,
+    time_convert,
 )
 from .menus import (
     SpotifyUserMenu,
@@ -53,7 +54,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.5"
+    __version__ = "1.3.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -68,6 +69,7 @@ class Spotify(commands.Cog):
         self.bot.loop.create_task(self.initialize())
         self.HAS_TOKENS = False
         self.current_menus = {}
+        self.GENRES = []
 
     async def initialize(self):
         tokens = await self.bot.get_shared_api_tokens("spotify")
@@ -84,7 +86,8 @@ class Spotify(commands.Cog):
             self._credentials = tekore.Credentials(*self._tokens, sender=self._sender)
             self._app_token = tekore.request_client_token(*self._tokens[:2])
             self._spotify_client = tekore.Spotify(self._app_token, sender=self._sender)
-        except KeyError:
+            self.GENRES = await self._spotify_client.recommendation_genre_seeds()
+        except Exception:
             log.exception("error starting the cog")
         self._ready.set()
 
@@ -586,6 +589,30 @@ class Spotify(commands.Cog):
             user_token=user_token,
         ).start(ctx=ctx)
 
+    @spotify_com.command(name="genres", aliases=["genre"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def spotify_genres(self, ctx: commands.Context):
+        """
+        Display all available genres for the recommendations
+        """
+        if not self.GENRES:
+            try:
+                self.GENRES = await self._spotify_client.recommendation_genre_seeds()
+            except Exception:
+                log.exception("Error grabbing genres.")
+                return await ctx.send(
+                    _(
+                        "The bot owner needs to set their Spotify credentials "
+                        "before this command can be used."
+                        " See `{prefix}spotify set creds` for more details."
+                    ).format(prefix=ctx.clean_prefix)
+                )
+        await ctx.maybe_send_embed(
+            _("The following are available genres for Spotifies recommendations:\n\n {genres}").format(
+                genres=humanize_list(self.GENRES)
+            )
+        )
+
     @spotify_com.command(name="recommendations", aliases=["recommend", "recommendation"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def spotify_recommendations(
@@ -593,15 +620,16 @@ class Spotify(commands.Cog):
         ctx: commands.Context,
         detailed: Optional[bool] = False,
         *,
-        recommendations: RecommendationsConverter = {},
+        recommendations: RecommendationsConverter,
     ):
         """
         Get Spotify Recommendations
 
         `<recommendations>` Requires at least 1 of the following matching objects:
-         - `genre` Must be a valid genre type.
+         - `genre` Must be a valid genre type. Do `[p]spotify genres` to see what's available.
          - `tracks` Any spotify URL or URI leading to tracks will be added to the seed
          - `artists` Any spotify URL or URI leading to artists will be added to the seed
+
          The following parameters also exist and must include some additional parameter:
          - `acousticness` + a value from 0-100
          - `danceability` + a value from 0-100
@@ -610,12 +638,12 @@ class Spotify(commands.Cog):
          - `instrumentalness` + a value from 0-100
          - `key` A value from 0-11 representing Pitch Class notation
          - `liveness` + a value from 0-100
-         - `loudness` A value from -60 to 0 represending dB
-         - `mode` either major or minor
+         - `loudness` + A value from -60 to 0 represending dB
+         - `mode` + either major or minor
          - `popularity` + a value from 0-100
          - `speechiness` + a value from 0-100
-         - `tempo` the tempo in BPM
-         - `time_signature` the measure of bars
+         - `tempo` + the tempo in BPM
+         - `time_signature` + the measure of bars
          - `valence` + a value from 0-100
         """
 
@@ -750,7 +778,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_pause()
-            await ctx.react_quietly("\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}")
+            await ctx.react_quietly(ACTION_EMOJIS["pause"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -781,9 +809,7 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_resume()
                 else:
                     return await ctx.send(_("You are already playing music on Spotify."))
-            await ctx.react_quietly(
-                "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-            )
+            await ctx.react_quietly(ACTION_EMOJIS["play"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -810,9 +836,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_next()
-            await ctx.react_quietly(
-                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-            )
+            await ctx.react_quietly(ACTION_EMOJIS["next"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -839,9 +863,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_previous()
-            await ctx.react_quietly(
-                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-            )
+            await ctx.react_quietly(ACTION_EMOJIS["previous"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -887,15 +909,11 @@ class Spotify(commands.Cog):
             with user_spotify.token_as(user_token):
                 if tracks:
                     await user_spotify.playback_start_tracks(tracks)
-                    await ctx.react_quietly(
-                        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-                    )
+                    await ctx.react_quietly(ACTION_EMOJIS["next"])
                     return
                 if new_uri:
                     await user_spotify.playback_start_context(new_uri)
-                    await ctx.react_quietly(
-                        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-                    )
+                    await ctx.react_quietly(ACTION_EMOJIS["next"])
                     return
                 if url_or_playlist_name:
                     cur = await user_spotify.followed_playlists(limit=50)
@@ -909,9 +927,7 @@ class Spotify(commands.Cog):
                     for playlist in playlists:
                         if url_or_playlist_name.lower() in playlist.name.lower():
                             await user_spotify.playback_start_context(playlist.uri)
-                            await ctx.react_quietly(
-                                "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-                            )
+                            await ctx.react_quietly(ACTION_EMOJIS["next"])
                             return
                     tracks = await user_spotify.saved_tracks(limit=50)
                     for track in tracks.items:
@@ -921,16 +937,12 @@ class Spotify(commands.Cog):
                             in ", ".join(a.name for a in track.track.artists)
                         ):
                             await user_spotify.playback_start_tracks([track.track.id])
-                            await ctx.react_quietly(
-                                "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-                            )
+                            await ctx.react_quietly(ACTION_EMOJIS["next"])
                             return
                 else:
                     cur = await user_spotify.saved_tracks(limit=50)
                     await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
-                    await ctx.react_quietly(
-                        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-                    )
+                    await ctx.react_quietly(ACTION_EMOJIS["next"])
                     return
                 await ctx.send(_("I could not find any URL's or matching playlist names."))
         except tekore.NotFound:
@@ -954,9 +966,6 @@ class Spotify(commands.Cog):
 
         `<song>` is a spotify track URL or URI for the song to add to the queue
         """
-        # song_data = SPOTIFY_RE.match(song)
-        # if not song_data:
-        # return await ctx.send(_("That does not look like a spotify link."))
         if song.group(2) != "track":
             return await ctx.send(_("I can only append 1 track at a time right now to the queue."))
         new_uri = f"spotify:{song.group(2)}:{song.group(3)}"
@@ -968,9 +977,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_queue_add(new_uri)
-            await ctx.react_quietly(
-                "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-            )
+            await ctx.react_quietly(ACTION_EMOJIS["next"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1008,12 +1015,15 @@ class Spotify(commands.Cog):
                         )
                     if cur.repeat_state == "off":
                         state = "track"
+                        emoji = ACTION_EMOJIS["repeatone"]
                     if cur.repeat_state == "track":
                         state = "context"
+                        emoji = ACTION_EMOJIS["repeat"]
                     if cur.repeat_state == "context":
                         state = "off"
+                        emoji = ACTION_EMOJIS["off"]
                 await user_spotify.playback_repeat(state.lower())
-            await ctx.react_quietly("\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}")
+            await ctx.react_quietly(emoji)
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1049,7 +1059,7 @@ class Spotify(commands.Cog):
                         )
                     state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
-            await ctx.react_quietly("\N{TWISTED RIGHTWARDS ARROWS}")
+            await ctx.react_quietly(ACTION_EMOJIS["shuffle"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1065,22 +1075,40 @@ class Spotify(commands.Cog):
 
     @spotify_com.command(name="seek")
     @commands.bot_has_permissions(add_reactions=True)
-    async def spotify_seek(self, ctx: commands.Context, time: int):
+    async def spotify_seek(self, ctx: commands.Context, seconds: Union[int, str]):
         """
         Seek to a specific point in the current song
 
-        `<time>` position inside the current song to skip to.
+        `<seconds>` Accepts seconds or a value formatted like
+        00:00:00 (`hh:mm:ss`) or 00:00 (`mm:ss`).
         """
+        try:
+            int(seconds)
+            abs_position = False
+        except ValueError:
+            abs_position = True
+            seconds = time_convert(seconds)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
-                await user_spotify.playback_seek(int(time * 1000))
-            await ctx.react_quietly(
-                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}\N{VARIATION SELECTOR-16}"
-            )
+                cur = await user_spotify.playback()
+                now = cur.progress_ms
+                total = cur.item.duration_ms
+                emoji = ACTION_EMOJIS["fastforward"]
+                log.debug(seconds)
+                if abs_position:
+                    to_seek = seconds * 1000
+                else:
+                    to_seek = seconds * 1000 + now
+                if to_seek < now:
+                    emoji = ACTION_EMOJIS["rewind"]
+                if to_seek > total:
+                    emoji = ACTION_EMOJIS["next"]
+                await user_spotify.playback_seek(to_seek)
+            await ctx.react_quietly(emoji)
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1096,7 +1124,7 @@ class Spotify(commands.Cog):
 
     @spotify_com.command(name="volume")
     @commands.bot_has_permissions(add_reactions=True)
-    async def spotify_volume(self, ctx: commands.Context, volume: int):
+    async def spotify_volume(self, ctx: commands.Context, volume: Union[int, str]):
         """
         Set your spotify volume percentage
 
@@ -1112,11 +1140,11 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    await ctx.react_quietly("\N{SPEAKER WITH CANCELLATION STROKE}")
+                    await ctx.react_quietly(ACTION_EMOJIS["volume_mute"])
                 elif cur and volume > cur.device.volume_percent:
-                    await ctx.react_quietly("\N{SPEAKER WITH THREE SOUND WAVES}")
+                    await ctx.react_quietly(ACTION_EMOJIS["volume_up"])
                 else:
-                    await ctx.react_quietly("\N{SPEAKER WITH ONE SOUND WAVE}")
+                    await ctx.react_quietly(ACTION_EMOJIS["volume_down"])
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1151,7 +1179,7 @@ class Spotify(commands.Cog):
                     is_playing = True
             for d in devices:
                 if device_name.lower() in d.name.lower():
-                    await user_spotify.playback_transfer(d.id, True)
+                    await user_spotify.playback_transfer(d.id, is_playing)
                     break
             await ctx.tick()
         except tekore.NotFound:
@@ -1430,9 +1458,7 @@ class Spotify(commands.Cog):
         `<to_follow>` The song links or URI's you want to have removed
         """
         tracks = []
-        new_uri = ""
         for match in to_follow:
-            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
             if match.group(2) == "playlist":
                 tracks.append(match.group(3))
         if not tracks:
@@ -1474,9 +1500,7 @@ class Spotify(commands.Cog):
         `<to_follow>` The song links or URI's you want to have removed
         """
         tracks = []
-        new_uri = ""
         for match in to_follow:
-            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
             if match.group(2) == "artist":
                 tracks.append(match.group(3))
         user_token = await self.get_user_auth(ctx)
@@ -1514,9 +1538,7 @@ class Spotify(commands.Cog):
         `<to_follow>` The artis links or URI's you want to view the albums of
         """
         tracks = []
-        new_uri = ""
         for match in to_follow:
-            new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
             if match.group(2) == "artist":
                 tracks.append(match.group(3))
         if not tracks:
