@@ -53,7 +53,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.4"
+    __version__ = "1.3.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -750,7 +750,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_pause()
-            await ctx.message.add_reaction("\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}")
+            await ctx.react_quietly("\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}")
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -781,7 +781,7 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_resume()
                 else:
                     return await ctx.send(_("You are already playing music on Spotify."))
-            await ctx.message.add_reaction(
+            await ctx.react_quietly(
                 "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
             )
         except tekore.NotFound:
@@ -810,7 +810,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_next()
-            await ctx.message.add_reaction(
+            await ctx.react_quietly(
                 "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
             )
         except tekore.NotFound:
@@ -839,7 +839,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_previous()
-            await ctx.message.add_reaction(
+            await ctx.react_quietly(
                 "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
             )
         except tekore.NotFound:
@@ -887,13 +887,13 @@ class Spotify(commands.Cog):
             with user_spotify.token_as(user_token):
                 if tracks:
                     await user_spotify.playback_start_tracks(tracks)
-                    await ctx.message.add_reaction(
+                    await ctx.react_quietly(
                         "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
                     )
                     return
                 if new_uri:
                     await user_spotify.playback_start_context(new_uri)
-                    await ctx.message.add_reaction(
+                    await ctx.react_quietly(
                         "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
                     )
                     return
@@ -909,7 +909,7 @@ class Spotify(commands.Cog):
                     for playlist in playlists:
                         if url_or_playlist_name.lower() in playlist.name.lower():
                             await user_spotify.playback_start_context(playlist.uri)
-                            await ctx.message.add_reaction(
+                            await ctx.react_quietly(
                                 "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
                             )
                             return
@@ -921,14 +921,14 @@ class Spotify(commands.Cog):
                             in ", ".join(a.name for a in track.track.artists)
                         ):
                             await user_spotify.playback_start_tracks([track.track.id])
-                            await ctx.message.add_reaction(
+                            await ctx.react_quietly(
                                 "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
                             )
                             return
                 else:
                     cur = await user_spotify.saved_tracks(limit=50)
                     await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
-                    await ctx.message.add_reaction(
+                    await ctx.react_quietly(
                         "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
                     )
                     return
@@ -968,7 +968,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_queue_add(new_uri)
-            await ctx.message.add_reaction(
+            await ctx.react_quietly(
                 "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
             )
         except tekore.NotFound:
@@ -1013,9 +1013,7 @@ class Spotify(commands.Cog):
                     if cur.repeat_state == "context":
                         state = "off"
                 await user_spotify.playback_repeat(state.lower())
-            await ctx.message.add_reaction(
-                "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
-            )
+            await ctx.react_quietly("\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}")
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1051,7 +1049,7 @@ class Spotify(commands.Cog):
                         )
                     state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
-            await ctx.message.add_reactions("\N{TWISTED RIGHTWARDS ARROWS}")
+            await ctx.react_quietly("\N{TWISTED RIGHTWARDS ARROWS}")
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1080,7 +1078,7 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_seek(int(time * 1000))
-            await ctx.message.add_reactions(
+            await ctx.react_quietly(
                 "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}\N{VARIATION SELECTOR-16}"
             )
         except tekore.NotFound:
@@ -1114,11 +1112,11 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    await ctx.message.add_reaction("\N{SPEAKER WITH CANCELLATION STROKE}")
+                    await ctx.react_quietly("\N{SPEAKER WITH CANCELLATION STROKE}")
                 elif cur and volume > cur.device.volume_percent:
-                    await ctx.message.add_reaction("\N{SPEAKER WITH THREE SOUND WAVES}")
+                    await ctx.react_quietly("\N{SPEAKER WITH THREE SOUND WAVES}")
                 else:
-                    await ctx.message.add_reaction("\N{SPEAKER WITH ONE SOUND WAVE}")
+                    await ctx.react_quietly("\N{SPEAKER WITH ONE SOUND WAVE}")
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
