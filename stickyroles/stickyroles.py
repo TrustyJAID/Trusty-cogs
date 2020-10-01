@@ -1,12 +1,10 @@
-import discord
 import logging
-
-from redbot import version_info, VersionInfo
-from redbot.core import commands, Config, checks
-from redbot.core.i18n import Translator, cog_i18n
-
 from typing import Literal
 
+import discord
+from redbot import VersionInfo, version_info
+from redbot.core import Config, checks, commands
+from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("StickyRoles", __file__)
 log = logging.getLogger("red.trusty-cogs.stickyroles")

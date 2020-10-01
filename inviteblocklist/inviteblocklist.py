@@ -1,13 +1,11 @@
-import discord
 import logging
 import re
+from typing import List, Pattern, Union
 
-from typing import Union, Pattern, List
-
-from discord.ext.commands.converter import InviteConverter, IDConverter
+import discord
+from discord.ext.commands.converter import IDConverter, InviteConverter
 from discord.ext.commands.errors import BadArgument
-
-from redbot.core import commands, Config, version_info, VersionInfo
+from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 

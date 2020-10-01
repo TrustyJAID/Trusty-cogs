@@ -1,14 +1,13 @@
-import discord
 import logging
-
-from redbot.core import commands, checks, Config, modlog
-from redbot.core.utils.chat_formatting import humanize_list
-from redbot.core.i18n import Translator, cog_i18n
 from typing import Union
 
-from .eventmixin import EventMixin, CommandPrivs, EventChooser
-from .settings import inv_settings
+import discord
+from redbot.core import Config, checks, commands, modlog
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
 
+from .eventmixin import CommandPrivs, EventChooser, EventMixin
+from .settings import inv_settings
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")

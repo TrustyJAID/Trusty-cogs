@@ -1,16 +1,16 @@
-import discord
 import asyncio
-import aiohttp
 import functools
 import logging
 import sys
-
-from redbot.core import commands, checks, Config, VersionInfo, version_info
-from random import choice, randint
 from datetime import datetime
-from PIL import Image, ImageSequence
 from io import BytesIO
-from typing import Union, Optional, Tuple
+from random import choice, randint
+from typing import Optional, Tuple, Union
+
+import aiohttp
+import discord
+from PIL import Image, ImageSequence
+from redbot.core import Config, VersionInfo, checks, commands, version_info
 
 log = logging.getLogger("red.trusty-cogs.TrustyAvatar")
 

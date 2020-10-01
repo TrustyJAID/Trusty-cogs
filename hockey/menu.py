@@ -1,24 +1,22 @@
 import asyncio
-import discord
 import logging
-import aiohttp
 import re
-
-from typing import Any, Optional, Pattern, List
 from datetime import datetime, timedelta
+from typing import Any, List, Optional, Pattern
 
+import aiohttp
+import discord
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
-from redbot.vendored.discord.ext import menus
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.vendored.discord.ext import menus
 
-from .constants import TEAMS, HEADSHOT_URL, BASE_URL
-from .standings import Standings
+from .constants import BASE_URL, HEADSHOT_URL, TEAMS
+from .errors import NoSchedule
 from .game import Game
 from .helper import DATE_RE
-from .errors import NoSchedule
-
+from .standings import Standings
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")

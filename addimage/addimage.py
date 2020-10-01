@@ -1,20 +1,17 @@
-import random
-import discord
 import asyncio
 import logging
-import string
 import os
-
+import random
+import string
 from pathlib import Path
-from typing import Optional, cast, Literal
+from typing import Literal, Optional, cast
 
-from redbot import version_info, VersionInfo
-from redbot.core import commands, checks, Config, VersionInfo, version_info
+import discord
+from redbot import VersionInfo, version_info
+from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.data_manager import cog_data_path
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
-
 from redbot.core.i18n import Translator, cog_i18n
-
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 _ = Translator("AddImage", __file__)
 log = logging.getLogger("red.Trusty-cogs.addimage")

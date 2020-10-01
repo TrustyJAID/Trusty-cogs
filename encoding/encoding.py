@@ -1,22 +1,22 @@
+import base64
 import hashlib
 import re
-import base64
+from string import ascii_lowercase as lc
+from string import ascii_uppercase as uc
+from typing import Optional
 
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import pagify
 
-from typing import Optional
-from string import ascii_lowercase as lc, ascii_uppercase as uc
-
 from .braille import (
-    letters,
-    r_letters,
     contractions,
-    r_contractions,
-    punctuation,
-    r_punctuation,
+    letters,
     numbers,
+    punctuation,
+    r_contractions,
+    r_letters,
     r_numbers,
+    r_punctuation,
 )
 
 

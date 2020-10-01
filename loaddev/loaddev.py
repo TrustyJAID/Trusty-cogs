@@ -1,9 +1,8 @@
 import logging
-
 from typing import Optional
 
 from redbot import version_info
-from redbot.core import checks, commands, Config, i18n
+from redbot.core import Config, checks, commands, i18n
 from redbot.core.dev_commands import Dev
 
 log = logging.getLogger("red.trusty-cogs.loaddev")

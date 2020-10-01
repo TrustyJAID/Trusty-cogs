@@ -1,6 +1,6 @@
-import unidecode
 import re
 
+import unidecode
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 

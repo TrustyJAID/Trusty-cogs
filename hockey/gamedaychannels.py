@@ -1,11 +1,13 @@
-import discord
-from datetime import datetime
-from redbot.core import Config
-from .game import Game
-from .constants import CONFIG_ID, TEAMS
-from .pickems import Pickems
-from .helper import utc_to_local
 import logging
+from datetime import datetime
+
+import discord
+from redbot.core import Config
+
+from .constants import CONFIG_ID, TEAMS
+from .game import Game
+from .helper import utc_to_local
+from .pickems import Pickems
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 

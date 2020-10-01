@@ -1,33 +1,30 @@
-import discord
-import logging
 import asyncio
+import logging
 import re
-
 from multiprocessing.pool import Pool
-from typing import Union, Optional
 from pathlib import Path
+from typing import Optional, Union
 
-
-from redbot.core import commands, checks, Config, modlog, VersionInfo, version_info
+import discord
+from redbot.core import Config, VersionInfo, checks, commands, modlog, version_info
+from redbot.core.commands import TimedeltaConverter
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.predicates import ReactionPredicate
-from redbot.core.utils.menus import start_adding_reactions
 
 # from redbot.core.utils import menus
 from redbot.core.utils.chat_formatting import humanize_list, pagify
-from redbot.core.commands import TimedeltaConverter
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .converters import (
+    ChannelUserRole,
+    MultiResponse,
     Trigger,
     TriggerExists,
-    ValidRegex,
-    MultiResponse,
     ValidEmoji,
-    ChannelUserRole,
+    ValidRegex,
 )
+from .menus import BaseMenu, ExplainReTriggerPages, ReTriggerMenu, ReTriggerPages
 from .triggerhandler import TriggerHandler
-from .menus import ReTriggerMenu, ReTriggerPages, ExplainReTriggerPages, BaseMenu
-
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)

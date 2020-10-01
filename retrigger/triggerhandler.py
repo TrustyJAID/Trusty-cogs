@@ -1,36 +1,32 @@
-import discord
-import logging
-import aiohttp
-import functools
 import asyncio
-import random
-import string
+import functools
+import logging
 import os
+import random
 import re
-
-from io import BytesIO
+import string
 from copy import copy
 from datetime import datetime
-from typing import List, Union, Pattern, cast, Dict, Tuple, Any, Literal
-
-from redbot import version_info, VersionInfo
-from redbot.core.bot import Red
-from redbot.core import commands, Config, modlog
-from redbot.core.i18n import Translator
-from redbot.core.data_manager import cog_data_path
-from redbot.core.utils.chat_formatting import humanize_list, box, escape, pagify
-
-from discord.ext.commands.errors import BadArgument
-
+from io import BytesIO
 from multiprocessing import TimeoutError
 from multiprocessing.pool import Pool
+from typing import Any, Dict, List, Literal, Pattern, Tuple, Union, cast
 
-from .converters import Trigger, ChannelUserRole
+import aiohttp
+import discord
+from discord.ext.commands.errors import BadArgument
+from redbot import VersionInfo, version_info
+from redbot.core import Config, commands, modlog
+from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, pagify
+
+from .converters import ChannelUserRole, Trigger
 from .message import ReTriggerMessage
 
 try:
-    from PIL import Image
-    from PIL import ImageSequence
+    from PIL import Image, ImageSequence
 
     try:
         import pytesseract

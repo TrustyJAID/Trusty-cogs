@@ -1,22 +1,21 @@
+import asyncio
+import logging
+import re
+import time
+from copy import deepcopy
+from typing import Dict, List, Mapping, Optional, Tuple, Union, cast
+
 import aiohttp
 import discord
-import logging
-import asyncio
-import time
-import re
-
-from typing import cast, Optional, List, Union, Mapping, Dict, Tuple
-from copy import deepcopy
-
-from redbot.core import Config, commands, VersionInfo, version_info
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
+from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.common_filters import filter_mass_mentions
-from discord.ext.commands.converter import Converter
-from discord.ext.commands.errors import BadArgument
 
-from .flags import FLAGS
 from .errors import GoogleTranslateAPIError
+from .flags import FLAGS
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)

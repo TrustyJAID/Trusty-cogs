@@ -1,9 +1,9 @@
-from .starboard_entry import StarboardEntry
-
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-from redbot.core.i18n import Translator
 from redbot.core import commands
+from redbot.core.i18n import Translator
+
+from .starboard_entry import StarboardEntry
 
 _ = Translator("Starboard", __file__)
 

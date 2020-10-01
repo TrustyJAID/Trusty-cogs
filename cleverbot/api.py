@@ -1,23 +1,16 @@
-import discord
-import aiohttp
 import logging
 import re
+from typing import Optional, Tuple, Union
 
-from typing import Tuple, Union, Optional
-
-from redbot import version_info, VersionInfo
-from redbot.core.bot import Red
-from redbot.core import Config, commands
-
+import aiohttp
+import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
+from redbot import VersionInfo, version_info
+from redbot.core import Config, commands
+from redbot.core.bot import Red
 
-from .errors import (
-    NoCredentials,
-    InvalidCredentials,
-    APIError,
-    OutOfRequests,
-)
+from .errors import APIError, InvalidCredentials, NoCredentials, OutOfRequests
 
 try:
     import cchardet as chardet

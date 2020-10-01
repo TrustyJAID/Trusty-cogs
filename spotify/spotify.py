@@ -1,44 +1,43 @@
-import discord
-import re
-import tekore
-import logging
 import asyncio
+import logging
+import re
 import time
-
 from copy import copy
-from typing import Tuple, Optional, Literal, Mapping, Union
+from typing import Literal, Mapping, Optional, Tuple, Union
 
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import humanize_list
+import discord
+import tekore
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .helpers import (
-    NotPlaying,
-    InvalidEmoji,
     SPOTIFY_RE,
-    SearchTypes,
-    SpotifyURIConverter,
+    InvalidEmoji,
+    NotPlaying,
     RecommendationsConverter,
     ScopeConverter,
+    SearchTypes,
+    SpotifyURIConverter,
     time_convert,
 )
 from .menus import (
-    emoji_handler,
-    SpotifyUserMenu,
-    SpotifyPages,
-    SpotifySearchMenu,
-    SpotifyTrackPages,
-    SpotifyBaseMenu,
-    SpotifyPlaylistsPages,
-    SpotifyPlaylistPages,
-    SpotifyTopTracksPages,
-    SpotifyTopArtistsPages,
-    SpotifyRecentSongPages,
-    SpotifyArtistPages,
     SpotifyAlbumPages,
-    SpotifyShowPages,
+    SpotifyArtistPages,
+    SpotifyBaseMenu,
     SpotifyEpisodePages,
     SpotifyNewPages,
+    SpotifyPages,
+    SpotifyPlaylistPages,
+    SpotifyPlaylistsPages,
+    SpotifyRecentSongPages,
+    SpotifySearchMenu,
+    SpotifyShowPages,
+    SpotifyTopArtistsPages,
+    SpotifyTopTracksPages,
+    SpotifyTrackPages,
+    SpotifyUserMenu,
+    emoji_handler,
 )
 
 log = logging.getLogger("red.trusty-cogs.spotify")
@@ -79,7 +78,7 @@ class Spotify(commands.Cog):
                 "playlist-modify-public",
                 "playlist-modify-private",
                 "ugc-image-upload",
-            ]
+            ],
         )
 
         self._app_token = None
@@ -246,9 +245,7 @@ class Spotify(commands.Cog):
         content = message.content
         if message.embeds:
             em_dict = message.embeds[0].to_dict()
-            content += " ".join(
-                v for k, v in em_dict.items() if k in ["title", "description"]
-            )
+            content += " ".join(v for k, v in em_dict.items() if k in ["title", "description"])
             if "title" in em_dict:
                 if "url" in em_dict["title"]:
                     content += " " + em_dict["title"]["url"]
@@ -640,7 +637,6 @@ class Spotify(commands.Cog):
         """
         scope = humanize_list(await self.config.scopes())
         await ctx.maybe_send_embed(_("Current scopes:\n{scopes}").format(scopes=scope))
-
 
     @spotify_set.command(name="creds")
     @commands.is_owner()

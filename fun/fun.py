@@ -1,13 +1,13 @@
-import discord
-from redbot.core.bot import Red
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify
-
-import re
 import contextlib
+import re
 from typing import Optional, Union
 
-from .constants import regionals, ball, emoji_dict
+import discord
+from redbot.core import commands
+from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import pagify
+
+from .constants import ball, emoji_dict, regionals
 
 """Module for fun/meme commands commands
    Fun commands from Appu's selfbot

@@ -1,16 +1,13 @@
-import re
 import logging
+import re
+from typing import List, Union
+
 import discord
 import unidecode
-
-from redbot.core.i18n import Translator
-from redbot.core import commands
-
-from discord.ext.commands.converter import IDConverter
-from discord.ext.commands.converter import _get_from_guilds
+from discord.ext.commands.converter import IDConverter, _get_from_guilds
 from discord.ext.commands.errors import BadArgument
-
-from typing import List, Union
+from redbot.core import commands
+from redbot.core.i18n import Translator
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")

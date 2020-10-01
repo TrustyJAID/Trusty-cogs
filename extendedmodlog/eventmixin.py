@@ -1,17 +1,15 @@
-import datetime
-import discord
 import asyncio
+import datetime
 import logging
+from typing import Sequence, Union, cast
 
+import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-
-from redbot.core import commands, Config, modlog, VersionInfo, version_info
+from redbot.core import Config, VersionInfo, commands, modlog, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list, inline, escape
-
-from typing import Union, cast, Sequence
+from redbot.core.utils.chat_formatting import escape, humanize_list, inline
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")

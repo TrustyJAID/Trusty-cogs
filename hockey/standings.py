@@ -1,8 +1,10 @@
+import logging
 from datetime import datetime
+
 import aiohttp
 import discord
+
 from .constants import BASE_URL, TEAMS
-import logging
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 

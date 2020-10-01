@@ -1,16 +1,13 @@
-import discord
-import aiohttp
 import logging
-
-from redbot.core import commands
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
-
-from discord.ext.commands.converter import Converter
-from discord.ext.commands.errors import BadArgument
-
 from typing import List, Tuple
 
+import aiohttp
+import discord
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
 from mendeleev import element as ELEMENTS
+from redbot.core import commands
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .data import IMAGES, LATTICES, UNITS
 

@@ -1,34 +1,30 @@
-import discord
 import asyncio
 import datetime
-import aiohttp
 import itertools
 import logging
-
 import time  # this is to be removed before commit
-
-from io import BytesIO
 from copy import copy
-from typing import Union, Optional, List, Tuple, cast, Dict, Literal
+from io import BytesIO
+from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
-from redbot.core import checks, Config, commands
+import aiohttp
+import discord
+from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
-    box,
     bold,
+    box,
     escape,
     humanize_number,
     humanize_timedelta,
     inline,
     pagify,
 )
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
-from redbot.core.utils.menus import start_adding_reactions
 
-from .converters import FuzzyMember, GuildConverter, MultiGuildConverter, ChannelConverter
-
+from .converters import ChannelConverter, FuzzyMember, GuildConverter, MultiGuildConverter
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")

@@ -1,8 +1,8 @@
-import discord
-from random import choice
 import random
-from redbot.core import commands
+from random import choice
 
+import discord
+from redbot.core import commands
 
 FACES = [
     "¢‿¢",

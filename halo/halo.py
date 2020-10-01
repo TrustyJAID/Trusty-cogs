@@ -1,10 +1,9 @@
-import discord
-import aiohttp
-from redbot.core import commands
-from redbot.core import Config
-from redbot.core import checks
-from random import choice as randchoice
 import asyncio
+from random import choice as randchoice
+
+import aiohttp
+import discord
+from redbot.core import Config, checks, commands
 
 numbs = {"next": "➡", "back": "⬅", "exit": "❌"}
 

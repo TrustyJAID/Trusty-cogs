@@ -1,11 +1,10 @@
-import discord
 import logging
+from typing import Dict, List, Literal, Union, cast
 
-from typing import List, cast, Dict, Union, Literal
-
-from redbot import version_info, VersionInfo
-from redbot.core.bot import Red
+import discord
+from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
+from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 
 from .message_entry import StarboardMessage

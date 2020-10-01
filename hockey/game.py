@@ -1,22 +1,19 @@
-import discord  # type: ignore[import]
-import aiohttp
 import asyncio
 import logging
-
-from typing import Optional, Literal
 from datetime import datetime
+from typing import Literal, Optional
 
+import aiohttp
+import discord  # type: ignore[import]
+from redbot import VersionInfo, version_info
 from redbot.core import Config
-from redbot import version_info, VersionInfo
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify
 
-
-from .constants import BASE_URL, TEAMS, CONTENT_URL
+from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
-from .helper import utc_to_local, check_to_post, get_team, get_team_role
+from .helper import check_to_post, get_team, get_team_role, utc_to_local
 from .standings import Standings
-
 
 _ = Translator("Hockey", __file__)
 

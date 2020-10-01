@@ -1,15 +1,15 @@
-import discord
-import logging
 import asyncio
+import logging
 import re
-from typing import List, Union, Tuple, Pattern
+from typing import List, Pattern, Tuple, Union
 
+import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
-from redbot.core.i18n import Translator
 from redbot.core import commands
-from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)

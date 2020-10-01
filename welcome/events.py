@@ -1,19 +1,16 @@
-import re
 import logging
+import re
+from datetime import datetime, timedelta
+from random import choice as rand_choice
+from typing import List, Optional, Pattern, Union, cast
 
 import discord
-
-from random import choice as rand_choice
-from datetime import datetime, timedelta
-from typing import List, Union, Pattern, Optional, cast
-
-from redbot import version_info, VersionInfo
-from redbot.core import commands, Config
+from redbot import VersionInfo, version_info
+from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.common_filters import filter_mass_mentions
-from redbot.core.i18n import Translator, cog_i18n
-
 
 RE_CTX: Pattern = re.compile(r"{([^}]+)\}")
 RE_POS: Pattern = re.compile(r"{((\d+)[^.}]*(\.[^:}]+)?[^}]*)\}")

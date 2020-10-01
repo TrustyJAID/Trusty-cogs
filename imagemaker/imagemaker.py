@@ -1,18 +1,19 @@
+import asyncio
+import functools
+import json
+import os
+import sys
+import textwrap
+from copy import copy
+from io import BytesIO
+from typing import Optional, Union, cast
+
 import aiohttp
 import discord
+import numpy as np
+from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageSequence
 from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path
-from io import BytesIO
-import sys
-import functools
-import asyncio
-from PIL import Image, ImageDraw, ImageFont, ImageColor, ImageSequence
-import numpy as np
-import os
-import json
-from copy import copy
-from typing import Union, Optional, cast
-import textwrap
 
 from .converter import ImageFinder
 

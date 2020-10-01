@@ -1,10 +1,9 @@
-import discord
 from random import choice
-from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
-
 from typing import List
 
+import discord
+from redbot.core import commands
+from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Compliment", __file__)
 

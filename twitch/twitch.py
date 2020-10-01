@@ -1,20 +1,18 @@
-import discord
 import asyncio
-import aiohttp
 import logging
-
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Literal, Optional
 
+import aiohttp
+import discord
 from redbot.core import Config, checks, commands
 from redbot.core.commands import Context
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
-from .twitch_api import TwitchAPI
-from .twitch_profile import TwitchProfile
-from .twitch_follower import TwitchFollower
 from .errors import TwitchError
-
+from .twitch_api import TwitchAPI
+from .twitch_follower import TwitchFollower
+from .twitch_profile import TwitchProfile
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -175,7 +173,7 @@ class Twitch(TwitchAPI, commands.Cog):
                     "login": profile.login,
                     "display_name": profile.display_name,
                     "channels": [channel.id],
-                    "clips": [c["id"] for c in clips]
+                    "clips": [c["id"] for c in clips],
                 }
 
                 cur_accounts[str(profile.id)] = user_data
@@ -360,7 +358,9 @@ class Twitch(TwitchAPI, commands.Cog):
             return
         clips = await self.get_new_clips(profile.id)
         if not clips:
-            return await ctx.send(f"{profile.display_name} does not have any public clips available.")
+            return await ctx.send(
+                f"{profile.display_name} does not have any public clips available."
+            )
         urls = [c["url"] for c in clips]
         await menu(ctx, urls, DEFAULT_CONTROLS)
 

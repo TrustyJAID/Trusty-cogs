@@ -1,13 +1,13 @@
-import discord
 import asyncio
 import logging
-import aiohttp
-
 from datetime import datetime, timedelta
+
+import aiohttp
+import discord
 from redbot.core.i18n import Translator
 
-from .errors import NotAValidTeamError, VotingHasEndedError, UserHasVotedError
 from .constants import TEAMS
+from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
 
 _ = Translator("Hockey", __file__)

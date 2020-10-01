@@ -1,9 +1,9 @@
-import discord
-from redbot.core import commands
 from random import choice
-from redbot.core.i18n import Translator, cog_i18n
 from typing import List
 
+import discord
+from redbot.core import commands
+from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Insult", __file__)
 

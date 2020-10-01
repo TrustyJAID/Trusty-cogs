@@ -1,15 +1,14 @@
-import os
-import discord
-import aiohttp
 import asyncio
-import logging
 import functools
+import logging
+import os
+
+import aiohttp
+import discord
 import youtube_dl
-
-from redbot.core import commands, checks
+from moviepy.editor import CompositeVideoClip, TextClip, VideoFileClip
+from redbot.core import checks, commands
 from redbot.core.data_manager import cog_data_path
-
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip
 
 logging.captureWarnings(False)
 

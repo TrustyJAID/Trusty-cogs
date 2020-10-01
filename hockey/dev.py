@@ -1,20 +1,19 @@
 import asyncio
 import json
 import logging
+from datetime import date, datetime, timedelta
 
-from datetime import datetime, timedelta, date
-
+from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
-from redbot.core import commands, checks, Config
-from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
+from .constants import TEAMS
 from .errors import InvalidFileError
 from .game import Game
+from .gamedaychannels import GameDayChannels
 from .pickems import Pickems
 from .standings import Standings
-from .gamedaychannels import GameDayChannels
-from .constants import TEAMS
 
 try:
     from .oilers import Oilers

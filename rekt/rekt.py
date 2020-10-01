@@ -1,8 +1,9 @@
+from random import choice
+from typing import List
+
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from random import choice
-from typing import List
 
 _ = Translator("Rekt", __file__)
 

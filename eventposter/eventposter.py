@@ -1,13 +1,12 @@
-import discord
 import logging
+from typing import Literal, Optional, Union
 
-from typing import Union, Optional, Literal
-
-from redbot import version_info, VersionInfo
-from redbot.core import commands, checks, Config, VersionInfo, version_info
-from redbot.core.utils.predicates import ReactionPredicate
+import discord
+from redbot import VersionInfo, version_info
+from redbot.core import Config, VersionInfo, checks, commands, version_info
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .event_obj import Event, ValidImage
 

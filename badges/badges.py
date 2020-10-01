@@ -1,22 +1,20 @@
-import discord
-import aiohttp
+import asyncio
+import functools
 import logging
 import sys
-import functools
-import asyncio
-
 from io import BytesIO
-from PIL import Image, ImageFont, ImageDraw
-from PIL import ImageSequence
-from typing import Union, cast, Optional
+from typing import Optional, Union, cast
 
-from .barcode import generate, ImageWriter
-from .templates import blank_template
-from .badge_entry import Badge
-
-from redbot.core import commands, Config
-from redbot.core.i18n import Translator, cog_i18n
+import aiohttp
+import discord
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from redbot.core import Config, commands
 from redbot.core.data_manager import bundled_data_path
+from redbot.core.i18n import Translator, cog_i18n
+
+from .badge_entry import Badge
+from .barcode import ImageWriter, generate
+from .templates import blank_template
 
 _ = Translator("Badges", __file__)
 log = logging.getLogger("red.Trusty-cogs.badges")

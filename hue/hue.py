@@ -1,12 +1,11 @@
-import random
 import asyncio
+import random
+from typing import Optional, Tuple
 
-from redbot.core import commands, Config, checks
+from redbot.core import Config, checks, commands
 from redbot.core.data_manager import cog_data_path
 
 from .phue import Bridge, RemoteBridge, RemoteToken
-
-from typing import Optional, Tuple
 
 
 class Hue(commands.Cog):

@@ -1,16 +1,13 @@
-import discord
 import json
-import aiohttp
 import logging
+from typing import List, Literal, Optional
 
-from tabulate import tabulate
-from typing import Optional, List, Literal
-
+import aiohttp
+import discord
+from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core import commands
-from redbot.core import Config
-from redbot.core.utils.chat_formatting import pagify, box
-
+from redbot.core.utils.chat_formatting import box, pagify
+from tabulate import tabulate
 
 from .profile import Profile
 

@@ -1,9 +1,8 @@
-import discord
 import logging
 import re
 
-from apraw.models import Subreddit, Submission
-
+import discord
+from apraw.models import Submission, Subreddit
 
 BASE_URL = "https://reddit.com"
 

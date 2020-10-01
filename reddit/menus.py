@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 from typing import Any, AsyncGenerator
-from apraw.models import Submission, Subreddit
 
 import discord
+from apraw.models import Submission, Subreddit
 from redbot.vendored.discord.ext import menus
 
 from .helpers import make_embed_from_submission

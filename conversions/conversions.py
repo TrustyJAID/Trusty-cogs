@@ -1,12 +1,12 @@
-import discord
-import datetime
-import aiohttp
 import asyncio
+import datetime
 import logging
 import re
+from typing import Dict, Optional, Union
 
-from redbot.core import commands, Config, VersionInfo, version_info
-from typing import Optional, Union, Dict
+import aiohttp
+import discord
+from redbot.core import Config, VersionInfo, commands, version_info
 
 log = logging.getLogger("red.trusty-cogs.conversions")
 

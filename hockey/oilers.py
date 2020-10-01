@@ -1,6 +1,7 @@
 import asyncio
-from phue import Bridge
 import functools
+
+from phue import Bridge
 
 
 class Oilers:

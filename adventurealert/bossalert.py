@@ -1,9 +1,8 @@
 import discord
-
-from redbot import version_info, VersionInfo
-from redbot.core import commands, checks
+from redbot import VersionInfo, version_info
+from redbot.core import checks, commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 

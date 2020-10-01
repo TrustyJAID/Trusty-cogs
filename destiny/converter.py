@@ -2,10 +2,9 @@ import logging
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("Destiny", __file__)
 

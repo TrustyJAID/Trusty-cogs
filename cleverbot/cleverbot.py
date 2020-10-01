@@ -1,22 +1,15 @@
-import discord
 import logging
 import re
-
 from typing import Optional, Union
 
-from redbot import version_info, VersionInfo
-from redbot.core import commands, checks, Config
+import discord
+from redbot import VersionInfo, version_info
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
-from .api import CleverbotAPI, ChannelUserRole, IntRange
-
-from .errors import (
-    NoCredentials,
-    InvalidCredentials,
-    APIError,
-    OutOfRequests,
-)
+from .api import ChannelUserRole, CleverbotAPI, IntRange
+from .errors import APIError, InvalidCredentials, NoCredentials, OutOfRequests
 
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
 

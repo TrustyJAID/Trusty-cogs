@@ -1,14 +1,13 @@
-import discord
 import asyncio
 import logging
 import re
-
 from datetime import datetime
 from typing import Optional
 
-from redbot.core import commands, Config, checks, VersionInfo, version_info
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+import discord
+from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.predicates import MessagePredicate
 
 from .events import Events

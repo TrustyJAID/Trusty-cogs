@@ -1,11 +1,11 @@
-import discord
 import re
+from typing import Union
 
+import discord
 from discord.ext.commands.converter import IDConverter
+from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from discord.ext.commands.errors import BadArgument
-from typing import Union
 
 _ = Translator("Translate", __file__)
 

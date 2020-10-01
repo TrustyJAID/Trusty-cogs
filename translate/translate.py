@@ -1,16 +1,14 @@
 import logging
-
 from typing import Optional
 
-from redbot.core import commands, Config, checks
+from discord.ext.commands.errors import BadArgument
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
-from discord.ext.commands.errors import BadArgument
-
-from .api import GoogleTranslateAPI, FlagTranslation
-from .errors import GoogleTranslateAPIError
+from .api import FlagTranslation, GoogleTranslateAPI
 from .converters import ChannelUserRole
+from .errors import GoogleTranslateAPIError
 
 """
 Translator cog

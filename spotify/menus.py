@@ -1,27 +1,26 @@
 from __future__ import annotations
 
 import asyncio
-import discord
-import logging
-import tekore
 import json
-
+import logging
 from copy import copy
 from pathlib import Path
 from typing import Any, List, Tuple
 
-from redbot.vendored.discord.ext import menus
+import discord
+import tekore
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_list, box
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box, humanize_list
+from redbot.vendored.discord.ext import menus
 
 from .helpers import (
-    _draw_play,
-    NotPlaying,
-    InvalidEmoji,
-    make_details,
     REPEAT_STATES,
     SPOTIFY_LOGO,
+    InvalidEmoji,
+    NotPlaying,
+    _draw_play,
+    make_details,
 )
 
 log = logging.getLogger("red.Trusty-cogs.spotify")

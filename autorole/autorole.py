@@ -1,14 +1,12 @@
-import discord
+import logging
 import random
 import string
-import logging
-
 from typing import Optional, cast
 
-from redbot import version_info, VersionInfo
-from redbot.core import commands, checks, Config
+import discord
+from redbot import VersionInfo, version_info
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-
 
 default_settings = {
     "ENABLED": False,

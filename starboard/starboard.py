@@ -1,11 +1,10 @@
-import discord
 import logging
+from typing import Optional, Union
 
-from typing import Union, Optional
-
+import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.menus import menu, DEFAULT_CONTROLS
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from .converters import StarboardExists
 from .events import StarboardEvents

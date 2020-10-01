@@ -1,14 +1,12 @@
-import discord
 import datetime
-import aiohttp
+from typing import Literal, Optional
 from urllib.parse import urlencode
 
-from typing import Optional, Literal
-
+import aiohttp
+import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-
-from redbot.core import commands, Config, checks
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 _ = Translator("Weather", __file__)

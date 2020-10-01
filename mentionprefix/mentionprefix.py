@@ -8,7 +8,6 @@ from typing import Dict, Optional, Set
 
 import discord
 from discord.ext.commands.view import StringView
-
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context

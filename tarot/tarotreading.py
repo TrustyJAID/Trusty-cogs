@@ -1,10 +1,11 @@
+import random
+from random import choice, sample
+from typing import Optional
+
 import discord
 from redbot.core import commands
+
 from . import tarot_cards
-import random
-from random import sample
-from random import choice
-from typing import Optional
 
 
 class TarotReading(commands.Cog):

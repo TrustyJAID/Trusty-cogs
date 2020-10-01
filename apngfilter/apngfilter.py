@@ -1,9 +1,10 @@
-import discord
 import io
-from redbot.core import checks, commands, Config
 import re
-import aiohttp
 from typing import cast
+
+import aiohttp
+import discord
+from redbot.core import Config, checks, commands
 
 IS_LINK_REGEX = re.compile(r"(http(s?):)([/|.|\w|\s|-])*\.(?:png)")
 APNG_REGEX = re.compile(rb"fdAT")  # credit to Soulrift for researh on this

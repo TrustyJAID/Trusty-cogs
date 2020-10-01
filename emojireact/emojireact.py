@@ -1,8 +1,10 @@
-import discord
-from redbot.core import commands, Config, checks
-from redbot.core.i18n import Translator, cog_i18n
-from .unicode_codes import UNICODE_EMOJI
 import re
+
+import discord
+from redbot.core import Config, checks, commands
+from redbot.core.i18n import Translator, cog_i18n
+
+from .unicode_codes import UNICODE_EMOJI
 
 _ = Translator("EmojiReactions", __file__)
 

@@ -1,15 +1,12 @@
-import logging
 import asyncio
-import discord
-
-
-from typing import List, Optional
+import logging
 from datetime import datetime
+from typing import List, Optional
 
-from redbot import version_info, VersionInfo
-from redbot.core.i18n import Translator
+import discord
+from redbot import VersionInfo, version_info
 from redbot.core import Config
-
+from redbot.core.i18n import Translator
 
 from .constants import HEADSHOT_URL, TEAMS
 from .helper import check_to_post, get_team

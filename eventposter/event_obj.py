@@ -1,8 +1,7 @@
-import discord
 import re
+from typing import List, Optional, Tuple, cast
 
-from typing import List, Tuple, Optional, cast
-
+import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 

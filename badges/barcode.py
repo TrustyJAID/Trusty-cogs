@@ -7,10 +7,10 @@ Which is itself a port of python-barcode which is no longer available
 
 import gzip
 import os
-import xml.dom
 import string
-from redbot.core.data_manager import bundled_data_path
+import xml.dom
 
+from redbot.core.data_manager import bundled_data_path
 
 try:
     import Image

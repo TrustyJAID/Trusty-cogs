@@ -1,11 +1,12 @@
-from redbot.core import commands, checks, Config
+import logging
+import re
+from typing import Dict, List, Tuple
+
 import aiohttp
-from typing import List, Dict, Tuple
-from redbot.core.utils.chat_formatting import pagify
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-import re
-import logging
+from redbot.core import Config, checks, commands
+from redbot.core.utils.chat_formatting import pagify
 
 SEARCH_URL = "https://api.imgflip.com/get_memes"
 CAPTION_URL = "https://api.imgflip.com/caption_image"

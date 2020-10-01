@@ -1,7 +1,8 @@
-import discord
 import random
+from typing import Optional, Union
+
+import discord
 from redbot.core import commands
-from typing import Union, Optional
 
 
 class Mock(commands.Cog):

@@ -1,18 +1,15 @@
-import discord
-import logging
-import apraw
 import asyncio
-import aiohttp
-
+import logging
 from typing import Optional
 
+import aiohttp
+import apraw
+import discord
 from apraw.models import Submission, Subreddit
+from redbot.core import Config, checks, commands
 
-from redbot.core import commands, checks, Config
-
-
-from .menus import RedditMenu, BaseMenu
 from .helpers import BASE_URL, make_embed_from_submission
+from .menus import BaseMenu, RedditMenu
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
 

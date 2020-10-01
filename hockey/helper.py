@@ -1,16 +1,14 @@
 import asyncio
-import pytz
 import logging
 import re
-
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Union, Pattern
+from typing import Dict, List, Optional, Pattern, Union
 
-from redbot.core.i18n import Translator
-from redbot.core.commands import Context
-
+import pytz
 from discord.ext.commands.converter import Converter  # type: ignore[import]
 from discord.ext.commands.errors import BadArgument  # type: ignore[import]
+from redbot.core.commands import Context
+from redbot.core.i18n import Translator
 
 from .constants import TEAMS
 from .teamentry import TeamEntry

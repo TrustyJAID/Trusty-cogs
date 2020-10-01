@@ -1,18 +1,17 @@
-import discord
 import asyncio
-import aiohttp
-import time
 import logging
-
-from typing import Tuple, Optional, List
+import time
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Tuple
 
-from redbot.core import Config, commands, VersionInfo, version_info
+import aiohttp
+import discord
+from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
-from .twitch_profile import TwitchProfile
-from .twitch_follower import TwitchFollower
-from .errors import TwitchError
 
+from .errors import TwitchError
+from .twitch_follower import TwitchFollower
+from .twitch_profile import TwitchProfile
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -198,7 +197,9 @@ class TwitchAPI:
         total = data["total"]
         return follows, total
 
-    async def get_new_clips(self, user_id: str, started_at: Optional[datetime] = None) -> List[dict]:
+    async def get_new_clips(
+        self, user_id: str, started_at: Optional[datetime] = None
+    ) -> List[dict]:
         """
         Gets and returns the last 20 clips generated for a user
         """
@@ -247,9 +248,7 @@ class TwitchAPI:
                 try:
                     profile = await self.get_profile_from_id(follow.from_id)
                 except Exception:
-                    log.error(
-                        f"Error getting twitch profile {follow.from_id}", exc_info=True
-                    )
+                    log.error(f"Error getting twitch profile {follow.from_id}", exc_info=True)
                 log.info(
                     f"{profile.login} Followed! {followed.display_name} "
                     f"has {total} followers now."
@@ -263,8 +262,7 @@ class TwitchAPI:
                         await channel.send(embed=em)
                     else:
                         text_msg = (
-                            f"{profile.display_name} has just "
-                            f"followed {account.display_name}!"
+                            f"{profile.display_name} has just " f"followed {account.display_name}!"
                         )
                         await channel.send(text_msg)
                 async with self.config.twitch_accounts() as check_accounts:
@@ -288,16 +286,13 @@ class TwitchAPI:
                 now = datetime.utcnow() + timedelta(days=-8)
                 clips = await self.get_new_clips(user_id, now)
             except Exception:
-                log.exception(
-                    f"Error getting twitch clips {user_id}", exc_info=True
-                )
+                log.exception(f"Error getting twitch clips {user_id}", exc_info=True)
                 continue
             for clip in clips:
                 if clip["id"] not in clip_data["clips"]:
                     await self.send_clips_update(clip, clip_data)
                     async with self.config.twitch_clips() as saved:
                         saved[user_id]["clips"].append(clip["id"])
-
 
     async def check_for_new_followers(self) -> None:
         # Checks twitch every minute for new followers

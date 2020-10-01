@@ -1,17 +1,15 @@
-import re
 import datetime
-import tekore
 import logging
+import re
+from typing import Final, List, Pattern, Union
 
-from tabulate import tabulate
-from typing import Union, Final, Pattern, List
-
-from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_timedelta
-from redbot.core.i18n import Translator
-
+import tekore
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from redbot.core import commands
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_timedelta
+from tabulate import tabulate
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 

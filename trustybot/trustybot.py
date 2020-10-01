@@ -1,6 +1,7 @@
-import discord
-from redbot.core import commands, checks
 from typing import Optional
+
+import discord
+from redbot.core import checks, commands
 
 
 class TrustyBot(commands.Cog):

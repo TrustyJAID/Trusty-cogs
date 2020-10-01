@@ -1,7 +1,8 @@
-from PIL import Image, ImageFilter
 import random as rand
-from . import constants
-from . import util
+
+from PIL import Image, ImageFilter
+
+from . import constants, util
 
 
 def edge(pixels, image, angle):

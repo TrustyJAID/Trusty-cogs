@@ -23,8 +23,8 @@ import logging
 import os
 import platform
 import re
-import sys
 import socket
+import sys
 from copy import deepcopy
 from datetime import datetime, timedelta
 
@@ -36,13 +36,14 @@ else:
 if PY3K:
     import http.client as httplib
     from datetime import timezone
-    from urllib.parse import parse_qs, urlparse, urlencode
+    from urllib.parse import parse_qs, urlencode, urlparse
 
     UTC = timezone.utc
 else:
-    import httplib
     from datetime import tzinfo
     from urllib import urlencode
+
+    import httplib
     from urlparse import parse_qs, urlparse
 
     class UTC(tzinfo):

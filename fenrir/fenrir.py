@@ -1,8 +1,7 @@
 import discord
-
-from redbot import version_info, VersionInfo
-from redbot.core.bot import Red
+from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
+from redbot.core.bot import Red
 
 
 class Fenrir(commands.Cog):

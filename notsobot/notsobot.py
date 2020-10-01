@@ -1,30 +1,30 @@
 # https://github.com/NotSoSuper/NotSoBot
 
 import asyncio
+import logging
+import random
+import re
+import sys
+import textwrap
+import uuid
+from io import BytesIO
+from typing import Optional, Tuple, Union
+from urllib.parse import quote
+
 import aiohttp
 import discord
-import sys
-import re
-import random
+import jpglitch
+import numpy as np
 import wand
 import wand.color
 import wand.drawing
-from PIL import Image, ImageFont, ImageOps, ImageDraw, ImageSequence
-import numpy as np
-import jpglitch
-from .vw import macintoshplus
-from io import BytesIO
-from redbot.core import commands
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageSequence
 from pyfiglet import figlet_format
-from urllib.parse import quote
-import uuid
-from typing import Optional, Union, Tuple
-import logging
-import textwrap
-
+from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 
 from .converter import ImageFinder
+from .vw import macintoshplus
 
 log = logging.getLogger("red.trusty-cogs.NotSoBot")
 

@@ -1,6 +1,7 @@
+import re
+
 import discord
 from redbot.core import commands
-import re
 
 
 class Covfefe(commands.Cog):

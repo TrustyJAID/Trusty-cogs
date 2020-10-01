@@ -1,10 +1,12 @@
 # encoding: utf-8
 # https://github.com/rickyhan/macintoshplus
 """Vaporwaveは音楽のジャンルや芸術運動である[3] [4]このようなバウンスハウス、またはchillwave、そして、より広く、エレクトロニックダンスミュージック、などのインディーseapunkから2010年代初頭のダンスのジャンルに出現した。 、その態度やメッセージに多くの多様性と曖昧さ、vaporwaveがありますが：時々の両方が、大量消費社会の批判とパロディとして機能し80年代のヤッピー文化、[5]とニューエイジの音楽、音響的および審美的に彼らのノスタルジックで好奇心の魅力を紹介しながら、アーティファクト。"""
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageFilter
-from random import randint, choice, Random
-import os, hashlib
-from math import sin, cos, tan
+import hashlib
+import os
+from math import cos, sin, tan
+from random import Random, choice, randint
+
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 japanese_corpus = """それは20年前の今日だった
 サージェント·ペッパーは、プレイするバンドを教え

@@ -1,22 +1,19 @@
-import discord
 import asyncio
-import logging
 import functools
-
-import tweepy as tw
-from typing import Tuple, Any, Optional, List
+import logging
 from datetime import datetime
 from html import unescape
 from io import BytesIO
+from typing import Any, List, Optional, Tuple
 
-
-from redbot import version_info, VersionInfo
-from redbot.core import Config, checks, commands, VersionInfo, version_info
-from redbot.core.utils.chat_formatting import escape, pagify, humanize_list
+import discord
+import tweepy as tw
+from redbot import VersionInfo, version_info
+from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
 from .tweet_entry import TweetEntry
-
 
 _ = Translator("Tweets", __file__)
 

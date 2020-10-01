@@ -1,16 +1,15 @@
-import aiohttp
 import logging
-
-from typing import Optional
 from datetime import datetime, timedelta
+from typing import Optional
 
+import aiohttp
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
-from .helper import utc_to_local
 from .constants import BASE_URL, TEAMS
-from .game import Game
 from .errors import NoSchedule
+from .game import Game
+from .helper import utc_to_local
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
