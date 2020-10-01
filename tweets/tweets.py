@@ -720,7 +720,7 @@ class Tweets(commands.Cog):
         msg = ""
         if added_retweets:
             msg += _("Now posting retweets from {retweets}.").format(
-                retweets=humanize_list(retweets)
+                retweets=humanize_list(added_retweets)
             )
         if removed_retweets:
             msg += _("No longer posting retweets from {retweets}").format(
