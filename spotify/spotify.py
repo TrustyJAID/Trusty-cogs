@@ -251,8 +251,9 @@ class Spotify(commands.Cog):
             )
             if "url" in em_dict["title"]:
                 content += " " + em_dict["title"]["url"]
-            for field in em_dict["fields"]:
-                content += " " + field["name"] + " " + field["value"]
+            if "fields" in em_dict:
+                for field in em_dict["fields"]:
+                    content += " " + field["name"] + " " + field["value"]
             log.debug(content)
         song_data = SPOTIFY_RE.finditer(content)
         tracks = []
