@@ -14,16 +14,16 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .helpers import (
     NotPlaying,
+    InvalidEmoji,
     SPOTIFY_RE,
-    LOOKUP,
-    ACTION_EMOJIS,
-    SCOPE,
     SearchTypes,
     SpotifyURIConverter,
     RecommendationsConverter,
+    ScopeConverter,
     time_convert,
 )
 from .menus import (
+    emoji_handler,
     SpotifyUserMenu,
     SpotifyPages,
     SpotifySearchMenu,
@@ -54,12 +54,34 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.7"
+    __version__ = "1.4.0"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828)
-        self.config.register_user(token={}, listen_for=[], show_private=False)
+        self.config.register_user(token={}, listen_for={}, show_private=False)
+        self.config.register_global(
+            emojis={},
+            scopes=[
+                "user-read-private",
+                "user-top-read",
+                "user-read-recently-played",
+                "user-follow-read",
+                "user-library-read",
+                "user-read-currently-playing",
+                "user-read-playback-state",
+                "user-read-playback-position",
+                "playlist-read-collaborative",
+                "playlist-read-private",
+                "user-follow-modify",
+                "user-library-modify",
+                "user-modify-playback-state",
+                "playlist-modify-public",
+                "playlist-modify-private",
+                "ugc-image-upload",
+            ]
+        )
+
         self._app_token = None
         self._tokens: Tuple[str] = None
         self._spotify_client = None
@@ -89,6 +111,12 @@ class Spotify(commands.Cog):
             self.GENRES = await self._spotify_client.recommendation_genre_seeds()
         except Exception:
             log.exception("error starting the cog")
+        emojis = await self.config.emojis()
+        for name, emoji in emojis.items():
+            try:
+                emoji_handler.replace_emoji(name, emoji)
+            except InvalidEmoji:
+                pass
         self._ready.set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -143,8 +171,10 @@ class Spotify(commands.Cog):
                     return
                 await self.save_token(author, user_token)
             return user_token
-
-        auth = tekore.UserAuth(self._credentials, scope=SCOPE)
+        scope_list = await self.config.scopes()
+        scope = tekore.Scope(*scope_list)
+        log.debug(scope)
+        auth = tekore.UserAuth(self._credentials, scope=scope)
         msg = _(
             "Please accept the authorization in the following link and reply "
             "to me with the full url\n\n {auth}"
@@ -198,55 +228,60 @@ class Spotify(commands.Cog):
             if self.current_menus[payload.message_id] == payload.user_id:
                 log.debug("Menu reaction from the same user ignoring")
                 return
-        if str(payload.emoji) not in LOOKUP.keys():
+        listen_for = await self.config.user_from_id(payload.user_id).listen_for()
+        if not listen_for:
             return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        listen_for = await self.config.user_from_id(payload.user_id).listen_for()
-        if not listen_for:
-            return
+
         channel = self.bot.get_channel(payload.channel_id)
         try:
             message = await channel.fetch_message(payload.message_id)
         except Exception:
             return
 
-        action = LOOKUP[str(payload.emoji)]
-        if action == "play":
-            # play the song if it exists
-            content = message.content
-            if message.embeds:
-                content += " ".join(
-                    v
-                    for k, v in message.embeds[0].to_dict().items()
-                    if k in ["title", "description"]
-                )
-            song_data = SPOTIFY_RE.finditer(content)
-            tracks = []
+        content = message.content
+        if message.embeds:
+            content += " ".join(
+                v for k, v in message.embeds[0].to_dict().items() if k in ["title", "description"]
+            )
+        song_data = SPOTIFY_RE.finditer(content)
+        tracks = []
+        albums = []
+        playlists = []
+        if song_data:
             new_uri = ""
-            if song_data:
-                for match in song_data:
-                    new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                    if match.group(2) == "track":
-                        tracks.append(match.group(3))
-            ctx = await self.bot.get_context(message)
-            user = self.bot.get_user(payload.user_id)
-            if not user:
-                return
-            user_token = await self.get_user_auth(ctx, user)
-            if not user_token:
-                return
+            for match in song_data:
+                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
+                if match.group(2) == "track":
+                    tracks.append(match.group(3))
+                if match.group(2) == "album":
+                    albums.append(match.group(3))
+                if match.group(2) == "playlist":
+                    playlists.append(match.group(3))
+        ctx = await self.bot.get_context(message)
+        user = self.bot.get_user(payload.user_id)
+        if not user:
+            return
+        user_token = await self.get_user_auth(ctx, user)
+        if not user_token:
+            return
+        user_spotify = tekore.Spotify(sender=self._sender)
+        action = {v: k for k, v in listen_for.items()}[str(payload.emoji)]
+        if action == "play" or action == "playpause":
+            # play the song if it exists
             try:
-                user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     if tracks:
                         await user_spotify.playback_start_tracks(tracks)
+                        await ctx.react_quietly(payload.emoji)
                         return
                     if not tracks and new_uri:
                         await user_spotify.playback_start_context(new_uri)
+                        await ctx.react_quietly(payload.emoji)
                         return
                     elif message.embeds:
                         em = message.embeds[0]
@@ -261,41 +296,16 @@ class Spotify(commands.Cog):
                         if not query or query == "-":
                             return
                         search = await user_spotify.search(query, limit=50)
+                        log.debug(search)
                         tracks = search[0].items
                         if tracks:
                             await user_spotify.playback_start_tracks([t.id for t in tracks])
+                            await ctx.react_quietly(payload.emoji)
             except Exception:
                 log.exception("Error on reaction add play")
-                return
+                pass
         if action == "like":
-            content = message.content
-            if message.embeds:
-                content += " ".join(
-                    v
-                    for k, v in message.embeds[0].to_dict().items()
-                    if k in ["title", "description"]
-                )
-            song_data = SPOTIFY_RE.finditer(content)
-            tracks = []
-            albums = []
-            playlists = []
-            if song_data:
-                for match in song_data:
-                    if match.group(2) == "track":
-                        tracks.append(match.group(3))
-                    if match.group(2) == "album":
-                        albums.append(match.group(3))
-                    if match.group(2) == "playlist":
-                        playlists.append(match.group(3))
-            ctx = await self.bot.get_context(message)
-            user = self.bot.get_user(payload.user_id)
-            if not user:
-                return
-            user_token = await self.get_user_auth(ctx, user)
-            if not user_token:
-                return
             try:
-                user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     if tracks:
                         await user_spotify.saved_tracks_add(tracks)
@@ -304,8 +314,92 @@ class Spotify(commands.Cog):
                     if playlists:
                         for playlist in playlists:
                             await user_spotify.playlists_add(playlist)
+                await ctx.react_quietly(payload.emoji)
             except Exception:
-                return
+                pass
+        if action == "pause":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    if cur.is_playing:
+                        await user_spotify.playback_pause()
+                    await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "repeat":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    if cur.repeat_state == "off":
+                        state = "context"
+                    if cur.repeat_state == "context":
+                        state = "off"
+                    await user_spotify.playback_repeat(state)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "repeatone":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    if cur.repeat_state == "off":
+                        state = "track"
+                    if cur.repeat_state == "track":
+                        state = "off"
+                    await user_spotify.playback_repeat(state)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "shuffle":
+            try:
+                with user_spotify.token_as(self.user_token):
+                    cur = await user_spotify.playback()
+                    if not cur:
+                        return
+                    await user_spotify.playback_shuffle(not cur.shuffle_state)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "next":
+            try:
+                with user_spotify.token_as(user_token):
+                    await user_spotify.playback_next()
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "previous":
+            try:
+                with user_spotify.token_as(user_token):
+                    await user_spotify.playback_previous()
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "volume_down":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    volume = cur.device.volume_percent - 10
+                    await user_spotify.playback_volume(volume)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "volume_up":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    volume = cur.device.volume_percent + 10
+                    await user_spotify.playback_volume(volume)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
+        if action == "volume_mute":
+            try:
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.playback()
+                    await user_spotify.playback_volume(0)
+                await ctx.react_quietly(payload.emoji)
+            except Exception:
+                pass
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
@@ -343,54 +437,75 @@ class Spotify(commands.Cog):
         pass
 
     @spotify_set.command(name="listen")
-    async def set_reaction_listen(self, ctx: commands.Context, *listen_for: str):
+    async def set_reaction_listen(self, ctx: commands.Context, *, listen_for: TokenConverter):
         """
         Set the bot to listen for specific emoji reactions on messages
 
         If the message being reacted to has somthing valid to search
         for the bot will attempt to play the found search on spotify for you.
 
-        `<listen_for>` Must be either `play` or `like`
-
-        \N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16} will look only for spotify links and add them to your liked songs
-        \N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16} will attempt to play the song found by searching the message content
+        `<listen_for>` Must be one of the following action names followed by an emoji:
+        `pause` - Pauses your current Spotify player.
+        `repeat` - Changes your current Spotify player to repeat current playlist.
+        `repeatone` - Changes your current spotify player to repeat the track.
+        `next` - Skips to the next track in queue.
+        `previous` - Skips to the previous track in queue.
+        `like` - Likes a song link or URI if it is inside the message reacted to.
+        `volume_down` - Adjusts the volume of your Spotify player down 10%.
+        `volume_up`- Adjusts the volume of your Spotify player up 10%.
+        `volume_mute` - Mutes your Spotify player.
+        `shuffle` - Shuffles your current Spotify player.
+        `play` - Plays a song link or URI if it is inside the message reacted to.
         """
-        allowed = [
-            "play",
-            "like",
-            "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-            "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}",
-        ]
-        if not any([i in allowed for i in listen_for]):
-            return await ctx.send(
-                _(
-                    "One of the values you supplied for `listen_for` is not valid. "
-                    "Only `play` and `like` are accepted."
-                )
-            )
-        added = []
+        added = {}
+        async with self.config.user(ctx.author).listen_for() as current:
+            for name, emoji in listen_for.items():
+                if name not in emoji_handler.emojis.keys():
+                    continue
+                try:
+                    await ctx.message.add_reaction(str(emoji))
+                    current[name] = str(emoji)
+                    added[name] = str(emoji)
+                except discord.errors.HTTPError:
+                    pass
+        msg = _("I will now listen for the following emojis from you:\n")
+        for name, emoji in added.items():
+            msg += f"{name} -> {emoji}\n"
+        await ctx.maybe_send_embed(msg)
+
+    @spotify_set.command(name="remlisten")
+    async def set_reaction_remove_listen(self, ctx: commands.Context, *listen_for: str):
+        """
+        Set the bot to listen for specific emoji reactions on messages
+
+        If the message being reacted to has somthing valid to search
+        for the bot will attempt to play the found search on spotify for you.
+
+        `<listen_for>` Must be one of the following action names:
+        `pause` - Pauses your current Spotify player.
+        `repeat` - Changes your current Spotify player to repeat current playlist.
+        `repeatone` - Changes your current spotify player to repeat the track.
+        `next` - Skips to the next track in queue.
+        `previous` - Skips to the previous track in queue.
+        `like` - Likes a song link or URI if it is inside the message reacted to.
+        `volume_down` - Adjusts the volume of your Spotify player down 10%.
+        `volume_up`- Adjusts the volume of your Spotify player up 10%.
+        `volume_mute` - Mutes your Spotify player.
+        `shuffle` - Shuffles your current Spotify player.
+        `play` - Plays a song link or URI if it is inside the message reacted to.
+        """
         removed = []
         async with self.config.user(ctx.author).listen_for() as current:
-            for listen in listen_for:
-                _to_set = listen
-                if listen in LOOKUP:
-                    _to_set = LOOKUP[listen]
-                if _to_set in current:
-                    current.remove(_to_set)
-                    removed.append(_to_set)
-                else:
-                    current.append(_to_set)
-                    added.append(_to_set)
-        add = _("I will now listen for {adds} reactions.\n").format(adds=humanize_list(added))
-        remove = _("I will stop listening for {rem} reactions.\n").format(
-            rem=humanize_list(removed)
+            for name in listen_for:
+                if name in current:
+                    del current[name]
+                    removed.append(name)
+        if not removed:
+            return await ctx.send(_("None of the listed events were being listened for."))
+        msg = _("I will no longer listen for emojis for the following events: {listen}").format(
+            listen=humanize_list(removed)
         )
-        to_send = ""
-        if added:
-            to_send += add
-        if removed:
-            to_send += remove
-        await ctx.send(to_send)
+        await ctx.maybe_send_embed(msg)
 
     @spotify_set.command(name="showprivate")
     async def show_private(self, ctx: commands.Context, show_private: bool):
@@ -407,9 +522,121 @@ class Spotify(commands.Cog):
             msg = _("I will stop showing private playlists now.")
         await ctx.send(msg)
 
+    @spotify_set.command(name="resetemojis", aliases=["resetemoji"])
+    @commands.is_owner()
+    async def spotify_reset_emoji(self, ctx: commands.Context):
+        """
+        Resets the bot to use the default emojis
+        """
+        await self.config.emojis.clear()
+        emoji_handler.reload_emojis()
+        await ctx.send(_("I will now use the default emojis."))
+
+    @spotify_set.command(name="emojis")
+    @commands.is_owner()
+    async def spotify_emojis(self, ctx: commands.Context, *, new_emojis: TokenConverter):
+        """
+        Change the emojis used by the bot for various actions
+
+        `<new_emojis>` Is a space or comma separated list of name followed by emoji
+        for example `[p]spotify set emojis playpause 😃` will then replace ⏯
+        usage with the 😃 emoji.
+
+        Available name replacements:
+           `playpause` -> ⏯
+           `pause` -> ⏸
+           `repeat` -> 🔁
+           `repeatone` -> 🔂
+           `next` -> ⏭
+           `previous` -> ⏮
+           `like` -> ♥
+           `fastforward` -> ⏩
+           `rewind` -> ⏪
+           `volume_down` -> 🔉
+           `volume_up` -> 🔊
+           `volume_mute` -> 🔇
+           `off` -> ❎
+           `playall` -> ⏏
+           `shuffle` -> 🔀
+           `back_left` -> ◀
+           `play` -> ▶
+        """
+        emojis_changed = {}
+        async with self.config.emojis() as emojis:
+            for name, emoji in new_emojis.items():
+                try:
+                    await ctx.message.add_reaction(str(emoji))
+                    emoji_handler.replace_emoji(name, str(emoji))
+                    emojis[name] = str(emoji)
+                    emojis_changed[name] = str(emoji)
+                except (InvalidEmoji, discord.errors.HTTPException):
+                    pass
+        if not emojis_changed:
+            return await ctx.send(_("No emojis have been changed."))
+        msg = _("The following emojis have been replaced:\n")
+        for name, emoji in emojis_changed.items():
+            original = emoji_handler.default[name]
+            msg += f"{original} -> {emoji}\n"
+        await ctx.maybe_send_embed(msg)
+
+    @spotify_set.command(name="scope", aliases=["scopes"])
+    @commands.is_owner()
+    async def spotify_api_scope(self, ctx: commands.Context, *scopes: ScopeConverter):
+        """
+        Set customized scope for what you want your bot to allow
+
+        Available options are:
+        user-read-private
+        user-top-read
+        user-read-recently-played
+        user-follow-read
+        user-library-read
+        user-read-currently-playing
+        user-read-playback-state
+        user-read-playback-position
+        playlist-read-collaborative
+        playlist-read-private
+        user-follow-modify
+        user-library-modify
+        user-modify-playback-state
+        playlist-modify-public
+        playlist-modify-private
+
+        You can find more information here:
+        https://developer.spotify.com/documentation/general/guides/scopes/
+        """
+        added = []
+        removed = []
+        async with self.config.scopes() as current_scope:
+            for scope in scopes:
+                if scope in current_scope:
+                    current_scope.remove(scope)
+                    removed.append(scope)
+                else:
+                    current_scope.append(scope)
+                    added.append(scope)
+        add = humanize_list(added)
+        rem = humanize_list(removed)
+        msg = ""
+        if add:
+            msg += _("The following scopes were added: {added}\n").format(added=add)
+        if rem:
+            _("The following scopes were removed: {removed}\n").format(removed=rem)
+        await ctx.maybe_send_embed(msg)
+
+    @spotify_set.command(name="currentscope", aliases=["currentscopes"])
+    @commands.is_owner()
+    async def spotify_view_api_scope(self, ctx: commands.Context):
+        """
+        View the current scopes being requested
+        """
+        scope = humanize_list(await self.config.scopes())
+        await ctx.maybe_send_embed(_("Current scopes:\n{scopes}").format(scopes=scope))
+
+
     @spotify_set.command(name="creds")
     @commands.is_owner()
-    async def command_audioset_spotifyapi(self, ctx: commands.Context):
+    async def spotify_api_credential_set(self, ctx: commands.Context):
         """Instructions to set the Spotify API tokens."""
         message = _(
             "1. Go to Spotify developers and log in with your Spotify account.\n"
@@ -449,11 +676,13 @@ class Spotify(commands.Cog):
         )
         msg = ""
         cog_settings = await self.config.user(ctx.author).all()
-        listen_emojis = humanize_list([ACTION_EMOJIS[i] for i in cog_settings["listen_for"]])
+        listen_emojis = humanize_list(
+            [f"{action=}-{emoji=}\n" for action, emoji in cog_settings["listen_for"].items()]
+        )
         if not listen_emojis:
             listen_emojis = "Nothing"
         show_private = cog_settings["show_private"]
-        msg += _("Watching for Emojis: {listen_emojis}\n").format(listen_emojis=listen_emojis)
+        msg += _("Watching for Emojis:\n{listen_emojis}\n").format(listen_emojis=listen_emojis)
         msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
         if not cog_settings["token"]:
             em.description = msg
@@ -499,6 +728,8 @@ class Spotify(commands.Cog):
             ).start(ctx=ctx)
         except NotPlaying:
             await ctx.send(_("It appears you're not currently listening to Spotify."))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
 
     @spotify_com.command(name="share")
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
@@ -523,6 +754,8 @@ class Spotify(commands.Cog):
                     return await ctx.send(
                         _("You don't appear to be listening to something I can play in audio.")
                     )
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -608,9 +841,9 @@ class Spotify(commands.Cog):
                     ).format(prefix=ctx.clean_prefix)
                 )
         await ctx.maybe_send_embed(
-            _("The following are available genres for Spotify's recommendations:\n\n {genres}").format(
-                genres=humanize_list(self.GENRES)
-            )
+            _(
+                "The following are available genres for Spotify's recommendations:\n\n {genres}"
+            ).format(genres=humanize_list(self.GENRES))
         )
 
     @spotify_com.command(name="recommendations", aliases=["recommend", "recommendation"])
@@ -684,10 +917,13 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            search = await user_spotify.playback_recently_played(limit=50)
-            tracks = search.items
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                search = await user_spotify.playback_recently_played(limit=50)
+                tracks = search.items
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         await SpotifySearchMenu(
             source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
             delete_message_after=False,
@@ -706,10 +942,12 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            cur = await user_spotify.current_user_top_tracks(limit=50)
-
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                cur = await user_spotify.current_user_top_tracks(limit=50)
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         tracks = cur.items
         await SpotifyBaseMenu(
             source=SpotifyTopTracksPages(tracks),
@@ -729,10 +967,12 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            cur = await user_spotify.current_user_top_artists(limit=50)
-
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                cur = await user_spotify.current_user_top_artists(limit=50)
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         artists = cur.items
         await SpotifyBaseMenu(
             source=SpotifyTopArtistsPages(artists),
@@ -778,7 +1018,9 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_pause()
-            await ctx.react_quietly(ACTION_EMOJIS["pause"])
+            await ctx.react_quietly(emoji_handler.get_emoji("pause"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -809,7 +1051,9 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_resume()
                 else:
                     return await ctx.send(_("You are already playing music on Spotify."))
-            await ctx.react_quietly(ACTION_EMOJIS["play"])
+            await ctx.react_quietly(emoji_handler.get_emoji("play"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -836,7 +1080,9 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_next()
-            await ctx.react_quietly(ACTION_EMOJIS["next"])
+            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -863,7 +1109,9 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_previous()
-            await ctx.react_quietly(ACTION_EMOJIS["previous"])
+            await ctx.react_quietly(emoji_handler.get_emoji("previous"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -909,11 +1157,11 @@ class Spotify(commands.Cog):
             with user_spotify.token_as(user_token):
                 if tracks:
                     await user_spotify.playback_start_tracks(tracks)
-                    await ctx.react_quietly(ACTION_EMOJIS["next"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
                     return
                 if new_uri:
                     await user_spotify.playback_start_context(new_uri)
-                    await ctx.react_quietly(ACTION_EMOJIS["next"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
                     return
                 if url_or_playlist_name:
                     cur = await user_spotify.followed_playlists(limit=50)
@@ -927,7 +1175,7 @@ class Spotify(commands.Cog):
                     for playlist in playlists:
                         if url_or_playlist_name.lower() in playlist.name.lower():
                             await user_spotify.playback_start_context(playlist.uri)
-                            await ctx.react_quietly(ACTION_EMOJIS["next"])
+                            await ctx.react_quietly(emoji_handler.get_emoji("next"))
                             return
                     tracks = await user_spotify.saved_tracks(limit=50)
                     for track in tracks.items:
@@ -937,14 +1185,16 @@ class Spotify(commands.Cog):
                             in ", ".join(a.name for a in track.track.artists)
                         ):
                             await user_spotify.playback_start_tracks([track.track.id])
-                            await ctx.react_quietly(ACTION_EMOJIS["next"])
+                            await ctx.react_quietly(emoji_handler.get_emoji("next"))
                             return
                 else:
                     cur = await user_spotify.saved_tracks(limit=50)
                     await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
-                    await ctx.react_quietly(ACTION_EMOJIS["next"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
                     return
                 await ctx.send(_("I could not find any URL's or matching playlist names."))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -977,7 +1227,9 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_queue_add(new_uri)
-            await ctx.react_quietly(ACTION_EMOJIS["next"])
+            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1014,16 +1266,18 @@ class Spotify(commands.Cog):
                             _("I could not find an active device to send requests for.")
                         )
                     if cur.repeat_state == "off":
-                        state = "track"
-                        emoji = ACTION_EMOJIS["repeatone"]
-                    if cur.repeat_state == "track":
                         state = "context"
-                        emoji = ACTION_EMOJIS["repeat"]
+                        emoji = emoji_handler.get_emoji("repeat")
                     if cur.repeat_state == "context":
+                        state = "track"
+                        emoji = emoji_handler.get_emoji("repeatone")
+                    if cur.repeat_state == "track":
                         state = "off"
-                        emoji = ACTION_EMOJIS["off"]
+                        emoji = emoji_handler.get_emoji("off")
                 await user_spotify.playback_repeat(state.lower())
             await ctx.react_quietly(emoji)
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1059,7 +1313,9 @@ class Spotify(commands.Cog):
                         )
                     state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
-            await ctx.react_quietly(ACTION_EMOJIS["shuffle"])
+            await ctx.react_quietly(emoji_handler.get_emoji("shuffle"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1097,18 +1353,20 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 now = cur.progress_ms
                 total = cur.item.duration_ms
-                emoji = ACTION_EMOJIS["fastforward"]
+                emoji = emoji_handler.get_emoji("fastforward")
                 log.debug(seconds)
                 if abs_position:
                     to_seek = seconds * 1000
                 else:
                     to_seek = seconds * 1000 + now
                 if to_seek < now:
-                    emoji = ACTION_EMOJIS["rewind"]
+                    emoji = emoji_handler.get_emoji("rewind")
                 if to_seek > total:
-                    emoji = ACTION_EMOJIS["next"]
+                    emoji = emoji_handler.get_emoji("next")
                 await user_spotify.playback_seek(to_seek)
             await ctx.react_quietly(emoji)
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1122,7 +1380,7 @@ class Spotify(commands.Cog):
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
-    @spotify_com.command(name="volume")
+    @spotify_com.command(name="volume", aliases=["vol"])
     @commands.bot_has_permissions(add_reactions=True)
     async def spotify_volume(self, ctx: commands.Context, volume: Union[int, str]):
         """
@@ -1140,11 +1398,13 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    await ctx.react_quietly(ACTION_EMOJIS["volume_mute"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("volume_mute"))
                 elif cur and volume > cur.device.volume_percent:
-                    await ctx.react_quietly(ACTION_EMOJIS["volume_up"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("volume_up"))
                 else:
-                    await ctx.react_quietly(ACTION_EMOJIS["volume_down"])
+                    await ctx.react_quietly(emoji_handler.get_emoji("volume_down"))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1182,6 +1442,8 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_transfer(d.id, is_playing)
                     break
             await ctx.tick()
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1204,9 +1466,12 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            playlists = await user_spotify.featured_playlists(limit=50)
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                playlists = await user_spotify.featured_playlists(limit=50)
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         playlist_list = playlists[1].items
         await SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
@@ -1230,14 +1495,17 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            cur = await user_spotify.followed_playlists(limit=50)
-            playlists = cur.items
-            while len(playlists) < cur.total:
-                new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                for p in new.items:
-                    playlists.append(p)
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                cur = await user_spotify.followed_playlists(limit=50)
+                playlists = cur.items
+                while len(playlists) < cur.total:
+                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
+                    for p in new.items:
+                        playlists.append(p)
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         show_private = await self.config.user(ctx.author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
@@ -1267,14 +1535,17 @@ class Spotify(commands.Cog):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            cur = await user_spotify.followed_playlists(limit=50)
-            playlists = cur.items
-            while len(playlists) < cur.total:
-                new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                for p in new.items:
-                    playlists.append(p)
+        try:
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                cur = await user_spotify.followed_playlists(limit=50)
+                playlists = cur.items
+                while len(playlists) < cur.total:
+                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
+                    for p in new.items:
+                        playlists.append(p)
+        except tekore.Unauthorised:
+            return await ctx.send(_("I am not authorized to perform this action for you."))
         show_private = await self.config.user(ctx.author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
@@ -1320,6 +1591,8 @@ class Spotify(commands.Cog):
                 user = await user_spotify.current_user()
                 await user_spotify.playlist_create(user.id, name, public, description)
                 await ctx.tick()
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1375,6 +1648,8 @@ class Spotify(commands.Cog):
                         await ctx.tick()
                         return
             await ctx.send(_("I could not find a playlist matching {name}.").format(name=name))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1430,6 +1705,8 @@ class Spotify(commands.Cog):
                         await ctx.tick()
                         return
             await ctx.send(_("I could not find a playlist matching {name}.").format(name=name))
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1474,6 +1751,8 @@ class Spotify(commands.Cog):
                 for playlist in tracks:
                     await user_spotify.playlist_follow(playlist, public)
                 await ctx.tick()
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1512,6 +1791,8 @@ class Spotify(commands.Cog):
                 for playlist in tracks:
                     await user_spotify.artist_follow(playlist)
                 await ctx.tick()
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1543,13 +1824,16 @@ class Spotify(commands.Cog):
                 tracks.append(match.group(3))
         if not tracks:
             return await ctx.send(_("You did not provide an artist link or URI."))
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            search = await user_spotify.artist_albums(tracks[0], limit=50)
-            tracks = search.items
+        try:
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await ctx.send(_("You need to authorize me to interact with spotify."))
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                search = await user_spotify.artist_albums(tracks[0], limit=50)
+                tracks = search.items
+        except tekore.Unauthorised:
+            await ctx.send(_("I am not authorized to perform this action for you."))
         await SpotifySearchMenu(
             source=SpotifyAlbumPages(tracks, False),
             delete_message_after=False,

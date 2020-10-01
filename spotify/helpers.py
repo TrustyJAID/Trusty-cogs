@@ -1,17 +1,16 @@
 import re
-import discord
 import datetime
 import tekore
 import logging
 
 from tabulate import tabulate
-from typing import Literal, Union, Final, Pattern
+from typing import Union, Final, Pattern, List
 
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import pagify, humanize_timedelta
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_timedelta
+from redbot.core.i18n import Translator
 
-from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
+from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 
 log = logging.getLogger("red.trusty-cogs.spotify")
@@ -26,22 +25,6 @@ _RE_TIME_CONVERTER: Final[Pattern] = re.compile(r"(?:(\d+):)?([0-5]?[0-9]):([0-5
 
 _ = Translator("Spotify", __file__)
 
-ACTION_EMOJIS = {
-    "play": "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    "pause": "\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    "repeat": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
-    "repeatone": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}",
-    "next": "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    "previous": "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    "like": "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}",
-    "fastforward": "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
-    "rewind": "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}",
-    "volume_down": "\N{SPEAKER WITH ONE SOUND WAVE}",
-    "volume_up": "\N{SPEAKER WITH THREE SOUND WAVES}",
-    "volume_mute": "\N{SPEAKER WITH CANCELLATION STROKE}",
-    "off": "\N{NEGATIVE SQUARED CROSS MARK}",
-}
-LOOKUP = {v: k for k, v in ACTION_EMOJIS.items()}
 
 REPEAT_STATES = {
     "context": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
@@ -90,31 +73,16 @@ VALID_RECOMMENDATIONS = {
     "valence": lambda x: max(min(1.0, x / 100), 0.0),
 }
 
-SCOPE = tekore.Scope(
-    tekore.scope.user_read_private,
-    tekore.scope.user_top_read,
-    tekore.scope.user_read_recently_played,
-    tekore.scope.user_follow_read,
-    tekore.scope.user_library_read,
-    tekore.scope.user_read_currently_playing,
-    tekore.scope.user_read_playback_state,
-    tekore.scope.user_read_playback_position,
-    tekore.scope.playlist_read_collaborative,
-    tekore.scope.playlist_read_private,
-    tekore.scope.user_follow_modify,
-    tekore.scope.user_library_modify,
-    tekore.scope.user_modify_playback_state,
-    tekore.scope.playlist_modify_public,
-    tekore.scope.playlist_modify_private,
-    tekore.scope.ugc_image_upload,
-)
-
 
 class SpotifyError(Exception):
     pass
 
 
 class NotPlaying(SpotifyError):
+    pass
+
+
+class InvalidEmoji(SpotifyError):
     pass
 
 
@@ -136,7 +104,7 @@ def time_convert(length: Union[int, str]) -> int:
             return 0
 
 
-async def make_details(track: tekore.model.FullTrack, details: tekore.model.AudioFeatures):
+async def make_details(track: tekore.model.FullTrack, details: tekore.model.AudioFeatures) -> str:
     """
     {
       "duration_ms" : 255349,
@@ -235,10 +203,7 @@ class SearchTypes(Converter):
     This ensures that when using the search function we get a valid search type
     """
 
-    async def convert(
-        self, ctx: commands.Context, argument: str
-    ) -> Literal["artist", "album", "episode", "playlist", "show", "track"]:
-        result = []
+    async def convert(self, ctx: commands.Context, argument: str) -> str:
         valid_types = [
             "artist",
             "album",
@@ -248,8 +213,38 @@ class SearchTypes(Converter):
             "track",
         ]
         find = argument.lower()
-        if find not in VALID_GENRES:
+        if find not in valid_types:
             raise BadArgument(_("{argument} is not a valid genre.").format(argument=argument))
+        return find
+
+
+class ScopeConverter(Converter):
+    """
+    This ensures that when using the search function we get a valid search type
+    """
+
+    async def convert(self, ctx: commands.Context, argument: str) -> str:
+        valid_types = [
+            "user-read-private",
+            "user-top-read",
+            "user-read-recently-played",
+            "user-follow-read",
+            "user-library-read",
+            "user-read-currently-playing",
+            "user-read-playback-state",
+            "user-read-playback-position",
+            "playlist-read-collaborative",
+            "playlist-read-private",
+            "user-follow-modify",
+            "user-library-modify",
+            "user-modify-playback-state",
+            "playlist-modify-public",
+            "playlist-modify-private",
+            "ugc-image-upload",
+        ]
+        find = argument.lower()
+        if find not in valid_types:
+            raise BadArgument(_("{argument} is not a valid scope.").format(argument=argument))
         return find
 
 
@@ -275,13 +270,11 @@ class RecommendationsConverter(Converter):
                 )
         genre_str = r"|".join(i for i in ctx.cog.GENRES)
         find_genre = re.compile(fr"\b({genre_str})\b", flags=re.I)
-        find_lim = re.compile(r"limit\W(\d+\w+)", flags=re.I)
         find_extra = find_rec.finditer(argument)
         genres = list(find_genre.findall(argument))
         song_data = SPOTIFY_RE.finditer(argument)
         tracks: List[str] = []
         artists: List[str] = []
-        new_uri = ""
         if song_data:
             for match in song_data:
                 if match.group(2) == "track":

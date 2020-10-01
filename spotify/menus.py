@@ -4,7 +4,10 @@ import asyncio
 import discord
 import logging
 import tekore
+import json
 
+from copy import copy
+from pathlib import Path
 from typing import Any, List, Tuple
 
 from redbot.vendored.discord.ext import menus
@@ -12,10 +15,44 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import humanize_list, box
 from redbot.core.i18n import Translator
 
-from .helpers import _draw_play, NotPlaying, make_details, REPEAT_STATES, SPOTIFY_LOGO
+from .helpers import (
+    _draw_play,
+    NotPlaying,
+    InvalidEmoji,
+    make_details,
+    REPEAT_STATES,
+    SPOTIFY_LOGO,
+)
 
 log = logging.getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
+
+
+class EmojiHandler:
+    def __init__(self):
+        with open(Path(__file__).parent / "emojis.json", "r") as infile:
+            self.emojis = json.loads(infile.read())
+            self.default = copy(self.emojis)
+
+    def get_emoji(self, name: str) -> str:
+        if name in self.emojis:
+            return self.emojis[name]
+        return self.default[name]
+        # we shouldn't have anyone deleting emoji keys
+
+    def reload_emojis(self):
+        # we could just copy default but we can also just
+        # reload the emojis from disk
+        with open(Path(__file__).parent / "emojis.json", "r") as infile:
+            self.emojis = json.loads(infile.read())
+
+    def replace_emoji(self, name: str, to: str):
+        if name not in self.emojis:
+            raise InvalidEmoji
+        self.emojis[name] = to
+
+
+emoji_handler = EmojiHandler()  # initialize here so when it's changed other objects use this one
 
 
 class SpotifyTrackPages(menus.ListPageSource):
@@ -486,16 +523,19 @@ class SpotifyPages(menus.PageSource):
             The object represented by that page.
             This is passed into :meth:`format_page`.
         """
-        user_spotify = tekore.Spotify(sender=self.sender)
-        with user_spotify.token_as(self.user_token):
-            cur_state = await user_spotify.playback()
-            if not cur_state:
-                raise NotPlaying
-            is_liked = False
-            if not cur_state.item.is_local:
-                song = cur_state.item.id
-                liked = await user_spotify.saved_tracks_contains([song])
-                is_liked = liked[0]
+        try:
+            user_spotify = tekore.Spotify(sender=self.sender)
+            with user_spotify.token_as(self.user_token):
+                cur_state = await user_spotify.playback()
+                if not cur_state:
+                    raise NotPlaying
+                is_liked = False
+                if not cur_state.item.is_local:
+                    song = cur_state.item.id
+                    liked = await user_spotify.saved_tracks_contains([song])
+                    is_liked = liked[0]
+        except tekore.Unauthorised:
+            raise
         return cur_state, is_liked
 
 
@@ -521,6 +561,28 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.user_token = user_token
         self.cog = cog
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(2))
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("previous"), self.skip_previous, position=menus.First(0)
+            )
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("playpause"), self.play_pause, position=menus.First(1)
+            )
+        )
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("repeat"), self.repeat, position=menus.First(3))
+        )
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("shuffle"), self.shuffle, position=menus.First(4))
+        )
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(5))
+        )
 
     async def update(self, payload):
         """|coro|
@@ -600,10 +662,6 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             return True
         return max_pages <= 2
 
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-    )
     async def play_pause(self, payload):
         """go to the previous page"""
         try:
@@ -618,6 +676,8 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                     await user_spotify.playback_pause()
                 else:
                     await user_spotify.playback_resume()
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -633,9 +693,6 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         await asyncio.sleep(1)
         await self.show_checked_page(0)
 
-    @menus.button(
-        "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
-    )
     async def repeat(self, payload):
         """go to the next page"""
         try:
@@ -643,12 +700,14 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if cur.repeat_state == "off":
-                    state = "track"
-                if cur.repeat_state == "track":
                     state = "context"
                 if cur.repeat_state == "context":
+                    state = "track"
+                if cur.repeat_state == "track":
                     state = "off"
                 await user_spotify.playback_repeat(state)
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -664,16 +723,6 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         await asyncio.sleep(1)
         await self.show_checked_page(0)
 
-        # @menus.button(
-        # "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}",
-        # )
-        # async def repeat_one(self, payload):
-        """go to the next page"""
-        # await self.show_checked_page(0)
-
-    @menus.button(
-        "\N{TWISTED RIGHTWARDS ARROWS}",
-    )
     async def shuffle(self, payload):
         """go to the next page"""
         try:
@@ -686,6 +735,8 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                     )
                 state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -701,9 +752,6 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         await asyncio.sleep(1)
         await self.show_checked_page(0)
 
-    @menus.button(
-        "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}",
-    )
     async def like_song(self, payload):
         """go to the next page"""
         try:
@@ -715,6 +763,8 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                         _("I could not find an active device to send requests for.")
                     )
                 await user_spotify.saved_tracks_add([self.source.current_track.id])
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -729,16 +779,14 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             )
         await self.show_checked_page(0)
 
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-    )
-    async def go_to_first_page(self, payload):
+    async def skip_previous(self, payload):
         """go to the first page"""
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_previous()
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -754,16 +802,14 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         await asyncio.sleep(1)
         await self.show_page(0)
 
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(2),
-    )
-    async def go_to_last_page(self, payload):
+    async def skip_next(self, payload):
         """go to the last page"""
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_next()
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -809,6 +855,42 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.user_token = user_token
         self.cog = cog
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(6))
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("previous"), self.skip_previous, position=menus.First(0)
+            )
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("playpause"), self.play_pause, position=menus.First(2)
+            )
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("playall"),
+                self.play_pause_all,
+                position=menus.First(3),
+                skip_if=self._skip_play_all,
+            )
+        )
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(4))
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("back_left"),
+                self.go_to_previous_page,
+                position=menus.First(1),
+            )
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("play"), self.go_to_next_page, position=menus.First(5)
+            )
+        )
 
     async def update(self, payload):
         """|coro|
@@ -893,26 +975,14 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return True
 
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-    )
     async def go_to_previous_page(self, payload):
         """go to the previous page"""
         await self.show_checked_page(self.current_page - 1)
 
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-    )
     async def go_to_next_page(self, payload):
         """go to the next page"""
         await self.show_checked_page(self.current_page + 1)
 
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-    )
     async def play_pause(self, payload):
         """go to the previous page"""
         try:
@@ -920,7 +990,9 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await ctx.send(_("I could not find an active device to send requests for."))
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
                     return
                 if cur.item.id == self.source.current_track.id:
                     if cur.is_playing:
@@ -932,6 +1004,8 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                         await user_spotify.playback_start_tracks([self.source.current_track.id])
                     else:
                         await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -945,11 +1019,6 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
-    @menus.button(
-        "\N{EJECT SYMBOL}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-        skip_if=_skip_play_all,
-    )
     async def play_pause_all(self, payload):
         """go to the previous page"""
         try:
@@ -966,6 +1035,8 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                         )
                     else:
                         await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -979,15 +1050,14 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
-    @menus.button(
-        "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}",
-    )
     async def like_song(self, payload):
         """go to the next page"""
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 await user_spotify.saved_tracks_add([self.source.current_track.id])
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
             await self.ctx.send(_("I could not find an active device to send requests for."))
         except tekore.Forbidden as e:
@@ -1002,21 +1072,11 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             )
         await self.show_checked_page(0)
 
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_first_page(self, payload):
+    async def skip_previous(self, payload):
         """go to the first page"""
         await self.show_page(0)
 
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_last_page(self, payload):
+    async def skip_next(self, payload):
         """go to the last page"""
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
