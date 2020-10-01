@@ -331,7 +331,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `emoji_change`
             `commands_used`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            ** requires manage_channel permissions**
             `invite_created`
             `invite_deleted`
         """
