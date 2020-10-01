@@ -79,6 +79,7 @@ class EventMixin:
         self.config: Config
         self.bot: Red
         self.settings: dict
+        self._ban_cache: dict
 
     async def get_colour(self, channel: discord.TextChannel) -> discord.Colour:
         try:
@@ -605,8 +606,22 @@ class EventMixin:
             await channel.send(msg)
 
     @commands.Cog.listener()
+    async def on_member_ban(self, guild: discord.Guild, member: discord.Member):
+        """
+        This is only used to track that the user was banned and not kicked/removed
+        """
+        if guild not in self._ban_cache:
+            self._ban_cache[guild] = [member]
+        else:
+            self._ban_cache[guild].append(member)
+
+    @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         guild = member.guild
+        await asyncio.sleep(5)
+        if guild in self._ban_cache and member in self._ban_cache[guild]:
+            # was a ban so we can leave early
+            return
         if guild.id not in self.settings:
             return
         if not self.settings[guild.id]["user_left"]["enabled"]:
