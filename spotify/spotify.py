@@ -54,7 +54,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -245,9 +245,15 @@ class Spotify(commands.Cog):
 
         content = message.content
         if message.embeds:
+            em_dict = message.embeds[0].to_dict()
             content += " ".join(
-                v for k, v in message.embeds[0].to_dict().items() if k in ["title", "description"]
+                v for k, v in em_dict.items() if k in ["title", "description"]
             )
+            if "url" in em_dict["title"]:
+                content += " " + em_dict["title"]["url"]
+            for field in em_dict["fields"]:
+                content += " " + field["name"] + " " + field["value"]
+            log.debug(content)
         song_data = SPOTIFY_RE.finditer(content)
         tracks = []
         albums = []
