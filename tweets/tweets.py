@@ -12,7 +12,7 @@ from io import BytesIO
 
 from redbot import version_info, VersionInfo
 from redbot.core import Config, checks, commands, VersionInfo, version_info
-from redbot.core.utils.chat_formatting import escape, pagify
+from redbot.core.utils.chat_formatting import escape, pagify, humanize_list
 from redbot.core.i18n import Translator, cog_i18n
 
 from .tweet_entry import TweetEntry
@@ -63,7 +63,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.1"
+    __version__ = "2.6.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -77,7 +77,7 @@ class Tweets(commands.Cog):
             },
             "accounts": {},
             "error_channel": None,
-            "version": "0.0.0"
+            "version": "0.0.0",
         }
         self.config.register_global(**default_global)
         self.config.register_channel(custom_embeds=True)
@@ -654,56 +654,79 @@ class Tweets(commands.Cog):
         await ctx.send(_("Restarting the twitter stream."))
 
     @_autotweet.command(name="replies")
-    async def _replies(self, ctx: commands.context, username: str) -> None:
+    async def _replies(self, ctx: commands.context, *usernames: str) -> None:
         """
         Toggle an accounts replies being posted
 
         This is checked on `autotweet` as well as `gettweets`
         """
-        username = username.lower()
-        edited_account = None
-        for user_id, accounts in self.accounts.items():
-            if accounts["twitter_name"].lower() == username:
-                edited_account = user_id
-        if edited_account is None:
-            await ctx.send(_("I am not following ") + username)
-            return
-        else:
-            # all_accounts.remove(edited_account)
-            replies = self.accounts[str(edited_account)]["replies"]
-            self.accounts[str(edited_account)]["replies"] = not replies
-
-            await self.config.accounts.set(self.accounts)
-            if self.accounts[str(edited_account)]["replies"]:
-                await ctx.send(_("Now posting replies from ") + username)
+        replies = []
+        notreplies = []
+        for username in usernames:
+            username = username.lower()
+            edited_account = None
+            for user_id, accounts in self.accounts.items():
+                if accounts["twitter_name"].lower() == username:
+                    edited_account = user_id
+            if edited_account is None:
+                continue
             else:
-                await ctx.send(_("No longer posting replies from") + username)
+                # all_accounts.remove(edited_account)
+                replies = self.accounts[edited_account]["replies"]
+                self.accounts[edited_account]["replies"] = not replies
+                if replies:
+                    notreplies.append(username)
+                else:
+                    replies.append(username)
+        await self.config.accounts.set(self.accounts)
+        msg = ""
+        if replies:
+            msg += _("Now posting replies from {replies}\n").format(
+                replies=humanize_list(replies)
+            )
+        if notreplies:
+            msg += _("No longer posting replies from {replies}\n").format(
+                replies=humanize_list(notreplies)
+            )
+        await ctx.send(msg)
 
     @_autotweet.command(name="retweets")
-    async def _retweets(self, ctx: commands.context, username: str) -> None:
+    async def _retweets(self, ctx: commands.context, *usernames: str) -> None:
         """
         Toggle an accounts retweets being posted
 
         This is checked on `autotweet` as well as `gettweets`
         """
-        username = username.lower()
-        edited_account = None
-        for user_id, accounts in self.accounts.items():
-            if accounts["twitter_name"].lower() == username:
-                edited_account = user_id
-        if edited_account is None:
-            await ctx.send(_("I am not following ") + username)
-            return
-        else:
-            # all_accounts.remove(edited_account)
-            retweets = self.accounts[str(edited_account)]["retweets"]
-            self.accounts[str(edited_account)]["retweets"] = not retweets
-
-            await self.config.accounts.set(self.accounts)
-            if self.accounts[str(edited_account)]["retweets"]:
-                await ctx.send(_("Now posting retweets from ") + username)
+        retweets = []
+        noretweets = []
+        for username in usernames:
+            username = username.lower()
+            edited_account = None
+            for user_id, accounts in self.accounts.items():
+                if accounts["twitter_name"].lower() == username:
+                    edited_account = user_id
+            if edited_account is None:
+                await ctx.send(_("I am not following ") + username)
+                return
             else:
-                await ctx.send(_("No longer posting retweets from") + username)
+                # all_accounts.remove(edited_account)
+                retweets = self.accounts[edited_account]["retweets"]
+                self.accounts[edited_account]["retweets"] = not retweets
+                if retweets:
+                    noretweets.append(username)
+                else:
+                    retweets.append(username)
+        await self.config.accounts.set(self.accounts)
+        msg = ""
+        if retweets:
+            msg += _("Now posting retweets from {retweets}.").format(
+                retweets=humanize_list(retweets)
+            )
+        if noretweets:
+            msg += _("No longer posting retweets from {retweets}").format(
+                retweets=humanize_list(noretweets)
+            )
+        await ctx.send(msg)
 
     async def is_followed_account(self, twitter_id) -> Tuple[bool, Any]:
         followed_accounts = await self.config.accounts()
