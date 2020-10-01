@@ -63,7 +63,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.0"
+    __version__ = "2.6.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -103,7 +103,7 @@ class Tweets(commands.Cog):
     async def initialize(self):
         data = await self.config.accounts()
         if await self.config.version() < "2.6.0":
-            for account in data:
+            for _, account in data.items():
                 if "retweets" not in account:
                     account["retweets"] = True
                 self.accounts[account["twitter_id"]] = account
