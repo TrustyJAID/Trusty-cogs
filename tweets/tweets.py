@@ -660,8 +660,8 @@ class Tweets(commands.Cog):
 
         This is checked on `autotweet` as well as `gettweets`
         """
-        replies = []
-        notreplies = []
+        added_replies = []
+        removed_treplies = []
         for username in usernames:
             username = username.lower()
             edited_account = None
@@ -675,18 +675,18 @@ class Tweets(commands.Cog):
                 replies = self.accounts[edited_account]["replies"]
                 self.accounts[edited_account]["replies"] = not replies
                 if replies:
-                    notreplies.append(username)
+                    removed_treplies.append(username)
                 else:
-                    replies.append(username)
+                    added_replies.append(username)
         await self.config.accounts.set(self.accounts)
         msg = ""
-        if replies:
+        if added_replies:
             msg += _("Now posting replies from {replies}\n").format(
-                replies=humanize_list(replies)
+                replies=humanize_list(added_replies)
             )
-        if notreplies:
+        if removed_treplies:
             msg += _("No longer posting replies from {replies}\n").format(
-                replies=humanize_list(notreplies)
+                replies=humanize_list(removed_treplies)
             )
         await ctx.send(msg)
 
@@ -697,8 +697,8 @@ class Tweets(commands.Cog):
 
         This is checked on `autotweet` as well as `gettweets`
         """
-        retweets = []
-        noretweets = []
+        added_retweets = []
+        removed_retweets = []
         for username in usernames:
             username = username.lower()
             edited_account = None
@@ -713,18 +713,18 @@ class Tweets(commands.Cog):
                 retweets = self.accounts[edited_account]["retweets"]
                 self.accounts[edited_account]["retweets"] = not retweets
                 if retweets:
-                    noretweets.append(username)
+                    removed_retweets.append(username)
                 else:
-                    retweets.append(username)
+                    added_retweets.append(username)
         await self.config.accounts.set(self.accounts)
         msg = ""
-        if retweets:
+        if added_retweets:
             msg += _("Now posting retweets from {retweets}.").format(
                 retweets=humanize_list(retweets)
             )
-        if noretweets:
+        if removed_retweets:
             msg += _("No longer posting retweets from {retweets}").format(
-                retweets=humanize_list(noretweets)
+                retweets=humanize_list(removed_retweets)
             )
         await ctx.send(msg)
 
