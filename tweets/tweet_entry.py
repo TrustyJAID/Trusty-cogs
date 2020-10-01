@@ -6,6 +6,7 @@ class TweetEntry:
         channel: list,
         last_tweet: int,
         replies: bool = False,
+        retweets: bool = True,
     ):
         super().__init__()
         self.twitter_id = twitter_id
@@ -13,6 +14,7 @@ class TweetEntry:
         self.channel = channel
         self.last_tweet = last_tweet
         self.replies = replies
+        self.retweets = retweets
 
     def to_json(self) -> dict:
         return {
@@ -21,6 +23,7 @@ class TweetEntry:
             "channel": self.channel,
             "last_tweet": self.last_tweet,
             "replies": self.replies,
+            "retweets": self.retweets,
         }
 
     @classmethod
@@ -31,4 +34,5 @@ class TweetEntry:
             data["channel"],
             data["last_tweet"],
             data["replies"],
+            data["retweets"],
         )

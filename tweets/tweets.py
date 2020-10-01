@@ -63,7 +63,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.5.4"
+    __version__ = "2.6.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -77,6 +77,7 @@ class Tweets(commands.Cog):
             },
             "accounts": {},
             "error_channel": None,
+            "version": "0.0.0"
         }
         self.config.register_global(**default_global)
         self.config.register_channel(custom_embeds=True)
@@ -101,10 +102,13 @@ class Tweets(commands.Cog):
 
     async def initialize(self):
         data = await self.config.accounts()
-        if type(data) == list:
+        if await self.config.version() < "2.6.0":
             for account in data:
+                if "retweets" not in account:
+                    account["retweets"] = True
                 self.accounts[account["twitter_id"]] = account
             await self.config.accounts.set(self.accounts)
+            await self.config.version.set(self.__version__)
         else:
             self.accounts = await self.config.accounts()
         embed_channels = await self.config.all_channels()
@@ -205,10 +209,10 @@ class Tweets(commands.Cog):
             url=post_url,
             timestamp=status.created_at,
         )
-        em.set_footer(text="@" + username)
+        em.set_footer(text=f"@{username}")
         if hasattr(status, "retweeted_status"):
             em.set_author(
-                name=status.user.name + " Retweeted " + status.retweeted_status.user.name,
+                name=f"{status.user.name} Retweeted {status.retweeted_status.user.name}",
                 url=post_url,
                 icon_url=status.user.profile_image_url,
             )
@@ -266,6 +270,8 @@ class Tweets(commands.Cog):
         if str(user_id) not in self.accounts:
             return
         if status.in_reply_to_screen_name and not self.accounts[str(user_id)]["replies"]:
+            return
+        if hasattr(status, "retweeted_status") and not self.accounts[str(user_id)]["retweets"]:
             return
         em = await self.build_tweet_embed(status)
         # channel_list = account.channel
@@ -672,6 +678,32 @@ class Tweets(commands.Cog):
                 await ctx.send(_("Now posting replies from ") + username)
             else:
                 await ctx.send(_("No longer posting replies from") + username)
+
+    @_autotweet.command(name="retweets")
+    async def _retweets(self, ctx: commands.context, username: str) -> None:
+        """
+        Toggle an accounts retweets being posted
+
+        This is checked on `autotweet` as well as `gettweets`
+        """
+        username = username.lower()
+        edited_account = None
+        for user_id, accounts in self.accounts.items():
+            if accounts["twitter_name"].lower() == username:
+                edited_account = user_id
+        if edited_account is None:
+            await ctx.send(_("I am not following ") + username)
+            return
+        else:
+            # all_accounts.remove(edited_account)
+            retweets = self.accounts[str(edited_account)]["retweets"]
+            self.accounts[str(edited_account)]["retweets"] = not retweets
+
+            await self.config.accounts.set(self.accounts)
+            if self.accounts[str(edited_account)]["retweets"]:
+                await ctx.send(_("Now posting retweets from ") + username)
+            else:
+                await ctx.send(_("No longer posting retweets from") + username)
 
     async def is_followed_account(self, twitter_id) -> Tuple[bool, Any]:
         followed_accounts = await self.config.accounts()
