@@ -249,8 +249,9 @@ class Spotify(commands.Cog):
             content += " ".join(
                 v for k, v in em_dict.items() if k in ["title", "description"]
             )
-            if "url" in em_dict["title"]:
-                content += " " + em_dict["title"]["url"]
+            if "title" in em_dict:
+                if "url" in em_dict["title"]:
+                    content += " " + em_dict["title"]["url"]
             if "fields" in em_dict:
                 for field in em_dict["fields"]:
                     content += " " + field["name"] + " " + field["value"]
