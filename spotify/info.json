@@ -1,5 +1,5 @@
 {
-    "author" : ["TrustyJAID"],
+    "author" : ["TrustyJAID", "NeuroAssassin"],
     "description" : "This cog allows you to control Spotify via OAuth through the bot on discord. Use `[p]spotify` to see available commands.",
     "disabled" : false,
     "end_user_data_statement" : "This cog stores OAuth tokens and refresh tokens for the purposes of interacting with the Spotify API with discord commands and reactions. This data can be deleted at any time either via revoking the authorization token on Spotify or through the `[p]mydata forgetme` command.",
