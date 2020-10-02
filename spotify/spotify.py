@@ -39,6 +39,7 @@ from .menus import (
     SpotifyUserMenu,
     emoji_handler,
 )
+from .rpc import DashboardRPC_Spotify
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -52,8 +53,8 @@ class Spotify(commands.Cog):
     Display information from Spotify's API
     """
 
-    __author__ = ["TrustyJAID"]
-    __version__ = "1.4.2"
+    __author__ = ["TrustyJAID", "NeuroAssassin"]
+    __version__ = "1.4.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -91,6 +92,11 @@ class Spotify(commands.Cog):
         self.HAS_TOKENS = False
         self.current_menus = {}
         self.GENRES = []
+
+        # RPC
+        self.dashboard_authed = []
+        self.temp_cache = {}
+        self.rpc_extension = DashboardRPC_Spotify(self)
 
     async def initialize(self):
         tokens = await self.bot.get_shared_api_tokens("spotify")
@@ -170,17 +176,20 @@ class Spotify(commands.Cog):
                     return
                 await self.save_token(author, user_token)
             return user_token
+
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
         log.debug(scope)
         auth = tekore.UserAuth(self._credentials, scope=scope)
+        self.temp_cache[ctx.author.id] = auth
+        
         msg = _(
             "Please accept the authorization in the following link and reply "
             "to me with the full url\n\n {auth}"
         ).format(auth=auth.url)
 
         def check(message):
-            return message.author.id == author.id and self._tokens[-1] in message.content
+            return (message.author.id in self.dashboard_authed) or (message.author.id == author.id and self._tokens[-1] in message.content)
 
         try:
             await author.send(msg)
@@ -191,10 +200,24 @@ class Spotify(commands.Cog):
         try:
             check_msg = await ctx.bot.wait_for("message", check=check, timeout=120)
         except asyncio.TimeoutError:
+            # Let's check if they authenticated throug Dashboard
+            if ctx.author.id in self.dashboard_authed:
+                await ctx.send(_("Detected authentication via dashboard."))
+                return await self.get_user_auth(ctx, author)
+            try:
+                del self.temp_cache[ctx.author.id]
+            except KeyError:
+                pass
             await ctx.send(_("Alright I won't interact with spotify for you."))
             return
+
+        if ctx.author.id in self.dashboard_authed:
+            await ctx.send(_("Detected authentication via dashboard."))
+            return await self.get_user_auth(ctx, author)
+
         redirected = check_msg.clean_content.strip()
         if self._tokens[-1] not in redirected:
+            del self.temp_cache[ctx.author.id]
             return await ctx.send(_("Credentials not valid"))
         reply_msg = _("Your authorization has been set!")
         try:
@@ -207,6 +230,7 @@ class Spotify(commands.Cog):
         user_token = await auth.request_token(url=redirected)
         await self.save_token(ctx.author, user_token)
 
+        del self.temp_cache[ctx.author.id]
         return user_token
 
     async def save_token(self, author: discord.User, user_token: tekore.Token):
@@ -665,6 +689,8 @@ class Spotify(commands.Cog):
         Forget all your spotify settings and credentials on the bot
         """
         await self.config.user(ctx.author).clear()
+        if ctx.author.id in self.dashboard_authed:
+            self.dashboard_authed.remove(ctx.author.id)
         await ctx.send(_("All your spotify data deleted from my settings."))
 
     @spotify_com.command(name="me")
