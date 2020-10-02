@@ -182,14 +182,14 @@ class Spotify(commands.Cog):
         log.debug(scope)
         auth = tekore.UserAuth(self._credentials, scope=scope)
         self.temp_cache[ctx.author.id] = auth
-        
+
         msg = _(
             "Please accept the authorization in the following link and reply "
             "to me with the full url\n\n {auth}"
         ).format(auth=auth.url)
 
         def check(message):
-            return (message.author.id in self.dashboard_authed) or (message.author.id == author.id and self._tokens[-1] in message.content)
+            return (author.id in self.dashboard_authed) or (message.author.id == author.id and self._tokens[-1] in message.content)
 
         try:
             await author.send(msg)
@@ -202,7 +202,7 @@ class Spotify(commands.Cog):
         except asyncio.TimeoutError:
             # Let's check if they authenticated throug Dashboard
             if ctx.author.id in self.dashboard_authed:
-                await ctx.send(_("Detected authentication via dashboard."))
+                await ctx.send(_("Detected authentication via dashboard for {user}.").format(user=author.name))
                 return await self.get_user_auth(ctx, author)
             try:
                 del self.temp_cache[ctx.author.id]
@@ -212,7 +212,7 @@ class Spotify(commands.Cog):
             return
 
         if ctx.author.id in self.dashboard_authed:
-            await ctx.send(_("Detected authentication via dashboard."))
+            await ctx.send(_("Detected authentication via dashboard for {user}.").format(user=author.name))
             return await self.get_user_auth(ctx, author)
 
         redirected = check_msg.clean_content.strip()

@@ -6,8 +6,6 @@ from redbot.core.commands import commands
 
 from dashboard.rpc.utils import rpccheck
 
-from .helpers import SCOPE
-
 class DashboardRPC_Spotify:
     def __init__(self, cog: commands.Cog):
         self.bot: Red = cog.bot
