@@ -1,10 +1,8 @@
-import discord
-import tekore
-
 from redbot.core.bot import Red
 from redbot.core.commands import commands
 
 from dashboard.rpc.utils import rpccheck
+
 
 class DashboardRPC_Spotify:
     def __init__(self, cog: commands.Cog):
@@ -13,7 +11,7 @@ class DashboardRPC_Spotify:
 
         self.bot.register_rpc_handler(self.authenticate_user)
 
-    def unload():
+    def unload(self):
         self.bot.unregister_rpc_handler(self.authenticate_user)
 
     @rpccheck()
@@ -21,7 +19,7 @@ class DashboardRPC_Spotify:
         if not self.bot.get_cog("Spotify"):
             return {"status": 0, "message": "Spotify cog is not loaded."}
 
-        user = int(user) # Blame socket communication for this
+        user = int(user)  # Blame socket communication for this
 
         userobj = self.bot.get_user(user)
         if not userobj:

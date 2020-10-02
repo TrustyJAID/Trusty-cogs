@@ -140,6 +140,8 @@ class Spotify(commands.Cog):
         await self._ready.wait()
 
     def cog_unload(self):
+        if DASHBOARD:
+            self.rpc_extension.unload()
         if self._sender:
             self.bot.loop.create_task(self._sender.client.aclose())
 
