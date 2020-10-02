@@ -410,7 +410,7 @@ class ReTriggerMenu(menus.MenuPages, inherit_buttons=False):
                     page = await self._source.get_page(self.current_page)
                     kwargs = await self._get_kwargs_from_page(page)
                     await self.message.edit(
-                        content=_("This trigger has beend deleted."), embed=kwargs["embed"]
+                        content=_("This trigger has been deleted."), embed=kwargs["embed"]
                     )
                     for t in self.cog.triggers[self.ctx.guild.id]:
                         if t.name == self.source.selection.name:
