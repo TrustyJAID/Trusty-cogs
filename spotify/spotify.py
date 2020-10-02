@@ -39,7 +39,11 @@ from .menus import (
     SpotifyUserMenu,
     emoji_handler,
 )
-from .rpc import DashboardRPC_Spotify
+try:
+    from .rpc import DashboardRPC_Spotify
+    DASHBOARD = True
+except ImportError:
+    DASHBOARD = False
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -96,7 +100,8 @@ class Spotify(commands.Cog):
         # RPC
         self.dashboard_authed = []
         self.temp_cache = {}
-        self.rpc_extension = DashboardRPC_Spotify(self)
+        if DASHBOARD:
+            self.rpc_extension = DashboardRPC_Spotify(self)
 
     async def initialize(self):
         tokens = await self.bot.get_shared_api_tokens("spotify")
