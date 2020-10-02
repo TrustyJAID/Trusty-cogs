@@ -53,7 +53,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.1"
+    __version__ = "1.4.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -297,11 +297,10 @@ class Spotify(commands.Cog):
                                 query = find.group(1)
                         else:
                             query = em.title if em.title else ""
-                        log.debug(query)
                         if not query or query == "-":
                             return
                         search = await user_spotify.search(query, limit=50)
-                        log.debug(search)
+                        # log.debug(search)
                         tracks = search[0].items
                         if tracks:
                             await user_spotify.playback_start_tracks([t.id for t in tracks])
