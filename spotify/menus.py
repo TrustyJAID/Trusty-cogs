@@ -855,7 +855,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         self.user_token = user_token
         self.cog = cog
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(6))
+            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(7))
         )
         self.add_button(
             menus.Button(
@@ -876,7 +876,15 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             )
         )
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(4))
+            menus.Button(
+                emoji_handler.get_emoji("queue"),
+                self.queue_song_next,
+                position=menus.First(4),
+                skip_if=self._skip_queue_next,
+            )
+        )
+        self.add_button(
+            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(5))
         )
         self.add_button(
             menus.Button(
@@ -887,7 +895,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("play"), self.go_to_next_page, position=menus.First(5)
+                emoji_handler.get_emoji("play"), self.go_to_next_page, position=menus.First(6)
             )
         )
 
@@ -974,6 +982,11 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return True
 
+    def _skip_queue_next(self):
+        if isinstance(self._source.current_track, tekore.model.FullTrack):
+            return False
+        return True
+
     async def go_to_previous_page(self, payload):
         """go to the previous page"""
         await self.show_checked_page(self.current_page - 1)
@@ -1025,12 +1038,50 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await ctx.send(_("I could not find an active device to send requests for."))
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
                     return
                 else:
                     if self.source.current_track.type == "track":
                         await user_spotify.playback_start_tracks(
                             [i.id for i in self.source.entries]
+                        )
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.Unauthorised:
+            await self.ctx.send(_("I am not authorized to perform this action for you."))
+        except tekore.NotFound:
+            await self.ctx.send(_("I could not find an active device to send requests for."))
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await self.ctx.send(_("This action is prohibited for non-premium users."))
+            else:
+                await self.ctx.send(_("I couldn't perform that action for you."))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.ctx.send(
+                _("An exception has occured, please contact the bot owner for more assistance.")
+            )
+
+    async def queue_song_next(self, payload):
+        """go to the previous page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await self.ctx.send(
+                        _("I could not find an active device to send requests for.")
+                    )
+                    return
+                else:
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_queue_add(self.source.current_track.uri)
+                        await self.ctx.send(
+                            _("{track} has been added to your queue.").format(
+                                track=self.source.current_track.name
+                            )
                         )
                     else:
                         await user_spotify.playback_start_context(self.source.current_track.uri)
