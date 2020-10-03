@@ -284,6 +284,7 @@ class RecommendationsConverter(Converter):
             "genres": genres if genres else None,
             "track_ids": tracks if tracks else None,
             "limit": 100,
+            "market": "from_token",
         }
         for match in find_extra:
             try:
