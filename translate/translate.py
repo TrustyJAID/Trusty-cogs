@@ -36,7 +36,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
 
     __author__ = ["Aziz", "TrustyJAID"]
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -184,6 +184,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @translateset.group(aliases=["blocklist"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def blacklist(self, ctx: commands.Context) -> None:
         """
         Set blacklist options for translations
@@ -194,6 +195,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @translateset.group(aliases=["allowlist"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def whitelist(self, ctx: commands.Context) -> None:
         """
         Set whitelist options for translations
@@ -204,6 +206,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @whitelist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def whitelist_add(
         self, ctx: commands.Context, *channel_user_role: ChannelUserRole
     ) -> None:
@@ -225,6 +228,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @whitelist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def whitelist_remove(
         self, ctx: commands.Context, *channel_user_role: ChannelUserRole
     ) -> None:
@@ -249,6 +253,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @whitelist.command(name="list")
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def whitelist_list(self, ctx: commands.Context) -> None:
         """
         List Channels, Users, and Roles in the servers translation whitelist.
@@ -266,6 +271,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @blacklist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def blacklist_add(
         self, ctx: commands.Context, *channel_user_role: ChannelUserRole
     ) -> None:
@@ -287,6 +293,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @blacklist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def blacklist_remove(
         self, ctx: commands.Context, *channel_user_role: ChannelUserRole
     ) -> None:
@@ -311,6 +318,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @blacklist.command(name="list")
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def blacklist_list(self, ctx: commands.Context) -> None:
         """
         List Channels, Users, and Roles in the servers translation blacklist.
