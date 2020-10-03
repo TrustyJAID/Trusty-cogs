@@ -4,7 +4,7 @@ from typing import Optional, Tuple, Union
 
 import aiohttp
 import discord
-from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
+from discord.ext.commands.converter import Converter, IDConverter
 from discord.ext.commands.errors import BadArgument
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
