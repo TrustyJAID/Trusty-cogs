@@ -29,7 +29,7 @@ _ = Translator("Spotify", __file__)
 
 class EmojiHandler:
     def __init__(self):
-        with open(Path(__file__).parent / "emojis.json", "r") as infile:
+        with open(Path(__file__).parent / "emojis.json", "r", encoding="utf8") as infile:
             self.emojis = json.loads(infile.read())
             self.default = copy(self.emojis)
 
@@ -42,7 +42,7 @@ class EmojiHandler:
     def reload_emojis(self):
         # we could just copy default but we can also just
         # reload the emojis from disk
-        with open(Path(__file__).parent / "emojis.json", "r") as infile:
+        with open(Path(__file__).parent / "emojis.json", "r", encoding="utf8") as infile:
             self.emojis = json.loads(infile.read())
 
     def replace_emoji(self, name: str, to: str):

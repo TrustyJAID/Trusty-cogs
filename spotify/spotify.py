@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.4.5"
+    __version__ = "1.4.6"
 
     def __init__(self, bot):
         self.bot = bot
