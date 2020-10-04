@@ -870,7 +870,7 @@ class EventMixin:
                 return
         if not self.settings[guild.id]["channel_change"]["enabled"]:
             return
-        if await self.is_ignored_channel(guild, message_channel):
+        if await self.is_ignored_channel(guild, before):
             return
         try:
             channel = await self.modlog_channel(guild, "channel_change")
