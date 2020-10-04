@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.4.6"
+    __version__ = "1.4.8"
 
     def __init__(self, bot):
         self.bot = bot
@@ -224,7 +224,11 @@ class Spotify(commands.Cog):
                 del self.temp_cache[ctx.author.id]
             except KeyError:
                 pass
-            await ctx.send(_("Alright I won't interact with spotify for you."))
+            await ctx.send(
+                _("Alright I won't interact with spotify for you {author}.").format(
+                    author=ctx.author.mention
+                )
+            )
             return
 
         if ctx.author.id in self.dashboard_authed:
@@ -329,7 +333,7 @@ class Spotify(commands.Cog):
                         await user_spotify.playback_start_tracks(tracks)
                         await ctx.react_quietly(payload.emoji)
                         return
-                    if not tracks and new_uri:
+                    elif new_uri:
                         await user_spotify.playback_start_context(new_uri)
                         await ctx.react_quietly(payload.emoji)
                         return
@@ -363,7 +367,7 @@ class Spotify(commands.Cog):
                     if tracks:
                         for track in tracks:
                             await user_spotify.playback_queue_add(f"spotify:track:{track}")
-                            await ctx.react_quietly(payload.emoji)
+                        await ctx.react_quietly(payload.emoji)
                         return
                     elif message.embeds:
                         em = message.embeds[0]
@@ -620,7 +624,9 @@ class Spotify(commands.Cog):
         else:
             msg = _("I will stop clearing reactions after the menu has timed out.\n")
         if not ctx.channel.permissions_for(ctx.me).manage_messages:
-            msg += _("I don't have manage messages permissions so this might not work as expected.")
+            msg += _(
+                "I don't have manage messages permissions so this might not work as expected."
+            )
         await ctx.send(msg)
 
     @spotify_set.command(name="deletemessage")
@@ -809,7 +815,7 @@ class Spotify(commands.Cog):
         msg = ""
         cog_settings = await self.config.user(ctx.author).all()
         listen_emojis = humanize_list(
-            [f"{action=}-{emoji=}\n" for action, emoji in cog_settings["listen_for"].items()]
+            [f"{emoji} -> {action}\n" for action, emoji in cog_settings["listen_for"].items()]
         )
         if not listen_emojis:
             listen_emojis = "Nothing"
@@ -842,14 +848,34 @@ class Spotify(commands.Cog):
 
     @spotify_com.command(name="now", aliases=["np"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def spotify_now(self, ctx: commands.Context, detailed: Optional[bool] = False):
+    async def spotify_now(
+        self,
+        ctx: commands.Context,
+        detailed: Optional[bool] = False,
+        member: Optional[discord.Member] = None,
+    ):
         """
         Displays your currently played spotify song
+
+        `[member]` Optional discord member to show their current spotify status
+        if they're displaying it on Discord.
         """
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
+        if member:
+            if not [c for c in member.activities if c.type == discord.ActivityType.listening]:
+                return await ctx.send(
+                    _("That user is not currently listening to Spotify on Discord.")
+                )
+            else:
+                activity = [
+                    c for c in member.activities if c.type == discord.ActivityType.listening
+                ][0]
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    track = await user_spotify.track(activity.track_id)
         if ctx.guild:
             delete_after = await self.config.guild(ctx.guild).delete_message_after()
             clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
@@ -857,8 +883,14 @@ class Spotify(commands.Cog):
         else:
             delete_after, clear_after, timeout = False, True, 120
         try:
+            if member is None:
+                page_source = SpotifyPages(
+                    user_token=user_token, sender=self._sender, detailed=detailed
+                )
+            else:
+                page_source = SpotifyTrackPages(items=[track], detailed=detailed)
             await SpotifyUserMenu(
-                source=SpotifyPages(user_token=user_token, sender=self._sender, detailed=detailed),
+                source=page_source,
                 delete_message_after=delete_after,
                 clear_reactions_after=clear_after,
                 timeout=timeout,

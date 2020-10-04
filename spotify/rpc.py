@@ -30,7 +30,10 @@ class DashboardRPC_Spotify:
         try:
             auth = self.cog.temp_cache[user]
         except KeyError:
-            return {"status": 0, "message": "You must authenticate using a link given by bot."}
+            return {
+                "status": 0,
+                "message": "You must authenticate using a link given by bot. If this fails try posting the full URL inside discord.",
+            }
 
         user_token = await auth.request_token(code=code, state=state)
         await self.cog.save_token(userobj, user_token)

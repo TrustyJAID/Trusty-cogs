@@ -70,12 +70,15 @@ class SpotifyTrackPages(menus.ListPageSource):
         em = discord.Embed(color=discord.Colour(0x1DB954))
         url = f"https://open.spotify.com/track/{track.id}"
         artist_title = f"{track.name} by " + ", ".join(a.name for a in track.artists)
+        album = getattr(track, "album", "")
+        if album:
+            album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
         em.set_author(
             name=track.name[:256],
             url=url,
             icon_url=SPOTIFY_LOGO,
         )
-        em.description = f"[{artist_title}]({url})\n"
+        em.description = f"[{artist_title}]({url})\n\n{album}"
         if track.album.images:
             em.set_thumbnail(url=track.album.images[0].url)
         if self.detailed:
@@ -561,11 +564,17 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         self.user_token = user_token
         self.cog = cog
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(2))
+            menus.Button(
+                emoji_handler.get_emoji("next"),
+                self.skip_next,
+                position=menus.First(2),
+            )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("previous"), self.skip_previous, position=menus.First(0)
+                emoji_handler.get_emoji("previous"),
+                self.skip_previous,
+                position=menus.First(0),
             )
         )
         self.add_button(
@@ -574,10 +583,18 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             )
         )
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("repeat"), self.repeat, position=menus.First(3))
+            menus.Button(
+                emoji_handler.get_emoji("repeat"),
+                self.repeat,
+                position=menus.First(3),
+            )
         )
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("shuffle"), self.shuffle, position=menus.First(4))
+            menus.Button(
+                emoji_handler.get_emoji("shuffle"),
+                self.shuffle,
+                position=menus.First(4),
+            )
         )
         self.add_button(
             menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(5))
@@ -649,11 +666,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return payload.emoji in self.buttons
 
-    def _skip_single_arrows(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
+    def _is_other_user(self):
+        if isinstance(self.source, SpotifyTrackPages):
             return True
-        return max_pages == 1
+        return False
 
     def _skip_double_triangle_buttons(self):
         max_pages = self._source.get_max_pages()
@@ -671,10 +687,17 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
                     await self.ctx.send(
                         _("I could not find an active device to send requests for.")
                     )
-                if cur.is_playing:
-                    await user_spotify.playback_pause()
+                    return
+                if cur.item.id == self.source.current_track.id:
+                    if cur.is_playing:
+                        await user_spotify.playback_pause()
+                    else:
+                        await user_spotify.playback_resume()
                 else:
-                    await user_spotify.playback_resume()
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_start_tracks([self.source.current_track.id])
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
         except tekore.Unauthorised:
             await self.ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -688,6 +711,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
             )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
@@ -719,6 +746,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
 
@@ -748,6 +779,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
         await asyncio.sleep(1)
         await self.show_checked_page(0)
 
@@ -776,6 +811,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
         await self.show_checked_page(0)
 
     async def skip_previous(self, payload):
@@ -797,6 +836,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
             )
         await asyncio.sleep(1)
         await self.show_page(0)
@@ -820,6 +863,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             log.exception("Error grabing user info from spotify")
             await self.ctx.send(
                 _("An exception has occured, please contact the bot owner for more assistance.")
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self._source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
             )
         await asyncio.sleep(1)
         await self.show_page(0)
