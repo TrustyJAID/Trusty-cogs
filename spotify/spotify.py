@@ -1781,11 +1781,11 @@ class Spotify(commands.Cog):
             ctx.channel, discord.DMChannel
         )
         if show_private:
-            playlist_list = playlists.items
+            playlist_list = playlists
         else:
             playlist_list = [p for p in playlists if p.public is not False]
         await SpotifySearchMenu(
-            source=SpotifyPlaylistPages(playlist_list),
+            source=SpotifyPlaylistPages(playlist_list, False),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
             timeout=timeout,
