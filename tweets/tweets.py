@@ -60,7 +60,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.2"
+    __version__ = "2.6.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -657,6 +657,8 @@ class Tweets(commands.Cog):
 
         This is checked on `autotweet` as well as `gettweets`
         """
+        if len(usernames) == 0:
+            return await ctx.send_help()
         added_replies = []
         removed_treplies = []
         for username in usernames:
@@ -694,6 +696,8 @@ class Tweets(commands.Cog):
 
         This is checked on `autotweet` as well as `gettweets`
         """
+        if len(usernames) == 0:
+            return await ctx.send_help()
         added_retweets = []
         removed_retweets = []
         for username in usernames:
