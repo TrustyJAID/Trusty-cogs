@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.4.9"
+    __version__ = "1.4.10"
 
     def __init__(self, bot):
         self.bot = bot
@@ -197,7 +197,7 @@ class Spotify(commands.Cog):
                     user_token = await self._credentials.refresh(user_token)
                 except tekore.BadRequest:
                     await ctx.send("Your refresh token has been revoked, clearing data.")
-                    await self.config.user(ctx.author).token.clear()
+                    await self.config.user(author).token.clear()
                     return
                 await self.save_token(author, user_token)
             return user_token
@@ -209,6 +209,12 @@ class Spotify(commands.Cog):
                 )
             )
             return
+        try:
+            return await self.ask_for_auth(ctx, author)
+        except discord.errors.Forbidden:
+            await ctx.send(_("You have blocked direct messages, please enable them to authorize spotify commands."))
+
+    async def ask_for_auth(self, ctx: commands.Context, author: discord.User):
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
         auth = tekore.UserAuth(self._credentials, scope=scope)
@@ -224,16 +230,13 @@ class Spotify(commands.Cog):
                 message.author.id == author.id and self._tokens[-1] in message.content
             )
 
+        await author.send(msg)
         try:
-            await author.send(msg)
-        except discord.errors.Forbidden:
-            await ctx.send(msg)
-        try:
-            check_msg = await ctx.bot.wait_for("message", check=check, timeout=120)
+            check_msg = await self.bot.wait_for("message", check=check, timeout=120)
         except asyncio.TimeoutError:
             # Let's check if they authenticated throug Dashboard
-            if ctx.author.id in self.dashboard_authed:
-                await ctx.send(
+            if author.id in self.dashboard_authed:
+                await author.send(
                     _("Detected authentication via dashboard for {user}.").format(user=author.name)
                 )
                 return await self.get_user_auth(ctx, author)
@@ -241,15 +244,15 @@ class Spotify(commands.Cog):
                 del self.temp_cache[author.id]
             except KeyError:
                 pass
-            await ctx.send(
+            await author.send(
                 _("Alright I won't interact with spotify for you {author}.").format(
                     author=author.mention
                 )
             )
             return
 
-        if ctx.author.id in self.dashboard_authed:
-            await ctx.send(
+        if author.id in self.dashboard_authed:
+            await author.send(
                 _("Detected authentication via dashboard for {user}.").format(user=author.name)
             )
             return await self.get_user_auth(ctx, author)
@@ -259,12 +262,7 @@ class Spotify(commands.Cog):
             del self.temp_cache[author.id]
             return await ctx.send(_("Credentials not valid"))
         reply_msg = _("Your authorization has been set!")
-        try:
-            await author.send(reply_msg)
-            # pred = MessagePredicate.same_context(user=ctx.author)
-        except discord.errors.Forbidden:
-            # pre = MessagePredicate.same_context(ctx)
-            await ctx.send(reply_msg)
+        await author.send(reply_msg)
 
         user_token = await auth.request_token(url=redirected)
         await self.save_token(author, user_token)
