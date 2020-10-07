@@ -33,8 +33,8 @@ class EmojiHandler:
             self.emojis = json.loads(infile.read())
             self.default = copy(self.emojis)
 
-    def get_emoji(self, name: str) -> str:
-        if name in self.emojis:
+    def get_emoji(self, name: str, use_external: bool) -> str:
+        if use_external and name in self.emojis:
             return self.emojis[name]
         return self.default[name]
         # we shouldn't have anyone deleting emoji keys
@@ -547,6 +547,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
+        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
@@ -563,41 +564,48 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.user_token = user_token
         self.cog = cog
+        self.use_external = use_external
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("next"),
+                emoji_handler.get_emoji("next", self.use_external),
                 self.skip_next,
                 position=menus.First(2),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("previous"),
+                emoji_handler.get_emoji("previous", self.use_external),
                 self.skip_previous,
                 position=menus.First(0),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("playpause"), self.play_pause, position=menus.First(1)
+                emoji_handler.get_emoji("playpause", self.use_external),
+                self.play_pause,
+                position=menus.First(1),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("repeat"),
+                emoji_handler.get_emoji("repeat", self.use_external),
                 self.repeat,
                 position=menus.First(3),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("shuffle"),
+                emoji_handler.get_emoji("shuffle", self.use_external),
                 self.shuffle,
                 position=menus.First(4),
             )
         )
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(5))
+            menus.Button(
+                emoji_handler.get_emoji("like", self.use_external),
+                self.like_song,
+                position=menus.First(5),
+            )
         )
 
     async def update(self, payload):
@@ -885,6 +893,7 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
+        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
@@ -900,23 +909,32 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
             **kwargs,
         )
         self.user_token = user_token
+        self.use_external = use_external
         self.cog = cog
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("next"), self.skip_next, position=menus.First(7))
-        )
-        self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("previous"), self.skip_previous, position=menus.First(0)
+                emoji_handler.get_emoji("next", self.use_external),
+                self.skip_next,
+                position=menus.First(7),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("playpause"), self.play_pause, position=menus.First(2)
+                emoji_handler.get_emoji("previous", self.use_external),
+                self.skip_previous,
+                position=menus.First(0),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("playall"),
+                emoji_handler.get_emoji("playpause", self.use_external),
+                self.play_pause,
+                position=menus.First(2),
+            )
+        )
+        self.add_button(
+            menus.Button(
+                emoji_handler.get_emoji("playall", self.use_external),
                 self.play_pause_all,
                 position=menus.First(3),
                 skip_if=self._skip_play_all,
@@ -924,25 +942,31 @@ class SpotifySearchMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("queue"),
+                emoji_handler.get_emoji("queue", self.use_external),
                 self.queue_song_next,
                 position=menus.First(4),
                 skip_if=self._skip_queue_next,
             )
         )
         self.add_button(
-            menus.Button(emoji_handler.get_emoji("like"), self.like_song, position=menus.First(5))
+            menus.Button(
+                emoji_handler.get_emoji("like", self.use_external),
+                self.like_song,
+                position=menus.First(5),
+            )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("back_left"),
+                emoji_handler.get_emoji("back_left", self.use_external),
                 self.go_to_previous_page,
                 position=menus.First(1),
             )
         )
         self.add_button(
             menus.Button(
-                emoji_handler.get_emoji("play"), self.go_to_next_page, position=menus.First(6)
+                emoji_handler.get_emoji("play", self.use_external),
+                self.go_to_next_page,
+                position=menus.First(6),
             )
         )
 
@@ -1192,6 +1216,7 @@ class SpotifyBaseMenu(menus.MenuPages, inherit_buttons=False):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
+        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
