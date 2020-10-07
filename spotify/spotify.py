@@ -1268,7 +1268,11 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_pause()
-            await ctx.react_quietly(emoji_handler.get_emoji("pause"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "pause", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1301,7 +1305,11 @@ class Spotify(commands.Cog):
                     await user_spotify.playback_resume()
                 else:
                     return await ctx.send(_("You are already playing music on Spotify."))
-            await ctx.react_quietly(emoji_handler.get_emoji("play"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "play", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1330,7 +1338,11 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_next()
-            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1359,7 +1371,11 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 await user_spotify.playback_previous()
-            await ctx.react_quietly(emoji_handler.get_emoji("previous"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "previous", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1407,11 +1423,19 @@ class Spotify(commands.Cog):
             with user_spotify.token_as(user_token):
                 if tracks:
                     await user_spotify.playback_start_tracks(tracks)
-                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
                     return
                 if new_uri:
                     await user_spotify.playback_start_context(new_uri)
-                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
                     return
                 if url_or_playlist_name:
                     cur = await user_spotify.followed_playlists(limit=50)
@@ -1425,7 +1449,11 @@ class Spotify(commands.Cog):
                     for playlist in playlists:
                         if url_or_playlist_name.lower() in playlist.name.lower():
                             await user_spotify.playback_start_context(playlist.uri)
-                            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+                            await ctx.react_quietly(
+                                emoji_handler.get_emoji(
+                                    "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                                )
+                            )
                             return
                     saved_tracks = await user_spotify.saved_tracks(limit=50)
                     for track in saved_tracks.items:
@@ -1435,12 +1463,20 @@ class Spotify(commands.Cog):
                             in ", ".join(a.name for a in track.track.artists)
                         ):
                             await user_spotify.playback_start_tracks([track.track.id])
-                            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+                            await ctx.react_quietly(
+                                emoji_handler.get_emoji(
+                                    "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                                )
+                            )
                             return
                 else:
                     cur = await user_spotify.saved_tracks(limit=50)
                     await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
-                    await ctx.react_quietly(emoji_handler.get_emoji("next"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
                     return
                 await ctx.send(_("I could not find any URL's or matching playlist names."))
         except tekore.Unauthorised:
@@ -1481,7 +1517,11 @@ class Spotify(commands.Cog):
             with user_spotify.token_as(user_token):
                 for uri in tracks:
                     await user_spotify.playback_queue_add(uri)
-            await ctx.react_quietly(emoji_handler.get_emoji("next"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1521,13 +1561,19 @@ class Spotify(commands.Cog):
                         )
                     if cur.repeat_state == "off":
                         state = "context"
-                        emoji = emoji_handler.get_emoji("repeat")
+                        emoji = emoji_handler.get_emoji(
+                            "repeat", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
                     if cur.repeat_state == "context":
                         state = "track"
-                        emoji = emoji_handler.get_emoji("repeatone")
+                        emoji = emoji_handler.get_emoji(
+                            "repeatone", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
                     if cur.repeat_state == "track":
                         state = "off"
-                        emoji = emoji_handler.get_emoji("off")
+                        emoji = emoji_handler.get_emoji(
+                            "off", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
                 await user_spotify.playback_repeat(str(state).lower())
             await ctx.react_quietly(emoji)
         except tekore.Unauthorised:
@@ -1567,7 +1613,11 @@ class Spotify(commands.Cog):
                         )
                     state = not cur.shuffle_state
                 await user_spotify.playback_shuffle(state)
-            await ctx.react_quietly(emoji_handler.get_emoji("shuffle"))
+            await ctx.react_quietly(
+                emoji_handler.get_emoji(
+                    "shuffle", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
+            )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
@@ -1607,16 +1657,22 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 now = cur.progress_ms
                 total = cur.item.duration_ms
-                emoji = emoji_handler.get_emoji("fastforward")
+                emoji = emoji_handler.get_emoji(
+                    "fastforward", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                )
                 log.debug(seconds)
                 if abs_position:
                     to_seek = seconds * 1000
                 else:
                     to_seek = seconds * 1000 + now
                 if to_seek < now:
-                    emoji = emoji_handler.get_emoji("rewind")
+                    emoji = emoji_handler.get_emoji(
+                        "rewind", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                    )
                 if to_seek > total:
-                    emoji = emoji_handler.get_emoji("next")
+                    emoji = emoji_handler.get_emoji(
+                        "next", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                    )
                 await user_spotify.playback_seek(to_seek)
             await ctx.react_quietly(emoji)
         except tekore.Unauthorised:
@@ -1652,11 +1708,23 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    await ctx.react_quietly(emoji_handler.get_emoji("volume_mute"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "volume_mute", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
                 elif cur and volume > cur.device.volume_percent:
-                    await ctx.react_quietly(emoji_handler.get_emoji("volume_up"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "volume_up", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
                 else:
-                    await ctx.react_quietly(emoji_handler.get_emoji("volume_down"))
+                    await ctx.react_quietly(
+                        emoji_handler.get_emoji(
+                            "volume_down", ctx.channel.permissions_for(ctx.me).use_external_emojis
+                        )
+                    )
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
