@@ -50,7 +50,7 @@ except ImportError:
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
-TokenConverter = commands.get_dict_converter(delims=[" ", ",", ";"])
+ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), delims=[" ", ",", ";"])
 
 
 @cog_i18n(_)
@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.4.8"
+    __version__ = "1.4.9"
 
     def __init__(self, bot):
         self.bot = bot
@@ -89,6 +89,7 @@ class Spotify(commands.Cog):
                 "playlist-modify-private",
                 "ugc-image-upload",
             ],
+            version="0.0.0",
         )
 
         self._app_token = None
@@ -108,7 +109,19 @@ class Spotify(commands.Cog):
         if DASHBOARD:
             self.rpc_extension = DashboardRPC_Spotify(self)
 
+    async def migrate_settings(self):
+        if await self.config.version() < self.__version__:
+            all_users = await self.config.all_users()
+            for user_id, data in all_users.items():
+                if not data["listen_for"]:
+                    continue
+                new_data = {v: k for k, v in data["listen_for"].items()}
+                await self.config.user_from_id(user_id).listen_for.set(new_data)
+        await self.config.version.set(self.__version__)
+
     async def initialize(self):
+        await self.migrate_settings()
+
         tokens = await self.bot.get_shared_api_tokens("spotify")
         if not tokens:
             self._ready.set()
@@ -170,8 +183,8 @@ class Spotify(commands.Cog):
             await ctx.send(
                 _(
                     "The bot owner needs to set their Spotify credentials "
-                    "before this command can be used."
-                    " See `{prefix}spotify set creds` for more details."
+                    "before this command can be used. "
+                    "See `{prefix}spotify set creds` for more details."
                 ).format(prefix=ctx.clean_prefix)
             )
             return
@@ -188,7 +201,14 @@ class Spotify(commands.Cog):
                     return
                 await self.save_token(author, user_token)
             return user_token
-
+        if author.id in self.temp_cache:
+            await ctx.send(
+                _(
+                    "I've already sent you a link for authorization, "
+                    "please complete that first before trying a new command."
+                )
+            )
+            return
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
         log.debug(scope)
@@ -207,9 +227,7 @@ class Spotify(commands.Cog):
 
         try:
             await author.send(msg)
-            # pred = MessagePredicate.same_context(user=ctx.author)
         except discord.errors.Forbidden:
-            # pre = MessagePredicate.same_context(ctx)
             await ctx.send(msg)
         try:
             check_msg = await ctx.bot.wait_for("message", check=check, timeout=120)
@@ -321,10 +339,9 @@ class Spotify(commands.Cog):
         if not user_token:
             return
         user_spotify = tekore.Spotify(sender=self._sender)
-        actions = {v: k for k, v in listen_for.items()}
-        if str(payload.emoji) not in actions:
+        if str(payload.emoji) not in listen_for:
             return
-        action = actions[str(payload.emoji)]
+        action = listen_for[str(payload.emoji)]
         if action == "play" or action == "playpause":
             # play the song if it exists
             try:
@@ -525,7 +542,7 @@ class Spotify(commands.Cog):
         pass
 
     @spotify_set.command(name="listen")
-    async def set_reaction_listen(self, ctx: commands.Context, *, listen_for: TokenConverter):
+    async def set_reaction_listen(self, ctx: commands.Context, *, listen_for: ActionConverter):
         """
         Set the bot to listen for specific emoji reactions on messages
 
@@ -547,22 +564,31 @@ class Spotify(commands.Cog):
         """
         added = {}
         async with self.config.user(ctx.author).listen_for() as current:
-            for name, emoji in listen_for.items():
-                if name not in emoji_handler.emojis.keys():
+            for action, emoji in listen_for.items():
+                if action not in emoji_handler.emojis.keys():
                     continue
+                custom_emoji = None
                 try:
-                    await ctx.message.add_reaction(str(emoji))
-                    current[name] = str(emoji)
-                    added[name] = str(emoji)
-                except discord.errors.HTTPError:
+                    custom_emoji = await commands.PartialEmojiConverter().convert(ctx, emoji)
+                except commands.BadArgument:
                     pass
+                if custom_emoji:
+                    current[str(custom_emoji)] = action
+                    added[str(custom_emoji)] = action
+                else:
+                    try:
+                        await ctx.message.add_reaction(str(emoji))
+                        current[str(emoji)] = action
+                        added[str(emoji)] = action
+                    except discord.errors.HTTPException:
+                        pass
         msg = _("I will now listen for the following emojis from you:\n")
-        for name, emoji in added.items():
-            msg += f"{name} -> {emoji}\n"
+        for emoji, action in added.items():
+            msg += f"{emoji} -> {action}\n"
         await ctx.maybe_send_embed(msg)
 
     @spotify_set.command(name="remlisten")
-    async def set_reaction_remove_listen(self, ctx: commands.Context, *listen_for: str):
+    async def set_reaction_remove_listen(self, ctx: commands.Context, *emoji_or_name: str):
         """
         Set the bot to listen for specific emoji reactions on messages
 
@@ -584,14 +610,25 @@ class Spotify(commands.Cog):
         """
         removed = []
         async with self.config.user(ctx.author).listen_for() as current:
-            for name in listen_for:
+            for name in emoji_or_name:
                 if name in current:
+                    action = current[name]
                     del current[name]
-                    removed.append(name)
+                    removed.append(f"{name} -> {action}")
+                else:
+                    to_rem = []
+                    for emoji, action in current.items():
+                        if name == action:
+                            to_rem.append(emoji)
+                            removed.append(f"{emoji} -> {action}")
+                    if to_rem:
+                        for emoji in to_rem:
+                            del current[emoji]
+
         if not removed:
             return await ctx.send(_("None of the listed events were being listened for."))
-        msg = _("I will no longer listen for emojis for the following events: {listen}").format(
-            listen=humanize_list(removed)
+        msg = _("I will no longer listen for emojis for the following events:\n{listen}").format(
+            listen="\n".join(i for i in removed)
         )
         await ctx.maybe_send_embed(msg)
 
@@ -670,7 +707,7 @@ class Spotify(commands.Cog):
 
     @spotify_set.command(name="emojis")
     @commands.is_owner()
-    async def spotify_emojis(self, ctx: commands.Context, *, new_emojis: TokenConverter):
+    async def spotify_emojis(self, ctx: commands.Context, *, new_emojis: ActionConverter):
         """
         Change the emojis used by the bot for various actions
 
@@ -814,8 +851,8 @@ class Spotify(commands.Cog):
         )
         msg = ""
         cog_settings = await self.config.user(ctx.author).all()
-        listen_emojis = humanize_list(
-            [f"{emoji} -> {action}\n" for action, emoji in cog_settings["listen_for"].items()]
+        listen_emojis = "\n".join(
+            f"{emoji} -> {action}" for emoji, action in cog_settings["listen_for"].items()
         )
         if not listen_emojis:
             listen_emojis = "Nothing"
@@ -896,6 +933,7 @@ class Spotify(commands.Cog):
                 timeout=timeout,
                 cog=self,
                 user_token=user_token,
+                use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
             ).start(ctx=ctx)
         except NotPlaying:
             await ctx.send(_("It appears you're not currently listening to Spotify."))
@@ -997,6 +1035,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="genres", aliases=["genre"])
@@ -1085,6 +1124,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="recent")
@@ -1119,6 +1159,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="toptracks")
@@ -1150,6 +1191,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="topartists")
@@ -1181,6 +1223,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="new")
@@ -1209,6 +1252,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_com.command(name="pause")
@@ -1696,6 +1740,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_playlist.command(name="list", aliases=["ls"])
@@ -1742,6 +1787,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_playlist.command(name="view")
@@ -1791,6 +1837,7 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
 
     @spotify_playlist.command(name="create")
@@ -2075,4 +2122,5 @@ class Spotify(commands.Cog):
             timeout=timeout,
             cog=self,
             user_token=user_token,
+            use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
         ).start(ctx=ctx)
