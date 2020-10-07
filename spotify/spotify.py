@@ -211,9 +211,8 @@ class Spotify(commands.Cog):
             return
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
-        log.debug(scope)
         auth = tekore.UserAuth(self._credentials, scope=scope)
-        self.temp_cache[ctx.author.id] = auth
+        self.temp_cache[author.id] = auth
 
         msg = _(
             "Please accept the authorization in the following link and reply "
@@ -239,12 +238,12 @@ class Spotify(commands.Cog):
                 )
                 return await self.get_user_auth(ctx, author)
             try:
-                del self.temp_cache[ctx.author.id]
+                del self.temp_cache[author.id]
             except KeyError:
                 pass
             await ctx.send(
                 _("Alright I won't interact with spotify for you {author}.").format(
-                    author=ctx.author.mention
+                    author=author.mention
                 )
             )
             return
@@ -257,7 +256,7 @@ class Spotify(commands.Cog):
 
         redirected = check_msg.clean_content.strip()
         if self._tokens[-1] not in redirected:
-            del self.temp_cache[ctx.author.id]
+            del self.temp_cache[author.id]
             return await ctx.send(_("Credentials not valid"))
         reply_msg = _("Your authorization has been set!")
         try:
@@ -268,9 +267,9 @@ class Spotify(commands.Cog):
             await ctx.send(reply_msg)
 
         user_token = await auth.request_token(url=redirected)
-        await self.save_token(ctx.author, user_token)
+        await self.save_token(author, user_token)
 
-        del self.temp_cache[ctx.author.id]
+        del self.temp_cache[author.id]
         return user_token
 
     async def save_token(self, author: discord.User, user_token: tekore.Token):
