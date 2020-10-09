@@ -1,15 +1,18 @@
 import random
+import logging
 from typing import Optional, Union
 
 import discord
 from redbot.core import commands
+
+log = logging.getLogger("red.trusty-cogs.mock")
 
 
 class Mock(commands.Cog):
     """mock a user as spongebob"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.7"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -41,50 +44,44 @@ class Mock(commands.Cog):
     async def mock(
         self,
         ctx: commands.Context,
-        channel: Optional[discord.TextChannel] = None,
         *,
-        msg: Optional[Union[discord.Member, int, str]] = None,
+        msg: Optional[Union[discord.Message, discord.Member, str]] = None,
     ) -> None:
         """
         Mock a user with the spongebob meme
 
-        `channel` Optional channel to retrieve messages from and post the mock message
-        `msg` Optional either member, message ID, or string
+        `[msg]` Optional either member, message ID, or string
+        message ID can be channe_id-message-id formatted or a message link
         if no `msg` is provided the command will use the last message in channel before the command
         is `msg` is a member it will look through the past 10 messages in
         the `channel` and put them all together
         """
-        if not channel:
-            send_channel = ctx.channel
-        else:
-            send_channel = channel
-        result = ""
-        mocker = ctx.message.author
-        if type(msg) is int:
-            try:
-                search_msg = await ctx.channel.fetch_message(msg)
-            except (discord.errors.NotFound, discord.error.Forbidden):
-                return
-            result = await self.cap_change(search_msg.content)
-            if result == "" and len(search_msg.embeds) != 0:
-                if search_msg.embeds[0].description != discord.Embed.Empty:
-                    result = await self.cap_change(search_msg.embeds[0].description)
-            author = search_msg.author
-        elif type(msg) is str:
+        if isinstance(msg, str):
+            log.debug("Mocking a given string")
             result = await self.cap_change(str(msg))
+            result += f"\n\n[Mocking Message]({ctx.message.jump_url})"
             author = ctx.message.author
-        elif type(msg) is discord.Member:
+        elif isinstance(msg, discord.Member):
+            log.debug("Mocking a user")
             total_msg = ""
-            async for message in send_channel.history(limit=10):
+            async for message in ctx.channel.history(limit=10):
                 if message.author == msg:
                     total_msg += message.content + "\n"
             result = await self.cap_change(total_msg)
             author = msg
+        elif isinstance(msg, discord.Message):
+            log.debug("Mocking a message")
+            result = await self.cap_change(msg.content)
+            result += f"\n\n[Mocking Message]({msg.jump_url})"
+            author = msg.author
+            search_msg = msg
         else:
-            async for message in send_channel.history(limit=2):
+            log.debug("Mocking last message in chat")
+            async for message in ctx.channel.history(limit=2):
                 search_msg = message
             author = search_msg.author
             result = await self.cap_change(search_msg.content)
+            result += f"\n\n[Mocking Message]({search_msg.jump_url})"
             if result == "" and len(search_msg.embeds) != 0:
                 if search_msg.embeds[0].description != discord.Embed.Empty:
                     result = await self.cap_change(search_msg.embeds[0].description)
@@ -94,17 +91,17 @@ class Mock(commands.Cog):
         embed.set_author(name=author.display_name, icon_url=author.avatar_url)
         embed.set_thumbnail(url="https://i.imgur.com/upItEiG.jpg")
         embed.set_footer(
-            text="{} mocked {}".format(ctx.message.author.display_name, author.display_name),
+            text=f"{ctx.message.author.display_name} mocked {author.display_name}",
             icon_url=ctx.message.author.avatar_url,
         )
         if hasattr(msg, "attachments") and search_msg.attachments != []:
             embed.set_image(url=search_msg.attachments[0].url)
-        if not send_channel.permissions_for(ctx.me).embed_links:
-            if author != mocker:
-                await send_channel.send(result + " - " + author.mention)
+        if not ctx.channel.permissions_for(ctx.me).embed_links:
+            if author != ctx.message.author:
+                await ctx.send(f"{result} - {author.mention}")
             else:
-                await send_channel.send(result)
+                await ctx.send(result)
         else:
-            await send_channel.send(embed=embed)
-            if author != mocker:
-                await send_channel.send("- " + author.mention)
+            await ctx.channel.send(embed=embed)
+            if author != ctx.message.author:
+                await ctx.send(f"- {author.mention}")
