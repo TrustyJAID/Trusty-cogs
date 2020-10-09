@@ -46,7 +46,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.12.4"
+    __version__ = "2.12.5"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1321,10 +1321,13 @@ class Hockey(HockeyDev, commands.Cog):
                 url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster"
                 async with self.session.get(url) as resp:
                     data = await resp.json()
-                for player in data["roster"]:
-                    players.append(player)
+                if "roster" in data:
+                    for player in data["roster"]:
+                        players.append(player)
         else:
             for team in TEAMS:
+                if not TEAMS[team]["id"]:
+                    continue
                 url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster"
                 async with self.session.get(url) as resp:
                     data = await resp.json()
