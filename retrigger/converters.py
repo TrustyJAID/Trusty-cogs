@@ -168,6 +168,9 @@ class Trigger:
         """Toggle whether or not this trigger is enabled."""
         self.enabled = not self.enabled
 
+    def __repr__(self):
+        return "<ReTrigger name={0.name} author={0.author} pattern={0.regex.pattern}>".format(self)
+
     def __str__(self):
         """This is defined moreso for debugging purposes but may prove useful for elaborating
         what is defined for each trigger individually"""
