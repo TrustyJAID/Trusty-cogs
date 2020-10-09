@@ -60,7 +60,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.4"
+    __version__ = "2.6.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -947,13 +947,14 @@ class Tweets(commands.Cog):
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
             )
-            task = await ctx.bot.loop.run_in_executor(None, fake_task)
+            task = ctx.bot.loop.run_in_executor(None, fake_task)
             list_members = await asyncio.wait_for(task, timeout=30)
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")
             log.error(msg, exc_info=True)
             return await ctx.send(msg)
         except Exception:
+            log.exception("Error finding twitter list")
             msg = _("That `owner` and `list_name` " "don't appear to be available")
             await ctx.send(msg)
             return
