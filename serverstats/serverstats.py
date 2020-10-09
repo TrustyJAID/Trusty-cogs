@@ -12,6 +12,7 @@ import discord
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import (
     bold,
     box,
@@ -38,7 +39,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -910,11 +911,15 @@ class ServerStats(commands.Cog):
         embed.colour = await ctx.embed_colour()
         embed.set_author(name=f"{member} ({member.id})", icon_url=member.avatar_url)
         if await self.bot.is_owner(ctx.author):
-            guild_list = [m for m in self.bot.get_all_members() if m.id == member.id]
+            guild_list = [
+                m
+                async for m in AsyncIter(self.bot.get_all_members(), steps=500)
+                if m.id == member.id
+            ]
         else:
             guild_list = [
                 m
-                for m in self.bot.get_all_members()
+                async for m in AsyncIter(self.bot.get_all_members(), steps=500)
                 if m.id == member.id and ctx.author in m.guild.members
             ]
 
