@@ -449,6 +449,8 @@ class NotSoBot(commands.Cog):
         async with ctx.typing():
             xx = await ctx.message.channel.send("ok, processing")
             b, mime = await self.bytes_download(url)
+            if mime not in self.image_mimes:
+                return await ctx.send("That is not a valid image!")
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
@@ -674,6 +676,8 @@ class NotSoBot(commands.Cog):
         x = await ctx.send("ok, processing")
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
+            if mime not in self.image_mimes:
+                return await ctx.send("That is not a valid image!")
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
@@ -1558,6 +1562,8 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
+            if mime not in self.image_mimes:
+                return await ctx.send("That is not a valid image!")
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
