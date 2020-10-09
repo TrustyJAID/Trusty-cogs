@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.4.10"
+    __version__ = "1.4.11"
 
     def __init__(self, bot):
         self.bot = bot
@@ -110,14 +110,17 @@ class Spotify(commands.Cog):
             self.rpc_extension = DashboardRPC_Spotify(self)
 
     async def migrate_settings(self):
-        if await self.config.version() < self.__version__:
+        if await self.config.version() < "1.4.9":
             all_users = await self.config.all_users()
             for user_id, data in all_users.items():
                 if not data["listen_for"]:
                     continue
-                new_data = {v: k for k, v in data["listen_for"].items()}
+                if isinstance(data["listen_for"], list):
+                    new_data = {}
+                else:
+                    new_data = {v: k for k, v in data["listen_for"].items()}
                 await self.config.user_from_id(user_id).listen_for.set(new_data)
-        await self.config.version.set(self.__version__)
+            await self.config.version.set(self.__version__)
 
     async def initialize(self):
         await self.migrate_settings()
