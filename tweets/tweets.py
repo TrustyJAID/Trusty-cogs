@@ -60,7 +60,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.3"
+    __version__ = "2.6.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -807,13 +807,19 @@ class Tweets(commands.Cog):
             timestamp=ctx.message.created_at,
         )
         embed.set_author(name=guild.name, icon_url=guild.icon_url)
-        for channel in guild.channels:
-            account_list = ""
+        account_list = ""
+        for channel in guild.text_channels:
+            channel_accounts = []
             for user_id, account in self.accounts.items():
                 if channel.id in account["channel"]:
-                    account_list += account["twitter_name"] + ", "
-            if account_list != "":
-                embed.add_field(name=channel.name, value=account_list[:-2])
+                    channel_accounts.append(account["twitter_name"])
+            if channel_accounts:
+                account_list += f"{channel.mention}\n"
+                account_list += humanize_list(channel_accounts) + "\n"
+        pages = list(pagify(account_list, page_length=1024))
+        embed.description = "".join(pages[:2])
+        for page in pages[2:]:
+            embed.add_field(name=_("Autotweet list continued"), value=page)
         await ctx.send(embed=embed)
 
     async def add_account(
