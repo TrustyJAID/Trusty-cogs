@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Optional, Union
@@ -29,6 +28,11 @@ from .triggerhandler import TriggerHandler
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
+try:
+    import regex as re
+except ImportError:
+    import re
+
 
 @cog_i18n(_)
 class ReTrigger(TriggerHandler, commands.Cog):
@@ -41,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.16.2"
+    __version__ = "2.17.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -84,7 +88,12 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for guild, settings in data.items():
             self.triggers[guild] = []
             for trigger in settings["trigger_list"].values():
-                new_trigger = await Trigger.from_json(trigger)
+                try:
+                    new_trigger = await Trigger.from_json(trigger)
+                except Exception:
+                    log.exception("Error trying to compile regex pattern.")
+                    # I might move this to DM the author of the trigger
+                    # before this becomes actually breaking
                 self.triggers[guild].append(new_trigger)
 
     async def save_loop(self):
@@ -652,6 +661,40 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} text changed to `{text}`")
         await ctx.send(msg.format(name=trigger.name, text=text))
+
+    @_edit.command(name="chance", aliases=["chances"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def edit_chance(
+        self, ctx: commands.Context, trigger: TriggerExists, chance: int
+    ) -> None:
+        """
+        Edit the chance a trigger will execute.
+
+        `<trigger>` is the name of the trigger.
+        `<chance>` The chance the trigger will execute in form of 1 in chance.
+
+        Set the `chance` to 0 to remove the chance and always perform the trigger.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        if chance < 0:
+            return await ctx.send(_("You cannot have a negative chance of triggers happening."))
+        trigger.chance = chance
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        if chance:
+            msg = _("Trigger {name} chance changed to `1 in {chance}`")
+        else:
+            msg = _("Trigger {name} chance changed to always.")
+        await ctx.send(msg.format(name=trigger.name, chance=str(chance)))
 
     @_edit.command(name="deleteafter", aliases=["autodelete", "delete"])
     @checks.mod_or_permissions(manage_messages=True)

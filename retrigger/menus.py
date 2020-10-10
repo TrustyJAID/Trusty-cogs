@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import discord
 from discord.ext.commands.errors import BadArgument
@@ -195,7 +195,8 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("Message deleted after: {time} seconds.\n").format(time=trigger.delete_after)
         if trigger.read_filenames:
             info += _("Read filenames: **Enabled**\n")
-
+        if trigger.chance:
+                info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
         if embeds:
             info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(

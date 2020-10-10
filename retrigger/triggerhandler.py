@@ -3,26 +3,24 @@ import functools
 import logging
 import os
 import random
-import re
 import string
 from copy import copy
 from datetime import datetime
 from io import BytesIO
 from multiprocessing import TimeoutError
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Literal, Pattern, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Pattern, Tuple, cast
 
 import aiohttp
 import discord
-from discord.ext.commands.errors import BadArgument
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands, modlog
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, escape, humanize_list, pagify
+from redbot.core.utils.chat_formatting import escape, humanize_list
 
-from .converters import ChannelUserRole, Trigger
+from .converters import Trigger
 from .message import ReTriggerMessage
 
 try:
@@ -39,6 +37,12 @@ try:
 except ImportError:
     ALLOW_RESIZE = False
     ALLOW_OCR = False
+
+
+try:
+    import regex as re
+except ImportError:
+    import re
 
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
@@ -305,192 +309,6 @@ class TriggerHandler:
         byte_array.seek(0)
         return discord.File(byte_array, filename="resize.gif")
 
-    async def trigger_embed(
-        self, ctx: commands.Context, trigger_list: List[dict]
-    ) -> List[Union[discord.Embed, str]]:
-        msg_list = []
-        embeds = ctx.channel.permissions_for(ctx.me).embed_links
-        page = 1
-        good = "\N{WHITE HEAVY CHECK MARK}"
-        bad = "\N{CROSS MARK}"
-        for triggers in trigger_list:
-            trigger = await Trigger.from_json(triggers)
-            author = ctx.guild.get_member(trigger.author)
-            active_triggers = [t.name for t in self.triggers[ctx.guild.id]]
-            if not author:
-                try:
-                    author = await self.bot.fetch_user(trigger.author)
-                except AttributeError:
-                    author = await self.bot.get_user_info(trigger.author)
-            blacklist = []
-            for y in trigger.blacklist:
-                try:
-                    blacklist.append(await ChannelUserRole().convert(ctx, str(y)))
-                except BadArgument:
-                    continue
-            if embeds:
-                blacklist_s = ", ".join(x.mention for x in blacklist)
-            else:
-                blacklist_s = ", ".join(x.name for x in blacklist)
-            whitelist = []
-            for y in trigger.whitelist:
-                try:
-                    whitelist.append(await ChannelUserRole().convert(ctx, str(y)))
-                except BadArgument:
-                    continue
-            if embeds:
-                whitelist_s = ", ".join(x.mention for x in whitelist)
-            else:
-                whitelist_s = ", ".join(x.name for x in whitelist)
-            if trigger.response_type:
-                responses = humanize_list(trigger.response_type)
-            else:
-                responses = _("This trigger has no actions and should be removed.")
-
-            info = _(
-                "__Name__: **{name}** \n"
-                "__Active__: **{enabled}**\n"
-                "__Author__: {author}\n"
-                "__Count__: **{count}**\n"
-                "__Response__: **{response}**\n"
-            )
-            if embeds:
-                info = info.format(
-                    name=trigger.name,
-                    enabled=good if trigger.name in active_triggers else bad,
-                    author=author.mention,
-                    count=trigger.count,
-                    response=responses,
-                )
-            else:
-                info = info.format(
-                    name=trigger.name,
-                    enabled=good if trigger.name in active_triggers else bad,
-                    author=author.name,
-                    count=trigger.count,
-                    response=responses,
-                )
-            if trigger.ignore_commands:
-                info += _("Ignore commands: **{ignore}**\n").format(ignore=trigger.ignore_commands)
-            if "text" in trigger.response_type:
-                if trigger.multi_payload:
-                    response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
-                else:
-                    response = trigger.text
-                info += _("__Text__: ") + "**{response}**\n".format(response=response)
-            if "rename" in trigger.response_type:
-                if trigger.multi_payload:
-                    response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
-                else:
-                    response = trigger.text
-                info += _("__Rename__: ") + "**{response}**\n".format(response=response)
-            if "dm" in trigger.response_type:
-                if trigger.multi_payload:
-                    response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
-                else:
-                    response = trigger.text
-                info += _("__DM__: ") + "**{response}**\n".format(response=response)
-            if "command" in trigger.response_type:
-                if trigger.multi_payload:
-                    response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
-                else:
-                    response = trigger.text
-                info += _("__Command__: ") + "**{response}**\n".format(response=response)
-            if "react" in trigger.response_type:
-                if trigger.multi_payload:
-                    emoji_response = [
-                        r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"
-                    ]
-                else:
-                    emoji_response = trigger.text
-                server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
-                unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
-                info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
-            if "add_role" in trigger.response_type:
-                if trigger.multi_payload:
-                    role_response = [
-                        r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"
-                    ]
-                else:
-                    role_response = trigger.text
-                roles = [ctx.guild.get_role(r) for r in role_response]
-                if embeds:
-                    roles_list = [r.mention for r in roles if r is not None]
-                else:
-                    roles_list = [r.name for r in roles if r is not None]
-                if roles_list:
-                    info += _("__Roles Added__: ") + humanize_list(roles_list) + "\n"
-                else:
-                    info += _("Roles Added: Deleted Roles\n")
-            if "remove_role" in trigger.response_type:
-                if trigger.multi_payload:
-                    role_response = [
-                        r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"
-                    ]
-                else:
-                    role_response = trigger.text
-                roles = [ctx.guild.get_role(r) for r in role_response]
-                if embeds:
-                    roles_list = [r.mention for r in roles if r is not None]
-                else:
-                    roles_list = [r.name for r in roles if r is not None]
-                if roles_list:
-                    info += _("__Roles Removed__: ") + humanize_list(roles_list) + "\n"
-                else:
-                    info += _("__Roles Added__: Deleted Roles\n")
-            if whitelist_s:
-                info += _("__Whitelist__: ") + whitelist_s + "\n"
-            if blacklist_s:
-                info += _("__Blacklist__: ") + blacklist_s + "\n"
-            if trigger.cooldown:
-                time = trigger.cooldown["time"]
-                style = trigger.cooldown["style"]
-                info += _("Cooldown: ") + "**{}s per {}**\n".format(time, style)
-            if trigger.ocr_search:
-                info += _("OCR: **Enabled**\n")
-            if trigger.ignore_edits:
-                info += _("Ignoring edits: **Enabled**\n")
-            if trigger.delete_after:
-                info += _("Message deleted after: {time} seconds.\n").format(
-                    time=trigger.delete_after
-                )
-            if trigger.read_filenames:
-                info += _("Read filenames: **Enabled**\n")
-
-            if embeds:
-                info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
-                em = discord.Embed(
-                    timestamp=ctx.message.created_at,
-                    colour=await ctx.embed_colour(),
-                    title=_("Triggers for {guild}").format(guild=ctx.guild.name),
-                )
-                em.set_author(name=author, icon_url=author.avatar_url)
-                if trigger.created_at == 0:
-                    em.set_footer(
-                        text=_("Page {page}/{leng}").format(page=page, leng=len(trigger_list))
-                    )
-                else:
-                    em.set_footer(
-                        text=_("Page {page}/{leng} Created").format(
-                            page=page, leng=len(trigger_list)
-                        )
-                    )
-                    em.timestamp = discord.utils.snowflake_time(trigger.created_at)
-
-                first = True
-                for pages in pagify(info, page_length=1024):
-                    if first:
-                        em.description = pages
-                        first = False
-                    else:
-                        em.add_field(name=_("Trigger info continued"), value=pages)
-                msg_list.append(em)
-            else:
-                info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")
-                msg_list.append(info)
-            page += 1
-        return msg_list
-
     async def check_trigger_cooldown(self, message: discord.Message, trigger: Trigger) -> bool:
         now = datetime.now().timestamp()
         if trigger.cooldown:
@@ -612,6 +430,9 @@ class TriggerHandler:
                 continue
             if edit and trigger.ignore_edits:
                 continue
+            if trigger.chance:
+                if random.randint(0, trigger.chance) != 0:
+                    continue
 
             allowed_trigger = await self.check_bw_list(trigger, message)
             is_auto_mod = trigger.response_type in auto_mod

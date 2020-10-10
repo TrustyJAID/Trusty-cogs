@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 from typing import List, Pattern, Tuple, Union
 
 import discord
@@ -13,6 +12,11 @@ from redbot.core.utils.predicates import ReactionPredicate
 
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
+
+try:
+    import regex as re
+except ImportError:
+    import re
 
 
 class MultiResponse(Converter):
@@ -138,7 +142,10 @@ class Trigger:
 
     def __init__(self, name, regex, response_type, author, **kwargs):
         self.name = name
-        self.regex = re.compile(regex)
+        try:
+            self.regex = re.compile(regex)
+        except Exception:
+            raise
         self.response_type = response_type
         self.author = author
         self.enabled = kwargs.get("enabled", True)
@@ -155,6 +162,7 @@ class Trigger:
         self.ocr_search = kwargs.get("ocr_search", False)
         self.delete_after = kwargs.get("delete_after", None)
         self.read_filenames = kwargs.get("read_filenames", False)
+        self.chance = kwargs.get("chance", 0)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -240,9 +248,9 @@ class Trigger:
             if role_response:
                 info += _("__Roles Removed__: ") + role_response + "\n"
         if self.whitelist:
-            info += _("__Whitelist__: ") + self.whitelist + "\n"
+            info += _("__Whitelist__: ") + ", ".join([str(i) for i in self.whitelist]) + "\n"
         if self.blacklist:
-            info += _("__Blacklist__: ") + self.blacklist + "\n"
+            info += _("__Blacklist__: ") + ", ".join([str(i) for i in self.blacklist]) + "\n"
         if self.cooldown:
             time = self.cooldown["time"]
             style = self.cooldown["style"]
@@ -251,6 +259,8 @@ class Trigger:
             info += _("OCR: **Enabled**\n")
         if self.ignore_edits:
             info += _("Ignoring edits: **Enabled**\n")
+        if self.chance:
+            info += _("__Chance__: **1 in {number}**\n").format(number=self.chance)
         if self.delete_after:
             info += _("Message deleted after: {time} seconds.\n").format(time=self.delete_after)
         if self.read_filenames:
@@ -278,6 +288,7 @@ class Trigger:
             "ocr_search": self.ocr_search,
             "delete_after": self.delete_after,
             "read_filenames": self.read_filenames,
+            "chance": self.chance,
         }
 
     @classmethod
@@ -291,6 +302,7 @@ class Trigger:
         delete_after = None
         enabled = True
         read_filenames = True
+        chance = 0
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -317,6 +329,8 @@ class Trigger:
             # replace old setting with new flag
             read_filenames = data["text"]
             data["text"] = ""
+        if "chance" in data:
+            chance = data["chance"]
         return cls(
             data["name"],
             data["regex"],
@@ -336,6 +350,7 @@ class Trigger:
             ignore_edits=ignore_edits,
             ocr_search=ocr_search,
             read_filenames=read_filenames,
+            chance=chance,
         )
 
 
