@@ -954,6 +954,8 @@ class Spotify(commands.Cog):
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    await ctx.send(_("It appears you're not currently listening to Spotify."))
                 if cur.is_playing and not cur.item.is_local:
                     msg = copy(ctx.message)
                     msg.content = ctx.prefix + f"play {cur.item.uri}"
