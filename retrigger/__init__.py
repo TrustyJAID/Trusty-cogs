@@ -16,5 +16,6 @@ async def setup(bot):
         await cog.initialize()
     except Exception:
         log.exception("Error loading ReTrigger")
+        cog.cog_unload()
         raise
     bot.add_cog(cog)
