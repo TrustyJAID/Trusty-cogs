@@ -287,7 +287,7 @@ class NotSoBot(commands.Cog):
     async def magik(self, ctx, urls: ImageFinder = None, scale: int = 2, scale_msg: str = ""):
         """
         Apply magik to Image(s)
-        
+
         `[p]magik image_url` or `[p]magik image_url image_url_2`
         """
         if urls is None:
@@ -833,7 +833,7 @@ class NotSoBot(commands.Cog):
                     await ctx.send(":no_entry: Image `{0}` is invalid!".format(str(count)))
                     continue
                 list_im.append(b)
-                
+
                 def make_merge(b):
                     imgs = [Image.open(i).convert("RGBA") for i in list_im]
                     if vertical:
@@ -849,8 +849,8 @@ class NotSoBot(commands.Cog):
                     imgs_comb.save(final, "png")
                     file_size = final.tell()
                     final.seek(0)
-                    file = discord.File(final, filename="merge.png"), file_size
-                    
+                    return discord.File(final, filename="merge.png"), file_size
+
             await xx.delete()
             task = ctx.bot.loop.run_in_executor(None, make_merge, b)
             try:
