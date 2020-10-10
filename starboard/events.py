@@ -92,10 +92,20 @@ class StarboardEvents:
     ) -> bool:
         """CHecks if the channel is allowed to track starboard
         messages"""
+        if channel.is_nsfw() and not self.bot.get_channel(starboard.channel).is_nsfw():
+            return False
         if starboard.whitelist_channel:
-            return channel.id in starboard.whitelist_channel
+            if channel.id in starboard.whitelist_channel:
+                return True
+            if channel.category_id in starboard.whitelist_channel:
+                return True
+            return False
         else:
-            return channel.id not in starboard.blacklist_channel
+            if channel.id in starboard.blacklist_channel:
+                return False
+            if channel.category_id in starboard.blacklist_channel:
+                return False
+            return True
 
     async def _get_colour(self, channel: discord.TextChannel) -> discord.Colour:
         try:

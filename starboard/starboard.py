@@ -21,7 +21,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.3.1"
+    __version__ = "2.3.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -261,7 +261,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: StarboardExists,
-        channel_or_role: Union[discord.TextChannel, discord.Role],
+        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
         Add a channel to the starboard blacklist
@@ -308,7 +308,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: StarboardExists,
-        channel_or_role: Union[discord.TextChannel, discord.Role],
+        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
         Remove a channel to the starboard blacklist
@@ -355,7 +355,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: StarboardExists,
-        channel_or_role: Union[discord.TextChannel, discord.Role],
+        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
         Add a channel to the starboard whitelist
@@ -402,7 +402,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: StarboardExists,
-        channel_or_role: Union[discord.TextChannel, discord.Role],
+        channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
         Remove a channel to the starboard whitelist
