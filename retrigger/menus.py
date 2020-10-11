@@ -180,9 +180,9 @@ class ReTriggerPages(menus.ListPageSource):
             else:
                 info += _("__Roles Added__: Deleted Roles\n")
         if whitelist_s:
-            info += _("__Whitelist__: ") + whitelist_s + "\n"
+            info += _("__Allowlist__: ") + whitelist_s + "\n"
         if blacklist_s:
-            info += _("__Blacklist__: ") + blacklist_s + "\n"
+            info += _("__Blocklist__: ") + blacklist_s + "\n"
         if trigger.cooldown:
             time = trigger.cooldown["time"]
             style = trigger.cooldown["style"]
@@ -196,7 +196,7 @@ class ReTriggerPages(menus.ListPageSource):
         if trigger.read_filenames:
             info += _("Read filenames: **Enabled**\n")
         if trigger.chance:
-                info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
+            info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
         if embeds:
             info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(

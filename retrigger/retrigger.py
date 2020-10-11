@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.17.0"
+    __version__ = "2.17.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -140,13 +140,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
         await self.red_delete_data_for_user(requester="owner", user_id=user_id)
         await ctx.tick()
 
-    @retrigger.group(aliases=["blocklist"])
+    @retrigger.group(name="blocklist", aliases=["blacklist"])
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist(self, ctx: commands.Context) -> None:
         """
-        Set blacklist options for retrigger
+        Set blocklist options for retrigger
 
-        blacklisting supports channels, users, or roles
+        blocklisting supports channels, users, or roles
 
         See https://regex101.com/ for help building a regex pattern.
         See `[p]retrigger explain` or click the link below for more details.
@@ -154,13 +154,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
-    @retrigger.group(aliases=["allowlist"])
+    @retrigger.group(name="allowlist",aliases=["whitelist"])
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist(self, ctx: commands.Context) -> None:
         """
-        Set whitelist options for retrigger
+        Set allowlist options for retrigger
 
-        whitelisting supports channels, users, or roles
+        allowlisting supports channels, users, or roles
 
         See https://regex101.com/ for help building a regex pattern.
         See `[p]retrigger explain` or click the link below for more details.
@@ -398,10 +398,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ) -> None:
         """
-        Add a channel, user, or role to triggers whitelist
+        Add a channel, user, or role to triggers allowlist
 
         `<trigger>` is the name of the trigger.
-        `[channel_user_role...]` is the channel, user or role to whitelist
+        `[channel_user_role...]` is the channel, user or role to allowlist
         (You can supply more than one of any at a time)
 
         See https://regex101.com/ for help building a regex pattern.
@@ -412,7 +412,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if len(channel_user_role) < 1:
             return await ctx.send(
-                _("You must supply 1 or more channels users or roles to be whitelisted.")
+                _("You must supply 1 or more channels users or roles to be allowed")
             )
         for obj in channel_user_role:
             if obj.id not in trigger.whitelist:
@@ -421,7 +421,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = await trigger.to_json()
         await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} added `{list_type}` to its whitelist.")
+        msg = _("Trigger {name} added `{list_type}` to its allowlist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
@@ -431,10 +431,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ) -> None:
         """
-        Remove a channel, user, or role from triggers whitelist
+        Remove a channel, user, or role from triggers allowlist
 
         `<trigger>` is the name of the trigger.
-        `[channel_user_role...]` is the channel, user or role to remove from the whitelist
+        `[channel_user_role...]` is the channel, user or role to remove from the allowlist
         (You can supply more than one of any at a time)
 
         See https://regex101.com/ for help building a regex pattern.
@@ -447,7 +447,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(
                 _(
                     "You must supply 1 or more channels users "
-                    "or roles to be removed from the whitelist"
+                    "or roles to be removed from the allowlist."
                 )
             )
         for obj in channel_user_role:
@@ -457,7 +457,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = await trigger.to_json()
         await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} removed `{list_type}` from its whitelist.")
+        msg = _("Trigger {name} removed `{list_type}` from its allowlist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
@@ -467,10 +467,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ) -> None:
         """
-        Add a channel, user, or role to triggers blacklist
+        Add a channel, user, or role to triggers blocklist
 
         `<trigger>` is the name of the trigger.
-        `[channel_user_role...]` is the channel, user or role to blacklist
+        `[channel_user_role...]` is the channel, user or role to blocklist
         (You can supply more than one of any at a time)
 
         See https://regex101.com/ for help building a regex pattern.
@@ -481,7 +481,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if len(channel_user_role) < 1:
             return await ctx.send(
-                _("You must supply 1 or more channels users or roles to be blacklisted.")
+                _("You must supply 1 or more channels users or roles to be blocked.")
             )
         for obj in channel_user_role:
             if obj.id not in trigger.blacklist:
@@ -490,7 +490,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = await trigger.to_json()
         await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} added `{list_type}` to its blacklist.")
+        msg = _("Trigger {name} added `{list_type}` to its blocklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 
@@ -500,10 +500,10 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
     ) -> None:
         """
-        Remove a channel, user, or role from triggers blacklist
+        Remove a channel, user, or role from triggers blocklist
 
         `<trigger>` is the name of the trigger.
-        `[channel_user_role...]` is the channel, user or role to remove from the blacklist
+        `[channel_user_role...]` is the channel, user or role to remove from the blocklist
         (You can supply more than one of any at a time)
 
         See https://regex101.com/ for help building a regex pattern.
@@ -516,7 +516,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(
                 _(
                     "You must supply 1 or more channels users or "
-                    "roles to be removed from the blacklist."
+                    "roles to be removed from the blocklist."
                 )
             )
         for obj in channel_user_role:
@@ -526,7 +526,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     trigger_list[trigger.name] = await trigger.to_json()
         await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} removed `{list_type}` from its blacklist.")
+        msg = _("Trigger {name} removed `{list_type}` from its blocklist.")
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type, name=trigger.name))
 

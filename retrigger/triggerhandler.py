@@ -9,7 +9,7 @@ from datetime import datetime
 from io import BytesIO
 from multiprocessing import TimeoutError
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Literal, Pattern, Tuple, cast
+from typing import Any, Dict, List, Literal, Pattern, Tuple, cast, Optional
 
 import aiohttp
 import discord
@@ -146,7 +146,7 @@ class TriggerHandler:
     async def check_bw_list(self, trigger: Trigger, message: discord.Message) -> bool:
         can_run = True
         author: discord.Member = cast(discord.Member, message.author)
-        channel: discord.TextChannel = message.channel
+        channel: discord.TextChannel = cast(discord.TextChannel, message.channel)
         if trigger.whitelist:
             can_run = False
             if channel.id in trigger.whitelist:
@@ -192,7 +192,7 @@ class TriggerHandler:
             log.info("Creating guild folder")
             directory.mkdir(exist_ok=True, parents=True)
 
-    async def save_image_location(self, image_url: str, guild: discord.Guild) -> str:
+    async def save_image_location(self, image_url: str, guild: discord.Guild) -> Optional[str]:
         good_image_url = LINK_REGEX.search(image_url)
         if not good_image_url:
             return None
@@ -209,7 +209,7 @@ class TriggerHandler:
                     f.write(test)
         return filename
 
-    async def wait_for_image(self, ctx: commands.Context) -> discord.Message:
+    async def wait_for_image(self, ctx: commands.Context) -> Optional[discord.Message]:
         await ctx.send(_("Upload an image for me to use! Type `exit` to cancel."))
         msg = None
         while msg is None:
