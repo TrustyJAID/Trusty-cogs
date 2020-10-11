@@ -21,7 +21,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.3.2"
+    __version__ = "2.3.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -246,14 +246,14 @@ class Starboard(StarboardEvents, commands.Cog):
             self.starboards[ctx.guild.id][starboard.name].messages.append(star_message.to_json())
         await self._save_starboards(guild)
 
-    @starboard.group()
+    @starboard.group(name="allowlist", aliases=["whitelist"])
     async def whitelist(self, ctx: commands.Context) -> None:
-        """Add/Remove channels/roles from the whitelist"""
+        """Add/Remove channels/roles from the allowlist"""
         pass
 
-    @starboard.group()
+    @starboard.group(name="blocklist", aliases=["blacklist"])
     async def blacklist(self, ctx: commands.Context) -> None:
-        """Add/Remove channels/roles from the blacklist"""
+        """Add/Remove channels/roles from the blocklist"""
         pass
 
     @blacklist.command(name="add")
@@ -264,15 +264,15 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
-        Add a channel to the starboard blacklist
+        Add a channel to the starboard blocklist
 
         `<name>` is the name of the starboard to adjust
-        `<channel_or_role>` is the channel or role you would like to add to the blacklist
+        `<channel_or_role>` is the channel or role you would like to add to the blocklist
         """
         guild = ctx.guild
-        if type(channel_or_role) is discord.TextChannel:
+        if type(channel_or_role) in [discord.TextChannel, discord.CategoryChannel]:
             if channel_or_role.id in starboard.blacklist_channel:
-                msg = _("{channel_or_role} is already blacklisted for starboard {name}").format(
+                msg = _("{channel_or_role} is already blocked for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -282,13 +282,13 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} blacklisted on starboard {name}").format(
+                msg = _("{channel_or_role} blocked on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
         else:
             if channel_or_role.id in starboard.blacklist_role:
-                msg = _("{channel_or_role} is already blacklisted for starboard {name}").format(
+                msg = _("{channel_or_role} is already blocked for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -298,7 +298,7 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} blacklisted on starboard {name}").format(
+                msg = _("{channel_or_role} blocked on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -311,15 +311,15 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
-        Remove a channel to the starboard blacklist
+        Remove a channel to the starboard blocklist
 
         `<name>` is the name of the starboard to adjust
-        `<channel_or_role>` is the channel or role you would like to remove from the blacklist
+        `<channel_or_role>` is the channel or role you would like to remove from the blocklist
         """
         guild = ctx.guild
-        if type(channel_or_role) is discord.TextChannel:
+        if type(channel_or_role) in [discord.TextChannel, discord.CategoryChannel]:
             if channel_or_role.id not in starboard.blacklist_channel:
-                msg = _("{channel_or_role} is not blacklisted for starboard {name}").format(
+                msg = _("{channel_or_role} is not on the blocklist for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -329,13 +329,13 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} removed from blacklist on starboard {name}").format(
+                msg = _("{channel_or_role} removed from the blocklist on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
         else:
             if channel_or_role.id not in starboard.blacklist_role:
-                msg = _("{channel_or_role} is not blacklisted for starboard {name}").format(
+                msg = _("{channel_or_role} is not on the blocklist for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -345,7 +345,7 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} removed from blacklist on starboard {name}").format(
+                msg = _("{channel_or_role} removed from blocklist on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -358,15 +358,15 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
-        Add a channel to the starboard whitelist
+        Add a channel to the starboard allowlist
 
         `<name>` is the name of the starboard to adjust
-        `<channel_or_role>` is the channel or role you would like to add to the whitelist
+        `<channel_or_role>` is the channel or role you would like to add to the allowlist
         """
         guild = ctx.guild
-        if type(channel_or_role) is discord.TextChannel:
+        if type(channel_or_role) in [discord.TextChannel, discord.CategoryChannel]:
             if channel_or_role.id in starboard.whitelist_channel:
-                msg = _("{channel_or_role} is already whitelisted for starboard {name}").format(
+                msg = _("{channel_or_role} is already allowed for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -376,13 +376,13 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} whitelisted on starboard {name}").format(
+                msg = _("{channel_or_role} allowed on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
         else:
             if channel_or_role.id in starboard.whitelist_role:
-                msg = _("{channel_or_role} is already whitelisted for starboard {name}").format(
+                msg = _("{channel_or_role} is already allowed for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -392,7 +392,7 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} whitelisted on starboard {name}").format(
+                msg = _("{channel_or_role} allowed on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -405,15 +405,15 @@ class Starboard(StarboardEvents, commands.Cog):
         channel_or_role: Union[discord.TextChannel, discord.CategoryChannel, discord.Role],
     ) -> None:
         """
-        Remove a channel to the starboard whitelist
+        Remove a channel to the starboard allowlist
 
         `<name>` is the name of the starboard to adjust
-        `<channel_or_role>` is the channel or role you would like to remove from the whitelist
+        `<channel_or_role>` is the channel or role you would like to remove from the allowlist
         """
         guild = ctx.guild
-        if type(channel_or_role) is discord.TextChannel:
+        if type(channel_or_role) in [discord.TextChannel, discord.CategoryChannel]:
             if channel_or_role.id not in starboard.whitelist_channel:
-                msg = _("{channel_or_role} is not whitelisted for starboard {name}").format(
+                msg = _("{channel_or_role} is not on the allowlist for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -423,13 +423,13 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} removed from whitelist on starboard {name}").format(
+                msg = _("{channel_or_role} removed from the allowlist on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
         else:
             if channel_or_role.id not in starboard.whitelist_role:
-                msg = _("{channel_or_role} is not whitelisted for starboard {name}").format(
+                msg = _("{channel_or_role} is not the allowlist for starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -439,7 +439,7 @@ class Starboard(StarboardEvents, commands.Cog):
                     channel_or_role.id
                 )
                 await self._save_starboards(guild)
-                msg = _("{channel_or_role} removed from whitelist on starboard {name}").format(
+                msg = _("{channel_or_role} removed from the allowlist on starboard {name}").format(
                     channel_or_role=channel_or_role.name, name=starboard.name
                 )
                 await ctx.send(msg)
@@ -452,7 +452,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Change the channel that the starboard gets posted to
 
         `<name>` is the name of the starboard to adjust
-        `<channel_or_role>` is the channel or role you would like to remove from the blacklist
+        `<channel>` The channel of the starboard.
         """
         guild = ctx.guild
         if not channel.permissions_for(guild.me).send_messages:
