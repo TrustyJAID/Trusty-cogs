@@ -234,7 +234,7 @@ TEAMS = {
         "emoji": "NashvillePredators:664662887985315874",
         "home": "#FFB81C",
         "id": 18,
-        "invite": "https://discord.gg/jSmVmxJ",
+        "invite": "https://discord.gg/QzrWbVH",
         "logo": "https://nhl.bamcontent.com/images/photos/281721070/256x256/cut.png",
         "team_url": "http://www.nashvillepredators.com",
         "timezone": "US/Central",
