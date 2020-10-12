@@ -463,13 +463,15 @@ class DestinyAPI:
             count += 1
         try:
             await ctx.author.send(msg)
+            pred = MessagePredicate.valid_int(user=ctx.author)
         except discord.errors.Forbidden:
             await ctx.send(msg)
-        try:
             pred = MessagePredicate.valid_int(ctx)
+        try:
             msg = await ctx.bot.wait_for("message", check=pred, timeout=60)
         except asyncio.TimeoutError:
             return None, None
+        log.debug(memberships)
         membership = memberships[int(pred.result) - 1]
         membership_name = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
         return (membership, membership_name)

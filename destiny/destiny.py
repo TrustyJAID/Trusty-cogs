@@ -28,7 +28,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.3.4"
+    __version__ = "1.3.5"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -103,6 +103,14 @@ class Destiny(DestinyAPI, commands.Cog):
     async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
         pass
+
+    @destiny.command()
+    async def forgetme(self, ctx: commands.Context) -> None:
+        """
+        Remove your authorization to the destiny API on the bot
+        """
+        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
+        await ctx.send(_("Your authorization has been reset."))
 
     @destiny.group(aliases=["s"])
     async def search(self, ctx: commands.Context) -> None:
