@@ -145,7 +145,7 @@ class NotSoBot(commands.Cog):
             " ": "　",
         }
         self.retro_regex = re.compile(
-            r"((https)(\:\/\/|)?u2\.photofunia\.com\/.\/results\/.\/.\/.*(\.jpg\?download))"
+            r"((https)(\:\/\/|)?u2?\.photofunia\.com\/.\/results\/.\/.\/.*(\.jpg\?download))"
         )
         self.image_mimes = ["image/png", "image/pjpeg", "image/jpeg", "image/x-icon"]
         self.gif_mimes = ["image/gif"]
