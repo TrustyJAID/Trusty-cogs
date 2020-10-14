@@ -648,6 +648,7 @@ class ServerStats(commands.Cog):
         return member_list
 
     @commands.group()
+    @commands.guild_only()
     @checks.bot_has_permissions(add_reactions=True)
     async def pruneroles(self, ctx: commands.Context) -> None:
         """
@@ -1087,6 +1088,7 @@ class ServerStats(commands.Cog):
             pass
 
     @commands.command()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def topmembers(
         self, ctx: commands.Context, number: int = 10, guild: GuildConverter = None
@@ -1357,6 +1359,7 @@ class ServerStats(commands.Cog):
             await self.guild_menu(ctx, list(itertools.chain.from_iterable(guilds)), None, 0)
 
     @commands.command()
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
@@ -1370,6 +1373,7 @@ class ServerStats(commands.Cog):
             "{} has {} members.".format(guild.name, humanize_number(guild.member_count))
         )
 
+    @commands.guild_only()
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1682,6 +1686,7 @@ class ServerStats(commands.Cog):
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
         await ctx.send(embed=em)
 
+    @commands.guild_only()
     @commands.command(aliases=["serveremojis"])
     @commands.bot_has_permissions(embed_links=True)
     async def guildemojis(
