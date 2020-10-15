@@ -1202,7 +1202,7 @@ class ServerStats(commands.Cog):
             and react.message.id == message.id
         )
         try:
-            react, _ = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+            react, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
         except asyncio.TimeoutError:
             for e in emojis:
                 try:
