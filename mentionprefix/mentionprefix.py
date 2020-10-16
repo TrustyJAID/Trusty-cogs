@@ -28,7 +28,7 @@ class MentionPrefix(commands.Cog):
         (timedelta(hours=1), 10),
         (timedelta(days=1), 24),
     ]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     __author__ = ["Draper"]
 
     def __init__(self, bot: Red) -> None:
@@ -100,7 +100,7 @@ class MentionPrefix(commands.Cog):
         prefix_list = [
             pf
             for p in prefixes
-            if (pf := f"`{discord.utils.escape_markdown(p)}`")
+            if (pf := f"`{p}`")
             and len(pf) < 1800
             and ((counter + len(pf)) < 1800)
             and (counter := counter + len(pf))
