@@ -79,7 +79,7 @@ class ChannelUserRole(IDConverter):
 class InviteBlocklist(commands.Cog):
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -118,7 +118,7 @@ class InviteBlocklist(commands.Cog):
         chan = self.bot.get_channel(payload.channel_id)
         try:
             msg = await chan.fetch_message(payload.message_id)
-        except discord.errors.Forbidden:
+        except (discord.errors.Forbidden, discord.errors.NotFound):
             return
         await self._handle_message_search(msg)
 
