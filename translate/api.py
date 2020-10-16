@@ -102,23 +102,25 @@ class GoogleTranslateAPI:
                 for key, value in data.items():
                     count[key] = value
 
-    async def add_detect(self, guild: discord.Guild):
-        log.debug(f"adding detect to {guild.name}")
-        if guild.id not in self._guild_counter:
-            self._guild_counter[guild.id] = await self.config.guild(guild).count()
+    async def add_detect(self, guild: Optional[discord.Guild]):
+        if guild:
+            log.debug(f"adding detect to {guild.name}")
+            if guild.id not in self._guild_counter:
+                self._guild_counter[guild.id] = await self.config.guild(guild).count()
+            self._guild_counter[guild.id]["detect"] += 1
         if not self._global_counter:
             self._global_counter = await self.config.count()
-        self._guild_counter[guild.id]["detect"] += 1
         self._global_counter["detect"] += 1
 
-    async def add_requests(self, guild: discord.Guild, message: str):
-        log.debug(f"Adding requests to {guild.name}")
-        if guild.id not in self._guild_counter:
-            self._guild_counter[guild.id] = await self.config.guild(guild).count()
+    async def add_requests(self, guild: Optional[discord.Guild], message: str):
+        if guild:
+            log.debug(f"Adding requests to {guild.name}")
+            if guild.id not in self._guild_counter:
+                self._guild_counter[guild.id] = await self.config.guild(guild).count()
+            self._guild_counter[guild.id]["requests"] += 1
+            self._guild_counter[guild.id]["characters"] += len(message)
         if not self._global_counter:
             self._global_counter = await self.config.count()
-        self._guild_counter[guild.id]["requests"] += 1
-        self._guild_counter[guild.id]["characters"] += len(message)
         self._global_counter["requests"] += 1
         self._global_counter["characters"] += len(message)
 
