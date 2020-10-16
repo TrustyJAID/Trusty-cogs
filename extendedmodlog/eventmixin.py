@@ -1306,6 +1306,10 @@ class EventMixin:
             after_attr = getattr(after, attr)
             if before_attr != after_attr:
                 worth_updating = True
+                if attr == "icon_url":
+                    embed.description = _("Server Icon Updated")
+                    embed.set_image(url=after.icon_url)
+                    continue
                 msg += _("Before ") + f"{name} {before_attr}\n"
                 msg += _("After ") + f"{name} {after_attr}\n"
                 embed.add_field(name=_("Before ") + name, value=str(before_attr))
