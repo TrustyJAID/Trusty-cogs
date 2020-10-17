@@ -17,6 +17,7 @@ from .errors import NoSchedule
 from .game import Game
 from .helper import DATE_RE
 from .standings import Standings
+from .player import Player
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
@@ -298,69 +299,19 @@ class LeaderboardPages(menus.ListPageSource):
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
-
-class RosterPages(menus.ListPageSource):
-    def __init__(self, pages: list):
+class PlayerPages(menus.ListPageSource):
+    def __init__(self, pages: list, season: str):
         super().__init__(pages, per_page=1)
         self.pages = pages
-
-    def is_paginating(self):
-        return True
+        self.season = season
 
     async def format_page(self, menu: menus.MenuPages, page):
-        url = BASE_URL + page["person"]["link"] + "?expand=person.stats&stats=yearByYear"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                player_data = await resp.json()
-        player = player_data["people"][0]
-        year_stats: list = []
-        try:
-            year_stats = [
-                league
-                for league in player["stats"][0]["splits"]
-                if league["league"]["name"] == "National Hockey League"
-            ][-1]
-        except IndexError:
-            pass
-        name = player["fullName"]
-        number = player["primaryNumber"]
-        position = player["primaryPosition"]["name"]
-        headshot = HEADSHOT_URL.format(player["id"])
-        team = player["currentTeam"]["name"]
-        em = discord.Embed(colour=int(TEAMS[team]["home"].replace("#", ""), 16))
-        em.set_author(
-            name="{} #{}".format(name, number),
-            url=TEAMS[team]["team_url"],
-            icon_url=TEAMS[team]["logo"],
-        )
-        em.add_field(name="Position", value=position)
-        em.set_thumbnail(url=headshot)
+        player = await Player.from_id(page)
+        log.debug(player)
+        player = await player.get_full_stats(self.season)
+        em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
-        if not year_stats:
-            return em
-        if position != "Goalie":
-            post_data = {
-                _("Shots"): year_stats["stat"]["shots"],
-                _("Goals"): year_stats["stat"]["goals"],
-                _("Assists"): year_stats["stat"]["assists"],
-                _("Hits"): year_stats["stat"]["hits"],
-                _("Face Off Percent"): year_stats["stat"]["faceOffPct"],
-                "+/-": year_stats["stat"]["plusMinus"],
-                _("Blocked Shots"): year_stats["stat"]["blocked"],
-                _("PIM"): year_stats["stat"]["pim"],
-            }
-            for key, value in post_data.items():
-                if value != 0.0:
-                    em.add_field(name=key, value=value)
-        else:
-            saves = year_stats["stat"]["saves"]
-            save_percentage = year_stats["stat"]["savePercentage"]
-            goals_against_average = year_stats["stat"]["goalAgainstAverage"]
-            em.add_field(name=_("Saves"), value=saves)
-            em.add_field(name=_("Save Percentage"), value=save_percentage)
-            em.add_field(name=_("Goals Against Average"), value=goals_against_average)
         return em
-
 
 class BaseMenu(menus.MenuPages, inherit_buttons=False):
     def __init__(

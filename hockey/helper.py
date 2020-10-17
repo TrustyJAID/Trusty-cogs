@@ -20,6 +20,8 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 DATE_RE = re.compile(
     r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
 )
+
+YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 # https://www.regular-expressions.info/dates.html
 
 
@@ -35,6 +37,22 @@ def get_season():
 def utc_to_local(utc_dt, new_timezone="US/Eastern"):
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
+
+
+class YearFinder(Converter):
+    """
+    Validates Year format
+
+    for use in the `[p]nhl games` command to pull up specific dates
+    """
+
+    async def convert(self, ctx: Context, argument: str) -> re.Match:
+        result = None
+        find = YEAR_RE.search(argument)
+        if find:
+            return find
+        else:
+            raise BadArgument(_("`{arg}` is not a valid year.").format(arg=argument))
 
 
 class DateFinder(Converter):

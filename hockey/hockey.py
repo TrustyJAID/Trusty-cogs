@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from typing import Literal, Optional, Union
 from urllib.parse import quote
@@ -12,6 +12,7 @@ import discord
 import yaml
 from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
@@ -19,16 +20,16 @@ from .dev import HockeyDev
 from .errors import InvalidFileError, NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
 from .gamedaychannels import GameDayChannels
-from .helper import HockeyStandings, HockeyStates, HockeyTeams, TeamDateFinder
+from .helper import HockeyStandings, HockeyStates, HockeyTeams, TeamDateFinder, YearFinder
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
     DivisionStandingsPages,
     GamesMenu,
     LeaderboardPages,
-    RosterPages,
     StandingsPages,
     TeamStandingsPages,
+    PlayerPages,
 )
 from .pickems import Pickems
 from .schedule import Schedule
@@ -46,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.12.5"
+    __version__ = "2.13.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -57,6 +58,7 @@ class Hockey(HockeyDev, commands.Cog):
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
             default_global["teams"].append(team_entry.to_json())
         default_global["teams"].append(team_entry.to_json())
+        default_global["player_db"] = 0
         default_guild = {
             "standings_channel": None,
             "standings_type": None,
@@ -92,13 +94,13 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
-        self.loop = bot.loop.create_task(self.game_check_loop())
+        # self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
-        self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
+        # self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
-        self.pickems_save_lock = asyncio.Lock()
+        # self.pickems_save_lock = asyncio.Lock()
         self.current_games = {}
         self.games_playing = False
 
@@ -1308,48 +1310,123 @@ class Hockey(HockeyDev, commands.Cog):
             timeout=60,
         ).start(ctx=ctx)
 
-    @hockey_commands.command(aliases=["player", "players"])
-    async def roster(self, ctx, *, search: str):
-        """
-        Search for a player or get a team roster
-        """
-        rosters = {}
-        players = []
-        teams = [team for team in TEAMS if search.lower() in team.lower()]
-        if teams != []:
-            for team in teams:
-                url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster"
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-                if "roster" in data:
-                    for player in data["roster"]:
-                        players.append(player)
-        else:
-            for team in TEAMS:
-                if not TEAMS[team]["id"]:
-                    continue
-                url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster"
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-                try:
-                    rosters[team] = data["roster"]
-                except KeyError:
-                    pass
+    async def player_id_lookup(self, inactive: bool, name: str):
+        now = datetime.utcnow()
+        saved = datetime.fromtimestamp(await self.config.player_db())
+        path = cog_data_path(self) / "players.json"
+        if (now - saved) > timedelta(days=1):
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://records.nhl.com/site/api/player") as resp:
+                    with path.open(encoding="utf-8", mode="w") as f:
+                        json.dump(await resp.json(), f)
+            await self.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
 
-            for team in rosters:
-                for player in rosters[team]:
-                    if search.lower() in player["person"]["fullName"].lower():
-                        players.append(player)
+            players = []
+            for player in json.loads(f.read())["data"]:
+                if name.lower() in player["fullName"].lower():
+                    if player["onRoster"] == "N" and not inactive:
+                        continue
+                    players.append(player["id"])
 
+        return players
+
+    @hockey_commands.command(aliases=["players"])
+    async def player(
+        self,
+        ctx: commands.Context,
+        inactive: Optional[bool] = False,
+        season: Optional[YearFinder] = None,
+        *,
+        search: str,
+    ):
+        """
+        Lookup information about a specific player
+
+        `[inactive=False]` Whether or not to search through inactive players as well
+        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
+        `<search>` The name of the player to search for
+        """
+        season_str = None
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    return await ctx.send(_("Dates must be only 1 year apart."))
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    return await ctx.send(_("Dates must be only 1 year apart."))
+                if int(season.group(1)) > datetime.now().year:
+                    return await ctx.send(_("Please select a year prior to now."))
+                season_str = f"{season.group(1)}{season.group(3)}"
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    return await ctx.send(_("Please select a year prior to now."))
+                year = int(season.group(1)) + 1
+                season_str = f"{season.group(1)}{year}"
+        log.debug(season)
+        players = await self.player_id_lookup(inactive, search)
         if players != []:
             await BaseMenu(
-                source=RosterPages(pages=players),
+                source=PlayerPages(pages=players, season=season_str),
                 delete_message_after=False,
                 clear_reactions_after=True,
                 timeout=60,
             ).start(ctx=ctx)
         else:
-            await ctx.send(search + _(" is not an NHL team or Player!"))
+            await ctx.send(_("I could not find any player data for \"{player}\".").format(player=search))
+
+    @hockey_commands.command()
+    async def roster(self, ctx, season: Optional[YearFinder] = None, *, search: HockeyTeams):
+        """
+        Search for a player or get a team roster
+
+        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
+        `<search>` The name of the team to search for
+        """
+        season_str = None
+        season_url = ""
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    return await ctx.send(_("Dates must be only 1 year apart."))
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    return await ctx.send(_("Dates must be only 1 year apart."))
+                if int(season.group(1)) > datetime.now().year:
+                    return await ctx.send(_("Please select a year prior to now."))
+                season_str = f"{season.group(1)}{season.group(3)}"
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    return await ctx.send(_("Please select a year prior to now."))
+                year = int(season.group(1)) + 1
+                season_str = f"{season.group(1)}{year}"
+        if season:
+            season_url = f"?season={season_str}"
+        rosters = {}
+        players = []
+        teams = [team for team in TEAMS if search.lower() in team.lower()]
+        if teams != []:
+            for team in teams:
+                url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
+                async with self.session.get(url) as resp:
+                    data = await resp.json()
+                if "roster" in data:
+                    for player in data["roster"]:
+                        players.append(player["person"]["id"])
+        else:
+            return await ctx.send(_("No team name was provided."))
+
+        if players:
+            await BaseMenu(
+                source=PlayerPages(pages=players, season=season_str),
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=60,
+            ).start(ctx=ctx)
+        else:
+            if season:
+                year = _(" in the {season} season").format(season=f"{season.group(1)}-{season.group(3)}")
+            else:
+                year = ""
+            await ctx.send(_("I could not find a roster for the {team}{year}.").format(team=team, year=year))
 
     @hockey_commands.command(hidden=True)
     @checks.mod_or_permissions(manage_messages=True)
@@ -1643,7 +1720,7 @@ class Hockey(HockeyDev, commands.Cog):
                 "here but don't go on another discord and preach "
                 "it to an angry mob after we just won.\n- "
                 "Not following the above rules will result in "
-                "appropriate punishments ranging from a warning"
+                "appropriate punishments ranging from a warning "
                 "to a ban. ```\n\nhttps://discord.gg/reddithockey"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
