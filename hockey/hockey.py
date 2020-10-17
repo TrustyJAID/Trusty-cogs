@@ -1315,9 +1315,12 @@ class Hockey(HockeyDev, commands.Cog):
         saved = datetime.fromtimestamp(await self.config.player_db())
         path = cog_data_path(self) / "players.json"
         if (now - saved) > timedelta(days=1) or not path.exists():
+            new_data = {"data":[]}
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://records.nhl.com/site/api/player") as resp:
+                async with session.get("https://records.nhl.com/site/api/player?include=id&include=fullName") as resp:
                     with path.open(encoding="utf-8", mode="w") as f:
+                        data = await res.json()
+
                         json.dump(await resp.json(), f)
             await self.config.player_db.set(int(now.timestamp()))
         with path.open(encoding="utf-8", mode="r") as f:
@@ -1760,12 +1763,18 @@ class Hockey(HockeyDev, commands.Cog):
                     await ctx.send(msg)
 
     async def save_pickems_unload(self):
-        async with self.pickems_save_lock:
-            for guild_id, pickems in self.all_pickems.items():
-                guild_obj = discord.Object(id=int(guild_id))
-                await self.config.guild(guild_obj).pickems.set(
-                    {name: p.to_json() for name, p in pickems.items()}
-                )
+        try:
+            async with self.pickems_save_lock:
+                for guild_id, pickems in self.all_pickems.items():
+                    guild_obj = discord.Object(id=int(guild_id))
+                    await self.config.guild(guild_obj).pickems.set(
+                        {name: p.to_json() for name, p in pickems.items()}
+                    )
+        except AttributeError:
+            # I removed this for testing most likely
+            pass
+        except Exception:
+            log.exception("Something went wrong with the pickems unload")
 
     def cog_unload(self):
         self.bot.loop.create_task(self.session.close())
