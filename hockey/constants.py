@@ -851,7 +851,7 @@ TEAMS = {
         "tri_code": "WIN",
         "away": "#000000",
         "home": "#000000",
-        "emoji": ":WinnipegJets:747409678304280637",
+        "emoji": "WinnipegJets:747409678304280637",
         "timezone": "US/Eastern",
         "team_url": "",
         "nickname": [],
