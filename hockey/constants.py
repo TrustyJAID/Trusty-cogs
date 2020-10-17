@@ -524,7 +524,7 @@ TEAMS = {
     "St. Louis Eagles": {
         "conference": "",
         "division": "",
-        "id": 36,
+        "id": 45,
         "logo": "https://imgur.com/ehHaKTP.png",
         "tri_code": "SLE",
         "away": "#000000",
@@ -566,7 +566,7 @@ TEAMS = {
     "Brooklyn Americans": {
         "conference": "",
         "division": "",
-        "id": 44,
+        "id": 51,
         "logo": "https://imgur.com/b7wDd9v.png",
         "tri_code": "NYA",
         "away": "#000000",
@@ -580,7 +580,7 @@ TEAMS = {
     "Philadelphia Quakers": {
         "conference": "",
         "division": "",
-        "id": 38,
+        "id": 39,
         "logo": "https://imgur.com/RIyBZmz.png",
         "tri_code": "PIR",
         "away": "#000000",

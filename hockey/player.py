@@ -4,7 +4,7 @@ import logging
 import discord
 
 from dataclasses import dataclass
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 from tabulate import tabulate
 from datetime import datetime
 
@@ -161,11 +161,12 @@ class Player:
 
     def description(self) -> str:
         desc = {
-            "birth_date": _("Born on "),
-            "position": _("Position "),
-            "home_town": _("From "),
-            "height": _("Height "),
-            "weight": _("Weight "),
+            "birth_date": _("Born: "),
+            "deceased": _("Deceased: "),
+            "position": _("Position: "),
+            "home_town": _("From: "),
+            "height": _("Height: "),
+            "weight": _("Weight: "),
         }
 
         msg = ""
@@ -191,6 +192,9 @@ class Player:
                 elif attr == "position":
                     shoots = f"({getattr(self, 'shoots_catches', '')})"
                     msg += name + f"{getattr(self, attr)} {shoots if shoots != '()' else ''}\n"
+                elif attr == "deceased":
+                    death_date = getattr(self, "date_of_death", "")
+                    msg += f"{name} {death_date}\n" if getattr(self, attr) else ""
                 else:
                     msg += name + f"{getattr(self, attr)}\n"
         msg += _("[Elite Prospects]({ep_url})").format(ep_url=self.ep_url())
@@ -201,9 +205,8 @@ class Player:
 
     def get_embed(self) -> discord.Embed:
         try:
-            team_name = [
-                name for name, team in TEAMS.items() if team["id"] == self.current_team_id
-            ][0]
+            team_id = self.current_team_id or self.last_nhl_team_id
+            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
         except IndexError:
@@ -219,39 +222,38 @@ class Player:
         em.description = self.description()
         return em
 
-    async def get_full_stats(self, season: Optional[str]) -> str:
+    async def get_full_stats(self, season: Optional[str]):
         if season:
-            url_season = f"&season={season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYear"
         else:
-            url_season = ""
-        url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeason{url_season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeason"
         log.debug(url)
+        log.debug(season)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 data = await resp.json()
-        if data["stats"][0]["splits"]:
-            stats_season = data["stats"][0]["splits"][0]["season"]
-            if self.position == "G":
-                stats = [
-                    data["stats"][0]["splits"][0]["stat"].get(v, "")
-                    for k, v in GOALIE_STATS.items()
-                ]
-                player = Goalie(
-                    *self.__dict__.values(),
-                    stats_season,
-                    *stats,
-                )
-                return await player.get_full_stats(season)
-            else:
-                stats = [
-                    data["stats"][0]["splits"][0]["stat"].get(v, "") for v in SKATER_STATS.values()
-                ]
-                player = Skater(
-                    *self.__dict__.values(),
-                    stats_season,
-                    *stats,
-                )
-                return await player.get_full_stats(season)
+        for seasons in data["stats"][0]["splits"]:
+            stats_season = seasons["season"]
+            if season in [stats_season, None]:
+                if "team" in seasons:
+                    setattr(self, "current_team_id", seasons["team"].get("id", None))
+                if self.position == "G":
+                    stats = [seasons["stat"].get(v, "") for k, v in GOALIE_STATS.items()]
+                    player = Goalie(
+                        *self.__dict__.values(),
+                        stats_season,
+                        *stats,
+                    )
+                    return await player.get_full_stats(season)
+                else:
+                    stats = [seasons["stat"].get(v, "") for v in SKATER_STATS.values()]
+                    player = Skater(
+                        *self.__dict__.values(),
+                        stats_season,
+                        *stats,
+                    )
+                    return await player.get_full_stats(season)
+        log.debug(f"Returning {repr(self)}")
         return self
 
     def full_name_url(self) -> str:
@@ -305,40 +307,39 @@ class Skater(Player):
     def __repr__(self) -> str:
         return "<Skater name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
 
-    async def get_full_stats(self, season: Optional[str]) -> str:
-        log.debug(season)
+    async def get_full_stats(self, season: Optional[str]):
         if season:
-            url_season = f"&season={season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         else:
-            url_season = ""
-        url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeasonPlayoffs{url_season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeasonPlayoffs"
         log.debug(url)
+        log.debug(season)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 data = await resp.json()
-        if data["stats"][0]["splits"]:
-            stats_season = data["stats"][0]["splits"][0]["season"]
-            stats = [
-                data["stats"][0]["splits"][0]["stat"].get(v, "") for v in SKATER_STATS.values()
-            ]
+        for seasons in data["stats"][0]["splits"]:
+            stats_season = seasons["season"]
+            if season in [stats_season, None]:
+                stats = [seasons["stat"].get(v, "") for v in SKATER_STATS.values()]
 
-            player = SkaterPlayoffs(
-                *self.__dict__.values(),
-                *stats,
-            )
-            return player
+                player = SkaterPlayoffs(
+                    *self.__dict__.values(),
+                    *stats,
+                )
+                return player
         return self
 
     def get_embed(self) -> discord.Embed:
         try:
-            team_name = [
-                name for name, team in TEAMS.items() if team["id"] == self.current_team_id
-            ][0]
+            team_id = self.current_team_id or self.last_nhl_team_id
+            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
             logo = TEAMS[team_name]["logo"]
+            emoji = TEAMS[team_name]["emoji"]
         except IndexError:
             team_name = _("No Team")
             colour = 0xFFFFFF
+            emoji = ""
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         em = discord.Embed(colour=colour)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
@@ -355,12 +356,14 @@ class Skater(Player):
             [_("Blocked Shots"), f"[ {self.blocked} ]"],
             [_("PIM"), f"[ {self.pim} ]"],
             [_("GP"), f"[ {self.games} ]"],
+            [_("TOI"), f"[ {self.time_on_ice} ]"],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}"]
         )
         em.set_thumbnail(url=self.headshot())
-        em.add_field(name=_("Stats"), value=box(stats_md, lang="apache"))
+        stats_str = f"<:{emoji}> {team_name} <:{emoji}>\n{box(stats_md, lang='apache')}"
+        em.add_field(name=_("Stats"), value=stats_str)
         return em
 
 
@@ -402,14 +405,15 @@ class SkaterPlayoffs(Skater):
 
     def get_embed(self) -> discord.Embed:
         try:
-            team_name = [
-                name for name, team in TEAMS.items() if team["id"] == self.current_team_id
-            ][0]
+            team_id = self.current_team_id or self.last_nhl_team_id
+            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
+            emoji = TEAMS[team_name]["emoji"]
             logo = TEAMS[team_name]["logo"]
         except IndexError:
             team_name = _("No Team")
             colour = 0xFFFFFF
+            emoji = ""
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         em = discord.Embed(colour=colour)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
@@ -426,12 +430,15 @@ class SkaterPlayoffs(Skater):
             ["+/-", f"[ {self.plusminus} ]", f"[ {self.p_plusminus} ]"],
             [_("Blocked"), f"[ {self.blocked} ]", f"[ {self.p_blocked} ]"],
             [_("PIM"), f"[ {self.pim} ]", f"[ {self.p_pim} ]"],
+            [_("TOI"), f"[ {self.time_on_ice} ]", f"[ {self.p_time_on_ice} ]"],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}", _("Playoffs")]
         )
         em.set_thumbnail(url=self.headshot())
-        em.add_field(name=_("Stats"), value=box(stats_md, lang="apache"))
+
+        stats_str = f"<:{emoji}> {team_name} <:{emoji}>\n{box(stats_md, lang='apache')}"
+        em.add_field(name=_("Stats"), value=stats_str)
         return em
 
 
@@ -468,37 +475,39 @@ class Goalie(Player):
     def __repr__(self) -> str:
         return "<Goalie name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
 
-    async def get_full_stats(self, season: Optional[str]) -> str:
+    async def get_full_stats(self, season: Optional[str]):
         if season:
-            url_season = f"&season={season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         else:
-            url_season = ""
-        url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeasonPlayoffs{url_season}"
+            url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=statsSingleSeasonPlayoffs"
         log.debug(url)
+        log.debug(season)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 data = await resp.json()
-        if data["stats"][0]["splits"]:
-            stats = [
-                data["stats"][0]["splits"][0]["stat"].get(v, "") for k, v in GOALIE_STATS.items()
-            ]
-            player = GoaliePlayoffs(
-                *self.__dict__.values(),
-                *stats,
-            )
-            return player
+        for seasons in data["stats"][0]["splits"]:
+            stats_season = seasons["season"]
+            if season in [stats_season, None]:
+                stats = [seasons["stat"].get(v, "") for v in GOALIE_STATS.values()]
+
+                player = GoaliePlayoffs(
+                    *self.__dict__.values(),
+                    *stats,
+                )
+                return player
         return self
 
     def get_embed(self) -> discord.Embed:
         try:
-            team_name = [
-                name for name, team in TEAMS.items() if team["id"] == self.current_team_id
-            ][0]
+            team_id = self.current_team_id or self.last_nhl_team_id
+            team_name = [name for name, team in TEAMS.items() if team["id"] == team_id][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
+            emoji = TEAMS[team_name]["emoji"]
             logo = TEAMS[team_name]["logo"]
         except IndexError:
             team_name = _("No Team")
             colour = 0xFFFFFF
+            emoji = ""
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         em = discord.Embed(colour=colour)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
@@ -506,16 +515,19 @@ class Goalie(Player):
         em.set_thumbnail(url=self.headshot())
         em.description = self.description()
         post_data = [
+            [_("GP"), f"[ {self.games} ]"],
+            [_("SO"), f"[ {self.shutouts} ]"],
             [_("Saves"), f"[ {self.saves} ]"],
             [_("Save %"), f"[ {self.save_percentage} ]"],
             [_("GAA"), f"[ {self.goals_against_average} ]"],
-            [_("GP"), f"[ {self.games} ]"],
+            [_("Started"), f"[ {self.games_started} ]"],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}"]
         )
         em.set_thumbnail(url=self.headshot())
-        em.add_field(name=_("Stats"), value=box(stats_md, lang="apache"))
+        stats_str = f"<:{emoji}> {team_name} <:{emoji}>\n{box(stats_md, lang='apache')}"
+        em.add_field(name=_("Stats"), value=stats_str)
         return em
 
 
@@ -557,10 +569,12 @@ class GoaliePlayoffs(Goalie):
                 name for name, team in TEAMS.items() if team["id"] == self.current_team_id
             ][0]
             colour = int(TEAMS[team_name]["home"].replace("#", ""), 16)
+            emoji = TEAMS[team_name]["emoji"]
             logo = TEAMS[team_name]["logo"]
         except IndexError:
             team_name = _("No Team")
             colour = 0xFFFFFF
+            emoji = ""
             logo = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         em = discord.Embed(colour=colour)
         number = f"#{self.sweater_number}" if self.sweater_number else ""
@@ -569,14 +583,17 @@ class GoaliePlayoffs(Goalie):
         em.description = self.description()
         post_data = [
             [_("GP"), f"[ {self.games} ]", f"[ {self.p_games} ]"],
+            [_("SO"), f"[ {self.shutouts} ]", f"[ {self.p_shutouts} ]"],
             [_("Saves"), f"[ {self.saves} ]", f"[ {self.p_saves} ]"],
             [_("Save %"), f"[ {self.save_percentage} ]", f"[ {self.p_save_percentage} ]"],
             [_("GAA"), f"[ {self.goals_against_average} ]", f"[ {self.p_goals_against_average} ]"],
+            [_("Started"), f"[ {self.games_started} ]", f"[ {self.p_games_started} ]"],
         ]
 
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}", _("Playoffs")]
         )
         em.set_thumbnail(url=self.headshot())
-        em.add_field(name=_("Stats"), value=box(stats_md, lang="apache"))
+        stats_str = f"<:{emoji}> {team_name} <:{emoji}>\n{box(stats_md, lang='apache')}"
+        em.add_field(name=_("Stats"), value=stats_str)
         return em
