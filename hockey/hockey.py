@@ -94,13 +94,13 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
-        # self.loop = bot.loop.create_task(self.game_check_loop())
+        self.loop = bot.loop.create_task(self.game_check_loop())
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
-        # self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
+        self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
         self.save_pickems = True
-        # self.pickems_save_lock = asyncio.Lock()
+        self.pickems_save_lock = asyncio.Lock()
         self.current_games = {}
         self.games_playing = False
 
