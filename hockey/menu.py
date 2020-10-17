@@ -299,6 +299,7 @@ class LeaderboardPages(menus.ListPageSource):
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
+
 class PlayerPages(menus.ListPageSource):
     def __init__(self, pages: list, season: str):
         super().__init__(pages, per_page=1)
@@ -312,6 +313,7 @@ class PlayerPages(menus.ListPageSource):
         em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
+
 
 class BaseMenu(menus.MenuPages, inherit_buttons=False):
     def __init__(

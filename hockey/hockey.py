@@ -1332,6 +1332,7 @@ class Hockey(HockeyDev, commands.Cog):
         return players
 
     @hockey_commands.command(aliases=["players"])
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def player(
         self,
         ctx: commands.Context,
@@ -1372,9 +1373,12 @@ class Hockey(HockeyDev, commands.Cog):
                 timeout=60,
             ).start(ctx=ctx)
         else:
-            await ctx.send(_("I could not find any player data for \"{player}\".").format(player=search))
+            await ctx.send(
+                _('I could not find any player data for "{player}".').format(player=search)
+            )
 
     @hockey_commands.command()
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def roster(self, ctx, season: Optional[YearFinder] = None, *, search: HockeyTeams):
         """
         Search for a player or get a team roster
@@ -1423,10 +1427,14 @@ class Hockey(HockeyDev, commands.Cog):
             ).start(ctx=ctx)
         else:
             if season:
-                year = _(" in the {season} season").format(season=f"{season.group(1)}-{season.group(3)}")
+                year = _(" in the {season} season").format(
+                    season=f"{season.group(1)}-{season.group(3)}"
+                )
             else:
                 year = ""
-            await ctx.send(_("I could not find a roster for the {team}{year}.").format(team=team, year=year))
+            await ctx.send(
+                _("I could not find a roster for the {team}{year}.").format(team=team, year=year)
+            )
 
     @hockey_commands.command(hidden=True)
     @checks.mod_or_permissions(manage_messages=True)
