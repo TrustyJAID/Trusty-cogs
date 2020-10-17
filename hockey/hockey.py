@@ -1316,7 +1316,7 @@ class Hockey(HockeyDev, commands.Cog):
         path = cog_data_path(self) / "players.json"
         if (now - saved) > timedelta(days=1) or not path.exists():
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://records.nhl.com/site/api/player?include=id&include=fullName") as resp:
+                async with session.get("https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster") as resp:
                     with path.open(encoding="utf-8", mode="w") as f:
                         json.dump(await resp.json(), f)
             await self.config.player_db.set(int(now.timestamp()))
