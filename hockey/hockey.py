@@ -1315,12 +1315,9 @@ class Hockey(HockeyDev, commands.Cog):
         saved = datetime.fromtimestamp(await self.config.player_db())
         path = cog_data_path(self) / "players.json"
         if (now - saved) > timedelta(days=1) or not path.exists():
-            new_data = {"data":[]}
             async with aiohttp.ClientSession() as session:
                 async with session.get("https://records.nhl.com/site/api/player?include=id&include=fullName") as resp:
                     with path.open(encoding="utf-8", mode="w") as f:
-                        data = await res.json()
-
                         json.dump(await resp.json(), f)
             await self.config.player_db.set(int(now.timestamp()))
         with path.open(encoding="utf-8", mode="r") as f:
