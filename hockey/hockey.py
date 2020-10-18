@@ -20,7 +20,7 @@ from .dev import HockeyDev
 from .errors import InvalidFileError, NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
 from .gamedaychannels import GameDayChannels
-from .helper import HockeyStandings, HockeyStates, HockeyTeams, TeamDateFinder, YearFinder
+from .helper import HockeyStandings, HockeyStates, HockeyTeams, TeamDateFinder, YearFinder, YEAR_RE
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
@@ -1310,7 +1310,7 @@ class Hockey(HockeyDev, commands.Cog):
             timeout=60,
         ).start(ctx=ctx)
 
-    async def player_id_lookup(self, inactive: bool, name: str):
+    async def player_id_lookup(self, name: str):
         now = datetime.utcnow()
         saved = datetime.fromtimestamp(await self.config.player_db())
         path = cog_data_path(self) / "players.json"
@@ -1325,10 +1325,11 @@ class Hockey(HockeyDev, commands.Cog):
             players = []
             for player in json.loads(f.read())["data"]:
                 if name.lower() in player["fullName"].lower():
-                    if player["onRoster"] == "N" and not inactive:
-                        continue
-                    players.append(player["id"])
-
+                    if player["onRoster"] == "N":
+                        players.append(player["id"])
+                    else:
+                        players.insert(0, player["id"])
+        log.debug(players)
         return players
 
     @hockey_commands.command(aliases=["players"])
@@ -1336,21 +1337,20 @@ class Hockey(HockeyDev, commands.Cog):
     async def player(
         self,
         ctx: commands.Context,
-        inactive: Optional[bool] = False,
-        season: Optional[YearFinder] = None,
         *,
         search: str,
     ):
         """
         Lookup information about a specific player
 
-        `[inactive=False]` Whether or not to search through inactive players as well
-        `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
         `<search>` The name of the player to search for
+        you can include the season to get stats data on format can be `YYYY` or `YYYYYYYY`
         """
         async with ctx.typing():
+            season = YEAR_RE.search(search)
             season_str = None
             if season:
+                search = YEAR_RE.sub("", search)
                 if season.group(3):
                     if (int(season.group(3)) - int(season.group(1))) > 1:
                         return await ctx.send(_("Dates must be only 1 year apart."))
@@ -1365,7 +1365,8 @@ class Hockey(HockeyDev, commands.Cog):
                     year = int(season.group(1)) + 1
                     season_str = f"{season.group(1)}{year}"
             log.debug(season)
-            players = await self.player_id_lookup(inactive, search)
+            log.debug(search)
+            players = await self.player_id_lookup(search.strip())
         if players != []:
             await BaseMenu(
                 source=PlayerPages(pages=players, season=season_str),
