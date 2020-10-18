@@ -79,7 +79,7 @@ class ChannelUserRole(IDConverter):
 class InviteBlocklist(commands.Cog):
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -113,8 +113,6 @@ class InviteBlocklist(commands.Cog):
         if payload.cached_message:
             if not payload.cached_message.guild:
                 return
-            await self._handle_message_search(payload.cached_message)
-            return
         chan = self.bot.get_channel(payload.channel_id)
         try:
             msg = await chan.fetch_message(payload.message_id)
