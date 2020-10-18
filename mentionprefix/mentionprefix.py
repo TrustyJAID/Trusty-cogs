@@ -16,6 +16,8 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 log = logging.getLogger("red.Trusty-Cogs.mentionprefix")
 
+HELP_RE = re.compile(r"^.*help$", flags=re.I)
+
 _ = lambda s: s
 
 
@@ -28,8 +30,8 @@ class MentionPrefix(commands.Cog):
         (timedelta(hours=1), 10),
         (timedelta(days=1), 24),
     ]
-    __version__ = "1.0.1"
-    __author__ = ["Draper"]
+    __version__ = "1.1.0"
+    __author__ = ["Draper", "TrustyJAID"]
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot
@@ -65,11 +67,18 @@ class MentionPrefix(commands.Cog):
             await ctx.send(_("Mentioning the bot will no longer cause it to send a help message."))
         await self.config.disabled_in.set(list(self.disable_in))
 
+    def handle_dm_help(self, message: discord.Message) -> bool:
+        if message.author.bot:
+            return False
+        if isinstance(message.channel, discord.DMChannel):
+            return HELP_RE.match(message.content) is not None
+        return False
+
     @commands.Cog.listener()
     async def on_message_without_command(self, message: discord.Message):
         if (not self._event.is_set()) or self.mention_regex is None:
             return
-        if not self.mention_regex.match(message.content):
+        if not self.mention_regex.match(message.content) and not self.handle_dm_help(message):
             return
         channel = message.channel
         author = message.author
