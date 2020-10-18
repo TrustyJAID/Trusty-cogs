@@ -1510,7 +1510,7 @@ class Spotify(commands.Cog):
             if song.group(2) == "track":
                 tracks.append(f"spotify:{song.group(2)}:{song.group(3)}")
         if not tracks:
-            return await ctx.send(_("I can only tracks to your spotify queue."))
+            return await ctx.send(_("I can only add tracks to your spotify queue."))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))
