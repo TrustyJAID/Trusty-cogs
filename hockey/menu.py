@@ -306,6 +306,9 @@ class PlayerPages(menus.ListPageSource):
         self.pages = pages
         self.season = season
 
+    def is_paginating(self):
+        return True
+
     async def format_page(self, menu: menus.MenuPages, page):
         player = await Player.from_id(page)
         log.debug(player)
