@@ -17,6 +17,7 @@ from .braille import (
     r_letters,
     r_numbers,
     r_punctuation,
+    dna,
 )
 
 
@@ -26,84 +27,10 @@ class Encoding(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot):
         self.bot = bot
-        self.table = {
-            "A": [
-                "00",
-                "01",
-                "10",
-                "11",
-                "00",
-                "00",
-                "00",
-                "01",
-                "01",
-                "01",
-                "10",
-                "10",
-                "10",
-                "11",
-                "11",
-                "11",
-            ],
-            "G": [
-                "01",
-                "10",
-                "11",
-                "00",
-                "11",
-                "10",
-                "01",
-                "11",
-                "00",
-                "10",
-                "11",
-                "00",
-                "01",
-                "00",
-                "01",
-                "10",
-            ],
-            "C": [
-                "10",
-                "11",
-                "00",
-                "01",
-                "10",
-                "11",
-                "10",
-                "10",
-                "11",
-                "00",
-                "01",
-                "11",
-                "00",
-                "01",
-                "00",
-                "01",
-            ],
-            "T": [
-                "11",
-                "00",
-                "01",
-                "10",
-                "01",
-                "01",
-                "11",
-                "00",
-                "10",
-                "11",
-                "00",
-                "01",
-                "11",
-                "10",
-                "10",
-                "00",
-            ],
-        }
         # A = 00
         # G = 10
         # C = 11
@@ -199,9 +126,12 @@ class Encoding(commands.Cog):
         """
         Decode binary sequences of 8
         """
-        message = re.sub(r"[\s]+", "", message)
-        bin_ascii = "".join([chr(int(message[i : i + 8], 2)) for i in range(0, len(message), 8)])
-        await ctx.send(bin_ascii)
+        try:
+            message = re.sub(r"[\s]+", "", message)
+            bin_ascii = "".join([chr(int(message[i : i + 8], 2)) for i in range(0, len(message), 8)])
+            await ctx.send(bin_ascii)
+        except Exception:
+            await ctx.send("That does not look like valid binary.")
 
     @_encode.command(name="hex")
     async def encode_hex(self, ctx: commands.Context, *, message: str) -> None:
@@ -216,11 +146,14 @@ class Encoding(commands.Cog):
         """
         Decode a hexadecimal sequence to text
         """
-        message = re.sub(r"[\s]+", "", message)
-        ascii_bin = "".join(
-            chr(int("0x" + message[x : x + 2], 16)) for x in range(0, len(message), 2)
-        )
-        await ctx.send(ascii_bin)
+        try:
+            message = re.sub(r"[\s]+", "", message)
+            ascii_bin = "".join(
+                chr(int("0x" + message[x : x + 2], 16)) for x in range(0, len(message), 2)
+            )
+            await ctx.send(ascii_bin)
+        except Exception:
+            await ctx.send("That does not look like valid hex.")
 
     @_encode.command(name="b16", aliases=["base16"])
     async def encode_b16(self, ctx: commands.Context, *, message: str) -> None:
@@ -236,7 +169,7 @@ class Encoding(commands.Cog):
         """
         try:
             await ctx.send(base64.b16decode(bytes(message, "utf-8")).decode("utf-8"))
-        except UnicodeDecodeError:
+        except Exception:
             await ctx.send("That does not look like valid base 16 characters.")
 
     @_encode.command(name="b32", aliases=["base32"])
@@ -253,7 +186,7 @@ class Encoding(commands.Cog):
         """
         try:
             await ctx.send(base64.b32decode(bytes(message, "utf-8")).decode("utf-8"))
-        except UnicodeDecodeError:
+        except Exception:
             await ctx.send("That does not look like valid base 32 characters.")
 
     @_encode.command(name="b64", aliases=["base64"])
@@ -285,7 +218,10 @@ class Encoding(commands.Cog):
         """
         Decode character numbers to a message
         """
-        await ctx.send(" ".join(str(chr(int(x))) for x in re.split(r"[\s]+", message)))
+        try:
+            await ctx.send(" ".join(str(chr(int(x))) for x in re.split(r"[\s]+", message)))
+        except Exception:
+            await ctx.send("That does not look like valid char data.")
 
     @_encode.command(name="braille")
     async def encode_braille(self, ctx: commands.Context, *, message: str) -> None:
@@ -399,7 +335,7 @@ class Encoding(commands.Cog):
             for character in message:
                 if character in skip:
                     continue
-                replacement += self.table[character][i]
+                replacement += dna[character][i]
             try:
                 n = int("0b" + replacement, 2)
                 mapping[i] = n.to_bytes((n.bit_length() + 7) // 8, "big").decode("utf8", "ignore")
