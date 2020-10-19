@@ -19,7 +19,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -188,9 +188,12 @@ class Reddit(commands.Cog):
             )
         if not channel:
             channel = ctx.channel
-        sub = await self.login.subreddit(subreddit)
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
         if not getattr(sub, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
         if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         if sub.id not in self.subreddits:
@@ -229,9 +232,12 @@ class Reddit(commands.Cog):
             )
         if not channel:
             channel = ctx.channel
-        sub = await self.login.subreddit(subreddit)
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
         if not getattr(sub, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
         if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
         if sub.id not in self.subreddits:
@@ -289,19 +295,23 @@ class Reddit(commands.Cog):
         """
         Show 25 hotest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         if not self.login:
             return await ctx.send(
                 "The bot owner has not added credentials to utilize this cog.\n"
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
-        subreddit = await self.login.subreddit(subreddit)
-        if not getattr(subreddit, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
-        if subreddit.over18 and not ctx.channel.is_nsfw():
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if not getattr(sub, "dist", True):
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
-        submissions = subreddit.hot()
+        submissions = sub.hot()
         await BaseMenu(
-            source=RedditMenu(subreddit=subreddit, submissions=submissions),
+            source=RedditMenu(subreddit=sub, submissions=submissions),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -313,19 +323,23 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         if not self.login:
             return await ctx.send(
                 "The bot owner has not added credentials to utilize this cog.\n"
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
-        subreddit = await self.login.subreddit(subreddit)
-        if not getattr(subreddit, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
-        if subreddit.over18 and not ctx.channel.is_nsfw():
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if not getattr(sub, "dist", True):
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
-        submissions = subreddit.new()
+        submissions = sub.new()
         await BaseMenu(
-            source=RedditMenu(subreddit=subreddit, submissions=submissions),
+            source=RedditMenu(subreddit=sub, submissions=submissions),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -337,19 +351,23 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         if not self.login:
             return await ctx.send(
                 "The bot owner has not added credentials to utilize this cog.\n"
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
-        subreddit = await self.login.subreddit(subreddit)
-        if not getattr(subreddit, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
-        if subreddit.over18 and not ctx.channel.is_nsfw():
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if not getattr(sub, "dist", True):
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
-        submissions = subreddit.top()
+        submissions = sub.top()
         await BaseMenu(
-            source=RedditMenu(subreddit=subreddit, submissions=submissions),
+            source=RedditMenu(subreddit=sub, submissions=submissions),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -361,19 +379,23 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         if not self.login:
             return await ctx.send(
                 "The bot owner has not added credentials to utilize this cog.\n"
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
-        subreddit = await self.login.subreddit(subreddit)
-        if not getattr(subreddit, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
-        if subreddit.over18 and not ctx.channel.is_nsfw():
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if not getattr(sub, "dist", True):
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
-        submissions = subreddit.rising()
+        submissions = sub.rising()
         await BaseMenu(
-            source=RedditMenu(subreddit=subreddit, submissions=submissions),
+            source=RedditMenu(subreddit=sub, submissions=submissions),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -385,23 +407,27 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         if not self.login:
             return await ctx.send(
                 "The bot owner has not added credentials to utilize this cog.\n"
                 "Have them see `{ctx.clean_prefix}redditset creds` for more information"
             )
-        subreddit = await self.login.subreddit(subreddit)
-        if not getattr(subreddit, "dist", True):
-            return await ctx.send("That doesn't look like a valid subreddit.")
-        if subreddit.over18 and not ctx.channel.is_nsfw():
+        try:
+            sub = await self.login.subreddit(subreddit)
+        except Exception:
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if not getattr(sub, "dist", True):
+            return await ctx.send(f"`{subreddit}` does not look like a valid subreddit.")
+        if sub.over18 and not ctx.channel.is_nsfw():
             return await ctx.send("I cannot post contents from this sub in non NSFW channels.")
-        submission = await subreddit.random()
+        submission = await sub.random()
         if submission.over_18 and not ctx.channel.is_nsfw():
             for i in range(0, 10):
-                submission = await subreddit.random()
+                submission = await sub.random()
                 if not submission.over18:
                     break
-        data = await make_embed_from_submission(ctx.channel, subreddit, submission)
+        data = await make_embed_from_submission(ctx.channel, sub, submission)
         if data:
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 await ctx.send(data["content"], embed=data["embed"])
