@@ -2,9 +2,9 @@ import asyncio
 import base64
 import json
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 from urllib.parse import quote
 
 import aiohttp
@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.13.0"
+    __version__ = "2.13.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -93,11 +93,11 @@ class Hockey(HockeyDev, commands.Cog):
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
-        self.loop = bot.loop.create_task(self.game_check_loop())
+        self.loop = None
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
-        self.pickems_save_loop = bot.loop.create_task(self.save_pickems_data())
+        self.pickems_save_loop = None
         self.save_pickems = True
         self.pickems_save_lock = asyncio.Lock()
         self.current_games = {}
@@ -121,6 +121,11 @@ class Hockey(HockeyDev, commands.Cog):
             if str(user_id) in data["leaderboard"]:
                 del data["leaderboard"][str(user_id)]
                 await self.config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
+
+    async def initialize(self):
+        await self.initialize_pickems()
+        self.loop = asyncio.create_task(self.game_check_loop())
+        self.pickems_save_loop = asyncio.create_task(self.save_pickems_data())
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information
@@ -1785,6 +1790,3 @@ class Hockey(HockeyDev, commands.Cog):
             log.debug("canceling pickems save loop")
             self.save_pickems = False
             self.pickems_save_loop.cancel()
-
-    __del__ = cog_unload
-    __unload = cog_unload

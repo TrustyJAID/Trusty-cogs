@@ -9,5 +9,5 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     cog = Hockey(bot)
-    await cog.initialize_pickems()
     bot.add_cog(cog)
+    await cog.initialize()
