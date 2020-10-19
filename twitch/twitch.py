@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 from typing import Literal, Optional
 
-import aiohttp
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.commands import Context
@@ -12,7 +11,6 @@ from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from .errors import TwitchError
 from .twitch_api import TwitchAPI
 from .twitch_follower import TwitchFollower
-from .twitch_profile import TwitchProfile
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -25,7 +23,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -34,13 +32,14 @@ class Twitch(TwitchAPI, commands.Cog):
             "access_token": {},
             "twitch_accounts": [],
             "twitch_clips": {},
+            "version": "0.0.0",
         }
         user_defaults = {"id": "", "login": "", "display_name": ""}
         self.config.register_global(**global_defaults, force_registration=True)
         self.config.register_user(**user_defaults, force_registration=True)
         self.rate_limit_resets = set()
         self.rate_limit_remaining = 0
-        self.loop = bot.loop.create_task(self.check_for_new_followers())
+        self.loop = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -61,9 +60,14 @@ class Twitch(TwitchAPI, commands.Cog):
         await self.config.user_from_id(user_id).clear()
 
     async def initialize(self):
+        log.debug("Initializing Twitch Cog")
+        if await self.config.version() < "1.2.0":
+            await self.migrate_api_tokens()
+            await self.config.version.set("1.2.0")
+        self.loop = asyncio.create_task(self.check_for_new_followers())
+
+    async def migrate_api_tokens(self):
         keys = await self.config.all()
-        if "client_id" not in keys:
-            return
         try:
             central_key = await self.bot.get_shared_api_tokens("twitch")
         except AttributeError:
@@ -476,8 +480,5 @@ class Twitch(TwitchAPI, commands.Cog):
         await ctx.maybe_send_embed(msg)
 
     def cog_unload(self):
-        if getattr(self, "loop", None) is not None:
+        if getattr(self, "loop", None):
             self.loop.cancel()
-
-    __del__ = cog_unload
-    __unload = cog_unload
