@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Tuple
 import discord
 import tweepy as tw
 from redbot import VersionInfo, version_info
-from redbot.core import Config, VersionInfo, checks, commands, version_info
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
@@ -20,7 +20,6 @@ _ = Translator("Tweets", __file__)
 log = logging.getLogger("red.trusty-cogs.Tweets")
 
 
-@cog_i18n(_)
 class TweetListener(tw.StreamListener):
     def __init__(self, api, bot):
         super().__init__(api=api)
@@ -60,7 +59,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.5"
+    __version__ = "2.6.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -80,7 +79,7 @@ class Tweets(commands.Cog):
         self.config.register_channel(custom_embeds=True)
         self.mystream = None
         self.run_stream = True
-        self.twitter_loop = self.bot.loop.create_task(self.start_stream())
+        self.twitter_loop = None
         self.accounts = {}
         self.regular_embed_channels = []
 
@@ -100,18 +99,19 @@ class Tweets(commands.Cog):
     async def initialize(self):
         data = await self.config.accounts()
         if await self.config.version() < "2.6.0":
-            for _, account in data.items():
+            for name, account in data.items():
                 if "retweets" not in account:
                     account["retweets"] = True
                 self.accounts[account["twitter_id"]] = account
             await self.config.accounts.set(self.accounts)
-            await self.config.version.set(self.__version__)
+            await self.config.version.set("2.6.0")
         else:
             self.accounts = await self.config.accounts()
         embed_channels = await self.config.all_channels()
         for c_id, settings in embed_channels.items():
             if not settings["custom_embeds"]:
                 self.regular_embed_channels.append(c_id)
+        self.twitter_loop = asyncio.create_task(self.start_stream())
 
     ###################################################################
     # Here is all the logic for handling tweets and tweet creation
@@ -1071,7 +1071,3 @@ class Tweets(commands.Cog):
             self.mystream = None
             log.debug("Twitter stream disconnected.")
         log.debug("Tweets unloaded.")
-
-    __unload = cog_unload
-
-    __del__ = cog_unload
