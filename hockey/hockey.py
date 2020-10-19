@@ -52,7 +52,6 @@ class Hockey(HockeyDev, commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.session = aiohttp.ClientSession(loop=self.bot.loop)
         default_global = {"teams": [], "created_gdc": False, "print": False}
         for team in TEAMS:
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
@@ -403,8 +402,9 @@ class Hockey(HockeyDev, commands.Cog):
          with values in a properly formatted .yaml file
         """
         try:
-            async with self.session.get(attachments[0].url) as infile:
-                data = yaml.safe_load(await infile.read())
+            async with aiohttp.ClientSession() as session:
+                async with session.get(attachments[0].url) as infile:
+                    data = yaml.safe_load(await infile.read())
         except yaml.error.YAMLError as exc:
             raise InvalidFileError("Error Parsing the YAML") from exc
         # new_dict = {}
@@ -1412,8 +1412,9 @@ class Hockey(HockeyDev, commands.Cog):
         if teams != []:
             for team in teams:
                 url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        data = await resp.json()
                 if "roster" in data:
                     for player in data["roster"]:
                         players.append(player["person"]["id"])
@@ -1735,8 +1736,9 @@ class Hockey(HockeyDev, commands.Cog):
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"
-            async with self.session.get(eastern_conference) as resp:
-                data = await resp.read()
+            async with aiohttp.ClientSession() as session:
+                async with session.get(eastern_conference) as resp:
+                    data = await resp.read()
             logo = BytesIO()
             logo.write(data)
             logo.seek(0)
@@ -1744,8 +1746,9 @@ class Hockey(HockeyDev, commands.Cog):
             await ctx.send(msg1, file=image)
             for division in team_list:
                 if division == "Central":
-                    async with self.session.get(western_conference) as resp:
-                        data = await resp.read()
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(western_conference) as resp:
+                            data = await resp.read()
                     logo = BytesIO()
                     logo.write(data)
                     logo.seek(0)
@@ -1775,7 +1778,6 @@ class Hockey(HockeyDev, commands.Cog):
             log.exception("Something went wrong with the pickems unload")
 
     def cog_unload(self):
-        self.bot.loop.create_task(self.session.close())
         self.bot.loop.create_task(self.save_pickems_unload())
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()
