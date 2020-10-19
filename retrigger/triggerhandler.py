@@ -99,50 +99,6 @@ class TriggerHandler:
         if author is author.guild.owner and "mock" not in trigger.response_type:
             return True
 
-    async def local_perms(self, message: discord.Message) -> bool:
-        """Check the user is/isn't locally whitelisted/blacklisted.
-        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
-        """
-        if await self.bot.is_owner(message.author):
-            return True
-        elif message.guild is None:
-            return True
-        if not getattr(message.author, "roles", None):
-            return False
-        try:
-            guild_settings = self.bot.db.guild(message.guild)
-            local_blacklist = await guild_settings.blacklist()
-            local_whitelist = await guild_settings.whitelist()
-            author: discord.Member = cast(discord.Member, message.author)
-            _ids = [r.id for r in author.roles if not r.is_default()]
-            _ids.append(message.author.id)
-            if local_whitelist:
-                return any(i in local_whitelist for i in _ids)
-
-            return not any(i in local_blacklist for i in _ids)
-        except AttributeError:
-            return await self.bot.allowed_by_whitelist_blacklist(
-                message.author,
-                who_id=message.author.id,
-                guild_id=message.guild.id,
-                role_ids=[r.id for r in message.author.roles],
-            )
-
-    async def global_perms(self, message: discord.Message) -> bool:
-        """Check the user is/isn't globally whitelisted/blacklisted.
-        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
-        """
-        if await self.bot.is_owner(message.author):
-            return True
-        try:
-            whitelist = await self.bot.db.whitelist()
-            if whitelist:
-                return message.author.id in whitelist
-
-            return message.author.id not in await self.bot.db.blacklist()
-        except AttributeError:
-            return await self.bot.allowed_by_whitelist_blacklist(message.author)
-
     async def check_bw_list(self, trigger: Trigger, message: discord.Message) -> bool:
         can_run = True
         author: discord.Member = cast(discord.Member, message.author)
@@ -413,21 +369,14 @@ class TriggerHandler:
         if not author:
             return
 
-        local_perms = not await self.local_perms(message)
-        global_perms = not await self.global_perms(message)
+        blocked = not await self.bot.allowed_by_whitelist_blacklist(author)
         channel_perms = channel.permissions_for(author)
         is_command = await self.check_is_command(message)
         is_mod = await self.is_mod_or_admin(author)
 
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
-        # async with self.config.guild(guild).trigger_list() as trigger_list:
         for trigger in self.triggers[guild.id]:
-            # log.debug(triggers)
-            # try:
-            # trigger = await Trigger.from_json(trigger_list[triggers])
-            # except Exception:
-            # continue
             if not trigger.enabled:
                 continue
             if edit and trigger.ignore_edits:
@@ -483,7 +432,7 @@ class TriggerHandler:
                     ).format(author=author)
                     log.debug(print_msg + trigger.name)
             else:
-                if any([local_perms, global_perms]):
+                if blocked:
                     print_msg = _(
                         "ReTrigger: Channel is ignored or {author} is blacklisted "
                     ).format(author=author)
@@ -511,17 +460,21 @@ class TriggerHandler:
         """
         This function is built to asynchronously search images for text using pytesseract
 
-        It takes a discord message and searches for valid image links and all attachments on the message
-        then runs them through pytesseract. All contents from pytesseract are returned as a string.
+        It takes a discord message and searches for valid
+        image links and all attachments on the message
+        then runs them through pytesseract. All contents
+        from pytesseract are returned as a string.
         """
         content = " "
         for attachment in message.attachments:
             temp = BytesIO()
             await attachment.save(temp)
-            temp.seek(0)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
             new_task = self.bot.loop.run_in_executor(None, task)
-            content += await asyncio.wait_for(new_task, timeout=5)
+            try:
+                content += await asyncio.wait_for(new_task, timeout=5)
+            except asyncio.TimeoutError:
+                pass
         good_image_url = IMAGE_REGEX.findall(message.content)
         for link in good_image_url:
             temp = BytesIO()
@@ -532,7 +485,10 @@ class TriggerHandler:
                     temp.seek(0)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
             new_task = self.bot.loop.run_in_executor(None, task)
-            content += await asyncio.wait_for(new_task, timeout=5)
+            try:
+                content += await asyncio.wait_for(new_task, timeout=5)
+            except asyncio.TimeoutError:
+                pass
         return content
 
     async def safe_regex_search(
@@ -730,12 +686,12 @@ class TriggerHandler:
             else:
                 dm_response = str(trigger.text)
             response = await self.convert_parms(message, dm_response, trigger, find)
-            try:
-                trigger_author = await self.bot.fetch_user(trigger.author)
-            except AttributeError:
-                trigger_author = await self.bot.get_user_info(trigger.author)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            trigger_author = self.bot.get_user(trigger.author)
+            if not trigger_author:
+                try:
+                    trigger_author = await self.bot.fetch_user(trigger.author)
+                except Exception:
+                    log.error(error_in, exc_info=True)
             try:
                 await trigger_author.send(response)
             except discord.errors.Forbidden:
