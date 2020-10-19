@@ -409,7 +409,9 @@ class TriggerHandler:
         if guild.id not in self.triggers:
             return
         channel: discord.TextChannel = cast(discord.TextChannel, message.channel)
-        author: discord.Member = cast(discord.Member, message.author)
+        author: Optional[discord.Member] = guild.get_member(message.author.id)
+        if not author:
+            return
 
         local_perms = not await self.local_perms(message)
         global_perms = not await self.global_perms(message)
