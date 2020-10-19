@@ -1,14 +1,54 @@
 import logging
+import apraw
 import re
 
+
+from redbot.core import commands
+from redbot.core.i18n import Translator
 import discord
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
 from apraw.models import Submission, Subreddit
 
 BASE_URL = "https://reddit.com"
 
 SELF_POST_SCRUB = re.compile(r"^(&#x200B;[\s\n]+)(https?://.+)$")
 
+REDDIT_RE = re.compile(r"\/r\/([a-zA-Z0-9]+)")
+
 log = logging.getLogger("red.Trusty-cogs.reddit")
+
+_ = Translator("Reddit", __file__)
+
+
+class SubredditConverter(Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> apraw.models.Subreddit:
+        if not ctx.cog.login:
+            raise BadArgument(
+                _(
+                    "The bot owner has not added credentials to utilize this cog.\n"
+                    "Have them see `{prefix}redditset creds` for more information"
+                ).format(prefix=ctx.clean_prefix)
+            )
+        await ctx.trigger_typing()
+        subr = REDDIT_RE.search(argument)
+        if subr:
+            subreddit = subr.group(1)
+        else:
+            subreddit = re.sub(r"<|>|\/|\\|\.|,|;|\'|\"", "", argument)
+        try:
+            sub = await ctx.cog.login.subreddit(subreddit)
+        except Exception:
+            raise BadArgument(
+                _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
+            )
+        if not getattr(sub, "dist", True):
+            raise BadArgument(
+                _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
+            )
+        if sub.over18 and not ctx.channel.is_nsfw():
+            raise BadArgument(_("I cannot post contents from this sub in non-NSFW channels."))
+        return sub
 
 
 async def make_embed_from_submission(

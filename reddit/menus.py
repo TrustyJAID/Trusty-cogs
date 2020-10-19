@@ -6,10 +6,13 @@ from typing import Any, AsyncGenerator
 import discord
 from apraw.models import Submission, Subreddit
 from redbot.vendored.discord.ext import menus
+from redbot.core.i18n import Translator
 
 from .helpers import make_embed_from_submission
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
+
+_ = Translator("Reddit", __file__)
 
 
 class RedditMenu(menus.AsyncIteratorPageSource):
@@ -83,7 +86,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
                     self.current_page = i
                     break
             if page.over_18:
-                return await channel.send("This is not a NSFW channel.")
+                return await channel.send(_("This is not a NSFW channel."))
         kwargs = await self._get_kwargs_from_page(page)
         return await channel.send(**kwargs)
 
@@ -91,7 +94,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         if page.over_18 and not self.message.channel.is_nsfw():
-            await self.message.edit(content="This post is NSFW.", embed=None)
+            await self.message.edit(content=_("This post is NSFW."), embed=None)
             return
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs)
