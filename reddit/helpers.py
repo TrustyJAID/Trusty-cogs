@@ -42,7 +42,7 @@ class SubredditConverter(Converter):
             raise BadArgument(
                 _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
             )
-        if not getattr(sub, "dist", True):
+        if len(sub._data.keys()) < 5:
             raise BadArgument(
                 _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
             )
