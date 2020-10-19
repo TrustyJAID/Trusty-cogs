@@ -111,14 +111,16 @@ class ReTriggerPages(menus.ListPageSource):
                 count=trigger.count,
                 response=responses,
             )
+        text_response = ""
         if trigger.ignore_commands:
             info += _("Ignore commands: **{ignore}**\n").format(ignore=trigger.ignore_commands)
         if "text" in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
-                response = trigger.text
-            info += _("__Text__: ") + "**{response}**\n".format(response=response)
+                text_response = trigger.text
+            if len(text_response) < 200:
+                info += _("__Text__: ") + "**{response}**\n".format(response=text_response)
         if "rename" in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -198,7 +200,7 @@ class ReTriggerPages(menus.ListPageSource):
         if trigger.chance:
             info += _("__Chance__: **1 in {number}**\n").format(number=trigger.chance)
         if embeds:
-            info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
+            # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(
                 timestamp=menu.ctx.message.created_at,
                 colour=await menu.ctx.embed_colour(),
@@ -218,6 +220,17 @@ class ReTriggerPages(menus.ListPageSource):
                     first = False
                 else:
                     em.add_field(name=_("Trigger info continued"), value=pages)
+            if len(text_response) >= 200:
+                use_box = False
+                for page in pagify(text_response, page_length=1000):
+                    if page.startswith("```"):
+                        use_box = True
+                    if use_box:
+                        em.add_field(name=_("__Text__"), value=box(page.replace("```", ""), lang="text"))
+                    else:
+                        em.add_field(name=_("__Text__"), value=page)
+            for page in pagify(trigger.regex.pattern, page_length=1000):
+                em.add_field(name=_("__Regex__"), value=box(page, lang="bf"))
             msg_list.append(em)
         else:
             info += _("Regex: ") + box(trigger.regex.pattern[: 2000 - len(info)], lang="bf")

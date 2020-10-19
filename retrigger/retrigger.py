@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.17.1"
+    __version__ = "2.17.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -65,7 +65,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.config.register_global(trigger_timeout=1)
         self.re_pool = Pool(maxtasksperchild=1000)
         self.triggers = {}
-        self.save_triggers = self.bot.loop.create_task(self.save_loop())
+        self.save_triggers = None
         self.__unload = self.cog_unload
         self.trigger_timeout = 1
 
@@ -95,6 +95,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild].append(new_trigger)
+        self.save_triggers = asyncio.create_task(self.save_loop())
 
     async def save_loop(self):
         if version_info >= VersionInfo.from_str("3.2.0"):

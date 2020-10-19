@@ -12,10 +12,5 @@ log = logging.getLogger("red.trusty-cogs.retrigger")
 
 async def setup(bot):
     cog = ReTrigger(bot)
-    try:
-        await cog.initialize()
-    except Exception:
-        log.exception("Error loading ReTrigger")
-        cog.cog_unload()
-        raise
     bot.add_cog(cog)
+    await cog.initialize()
