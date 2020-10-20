@@ -351,7 +351,10 @@ class NotSoBot(commands.Cog):
                 with wand.image.Image(file=image) as img:
                     for x in range(0, 30):
                         if x == 0:
+                            log.debug("Cloning initial image")
                             i = img.clone().convert("gif")
+                        else:
+                            i = new_image.sequence[-1].clone()
                         i.transform(resize="512x512>")
                         i.liquid_rescale(
                             width=int(i.width * 0.75),
@@ -367,6 +370,9 @@ class NotSoBot(commands.Cog):
                         )
                         i.resize(img.width, img.height)
                         new_image.sequence.append(i)
+                new_image.format = "gif"
+                new_image.dispose = "background"
+                new_image.type = "optimize"
                 for frame in new_image.sequence:
                     frame.delay = frame_delay
                 new_image.save(file=final)
