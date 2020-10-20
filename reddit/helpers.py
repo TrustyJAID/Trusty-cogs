@@ -42,11 +42,11 @@ class SubredditConverter(Converter):
             raise BadArgument(
                 _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
             )
-        if len(sub._data.keys()) < 5:
+        if len(sub._data.keys()) < 7:
             raise BadArgument(
                 _("`{argument}` does not look like a valid subreddit.").format(argument=argument)
             )
-        if sub.over18 and not ctx.channel.is_nsfw():
+        if getattr(sub, "over18", False) and not ctx.channel.is_nsfw():
             raise BadArgument(_("I cannot post contents from this sub in non-NSFW channels."))
         return sub
 
