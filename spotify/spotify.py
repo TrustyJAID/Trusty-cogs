@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -101,6 +101,7 @@ class Spotify(commands.Cog):
         self.bot.loop.create_task(self.initialize())
         self.HAS_TOKENS = False
         self.current_menus = {}
+        self.user_menus = {}
         self.GENRES = []
 
         # RPC
@@ -215,7 +216,11 @@ class Spotify(commands.Cog):
         try:
             return await self.ask_for_auth(ctx, author)
         except discord.errors.Forbidden:
-            await ctx.send(_("You have blocked direct messages, please enable them to authorize spotify commands."))
+            await ctx.send(
+                _(
+                    "You have blocked direct messages, please enable them to authorize spotify commands."
+                )
+            )
 
     async def ask_for_auth(self, ctx: commands.Context, author: discord.User):
         scope_list = await self.config.scopes()
@@ -632,6 +637,20 @@ class Spotify(commands.Cog):
         )
         await ctx.maybe_send_embed(msg)
 
+    @spotify_set.command(name="showsettings", aliases=["settings"])
+    @commands.mod_or_permissions(manage_messages=True)
+    async def show_settings(self, ctx: commands.Context):
+        """
+        Show settings for menu timeouts
+        """
+        delete_after = await self.config.guild(ctx.guild).delete_message_after()
+        clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
+        timeout = await self.config.guild(ctx.guild).menu_timeout()
+        msg = _(
+            "Delete After: {delete_after}\nClear After: {clear_after}\nTimeout: {timeout}"
+        ).format(delete_after=delete_after, clear_after=clear_after, timeout=timeout)
+        await ctx.maybe_send_embed(msg)
+
     @spotify_set.command(name="showprivate")
     async def show_private(self, ctx: commands.Context, show_private: bool):
         """
@@ -897,7 +916,17 @@ class Spotify(commands.Cog):
         `[member]` Optional discord member to show their current spotify status
         if they're displaying it on Discord.
         """
-
+        if ctx.author.id in self.user_menus:
+            jump = self.user_menus[ctx.author.id]
+            em = discord.Embed(
+                description=_(
+                    "[You already have a player running here.]({jump})\n"
+                    "Please wait for that one to end or cancel it before trying again."
+                ).format(jump=jump),
+                colour=await self.bot.get_embed_colour(ctx),
+            )
+            await ctx.send(embed=em, delete_after=10)
+            return
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await ctx.send(_("You need to authorize me to interact with spotify."))

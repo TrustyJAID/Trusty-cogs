@@ -608,6 +608,108 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
             )
         )
 
+    async def finalize(self, timed_out: bool):
+        del self.cog.user_menus[self.ctx.author.id]
+
+    async def edit_menu_page_auto(self):
+        """
+        This is used to handled editing the menu when
+        we detect that the song has changed from spotify
+        It has no return so as not to edit the length
+        of timeout on the menu itself so it returns nothing
+
+        This is a minor quality of life feature so that
+        if the track changes while you do the command it doesn't
+        show an old song when you're already listening to a new song
+        """
+        while self._running:
+            await asyncio.sleep(15)
+            user_spotify = tekore.Spotify(sender=self.source.sender)
+            with user_spotify.token_as(self.source.user_token):
+                cur_state = await user_spotify.playback()
+                if not cur_state and not cur_state.item:
+                    continue
+                if cur_state.item.id != self.source.current_track.id:
+                    await self.show_checked_page(0)
+
+    async def _internal_loop(self):
+        try:
+            self.__timed_out = False
+            loop = self.bot.loop
+            # Ensure the name exists for the cancellation handling
+            tasks = []
+            while self._running:
+                tasks = [
+                    asyncio.ensure_future(self.edit_menu_page_auto()),
+                    asyncio.ensure_future(
+                        self.bot.wait_for("raw_reaction_add", check=self.reaction_check)
+                    ),
+                    asyncio.ensure_future(
+                        self.bot.wait_for("raw_reaction_remove", check=self.reaction_check)
+                    ),
+                ]
+                done, pending = await asyncio.wait(
+                    tasks, timeout=self.timeout, return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in pending:
+                    task.cancel()
+
+                if len(done) == 0:
+                    raise asyncio.TimeoutError()
+
+                # Exception will propagate if e.g. cancelled or timed out
+                payload = done.pop().result()
+                loop.create_task(self.update(payload))
+
+                # NOTE: Removing the reaction ourselves after it's been done when
+                # mixed with the checks above is incredibly racy.
+                # There is no guarantee when the MESSAGE_REACTION_REMOVE event will
+                # be called, and chances are when it does happen it'll always be
+                # after the remove_reaction HTTP call has returned back to the caller
+                # which means that the stuff above will catch the reaction that we
+                # just removed.
+
+                # For the future sake of myself and to save myself the hours in the future
+                # consider this my warning.
+
+        except asyncio.TimeoutError:
+            self.__timed_out = True
+        finally:
+            self._event.set()
+
+            # Cancel any outstanding tasks (if any)
+            for task in tasks:
+                task.cancel()
+
+            try:
+                await self.finalize(self.__timed_out)
+            except Exception:
+                pass
+            finally:
+                self.__timed_out = False
+
+            # Can't do any requests if the bot is closed
+            if self.bot.is_closed():
+                return
+
+            # Wrap it in another block anyway just to ensure
+            # nothing leaks out during clean-up
+            try:
+                if self.delete_message_after:
+                    return await self.message.delete()
+
+                if self.clear_reactions_after:
+                    if self._can_remove_reactions:
+                        return await self.message.clear_reactions()
+
+                    for button_emoji in self.buttons:
+                        try:
+                            await self.message.remove_reaction(button_emoji, self.__me)
+                        except discord.HTTPException:
+                            continue
+            except Exception:
+                pass
+
     async def update(self, payload):
         """|coro|
 
@@ -618,6 +720,8 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         payload: :class:`discord.RawReactionActionEvent`
             The reaction event that triggered this update.
         """
+        if not payload:
+            return
         button = self.buttons[payload.emoji]
         if not self._running:
             return
@@ -642,6 +746,7 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
         kwargs = await self._get_kwargs_from_page(page)
         msg = await channel.send(**kwargs)
         self.cog.current_menus[msg.id] = ctx.author.id
+        self.cog.user_menus[ctx.author.id] = msg.jump_url
         return msg
 
     async def show_page(self, page_number):
@@ -883,7 +988,10 @@ class SpotifyUserMenu(menus.MenuPages, inherit_buttons=False):
     async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         self.stop()
-        del self.cog.current_menus[self.message.id]
+        if self.message.id in self.cog.current_menus:
+            del self.cog.current_menus[self.message.id]
+        if self.ctx.author.id in self.cog.user_menus:
+            del self.cog.user_menus[self.ctx.author.id]
         await self.message.delete()
 
 
