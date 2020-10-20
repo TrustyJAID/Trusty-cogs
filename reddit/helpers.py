@@ -89,8 +89,12 @@ async def make_embed_from_submission(
         has_text = True
         text = SELF_POST_SCRUB.sub("", submission.selftext)
         em.description = text[:512]
-    author_name = await submission.author()
-    author_str = f"[u/{author_name}]({BASE_URL}/u/{author_name})"
+    try:
+        author_name = await submission.author()
+        author_str = f"[u/{author_name}]({BASE_URL}/u/{author_name})"
+    except Exception:
+        author_name = _("Unknown or Deleted User")
+        author_str = _("Unknown or Deleted User")
     em.add_field(name="Post Author", value=author_str)
     # em.add_field(name="Content Warning", value=)
     # link_str = f"[Click to see full post]({BASE_URL}{submission.permalink})"
