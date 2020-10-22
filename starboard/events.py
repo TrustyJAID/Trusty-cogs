@@ -97,13 +97,13 @@ class StarboardEvents:
         if starboard.whitelist_channel:
             if channel.id in starboard.whitelist_channel:
                 return True
-            if channel.category_id in starboard.whitelist_channel:
+            if channel.category_id and channel.category_id in starboard.whitelist_channel:
                 return True
             return False
         else:
             if channel.id in starboard.blacklist_channel:
                 return False
-            if channel.category_id in starboard.blacklist_channel:
+            if channel.category_id and channel.category_id in starboard.blacklist_channel:
                 return False
             return True
 
