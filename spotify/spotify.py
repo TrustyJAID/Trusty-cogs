@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1584,7 +1584,17 @@ class Spotify(commands.Cog):
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
-                if not state:
+                if state:
+                    lookup = {
+                        "off": "off",
+                        "context": "repeat",
+                        "track": "repeatone",
+                    }
+                    emoji = emoji_handler.get_emoji(
+                        lookup[state.lower()],
+                        ctx.channel.permissions_for(ctx.me).use_external_emojis,
+                    )
+                else:
                     cur = await user_spotify.playback()
                     if not cur:
                         return await ctx.send(
