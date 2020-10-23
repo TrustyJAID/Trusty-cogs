@@ -122,32 +122,23 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def oof(
-        self, ctx: commands.Context, msg_id: int = None, channel: discord.TextChannel = None
+        self, ctx: commands.Context, message: Optional[discord.Message]
     ) -> None:
         """
         React 🅾🇴🇫 to a message.
 
-        `msg_id` must be the message ID for desited message within the channel.
-        `channel` must be the channel where the desired message is defaults to current channel
-        if the bot has manage messages permission it will attempt to delete the command.
+        `[message]` Can be a message ID from the current channel, a jump URL,
+        or a channel_id-message_id from shift + copying ID on the message.
         """
-        if channel is None:
-            channel = ctx.message.channel
-        if msg_id is None:
-            async for messages in channel.history(limit=2):
-                message = messages
-        else:
-            try:
-                message = await channel.fetch_message(msg_id)
-            except discord.NotFound:
-                return await ctx.send(
-                    "Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5
-                )
 
-        if channel.permissions_for(ctx.me).add_reactions:
-            with contextlib.suppress(discord.HTTPException):
-                for emoji in ("🅾", "🇴", "🇫"):
-                    await message.add_reaction(emoji)
+        if message is None:
+            async for messages in ctx.channel.history(limit=2):
+                message = messages
+        if not message.channel.permissions_for(ctx.me).add_reactions:
+            return await ctx.send("I require add_reactions permission in that channel.")
+        with contextlib.suppress(discord.HTTPException):
+            for emoji in ("🅾", "🇴", "🇫"):
+                await message.add_reaction(emoji)
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
 
@@ -158,30 +149,17 @@ class Fun(commands.Cog):
         self,
         ctx: commands.Context,
         msg: str,
-        msg_id: Optional[int] = None,
-        channel: Optional[discord.TextChannel] = None,
+        message: Optional[discord.Message],
     ) -> None:
         """
         Add letter(s) as reaction to previous message.
 
-        `msg` is the word you would like to react, no spaces.
-        `msg_id` must be the message ID for desited message within the channel.
-        `channel` must be the channel where the desired message is defaults to current channel.
+        `[message]` Can be a message ID from the current channel, a jump URL,
+        or a channel_id-message_id from shift + copying ID on the message.
         """
-        if channel is None:
-            channel = ctx.channel
-        if not channel.permissions_for(ctx.me).add_reactions:
-            return
-        if msg_id is None:
-            async for messages in channel.history(limit=2):
+        if message is None:
+            async for messages in ctx.channel.history(limit=2):
                 message = messages
-        else:
-            try:
-                message = await channel.fetch_message(msg_id)
-            except discord.NotFound:
-                return await ctx.send(
-                    "Message ID {} not found in {}".format(msg_id, channel.mention), delete_after=5
-                )
 
         reactions = []
         non_unicode_emoji_list = []
@@ -240,7 +218,7 @@ class Fun(commands.Cog):
             with contextlib.suppress(discord.HTTPException):
                 for reaction in reactions:
                     await message.add_reaction(reaction)
-        if not channel and ctx.channel.permissions_for(ctx.me).manage_messages:
+        if message.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
         else:
             await ctx.tick()
