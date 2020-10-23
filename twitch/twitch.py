@@ -42,6 +42,7 @@ class Twitch(TwitchAPI, commands.Cog):
         self.rate_limit_resets = set()
         self.rate_limit_remaining = 0
         self.loop = None
+        self.streams = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -66,7 +67,22 @@ class Twitch(TwitchAPI, commands.Cog):
         if await self.config.version() < "1.2.0":
             await self.migrate_api_tokens()
             await self.config.version.set("1.2.0")
+        if await self.config.version() < "1.3.3":
+            await self.migrate_clips()
         self.loop = asyncio.create_task(self.check_for_new_followers())
+
+    async def migrate_clips(self):
+        async with self.config.twitch_clips() as cur_data:
+            for t_id, data in cur_data.items():
+                if isinstance(data["channels"], list):
+                    channels = {}
+                    for channel in data["channels"]:
+                        channels[str(channel)] = {
+                            "view_count": 0,
+                            "check_back": None,
+                        }
+                    cur_data[t_id]["channels"] = channels
+        await self.config.version.set("1.3.3")
 
     async def migrate_api_tokens(self):
         keys = await self.config.all()
@@ -167,10 +183,6 @@ class Twitch(TwitchAPI, commands.Cog):
         `[check_back]` How far back to look back for new clips. Note: You must provide a number
         for `view_count` when providing the check_back. Default is 8 days.
         """
-        log.debug(channel)
-        log.debug(view_count)
-        log.debug(check_back)
-        return
         if channel is None:
             channel = ctx.channel
         if not channel.permissions_for(ctx.me).embed_links:
@@ -187,19 +199,24 @@ class Twitch(TwitchAPI, commands.Cog):
                     clips = await self.get_new_clips(profile.id)
                 except TwitchError as e:
                     return await ctx.send(e)
+                chan_data = {
+                    "view_count": view_count,
+                    "check_back": check_back.total_seconds() if check_back else None,
+                }
                 user_data = {
                     "id": profile.id,
                     "login": profile.login,
                     "display_name": profile.display_name,
-                    "channels": [channel.id],
+                    "channels": {str(channel.id): chan_data},
                     "clips": [c["id"] for c in clips],
-                    "view_count": view_count,
-                    "check_back": check_back.total_seconds() if check_back else None,
                 }
 
                 cur_accounts[str(profile.id)] = user_data
             else:
-                cur_accounts[str(profile.id)]["channels"].append(channel.id)
+                cur_accounts[str(profile.id)]["channels"][str(channel.id)] = {
+                    "view_count": view_count,
+                    "check_back": check_back.total_seconds() if check_back else None,
+                }
         await ctx.send(
             "{} has been setup for new clip notifications in {}".format(
                 profile.display_name, channel.mention
