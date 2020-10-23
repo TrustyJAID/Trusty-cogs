@@ -16,6 +16,8 @@ log = logging.getLogger("red.Trusty-cogs.Twitch")
 
 BASE_URL = "https://api.twitch.tv/helix"
 
+TimeConverter = commands.converter.parse_timedelta
+
 
 class Twitch(TwitchAPI, commands.Cog):
     """
@@ -23,7 +25,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -152,10 +154,23 @@ class Twitch(TwitchAPI, commands.Cog):
         ctx: commands.Context,
         twitch_name: str,
         channel: Optional[discord.TextChannel] = None,
+        view_count: Optional[int] = 0,
+        *,
+        check_back: Optional[TimeConverter] = None,
     ) -> None:
         """
         Setup a channel for automatic clip notifications
+
+        `<twitch_name>` The name of the streamers who's clips you want posted
+        `[channel]` The channel to post clips into, if not provided will use the current channel.
+        `[view_count]` The minimum view count required before posting a clip.
+        `[check_back]` How far back to look back for new clips. Note: You must provide a number
+        for `view_count` when providing the check_back. Default is 8 days.
         """
+        log.debug(channel)
+        log.debug(view_count)
+        log.debug(check_back)
+        return
         if channel is None:
             channel = ctx.channel
         if not channel.permissions_for(ctx.me).embed_links:
@@ -178,6 +193,8 @@ class Twitch(TwitchAPI, commands.Cog):
                     "display_name": profile.display_name,
                     "channels": [channel.id],
                     "clips": [c["id"] for c in clips],
+                    "view_count": view_count,
+                    "check_back": check_back.total_seconds() if check_back else None,
                 }
 
                 cur_accounts[str(profile.id)] = user_data

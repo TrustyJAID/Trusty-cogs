@@ -282,14 +282,21 @@ class TwitchAPI:
     async def check_clips(self):
         followed = await self.config.twitch_clips()
         for user_id, clip_data in followed.items():
+            view_count = clip_data["view_count"] if "view_count" in clip_data else 0
+            if "check_back" in clip_data and clip_data["check_back"]:
+                look_back = timedelta(seconds=clip_data["check_back"])
+            else:
+                look_back = timedelta(days=8)
             try:
-                now = datetime.utcnow() + timedelta(days=-8)
+
+                now = datetime.utcnow() - look_back
                 clips = await self.get_new_clips(user_id, now)
             except Exception:
                 log.exception(f"Error getting twitch clips {user_id}", exc_info=True)
                 continue
             for clip in clips:
-                if clip["id"] not in clip_data["clips"]:
+
+                if clip["id"] not in clip_data["clips"] and clip["view_count"] > view_count:
                     await self.send_clips_update(clip, clip_data)
                     async with self.config.twitch_clips() as saved:
                         saved[user_id]["clips"].append(clip["id"])
