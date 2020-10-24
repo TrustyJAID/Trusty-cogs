@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
 import aiohttp
@@ -10,8 +10,7 @@ from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 
 from .errors import TwitchError
-from .twitch_follower import TwitchFollower
-from .twitch_profile import TwitchProfile
+from .twitch_models import TwitchProfile, TwitchFollower
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -140,18 +139,6 @@ class TwitchAPI:
 
     #####################################################################################
 
-    async def make_user_embed(self, profile: TwitchProfile) -> discord.Embed:
-        # makes the embed for a twitch profile
-        em = discord.Embed(colour=int("6441A4", 16))
-        em.description = profile.description
-        url = "https://twitch.tv/{}".format(profile.login)
-        em.set_author(name=profile.display_name, url=url, icon_url=profile.profile_image_url)
-        em.set_image(url=profile.offline_image_url)
-        em.set_thumbnail(url=profile.profile_image_url)
-        footer_text = "{} Viewer count".format(profile.view_count)
-        em.set_footer(text=footer_text, icon_url=profile.profile_image_url)
-        return em
-
     async def make_follow_embed(
         self, account: TwitchProfile, profile: TwitchProfile, total_followers: int
     ):
@@ -197,7 +184,7 @@ class TwitchAPI:
         # Gets the last 100 followers from twitch
         url = "{}/users/follows?to_id={}&first=100".format(BASE_URL, user_id)
         data = await self.get_response(url)
-        follows = [TwitchFollower.from_json(x) for x in data["data"]]
+        follows = [TwitchFollower(**x) for x in data["data"]]
         total = data["total"]
         return follows, total
 
@@ -287,13 +274,21 @@ class TwitchAPI:
                 continue
             if clip["view_count"] < info["view_count"]:
                 continue
+            if clip["id"] in info["clips"]:
+                continue
             if channel and channel.permissions_for(channel.guild.me).send_messages:
                 tasks.append(channel.send(msg))
+            async with self.config.twitch_clips() as saved:
+                if "clips" not in saved[clip_data["id"]]["channels"]:
+                    saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"] = [clip["id"]]
+                else:
+                    saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"].append(clip["id"])
         await asyncio.gather(*tasks)
 
     async def check_clips(self):
         followed = await self.config.twitch_clips()
         for user_id, clip_data in followed.items():
+            log.debug(f"Checking for new clips from {clip_data['display_name']}")
             try:
                 now = datetime.utcnow() + timedelta(days=-8)
                 clips = await self.get_new_clips(user_id, now)
@@ -301,10 +296,7 @@ class TwitchAPI:
                 log.exception(f"Error getting twitch clips {user_id}", exc_info=True)
                 continue
             for clip in clips:
-                if clip["id"] not in clip_data["clips"]:
-                    await self.send_clips_update(clip, clip_data)
-                    async with self.config.twitch_clips() as saved:
-                        saved[user_id]["clips"].append(clip["id"])
+                await self.send_clips_update(clip, clip_data)
 
     async def check_for_new_followers(self) -> None:
         # Checks twitch every minute for new followers
@@ -314,8 +306,10 @@ class TwitchAPI:
             await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Twitch"):
             follow_accounts = await self.config.twitch_accounts()
-            clip_accounts = await self.config.twitch_clips()
             for account in follow_accounts:
                 await self.check_followers(account)
-            await self.check_clips()
+            try:
+                await self.check_clips()
+            except Exception:
+                log.exception("Error checking new clips")
             await asyncio.sleep(60)
