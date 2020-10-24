@@ -1802,9 +1802,10 @@ class Spotify(commands.Cog):
                     is_playing = True
             for d in devices:
                 if device_name.lower() in d.name.lower():
+                    log.debug(f"Transferring playback to {d.name}")
                     await user_spotify.playback_transfer(d.id, is_playing)
+                    await ctx.tick()
                     break
-            await ctx.tick()
         except tekore.Unauthorised:
             await ctx.send(_("I am not authorized to perform this action for you."))
         except tekore.NotFound:
