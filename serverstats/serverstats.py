@@ -78,7 +78,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def avatar(self, ctx: commands.Context, *, members: FuzzyMember):
+    async def avatar(self, ctx: commands.Context, *, members: Optional[FuzzyMember]):
         """
         Display a users avatar in chat
         """
