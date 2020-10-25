@@ -3,7 +3,9 @@ import re
 from typing import List, Union
 
 import discord
-import unidecode
+from unidecode import unidecode
+
+from rapidfuzz import process
 from discord.ext.commands.converter import IDConverter, _get_from_guilds
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
@@ -32,16 +34,20 @@ class FuzzyMember(IDConverter):
         if match is None:
             # Not a mention
             if guild:
-                for m in guild.members:
-                    if argument.lower() in unidecode.unidecode(m.display_name.lower()):
-                        # display_name so we can get the nick of the user first
-                        # without being NoneType and then check username if that matches
-                        # what we're expecting
-                        result.append(m)
-                        continue
-                    if argument.lower() in unidecode.unidecode(m.name.lower()):
-                        result.append(m)
-                        continue
+                for m in process.extract(
+                    argument,
+                    {m: unidecode(m.name) for m in guild.members},
+                    limit=None,
+                    score_cutoff=75,
+                ):
+                    result.append(m[2])
+                for m in process.extract(
+                    argument,
+                    {m: unidecode(m.nick) for m in guild.members if m.nick and m not in result},
+                    limit=None,
+                    score_cutoff=75,
+                ):
+                    result.append(m[2])
         else:
             user_id = int(match.group(1))
             if guild:
@@ -76,12 +82,8 @@ class GuildConverter(IDConverter):
             raise BadArgument(_("That option is only available for the bot owner."))
         if match is None:
             # Not a mention
-            for g in bot.guilds:
-                if argument.lower() in unidecode.unidecode(g.name.lower()):
-                    # display_name so we can get the nick of the user first
-                    # without being NoneType and then check username if that matches
-                    # what we're expecting
-                    result = g
+            for g in process.extractOne(argument, {g: unidecode(g.name) for g in bot.guilds}):
+                result = g
         else:
             guild_id = int(match.group(1))
             result = bot.get_guild(guild_id)
@@ -113,12 +115,10 @@ class MultiGuildConverter(IDConverter):
             raise BadArgument(_("That option is only available for the bot owner."))
         if not match:
             # Not a mention
-            for g in bot.guilds:
-                if argument.lower() in unidecode.unidecode(g.name.lower()):
-                    # display_name so we can get the nick of the user first
-                    # without being NoneType and then check username if that matches
-                    # what we're expecting
-                    result.append(g)
+            for g in process.extract(
+                argument, {g: unidecode(g.name) for g in bot.guilds}, limit=None, score_cutoff=75
+            ):
+                result.append(g[2])
         else:
             guild_id = int(match.group(1))
             result.append(bot.get_guild(guild_id))

@@ -24,7 +24,8 @@
     "requirements" : [
         "unidecode",
         "pytz",
-        "python-dateutil"
+        "python-dateutil",
+        "rapidfuzz"
     ],
     "short" : "A plethora of potentially useful commands for any bot owner.",
     "tags" : [
