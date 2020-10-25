@@ -212,7 +212,7 @@ class Reddit(commands.Cog):
                     )
                 )
         await ctx.send(
-            ("I will now pos new submissions to {sub} in {channel}").format(
+            ("I will now post new submissions to {sub} in {channel}").format(
                 sub=subreddit.display_name_prefixed, channel=channel.mention
             )
         )
