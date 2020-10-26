@@ -219,6 +219,7 @@ class Fun(commands.Cog):
                 for reaction in reactions:
                     await message.add_reaction(reaction)
         if message.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.message.delete()
+            with contextlib.suppress(discord.HTTPException):
+                await ctx.message.delete()
         else:
             await ctx.tick()
