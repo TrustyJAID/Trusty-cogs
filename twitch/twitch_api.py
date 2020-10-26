@@ -8,6 +8,7 @@ import aiohttp
 import discord
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
+from redbot.core.utils import bounded_gather
 
 from .errors import TwitchError
 from .twitch_models import TwitchProfile, TwitchFollower
@@ -283,7 +284,7 @@ class TwitchAPI:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"] = [clip["id"]]
                 else:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"].append(clip["id"])
-        await asyncio.gather(*tasks)
+        await bounded_gather(*tasks)
 
     async def check_clips(self):
         followed = await self.config.twitch_clips()

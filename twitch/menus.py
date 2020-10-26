@@ -15,7 +15,7 @@ from .twitch_models import TwitchFollower
 
 log = logging.getLogger("red.Trusty-cogs.twitch")
 
-_ = Translator("Reddit", __file__)
+_ = Translator("Twitch", __file__)
 
 
 class TwitchFollowersPages(menus.ListPageSource):

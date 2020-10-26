@@ -7,6 +7,7 @@ import aiohttp
 import discord  # type: ignore[import]
 from redbot import VersionInfo, version_info
 from redbot.core import Config
+from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify
 
@@ -552,7 +553,7 @@ class Game:
             publish = "Periodrecap" in await config.channel(channel).publish_states()
             if should_post:
                 tasks.append(self.post_period_recap(channel, em, publish))
-        await asyncio.gather(*tasks)
+        await bounded_gather(*tasks)
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
@@ -598,7 +599,7 @@ class Game:
             should_post = await check_to_post(bot, channel, post_state, self.game_state)
             if should_post:
                 tasks.append(self.actually_post_state(bot, channel, state_embed, state_text))
-        previews = await asyncio.gather(*tasks)
+        previews = await bounded_gather(*tasks)
         for preview in previews:
             if preview is None:
                 continue
@@ -817,7 +818,7 @@ class Game:
             team_to_post = await bot.get_cog("Hockey").config.channel(channel).team()
             if should_post and "all" not in team_to_post:
                 tasks.append(self.post_game_start(channel, msg))
-        await asyncio.gather(*tasks)
+        await bounded_gather(*tasks)
 
     async def post_game_start(self, channel, msg):
         if not channel.permissions_for(channel.guild.me).send_messages:

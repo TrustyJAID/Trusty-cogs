@@ -306,7 +306,6 @@ class Pickems:
                     if channel:
                         await Pickems.create_pickems_game_msg(bot, channel, game)
                         await asyncio.sleep(0.1)
-            # await asyncio.gather(*game_msg_tasks)
             today = today + new_day
             count += 1
             if today.weekday() == 6 or count == 7:

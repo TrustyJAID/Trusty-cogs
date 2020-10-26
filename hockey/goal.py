@@ -6,6 +6,7 @@ from typing import List, Optional
 import discord
 from redbot import VersionInfo, version_info
 from redbot.core import Config
+from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator
 
 from .constants import HEADSHOT_URL, TEAMS
@@ -159,7 +160,7 @@ class Goal:
             should_post = await check_to_post(bot, channel, post_state, "Goal")
             if should_post:
                 tasks.append(self.actually_post_goal(bot, channel, goal_embed, goal_text))
-        data = await asyncio.gather(*tasks)
+        data = await bounded_gather(*tasks)
         for channel in data:
             if channel is None:
                 continue
@@ -284,7 +285,7 @@ class Goal:
                 continue
             tasks.append(self.edit_goal(bot, channel, message_id, em))
 
-        await asyncio.gather(*tasks)
+        await bounded_gather(*tasks)
         return
 
     async def edit_goal(self, bot, channel, message_id, em):

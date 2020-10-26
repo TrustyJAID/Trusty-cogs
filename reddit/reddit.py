@@ -7,6 +7,7 @@ import apraw
 import discord
 from apraw.models import Submission, Subreddit
 from redbot.core import Config, checks, commands
+from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator, cog_i18n
 
 from .helpers import make_embed_from_submission, SubredditConverter
@@ -113,7 +114,7 @@ class Reddit(commands.Cog):
                 contents["subreddit"] = subreddit
                 contents["submission"] = submission
                 tasks.append(self.post_new_submissions(channel, contents, use_embed))
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await bounded_gather(*tasks, return_exceptions=True)
 
     async def post_new_submissions(
         self, channel: discord.TextChannel, contents: dict, use_embed: bool

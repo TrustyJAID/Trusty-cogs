@@ -10,6 +10,7 @@ import discord
 import tweepy as tw
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
+from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
@@ -285,7 +286,7 @@ class Tweets(commands.Cog):
                 continue
             use_embed = channel_send.id not in self.regular_embed_channels
             tasks.append(self.post_tweet_status(channel_send, em, status, use_embed))
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await bounded_gather(*tasks, return_exceptions=True)
 
     async def post_tweet_status(
         self,
