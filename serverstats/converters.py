@@ -121,7 +121,10 @@ class MultiGuildConverter(IDConverter):
                 result.append(g[2])
         else:
             guild_id = int(match.group(1))
-            result.append(bot.get_guild(guild_id))
+            guild = bot.get_guild(guild_id)
+            if not guild:
+                raise BadArgument('Guild "{}" not found'.format(argument))
+            result.append(guild)
 
         if not result:
             raise BadArgument('Guild "{}" not found'.format(argument))
