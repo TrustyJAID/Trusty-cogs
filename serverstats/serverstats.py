@@ -1174,7 +1174,7 @@ class ServerStats(commands.Cog):
     @staticmethod
     async def confirm_leave_guild(ctx: commands.Context, guild) -> None:
         await ctx.send(
-            _("Are you sure you want to leave {guild}? (reply yes or no)").format(guild=guild.name)
+            _("Are you sure you want me to leave {guild}? (reply yes or no)").format(guild=guild.name)
         )
         pred = MessagePredicate.yes_or_no(ctx)
         await ctx.bot.wait_for("message", check=pred)
