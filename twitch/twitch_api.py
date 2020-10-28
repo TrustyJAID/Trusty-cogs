@@ -276,15 +276,16 @@ class TwitchAPI:
             if info["view_count"] and clip["view_count"] < info["view_count"]:
                 continue
             if clip["id"] in info["clips"]:
+                log.debug("skipping clip")
                 continue
             if channel and channel.permissions_for(channel.guild.me).send_messages:
                 tasks.append(channel.send(msg))
             async with self.config.twitch_clips() as saved:
-                if "clips" not in saved[clip_data["id"]]["channels"]:
+                if "clips" not in saved[clip_data["id"]]["channels"][f"{channel.id}"]:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"] = [clip["id"]]
                 else:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"].append(clip["id"])
-        await bounded_gather(*tasks)
+        # await bounded_gather(*tasks)
 
     async def check_clips(self):
         followed = await self.config.twitch_clips()
@@ -311,6 +312,7 @@ class TwitchAPI:
                 await self.check_followers(account)
             try:
                 await self.check_clips()
+                pass
             except Exception:
                 log.exception("Error checking new clips")
             await asyncio.sleep(60)
