@@ -271,9 +271,9 @@ class TwitchAPI:
             channel = self.bot.get_channel(int(channel))
             if not channel:
                 continue
-            if age.total_seconds() > info["check_back"]:
+            if info["check_back"] and age.total_seconds() > info["check_back"]:
                 continue
-            if clip["view_count"] < info["view_count"]:
+            if info["view_count"] and clip["view_count"] < info["view_count"]:
                 continue
             if clip["id"] in info["clips"]:
                 continue
