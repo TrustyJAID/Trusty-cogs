@@ -285,7 +285,7 @@ class TwitchAPI:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"] = [clip["id"]]
                 else:
                     saved[clip_data["id"]]["channels"][f"{channel.id}"]["clips"].append(clip["id"])
-        # await bounded_gather(*tasks)
+        await bounded_gather(*tasks)
 
     async def check_clips(self):
         followed = await self.config.twitch_clips()
