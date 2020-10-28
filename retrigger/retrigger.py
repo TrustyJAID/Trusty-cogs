@@ -1293,7 +1293,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             filename = await self.save_image_location(attachment_url, guild)
             if not filename:
                 return await ctx.send(_("That is not a valid file link."))
-        if image_url is not None:
+        elif image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
                 return await ctx.send(_("That is not a valid file link."))
