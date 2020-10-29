@@ -46,7 +46,6 @@ class RoleTools(RoleEvents, commands.Cog):
         self.settings = {}
 
     async def initalize(self):
-        await self.bot.wait_until_red_ready()
         if await self.config.version() < "1.0.1":
             sticky_role_config = Config.get_conf(
                 None, identifier=1358454876, cog_name="StickyRoles"
