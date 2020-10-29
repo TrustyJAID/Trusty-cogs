@@ -58,7 +58,8 @@ class RoleTools(RoleEvents, commands.Cog):
                     continue
                 for role_id in data["sticky_roles"]:
                     role = guild.get_role(role_id)
-                    await self.config.role(role).sticky.set(True)
+                    if role:
+                        await self.config.role(role).sticky.set(True)
             auto_role_config = Config.get_conf(
                 None, identifier=45463543548, cog_name="StickyRoles"
             )
@@ -71,7 +72,8 @@ class RoleTools(RoleEvents, commands.Cog):
                     continue
                 for role_id in data["ROLE"]:
                     role = guild.get_role(role_id)
-                    await self.config.role(role).auto.set(True)
+                    if role:
+                        await self.config.role(role).auto.set(True)
             await self.config.version.set("1.0.0")
 
         self.settings = await self.config.all_guilds()
