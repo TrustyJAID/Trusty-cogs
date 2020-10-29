@@ -1,0 +1,29 @@
+{
+    "author" : [
+        "TrustyJAID"
+    ],
+    "description" : "Various role utility commands. Including Reaction roles, Sticky roles, and Auto role.",
+    "disabled" : false,
+    "end_user_data_statement" : "This cog stores User ID's for the purposes of re-assigning roles when the user re-joins a server.\nUser ID's may be stored in the bots log information.",
+    "hidden" : false,
+    "install_msg" : "The command group is `[p]roletools`. Remember that role names are case sensitive.",
+    "max_bot_version" : "0.0.0",
+    "min_bot_version" : "3.4.0",
+    "min_python_version" : [
+        3,
+        0,
+        0
+    ],
+    "name" : "RoleTools",
+    "permissions" : [
+        "manage_roles"
+    ],
+    "required_cogs" : {},
+    "requirements" : [],
+    "short" : "Various role related tools.",
+    "tags" : [
+        "utility",
+        "mod"
+    ],
+    "type" : "COG"
+}
