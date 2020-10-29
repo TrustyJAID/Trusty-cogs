@@ -66,7 +66,11 @@ class RoleTools(RoleEvents, commands.Cog):
                 guild = self.bot.get_guild(guild_id)
                 if not guild:
                     continue
-                if not data["ENABLED"] or data["AGREE_CHANNEL"] is not None:
+                if ("ENABLED" in data and not data["ENABLED"]) or (
+                    "AGREE_CHANNEL" in data and data["AGREE_CHANNEL"] is not None
+                ):
+                    continue
+                if "ROLE" not in data:
                     continue
                 for role_id in data["ROLE"]:
                     role = guild.get_role(role_id)
