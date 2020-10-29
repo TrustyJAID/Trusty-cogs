@@ -163,18 +163,13 @@ class RoleEvents:
         guild = member.guild
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.member(member).sticky_roles()
-        if not sticky_roles:
-            return
-
-        save = False
-
         for role in member.roles:
-            if role.id in sticky_roles:
-                if role.id not in to_reapply:
-                    to_reapply.append(role.id)
-                    save = True
+            if not await self.config.role(role).sticky():
+                continue
+            if role.id not in to_reapply:
+                to_reapply.append(role.id)
+                save = True
 
         if save:
             await self.config.member(member).to_reapply.set(to_reapply)
@@ -183,7 +178,6 @@ class RoleEvents:
         guild = member.guild
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        sticky_roles = await self.config.guild(guild).sticky_roles()
         to_reapply = await self.config.member(member).to_reapply()
         if not to_reapply:
             return
@@ -191,8 +185,6 @@ class RoleEvents:
         to_add = []
 
         for role_id in to_reapply:
-            if role_id not in sticky_roles:
-                continue
             role = guild.get_role(role_id)
             if role:
                 to_add.append(role)
