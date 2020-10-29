@@ -40,14 +40,15 @@ class RoleEvents:
             role = guild.get_role(guild_settings[key])
             if not await self.config.role(role).selfassignable():
                 return
-            log.debug("Adding role")
             member = guild.get_member(payload.user_id)
             if not role or not member:
                 return
             if member.bot:
                 return
             if await self.check_guild_verification(member, guild):
+                log.info("Ignoring user due to verification check.")
                 return
+            log.debug("Adding role")
             await self.give_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -71,12 +72,13 @@ class RoleEvents:
             role = guild.get_role(guild_settings[key])
             if not await self.config.role(role).selfremovable():
                 return
-            log.debug("Removing role")
+
             member = guild.get_member(payload.user_id)
             if not role or not member:
                 return
             if member.bot:
                 return
+            log.debug("Removing role")
             await self.remove_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()

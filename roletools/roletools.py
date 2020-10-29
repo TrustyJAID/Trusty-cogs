@@ -22,7 +22,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -423,7 +423,8 @@ class RoleTools(RoleEvents, commands.Cog):
         not_added = []
         async with self.config.guild(ctx.guild).reaction_roles() as cur_setting:
             for role, emoji in role_emoji:
-                if isinstance(emoji, discord.Emoji):
+                log.debug(type(emoji))
+                if isinstance(emoji, discord.PartialEmoji):
                     use_emoji = str(emoji.id)
                 else:
                     use_emoji = str(emoji)

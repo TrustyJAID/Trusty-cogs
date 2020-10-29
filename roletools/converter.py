@@ -2,8 +2,11 @@ import re
 import discord
 from typing import Tuple
 from discord.ext.commands import BadArgument, Converter
+from redbot.core.i18n import Translator
 
 from redbot.core import commands
+
+_ = Translator("RoleTools", __file__)
 
 
 class RoleHierarchyConverter(commands.RoleConverter):
@@ -19,10 +22,10 @@ class RoleHierarchyConverter(commands.RoleConverter):
         else:
             if role.position >= ctx.me.top_role.position:
                 raise BadArgument(
-                    "That role is higher than my highest role in the discord hierarchy."
+                    _("That role is higher than my highest role in the discord hierarchy.")
                 )
             if role.position >= ctx.author.top_role.position:
-                raise BadArgument("That role is higher than your own in the discord hierarchy.")
+                raise BadArgument(_("That role is higher than your own in the discord hierarchy."))
         return role
 
 
@@ -33,7 +36,10 @@ class RoleEmojiConverter(Converter):
             role, emoji = arg_split
         except Exception:
             raise BadArgument(
-                "Role Emoji must be a role followed by an emoji separated by either `;`, `,`, `|`, or `-`."
+                _(
+                    "Role Emoji must be a role followed by an "
+                    "emoji separated by either `;`, `,`, `|`, or `-`."
+                )
             )
         custom_emoji = None
         try:
@@ -43,9 +49,9 @@ class RoleEmojiConverter(Converter):
         if not custom_emoji:
             try:
                 await ctx.message.add_reaction(str(emoji.strip()))
-                custom_emoji = str(emoji)
+                custom_emoji = emoji
             except discord.errors.HTTPException:
-                raise BadArgument("That does not look like a valid emoji.")
+                raise BadArgument(_("That does not look like a valid emoji."))
         try:
             role = await RoleHierarchyConverter().convert(ctx, role.strip())
         except commands.BadArgument:
