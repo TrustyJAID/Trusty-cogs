@@ -8,7 +8,8 @@ from redbot.core import commands
 
 class RoleHierarchyConverter(commands.RoleConverter):
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
-
+        if not ctx.me.guild_permissions.manage_roles:
+            raise BadArgument(_("I require manage roles permission to use this command."))
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -17,7 +18,9 @@ class RoleHierarchyConverter(commands.RoleConverter):
             return role
         else:
             if role.position >= ctx.me.top_role.position:
-                raise BadArgument("That role is higher than my highest role in the discord hierarchy.")
+                raise BadArgument(
+                    "That role is higher than my highest role in the discord hierarchy."
+                )
             if role.position >= ctx.author.top_role.position:
                 raise BadArgument("That role is higher than your own in the discord hierarchy.")
         return role
