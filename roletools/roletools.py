@@ -110,7 +110,7 @@ class RoleTools(RoleEvents, commands.Cog):
                 return await ctx.send(
                     _(
                         "The role {role} is not self assignable. Run the command "
-                        "`{prefix}roletools sticky yes {role}` to make it self assignable."
+                        "`{prefix}roletools selfadd yes {role}` to make it self assignable."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
         if set_to is True:
@@ -203,7 +203,7 @@ class RoleTools(RoleEvents, commands.Cog):
                     _(
                         "The role {role} is not automatically applied "
                         "when a user joins. Run the command "
-                        "`{prefix}roletools sticky yes {role}` to make "
+                        "`{prefix}roletools auto yes {role}` to make "
                         "it automatically apply when a user joins."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
@@ -231,7 +231,7 @@ class RoleTools(RoleEvents, commands.Cog):
             await self.config.role(role).auto.set(False)
             return await ctx.send(_("That role is no automatically applied when a user joins."))
 
-    @roletools.command(aliases=["reactionroles"])
+    @roletools.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
     async def reactroles(self, ctx: Context):
         """
@@ -241,14 +241,15 @@ class RoleTools(RoleEvents, commands.Cog):
             return await ctx.send(_("There are no bound roles in this server."))
         msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
         for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
-            msg_id, channel_id, emoji = key.split("-")
+            channel_id, msg_id, emoji = key.split("-")
             if emoji.isdigit():
                 emoji = self.bot.get_emoji(int(emoji))
             role = ctx.guild.get_role(role_id)
-            channel = ctx.guild.get_channel(channel_id)
+            channel = ctx.guild.get_channel(int(channel_id))
             try:
-                message = await channel.fetch_message(msg_id)
+                message = await channel.fetch_message(int(msg_id))
             except Exception:
+                log.exception("aaaaa")
                 message = None
             msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
                 role=role.name, emoji=emoji, message=message.jump_url if message else "None"
