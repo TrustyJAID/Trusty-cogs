@@ -172,13 +172,13 @@ class RoleEvents:
                 save = True
 
         if save:
-            await self.config.member(member).to_reapply.set(to_reapply)
+            await self.config.member(member).sticky_roles.set(to_reapply)
 
     async def _sticky_join(self, member: discord.Member):
         guild = member.guild
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        to_reapply = await self.config.member(member).to_reapply()
+        to_reapply = await self.config.member(member).sticky_roles()
         if not to_reapply:
             return
 
