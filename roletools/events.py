@@ -44,6 +44,8 @@ class RoleEvents:
             member = guild.get_member(payload.user_id)
             if not role or not member:
                 return
+            if member.bot:
+                return
             await self.give_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -70,6 +72,8 @@ class RoleEvents:
             log.debug("Removing role")
             member = guild.get_member(payload.user_id)
             if not role or not member:
+                return
+            if member.bot:
                 return
             await self.remove_roles(member, [role], _("Reaction Role"))
 
