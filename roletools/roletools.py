@@ -22,7 +22,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -238,25 +238,27 @@ class RoleTools(RoleEvents, commands.Cog):
         """
         if ctx.guild.id not in self.settings:
             return await ctx.send(_("There are no bound roles in this server."))
-        msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
-        for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
-            channel_id, msg_id, emoji = key.split("-")
-            if emoji.isdigit():
-                emoji = self.bot.get_emoji(int(emoji))
-            if not emoji:
-                emoji = _("Emoji from another server")
-            role = ctx.guild.get_role(role_id)
-            channel = ctx.guild.get_channel(int(channel_id))
-            try:
-                message = await channel.fetch_message(int(msg_id))
-            except Exception:
-                message = None
-            msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
-                role=role.name if role else _("None"),
-                emoji=emoji,
-                message=message.jump_url if message else _("None"),
-            )
-        pages = list(pagify(msg))
+        async with ctx.typing():
+            msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
+            for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
+                channel_id, msg_id, emoji = key.split("-")
+                if emoji.isdigit():
+                    emoji = self.bot.get_emoji(int(emoji))
+                if not emoji:
+                    emoji = _("Emoji from another server")
+                role = ctx.guild.get_role(role_id)
+                channel = ctx.guild.get_channel(int(channel_id))
+                try:
+                    message = await channel.fetch_message(int(msg_id))
+                except Exception:
+                    message = None
+
+                msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
+                    role=role.name if role else _("None"),
+                    emoji=emoji,
+                    message=message.jump_url if message else _("None"),
+                )
+            pages = list(pagify(msg))
         await BaseMenu(
             source=ReactRolePages(
                 pages=pages,
@@ -316,10 +318,10 @@ class RoleTools(RoleEvents, commands.Cog):
             if isinstance(emoji, discord.Emoji):
                 use_emoji = str(emoji.id)
             else:
-                use_emoji = str(emoji)
+                use_emoji = str(emoji).strip(r"\N{VARIATION SELECTOR-16}")
             key = f"{message.channel.id}-{message.id}-{use_emoji}"
             try:
-                await message.add_reaction(emoji)
+                await message.add_reaction(emoji.strip(r"\N{VARIATION SELECTOR-16}"))
             except Exception:
                 return await ctx.send("That is not a valid emoji")
             if ctx.guild.id not in self.settings:
@@ -377,7 +379,7 @@ class RoleTools(RoleEvents, commands.Cog):
                     found = True
                     break
             else:
-                if str(role_or_emoji) in key:
+                if str(role_or_emoji.strip(r"\N{VARIATION SELECTOR-16}")) in key:
                     found = True
                     break
         if found:
@@ -430,11 +432,13 @@ class RoleTools(RoleEvents, commands.Cog):
                 if isinstance(emoji, discord.PartialEmoji):
                     use_emoji = str(emoji.id)
                 else:
-                    use_emoji = str(emoji)
+                    use_emoji = str(emoji).strip(r"\N{VARIATION SELECTOR-16}")
                 key = f"{message.channel.id}-{message.id}-{use_emoji}"
                 if key not in cur_setting:
                     try:
-                        await message.add_reaction(str(emoji).strip())
+                        await message.add_reaction(
+                            str(emoji).strip().strip(r"\N{VARIATION SELECTOR-16}")
+                        )
                     except Exception:
                         log.exception("could not add reaction to message")
                         pass

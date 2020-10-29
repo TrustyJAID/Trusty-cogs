@@ -32,7 +32,8 @@ class RoleEvents:
         if getattr(payload.emoji, "id", None):
             key = f"{payload.channel_id}-{payload.message_id}-{payload.emoji.id}"
         else:
-            key = f"{payload.channel_id}-{payload.message_id}-{payload.emoji}"
+            emoji = str(payload.emoji).strip(r"\N{VARIATION SELECTOR-16}")
+            key = f"{payload.channel_id}-{payload.message_id}-{emoji}"
         guild_settings = self.settings[guild.id]["reaction_roles"]
         if key in guild_settings:
             # add roles
@@ -64,7 +65,8 @@ class RoleEvents:
         if getattr(payload.emoji, "id", None):
             key = f"{payload.channel_id}-{payload.message_id}-{payload.emoji.id}"
         else:
-            key = f"{payload.channel_id}-{payload.message_id}-{payload.emoji}"
+            emoji = str(payload.emoji).strip(r"\N{VARIATION SELECTOR-16}")
+            key = f"{payload.channel_id}-{payload.message_id}-{emoji}"
         guild_settings = self.settings[guild.id]["reaction_roles"]
         if key in guild_settings:
             # add roles
