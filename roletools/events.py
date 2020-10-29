@@ -164,6 +164,7 @@ class RoleEvents:
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
         to_reapply = await self.config.member(member).sticky_roles()
+        save = False
         for role in member.roles:
             if not await self.config.role(role).sticky():
                 continue
