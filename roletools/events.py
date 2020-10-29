@@ -83,6 +83,23 @@ class RoleEvents:
             await self.remove_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if await self.bot.cog_disabled_in_guild(self, before.guild):
+            return
+        removed_roles = list(set(before.roles) - set(after.roles))
+        added_roles = list(set(after.roles) - set(before.roles))
+        for role in added_roles:
+            if await self.config.role(role).sticky():
+                async with self.config.member(after).sticky_roles() as roles:
+                    if role.id not in roles:
+                        roles.append(role.id)
+        for role in removed_roles:
+            if await self.config.role(role).sticky():
+                async with self.config.member(after).sticky_roles() as roles:
+                    if role.id in roles:
+                        roles.remove(role.id)
+
+    @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         if await self.bot.cog_disabled_in_guild(self, member.guild):
             return

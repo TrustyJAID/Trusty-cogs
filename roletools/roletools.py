@@ -1,11 +1,15 @@
+import asyncio
 import logging
+
 from typing import Optional, Union
 
 import discord
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.commands import Context
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 
 from .events import RoleEvents
 from .converter import RoleEmojiConverter, RoleHierarchyConverter
@@ -22,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -320,10 +324,11 @@ class RoleTools(RoleEvents, commands.Cog):
             else:
                 use_emoji = str(emoji).strip(r"\N{VARIATION SELECTOR-16}")
             key = f"{message.channel.id}-{message.id}-{use_emoji}"
+            send_to_react = False
             try:
                 await message.add_reaction(emoji.strip(r"\N{VARIATION SELECTOR-16}"))
             except Exception:
-                return await ctx.send("That is not a valid emoji")
+                send_to_react = True
             if ctx.guild.id not in self.settings:
                 self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
             self.settings[ctx.guild.id]["reaction_roles"][key] = role.id
@@ -335,13 +340,37 @@ class RoleTools(RoleEvents, commands.Cog):
                 role=role.name, emoji=emoji, message=message.jump_url
             )
         )
-        if not await self.config.role(role).selfassignable():
+        if send_to_react:
             await ctx.send(
                 _(
-                    "{role} is not self assignable, make sure to enable it with "
-                    "`{prefix}roletools selfadd yes {role}` to enable self roles."
-                ).format(role=role.name, prefix=ctx.clean_prefix)
+                    "I couldn't add the emoji to the message. Please make "
+                    "sure to add the emoji to the message for this to work."
+                )
             )
+        if not await self.config.role(role).selfassignable():
+            msg_str = _(
+                "{role} is not self assignable. Would you liked to make "
+                "it self assignable and self removeable?"
+            ).format(role=role.name, prefix=ctx.clean_prefix)
+            msg = await ctx.send(msg_str)
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                return await ctx.send(
+                    _("Okay I won't automatically make {role} self assignable.").format(
+                        role=role.name
+                    )
+                )
+            if pred.result:
+                await self.config.role(role).selfassignable.set(True)
+                await self.config.role(role).selfremovable.set(True)
+                await ctx.send(
+                    _("{role} has been made self assignable and self removeable.").format(
+                        role=role.name
+                    )
+                )
 
     @roletools.command(aliases=["remreacts"])
     @commands.admin_or_permissions(manage_roles=True)
@@ -426,6 +455,7 @@ class RoleTools(RoleEvents, commands.Cog):
             )
         added = []
         not_added = []
+        send_to_react = False
         async with self.config.guild(ctx.guild).reaction_roles() as cur_setting:
             for role, emoji in role_emoji:
                 log.debug(type(emoji))
@@ -440,6 +470,7 @@ class RoleTools(RoleEvents, commands.Cog):
                             str(emoji).strip().strip(r"\N{VARIATION SELECTOR-16}")
                         )
                     except Exception:
+                        send_to_react = True
                         log.exception("could not add reaction to message")
                         pass
                     if ctx.guild.id not in self.settings:
@@ -452,8 +483,17 @@ class RoleTools(RoleEvents, commands.Cog):
 
                 else:
                     not_added.append((key, role))
+        ask_to_modify = False
         if added:
             msg = _("__The following Reaction Roles were created__\n")
+
+            if any(
+                [
+                    m is False
+                    for m in [await self.config.role(r).selfassignable() for x, r in added]
+                ]
+            ):
+                ask_to_modify = True
             for item, role in added:
                 channel, message_id, emoji = item.split("-")
                 if emoji.isdigit():
@@ -462,6 +502,13 @@ class RoleTools(RoleEvents, commands.Cog):
                     role=role.name, emoji=emoji, message=message.jump_url
                 )
             await ctx.send(msg)
+            if send_to_react:
+                await ctx.send(
+                    _(
+                        "I couldn't add an emoji to the message. Please make "
+                        "sure to add the missing emojis to the message for this to work."
+                    )
+                )
         if not_added:
             msg = _("__The following Reaction Roles could not be created__\n")
             for item, role in not_added:
@@ -472,3 +519,29 @@ class RoleTools(RoleEvents, commands.Cog):
                     role=role.name, emoji=emoji, message=message.jump_url
                 )
             await ctx.send(msg)
+
+        if ask_to_modify:
+            msg_str = _(
+                "Some roles are not self assignable. Would you liked to make "
+                "them self assignable and self removeable?"
+            ).format(role=role.name, prefix=ctx.clean_prefix)
+            msg = await ctx.send(msg_str)
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                return await ctx.send(
+                    _("Okay I won't automatically make {role} self assignable.").format(
+                        role=role.name
+                    )
+                )
+            if pred.result:
+                for key, role in added:
+                    await self.config.role(role).selfassignable.set(True)
+                    await self.config.role(role).selfremovable.set(True)
+                await ctx.send(
+                    _("{roles} have been made self assignable and self removeable.").format(
+                        roles=humanize_list([r for x, r in added])
+                    )
+                )
