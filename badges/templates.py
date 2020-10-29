@@ -72,12 +72,6 @@ blank_template = [
         "is_inverted": False,
     },
     {
-        "badge_name": "q",
-        "code": "Q !ITPb.qbhqo",
-        "file_name": "https://i.imgur.com/gQjSRpl.png",
-        "is_inverted": True,
-    },
-    {
         "badge_name": "dhs",
         "code": "SpaceX",
         "file_name": "https://i.imgur.com/ibtbEjr.png",

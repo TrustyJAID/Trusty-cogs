@@ -112,6 +112,7 @@ class Badges(commands.Cog):
         if str(status) == "dnd":
             status = _("MIA")
         barcode = BytesIO()
+        log.debug(type(barcode))
         generate("code39", str(user.id), writer=ImageWriter(self), output=barcode)
         barcode = Image.open(barcode)
         barcode = self.remove_white_barcode(barcode)
@@ -153,6 +154,7 @@ class Badges(commands.Cog):
             draw.text((60, 585), str(user.joined_at), fill=fill, font=font2)
         else:
             draw.text((60, 585), str(user.created_at), fill=fill, font=font2)
+        barcode.close()
         return template
 
     def make_animated_gif(self, template: Image, avatar: BytesIO) -> BytesIO:
@@ -264,6 +266,7 @@ class Badges(commands.Cog):
             image = discord.File(badge_img, "badge.png")
             embed = discord.Embed(color=ctx.author.color)
             embed.set_image(url="attachment://badge.png")
+            badge_img.close()
             await ctx.send(files=[image])
 
     @commands.command(aliases=["gbadge"])
@@ -290,6 +293,7 @@ class Badges(commands.Cog):
                 await ctx.send(_("Something went wrong sorry!"))
                 return
             image = discord.File(badge_img)
+            badge_img.close()
             await ctx.send(file=image)
 
     @commands.command()
