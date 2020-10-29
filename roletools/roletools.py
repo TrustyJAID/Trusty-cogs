@@ -22,7 +22,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -243,15 +243,18 @@ class RoleTools(RoleEvents, commands.Cog):
             channel_id, msg_id, emoji = key.split("-")
             if emoji.isdigit():
                 emoji = self.bot.get_emoji(int(emoji))
+            if not emoji:
+                emoji = _("Emoji from another server")
             role = ctx.guild.get_role(role_id)
             channel = ctx.guild.get_channel(int(channel_id))
             try:
                 message = await channel.fetch_message(int(msg_id))
             except Exception:
-                log.exception("aaaaa")
                 message = None
             msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
-                role=role.name, emoji=emoji, message=message.jump_url if message else "None"
+                role=role.name if role else _("None"),
+                emoji=emoji,
+                message=message.jump_url if message else _("None"),
             )
         pages = list(pagify(msg))
         await BaseMenu(

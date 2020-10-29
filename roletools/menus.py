@@ -70,6 +70,8 @@ class RolePages(menus.ListPageSource):
             channel, message, emoji = reaction.split("-")
             if emoji.isdigit():
                 emoji = menu.bot.get_emoji(int(emoji))
+            if not emoji:
+                emoji = _("Emoji from another server")
             link = jump_url.format(guild=menu.ctx.guild.id, channel=channel, message=message)
             reaction_roles += _("{emoji} on [message]({link})\n").format(emoji=emoji, link=link)
         for page in pagify(reaction_roles, page_length=1024):
