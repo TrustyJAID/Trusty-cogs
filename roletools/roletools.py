@@ -127,7 +127,7 @@ class RoleTools(RoleEvents, commands.Cog):
         If not provided the current settingwill be shown instead.
         `<role>` The role you want to set.
         """
-        cur_setting = await self.config.role(role).selfremoveable()
+        cur_setting = await self.config.role(role).selfremovable()
         if set_to is None:
             if cur_setting:
                 return await ctx.send(_("The role {role} is self removeable.").format(role=role))
@@ -139,10 +139,10 @@ class RoleTools(RoleEvents, commands.Cog):
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
         if set_to is True:
-            await self.config.role(role).selfremoveable.set(True)
+            await self.config.role(role).selfremovable.set(True)
             return await ctx.send(_("{role} is now self removeable.").format(role=role.name))
         if set_to is False:
-            await self.config.role(role).selfremoveable.set(False)
+            await self.config.role(role).selfremovable.set(False)
             return await ctx.send(_("{role} is no longer self removeable.").format(role=role.name))
 
     @roletools.command()

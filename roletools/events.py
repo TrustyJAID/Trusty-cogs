@@ -69,7 +69,7 @@ class RoleEvents:
         if key in guild_settings:
             # add roles
             role = guild.get_role(guild_settings[key])
-            if not await self.config.role(role).selfremoveable():
+            if not await self.config.role(role).selfremovable():
                 return
             log.debug("Removing role")
             member = guild.get_member(payload.user_id)
