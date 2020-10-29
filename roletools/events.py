@@ -46,6 +46,8 @@ class RoleEvents:
                 return
             if member.bot:
                 return
+            if await self.check_guild_verification(member, guild):
+                return
             await self.give_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
