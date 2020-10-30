@@ -310,7 +310,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Create a reaction role
 
         `<message>` can be the channel_id-message_id pair
-        from copying message ID while holding CTRL or a message link
+        from copying message ID while holding SHIFT or a message link
         `<emoji>` The emoji you want people to react with to get the role.
         `<role>` The role you want people to receive for reacting.
         """
@@ -385,7 +385,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Remove a reaction role
 
         `<message>` can be the channel_id-message_id pair
-        from copying message ID while holding CTRL or a message link
+        from copying message ID while holding SHIFT or a message link
         `<emoji>` The emoji you want people to react with to get the role.
         `<role>` The role you want people to receive for reacting.
         """
@@ -446,7 +446,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Create multiple roles reactions for a single message
 
         `<message>` can be the channel_id-message_id pair
-        from copying message ID while holding CTRL or a message link
+        from copying message ID while holding SHIFT or a message link
         `[role_emoji...]` Must be a role followed by the emoji tied to that role
         """
         if not message.guild or message.guild.id != ctx.guild.id:
