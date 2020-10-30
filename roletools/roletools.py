@@ -326,8 +326,8 @@ class RoleTools(RoleEvents, commands.Cog):
             key = f"{message.channel.id}-{message.id}-{use_emoji}"
             send_to_react = False
             try:
-                await message.add_reaction(emoji.strip(r"\N{VARIATION SELECTOR-16}"))
-            except Exception:
+                await message.add_reaction(str(emoji).strip(r"\N{VARIATION SELECTOR-16}"))
+            except discord.HTTPException:
                 send_to_react = True
             if ctx.guild.id not in self.settings:
                 self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
@@ -469,7 +469,7 @@ class RoleTools(RoleEvents, commands.Cog):
                         await message.add_reaction(
                             str(emoji).strip().strip(r"\N{VARIATION SELECTOR-16}")
                         )
-                    except Exception:
+                    except discord.HTTPException:
                         send_to_react = True
                         log.exception("could not add reaction to message")
                         pass
