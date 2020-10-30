@@ -129,7 +129,7 @@ class RoleTools(RoleEvents, commands.Cog):
         self, ctx: Context, set_to: Optional[bool] = None, *, role: RoleHierarchyConverter
     ):
         """
-        Set whether or not a user can apply the role to themselves.
+        Set whether or not a user can remove the role from themselves.
 
         `[set_to]` optional boolean of what to set the setting to.
         If not provided the current settingwill be shown instead.
