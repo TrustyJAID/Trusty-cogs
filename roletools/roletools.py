@@ -215,7 +215,7 @@ class RoleTools(RoleEvents, commands.Cog):
                 if role.id not in current_roles:
                     current_roles.append(role.id)
                 if ctx.guild.id not in self.settings:
-                    self.settings = await self.config.guild(ctx.guild).all()
+                    self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
                 if role.id not in self.settings[ctx.guild.id]["auto_roles"]:
                     self.settings[ctx.guild.id]["auto_roles"].append(role.id)
             await self.config.role(role).auto.set(True)
