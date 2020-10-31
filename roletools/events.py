@@ -47,9 +47,9 @@ class RoleEvents:
             if member.bot:
                 return
             if await self.check_guild_verification(member, guild):
-                log.info("Ignoring user due to verification check.")
+                log.debug("Ignoring user due to verification check.")
                 return
-            log.debug("Adding role")
+            log.debug(f"Adding role to {member.name} in {member.guild}")
             await self.give_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -79,7 +79,7 @@ class RoleEvents:
                 return
             if member.bot:
                 return
-            log.info("Removing role")
+            log.debug(f"Removing role from {member.name} in {member.guild}")
             await self.remove_roles(member, [role], _("Reaction Role"))
 
     @commands.Cog.listener()
@@ -115,21 +115,25 @@ class RoleEvents:
     async def check_guild_verification(
         self, member: discord.Member, guild: discord.Guild
     ) -> Union[bool, int]:
+        if member.roles:
+            return False
         allowed_discord = datetime.utcnow() - member.created_at
         # since discords check for verification level 2 is actually discord age not join age
         allowed_server = (
             (datetime.utcnow() - member.joined_at) if member.joined_at else timedelta(minutes=10)
         )
         if guild.verification_level.value >= 2 and allowed_discord <= timedelta(minutes=5):
+            log.debug(f"Waiting 5 minutes for {member.name} in {guild}")
             return 300 - int(allowed_discord.total_seconds())
         elif guild.verification_level.value >= 3 and allowed_server <= timedelta(minutes=10):
+            log.debug(f"Waiting 10 minutes for {member.name} in {guild}")
             return 600 - int(allowed_server.total_seconds())
         return False
 
     async def wait_for_verification(self, member: discord.Member, guild: discord.Guild) -> None:
         wait = await self.check_guild_verification(member, guild)
-        if not member.roles or wait:
-            log.info(
+        if wait:
+            log.debug(
                 f"Waiting {wait} seconds before allowing the user to have a role"
             )
             await asyncio.sleep(int(wait))

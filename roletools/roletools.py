@@ -12,7 +12,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils.menus import start_adding_reactions
 
 from .events import RoleEvents
-from .converter import RoleEmojiConverter, RoleHierarchyConverter
+from .converter import RoleEmojiConverter, RoleHierarchyConverter, RawUserIds
 from .menus import BaseMenu, ReactRolePages, RolePages
 
 log = logging.getLogger("red.trusty-cogs.roletools")
@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.5"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -152,6 +152,43 @@ class RoleTools(RoleEvents, commands.Cog):
         if set_to is False:
             await self.config.role(role).selfremovable.set(False)
             return await ctx.send(_("{role} is no longer self removeable.").format(role=role.name))
+
+    @roletools.command()
+    @commands.admin_or_permissions(manage_roles=True)
+    async def forcerole(
+        self,
+        ctx: Context,
+        users: commands.Greedy[Union[discord.Member, RawUserIds]],
+        *,
+        role: RoleHierarchyConverter,
+    ):
+        """
+        Force a sticky role on one or more users.
+
+        `<users>` The users you want to have a forced stickyrole applied to.
+        `<roles>` The role you want to set.
+
+        Note: The only way to remove this would be to manually remove the role from
+        the user.
+        """
+        errors = []
+        for user in users:
+            if isinstance(user, int):
+                async with self.config.member_from_ids(ctx.guild.id, user).sticky_roles() as setting:
+                    if role not in setting:
+                        setting.append(role.id)
+            elif isinstance(user, discord.Member):
+                async with self.config.member(user).sticky_roles() as setting:
+                    if role not in setting:
+                        setting.append(role.id)
+                try:
+                    await self.give_roles(user, [role], reason=_("Forced Sticky Role"))
+                except discord.HTTPException:
+                    errors.append(_("There was an error force applying the role to {user}.\n").format(user=user))
+        await ctx.send(_("{users} will have the role {role} force applied to them.").format(users=humanize_list(users), role=role.name))
+        if errors:
+            await ctx.send("".join([e for e in errors]))
+
 
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)

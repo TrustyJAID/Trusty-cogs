@@ -9,6 +9,23 @@ from redbot.core import commands
 _ = Translator("RoleTools", __file__)
 
 
+_id_regex = re.compile(r"([0-9]{15,21})$")
+_mention_regex = re.compile(r"<@!?([0-9]{15,21})>$")
+
+
+class RawUserIds(Converter):
+    # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/converters.py
+    async def convert(self, ctx, argument):
+        # This is for the hackban and unban commands, where we receive IDs that
+        # are most likely not in the guild.
+        # Mentions are supported, but most likely won't ever be in cache.
+
+        if match := _id_regex.match(argument) or _mention_regex.match(argument):
+            return int(match.group(1))
+
+        raise BadArgument(_("{} doesn't look like a valid user ID.").format(argument))
+
+
 class RoleHierarchyConverter(commands.RoleConverter):
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
         if not ctx.me.guild_permissions.manage_roles:
