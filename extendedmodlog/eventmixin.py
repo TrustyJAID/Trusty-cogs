@@ -483,12 +483,23 @@ class EventMixin:
         await self.config.guild(guild).invite_links.set(invites)
         return True
 
-    async def get_invite_link(self, guild: discord.Guild) -> str:
+    async def get_invite_link(self, member: discord.Member) -> str:
+        guild = member.guild
         manage_guild = guild.me.guild_permissions.manage_guild
         # invites = await self.config.guild(guild).invite_links()
         invites = self.settings[guild.id]["invite_links"]
         possible_link = ""
         check_logs = manage_guild and guild.me.guild_permissions.view_audit_log
+        if member.bot:
+            if check_logs:
+                action = discord.AuditLogAction.bot_add
+                async for log in guild.audit_logs(action=action):
+                    if log.target.id == member.id:
+                        possible_link = _("Added by: {inviter}").format(
+                            inviter=str(log.user)
+                        )
+                        break
+            return possible_link
         if manage_guild and "VANITY_URL" in guild.features:
             possible_link = str(await guild.vanity_invite())
         if invites and manage_guild:
@@ -569,7 +580,7 @@ class EventMixin:
 
         created_on = "{}\n({} days ago)".format(user_created, since_created)
 
-        possible_link = await self.get_invite_link(guild)
+        possible_link = await self.get_invite_link(member)
         if embed_links:
             embed = discord.Embed(
                 description=member.mention,
