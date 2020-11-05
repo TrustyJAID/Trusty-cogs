@@ -359,11 +359,11 @@ class RoleTools(RoleEvents, commands.Cog):
             if isinstance(emoji, discord.Emoji):
                 use_emoji = str(emoji.id)
             else:
-                use_emoji = str(emoji).strip(r"\N{VARIATION SELECTOR-16}")
+                use_emoji = str(emoji).strip("\N{VARIATION SELECTOR-16}")
             key = f"{message.channel.id}-{message.id}-{use_emoji}"
             send_to_react = False
             try:
-                await message.add_reaction(str(emoji).strip(r"\N{VARIATION SELECTOR-16}"))
+                await message.add_reaction(str(emoji).strip("\N{VARIATION SELECTOR-16}"))
             except discord.HTTPException:
                 send_to_react = True
             if ctx.guild.id not in self.settings:
@@ -445,7 +445,7 @@ class RoleTools(RoleEvents, commands.Cog):
                     found = True
                     break
             else:
-                if str(role_or_emoji.strip(r"\N{VARIATION SELECTOR-16}")) in key:
+                if str(role_or_emoji.strip("\N{VARIATION SELECTOR-16}")) in key:
                     found = True
                     break
         if found:
@@ -499,12 +499,12 @@ class RoleTools(RoleEvents, commands.Cog):
                 if isinstance(emoji, discord.PartialEmoji):
                     use_emoji = str(emoji.id)
                 else:
-                    use_emoji = str(emoji).strip(r"\N{VARIATION SELECTOR-16}")
+                    use_emoji = str(emoji).strip("\N{VARIATION SELECTOR-16}")
                 key = f"{message.channel.id}-{message.id}-{use_emoji}"
                 if key not in cur_setting:
                     try:
                         await message.add_reaction(
-                            str(emoji).strip().strip(r"\N{VARIATION SELECTOR-16}")
+                            str(emoji).strip().strip("\N{VARIATION SELECTOR-16}")
                         )
                     except discord.HTTPException:
                         send_to_react = True
