@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -538,7 +538,8 @@ class RoleTools(RoleEvents, commands.Cog):
                 msg += _("{role} - {emoji} on {message}\n").format(
                     role=role.name, emoji=emoji, message=message.jump_url
                 )
-            await ctx.send(msg)
+            for page in pagify(msg):
+                await ctx.send(page)
             if send_to_react:
                 await ctx.send(
                     _(
