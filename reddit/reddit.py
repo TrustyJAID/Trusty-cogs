@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, Mapping
 
 import aiohttp
 import apraw
@@ -48,6 +48,23 @@ class Reddit(commands.Cog):
         Nothing to delete
         """
         return
+
+    @commands.Cog.listener()
+    async def on_red_api_tokens_update(
+        self, service_name: str, api_tokens: Mapping[str, str]
+    ) -> None:
+        if service_name == "reddit":
+            try:
+                await self.login.close()
+                log.debug("Closed the reddit login.")
+            except Exception:
+                log.exception("Error closing the login.")
+            for name, stream in self._streams.items():
+                try:
+                    stream.cancel()
+                except Exception:
+                    log.debug(f"Error closing stream in {name}")
+            await self.initialize()
 
     async def initialize(self):
         await self.bot.wait_until_red_ready()
