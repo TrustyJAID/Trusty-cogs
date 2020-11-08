@@ -9,7 +9,7 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, VersionInfo, commands, modlog, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import escape, humanize_list, inline
+from redbot.core.utils.chat_formatting import escape, humanize_list, inline, humanize_timedelta
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
@@ -495,9 +495,7 @@ class EventMixin:
                 action = discord.AuditLogAction.bot_add
                 async for log in guild.audit_logs(action=action):
                     if log.target.id == member.id:
-                        possible_link = _("Added by: {inviter}").format(
-                            inviter=str(log.user)
-                        )
+                        possible_link = _("Added by: {inviter}").format(inviter=str(log.user))
                         break
             return possible_link
         if manage_guild and "VANITY_URL" in guild.features:
@@ -1746,6 +1744,8 @@ class EventMixin:
             "inviter": _("Inviter:"),
             "channel": _("Channel:"),
             "max_uses": _("Max Uses:"),
+            "max_age": _("Max Age:"),
+            "temporary": _("Temporary:"),
         }
         try:
             invite_time = invite.created_at.strftime("%H:%M:%S")
@@ -1766,6 +1766,8 @@ class EventMixin:
         for attr, name in invite_attrs.items():
             before_attr = getattr(invite, attr)
             if before_attr:
+                if attr == "max_age":
+                    before_attr = humanize_timedelta(seconds=before_attr)
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
                 embed.add_field(name=name, value=str(before_attr))
@@ -1803,6 +1805,8 @@ class EventMixin:
             "channel": _("Channel: "),
             "max_uses": _("Max Uses: "),
             "uses": _("Used: "),
+            "max_age": _("Max Age:"),
+            "temporary": _("Temporary:"),
         }
         try:
             invite_time = invite.created_at.strftime("%H:%M:%S")
@@ -1823,6 +1827,8 @@ class EventMixin:
         for attr, name in invite_attrs.items():
             before_attr = getattr(invite, attr)
             if before_attr:
+                if attr == "max_age":
+                    before_attr = humanize_timedelta(seconds=before_attr)
                 worth_updating = True
                 msg += f"{name} {before_attr}\n"
                 embed.add_field(name=name, value=str(before_attr))
