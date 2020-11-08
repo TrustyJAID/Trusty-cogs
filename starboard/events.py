@@ -72,7 +72,9 @@ class StarboardEvents:
         """Checks if the user is allowed to add to the starboard
         Allows bot owner to always add messages for testing
         disallows users from adding their own messages"""
-        if isinstance(member, discord.User):
+        if not isinstance(member, discord.Member):
+            # this will account for non-members reactions and still count
+            # for the starboard count
             return True
         user_roles = set([role.id for role in member.roles])
         if starboard.whitelist_role:
@@ -301,35 +303,35 @@ class StarboardEvents:
             if await self._loop_messages(payload, starboard, star_channel, msg, remove):
                 return
 
-        star_message = StarboardMessage(
-            original_message=msg.id,
-            original_channel=channel.id,
-            new_message=None,
-            new_channel=None,
-            author=msg.author.id,
-            reactions=[payload.user_id],
-        )
-        await self._get_count(star_message, starboard, remove)
-        count = len(star_message.reactions)
-        if count < starboard.threshold:
+            star_message = StarboardMessage(
+                original_message=msg.id,
+                original_channel=channel.id,
+                new_message=None,
+                new_channel=None,
+                author=msg.author.id,
+                reactions=[payload.user_id],
+            )
+            await self._get_count(star_message, starboard, remove)
+            count = len(star_message.reactions)
+            if count < starboard.threshold:
+                if star_message not in starboard.messages:
+                    self.starboards[guild.id][starboard.name].messages.append(star_message)
+                await self._save_starboards(guild)
+                return
+            em = await self._build_embed(guild, msg, starboard)
+            count_msg = "{} **#{}**".format(payload.emoji, count)
+            post_msg = await star_channel.send(count_msg, embed=em)
+            if starboard.autostar:
+                try:
+                    await post_msg.add_reaction(starboard.emoji)
+                except Exception:
+                    log.exception("Error adding autostar.")
             if star_message not in starboard.messages:
                 self.starboards[guild.id][starboard.name].messages.append(star_message)
-            await self._save_starboards(guild)
-            return
-        em = await self._build_embed(guild, msg, starboard)
-        count_msg = "{} **#{}**".format(payload.emoji, count)
-        post_msg = await star_channel.send(count_msg, embed=em)
-        if starboard.autostar:
-            try:
-                await post_msg.add_reaction(starboard.emoji)
-            except Exception:
-                log.exception("Error adding autostar.")
-        if star_message not in starboard.messages:
+            star_message.new_message = post_msg.id
+            star_message.new_channel = star_channel.id
             self.starboards[guild.id][starboard.name].messages.append(star_message)
-        star_message.new_message = post_msg.id
-        star_message.new_channel = star_channel.id
-        self.starboards[guild.id][starboard.name].messages.append(star_message)
-        await self._save_starboards(guild)
+            await self._save_starboards(guild)
 
     async def red_delete_data_for_user(
         self,
