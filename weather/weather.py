@@ -123,6 +123,7 @@ class Weather(commands.Cog):
 
     @weather_set.command(name="guild", aliases=["server"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
     async def set_guild(self, ctx: commands.Context, units: UnitConverter) -> None:
         """
         Sets the guild default weather units
