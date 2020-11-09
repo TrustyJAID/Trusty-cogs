@@ -14,7 +14,7 @@ BASE_URL = "https://reddit.com"
 
 SELF_POST_SCRUB = re.compile(r"^(&#x200B;[\s\n]+)(https?://.+)$")
 
-REDDIT_RE = re.compile(r"\/?r\/([a-zA-Z0-9]+)")
+REDDIT_RE = re.compile(r"\/?r\/([a-zA-Z0-9_]+)")
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
 
