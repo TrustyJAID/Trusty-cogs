@@ -132,7 +132,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Set whether or not a user can remove the role from themselves.
 
         `[set_to]` optional boolean of what to set the setting to.
-        If not provided the current settingwill be shown instead.
+        If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).selfremovable()
