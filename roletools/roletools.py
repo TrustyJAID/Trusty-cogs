@@ -102,7 +102,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Set whether or not a user can apply the role to themselves.
 
         `[set_to]` optional boolean of what to set the setting to.
-        If not provided the current settingwill be shown instead.
+        If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).selfassignable()
@@ -199,7 +199,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Set whether or not a role will be re-applied when a user leaves and rejoins the server.
 
         `[set_to]` optional boolean of what to set the setting to.
-        If not provided the current settingwill be shown instead.
+        If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).sticky()
@@ -229,7 +229,7 @@ class RoleTools(RoleEvents, commands.Cog):
         Set a role to be automatically applied when a user joins the server.
 
         `[set_to]` optional boolean of what to set the setting to.
-        If not provided the current settingwill be shown instead.
+        If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).auto()
