@@ -155,7 +155,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         """
         pass
 
-    @retrigger.group(name="allowlist",aliases=["whitelist"])
+    @retrigger.group(name="allowlist", aliases=["whitelist"])
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist(self, ctx: commands.Context) -> None:
         """
@@ -1070,7 +1070,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        with open(Path(__file__).parent / "README.md", "r") as infile:
+        with open(Path(__file__).parent / "README.md", "r", encoding="utf8") as infile:
             data = infile.read()
         pages = []
         for page in pagify(data, ["\n\n\n", "\n\n", "\n"], priority=True):
