@@ -343,7 +343,7 @@ class TriggerHandler:
             )
             return
         except Exception:
-            log.info("Could not find channel or message", exc_info=True)
+            log.info("Could not find channel or message")
             # If we can't find the channel ignore it
             return
         if message.author.bot:
