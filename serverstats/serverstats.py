@@ -37,7 +37,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1246,8 +1246,9 @@ class ServerStats(commands.Cog):
         if not ctx.guild and not await ctx.bot.is_owner(ctx.author):
             return await ctx.send(_("This command is not available in DM."))
         guilds = [ctx.guild]
-        page = ctx.bot.guilds.index(ctx.guild)
+        page = 0
         if await ctx.bot.is_owner(ctx.author):
+            page = ctx.bot.guilds.index(ctx.guild)
             guilds = ctx.bot.guilds
             if guild:
                 page = ctx.bot.guilds.index(guild)
