@@ -523,7 +523,10 @@ class EventPoster(commands.Cog):
         chan = ctx.guild.get_channel(announcement_channel)
         if chan and chan.is_news():
             await self.config.guild(ctx.guild).publish.set(publish)
-            await ctx.send("I will now publish events posted in this server.")
+            if publish:
+                await ctx.send("I will now publish events posted in this server.")
+            else:
+                await ctx.send("I will not publish events posted in this server.")
         elif chan and not chan.is_news():
             await ctx.send("The announcement channel set is not a news channel I can publish in.")
         else:
