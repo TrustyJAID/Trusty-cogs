@@ -1,35 +1,40 @@
-# How to install the Notsobot cog
+# How to install the NotSoBot cog
 **Requirements for Python**
-`pip3 install python-aalib pyfiglet numpy pillow wand`
-`pip3 install git+https://github.com/Kareeeeem/jpglitch`
-**Note: python-aalib uses ctypes to access aalib. As a result aalib is not available on Mac OS systems and will not import. You can still use everything except the ascii art commands.**
+```
+pip3 install python-aalib pyfiglet numpy pillow wand
+pip3 install git+https://github.com/Kareeeeem/jpglitch
+```
+**Note for Mac users: python-aalib uses ctypes to access aalib. As a result aalib is not available on Mac OS systems and will not import. You can still use everything except the ascii art commands.**
 
 
 **Requirements for ImageMagick**
-https://imagemagick.org/script/download.php
-http://docs.wand-py.org/en/0.4.4/guide/install.html#
+* https://imagemagick.org/script/download.php
+* http://docs.wand-py.org/en/0.6.4/guide/install.html
 
-Install the latest source in Ubuntu with:
-`sudo apt-get install libncurses5-dev libbz2-dev libpng-dev libffi-dev libssl-dev liblzma-dev tk-dev libfreetype6-dev libdb5.3-dev libsqlite3-dev libncursesw5-dev libmagickwand-dev git libgdbm-dev imagemagick zlib1g-dev build-essential unzip libexpat1-dev libjpeg-dev ffmpeg libreadline6-dev webp libaa1-dev`
-https://linuxconfig.org/how-to-install-imagemagick-7-on-ubuntu-18-04-linux
+```
+sudo apt -y install libncurses5-dev libbz2-dev libpng-dev libffi-dev libssl-dev liblzma-dev tk-dev libfreetype6-dev libdb5.3-dev libsqlite3-dev libncursesw5-dev libmagickwand-dev git libgdbm-dev imagemagick zlib1g-dev build-essential unzip libexpat1-dev libjpeg-dev ffmpeg libreadline6-dev webp libaa1-dev
+```
+
+Install the latest version of ImageMagick from source in Ubuntu/Debian based systems with:
+* https://linuxconfig.org/how-to-install-imagemagick-7-on-ubuntu-18-04-linux
 
 
 
 # If the above does not work here's how you can install from source on Ubuntu
 
 ```bash
-wget ftp://ftp.imagemagick.org/pub/ImageMagick/ImageMagick.tar.gz
+wget https://www.imagemagick.org/download/ImageMagick.tar.gz
 tar xvfz ImageMagick.tar.gz
 cd ImageMagick-*
 ./configure --disable-shared
-make
+make -j "$(nproc)"
 sudo make install
 ```
 
 ## Installing ImageMagick on Windows
 These instructions are specifically for installing ImageMagick for bots hosted on windows computers.
 
-1. Go to [this link](http://www.imagemagick.org/download/binaries/) and click the first link on that page to begin downloading ImageMagick.
+1. Go to [this link](https://imagemagick.org/script/download.php#windows) and click the first link on that page to begin downloading ImageMagick.
 
 2. When the download finishes, run the downloaded file and click `accept` on the "License Agreement".
 
