@@ -345,7 +345,7 @@ class StarboardEvents:
         for guild_id, starboards in self.starboards.items():
             for starboard, entry in starboards.items():
                 for message in entry.messages:
-                    if message["author"] == user_id:
+                    if message.author == user_id:
                         self.starboards[guild_id][starboard].messages.remove(message)
             await self.config.guild_from_id(guild_id).starboards.set(
                 {n: s.to_json() for n, s in self.starboards[guild_id].items()}
