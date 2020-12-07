@@ -331,7 +331,7 @@ class GoogleTranslateAPI:
         except (discord.errors.NotFound, discord.Forbidden):
             return
 
-        if not await self.check_ignored_channel(message):
+        if not await self.check_ignored_channel(message, reacted_user):
             return
         await self.translate_message(message, str(payload.emoji), reacted_user)
 
@@ -454,18 +454,24 @@ class GoogleTranslateAPI:
 
             return author.id not in await self.bot.db.blacklist()
 
-    async def check_ignored_channel(self, message: discord.Message) -> bool:
+    async def check_ignored_channel(
+        self, message: discord.Message, reacting_user: Optional[discord.Member] = None
+    ) -> bool:
         """
         https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273
         """
         if version_info >= VersionInfo.from_str("3.3.6"):
             ctx = await self.bot.get_context(message)
+            if reacting_user:
+                ctx.author = reacting_user
             return await self.bot.ignored_channel_or_guild(ctx)
         # everything below this can be removed at a later date when support
         # for previous versions are no longer required.
         channel = cast(discord.TextChannel, message.channel)
         guild = channel.guild
         author = cast(discord.Member, message.author)
+        if reacting_user:
+            author = reacting_user
         mod = self.bot.get_cog("Mod")
         if mod is None:
             return True
