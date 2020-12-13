@@ -274,10 +274,7 @@ class StarboardEvents:
         if version_info >= VersionInfo.from_str("3.4.0"):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
-        try:
-            msg = await channel.fetch_message(id=payload.message_id)
-        except (discord.errors.NotFound, discord.Forbidden):
-            return
+
         member = guild.get_member(payload.user_id)
         if member and member.bot:
             return
@@ -296,6 +293,10 @@ class StarboardEvents:
 
         star_channel = guild.get_channel(starboard.channel)
         if not star_channel:
+            return
+        try:
+            msg = await channel.fetch_message(id=payload.message_id)
+        except (discord.errors.NotFound, discord.Forbidden):
             return
         if member.id == msg.author.id and not starboard.selfstar:
             return
