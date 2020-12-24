@@ -22,7 +22,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.5"
+    __version__ = "1.3.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -101,6 +101,8 @@ class Twitch(TwitchAPI, commands.Cog):
                     "twitch",
                     value={"client_id": keys["client_id"], "client_secret": keys["client_secret"]},
                 )
+            except KeyError:
+                pass
         await self.config.api_key.clear()
 
     @commands.group(name="twitch")
