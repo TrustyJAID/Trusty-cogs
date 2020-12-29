@@ -353,11 +353,15 @@ class GoogleTranslateAPI:
                     _("You're translating too many messages!"), delete_after=delete_after
                 )
                 return
+        to_translate = None
         if message.embeds != []:
             if message.embeds[0].description:
                 to_translate = cast(str, message.embeds[0].description)
         else:
             to_translate = message.clean_content
+
+        if not to_translate:
+            return
         num_emojis = 0
         for reaction in message.reactions:
             if reaction.emoji == str(flag):
