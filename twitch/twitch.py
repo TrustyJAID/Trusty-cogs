@@ -191,7 +191,7 @@ class Twitch(TwitchAPI, commands.Cog):
         """
         Setup a channel for automatic clip notifications
 
-        `<twitch_name>` The name of the streamers who's clips you want posted
+        `<twitch_name>` The name of the streamers whose clips you want posted
         `[channel]` The channel to post clips into, if not provided will use the current channel.
         `[view_count]` The minimum view count required before posting a clip.
         `[check_back]` How far back to look back for new clips. Note: You must provide a number
