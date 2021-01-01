@@ -444,7 +444,7 @@ class SpotifyPages(menus.PageSource):
         is_liked = cur_state[1]
         em = discord.Embed(color=discord.Colour(0x1DB954))
         self.current_track = state.item
-        if state.item.is_local:
+        if getattr(state.item, "is_local", False):
             url = "https://open.spotify.com/"
             artist_title = f"{state.item.name} by " + ", ".join(a.name for a in state.item.artists)
             image = SPOTIFY_LOGO
@@ -473,7 +473,7 @@ class SpotifyPages(menus.PageSource):
         em.set_footer(text=footer, icon_url=SPOTIFY_LOGO)
         em.description = f"[{artist_title}]({url})\n\n{album}\n{_draw_play(state)}"
         try:
-            if self.detailed and not state.item.is_local:
+            if self.detailed and not getattr(state.item, "is_local", False):
                 sp = tekore.Spotify(sender=self.sender)
                 with sp.token_as(self.user_token):
                     details = await sp.track_audio_features(state.item.id)
@@ -532,7 +532,7 @@ class SpotifyPages(menus.PageSource):
                 if not cur_state:
                     raise NotPlaying
                 is_liked = False
-                if not cur_state.item.is_local:
+                if not getattr(cur_state.item, "is_local", False):
                     song = cur_state.item.id
                     liked = await user_spotify.saved_tracks_contains([song])
                     is_liked = liked[0]
