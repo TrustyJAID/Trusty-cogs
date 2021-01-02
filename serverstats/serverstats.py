@@ -37,7 +37,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.5.3"
+    __version__ = "1.5.4"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -82,7 +82,7 @@ class ServerStats(commands.Cog):
         """
         Display a users avatar in chat
         """
-        if not members:
+        if members is None:
             members = [ctx.author]
 
         await BaseMenu(

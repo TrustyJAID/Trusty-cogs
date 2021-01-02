@@ -55,7 +55,7 @@ class FuzzyMember(IDConverter):
             else:
                 result.append(_get_from_guilds(bot, "get_member", user_id))
 
-        if not result:
+        if not result or result == [None]:
             raise BadArgument('Member "{}" not found'.format(argument))
 
         return result
