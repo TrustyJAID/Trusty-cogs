@@ -228,22 +228,24 @@ class ServerStats(commands.Cog):
         }
 
         features = {
-            "PARTNERED": _("Partnered"),
-            "VERIFIED": _("Verified"),
-            "DISCOVERABLE": _("Server Discovery"),
-            "FEATURABLE": _("Featurable"),
-            "COMMUNITY": _("Community"),
-            "PUBLIC_DISABLED": _("Public disabled"),
-            "INVITE_SPLASH": _("Splash Invite"),
-            "VIP_REGIONS": _("VIP Voice Servers"),
-            "VANITY_URL": _("Vanity URL"),
-            "MORE_EMOJI": _("More Emojis"),
-            "COMMERCE": _("Commerce"),
-            "LURKABLE": _("Lurkable"),
-            "NEWS": _("News Channels"),
             "ANIMATED_ICON": _("Animated Icon"),
             "BANNER": _("Banner Image"),
+            "COMMERCE": _("Commerce"),
+            "COMMUNITY": _("Community"),
+            "DISCOVERABLE": _("Server Discovery"),
+            "FEATURABLE": _("Featurable"),
+            "INVITE_SPLASH": _("Splash Invite"),
             "MEMBER_LIST_DISABLED": _("Member list disabled"),
+            "MEMBER_VERIFICATION_GATE_ENABLED": _("Membership Screening enabled"),
+            "MORE_EMOJI": _("More Emojis"),
+            "NEWS": _("News Channels"),
+            "PARTNERED": _("Partnered"),
+            "PREVIEW_ENABLED": _("Preview enabled"),
+            "PUBLIC_DISABLED": _("Public disabled"),
+            "VANITY_URL": _("Vanity URL"),
+            "VERIFIED": _("Verified"),
+            "VIP_REGIONS": _("VIP Voice Servers"),
+            "WELCOME_SCREEN_ENABLED": _("Welcome Screen enabled"),
         }
         guild_features_list = [
             f"✅ {name}" for feature, name in features.items() if feature in guild.features
