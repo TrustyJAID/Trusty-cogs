@@ -499,7 +499,11 @@ class EventMixin:
                         break
             return possible_link
         if manage_guild and "VANITY_URL" in guild.features:
-            possible_link = str(await guild.vanity_invite())
+            try:
+                possible_link = str(await guild.vanity_invite())
+            except (discord.errors.NotFound, discord.errors.HTTPException):
+                pass
+
         if invites and manage_guild:
             guild_invites = await guild.invites()
             for invite in guild_invites:
