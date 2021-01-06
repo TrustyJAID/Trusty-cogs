@@ -200,7 +200,7 @@ class TwitchAPI:
             url += f"&started_at={started_at.isoformat()}Z"
             url += f"&ended_at={datetime.utcnow().isoformat()}Z"
         data = await self.get_response(url)
-        clips = data["data"]
+        clips = data.get("data", [])
         return clips
 
     async def maybe_get_twitch_profile(

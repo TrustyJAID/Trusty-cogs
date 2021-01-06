@@ -22,7 +22,7 @@ class Twitch(TwitchAPI, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.6"
+    __version__ = "1.3.7"
 
     def __init__(self, bot):
         self.bot = bot
