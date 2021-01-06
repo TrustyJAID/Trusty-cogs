@@ -160,7 +160,7 @@ class GoogleTranslateAPI:
                 can_run = True
             if member.id in whitelist:
                 can_run = True
-            for role in member.roles:
+            for role in getattr(member, "roles", []):
                 if role.is_default():
                     continue
                 if role.id in whitelist:
@@ -173,9 +173,7 @@ class GoogleTranslateAPI:
                 can_run = False
             if member.id in blacklist:
                 can_run = False
-            if isinstance(member, discord.User):
-                return True
-            for role in member.roles:
+            for role in getattr(member, "roles", []):
                 if role.is_default():
                     continue
                 if role.id in blacklist:

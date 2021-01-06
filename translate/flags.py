@@ -197,7 +197,7 @@ FLAGS = {
     "🇵🇪": {"code": "es", "country": "Peru", "name": "Spanish"},
     "🇵🇫": {"code": "fr", "country": "French Polynesia", "name": "French"},
     "🇵🇬": {"code": "en", "country": "Papua New Guinea", "name": "English"},
-    "🇵🇭": {"code": "en", "country": "Philippines", "name": "English"},
+    "🇵🇭": {"code": "tl", "country": "Philippines", "name": "Tagalog (Filipino)"},
     "🇵🇰": {"code": "en", "country": "Pakistan", "name": "English"},
     "🇵🇱": {"code": "pl", "country": "Poland", "name": "Polish"},
     "🇵🇲": {"code": "fr", "country": "Saint Pierre and Miquelon", "name": "French"},
