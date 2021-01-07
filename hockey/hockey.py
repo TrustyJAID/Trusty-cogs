@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.13.1"
+    __version__ = "2.13.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):

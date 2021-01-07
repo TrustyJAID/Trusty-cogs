@@ -81,9 +81,21 @@ class Standings:
         async with aiohttp.ClientSession() as session:
             async with session.get(BASE_URL + "/api/v1/standings") as resp:
                 data = await resp.json()
-        conference = ["eastern", "western", "conference"]
-        division = ["metropolitan", "atlantic", "pacific", "central", "division"]
+        conference = []  # ["eastern", "western", "conference"]
+        # The NHL removed conferences from the standings
+        division = [
+            "central",
+            "discover",
+            "division",
+            "scotia",
+            "north",
+            "massmutual",
+            "east",
+            "honda",
+            "west"
+        ]
         if style.lower() in conference:
+            # Leaving this incase it comes back
             e = [
                 await Standings.from_json(
                     team, record["division"]["name"], record["conference"]["name"]
@@ -112,7 +124,7 @@ class Standings:
                 new_list.append(
                     [
                         await Standings.from_json(
-                            team, record["division"]["name"], record["conference"]["name"]
+                            team, record["division"]["name"], None  # record["conference"]["name"]
                         )
                         for team in record["teamRecords"]
                     ]
@@ -125,7 +137,7 @@ class Standings:
         else:
             all_teams = [
                 await Standings.from_json(
-                    team, record["division"]["name"], record["conference"]["name"]
+                    team, record["division"]["name"], None  # record["conference"]["name"]
                 )
                 for record in data["records"]
                 for team in record["teamRecords"]

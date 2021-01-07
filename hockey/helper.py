@@ -277,8 +277,18 @@ async def check_valid_team(team_name: str, standings: bool = False) -> str:
     useful for game day channel creation should impliment elsewhere
     """
     is_team = []
-    conference = ["eastern", "western", "conference"]
-    division = ["metropolitan", "atlantic", "pacific", "central", "division"]
+    conference = []  # ["eastern", "western", "conference"]
+    division = [
+            "central",
+            "discover",
+            "division",
+            "scotia",
+            "north",
+            "massmutual",
+            "east",
+            "honda",
+            "west"
+        ]
     if team_name.lower() == "all":
         return ["all"]
     if team_name in conference and standings:
