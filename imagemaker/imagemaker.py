@@ -43,7 +43,7 @@ class ImageMaker(commands.Cog):
         "Bruno Lemos (isnowillegal.com)",
         "Jo\u00e3o Pedro (isnowillegal.com)",
     ]
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -385,6 +385,7 @@ class ImageMaker(commands.Cog):
     ) -> Optional[BytesIO]:
         template_path = "https://i.imgur.com/c5uoDcd.jpg"
         template = Image.open(await self.dl_image(template_path))
+        avatar = None
         if type(text) == discord.Member:
             user = cast(discord.User, text)
             if user.is_avatar_animated() and is_gif:
@@ -412,10 +413,10 @@ class ImageMaker(commands.Cog):
             try:
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
-                avatar.close()
                 template.close()
                 return None
-        avatar.close()
+        if avatar:
+            avatar.close()
         template.close()
         temp.seek(0)
         return temp
