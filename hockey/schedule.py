@@ -208,41 +208,43 @@ class ScheduleList(menus.PageSource):
         day = None
         start_time = None
         for game in games:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(BASE_URL + game["link"]) as resp:
-                    data = await resp.json()
-            game_obj = await Game.from_json(data)
+            game_start = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
+            home_team = game["teams"]["home"]["team"]["name"]
+            away_team = game["teams"]["away"]["team"]["name"]
+            home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
+            away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
+            home_abr = TEAMS[home_team]["tri_code"]
+            away_abr = TEAMS[away_team]["tri_code"]
+
             if start_time is None:
-                start_time = game_obj.game_start
+                start_time = game_start
             if day is None:
-                day = utc_to_local(game_obj.game_start).day
-                time = utc_to_local(game_obj.game_start).strftime("%A %b %d")
+                day = utc_to_local(game_start).day
+                time = utc_to_local(game_start).strftime("%A %b %d")
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}\n**"
-            elif day and day != utc_to_local(game_obj.game_start).day:
-                day = utc_to_local(game_obj.game_start).day
-                time = utc_to_local(game_obj.game_start).strftime("%A %b %d")
+            elif day and day != utc_to_local(game_start).day:
+                day = utc_to_local(game_start).day
+                time = utc_to_local(game_start).strftime("%A %b %d")
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}\n**"
-            if game_obj.game_start < datetime.utcnow():
+
+            if game_start < datetime.utcnow():
+                home_score = game["teams"]["home"]["score"]
+                away_score = game["teams"]["away"]["score"]
                 msg += (
-                    f"{game_obj.home_emoji} {game_obj.home_abr} **{game_obj.home_score}** - "
-                    f"**{game_obj.away_score}** {game_obj.away_emoji} {game_obj.away_abr} \n"
+                    f"{home_emoji} {home_abr} **{home_score}** - "
+                    f"**{away_score}** {away_emoji} {away_abr} \n"
                 )
             else:
                 if self.team == []:
-                    game_time = utc_to_local(
-                        game_obj.game_start, TEAMS[game_obj.home_team]["timezone"]
-                    )
+                    game_time = utc_to_local(game_start, TEAMS[home_team]["timezone"])
                     time_str = game_time.strftime("%I:%M %p %Z")
                 else:
 
-                    game_time = utc_to_local(game_obj.game_start, TEAMS[self.team[0]]["timezone"])
+                    game_time = utc_to_local(game_start, TEAMS[self.team[0]]["timezone"])
                     time_str = game_time.strftime("%I:%M %p %Z")
-                msg += (
-                    f"{game_obj.away_emoji} {game_obj.away_abr} @ "
-                    f"{game_obj.home_emoji} {game_obj.home_abr} - {time_str}\n"
-                )
+                msg += f"{away_emoji} {away_abr} @ " f"{home_emoji} {home_abr} - {time_str}\n"
 
             count = 0
             em = discord.Embed(timestamp=start_time)
