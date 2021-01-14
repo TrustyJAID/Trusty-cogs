@@ -32,7 +32,7 @@ from .menu import (
     PlayerPages,
 )
 from .pickems import Pickems
-from .schedule import Schedule
+from .schedule import Schedule, ScheduleList
 from .standings import Standings
 from .teamentry import TeamEntry
 
@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.13.2"
+    __version__ = "2.14.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1310,6 +1310,21 @@ class Hockey(HockeyDev, commands.Cog):
         log.debug(teams_and_date)
         await GamesMenu(
             source=Schedule(**teams_and_date),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    async def schedule(self, ctx, *, teams_and_date: Optional[TeamDateFinder] = {}):
+        """
+        Gets all upcoming NHL games for the current season as a list
+
+        If team is provided it will grab that teams schedule
+        """
+        log.debug(teams_and_date)
+        await GamesMenu(
+            source=ScheduleList(**teams_and_date),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,

@@ -22,7 +22,8 @@
     ],
     "required_cogs" : {},
     "requirements" : [
-        "pytz"
+        "pytz",
+        "tabulate"
     ],
     "short" : "Hockey commands",
     "tags" : [

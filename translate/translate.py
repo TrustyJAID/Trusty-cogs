@@ -36,7 +36,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
 
     __author__ = ["Aziz", "TrustyJAID"]
-    __version__ = "2.3.4"
+    __version__ = "2.3.5"
 
     def __init__(self, bot):
         self.bot = bot

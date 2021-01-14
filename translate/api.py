@@ -12,7 +12,6 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.common_filters import filter_mass_mentions
 
 from .errors import GoogleTranslateAPIError
 from .flags import FLAGS
@@ -379,9 +378,7 @@ class GoogleTranslateAPI:
         if target == original_lang:
             return
         try:
-            translated_text = filter_mass_mentions(
-                await self.translate_text(original_lang, target, to_translate)
-            )
+            translated_text = await self.translate_text(original_lang, target, to_translate)
             await self.add_requests(guild, to_translate)
         except Exception:
             log.exception("Error translating message")

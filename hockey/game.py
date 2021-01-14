@@ -9,7 +9,6 @@ from redbot import VersionInfo, version_info
 from redbot.core import Config
 from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import pagify
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
