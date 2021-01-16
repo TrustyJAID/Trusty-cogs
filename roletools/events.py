@@ -150,7 +150,7 @@ class RoleEvents:
         if not guild.me.guild_permissions.manage_roles:
             return
         for role in roles:
-            if role is None or role.position >= guild.me.top_role.position:
+            if role is None or role >= guild.me.top_role:
                 continue
             await member.add_roles(role, reason=reason)
 
