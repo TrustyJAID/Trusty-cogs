@@ -65,7 +65,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
 
     def __init__(self, bot):
         self.bot = bot

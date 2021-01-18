@@ -108,7 +108,7 @@ class Events:
                     username = username.replace(word, "[Redacted]")
         em = discord.Embed(description=converted_msg)
         if isinstance(member, discord.Member):
-            em.set_thumbnail(url=member.avatar_url_as(format="png"))
+            em.set_thumbnail(url=str(member.avatar_url))
         if EMBED_DATA["colour"]:
             em.colour = EMBED_DATA["colour"]
         if EMBED_DATA["title"]:
@@ -120,11 +120,11 @@ class Events:
         if EMBED_DATA["thumbnail"]:
             url = EMBED_DATA["thumbnail"]
             if url == "guild":
-                url = guild.icon_url
+                url = str(guild.icon_url)
             elif url == "splash":
-                url = guild.splash_url
+                url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = member.avatar_url
+                url = str(member.avatar_url)
             em.set_thumbnail(url=url)
         if EMBED_DATA["image"] or EMBED_DATA["image_goodbye"]:
             url = ""
@@ -133,25 +133,25 @@ class Events:
             if EMBED_DATA["image_goodbye"] and not is_welcome:
                 url = EMBED_DATA["image_goodbye"]
             if url == "guild":
-                url = guild.icon_url
+                url = str(guild.icon_url)
             elif url == "splash":
-                url = guild.splash_url
+                url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = member.avatar_url
+                url = str(member.avatar_url)
             em.set_image(url=url)
         if EMBED_DATA["icon_url"]:
             url = EMBED_DATA["icon_url"]
             if url == "guild":
-                url = guild.icon_url
+                url = str(guild.icon_url)
             elif url == "splash":
-                url = guild.splash_url
+                url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = member.avatar_url
+                url = str(member.avatar_url)
             em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
             em.timestamp = datetime.utcnow()
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
-            em.set_author(name=username, icon_url=member.avatar_url)
+            em.set_author(name=username, icon_url=str(member.avatar_url))
         return em
 
     @commands.Cog.listener()
