@@ -34,7 +34,7 @@ def get_season():
         return (now.year, now.year + 1)
 
 
-def utc_to_local(utc_dt, new_timezone="US/Eastern"):
+def utc_to_local(utc_dt, new_timezone="US/Pacific"):
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
 

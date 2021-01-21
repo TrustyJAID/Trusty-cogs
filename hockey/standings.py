@@ -131,7 +131,7 @@ class Standings:
                 )
             index = 0
             for div in new_list:
-                if div[0].division.lower() == style and style != "division":
+                if style in div[0].division.lower() and style != "division":
                     index = new_list.index(div)
             return new_list, index
         else:

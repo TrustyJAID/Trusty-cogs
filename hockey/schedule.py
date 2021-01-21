@@ -25,7 +25,7 @@ class Schedule(menus.PageSource):
         self._cache = []
         self._checks = 0
         self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        self.date = kwargs.get("date", utc_to_local(datetime.utcnow(), "US/Pacific"))
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", None)
         self._last_searched = ""
@@ -171,7 +171,7 @@ class ScheduleList(menus.PageSource):
         self._cache = []
         self._checks = 0
         self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        self.date = kwargs.get("date", utc_to_local(datetime.utcnow(), "US/Pacific"))
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", [])
         self._last_searched = ""
@@ -204,6 +204,13 @@ class ScheduleList(menus.PageSource):
         return page
 
     async def format_page(self, menu: menus.MenuPages, games: dict):
+        states = {
+            "Preview": "\N{LARGE RED CIRCLE}",
+            "Live": "\N{LARGE GREEN CIRCLE}",
+            "Intermission": "\N{LARGE YELLOW CIRCLE}",
+            "Final": "\N{CHEQUERED FLAG}"
+        }
+        log.debug(games)
         msg = ""
         day = None
         start_time = None
@@ -215,7 +222,10 @@ class ScheduleList(menus.PageSource):
             away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
             home_abr = TEAMS[home_team]["tri_code"]
             away_abr = TEAMS[away_team]["tri_code"]
-
+            try:
+                game_state = states[game["status"]["abstractGameState"]]
+            except KeyError:
+                game_state = "\N{LARGE RED CIRCLE}"
             if start_time is None:
                 start_time = game_start
             if day is None:
@@ -233,7 +243,7 @@ class ScheduleList(menus.PageSource):
                 home_score = game["teams"]["home"]["score"]
                 away_score = game["teams"]["away"]["score"]
                 msg += (
-                    f"{home_emoji} {home_abr} **{home_score}** - "
+                    f"{game_state} - {home_emoji} {home_abr} **{home_score}** - "
                     f"**{away_score}** {away_emoji} {away_abr} \n"
                 )
             else:
@@ -244,7 +254,7 @@ class ScheduleList(menus.PageSource):
 
                     game_time = utc_to_local(game_start, TEAMS[self.team[0]]["timezone"])
                     time_str = game_time.strftime("%I:%M %p %Z")
-                msg += f"{away_emoji} {away_abr} @ " f"{home_emoji} {home_abr} - {time_str}\n"
+                msg += f"{game_state} - {away_emoji} {away_abr} @ " f"{home_emoji} {home_abr} - {time_str}\n"
 
             count = 0
             em = discord.Embed(timestamp=start_time)

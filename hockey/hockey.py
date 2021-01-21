@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.1"
+    __version__ = "2.14.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1233,7 +1233,7 @@ class Hockey(HockeyDev, commands.Cog):
             log.error("error adding team role", exc_info=True)
             await ctx.send(team + _(" is not an available role!"))
 
-    @hockey_commands.command(name="goals")
+    @hockey_commands.command(name="goalsrole")
     async def team_goals(self, ctx, *, team: HockeyTeams = None):
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
@@ -1254,6 +1254,7 @@ class Hockey(HockeyDev, commands.Cog):
                 await ctx.message.channel.send(f"{role_list} role applied.")
                 return
             else:
+                await ctx.send(_("Please provide the team you want the goal notification role for."))
                 return
         else:
             try:
@@ -1283,6 +1284,15 @@ class Hockey(HockeyDev, commands.Cog):
             "western": ConferenceStandingsPages,
             "eastern": ConferenceStandingsPages,
             "division": DivisionStandingsPages,
+            "massmutual": DivisionStandingsPages,
+            "central": DivisionStandingsPages,
+            "discover": DivisionStandingsPages,
+            "scotia": DivisionStandingsPages,
+            "north": DivisionStandingsPages,
+            "massmutual": DivisionStandingsPages,
+            "east": DivisionStandingsPages,
+            "honda": DivisionStandingsPages,
+            "west": DivisionStandingsPages,
         }
         if search is None:
             search = "division"
