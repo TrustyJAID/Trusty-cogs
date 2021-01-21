@@ -288,13 +288,14 @@ class ServerStats(commands.Cog):
                 voice=bold(humanize_number(voice_channels)),
             ),
         )
+        owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
         em.add_field(
             name=_("Utility:"),
             value=_(
                 "Owner: {owner_mention}\n{owner}\nRegion: {region}\nVerif. level: {verif}\nServer ID: {id}{shard}"
             ).format(
-                owner_mention=bold(str(guild.owner.mention)),
-                owner=bold(str(guild.owner)),
+                owner_mention=bold(str(owner.mention)),
+                owner=bold(str(owner)),
                 region=f"**{vc_regions.get(str(guild.region)) or str(guild.region)}**",
                 verif=bold(verif[str(guild.verification_level)]),
                 id=bold(str(guild.id)),
