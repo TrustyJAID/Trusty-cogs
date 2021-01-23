@@ -25,7 +25,7 @@ class Schedule(menus.PageSource):
         self._cache = []
         self._checks = 0
         self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow(), "US/Pacific"))
+        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", None)
         self._last_searched = ""
@@ -171,7 +171,7 @@ class ScheduleList(menus.PageSource):
         self._cache = []
         self._checks = 0
         self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow(), "US/Pacific"))
+        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", [])
         self._last_searched = ""
@@ -210,7 +210,7 @@ class ScheduleList(menus.PageSource):
             "Intermission": "\N{LARGE YELLOW CIRCLE}",
             "Final": "\N{CHEQUERED FLAG}"
         }
-        log.debug(games)
+        # log.debug(games)
         msg = ""
         day = None
         start_time = None
@@ -260,7 +260,7 @@ class ScheduleList(menus.PageSource):
             em = discord.Embed(timestamp=start_time)
             em.set_footer(text=_("Games Start"))
             if self.team != []:
-                log.debug(self.team)
+                # log.debug(self.team)
                 colour = (
                     int(TEAMS[self.team[0]]["home"].replace("#", ""), 16)
                     if self.team[0] in TEAMS
