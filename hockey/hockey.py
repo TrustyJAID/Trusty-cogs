@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.3"
+    __version__ = "2.14.4"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -153,6 +153,7 @@ class Hockey(HockeyDev, commands.Cog):
                     game["link"]: {"count": 0, "game": None}
                     for game in data["dates"][0]["games"]
                     if game["status"]["abstractGameState"] != "Final"
+                    and game["status"]["detailedState"] != "Postponed"
                 }
             else:
                 games = []
@@ -204,7 +205,7 @@ class Hockey(HockeyDev, commands.Cog):
                         )
                     )
 
-                    if game.game_state == "Final":
+                    if game.game_state in ["Final", "Postponed"]:
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception:

@@ -62,6 +62,11 @@ class Goal:
         self.link = kwargs.get("link", None)
         self.tasks: List[asyncio.Task] = []
 
+    def __repr__(self):
+        return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(
+            self
+        )
+
     def to_json(self) -> dict:
         return {
             "goal_id": self.goal_id,

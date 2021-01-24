@@ -103,6 +103,11 @@ class Game:
         self.game_type = kwargs.get("game_type")
         self.link = kwargs.get("link")
 
+    def __repr__(self):
+        return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
+            self
+        )
+
     def to_json(self) -> dict:
         return {
             "game_state": self.game_state,
@@ -890,9 +895,14 @@ class Game:
         second_star = decisions["secondStar"]["fullName"] if "secondStar" in decisions else None
         third_star = decisions["thirdStar"]["fullName"] if "thirdStar" in decisions else None
         game_type = GAME_TYPES.get(data["gameData"]["game"]["type"], _("Unknown"))
+        game_state = (
+            data["gameData"]["status"]["abstractGameState"]
+            if data["gameData"]["status"]["detailedState"] != "Postponed"
+            else data["gameData"]["status"]["detailedState"]
+        )
         return cls(
             game_id=game_id,
-            game_state=data["gameData"]["status"]["abstractGameState"],
+            game_state=game_state,
             home_team=data["gameData"]["teams"]["home"]["name"],
             away_team=data["gameData"]["teams"]["away"]["name"],
             period=data["liveData"]["linescore"]["currentPeriod"],
