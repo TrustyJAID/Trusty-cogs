@@ -208,7 +208,7 @@ class ScheduleList(menus.PageSource):
             "Preview": "\N{LARGE RED CIRCLE}",
             "Live": "\N{LARGE GREEN CIRCLE}",
             "Intermission": "\N{LARGE YELLOW CIRCLE}",
-            "Final": "\N{CHEQUERED FLAG}"
+            "Final": "\N{CHEQUERED FLAG}",
         }
         # log.debug(games)
         msg = ""
@@ -222,6 +222,7 @@ class ScheduleList(menus.PageSource):
             away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
             home_abr = TEAMS[home_team]["tri_code"]
             away_abr = TEAMS[away_team]["tri_code"]
+            postponed = game["status"]["detailedState"] == "Postponed"
             try:
                 game_state = states[game["status"]["abstractGameState"]]
             except KeyError:
@@ -239,7 +240,13 @@ class ScheduleList(menus.PageSource):
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}\n**"
 
-            if game_start < datetime.utcnow():
+            if postponed:
+                time_str = _("Postponed")
+                msg += (
+                    f"{game_state} - {away_emoji} {away_abr} @ "
+                    f"{home_emoji} {home_abr} - {time_str}\n"
+                )
+            elif game_start < datetime.utcnow():
                 home_score = game["teams"]["home"]["score"]
                 away_score = game["teams"]["away"]["score"]
                 msg += (
@@ -254,7 +261,10 @@ class ScheduleList(menus.PageSource):
 
                     game_time = utc_to_local(game_start, TEAMS[self.team[0]]["timezone"])
                     time_str = game_time.strftime("%I:%M %p %Z")
-                msg += f"{game_state} - {away_emoji} {away_abr} @ " f"{home_emoji} {home_abr} - {time_str}\n"
+                msg += (
+                    f"{game_state} - {away_emoji} {away_abr} @ "
+                    f"{home_emoji} {home_abr} - {time_str}\n"
+                )
 
             count = 0
             em = discord.Embed(timestamp=start_time)
@@ -271,7 +281,7 @@ class ScheduleList(menus.PageSource):
                 if self.team[0] in TEAMS:
                     em.set_thumbnail(url=TEAMS[self.team[0]]["logo"])
             if len(msg) > 2048:
-                for page in pagify(msg, ["Games", "\n"], page_length=1024):
+                for page in pagify(msg, ["Games", "\n"], page_length=1024, priority=True):
                     if count == 0:
                         em.description = page
                         count += 1

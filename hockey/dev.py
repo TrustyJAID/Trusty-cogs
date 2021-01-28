@@ -48,7 +48,7 @@ class HockeyDev:
     #######################################################################
     # Owner Only Commands Mostly for Testing and debuggings
 
-    @commands.group(aliases=["nhldev"], hidden=True)
+    @commands.group(aliases=["nhldev"])
     @checks.is_owner()
     async def hockeydev(self, ctx: commands.Context):
         """
