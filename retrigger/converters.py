@@ -88,7 +88,7 @@ class MultiResponse(Converter):
                 raise BadArgument(_("Not creating trigger."))
 
         def author_perms(ctx: commands.Context, role: discord.Role) -> bool:
-            if ctx.author.id == ctx.guild.owner.id:
+            if ctx.author.id == ctx.guild.owner_id: #handles case where guild is not chunked and calls for the ID thru the endpoint instead
                 return True
             return role < ctx.author.top_role
 

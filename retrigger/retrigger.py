@@ -824,7 +824,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't assign roles higher than my own."))
-            if ctx.author.id == ctx.guild.owner.id:
+            if ctx.author.id == ctx.guild.owner_id:
                 continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
@@ -1732,7 +1732,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't assign roles higher than my own."))
-            if ctx.author.id == ctx.guild.owner.id:
+            if ctx.author.id == ctx.guild.owner_id:
                 continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
@@ -1775,7 +1775,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         for role in roles:
             if role >= ctx.me.top_role:
                 return await ctx.send(_("I can't remove roles higher than my own."))
-            if ctx.author.id == ctx.guild.owner.id:
+            if ctx.author.id == ctx.guild.owner_id:
                 continue
             if role >= ctx.author.top_role:
                 return await ctx.send(
