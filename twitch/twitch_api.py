@@ -211,7 +211,7 @@ class TwitchAPI:
             try:
                 profile = await self.get_profile_from_name(twitch_name)
             except Exception:
-                log.error("{} is not a valid Twitch username".format(twitch_name))
+                log.exception("{} is not a valid Twitch username".format(twitch_name))
                 raise TwitchError("{} is not a valid Twitch username".format(twitch_name))
         else:
             # User has set their twitch ID on the bot
@@ -240,7 +240,7 @@ class TwitchAPI:
                 try:
                     profile = await self.get_profile_from_id(follow.from_id)
                 except Exception:
-                    log.error(f"Error getting twitch profile {follow.from_id}", exc_info=True)
+                    log.exception(f"Error getting twitch profile {follow.from_id}", exc_info=True)
                 log.info(
                     f"{profile.login} Followed! {followed.display_name} "
                     f"has {total} followers now."
