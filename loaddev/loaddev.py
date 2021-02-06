@@ -83,7 +83,7 @@ class LoadDev(commands.Cog):
     @devset.command()
     async def replacemock(self, ctx: commands.Context, replacement: Optional[str]):
         """
-        Set an automatic replacemetn for `[p]mock` when auto loading dev.
+        Set an automatic replacement for `[p]mock` when auto loading dev.
         """
         await self.config.replace_mock.set(replacement)
         if replacement:
