@@ -86,6 +86,10 @@ class RoleEvents:
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if await self.bot.cog_disabled_in_guild(self, before.guild):
             return
+        before_pending = getattr(before, "pending", False)
+        after_pending = getattr(after, "pending", False)
+        if before_pending != after_pending:
+            await self._auto_give(after)
         removed_roles = list(set(before.roles) - set(after.roles))
         added_roles = list(set(after.roles) - set(before.roles))
         for role in added_roles:
@@ -110,6 +114,8 @@ class RoleEvents:
         if await self.bot.cog_disabled_in_guild(self, member.guild):
             return
         await self._sticky_join(member)
+        if getattr(member, "pending", False):
+            return
         await self._auto_give(member)
 
     async def check_guild_verification(
@@ -149,16 +155,43 @@ class RoleEvents:
         guild = member.guild
         if not guild.me.guild_permissions.manage_roles:
             return
+        to_add = []
         for role in roles:
             if role is None or role >= guild.me.top_role:
                 continue
-            await member.add_roles(role, reason=reason)
+            if required := await self.config.role(role).required():
+                has_required = True
+                for role_id in required:
+                    r = guild.get_role(role_id)
+                    if not r:
+                        continue
+                    if r not in member.roles:
+                        has_required = False
+                if not has_required:
+                    continue
+            if inclusive := await self.config.role(role).inclusive_with():
+                inclusive_roles = []
+                for role_id in inclusive:
+                    log.debug(role_id)
+                    r = guild.get_role(role_id)
+                    if r:
+                        inclusive_roles.append(r)
+                await member.add_roles(*inclusive_roles, reason=_("Inclusive Roles"))
+            if exclusive := await self.config.role(role).exclusive_to():
+                exclusive_roles = []
+                for role_id in exclusive:
+                    r = guild.get_role(role_id)
+                    if r in member.roles:
+                        exclusive_roles.append(r)
+                await self.remove_roles(member, exclusive_roles, _("Exclusive Roles"))
+            to_add.append(role)
+        await member.add_roles(*to_add, reason=reason)
 
     async def remove_roles(
         self, member: discord.Member, roles: List[discord.Role], reason: Optional[str] = None
     ):
         """
-        Handles all the logic for applying roles to a user
+        Handles all the logic for removing roles from a user
         """
         if not member.guild.get_member(member.id):
             return
@@ -207,8 +240,10 @@ class RoleEvents:
 
         for role_id in to_reapply:
             role = guild.get_role(role_id)
-            if role:
+            if role and role < guild.me.top_role:
                 to_add.append(role)
 
         if to_add:
-            await self.give_roles(member, to_add, _("Sticky Roles"))
+            # use this to prevent issues with inclusive/exclusive roles
+            # That may have previously been assigned manually
+            await member.add_roles(*to_add, reason=_("Sticky Roles"))

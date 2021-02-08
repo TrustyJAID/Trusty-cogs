@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.2"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -42,6 +42,9 @@ class RoleTools(RoleEvents, commands.Cog):
             "reactions": [],
             "selfassignable": False,
             "selfremovable": False,
+            "exclusive_to": [],
+            "inclusive_with": [],
+            "required": [],
         }
         default_member = {"sticky_roles": []}
         self.config.register_guild(**default_guild)
@@ -90,6 +93,27 @@ class RoleTools(RoleEvents, commands.Cog):
     async def roletools(self, ctx: Context):
         """
         Role tools commands
+        """
+        pass
+
+    @roletools.group(name="exclude", aliases=["exclusive"])
+    async def exclusive(self, ctx: Context):
+        """
+        Set role exclusions
+        """
+        pass
+
+    @roletools.group(name="include", aliases=["inclusive"])
+    async def inclusive(self, ctx: Context):
+        """
+        Set role inclusion
+        """
+        pass
+
+    @roletools.group(name="required")
+    async def required_roles(self, ctx: Context):
+        """
+        Set role requirements
         """
         pass
 
@@ -174,7 +198,9 @@ class RoleTools(RoleEvents, commands.Cog):
         errors = []
         for user in users:
             if isinstance(user, int):
-                async with self.config.member_from_ids(ctx.guild.id, user).sticky_roles() as setting:
+                async with self.config.member_from_ids(
+                    ctx.guild.id, user
+                ).sticky_roles() as setting:
                     if role not in setting:
                         setting.append(role.id)
             elif isinstance(user, discord.Member):
@@ -184,11 +210,18 @@ class RoleTools(RoleEvents, commands.Cog):
                 try:
                     await self.give_roles(user, [role], reason=_("Forced Sticky Role"))
                 except discord.HTTPException:
-                    errors.append(_("There was an error force applying the role to {user}.\n").format(user=user))
-        await ctx.send(_("{users} will have the role {role} force applied to them.").format(users=humanize_list(users), role=role.name))
+                    errors.append(
+                        _("There was an error force applying the role to {user}.\n").format(
+                            user=user
+                        )
+                    )
+        await ctx.send(
+            _("{users} will have the role {role} force applied to them.").format(
+                users=humanize_list(users), role=role.name
+            )
+        )
         if errors:
             await ctx.send("".join([e for e in errors]))
-
 
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
@@ -271,6 +304,191 @@ class RoleTools(RoleEvents, commands.Cog):
             await self.config.role(role).auto.set(False)
             return await ctx.send(_("That role is no automatically applied when a user joins."))
 
+    @exclusive.command(name="add")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def exclusive_add(
+        self, ctx: Context, role: RoleHierarchyConverter, *exclude: RoleHierarchyConverter
+    ):
+        """
+        Add role exclusion (This will remove if the designated role is acquired)
+
+        `<role>` This is the role a user may acquire you want to set exclusions for.
+        `<exclude>` The role(s) you wish to have removed when a user gains the `<role>`
+
+        Note: This will only work for reaction roles and automatic roles from this cog.
+        """
+        cur_setting = await self.config.role(role).exclusive_to()
+        inclusive = await self.config.role(role).inclusive_with()
+        for excluded_role in exclude:
+            if excluded_role.id in inclusive:
+                return await ctx.send(
+                    _("You cannot exclude a role that is already considered inclusive.")
+                )
+            if excluded_role.id not in cur_setting:
+                cur_setting.append(excluded_role.id)
+        await self.config.role(role).exclusive_to.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        role_names = humanize_list([i.name for i in roles if i])
+        await ctx.send(
+            _(
+                "Role {role} will now remove the following roles if it "
+                "is acquired automatically or via reaction roles.\n{excluded_roles}."
+            ).format(role=role.name, excluded_roles=role_names)
+        )
+
+    @exclusive.command(name="remove")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def exclusive_remove(
+        self, ctx: Context, role: RoleHierarchyConverter, *exclude: RoleHierarchyConverter
+    ):
+        """
+        Remove role exclusion
+
+        `<role>` This is the role a user may acquire you want to set exclusions for.
+        `<exclude>` The role(s) currently excluded you no longer wish to have excluded
+        """
+        cur_setting = await self.config.role(role).exclusive_to()
+        for excluded_role in exclude:
+            if excluded_role.id in cur_setting:
+                cur_setting.remove(excluded_role.id)
+        await self.config.role(role).exclusive_to.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        if roles:
+            role_names = humanize_list([i.name for i in roles if i])
+            await ctx.send(
+                _(
+                    "Role {role} will now remove the following roles if it "
+                    "is acquired automatically or via reaction roles.\n{excluded_roles}."
+                ).format(role=role.name, excluded_roles=role_names)
+            )
+        else:
+            return await ctx.send(
+                _("Role {role} will not have any excluded roles.").format(role=role.name)
+            )
+
+    @inclusive.command(name="add")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def inclusive_add(
+        self, ctx: Context, role: RoleHierarchyConverter, *include: RoleHierarchyConverter
+    ):
+        """
+        Add role inclusion (This will add roles if the designated role is acquired)
+
+        `<role>` This is the role a user may acquire you want to set exclusions for.
+        `<include>` The role(s) you wish to have added when a user gains the `<role>`
+
+        Note: This will only work for reaction roles and automatic roles from this cog.
+        """
+        cur_setting = await self.config.role(role).inclusive_with()
+        exclusive = await self.config.role(role).exclusive_to()
+        for included_role in include:
+            if included_role.id in exclusive:
+                return await ctx.send(
+                    _("You cannot include a role that is already considered exclusive.")
+                )
+            if included_role.id not in cur_setting:
+                cur_setting.append(included_role.id)
+        await self.config.role(role).inclusive_with.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        role_names = humanize_list([i.name for i in roles if i])
+        await ctx.send(
+            _(
+                "Role {role} will now add the following roles if it "
+                "is acquired automatically or via reaction roles.\n{included_roles}."
+            ).format(role=role.name, included_roles=role_names)
+        )
+
+    @inclusive.command(name="remove")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def inclusive_remove(
+        self, ctx: Context, role: RoleHierarchyConverter, *include: RoleHierarchyConverter
+    ):
+        """
+        Remove role inclusion
+
+        `<role>` This is the role a user may acquire you want to set exclusions for.
+        `<include>` The role(s) currently inclusive you no longer wish to have included
+        """
+        cur_setting = await self.config.role(role).inclusive_with()
+        for included_role in include:
+            if included_role.id in cur_setting:
+                cur_setting.remove(included_role.id)
+        await self.config.role(role).inclusive_with.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        if roles:
+            role_names = humanize_list([i.name for i in roles if i])
+            await ctx.send(
+                _(
+                    "Role {role} will now add the following roles if it "
+                    "is acquired automatically or via reaction roles.\n{included_roles}."
+                ).format(role=role.name, included_roles=role_names)
+            )
+        else:
+            return await ctx.send(
+                _("Role {role} will no longer have included roles.").format(role=role.name)
+            )
+
+    @required_roles.command(name="add")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def required_add(
+        self, ctx: Context, role: RoleHierarchyConverter, *required: RoleHierarchyConverter
+    ):
+        """
+        Add role requirements
+
+        `<role>` This is the role a user may acquire you want to set requirements for.
+        `<requires>` The role(s) the user requires before being allowed to gain this role.
+
+        Note: This will only work for reaction roles from this cog.
+        """
+        cur_setting = await self.config.role(role).required()
+        for included_role in required:
+            if included_role.id not in cur_setting:
+                cur_setting.append(included_role.id)
+        await self.config.role(role).required.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        role_names = humanize_list([i.name for i in roles if i])
+        await ctx.send(
+            _(
+                "Role {role} will now only be given if the following roles "
+                "are already owned.\n{included_roles}."
+            ).format(role=role.name, included_roles=role_names)
+        )
+
+    @required_roles.command(name="remove")
+    @commands.admin_or_permissions(manage_roles=True)
+    async def required_remove(
+        self, ctx: Context, role: RoleHierarchyConverter, *required: RoleHierarchyConverter
+    ):
+        """
+        Remove role requirements
+
+        `<role>` This is the role a user may acquire you want to set requirements for.
+        `<requires>` The role(s) you wish to have added when a user gains the `<role>`
+
+        Note: This will only work for reaction roles from this cog.
+        """
+        cur_setting = await self.config.role(role).required()
+        for included_role in required:
+            if included_role.id in cur_setting:
+                cur_setting.remove(included_role.id)
+        await self.config.role(role).required.set(cur_setting)
+        roles = [ctx.guild.get_role(i) for i in cur_setting]
+        if roles:
+            role_names = humanize_list([i.name for i in roles if i])
+            await ctx.send(
+                _(
+                    "Role {role} will now only be given if the following roles "
+                    "are already owned.\n{included_roles}."
+                ).format(role=role.name, included_roles=role_names)
+            )
+        else:
+            return await ctx.send(
+                _("Role {role} will no longer require any other roles to be added.").format(
+                    role=role.name
+                )
+            )
+
     @roletools.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
     async def reactroles(self, ctx: Context):
@@ -332,6 +550,76 @@ class RoleTools(RoleEvents, commands.Cog):
             cog=self,
             page_start=page_start,
         ).start(ctx=ctx)
+
+    @roletools.command()
+    @commands.admin_or_permissions(manage_roles=True)
+    async def cleanup(self, ctx: Context):
+        """
+        Cleanup old/missing reaction roles and settings.
+
+        Note: This will also clear out reaction roles if the bot is just
+        missing permissions to see the reactions.
+        """
+        guild = ctx.guild
+        async with ctx.typing():
+            async with self.config.guild(ctx.guild).reaction_roles() as cur_settings:
+                to_remove = []
+                for key, role_id in cur_settings.items():
+                    chan_id, message_id, emoji = key.split("-")
+                    channel = guild.get_channel(chan_id)
+                    if not channel:
+                        to_remove.append((key, role_id))
+                        continue
+                    message = await channel.fetch_message(message_id)
+                    if not message:
+                        to_remove.append((key, role_id))
+                        continue
+                    role = guild.get_role(role_id)
+                    if not role:
+                        to_remove.append((key, role_id))
+                for key, role_id in to_remove:
+                    del cur_settings[key]
+                    del self.settings[guild.id]["reaction_roles"][key]
+                    async with self.config.role_from_id(role_id).reactions() as reactions:
+                        reactions.remove(key)
+        await ctx.send(_("I am finished deleting old settings."))
+
+    @roletools.command()
+    @commands.is_owner()
+    async def ownercleanup(self, ctx: Context):
+        """
+        Cleanup old/missing reaction roles and settings on the bot.
+
+        Note: This will also clear out reaction roles if the bot is just
+        missing permissions to see the reactions.
+        """
+        async with ctx.typing():
+            for guild_id in self.settings:
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    continue
+                async with self.config.guild(ctx.guild).reaction_roles() as cur_settings:
+                    to_remove = []
+                    for key, role_id in cur_settings.items():
+                        chan_id, message_id, emoji = key.split("-")
+                        channel = guild.get_channel(chan_id)
+                        if not channel:
+                            to_remove.append((key, role_id))
+                            continue
+                        message = await channel.fetch_message(message_id)
+                        if not message:
+                            to_remove.append((key, role_id))
+                            continue
+                        role = guild.get_role(role_id)
+                        if not role:
+                            to_remove.append((key, role_id))
+                    for key, role_id in to_remove:
+                        del cur_settings[key]
+                        del self.settings[guild.id]["reaction_roles"][key]
+                        async with self.config.role_from_id(role_id).reactions() as reactions:
+                            reactions.remove(key)
+        await ctx.send(_("I am finished deleting old settings."))
+
 
     @roletools.command(aliases=["reacts"])
     @commands.admin_or_permissions(manage_roles=True)

@@ -31,7 +31,7 @@ class Twitch(TwitchAPI, commands.Cog):
             "access_token": {},
             "twitch_accounts": [],
             "twitch_clips": {},
-            "version": "0.0.0",
+            "version": self.__version__, # default value so that migrations are skipped on new installs
         }
         user_defaults = {"id": "", "login": "", "display_name": ""}
         self.config.register_global(**global_defaults, force_registration=True)

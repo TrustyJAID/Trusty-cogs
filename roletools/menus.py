@@ -9,7 +9,7 @@ import discord
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.vendored.discord.ext import menus
 
 
@@ -49,10 +49,17 @@ class RolePages(menus.ListPageSource):
         em = discord.Embed(title=msg, colour=role.colour)
         mod_roles = await menu.bot.get_mod_roles(menu.ctx.guild)
         admin_roles = await menu.bot.get_admin_roles(menu.ctx.guild)
+        required_roles = [menu.ctx.guild.get_role(i) for i in role_settings["required"]]
+        exclusive_roles = [menu.ctx.guild.get_role(i) for i in role_settings["exclusive_to"]]
+        inclusive_roles = [menu.ctx.guild.get_role(i) for i in role_settings["inclusive_with"]]
+
         settings = _(
             "__Sticky:__ **{sticky}**\n__Auto:__ **{auto}**\n"
             "__Self Assignable:__ **{selfassign}**\n"
             "__Self Removable:__ **{selfrem}**\n"
+            "__Inclusive with:__ {inclusive}\n"
+            "__Exclusive to: {exclusive}__\n"
+            "__Required:__ {required}\n"
             "__Colour: __ **{colour}**\n"
             "__Is Mod:__ **{mod}**\n"
             "__Is Admin:__ **{admin}**\n"
@@ -61,6 +68,9 @@ class RolePages(menus.ListPageSource):
             auto=role_settings["auto"],
             selfassign=role_settings["selfassignable"],
             selfrem=role_settings["selfremovable"],
+            inclusive=humanize_list([r.mention for r in inclusive_roles if r]),
+            exclusive=humanize_list([r.mention for r in exclusive_roles if r]),
+            required=humanize_list([r.mention for r in required_roles if r]),
             colour=str(role.colour),
             mod=role in mod_roles,
             admin=role in admin_roles,
