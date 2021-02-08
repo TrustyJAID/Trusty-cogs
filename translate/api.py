@@ -381,7 +381,7 @@ class GoogleTranslateAPI:
             translated_text = await self.translate_text(original_lang, target, to_translate)
             await self.add_requests(guild, to_translate)
         except Exception:
-            log.exception("Error translating message")
+            log.exception(f"Error translating message {guild=} {channel=}")
             return
         if not translated_text:
             return
