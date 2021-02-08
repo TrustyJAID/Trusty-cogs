@@ -158,7 +158,11 @@ class StarboardEvents:
         em.timestamp = message.created_at
         jump_link = _("\n\n[Click Here to view context]({link})").format(link=message.jump_url)
         if em.description:
-            em.description = f"{em.description}{jump_link}"
+            with_context = f"{em.description}{jump_link}"
+            if len(with_context) > 2048:
+                em.add_field(name=_("Context"), value=jump_link)
+            else:
+                em.description = with_context
         else:
             em.description = jump_link
         em.set_footer(text=f"{channel.guild.name} | {channel.name}")
