@@ -163,6 +163,7 @@ class Trigger:
         self.delete_after = kwargs.get("delete_after", None)
         self.read_filenames = kwargs.get("read_filenames", False)
         self.chance = kwargs.get("chance", 0)
+        self.reply = kwargs.get("reply", None)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -218,6 +219,7 @@ class Trigger:
             "delete_after": self.delete_after,
             "read_filenames": self.read_filenames,
             "chance": self.chance,
+            "reply": self.reply,
         }
 
     @classmethod
@@ -232,6 +234,7 @@ class Trigger:
         enabled = True
         read_filenames = True
         chance = 0
+        reply = None
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -260,6 +263,8 @@ class Trigger:
             data["text"] = ""
         if "chance" in data:
             chance = data["chance"]
+        if "reply" in data:
+            reply = data["reply"]
         return cls(
             data["name"],
             data["regex"],
@@ -280,6 +285,7 @@ class Trigger:
             ocr_search=ocr_search,
             read_filenames=read_filenames,
             chance=chance,
+            reply=reply,
         )
 
 

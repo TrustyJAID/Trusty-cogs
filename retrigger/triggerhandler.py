@@ -607,12 +607,25 @@ class TriggerHandler:
             response = await self.convert_parms(message, text_response, trigger, find)
             if response and not channel.permissions_for(author).mention_everyone:
                 response = escape(response, mass_mentions=True)
-            try:
-                await channel.send(response, delete_after=trigger.delete_after)
-            except discord.errors.Forbidden:
-                log.debug(error_in, exc_info=True)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            if version_info >= VersionInfo.from_str("3.4.6") and trigger.reply is not None:
+                try:
+                    await channel.send(
+                        response,
+                        delete_after=trigger.delete_after,
+                        reference=message,
+                        mention_author=trigger.reply,
+                    )
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
+            else:
+                try:
+                    await channel.send(response, delete_after=trigger.delete_after)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
 
         if "randtext" in trigger.response_type and own_permissions.send_messages:
             await channel.trigger_typing()
@@ -622,12 +635,22 @@ class TriggerHandler:
             )
             if crand_text_response and not channel.permissions_for(author).mention_everyone:
                 crand_text_response = escape(crand_text_response, mass_mentions=True)
-            try:
-                await channel.send(crand_text_response)
-            except discord.errors.Forbidden:
-                log.debug(error_in, exc_info=True)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            if version_info >= VersionInfo.from_str("3.4.6") and trigger.reply is not None:
+                try:
+                    await channel.send(
+                        crand_text_response, reference=message, mention_author=trigger.reply
+                    )
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
+            else:
+                try:
+                    await channel.send(crand_text_response)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
 
         if "image" in trigger.response_type and own_permissions.attach_files:
             await channel.trigger_typing()
@@ -640,12 +663,25 @@ class TriggerHandler:
                 )
             if image_text_response and not channel.permissions_for(author).mention_everyone:
                 image_text_response = escape(image_text_response, mass_mentions=True)
-            try:
-                await channel.send(image_text_response, file=file)
-            except discord.errors.Forbidden:
-                log.debug(error_in, exc_info=True)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            if version_info >= VersionInfo.from_str("3.4.6") and trigger.reply is not None:
+                try:
+                    await channel.send(
+                        image_text_response,
+                        file=file,
+                        reference=message,
+                        mention_author=trigger.reply,
+                    )
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
+            else:
+                try:
+                    await channel.send(image_text_response, file=file)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
 
         if "randimage" in trigger.response_type and own_permissions.attach_files:
             await channel.trigger_typing()
@@ -660,12 +696,25 @@ class TriggerHandler:
 
             if rimage_text_response and not channel.permissions_for(author).mention_everyone:
                 rimage_text_response = escape(rimage_text_response, mass_mentions=True)
-            try:
-                await channel.send(rimage_text_response, file=file)
-            except discord.errors.Forbidden:
-                log.debug(error_in, exc_info=True)
-            except Exception:
-                log.error(error_in, exc_info=True)
+            if version_info >= VersionInfo.from_str("3.4.6") and trigger.reply is not None:
+                try:
+                    await channel.send(
+                        rimage_text_response,
+                        file=file,
+                        reference=message,
+                        mention_author=trigger.reply,
+                    )
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
+            else:
+                try:
+                    await channel.send(rimage_text_response, file=file)
+                except discord.errors.Forbidden:
+                    log.debug(error_in, exc_info=True)
+                except Exception:
+                    log.error(error_in, exc_info=True)
 
         if "dm" in trigger.response_type:
             if trigger.multi_payload:

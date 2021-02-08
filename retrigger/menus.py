@@ -121,6 +121,10 @@ class ReTriggerPages(menus.ListPageSource):
                 text_response = trigger.text
             if len(text_response) < 200:
                 info += _("__Text__: ") + "**{response}**\n".format(response=text_response)
+        if trigger.reply is not None:
+            info += _("__Replies with Notification__:") + "**{response}**\n".format(
+                response=trigger.reply
+            )
         if "rename" in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
@@ -226,7 +230,9 @@ class ReTriggerPages(menus.ListPageSource):
                     if page.startswith("```"):
                         use_box = True
                     if use_box:
-                        em.add_field(name=_("__Text__"), value=box(page.replace("```", ""), lang="text"))
+                        em.add_field(
+                            name=_("__Text__"), value=box(page.replace("```", ""), lang="text")
+                        )
                     else:
                         em.add_field(name=_("__Text__"), value=page)
             for page in pagify(trigger.regex.pattern, page_length=1000):

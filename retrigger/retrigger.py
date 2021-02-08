@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.17.2"
+    __version__ = "2.18.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -608,6 +608,34 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} read filenames set to: {read_filenames}")
         await ctx.send(msg.format(name=trigger.name, read_filenames=trigger.read_filenames))
+
+    @_edit.command(name="reply", aliases=["replies"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def set_reply(self, ctx: commands.Context, trigger: TriggerExists, set_to: Optional[bool] = None) -> None:
+        """
+        Set whether or not to reply to the triggered message
+
+        `<trigger>` is the name of the trigger.
+        `[set_to]` `True` will reply with a notificaiton, `False` will reply without a notification,
+        leaving this blank will clear replies entirely.
+
+        Note: This is only availabe for Red 3.4.6/discord.py 1.6.0 or greater.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.reply = set_to
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} replies set to: {set_to}")
+        await ctx.send(msg.format(name=trigger.name, set_to=trigger.reply))
 
     @_edit.command(name="edited")
     @checks.mod_or_permissions(manage_messages=True)
