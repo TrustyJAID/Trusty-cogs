@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -51,6 +51,13 @@ class RoleTools(RoleEvents, commands.Cog):
         self.config.register_role(**default_role)
         self.config.register_member(**default_member)
         self.settings = {}
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+        Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def initalize(self):
         if await self.config.version() < "1.0.1":
@@ -566,15 +573,15 @@ class RoleTools(RoleEvents, commands.Cog):
                 to_remove = []
                 for key, role_id in cur_settings.items():
                     chan_id, message_id, emoji = key.split("-")
-                    channel = guild.get_channel(chan_id)
+                    channel = guild.get_channel(int(chan_id))
                     if not channel:
                         to_remove.append((key, role_id))
                         continue
-                    message = await channel.fetch_message(message_id)
+                    message = await channel.fetch_message(int(message_id))
                     if not message:
                         to_remove.append((key, role_id))
                         continue
-                    role = guild.get_role(role_id)
+                    role = guild.get_role(int(role_id))
                     if not role:
                         to_remove.append((key, role_id))
                 for key, role_id in to_remove:
@@ -602,15 +609,15 @@ class RoleTools(RoleEvents, commands.Cog):
                     to_remove = []
                     for key, role_id in cur_settings.items():
                         chan_id, message_id, emoji = key.split("-")
-                        channel = guild.get_channel(chan_id)
+                        channel = guild.get_channel(int(chan_id))
                         if not channel:
                             to_remove.append((key, role_id))
                             continue
-                        message = await channel.fetch_message(message_id)
+                        message = await channel.fetch_message(int(message_id))
                         if not message:
                             to_remove.append((key, role_id))
                             continue
-                        role = guild.get_role(role_id)
+                        role = guild.get_role(int(role_id))
                         if not role:
                             to_remove.append((key, role_id))
                     for key, role_id in to_remove:
