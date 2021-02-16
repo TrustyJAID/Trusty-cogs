@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.2.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -208,11 +208,11 @@ class RoleTools(RoleEvents, commands.Cog):
                 async with self.config.member_from_ids(
                     ctx.guild.id, user
                 ).sticky_roles() as setting:
-                    if role not in setting:
+                    if role.id not in setting:
                         setting.append(role.id)
             elif isinstance(user, discord.Member):
                 async with self.config.member(user).sticky_roles() as setting:
-                    if role not in setting:
+                    if role.id not in setting:
                         setting.append(role.id)
                 try:
                     await self.give_roles(user, [role], reason=_("Forced Sticky Role"))
@@ -224,6 +224,51 @@ class RoleTools(RoleEvents, commands.Cog):
                     )
         await ctx.send(
             _("{users} will have the role {role} force applied to them.").format(
+                users=humanize_list(users), role=role.name
+            )
+        )
+        if errors:
+            await ctx.send("".join([e for e in errors]))
+
+    @roletools.command()
+    @commands.admin_or_permissions(manage_roles=True)
+    async def forceroleremove(
+        self,
+        ctx: Context,
+        users: commands.Greedy[Union[discord.Member, RawUserIds]],
+        *,
+        role: RoleHierarchyConverter,
+    ):
+        """
+        Force remove sticky role on one or more users.
+
+        `<users>` The users you want to have a forced stickyrole applied to.
+        `<roles>` The role you want to set.
+
+        Note: This is generally only useful for users who have left the server.
+        """
+        errors = []
+        for user in users:
+            if isinstance(user, int):
+                async with self.config.member_from_ids(
+                    ctx.guild.id, user
+                ).sticky_roles() as setting:
+                    if role in setting:
+                        setting.remove(role.id)
+            elif isinstance(user, discord.Member):
+                async with self.config.member(user).sticky_roles() as setting:
+                    if role.id in setting:
+                        setting.append(role.id)
+                try:
+                    await self.remove_roles(user, [role], reason=_("Force removed sticky role"))
+                except discord.HTTPException:
+                    errors.append(
+                        _("There was an error force removing the role from {user}.\n").format(
+                            user=user
+                        )
+                    )
+        await ctx.send(
+            _("{users} will have the role {role} force removed from them.").format(
                 users=humanize_list(users), role=role.name
             )
         )
