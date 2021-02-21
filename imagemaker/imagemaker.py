@@ -71,6 +71,7 @@ class ImageMaker(commands.Cog):
                     return None
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def wheeze(
         self, ctx: commands.Context, *, text: Union[discord.Member, str] = None
     ) -> None:
@@ -91,6 +92,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=file)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def facemerge(self, ctx: commands.Context, *, urls: ImageFinder) -> None:
         """
         Generate a gif of two images fading into eachother
@@ -109,6 +111,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=file)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     @commands.check(lambda ctx: BANNER)
     async def scrollbanner(
         self, ctx: commands.Context, colour: Optional[discord.Colour] = (255, 0, 0), *, text: str
@@ -129,6 +132,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(files=[file])
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def obama(self, ctx: commands.Context, *, text: str) -> None:
         """
@@ -168,6 +172,7 @@ class ImageMaker(commands.Cog):
                 await ctx.send(files=[file])
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def gwheeze(self, ctx: commands.Context, member: discord.Member = None) -> None:
         """
         Generate a gif wheeze image if user has a gif avatar
@@ -187,6 +192,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=file)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def beautiful(
         self, ctx: commands.Context, user: discord.Member = None, is_gif=False
     ) -> None:
@@ -208,6 +214,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=file)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def feels(
         self, ctx: commands.Context, user: discord.Member = None, is_gif=False
     ) -> None:
@@ -230,6 +237,7 @@ class ImageMaker(commands.Cog):
 
     @commands.command(aliases=["isnowillegal"])
     @commands.check(lambda ctx: TRUMP)
+    @commands.bot_has_permissions(attach_files=True)
     async def trump(self, ctx: commands.Context, *, message) -> None:
         """
         Generate isnowillegal gif image
@@ -253,6 +261,7 @@ class ImageMaker(commands.Cog):
             await ctx.send(file=image)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def redpill(self, ctx: commands.Context) -> None:
         """Generate a Red Pill"""
         msg = copy(ctx.message)
@@ -260,6 +269,7 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def bluepill(self, ctx: commands.Context) -> None:
         """Generate a Blue Pill"""
         msg = copy(ctx.message)
@@ -267,6 +277,7 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def blackpill(self, ctx: commands.Context) -> None:
         """Generate a Black Pill"""
         msg = copy(ctx.message)
@@ -274,6 +285,7 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def purplepill(self, ctx: commands.Context) -> None:
         """Generate a Purple Pill"""
         msg = copy(ctx.message)
@@ -281,6 +293,7 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def yellowpill(self, ctx: commands.Context) -> None:
         """Generate a Yellow Pill"""
         msg = copy(ctx.message)
@@ -288,6 +301,7 @@ class ImageMaker(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def greenpill(self, ctx: commands.Context) -> None:
         """Generate a Green Pill"""
         msg = copy(ctx.message)
@@ -308,6 +322,7 @@ class ImageMaker(commands.Cog):
         return image
 
     @commands.command()
+    @commands.bot_has_permissions(attach_files=True)
     async def pill(self, ctx: commands.Context, colour="#FF0000") -> None:
         """
         Generate a pill image to any colour with hex codes
