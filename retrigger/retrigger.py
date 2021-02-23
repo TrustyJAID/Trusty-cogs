@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from multiprocessing.pool import Pool
+import multiprocessing as mp
 from pathlib import Path
 from typing import Optional, Union
 
@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.18.0"
+    __version__ = "2.18.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -63,7 +63,8 @@ class ReTrigger(TriggerHandler, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1)
-        self.re_pool = Pool(maxtasksperchild=1000)
+        mp_ctx = mp.get_context("spawn")
+        self.re_pool = mp_ctx.Pool(maxtasksperchild=1000)
         self.triggers = {}
         self.save_triggers = None
         self.__unload = self.cog_unload
@@ -77,12 +78,24 @@ class ReTrigger(TriggerHandler, commands.Cog):
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     def cog_unload(self):
+        if 218773382617890828 in self.bot.owner_ids:
+            try:
+                self.bot.remove_dev_env_value("retrigger", lambda x: self)
+            except Exception:
+                pass
         log.debug("Closing process pools.")
         self.re_pool.close()
         self.bot.loop.run_in_executor(None, self.re_pool.join)
         self.save_triggers.cancel()
 
     async def initialize(self):
+        if 218773382617890828 in self.bot.owner_ids:
+            # This doesn't work on bot startup but that's fine
+            try:
+                self.bot.add_dev_env_value("retrigger", lambda x: self)
+            except Exception:
+                log.error("Error adding retrigger to dev environment.")
+                pass
         self.trigger_timeout = await self.config.trigger_timeout()
         data = await self.config.all_guilds()
         for guild, settings in data.items():

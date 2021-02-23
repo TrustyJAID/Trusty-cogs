@@ -7,8 +7,7 @@ import string
 from copy import copy
 from datetime import datetime
 from io import BytesIO
-from multiprocessing import TimeoutError
-from multiprocessing.pool import Pool
+import multiprocessing as mp
 from typing import Any, Dict, List, Literal, Pattern, Tuple, cast, Optional
 
 import aiohttp
@@ -65,7 +64,7 @@ class TriggerHandler:
 
     config: Config
     bot: Red
-    re_pool: Pool
+    re_pool: mp.pool.Pool
     triggers: Dict[int, List[Trigger]]
     trigger_timeout: int
     ALLOW_RESIZE: bool = ALLOW_RESIZE
@@ -510,7 +509,7 @@ class TriggerHandler:
             task = functools.partial(process.get, timeout=self.trigger_timeout)
             new_task = self.bot.loop.run_in_executor(None, task)
             search = await asyncio.wait_for(new_task, timeout=self.trigger_timeout + 5)
-        except TimeoutError:
+        except mp.TimeoutError:
             error_msg = (
                 "ReTrigger: regex process took too long. Removing from memory "
                 f"{guild.name} ({guild.id}) Author {trigger.author} "
