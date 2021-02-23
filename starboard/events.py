@@ -155,6 +155,19 @@ class StarboardEvents:
             )
             if message.attachments != []:
                 em.set_image(url=message.attachments[0].url)
+            if msg_ref := getattr(message, "reference", None):
+                ref_msg_chan = self.bot.get_channel(msg_ref.channel_id)
+                try:
+                    ref_msg = await ref_msg_chan.fetch_message(msg_ref.message_id)
+                    ref_text = ref_msg.system_content
+                    if len(ref_text) > 1024:
+                        ref_text = ref_text[:1021] + "..."
+                    em.add_field(
+                        name=_("Replying to {author}").format(author=ref_msg.author.display_name),
+                        value=ref_text,
+                    )
+                except Exception:
+                    pass
         em.timestamp = message.created_at
         jump_link = _("\n\n[Click Here to view context]({link})").format(link=message.jump_url)
         if em.description:
