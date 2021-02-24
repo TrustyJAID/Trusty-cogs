@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.18.1"
+    __version__ = "2.18.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -63,8 +63,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1)
-        mp_ctx = mp.get_context("spawn")
-        self.re_pool = mp_ctx.Pool(maxtasksperchild=1000)
+        self.re_pool = mp.Pool(maxtasksperchild=1000)
         self.triggers = {}
         self.save_triggers = None
         self.__unload = self.cog_unload

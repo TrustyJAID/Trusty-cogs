@@ -64,7 +64,7 @@ class TriggerHandler:
 
     config: Config
     bot: Red
-    re_pool: mp.pool.Pool
+    re_pool: mp.Pool
     triggers: Dict[int, List[Trigger]]
     trigger_timeout: int
     ALLOW_RESIZE: bool = ALLOW_RESIZE
@@ -73,7 +73,7 @@ class TriggerHandler:
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
-        self.re_pool: Pool
+        self.re_pool: mp.Pool
         self.triggers: Dict[int, List[Trigger]]
         self.trigger_timeout: int
         self.ALLOW_RESIZE = ALLOW_RESIZE
