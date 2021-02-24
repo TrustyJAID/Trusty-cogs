@@ -8,6 +8,7 @@ from copy import copy
 from datetime import datetime
 from io import BytesIO
 import multiprocessing as mp
+from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, Literal, Pattern, Tuple, cast, Optional
 
 import aiohttp
@@ -64,7 +65,7 @@ class TriggerHandler:
 
     config: Config
     bot: Red
-    re_pool: mp.Pool
+    re_pool: ThreadPool
     triggers: Dict[int, List[Trigger]]
     trigger_timeout: int
     ALLOW_RESIZE: bool = ALLOW_RESIZE
@@ -73,7 +74,7 @@ class TriggerHandler:
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
-        self.re_pool: mp.Pool
+        self.re_pool: ThreadPool
         self.triggers: Dict[int, List[Trigger]]
         self.trigger_timeout: int
         self.ALLOW_RESIZE = ALLOW_RESIZE

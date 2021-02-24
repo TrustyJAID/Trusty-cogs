@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import multiprocessing as mp
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Optional, Union
 
@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.18.2"
+    __version__ = "2.18.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -63,7 +63,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1)
-        self.re_pool = mp.Pool(maxtasksperchild=1000)
+        self.re_pool = ThreadPool()
         self.triggers = {}
         self.save_triggers = None
         self.__unload = self.cog_unload
@@ -79,8 +79,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
     def cog_unload(self):
         if 218773382617890828 in self.bot.owner_ids:
             try:
-                self.bot.remove_dev_env_value("retrigger", lambda x: self)
+                self.bot.remove_dev_env_value("retrigger")
             except Exception:
+                log.exception("Error removing retrigger from dev environment.")
                 pass
         log.debug("Closing process pools.")
         self.re_pool.close()
@@ -1027,15 +1028,15 @@ class ReTrigger(TriggerHandler, commands.Cog):
             try:
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
             except asyncio.TimeoutError:
-                return await ctx.send(_("Not bypassing regex pattern filtering."))
+                return await ctx.send(_("Not bypassing safe Regex search."))
             if pred.result:
                 await self.config.guild(ctx.guild).bypass.set(bypass)
                 await ctx.tick()
             else:
-                await ctx.send(_("Not bypassing regex pattern filtering."))
+                await ctx.send(_("Not bypassing safe Regex search."))
         else:
             await self.config.guild(ctx.guild).bypass.set(bypass)
-            await ctx.send(_("Safe Regex search bypass re-enabled."))
+            await ctx.send(_("Safe Regex search re-enabled."))
 
     @retrigger.command(usage="[trigger]")
     async def list(
