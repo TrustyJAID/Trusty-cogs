@@ -278,7 +278,7 @@ class RecommendationsConverter(Converter):
                 if match.group(2) == "track":
                     tracks.append(match.group(3))
                 if match.group(2) == "artist":
-                    tracks.append(match.group(3))
+                    artists.append(match.group(3))
         query = {
             "artist_ids": artists if artists else None,
             "genres": genres if genres else None,

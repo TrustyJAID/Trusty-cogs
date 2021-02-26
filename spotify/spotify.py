@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.5.3"
+    __version__ = "1.5.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1141,7 +1141,7 @@ class Spotify(commands.Cog):
                 )
             items = search.tracks
         if not items:
-            return await ctx.send(_("No recommendations could be found that query."))
+            return await ctx.send(_("No recommendations could be found with that query."))
         if ctx.guild:
             delete_after = await self.config.guild(ctx.guild).delete_message_after()
             clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
