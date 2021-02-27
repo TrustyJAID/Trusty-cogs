@@ -324,7 +324,7 @@ class DestinyAPI:
 
     async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
         """
-        This retreieves the activity history for a users character
+        This retrieves the activity history for a user's character
 
         """
         try:
