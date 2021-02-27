@@ -160,6 +160,8 @@ async def make_details(track: tekore.model.FullTrack, details: tekore.model.Audi
             detail = f"[ {detail} dB ]"
         if attr == "tempo":
             detail = f"[ {detail} BPM ]"
+        if attr == "time_signature":
+            detail = f"[ {detail}/4 ]"
         if isinstance(detail, int):
             detail = f"[ {detail} ]"
         if isinstance(detail, float):
