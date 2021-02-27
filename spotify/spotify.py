@@ -60,7 +60,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.5.4"
+    __version__ = "1.5.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -322,6 +322,8 @@ class Spotify(commands.Cog):
                 for field in em_dict["fields"]:
                     content += " " + field["name"] + " " + field["value"]
             log.debug(content)
+        content = content.replace("🧑‍🎨", ":artist:")
+        # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(content)
         tracks = []
         albums = []
@@ -985,7 +987,9 @@ class Spotify(commands.Cog):
                 cur = await user_spotify.playback()
                 if not cur:
                     await ctx.send(_("It appears you're not currently listening to Spotify."))
-                elif cur.is_playing and not cur.item.is_local:
+                elif isinstance(cur.item, tekore.model.FullEpisode):
+                    return await ctx.send(_("I cannot play podcasts from spotify."))
+                elif cur.is_playing and not getattr(cur.item, "is_local", False):
                     msg = copy(ctx.message)
                     msg.content = ctx.prefix + f"play {cur.item.uri}"
                     self.bot.dispatch("message", msg)
@@ -1437,6 +1441,8 @@ class Spotify(commands.Cog):
         the bot will search through your playlists and start playing
         the playlist with the closest matching name
         """
+        url_or_playlist_name = url_or_playlist_name.replace("🧑‍🎨", ":artist:")
+        # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(url_or_playlist_name)
         tracks = []
         new_uri = ""

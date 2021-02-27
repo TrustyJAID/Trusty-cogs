@@ -14,7 +14,7 @@ from tabulate import tabulate
 log = logging.getLogger("red.trusty-cogs.spotify")
 
 SPOTIFY_RE = re.compile(
-    r"(https?:\/\/open\.spotify\.com\/|spotify:)(track|playlist|album|artist|episode|show)\/?:?([^?\(\)\s]+)"
+    r"(https?:\/\/open\.spotify\.com\/|spotify:?)(track|playlist|album|artist|episode|show)\/?:?([^?\(\)\s]+)"
 )
 
 SPOTIFY_LOGO = "https://imgur.com/Ig4VuuJ.png"
@@ -253,6 +253,8 @@ class RecommendationsConverter(Converter):
 
     async def convert(self, ctx: commands.Context, argument: str) -> dict:
         query = {}
+        argument = argument.replace("🧑‍🎨", ":artist:")
+        # because discord will replace this in URI's automatically 🙄
         rec_str = r"|".join(i for i in VALID_RECOMMENDATIONS.keys())
         find_rec = re.compile(fr"({rec_str})\W(.+)", flags=re.I)
         if not ctx.cog.GENRES:
