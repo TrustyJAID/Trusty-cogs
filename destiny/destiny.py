@@ -58,7 +58,7 @@ class Destiny(DestinyAPI, commands.Cog):
         user_id: int,
     ):
         """
-        Method for finding users data inside the cog and deleting it.
+        Method for finding a user's data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
 
@@ -162,7 +162,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def user(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
-        Display a menu of your basic characters info
+        Display a menu of your basic character's info
         `[user]` A member on the server who has setup their account on this bot.
         """
         if not await self.has_oauth(ctx, user):
@@ -342,7 +342,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def eververse(self, ctx: commands.Context) -> None:
         """
-        Display items available on the eververse right now
+        Display items currently available on the Eververse
         """
         if not await self.has_oauth(ctx):
             return
@@ -388,7 +388,7 @@ class Destiny(DestinyAPI, commands.Cog):
         self, ctx: commands.Context, full: Optional[bool] = False, user: discord.Member = None
     ) -> None:
         """
-        Display a menu of each characters equipped weapons and their info
+        Display a menu of each character's equipped weapons and their info
 
         `[full=False]` Display full information about weapons equipped.
         `[user]` A member on the server who has setup their account on this bot.
@@ -508,7 +508,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def pvp(self, ctx: commands.Context) -> None:
         """
-        Display a menu of each characters pvp stats
+        Display a menu of each character's pvp stats
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny stats pvp"
@@ -518,7 +518,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def raid(self, ctx: commands.Context) -> None:
         """
-        Display a menu for each characters RAID stats
+        Display a menu for each character's RAID stats
         """
         msg = ctx.message
         msg.content = f"{ctx.prefix}destiny stats raid"
@@ -538,7 +538,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def history(self, ctx: commands.Context, activity: DestinyActivity) -> None:
         """
-        Display a meny of each characters last 5 activities
+        Display a meny of each character's last 5 activities
 
         `<activity>` The activity type to display stats on available types include:
         all, story, strike, raid, allpvp, patrol, allpve, control, clash,
@@ -843,7 +843,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True) -> None:
         """
-        Display each characters stats for a specific activity
+        Display each character's stats for a specific activity
         `<activity>` The type of stats to display, available options are:
         `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
@@ -904,8 +904,8 @@ class Destiny(DestinyAPI, commands.Cog):
 
         Required information is found at:
         https://www.bungie.net/en/Application
-        select create a new application
-        choose **Confidential** OAuth Client type
+        select **Create New App**
+        Choose **Confidential** OAuth Client type
         Select the scope you would like the bot to have access to
         Set the redirect URL to https://localhost/
         NOTE: It is strongly recommended to use this command in DM
