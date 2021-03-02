@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import functools
 from base64 import b64encode
 from datetime import datetime
 from typing import List, Optional
@@ -22,6 +23,12 @@ from .errors import (
     Destiny2RefreshTokenError,
 )
 
+DEV_BOTS = [552261846951002112]
+# If you want parsing the manifest data to be easier add your
+# bots ID to this list otherwise this should help performance
+# on bots that are just running the cog like normal
+
+DESTINY1_BASE_URL = "https://www.bungie.net/d1/Platform/Destiny/"
 BASE_URL = "https://www.bungie.net/Platform"
 IMAGE_URL = "https://www.bungie.net"
 AUTH_URL = "https://www.bungie.net/en/oauth/authorize"
@@ -240,13 +247,13 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {"components": "200,204,205,300,302,304"}
+        params = {"components": "100,103,104,200,202,204,205,300,302,304,307,800,900,1000,1100"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_entities(self, entity: str) -> dict:
+    def get_entities(self, entity: str) -> dict:
         """
         This loads the entity from the saved manifest
         """
@@ -263,7 +270,11 @@ class DestinyAPI:
         """
         items = []
         try:
-            data = await self.get_entities(entity)
+            # the below is to prevent blocking reading the large
+            # ~130mb manifest files and save on API calls
+            task = functools.partial(self.get_entities, entity=entity)
+            task = self.bot.loop.run_in_executor(None, task)
+            data = await asyncio.wait_for(task, timeout=60)
         except Exception:
             log.info(_("No manifest found, getting response from API."))
             return await self.get_definition_from_api(entity, entity_hash)
@@ -295,7 +306,11 @@ class DestinyAPI:
         This is a helper to search clean names for a given definition of data
         """
         try:
-            data = await self.get_entities(entity)
+            # the below is to prevent blocking reading the large
+            # ~130mb manifest files and save on API calls
+            task = functools.partial(self.get_entities, entity=entity)
+            task = self.bot.loop.run_in_executor(None, task)
+            data: dict = await asyncio.wait_for(task, timeout=60)
         except Exception:
             err_msg = _("This command requires the Manifest to be downloaded to work.")
             raise Destiny2MissingManifest(err_msg)
@@ -305,6 +320,9 @@ class DestinyAPI:
                 items.append(data)
             display_properties = data["displayProperties"]
             if str(entity_hash).lower() in display_properties["name"].lower():
+                if data.get("itemType", 0) == 20:
+                    # We generally don't care about dummy items in the lookup
+                    continue
                 items.append(data)
         return items
 
@@ -316,7 +334,7 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"components": "400,401,402"}
+        params = {"components": "304,400,401,402"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
@@ -476,7 +494,15 @@ class DestinyAPI:
         membership_name = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
         return (membership, membership_name)
 
-    async def get_manifest(self) -> None:
+    async def save(self, data: dict, loc: str = "sample.json"):
+        if self.bot.user.id not in DEV_BOTS:
+            return
+        base_path = Path(__file__).parent
+        path = base_path / loc
+        with path.open(encoding="utf-8", mode="w") as f:
+            json.dump(data, f, indent=4, sort_keys=False, separators=(",", " : "))
+
+    async def get_manifest(self, d1: bool = False) -> None:
         """
         Checks if the manifest is up to date and downloads if it's not
         """
@@ -488,23 +514,101 @@ class DestinyAPI:
             headers = await self.build_headers()
         except Destiny2MissingAPITokens:
             return
-        manifest_data = await self.request_url(f"{BASE_URL}/Destiny2/Manifest/", headers=headers)
-        locale = get_locale()
-        if locale in manifest_data:
-            manifest = manifest_data["jsonWorldContentPaths"][locale]
-        elif locale[:-3] in manifest_data:
-            manifest = manifest_data["jsonWorldContentPaths"][locale[:-3]]
+        if d1:
+            manifest_data = await self.request_url(
+                f"{DESTINY1_BASE_URL}/Manifest/", headers=headers
+            )
+            locale = get_locale()
+            if locale in manifest_data:
+                manifest = manifest_data["mobileWorldContentPaths"][locale]
+            elif locale[:-3] in manifest_data:
+                manifest = manifest_data["mobileWorldContentPaths"][locale[:-3]]
+            else:
+                manifest = manifest_data["mobileWorldContentPaths"]["en"]
         else:
-            manifest = manifest_data["jsonWorldContentPaths"]["en"]
-        if await self.config.manifest_version() != manifest_data["version"]:
+            manifest_data = await self.request_url(
+                f"{BASE_URL}/Destiny2/Manifest/", headers=headers
+            )
+            await self.save(manifest_data, "d2_manifest.json")
+            locale = get_locale()
+            if locale in manifest_data:
+                manifest = manifest_data["jsonWorldContentPaths"][locale]
+            elif locale[:-3] in manifest_data:
+                manifest = manifest_data["jsonWorldContentPaths"][locale[:-3]]
+            else:
+                manifest = manifest_data["jsonWorldContentPaths"]["en"]
+        if await self.config.manifest_version() != manifest_data["version"] or d1:
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"https://bungie.net/{manifest}", headers=headers) as resp:
-                    data = await resp.json()
-            for key, value in data.items():
-                path = cog_data_path(self) / f"{key}.json"
-                with path.open(encoding="utf-8", mode="w") as f:
-                    json.dump(value, f, indent=4, sort_keys=False, separators=(",", " : "))
-            await self.config.manifest_version.set(manifest_data["version"])
+                    if d1:
+                        data = await resp.read()
+                        directory = cog_data_path(self) / "d1/"
+                        if not directory.is_dir():
+                            log.debug("Creating guild folder")
+                            directory.mkdir(exist_ok=True, parents=True)
+                        path = directory / "d1_manifest.zip"
+                        with path.open(mode="wb") as f:
+                            f.write(data)
+                        import zipfile
+                        import sqlite3
+                        import ctypes
+                        db_name = None
+                        with zipfile.ZipFile(str(path), "r") as zip_ref:
+                            zip_ref.extractall(str(cog_data_path(self) / "d1/"))
+                            db_name = zip_ref.namelist()
+
+                        conn = sqlite3.connect(directory / db_name[0])
+                        conn.row_factory = sqlite3.Row
+                        db = conn.cursor()
+                        rows = db.execute('''
+                        SELECT * from sqlite_master WHERE type='table'
+                        ''').fetchall()
+                        # conn.commit()
+                        # conn.close()
+                        # log.debug(rows)
+                        for row in rows:
+                            json_data = {}
+                            name = dict(row)["name"]
+                            data = db.execute('''
+                            SELECT * from {name}
+                            '''.format(name=name)).fetchall()
+                            for _id, datas in data:
+                                # log.debug(datas)
+                                try:
+                                    hash_id = ctypes.c_uint32(_id).value
+                                except TypeError:
+                                    hash_id = _id
+                                json_data[str(hash_id)] = json.loads(datas)
+                            # log.debug(dict(row))
+                            path = cog_data_path(self) / f"d1/{name}.json"
+                            with path.open(encoding="utf-8", mode="w") as f:
+                                if self.bot.user.id in DEV_BOTS:
+                                    json.dump(
+                                        json_data,
+                                        f,
+                                        indent=4,
+                                        sort_keys=False,
+                                        separators=(",", " : "),
+                                    )
+                                else:
+                                    json.dump(value, f)
+                        conn.close()
+                    else:
+                        data = await resp.json()
+                        for key, value in data.items():
+                            path = cog_data_path(self) / f"{key}.json"
+                            with path.open(encoding="utf-8", mode="w") as f:
+                                if self.bot.user.id in DEV_BOTS:
+                                    json.dump(
+                                        value,
+                                        f,
+                                        indent=4,
+                                        sort_keys=False,
+                                        separators=(",", " : "),
+                                    )
+                                else:
+                                    json.dump(value, f)
+                        await self.config.manifest_version.set(manifest_data["version"])
         return manifest_data["version"]
 
     async def get_char_colour(self, embed: discord.Embed, character):

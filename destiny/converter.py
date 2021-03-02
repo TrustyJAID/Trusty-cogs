@@ -1,5 +1,7 @@
 import logging
 
+from typing import Optional
+
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
@@ -36,7 +38,7 @@ class DestinyActivity(Converter):
             "privatematchesall": {"code": 32, "alt": ["private"]},
             "survival": {"code": 37, "alt": []},
             "countdown": {"code": 38, "alt": []},
-            "trialsofthenine": {"code": 39, "alt": ["9", "trials"]},
+            "trialsofthenine": {"code": 39, "alt": ["9"]},
             "social": {"code": 40, "alt": []},
             "trialscountdown": {"code": 41, "alt": []},
             "trialssurvival": {"code": 42, "alt": []},
@@ -72,6 +74,16 @@ class DestinyActivity(Converter):
             "clashcompetitive": {"code": 72, "alt": ["clashcomp"]},
             "controlquickplay": {"code": 73, "alt": ["controlqp"]},
             "controlcompetitive": {"code": 74, "alt": ["controlcomp"]},
+            "gambirprime": {"code": 75, "alt": []},
+            "reckoning": {"code": 76, "alt": []},
+            "menagerie": {"code": 77, "alt": []},
+            "vexoffensive": {"code": 78, "alt": []},
+            "nightmarehunt": {"code": 79, "alt": []},
+            "elimination": {"code": 80, "alt": ["elim"]},
+            "momentum": {"code": 81, "alt": []},
+            "dungeon": {"code": 82, "alt": []},
+            "sundial": {"code": 83, "alt": []},
+            "trialsofosiris": {"code": 84, "alt": ["trials"]},
         }
         result = None
         argument = argument.lower()
@@ -122,4 +134,33 @@ class StatsPage(Converter):
                     activity_list=humanize_list(list(possible_results.keys()))
                 )
             )
+        return result
+
+@cog_i18n(_)
+class SearchInfo(Converter):
+    """Returns specific type of information to display with search
+    By default we want to list the available perks on the weapon
+    Sometimes a user may want to view an items lore card
+
+    returns True to show lore pages instead
+    returns False to show detailed info instead
+
+    """
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Optional[bool]:
+
+        possible_results = {
+            "lore": {"code": False, "alt": ["lore"]},
+            "details": {"code": True, "alt": ["stats", "yes", "y", "true", "t", "1", "enable", "on"]},
+        }
+        result = None
+        argument = argument.lower()
+        if argument in possible_results:
+            result = possible_results[argument]["code"]
+        else:
+            for k, v in possible_results.items():
+                if argument in v["alt"]:
+                    result = v["code"]
+        if result is None:
+            raise BadArgument()
         return result
