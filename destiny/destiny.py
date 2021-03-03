@@ -5,12 +5,11 @@ import json
 import functools
 from pathlib import Path
 from typing import List, Literal, Optional
-from copy import copy
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify, humanize_timedelta
+from redbot.core.utils.chat_formatting import pagify, humanize_timedelta, humanize_list
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
@@ -37,7 +36,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -154,16 +153,16 @@ class Destiny(DestinyAPI, commands.Cog):
                 all_perks = await self.get_definition("DestinyInventoryItemDefinition", pool_perks)
                 try:
                     key_hash = all_perks[0]["itemCategoryHashes"][0]
-                    key_data = await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
+                    key_data = await self.get_definition(
+                        "DestinyItemCategoryDefinition", [key_hash]
+                    )
                     key = key_data[0]["displayProperties"]["name"]
                     if key in perks:
                         key = f"{key} {count}"
                         count += 1
                 except IndexError:
                     key = _("Perk {count}").format(count=slot_counter)
-                perks[key] = "\n".join(
-                    [p["displayProperties"]["name"] for p in all_perks]
-                )
+                perks[key] = "\n".join([p["displayProperties"]["name"] for p in all_perks])
                 slot_counter += 1
                 continue
             if "reusablePlugSetHash" in socket:
@@ -176,16 +175,16 @@ class Destiny(DestinyAPI, commands.Cog):
                 all_perks = await self.get_definition("DestinyInventoryItemDefinition", pool_perks)
                 try:
                     key_hash = all_perks[0]["itemCategoryHashes"][0]
-                    key_data = await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
+                    key_data = await self.get_definition(
+                        "DestinyItemCategoryDefinition", [key_hash]
+                    )
                     key = key_data[0]["displayProperties"]["name"]
                     if key in perks:
                         key = f"{key} {count}"
                         count += 1
                 except IndexError:
                     key = _("Perk {count}").format(count=slot_counter)
-                perks[key] = "\n".join(
-                    [p["displayProperties"]["name"] for p in all_perks]
-                )
+                perks[key] = "\n".join([p["displayProperties"]["name"] for p in all_perks])
                 slot_counter += 1
                 continue
             perk_hash = socket["singleInitialItemHash"]
@@ -1279,6 +1278,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 try:
                     version = await self.get_manifest()
                 except Exception:
+                    log.exception("Error getting destiny manifest")
                     return await ctx.send(_("There was an issue downloading the manifest."))
                 await msg.delete()
                 await ctx.send(f"Manifest {version} was downloaded.")

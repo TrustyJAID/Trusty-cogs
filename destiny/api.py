@@ -253,16 +253,19 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    def get_entities(self, entity: str) -> dict:
+    def get_entities(self, entity: str, d1: bool = False) -> dict:
         """
         This loads the entity from the saved manifest
         """
-        path = cog_data_path(self) / f"{entity}.json"
+        if d1:
+            path = cog_data_path(self) / f"d1/{entity}.json"
+        else:
+            path = cog_data_path(self) / f"{entity}.json"
         with path.open(encoding="utf-8", mode="r") as f:
             data = json.load(f)
         return data
 
-    async def get_definition(self, entity: str, entity_hash: list) -> List[dict]:
+    async def get_definition(self, entity: str, entity_hash: list, d1: bool = False) -> List[dict]:
         """
         This will attempt to get a definition from the manifest
         if the manifest is missing it will try and pull the data
@@ -272,7 +275,7 @@ class DestinyAPI:
         try:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
-            task = functools.partial(self.get_entities, entity=entity)
+            task = functools.partial(self.get_entities, entity=entity, d1=d1)
             task = self.bot.loop.run_in_executor(None, task)
             data = await asyncio.wait_for(task, timeout=60)
         except Exception:
@@ -286,7 +289,9 @@ class DestinyAPI:
         return items
         # return data[entity][entity_hash]
 
-    async def get_definition_from_api(self, entity: str, entity_hash) -> List[dict]:
+    async def get_definition_from_api(
+        self, entity: str, entity_hash: list, d1: bool = False
+    ) -> List[dict]:
         """
         This will acquire definition data from the API when the manifest is missing
         """
@@ -301,7 +306,9 @@ class DestinyAPI:
             items.append(data)
         return items
 
-    async def search_definition(self, entity: str, entity_hash: str) -> List[dict]:
+    async def search_definition(
+        self, entity: str, entity_hash: str, d1: bool = False
+    ) -> List[dict]:
         """
         This is a helper to search clean names for a given definition of data
         """
@@ -529,7 +536,6 @@ class DestinyAPI:
             manifest_data = await self.request_url(
                 f"{BASE_URL}/Destiny2/Manifest/", headers=headers
             )
-            await self.save(manifest_data, "d2_manifest.json")
             locale = get_locale()
             if locale in manifest_data:
                 manifest = manifest_data["jsonWorldContentPaths"][locale]
@@ -541,58 +547,7 @@ class DestinyAPI:
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"https://bungie.net/{manifest}", headers=headers) as resp:
                     if d1:
-                        data = await resp.read()
-                        directory = cog_data_path(self) / "d1/"
-                        if not directory.is_dir():
-                            log.debug("Creating guild folder")
-                            directory.mkdir(exist_ok=True, parents=True)
-                        path = directory / "d1_manifest.zip"
-                        with path.open(mode="wb") as f:
-                            f.write(data)
-                        import zipfile
-                        import sqlite3
-                        import ctypes
-                        db_name = None
-                        with zipfile.ZipFile(str(path), "r") as zip_ref:
-                            zip_ref.extractall(str(cog_data_path(self) / "d1/"))
-                            db_name = zip_ref.namelist()
-
-                        conn = sqlite3.connect(directory / db_name[0])
-                        conn.row_factory = sqlite3.Row
-                        db = conn.cursor()
-                        rows = db.execute('''
-                        SELECT * from sqlite_master WHERE type='table'
-                        ''').fetchall()
-                        # conn.commit()
-                        # conn.close()
-                        # log.debug(rows)
-                        for row in rows:
-                            json_data = {}
-                            name = dict(row)["name"]
-                            data = db.execute('''
-                            SELECT * from {name}
-                            '''.format(name=name)).fetchall()
-                            for _id, datas in data:
-                                # log.debug(datas)
-                                try:
-                                    hash_id = ctypes.c_uint32(_id).value
-                                except TypeError:
-                                    hash_id = _id
-                                json_data[str(hash_id)] = json.loads(datas)
-                            # log.debug(dict(row))
-                            path = cog_data_path(self) / f"d1/{name}.json"
-                            with path.open(encoding="utf-8", mode="w") as f:
-                                if self.bot.user.id in DEV_BOTS:
-                                    json.dump(
-                                        json_data,
-                                        f,
-                                        indent=4,
-                                        sort_keys=False,
-                                        separators=(",", " : "),
-                                    )
-                                else:
-                                    json.dump(value, f)
-                        conn.close()
+                        await self.download_d1_manifest()
                     else:
                         data = await resp.json()
                         for key, value in data.items():
@@ -610,6 +565,67 @@ class DestinyAPI:
                                     json.dump(value, f)
                         await self.config.manifest_version.set(manifest_data["version"])
         return manifest_data["version"]
+
+    async def download_d1_manifest(self):
+        data = await resp.read()
+        directory = cog_data_path(self) / "d1/"
+        if not directory.is_dir():
+            log.debug("Creating guild folder")
+            directory.mkdir(exist_ok=True, parents=True)
+        path = directory / "d1_manifest.zip"
+        with path.open(mode="wb") as f:
+            f.write(data)
+        import zipfile
+        import sqlite3
+        import ctypes
+
+        db_name = None
+        with zipfile.ZipFile(str(path), "r") as zip_ref:
+            zip_ref.extractall(str(cog_data_path(self) / "d1/"))
+            db_name = zip_ref.namelist()
+
+        conn = sqlite3.connect(directory / db_name[0])
+        conn.row_factory = sqlite3.Row
+        db = conn.cursor()
+        rows = db.execute(
+            """
+        SELECT * from sqlite_master WHERE type='table'
+        """
+        ).fetchall()
+        # conn.commit()
+        # conn.close()
+        # log.debug(rows)
+        for row in rows:
+            json_data = {}
+            name = dict(row)["name"]
+            data = db.execute(
+                """
+            SELECT * from {name}
+            """.format(
+                    name=name
+                )
+            ).fetchall()
+            for _id, datas in data:
+                # log.debug(datas)
+                try:
+                    hash_id = ctypes.c_uint32(_id).value
+                except TypeError:
+                    hash_id = _id
+                json_data[str(hash_id)] = json.loads(datas)
+            # log.debug(dict(row))
+            path = cog_data_path(self) / f"d1/{name}.json"
+            with path.open(encoding="utf-8", mode="w") as f:
+                if self.bot.user.id in DEV_BOTS:
+                    json.dump(
+                        json_data,
+                        f,
+                        indent=4,
+                        sort_keys=False,
+                        separators=(",", " : "),
+                    )
+                else:
+                    json.dump(value, f)
+        conn.close()
 
     async def get_char_colour(self, embed: discord.Embed, character):
         r = character["emblemColor"]["red"]
