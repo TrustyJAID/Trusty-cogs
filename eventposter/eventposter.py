@@ -22,7 +22,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "1.6.1"
+    __version__ = "1.7.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -226,6 +226,48 @@ class EventPoster(commands.Cog):
             async with self.config.guild(ctx.guild).events() as cur_events:
                 cur_events[str(event.hoster.id)] = event.to_json()
             self.event_cache[ctx.guild.id][event.message.id] = event
+
+    @commands.command(name="eventping", aliases=["eventmention"])
+    @commands.guild_only()
+    async def event_ping(
+        self,
+        ctx: commands.Context,
+        include_maybe: Optional[bool] = True,
+        *,
+        message: Optional[str] = None,
+    ) -> None:
+        """
+        Ping all the registered users for your event including optional message
+
+        `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.
+        `[message]` Optional message to include with the ping.
+        """
+        approval_channel = ctx.guild.get_channel(
+            await self.config.guild(ctx.guild).approval_channel()
+        )
+        announcement_channel = ctx.guild.get_channel(
+            await self.config.guild(ctx.guild).announcement_channel()
+        )
+        if not approval_channel:
+            return await ctx.send(
+                "No admin channel has been setup on this server. Use `[p]eventset approvalchannel` to add one."
+            )
+        if not announcement_channel:
+            return await ctx.send(
+                "No announcement channel has been setup on this server. Use `[p]eventset channel` to add one."
+            )
+        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
+            return await ctx.send("You don't have an event running with people to ping.")
+        event_data = await self.config.guild(ctx.guild).events()
+        event = await Event.from_json(event_data[str(ctx.author.id)], ctx.guild)
+        members = [m[0] for m in event.members]
+        if include_maybe:
+            members += event.maybe
+        msg = humanize_list([m.mention for m in members]) + ":\n" + message
+        for page in pagify(msg):
+            await ctx.send(page, allowed_mentions=discord.AllowedMentions(users=True))
+            # include AllowedMentions here just incase someone has user mentions disabled
+            # since this is intended to ping the users.
 
     @commands.command(name="event")
     @commands.guild_only()
