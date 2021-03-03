@@ -513,10 +513,6 @@ class DestinyAPI:
         """
         Checks if the manifest is up to date and downloads if it's not
         """
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
         try:
             headers = await self.build_headers()
         except Destiny2MissingAPITokens:
@@ -543,30 +539,32 @@ class DestinyAPI:
                 manifest = manifest_data["jsonWorldContentPaths"][locale[:-3]]
             else:
                 manifest = manifest_data["jsonWorldContentPaths"]["en"]
-        if await self.config.manifest_version() != manifest_data["version"] or d1:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://bungie.net/{manifest}", headers=headers) as resp:
-                    if d1:
-                        await self.download_d1_manifest()
-                    else:
-                        data = await resp.json()
-                        for key, value in data.items():
-                            path = cog_data_path(self) / f"{key}.json"
-                            with path.open(encoding="utf-8", mode="w") as f:
-                                if self.bot.user.id in DEV_BOTS:
-                                    json.dump(
-                                        value,
-                                        f,
-                                        indent=4,
-                                        sort_keys=False,
-                                        separators=(",", " : "),
-                                    )
-                                else:
-                                    json.dump(value, f)
-                        await self.config.manifest_version.set(manifest_data["version"])
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://bungie.net/{manifest}", headers=headers, timeout=None
+            ) as resp:
+                if d1:
+                    await self.download_d1_manifest(resp)
+                else:
+                    response_data = await resp.text()
+                    data = json.loads(response_data)
+                    for key, value in data.items():
+                        path = cog_data_path(self) / f"{key}.json"
+                        with path.open(encoding="utf-8", mode="w") as f:
+                            if self.bot.user.id in DEV_BOTS:
+                                json.dump(
+                                    value,
+                                    f,
+                                    indent=4,
+                                    sort_keys=False,
+                                    separators=(",", " : "),
+                                )
+                            else:
+                                json.dump(value, f)
+                    await self.config.manifest_version.set(manifest_data["version"])
         return manifest_data["version"]
 
-    async def download_d1_manifest(self):
+    async def download_d1_manifest(self, resp):
         data = await resp.read()
         directory = cog_data_path(self) / "d1/"
         if not directory.is_dir():
