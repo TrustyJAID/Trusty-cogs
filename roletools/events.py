@@ -49,6 +49,8 @@ class RoleEvents:
             if await self.check_guild_verification(member, guild):
                 log.debug("Ignoring user due to verification check.")
                 return
+            if getattr(member, "pending", False):
+                return
             log.debug(f"Adding role to {member.name} in {member.guild}")
             await self.give_roles(member, [role], _("Reaction Role"))
 
