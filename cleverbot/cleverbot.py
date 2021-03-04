@@ -2,6 +2,8 @@ import logging
 from typing import Optional, Union
 
 import discord
+
+from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -23,7 +25,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     """
 
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.3.3"
+    __version__ = "2.4.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -41,6 +43,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             "channel": None,
             "toggle": False,
             "mention": False,
+            "reply": True,
             "whitelist": [],
             "blacklist": [],
             "tweak1": -1,
@@ -293,7 +296,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             await self.config.guild(guild).toggle.set(True)
             await ctx.send(_("I will reply when I am mentioned."))
         else:
-            await self.config.guild(guild).toggle.set(False)
+            await self.config.guild(guild).toggle.clear()
             await ctx.send(_("I won't reply when I am mentioned anymore."))
 
     @cleverbotset.command()
@@ -306,8 +309,24 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             await self.config.guild(guild).mention.set(True)
             await ctx.send(_("I will mention on reply."))
         else:
-            await self.config.guild(guild).mention.set(False)
+            await self.config.guild(guild).mention.clear()
             await ctx.send(_("I won't mention on reply."))
+
+    @cleverbotset.command(aliases=["replies"])
+    @commands.guild_only()
+    @checks.mod_or_permissions(manage_channels=True)
+    async def reply(self, ctx: commands.Context) -> None:
+        """Toggles reply messages
+
+        Note: This is only available for Red 3.4.6 and discord.py 1.6.0
+        """
+        guild = ctx.message.guild
+        if not await self.config.guild(guild).reply():
+            await self.config.guild(guild).reply.clear()
+            await ctx.send(_("I will use replies in cleverbot responses."))
+        else:
+            await self.config.guild(guild).reply.set(False)
+            await ctx.send(_("I won't use replies on cleverbot responses anymore."))
 
     @cleverbotset.command()
     @checks.is_owner()
@@ -343,7 +362,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
                 )
             )
         else:
-            await self.config.guild(guild).channel.set(None)
+            await self.config.guild(guild).channel.clear()
             await ctx.send(_("Automatic replies turned off."))
 
     @cleverbotset.command()
@@ -403,7 +422,17 @@ class Cleverbot(CleverbotAPI, commands.Cog):
             )
             await ctx.send(msg)
         else:
+            replies = (
+                version_info >= VersionInfo.from_str("3.4.6")
+                and await self.config.guild(ctx.guild).reply()
+            )
             if ctx.guild and await self.config.guild(ctx.guild).mention():
-                await ctx.send(f"{author.mention} {response}")
+                if replies:
+                    await ctx.send(response, reference=ctx.message, mention_author=True)
+                else:
+                    await ctx.send(f"{author.mention} {response}")
             else:
-                await ctx.send(response)
+                if replies:
+                    await ctx.send(response, reference=ctx.message, mention_author=False)
+                else:
+                    await ctx.send(response)
