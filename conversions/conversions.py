@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import re
@@ -6,7 +5,7 @@ from typing import Dict, Optional, Union
 
 import aiohttp
 import discord
-from redbot.core import Config, VersionInfo, commands, version_info
+from redbot.core import commands
 
 log = logging.getLogger("red.trusty-cogs.conversions")
 
@@ -18,14 +17,10 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.2"
+    __version__ = "1.2.0"
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=239232811662311425)
-        self.config.register_global(version="0.0.0")
-        self.bot.loop.create_task(self.init())
-        self._ready = asyncio.Event()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -39,32 +34,6 @@ class Conversions(commands.Cog):
         Nothing to delete
         """
         return
-
-    async def cog_before_invoke(self, ctx: commands.Context) -> None:
-        await self._ready.wait()
-
-    async def init(self):
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
-        try:
-            if await self.config.version() < "1.1.0":
-                prefixes = await self.bot.get_valid_prefixes()
-                prefix = re.sub(rf"<@!?{self.bot.user.id}>", f"@{self.bot.user.name}", prefixes[0])
-                msg = (
-                    "The Conversions cog is now using a couple of API's "
-                    "that require API keys. Please use `{prefix}stockapi` "
-                    "to continue using the stock, gold, etc. commands. "
-                    "Please use `{prefix}cryptoapi` to continue using "
-                    "the cryptocurrency commands."
-                ).format(prefix=prefix)
-                self.bot.loop.create_task(self.bot.send_to_owners(msg))
-                await self.config.version.set("1.1.0")
-        except Exception:
-            log.exception("There was an exception loading the cog.", exec_info=True)
-        else:
-            self._ready.set()
 
     @commands.command(aliases=["bitcoin", "BTC"])
     async def btc(
@@ -405,93 +374,6 @@ class Conversions(commands.Cog):
         else:
             return embed
 
-    @commands.command()
-    async def gold(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
-        """
-        Converts gold in ounces to a given currency.
-
-        `ammount` must be a number of ounces to convert defaults to 1 ounce
-        `[currency]` must be a valid currency defaults to USD
-        """
-        GOLD = "https://www.quandl.com/api/v3/datasets/WGC/GOLD_DAILY_{}.json?api_key="
-        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
-        if not api_key:
-            return await ctx.send("The bot owner needs to supply an API key for this to work.")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(GOLD.format(currency.upper(), api_key)) as resp:
-                data = await resp.json()
-        price = (data["dataset"]["data"][0][1]) * ammount
-        msg = "{0} oz of Gold is {1:,.2f} {2}".format(ammount, price, currency.upper())
-        embed = discord.Embed(descirption="Gold", colour=discord.Colour.gold())
-        embed.add_field(name="Gold", value=msg)
-        embed.set_thumbnail(
-            url="https://upload.wikimedia.org/wikipedia/commons/d/d7/Gold-crystals.jpg"
-        )
-        if not ctx.channel.permissions_for(ctx.me).embed_links:
-            await ctx.send(msg)
-        else:
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def silver(self, ctx: commands.Context, ammount: int = 1, currency: str = "USD") -> None:
-        """
-        Converts silver in ounces to a given currency.
-
-        `[ammount]` must be a number of ounces to convert defaults to 1 ounce
-        `[currency]` must be a valid currency defaults to USD
-        """
-        SILVER = "https://www.quandl.com/api/v3/datasets/LBMA/SILVER.json?api_key={}"
-        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
-        if not api_key:
-            return await ctx.send("The bot owner needs to supply an API key for this to work.")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(SILVER.format(api_key)) as resp:
-                data = await resp.json()
-        price = (data["dataset"]["data"][0][1]) * ammount
-        if currency != "USD":
-            price = await self.conversionrate("USD", currency.upper()) * price
-        msg = "{0} oz of Silver is {1:,.2f} {2}".format(ammount, price, currency.upper())
-        embed = discord.Embed(descirption="Silver", colour=discord.Colour.lighter_grey())
-        embed.add_field(name="Silver", value=msg)
-        embed.set_thumbnail(
-            url="https://upload.wikimedia.org/wikipedia/commons/5/55/Silver_crystal.jpg"
-        )
-        if not ctx.channel.permissions_for(ctx.me).embed_links:
-            await ctx.send(msg)
-        else:
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def platinum(
-        self, ctx: commands.Context, ammount: int = 1, currency: str = "USD"
-    ) -> None:
-        """
-        Converts platinum in ounces to a given currency.
-
-        `[ammount]` must be a number of ounces to convert defaults to 1 ounce
-        `[currency]` must be a valid currency defaults to USD
-        """
-        PLATINUM = "https://www.quandl.com/api/v3/datasets/JOHNMATT/PLAT.json?api_key={}"
-        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
-        if not api_key:
-            return await ctx.send("The bot owner needs to supply an API key for this to work.")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(PLATINUM.format(api_key)) as resp:
-                data = await resp.json()
-        price = (data["dataset"]["data"][0][1]) * ammount
-        if currency != "USD":
-            price = await self.conversionrate("USD", currency.upper()) * price
-        msg = "{0} oz of Platinum is {1:,.2f} {2}".format(ammount, price, currency.upper())
-        embed = discord.Embed(descirption="Platinum", colour=discord.Colour.dark_grey())
-        embed.add_field(name="Platinum", value=msg)
-        embed.set_thumbnail(
-            url="https://upload.wikimedia.org/wikipedia/commons/6/68/Platinum_crystals.jpg"
-        )
-        if not ctx.channel.permissions_for(ctx.me).embed_links:
-            await ctx.send(msg)
-        else:
-            await ctx.send(embed=embed)
-
     @commands.command(aliases=["ticker"])
     async def stock(self, ctx: commands.Context, ticker: str, currency: str = "USD") -> None:
         """
@@ -500,23 +382,32 @@ class Conversions(commands.Cog):
         `<ticker>` is the ticker symbol you want to look up
         `[currency]` is the currency you want to convert to defaults to USD
         """
-        stock = "https://www.quandl.com/api/v3/datasets/WIKI/{}.json?api_key={}"
-        api_key = (await self.bot.get_shared_api_tokens("quandl")).get("api_key")
-        if not api_key:
-            return await ctx.send("The bot owner needs to supply an API key for this to work.")
+        stock = "https://query1.finance.yahoo.com/v8/finance/chart/{}"
         async with aiohttp.ClientSession() as session:
-            async with session.get(stock.format(ticker.upper(), api_key)) as resp:
+            async with session.get(stock.format(ticker.upper())) as resp:
                 data = await resp.json()
-        if "quandl_error" in data:
-            return await ctx.send(data["quandl_error"]["message"])
+        if not data["chart"]["result"]:
+            return await ctx.send(
+                "`{ticker}` does not appear to be a valid ticker symbol.".format(ticker=ticker)
+            )
+        ticker_data = data["chart"]["result"][0]["meta"]
+        if not ticker_data["currency"]:
+            return await ctx.send(
+                "`{ticker}` does not have a valid currency to view.".format(ticker=ticker)
+            )
         convertrate: float = 1.0
-        if currency != "USD":
-            maybe_convert = await self.conversionrate("USD", currency.upper())
+        if ticker_data["currency"] != currency:
+            maybe_convert = await self.conversionrate(ticker_data["currency"], currency.upper())
             if maybe_convert:
                 convertrate = maybe_convert
-        price = (data["dataset"]["data"][0][1]) * convertrate
+
+        price = (ticker_data["regularMarketPrice"]) * convertrate
+        last_updated = datetime.datetime.utcfromtimestamp(ticker_data["regularMarketTime"])
         msg = "{0} is {1:,.2f} {2}".format(ticker.upper(), price, currency.upper())
-        embed = discord.Embed(description="Stock Price", colour=discord.Colour.lighter_grey())
+        embed = discord.Embed(
+            description="Stock Price", colour=discord.Colour.lighter_grey(), timestamp=last_updated
+        )
+        embed.set_footer(text="Last Updated")
         embed.add_field(name=ticker.upper(), value=msg)
         if not ctx.channel.permissions_for(ctx.me).embed_links:
             await ctx.send(msg)
@@ -533,19 +424,6 @@ class Conversions(commands.Cog):
             "1. Go to https://coinmarketcap.com/api/ sign up for an account.\n"
             "2. In Dashboard / Overview grab your API Key and enter it with:\n"
             f"`{ctx.prefix}set api coinmarketcap api_key YOUR_KEY_HERE`"
-        )
-        await ctx.maybe_send_embed(msg)
-
-    @commands.command()
-    @commands.is_owner()
-    async def stockapi(self, ctx: commands.Context) -> None:
-        """
-        Instructions for how to setup the stock API
-        """
-        msg = (
-            "1. Go to https://www.quandl.com/ sign up for an account.\n"
-            "2. In account settings grab your API Key and enter it with:\n"
-            f"`{ctx.prefix}set api quandl api_key YOUR_KEY_HERE`"
         )
         await ctx.maybe_send_embed(msg)
 
