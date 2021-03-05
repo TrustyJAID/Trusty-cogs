@@ -195,7 +195,7 @@ TEAMS = {
         "invite": "https://discord.gg/H6EH73h",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281721042/256x256/cut.png",
         "team_url": "https://www.nhl.com/kings",
-        "timezone": "US/Mountain",
+        "timezone": "US/Pacific",
         "nickname": ["kings"],
         "tri_code": "LAK",
     },
