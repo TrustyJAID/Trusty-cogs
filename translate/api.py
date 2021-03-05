@@ -9,6 +9,7 @@ import aiohttp
 import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+
 from redbot.core import Config, VersionInfo, commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -405,7 +406,12 @@ class GoogleTranslateAPI:
 
         if channel.permissions_for(guild.me).embed_links:
             em = await self.translation_embed(author, translation, reacted_user)
-            translated_msg = await channel.send(embed=em)
+            if version_info >= VersionInfo.from_str("3.4.6"):
+                translated_msg = await channel.send(
+                    embed=em, reference=message, mention_author=False
+                )
+            else:
+                translated_msg = await channel.send(embed=em)
         else:
             msg = _("{author} said:\n{translated_text}").format(
                 author=author, translate_text=translated_text

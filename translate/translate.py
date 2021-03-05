@@ -1,8 +1,9 @@
+import discord
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from discord.ext.commands.errors import BadArgument
-from redbot.core import Config, checks, commands
+from redbot.core import Config, checks, commands, version_info, VersionInfo
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
@@ -36,7 +37,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
 
     __author__ = ["Aziz", "TrustyJAID"]
-    __version__ = "2.3.5"
+    __version__ = "2.3.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -105,18 +106,31 @@ class Translate(GoogleTranslateAPI, commands.Cog):
 
     @commands.command()
     async def translate(
-        self, ctx: commands.Context, to_language: FlagTranslation, *, message: str
+        self,
+        ctx: commands.Context,
+        to_language: FlagTranslation,
+        *,
+        message: Union[discord.Message, str],
     ) -> None:
         """
         Translate messages with Google Translate
 
-        `to_language` is the language you would like to translate
-        `message` is the message to translate
+        `<to_language>` is the language you would like to translate
+        `<message>` is the message to translate, this can be words you want
+        to translate, a channelID-messageID from SHIFT + clicking a message and copying ID,
+        a message ID from the current channel, or message link
         """
         if not await self._get_google_api_key():
             msg = _("The bot owner needs to set an api key first!")
             await ctx.send(msg)
             return
+        author = ctx.message.author
+        requestor = ctx.message.author
+        msg = ctx.message
+        if isinstance(message, discord.Message):
+            msg = message
+            author = message.author
+            message = message.clean_content
         try:
             detected_lang = await self.detect_language(message)
             await self.add_detect(ctx.guild)
@@ -137,13 +151,19 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         except GoogleTranslateAPIError as e:
             await ctx.send(str(e))
             return
-        author = ctx.message.author
+
         if ctx.channel.permissions_for(ctx.me).embed_links:
             translation = (translated_text, from_lang, to_language)
-            em = await self.translation_embed(author, translation)
-            await ctx.send(embed=em)
+            em = await self.translation_embed(author, translation, requestor)
+            if version_info >= VersionInfo.from_str("3.4.6"):
+                await ctx.send(embed=em, reference=msg, mention_author=False)
+            else:
+                await ctx.send(embed=em)
         else:
-            await ctx.send(translated_text)
+            if version_info >= VersionInfo.from_str("3.4.6"):
+                await ctx.send(translated_text, reference=msg, mention_author=False)
+            else:
+                await ctx.send(translated_text)
 
     @commands.group()
     async def translateset(self, ctx: commands.Context) -> None:
