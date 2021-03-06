@@ -611,9 +611,10 @@ class TriggerHandler:
                 try:
                     await channel.send(
                         response,
+                        tts=trigger.tts,
                         delete_after=trigger.delete_after,
                         reference=message,
-                        mention_author=trigger.reply,
+                        allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
@@ -621,7 +622,12 @@ class TriggerHandler:
                     log.error(error_in, exc_info=True)
             else:
                 try:
-                    await channel.send(response, delete_after=trigger.delete_after)
+                    await channel.send(
+                        response,
+                        tts=trigger.tts,
+                        delete_after=trigger.delete_after,
+                        allowed_mentions=trigger.allowed_mentions(),
+                    )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
                 except Exception:
@@ -638,7 +644,10 @@ class TriggerHandler:
             if version_info >= VersionInfo.from_str("3.4.6") and trigger.reply is not None:
                 try:
                     await channel.send(
-                        crand_text_response, reference=message, mention_author=trigger.reply
+                        crand_text_response,
+                        tts=trigger.tts,
+                        reference=message,
+                        allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
@@ -646,7 +655,11 @@ class TriggerHandler:
                     log.error(error_in, exc_info=True)
             else:
                 try:
-                    await channel.send(crand_text_response)
+                    await channel.send(
+                        crand_text_response,
+                        tts=trigger.tts,
+                        allowed_mentions=trigger.allowed_mentions(),
+                    )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
                 except Exception:
@@ -667,9 +680,10 @@ class TriggerHandler:
                 try:
                     await channel.send(
                         image_text_response,
+                        tts=trigger.tts,
                         file=file,
                         reference=message,
-                        mention_author=trigger.reply,
+                        allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
@@ -677,7 +691,12 @@ class TriggerHandler:
                     log.error(error_in, exc_info=True)
             else:
                 try:
-                    await channel.send(image_text_response, file=file)
+                    await channel.send(
+                        image_text_response,
+                        tts=trigger.tts,
+                        file=file,
+                        allowed_mentions=trigger.allowed_mentions(),
+                    )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
                 except Exception:
@@ -700,9 +719,10 @@ class TriggerHandler:
                 try:
                     await channel.send(
                         rimage_text_response,
+                        tts=trigger.tts,
                         file=file,
                         reference=message,
-                        mention_author=trigger.reply,
+                        allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
@@ -710,7 +730,12 @@ class TriggerHandler:
                     log.error(error_in, exc_info=True)
             else:
                 try:
-                    await channel.send(rimage_text_response, file=file)
+                    await channel.send(
+                        rimage_text_response,
+                        tts=trigger.tts,
+                        file=file,
+                        allowed_mentions=trigger.allowed_mentions(),
+                    )
                 except discord.errors.Forbidden:
                     log.debug(error_in, exc_info=True)
                 except Exception:
@@ -723,7 +748,7 @@ class TriggerHandler:
                 dm_response = str(trigger.text)
             response = await self.convert_parms(message, dm_response, trigger, find)
             try:
-                await author.send(response)
+                await author.send(response, allowed_mentions=trigger.allowed_mentions())
             except discord.errors.Forbidden:
                 log.debug(error_in, exc_info=True)
             except Exception:
@@ -742,7 +767,7 @@ class TriggerHandler:
                 except Exception:
                     log.error(error_in, exc_info=True)
             try:
-                await trigger_author.send(response)
+                await trigger_author.send(response, allowed_mentions=trigger.allowed_mentions())
             except discord.errors.Forbidden:
                 trigger.enabled = False
                 log.debug(error_in, exc_info=True)

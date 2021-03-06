@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Pattern, Tuple, Union
+from typing import List, Pattern, Tuple, Union, Optional
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
@@ -88,7 +88,9 @@ class MultiResponse(Converter):
                 raise BadArgument(_("Not creating trigger."))
 
         def author_perms(ctx: commands.Context, role: discord.Role) -> bool:
-            if ctx.author.id == ctx.guild.owner_id: #handles case where guild is not chunked and calls for the ID thru the endpoint instead
+            if (
+                ctx.author.id == ctx.guild.owner_id
+            ):  # handles case where guild is not chunked and calls for the ID thru the endpoint instead
                 return True
             return role < ctx.author.top_role
 
@@ -139,6 +141,12 @@ class Trigger:
     ocr_search: bool
     delete_after: int
     read_filenames: bool
+    chance: int
+    reply: Optional[bool]
+    tts: bool
+    user_mention: bool
+    role_mention: bool
+    everyone_mention: bool
 
     def __init__(self, name, regex, response_type, author, **kwargs):
         self.name = name
@@ -164,6 +172,10 @@ class Trigger:
         self.read_filenames = kwargs.get("read_filenames", False)
         self.chance = kwargs.get("chance", 0)
         self.reply = kwargs.get("reply", None)
+        self.tts = kwargs.get("tts", False)
+        self.user_mention = kwargs.get("user_mention", True)
+        self.role_mention = kwargs.get("role_mention", False)
+        self.everyone_mention = kwargs.get("everyone_mention", False)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -176,6 +188,12 @@ class Trigger:
     def toggle(self):
         """Toggle whether or not this trigger is enabled."""
         self.enabled = not self.enabled
+
+    def allowed_mentions(self):
+        return discord.AllowedMentions(
+            everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention,
+            replied_user=self.reply if self.reply is not None else False
+        )
 
     def __repr__(self):
         return "<ReTrigger name={0.name} author={0.author} pattern={0.regex.pattern}>".format(self)
@@ -220,6 +238,10 @@ class Trigger:
             "read_filenames": self.read_filenames,
             "chance": self.chance,
             "reply": self.reply,
+            "tts": self.tts,
+            "user_mention": self.user_mention,
+            "everyone_mention": self.everyone_mention,
+            "role_mention": self.role_mention
         }
 
     @classmethod
@@ -235,6 +257,10 @@ class Trigger:
         read_filenames = True
         chance = 0
         reply = None
+        tts = False
+        user_mention = True
+        everyone_mention = False
+        role_mention = False
         if "cooldown" in data:
             cooldown = data["cooldown"]
         if type(data["response_type"]) is str:
@@ -265,6 +291,14 @@ class Trigger:
             chance = data["chance"]
         if "reply" in data:
             reply = data["reply"]
+        if "tts" in data:
+            tts = data["tts"]
+        if "user_mention" in data:
+            user_mention = data["user_mention"]
+        if "everyone_mention" in data:
+            everyone_mention = data["everyone_mention"]
+        if "role_mention" in data:
+            role_mention = data["role_mention"]
         return cls(
             data["name"],
             data["regex"],
@@ -286,6 +320,10 @@ class Trigger:
             read_filenames=read_filenames,
             chance=chance,
             reply=reply,
+            tts=tts,
+            user_mention=user_mention,
+            everyone_mention=everyone_mention,
+            role_mention=role_mention,
         )
 
 

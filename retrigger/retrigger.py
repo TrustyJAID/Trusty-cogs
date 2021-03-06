@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.18.3"
+    __version__ = "2.19.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -649,6 +649,110 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} replies set to: {set_to}")
         await ctx.send(msg.format(name=trigger.name, set_to=trigger.reply))
+
+    @_edit.command(name="tts", aliases=["texttospeech", "text-to-speech"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def set_tts(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+        """
+        Set whether or not to send the message with text-to-speech
+
+        `<trigger>` is the name of the trigger.
+        `[set_to]` either `true` or `false` on whether to send the text
+        reply with text-to-speech enabled.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.tts = set_to
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} text-to-speech set to: {set_to}")
+        await ctx.send(msg.format(name=trigger.name, set_to=trigger.tts))
+
+    @_edit.command(name="usermention", aliases=["userping"])
+    @checks.mod_or_permissions(manage_messages=True)
+    async def set_user_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+        """
+        Set whether or not to send this trigger will mention users in the reply
+
+        `<trigger>` is the name of the trigger.
+        `[set_to]` either `true` or `false` on whether to allow this trigger
+        to actually ping the users in the message.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.user_mention = set_to
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} user mentions set to: {set_to}")
+        await ctx.send(msg.format(name=trigger.name, set_to=trigger.user_mention))
+
+    @_edit.command(name="everyonemention", aliases=["everyoneping"])
+    @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
+    async def set_everyone_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+        """
+        Set whether or not to send this trigger will allow everyone mentions
+
+        `<trigger>` is the name of the trigger.
+        `[set_to]` either `true` or `false` on whether to allow this trigger
+        to actually ping everyone if the bot has correct permissions.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.everyone_mention = set_to
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} everyone mentions set to: {set_to}")
+        await ctx.send(msg.format(name=trigger.name, set_to=trigger.everyone_mention))
+
+    @_edit.command(name="rolemention", aliases=["roleping"])
+    @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
+    async def set_role_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+        """
+        Set whether or not to send this trigger will allow role mentions
+
+        `<trigger>` is the name of the trigger.
+        `[set_to]` either `true` or `false` on whether to allow this trigger
+        to actually ping roles if the bot has correct permissions.
+
+        See https://regex101.com/ for help building a regex pattern.
+        See `[p]retrigger explain` or click the link below for more details.
+        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
+        """
+        if type(trigger) is str:
+            return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
+        if not await self.can_edit(ctx.author, trigger):
+            return await ctx.send(_("You are not authorized to edit this trigger."))
+        trigger.role_mention = set_to
+        async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
+            trigger_list[trigger.name] = await trigger.to_json()
+        await self.remove_trigger_from_cache(ctx.guild.id, trigger)
+        self.triggers[ctx.guild.id].append(trigger)
+        msg = _("Trigger {name} role mentions set to: {set_to}")
+        await ctx.send(msg.format(name=trigger.name, set_to=trigger.role_mention))
 
     @_edit.command(name="edited")
     @checks.mod_or_permissions(manage_messages=True)
