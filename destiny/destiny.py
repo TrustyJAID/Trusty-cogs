@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -318,7 +318,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get your Steam ID to give people to join your in-game fireteam
         """
         async with ctx.typing():
-            if not await self.has_oauth(ctx, ctx.author):
+            if not await self.has_oauth(ctx):
                 return
             bungie_id = await self.config.user(ctx.author).oauth.membership_id()
             creds = await self.get_bnet_user(ctx.author, bungie_id)
@@ -354,7 +354,7 @@ class Destiny(DestinyAPI, commands.Cog):
         the numbers after `groupid=` is the clan ID.
         """
         async with ctx.typing():
-            if not await self.has_oauth(ctx, ctx.author):
+            if not await self.has_oauth(ctx):
                 return
             clan_re = re.compile(
                 r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
@@ -416,7 +416,7 @@ class Destiny(DestinyAPI, commands.Cog):
         by reacting to the resulting message.
         """
         async with ctx.typing():
-            if not await self.has_oauth(ctx, ctx.author):
+            if not await self.has_oauth(ctx):
                 return
             clan_id = await self.config.guild(ctx.guild).clan_id()
             if not clan_id:
@@ -460,7 +460,7 @@ class Destiny(DestinyAPI, commands.Cog):
         the clan roster instead of displaying the output.
         """
         async with ctx.typing():
-            if not await self.has_oauth(ctx, ctx.author):
+            if not await self.has_oauth(ctx):
                 return
             clan_id = await self.config.guild(ctx.guild).clan_id()
             if not clan_id:
