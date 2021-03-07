@@ -5,10 +5,11 @@ import functools
 from base64 import b64encode
 from datetime import datetime
 from typing import List, Optional
+from pathlib import Path
 
 import aiohttp
 import discord
-from redbot.core import Config, VersionInfo, checks, commands, version_info
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n, get_locale
@@ -90,6 +91,38 @@ class DestinyAPI:
                 else:
                     log.error("Could not connect to the API")
                     raise Destiny2APIError
+
+    async def post_url(
+        self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None, body: Optional[dict] = None
+    ) -> dict:
+        """
+        Helper to make requests from formed headers and params elsewhere
+        and apply rate limiting to prevent issues
+        """
+        time_now = datetime.now().timestamp()
+        if self.throttle > time_now:
+            raise Destiny2APICooldown(str(self.throttle - time_now))
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, params=params, headers=headers, json=body) as resp:
+                # log.info(resp.url)
+                # log.info(headers)
+                if resp.status == 200:
+                    data = await resp.json()
+                    self.throttle = data["ThrottleSeconds"] + time_now
+                    if data["ErrorCode"] == 1 and "Response" in data:
+                        # fp = cog_data_path(self) / "data.json"
+                        # await JsonIO(fp)._threadsafe_save_json(data["Response"])
+                        return data["Response"]
+                    else:
+                        if "message" in data:
+                            log.error(data["message"])
+                        else:
+                            log.error("Incorrect response data")
+                        raise Destiny2InvalidParameters(data["Message"])
+                else:
+                    data = await resp.json()
+                    log.error("Could not connect to the API %s" % data)
+                    raise Destiny2APIError(data.get("Message", "Unknown error."))
 
     async def get_access_token(self, code: str) -> dict:
         """
@@ -265,13 +298,13 @@ class DestinyAPI:
             data = json.load(f)
         return data
 
-    async def get_definition(self, entity: str, entity_hash: list, d1: bool = False) -> List[dict]:
+    async def get_definition(self, entity: str, entity_hash: list, d1: bool = False) -> dict:
         """
         This will attempt to get a definition from the manifest
         if the manifest is missing it will try and pull the data
         from the API
         """
-        items = []
+        items = {}
         try:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
@@ -283,7 +316,8 @@ class DestinyAPI:
             return await self.get_definition_from_api(entity, entity_hash)
         for item in entity_hash:
             try:
-                items.append(data[str(item)])
+                items[str(item)] = data[str(item)]
+                # items.append(data[str(item)])
             except KeyError:
                 pass
         return items
@@ -291,7 +325,7 @@ class DestinyAPI:
 
     async def get_definition_from_api(
         self, entity: str, entity_hash: list, d1: bool = False
-    ) -> List[dict]:
+    ) -> dict:
         """
         This will acquire definition data from the API when the manifest is missing
         """
@@ -299,16 +333,15 @@ class DestinyAPI:
             headers = await self.build_headers()
         except Exception:
             raise Destiny2APIError
-        items = []
+        items = {}
         for hashes in entity_hash:
             url = f"{BASE_URL}/Destiny2/Manifest/{entity}/{hashes}/"
             data = await self.request_url(url, headers=headers)
-            items.append(data)
+            items[str(hashes)] = data
+            # items.append(data)
         return items
 
-    async def search_definition(
-        self, entity: str, entity_hash: str, d1: bool = False
-    ) -> List[dict]:
+    async def search_definition(self, entity: str, entity_hash: str, d1: bool = False) -> dict:
         """
         This is a helper to search clean names for a given definition of data
         """
@@ -321,16 +354,18 @@ class DestinyAPI:
         except Exception:
             err_msg = _("This command requires the Manifest to be downloaded to work.")
             raise Destiny2MissingManifest(err_msg)
-        items = []
+        items = {}
         for hash_key, data in data.items():
             if str(entity_hash) == hash_key:
-                items.append(data)
+                items[str(entity_hash)] = data
+                # items.append(data)
             display_properties = data["displayProperties"]
             if str(entity_hash).lower() in display_properties["name"].lower():
                 if data.get("itemType", 0) == 20:
                     # We generally don't care about dummy items in the lookup
                     continue
-                items.append(data)
+                # items.append(data)
+                items[str(entity_hash)] = data
         return items
 
     async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
@@ -346,6 +381,64 @@ class DestinyAPI:
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
         return await self.request_url(url, params=params, headers=headers)
+
+    async def get_clan_members(self, user: discord.User, clan_id: str) -> dict:
+        """
+        Get the list of all clan members
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/GroupV2/{clan_id}/Members/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_bnet_user(self, user: discord.User, membership_id: str) -> dict:
+        """
+        Get a Destiny users linked profiles
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/User/GetCredentialTypesForTargetAccount/{membership_id}/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_clan_pending(self, user: discord.User, clan_id: str) -> dict:
+        """
+        Get the list of pending clan members
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/GroupV2/{clan_id}/Members/Pending"
+        return await self.request_url(url, headers=headers)
+
+    async def approve_clan_pending(
+        self, user: discord.User, clan_id: str,  membership_type: int, membership_id: str,
+        member_data: dict
+    ) -> dict:
+        """
+        Approve a clan member into the clan
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/GroupV2/{clan_id}/Members/Approve/{membership_type}/{membership_id}/"
+        return await self.post_url(url, headers=headers, body=member_data)
+
+    async def get_clan_info(self, user: discord.User, clan_id: str) -> dict:
+        """
+        Get the list of pending clan members
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/GroupV2/{clan_id}/"
+        return await self.request_url(url, headers=headers)
 
     async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
         """
