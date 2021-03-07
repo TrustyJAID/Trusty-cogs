@@ -19,7 +19,7 @@
         "embed_links"
     ],
     "required_cogs" : {},
-    "requirements" : [],
+    "requirements" : ["tabulate"],
     "short" : "Destiny 2 information",
     "tags" : [
         "destiny",
