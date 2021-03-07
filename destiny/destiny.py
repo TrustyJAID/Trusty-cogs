@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -319,7 +319,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             bungie_id = await self.config.user(ctx.author).oauth.membership_id()
             creds = await self.get_bnet_user(ctx.author, bungie_id)
             steam_id = ""
@@ -339,6 +342,83 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Clan settings
         """
+        return
+
+    @clan.command(name="info")
+    @commands.bot_has_permissions(embed_links=True)
+    async def show_clan_info(self, ctx: commands.Context, clan_id: Optional[str]):
+        """
+        Display basic information about the clan set in this server
+        """
+        async with ctx.typing():
+            if not await self.has_oauth(ctx):
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
+            if clan_id:
+                clan_re = re.compile(
+                    r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
+                )
+                clan_invite = clan_re.search(clan_id)
+                if clan_invite:
+                    clan_id = clan_invite.group(4)
+            else:
+                clan_id = await self.config.guild(ctx.guild).clan_id()
+            if not clan_id:
+                return await ctx.send(
+                    _(
+                        "No clan ID has been setup for this server. "
+                        "Use `{prefix}destiny clan set` to set one."
+                    ).format(prefix=ctx.clean_prefix)
+                )
+            try:
+                clan_info = await self.get_clan_info(ctx.author, clan_id)
+                embed = await self.make_clan_embed(clan_info)
+            except Exception:
+                log.exception("Error getting clan info")
+                return await ctx.send(
+                    _("I could not find any information about this servers clan.")
+                )
+            else:
+                await ctx.send(embed=embed)
+
+    async def make_clan_embed(self, clan_info: dict) -> discord.Embed:
+        clan_id = clan_info["detail"]["groupId"]
+        clan_name = clan_info["detail"]["name"]
+        clan_about = clan_info["detail"]["about"]
+        clan_motto = clan_info["detail"]["motto"]
+        clan_callsign = clan_info["detail"]["clanInfo"]["clanCallsign"]
+        clan_xp_data = clan_info["detail"]["clanInfo"]["d2ClanProgressions"]["584850370"]
+        weekly_progress = clan_xp_data["weeklyProgress"]
+        weekly_limit = clan_xp_data["weeklyLimit"]
+        level = clan_xp_data["level"]
+        level_cap = clan_xp_data["levelCap"]
+        members = clan_info["detail"]["memberCount"]
+        max_members = clan_info["detail"]["features"]["maximumMembers"]
+        clan_creation_date = datetime.datetime.strptime(
+            clan_info["detail"]["creationDate"], "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
+        clan_create_str = clan_creation_date.strftime("%I:%M %p %Y-%m-%d")
+        clan_xp_str = _(
+            "Level: {level}/{level_cap}\nWeekly Progress: "
+            "{weekly_progress}/{weekly_limit}"
+        ).format(
+            level=level,
+            level_cap=level_cap,
+            weekly_progress=weekly_progress,
+            weekly_limit=weekly_limit,
+        )
+
+        join_link = f"https://www.bungie.net/en/ClanV2?groupid={clan_id}"
+        embed = discord.Embed(
+            title=f"{clan_name} [{clan_callsign}]", description=clan_about, url=join_link
+        )
+        embed.add_field(name=_("Motto"), value=clan_motto, inline=False)
+        embed.add_field(name=_("Clan XP"), value=clan_xp_str)
+        embed.add_field(name=_("Members"), value=f"{members}/{max_members}")
+        embed.add_field(name=_("Clan Founded"), value=clan_create_str)
+        return embed
 
     @clan.command(name="set")
     @commands.bot_has_permissions(embed_links=True)
@@ -355,7 +435,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             clan_re = re.compile(
                 r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
             )
@@ -364,11 +447,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 clan_id = clan_invite.group(4)
             try:
                 clan_info = await self.get_clan_info(ctx.author, clan_id)
-                clan_name = clan_info["detail"]["name"]
-                clan_about = clan_info["detail"]["about"]
-                clan_motto = clan_info["detail"]["motto"]
-                embed = discord.Embed(title=clan_name, description=clan_about)
-                embed.add_field(name=_("Motto"), value=clan_motto)
+                embed = await self.make_clan_embed(clan_info)
             except Exception:
                 log.exception("Error getting clan info")
                 return await ctx.send(_("I could not find a clan with that ID."))
@@ -417,7 +496,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             clan_id = await self.config.guild(ctx.guild).clan_id()
             if not clan_id:
                 return await ctx.send(
@@ -461,7 +543,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             clan_id = await self.config.guild(ctx.guild).clan_id()
             if not clan_id:
                 return await ctx.send(
@@ -534,7 +619,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx, user):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             if not user:
                 user = ctx.author
             try:
@@ -701,7 +789,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             try:
                 chars = await self.get_characters(ctx.author)
                 # await self.save(chars, "characters.json")
@@ -838,7 +929,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             if not item_types:
                 item_types = {"item_types": [9, 19, 21, 22, 24, 29], "item_sub_types": [21, 20]}
             try:
@@ -919,7 +1013,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             try:
                 chars = await self.get_characters(ctx.author)
             except Destiny2APIError:
@@ -994,7 +1091,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             try:
                 chars = await self.get_characters(ctx.author)
             except Destiny2APIError:
@@ -1068,7 +1168,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx, user):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             if not user:
                 user = ctx.author
             try:
@@ -1253,7 +1356,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             user = ctx.author
             try:
                 chars = await self.get_characters(user)
@@ -1576,7 +1682,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
-                return
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
             user = ctx.author
             try:
                 chars = await self.get_characters(user)

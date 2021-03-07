@@ -93,7 +93,11 @@ class DestinyAPI:
                     raise Destiny2APIError
 
     async def post_url(
-        self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None, body: Optional[dict] = None
+        self,
+        url: str,
+        params: Optional[dict] = None,
+        headers: Optional[dict] = None,
+        body: Optional[dict] = None,
     ) -> dict:
         """
         Helper to make requests from formed headers and params elsewhere
@@ -416,8 +420,12 @@ class DestinyAPI:
         return await self.request_url(url, headers=headers)
 
     async def approve_clan_pending(
-        self, user: discord.User, clan_id: str,  membership_type: int, membership_id: str,
-        member_data: dict
+        self,
+        user: discord.User,
+        clan_id: str,
+        membership_type: int,
+        membership_id: str,
+        member_data: dict,
     ) -> dict:
         """
         Approve a clan member into the clan
@@ -544,7 +552,9 @@ class DestinyAPI:
             data = await self.get_user_profile(ctx.author)
             platform = ""
             if len(data["destinyMemberships"]) > 1:
-                datas, platform = await self.pick_account(ctx, data["destinyMemberships"])
+                datas, platform = await self.pick_account(ctx, data)
+                if not datas:
+                    return False
                 name = datas["displayName"]
                 await self.config.user(ctx.author).account.set(datas)
             else:
@@ -556,7 +566,7 @@ class DestinyAPI:
             )
         if await self.config.user(ctx.author).account.membershipType() == 4:
             data = await self.get_user_profile(ctx.author)
-            datas, platform = await self.pick_account(ctx, data["destinyMemberships"])
+            datas, platform = await self.pick_account(ctx, data)
             name = datas["displayName"]
             await self.config.user(ctx.author).account.set(datas)
             await ctx.send(
@@ -564,7 +574,7 @@ class DestinyAPI:
             )
         return True
 
-    async def pick_account(self, ctx: commands.Context, memberships: list) -> tuple:
+    async def pick_account(self, ctx: commands.Context, profile: dict) -> tuple:
         """
         Have the user pick which account they want to pull data
         from if they have multiple accounts across platforms
@@ -574,11 +584,16 @@ class DestinyAPI:
             "available, which one would you like to use?\n"
         )
         count = 1
-        for membership in memberships:
-            platform = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
-            account_name = membership["displayName"]
+        for memberships in profile["destinyMemberships"]:
+            platform = BUNGIE_MEMBERSHIP_TYPES[memberships["membershipType"]]
+            account_name = memberships["displayName"]
             msg += f"**{count}. {account_name} {platform}**\n"
             count += 1
+            if memberships.get("crossSaveOverride", 0) == memberships["membershipType"]:
+                membership = memberships
+                membership_name = _("Crossave")
+        if membership:
+            return (membership, membership_name)
         try:
             await ctx.author.send(msg)
             pred = MessagePredicate.valid_int(user=ctx.author)
@@ -589,9 +604,9 @@ class DestinyAPI:
             msg = await ctx.bot.wait_for("message", check=pred, timeout=60)
         except asyncio.TimeoutError:
             return None, None
-        log.debug(memberships)
-        membership = memberships[int(pred.result) - 1]
-        membership_name = BUNGIE_MEMBERSHIP_TYPES[membership["membershipType"]]
+
+        membership = profile["destinyMemberships"][int(pred.result) - 1]
+        membership_name = BUNGIE_MEMBERSHIP_TYPES[profile["destinyMemberships"]["membershipType"]]
         return (membership, membership_name)
 
     async def save(self, data: dict, loc: str = "sample.json"):
