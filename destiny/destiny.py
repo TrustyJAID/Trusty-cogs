@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -206,6 +206,7 @@ class Destiny(DestinyAPI, commands.Cog):
         async with ctx.typing():
             try:
                 items = await self.search_definition("DestinyInventoryItemDefinition", search)
+                log.debug(items)
             except Destiny2MissingManifest as e:
                 await ctx.send(e)
                 return

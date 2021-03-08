@@ -361,7 +361,7 @@ class DestinyAPI:
         items = {}
         for hash_key, data in data.items():
             if str(entity_hash) == hash_key:
-                items[str(entity_hash)] = data
+                items[str(hash_key)] = data
                 # items.append(data)
             display_properties = data["displayProperties"]
             if str(entity_hash).lower() in display_properties["name"].lower():
@@ -369,7 +369,7 @@ class DestinyAPI:
                     # We generally don't care about dummy items in the lookup
                     continue
                 # items.append(data)
-                items[str(entity_hash)] = data
+                items[str(data["hash"])] = data
         return items
 
     async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
