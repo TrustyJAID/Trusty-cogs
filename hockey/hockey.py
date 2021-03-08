@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.5"
+    __version__ = "2.14.6"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -78,6 +78,7 @@ class Hockey(HockeyDev, commands.Cog):
             "goal_notifications": False,
             "start_notifications": False,
             "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
+            "ot_notifications": True
         }
         default_channel = {
             "team": [],
@@ -123,6 +124,11 @@ class Hockey(HockeyDev, commands.Cog):
                 await self.config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
 
     async def initialize(self):
+        if 218773382617890828 in self.bot.owner_ids:
+            try:
+                self.bot.add_dev_env_value("hockey", lambda x: self)
+            except Exception:
+                pass
         await self.initialize_pickems()
         self.loop = asyncio.create_task(self.game_check_loop())
         self.pickems_save_loop = asyncio.create_task(self.save_pickems_data())
@@ -874,6 +880,41 @@ class Hockey(HockeyDev, commands.Cog):
                 await ctx.maybe_send_embed(reply)
         else:
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
+
+    @hockey_notifications.command(name="otnotifications")
+    @checks.mod_or_permissions(manage_roles=True)
+    async def set_ot_notification_style(self, ctx, on_off: Optional[bool] = None):
+        """
+        Set the servers Regular Season OT notification style. Options are:
+
+        `True` - The bot will try to find correct role names for each team and mention that role.
+        `False` - The bot will not post any mention for roles.
+
+        The role name must match exactly `@Team Name GOAL` to work. For example
+        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.
+
+        If the role is mentionable by everyone when set to True this will ping the role.
+        Alternatively, if the role is not mentionable by everyone but the bot has permission
+        to mention everyone, setting this to True will allow the bot to ping.
+        """
+        if on_off is None:
+            cur_setting = await self.config.guild(ctx.guild).ot_notifications()
+            verb = _("On") if cur_setting else _("Off")
+            reply = _("__OT Notifications:__ **{verb}**\n\n").format(verb=verb)
+            reply += await self.check_notification_settings(ctx.guild)
+            reply += _(
+                "No settings have been changed, run this command again "
+                "followed by `on` or `off` to enable/disable this setting."
+            )
+            return await ctx.maybe_send_embed(reply)
+        await self.config.guild(ctx.guild).goal_notifications.set(on_off)
+        if on_off:
+            reply = _("__OT Notifications:__ **On**\n\n")
+            reply += await self.check_notification_settings(ctx.guild)
+            if reply:
+                await ctx.maybe_send_embed(reply)
+        else:
+            await ctx.maybe_send_embed(_("Okay, I will not mention OT in this server."))
 
     @hockey_notifications.command(name="game")
     @checks.mod_or_permissions(manage_roles=True)
@@ -1809,6 +1850,10 @@ class Hockey(HockeyDev, commands.Cog):
             log.exception("Something went wrong with the pickems unload")
 
     def cog_unload(self):
+        try:
+            self.bot.remove_dev_env_value("hockey")
+        except Exception:
+            pass
         self.bot.loop.create_task(self.save_pickems_unload())
         if getattr(self, "loop", None) is not None:
             self.loop.cancel()

@@ -19,8 +19,6 @@ _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
-GAME_TYPES = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
-
 
 class Game:
     """
@@ -108,6 +106,10 @@ class Game:
             self
         )
 
+    def game_type_str(self):
+        game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
+        return game_types.get(self.game_type, _("Unknown"))
+
     def to_json(self) -> dict:
         return {
             "game_state": self.game_state,
@@ -134,7 +136,7 @@ class Game:
             "first_star": self.first_star,
             "second_star": self.second_star,
             "third_star": self.third_star,
-            "game_type": {v: k for k, v in GAME_TYPES.items()}.get(self.game_type, ""),
+            "game_type": self.game_type,
             "link": self.link,
         }
 
@@ -245,7 +247,7 @@ class Game:
         em.set_author(name=title, url=team_url, icon_url=self.home_logo)
         em.set_thumbnail(url=self.home_logo)
         em.set_footer(
-            text=_("{game_type} Game start ").format(game_type=self.game_type),
+            text=_("{game_type} Game start ").format(game_type=self.game_type_str()),
             icon_url=self.away_logo,
         )
         if self.game_state == "Preview":
@@ -639,7 +641,9 @@ class Game:
             if state_notifications:
                 if version_info >= VersionInfo.from_str("3.4.0"):
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-
+            if self.game_state == "R" and "OT" in self.period_ord:
+                if not await config.guild(guild).ot_notifications():
+                    allowed_mentions = {}
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
@@ -894,7 +898,7 @@ class Game:
         first_star = decisions["firstStar"]["fullName"] if "firstStar" in decisions else None
         second_star = decisions["secondStar"]["fullName"] if "secondStar" in decisions else None
         third_star = decisions["thirdStar"]["fullName"] if "thirdStar" in decisions else None
-        game_type = GAME_TYPES.get(data["gameData"]["game"]["type"], _("Unknown"))
+        game_type = data["gameData"]["game"]["type"]
         game_state = (
             data["gameData"]["status"]["abstractGameState"]
             if data["gameData"]["status"]["detailedState"] != "Postponed"

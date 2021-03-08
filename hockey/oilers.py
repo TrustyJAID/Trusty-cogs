@@ -7,9 +7,9 @@ from phue import Bridge
 class Oilers:
     def __init__(self, bot):
         self.bot = bot
-        self.bridge = Bridge("192.168.50.123")
+        self.bridge = Bridge("192.168.50.60")
         self.lights = self.bridge.lights
-        self.bridge2 = Bridge("192.168.50.163")
+        self.bridge2 = Bridge("192.168.50.236")
         self.lights2 = self.bridge2.lights
         self.cur_lights = {}
         self.cur_lights2 = {}
