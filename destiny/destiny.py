@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.4"
+    __version__ = "1.5.5"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -401,8 +401,7 @@ class Destiny(DestinyAPI, commands.Cog):
         )
         clan_create_str = clan_creation_date.strftime("%I:%M %p %Y-%m-%d")
         clan_xp_str = _(
-            "Level: {level}/{level_cap}\nWeekly Progress: "
-            "{weekly_progress}/{weekly_limit}"
+            "Level: {level}/{level_cap}\nWeekly Progress: " "{weekly_progress}/{weekly_limit}"
         ).format(
             level=level,
             level_cap=level_cap,
@@ -575,9 +574,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 last_online = datetime.datetime.utcfromtimestamp(
                     int(member["lastOnlineStatusChange"])
                 )
-                join_date = datetime.datetime.strptime(
-                    member["joinDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
+                join_date = datetime.datetime.strptime(member["joinDate"], "%Y-%m-%dT%H:%M:%SZ")
                 destiny_name = member["destinyUserInfo"]["LastSeenDisplayName"]
                 destiny_id = member["destinyUserInfo"]["membershipId"]
                 clan_mems += destiny_name + "\n"
@@ -1417,9 +1414,10 @@ class Destiny(DestinyAPI, commands.Cog):
                 gender = (
                     await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
                 )[str(char["genderHash"])]
+                log.debug(gender)
                 char_class = (
                     await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-                )[str(char["genderHash"])]
+                )[str(char["classHash"])]
                 char_info += "{user} - {race} {gender} {char_class} ".format(
                     user=user.display_name,
                     race=race["displayProperties"]["name"],
@@ -1440,8 +1438,8 @@ class Destiny(DestinyAPI, commands.Cog):
 
                 for activities in data["activities"]:
                     activity_hash = str(activities["activityDetails"]["directorActivityHash"])
-                    activity_data = await self.get_definition(
-                        "DestinyActivityDefinition", [activity_hash]
+                    activity_data = (
+                        await self.get_definition("DestinyActivityDefinition", [activity_hash])
                     )[str(activity_hash)]
                     embed = discord.Embed(
                         title=activity_data["displayProperties"]["name"],
