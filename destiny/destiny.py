@@ -5,7 +5,7 @@ import json
 import functools
 import re
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
 from pathlib import Path
 from tabulate import tabulate
 from typing import List, Literal, Optional, Union
@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.3"
+    __version__ = "1.5.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -180,7 +180,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if key in perks:
                     key = f"{key} {count}"
                     count += 1
-            except IndexError:
+            except (IndexError, KeyError):
                 key = _("Perk {count}").format(count=slot_counter)
             perks[key] = perk["displayProperties"]["name"]
             slot_counter += 1
@@ -206,7 +206,6 @@ class Destiny(DestinyAPI, commands.Cog):
         async with ctx.typing():
             try:
                 items = await self.search_definition("DestinyInventoryItemDefinition", search)
-                log.debug(items)
             except Destiny2MissingManifest as e:
                 await ctx.send(e)
                 return
@@ -535,6 +534,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @clan.command(name="roster")
     @commands.bot_has_permissions(embed_links=True)
+    @commands.mod_or_permissions(manage_messages=True)
     async def get_clan_roster(self, ctx: commands.Context, output_format: Optional[str]) -> None:
         """
         Get the full clan roster
@@ -558,22 +558,34 @@ class Destiny(DestinyAPI, commands.Cog):
                 )
             clan = await self.get_clan_members(ctx.author, clan_id)
             headers = [
+                "Discord Name",
+                "Discord ID",
                 "Destiny Name",
                 "Destiny ID",
                 "Bungie.net Name",
                 "Bungie.net ID",
-                "Last Online",
+                "Last Seen Destiny",
                 "Steam ID",
+                "Join Date",
             ]
             clan_mems = ""
             rows = []
+            saved_users = await self.config.all_users()
             for member in clan["results"]:
                 last_online = datetime.datetime.utcfromtimestamp(
                     int(member["lastOnlineStatusChange"])
                 )
+                join_date = datetime.datetime.strptime(
+                    member["joinDate"], "%Y-%m-%dT%H:%M:%SZ"
+                )
                 destiny_name = member["destinyUserInfo"]["LastSeenDisplayName"]
                 destiny_id = member["destinyUserInfo"]["membershipId"]
                 clan_mems += destiny_name + "\n"
+                discord_id = None
+                discord_name = None
+                bungie_id = None
+                bungie_name = None
+                steam_id = None
                 try:
                     bungie_id = member["bungieNetUserInfo"]["membershipId"]
                     bungie_name = member["bungieNetUserInfo"]["displayName"]
@@ -583,16 +595,24 @@ class Destiny(DestinyAPI, commands.Cog):
                         if "credentialAsString" in cred:
                             steam_id = cred["credentialAsString"]
                 except Exception:
-                    bungie_id = None
-                    bungie_name = None
-                    steam_id = None
+                    pass
+                for user_id, data in saved_users.items():
+                    if data["oauth"]["membership_id"] == bungie_id:
+                        discord_user = ctx.guild.get_member(int(user_id))
+                        if discord_user:
+                            discord_name = str(discord_user)
+                            discord_id = discord_user.id
+
                 user_info = [
+                    discord_name,
+                    f"'{discord_id}" if discord_id else None,
                     destiny_name,
-                    f"'{destiny_id}",
+                    f"'{destiny_id}" if destiny_id else None,
                     bungie_name,
-                    f"'{bungie_id}",
+                    f"'{bungie_id}" if bungie_id else None,
                     last_online,
-                    f"'{steam_id}",
+                    f"'{steam_id}" if steam_id else None,
+                    str(join_date),
                 ]
                 rows.append(user_info)
             if output_format == "csv":
@@ -605,6 +625,10 @@ class Destiny(DestinyAPI, commands.Cog):
                     employee_writer.writerow(row)
                 outfile.seek(0)
                 file = discord.File(outfile, filename="clan_roster.csv")
+                await ctx.send(file=file)
+            elif output_format == "md":
+                data = tabulate(rows, headers=headers, tablefmt="github")
+                file = discord.File(BytesIO(data.encode()), filename="clan_roster.md")
                 await ctx.send(file=file)
             else:
                 data = tabulate(rows, headers=headers, tablefmt="pretty")
