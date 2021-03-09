@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.5"
+    __version__ = "1.5.6"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):

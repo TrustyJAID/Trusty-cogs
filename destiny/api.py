@@ -87,7 +87,8 @@ class DestinyAPI:
                             log.error(data["message"])
                         else:
                             log.error("Incorrect response data")
-                        raise Destiny2InvalidParameters(data["Message"])
+                        log.debug(url)
+                        raise Destiny2InvalidParameters(data)
                 else:
                     log.error("Could not connect to the API")
                     raise Destiny2APIError
@@ -317,7 +318,7 @@ class DestinyAPI:
             data = await asyncio.wait_for(task, timeout=60)
         except Exception:
             log.info(_("No manifest found, getting response from API."))
-            return await self.get_definition_from_api(entity, entity_hash)
+            return await self.get_definition_from_api(entity.replace("Lite", ""), entity_hash)
         for item in entity_hash:
             try:
                 items[str(item)] = data[str(item)]
