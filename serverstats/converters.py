@@ -155,3 +155,74 @@ class ChannelConverter(IDConverter):
         if not result:
             raise BadArgument(f"Channel `{argument}` not found")
         return result
+
+class PermissionConverter(IDConverter):
+    """
+    This is to convert to specific permission names
+
+    add_reactions
+    attach_files
+    change_nickname
+    connect
+    create_instant_invite
+    deafen_members
+    embed_links
+    external_emojis
+    manage_channels
+    manage_messages
+    manage_permissions
+    manage_roles
+    manage_webhooks
+    mention_everyone
+    move_members
+    mute_members
+    priority_speaker
+    read_message_history
+    read_messages
+    send_messages
+    send_tts_messages
+    speak
+    stream
+    use_external_emojis
+    use_slash_commands
+    use_voice_activation
+    value
+    view_channel
+    """
+
+    async def convert(
+        self, ctx: commands.Context, argument: str
+    ) -> str:
+        valid_perms = [
+                "add_reactions",
+                "attach_files",
+                "connect",
+                "create_instant_invite",
+                "deafen_members",
+                "embed_links",
+                "external_emojis",
+                "manage_messages",
+                "manage_permissions",
+                "manage_roles",
+                "manage_webhooks",
+                "move_members",
+                "mute_members",
+                "priority_speaker",
+                "read_message_history",
+                "read_messages",
+                "send_messages",
+                "send_tts_messages",
+                "speak",
+                "stream",
+                "use_external_emojis",
+                "use_slash_commands",
+                "use_voice_activation",
+                "view_channel",
+        ]
+        match = re.match(r"|".join(i for i in valid_perms), argument, flags=re.I)
+
+        result = match.group(0)
+
+        if not result:
+            raise BadArgument(f"Permission `{argument}` not found")
+        return result

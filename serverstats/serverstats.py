@@ -17,12 +17,19 @@ from redbot.core.utils.chat_formatting import (
     escape,
     humanize_number,
     humanize_timedelta,
+    humanize_list,
     pagify,
 )
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
-from .converters import ChannelConverter, FuzzyMember, GuildConverter, MultiGuildConverter
+from .converters import (
+    ChannelConverter,
+    FuzzyMember,
+    GuildConverter,
+    MultiGuildConverter,
+    PermissionConverter,
+)
 from .menus import BaseMenu, AvatarPages, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
@@ -37,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.5.5"
+    __version__ = "1.6.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -581,6 +588,108 @@ class ServerStats(commands.Cog):
             return
         await ctx.tick()
 
+    @channeledit.command(name="permissions", aliases=["perms", "permission"])
+    @checks.mod_or_permissions(manage_permissions=True)
+    @checks.bot_has_permissions(manage_permissions=True)
+    async def edit_channel_perms(
+        self,
+        ctx: commands.Context,
+        permission: PermissionConverter,
+        channel: Optional[ChannelConverter],
+        true_or_false: Optional[bool],
+        *roles_or_users: Union[discord.Member, discord.Role, str],
+    ) -> None:
+        """
+        Edit channel read permissions for designated role
+
+        `[channel]` The channel you would like to edit. If no channel is provided
+        the channel this command is run in will be used.
+        `[true_or_false]` `True` or `False` to set the permission level. If this is not
+        provided `None` will be used instead which signifies the default state of the permission.
+        `[roles_or_users]` the roles or users you want to edit this setting for.
+
+        `<permission>` Must be one of the following:
+            add_reactions
+            attach_files
+            connect
+            create_instant_invite
+            deafen_members
+            embed_links
+            external_emojis
+            manage_messages
+            manage_permissions
+            manage_roles
+            manage_webhooks
+            move_members
+            mute_members
+            priority_speaker
+            read_message_history
+            read_messages
+            send_messages
+            send_tts_messages
+            speak
+            stream
+            use_external_emojis
+            use_slash_commands
+            use_voice_activation
+        """
+        if channel is None:
+            channel = ctx.channel
+        if (
+            not channel.permissions_for(ctx.author).manage_permissions
+            or not channel.permissions_for(ctx.author).manage_channels
+        ):
+            return await ctx.send(
+                _("You do not have the correct permissions to edit {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        if (
+            not channel.permissions_for(ctx.me).manage_permissions
+            or not channel.permissions_for(ctx.author).manage_channels
+        ):
+            return await ctx.send(
+                _("I do not have the correct permissions to edit {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        targets = list(roles_or_users)
+        for r in roles_or_users:
+            if isinstance(r, str):
+                if r == "everyone":
+                    targets.remove(r)
+                    targets.append(ctx.guild.default_role)
+                else:
+                    targets.remove(r)
+        if not targets:
+            return await ctx.send(
+                _("You need to provide a role or user you want to edit permissions for")
+            )
+        overs = channel.overwrites
+        for target in targets:
+            if target in overs:
+                overs[target].update(**{permission: true_or_false})
+
+            else:
+                perm = discord.PermissionOverwrite(**{permission: true_or_false})
+                overs[target] = perm
+        try:
+            await channel.edit(overwrites=overs)
+            await ctx.send(
+                _(
+                    "The following roles or users have had `{perm}` "
+                    "in {channel} set to `{perm_level}`:\n{roles_or_users}"
+                ).format(
+                    perm=permission,
+                    channel=channel.mention,
+                    perm_level=true_or_false,
+                    roles_or_users=humanize_list([i.mention for i in targets]),
+                )
+            )
+        except Exception:
+            log.exception(f"Error editing permissions in channel {channel.name}")
+            return await ctx.send(_("There was an issue editing permissions on that channel."))
+
     async def ask_for_invite(self, ctx: commands.Context) -> Optional[str]:
         """
         Ask the user to provide an invite link
@@ -896,7 +1005,9 @@ class ServerStats(commands.Cog):
             embed = discord.Embed()
             since_created = (ctx.message.created_at - member.created_at).days
             user_created = member.created_at.strftime("%d %b %Y %H:%M")
-            created_on = _("Joined Discord on {}\n({} days ago)").format(user_created, since_created)
+            created_on = _("Joined Discord on {}\n({} days ago)").format(
+                user_created, since_created
+            )
             embed.description = created_on
             embed.set_thumbnail(url=member.avatar_url)
             embed.colour = await ctx.embed_colour()
@@ -1178,7 +1289,9 @@ class ServerStats(commands.Cog):
     @staticmethod
     async def confirm_leave_guild(ctx: commands.Context, guild) -> None:
         await ctx.send(
-            _("Are you sure you want me to leave {guild}? (reply yes or no)").format(guild=guild.name)
+            _("Are you sure you want me to leave {guild}? (reply yes or no)").format(
+                guild=guild.name
+            )
         )
         pred = MessagePredicate.yes_or_no(ctx)
         await ctx.bot.wait_for("message", check=pred)
