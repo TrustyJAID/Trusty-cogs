@@ -153,7 +153,7 @@ class HockeyTeams(Converter):
                     await new_msg.add_reaction(emoji)
                 try:
                     reaction, user = await ctx.bot.wait_for(
-                        "reaction_add", check=reaction_check, timeout=15
+                        "reaction_add", check=reaction_check, timeout=60
                     )
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
@@ -171,7 +171,7 @@ class HockeyTeams(Converter):
                     return m.author == ctx.message.author
 
                 try:
-                    msg = await ctx.bot.wait_for("message", check=msg_check, timeout=15)
+                    msg = await ctx.bot.wait_for("message", check=msg_check, timeout=60)
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
                     return None

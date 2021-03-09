@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.6"
+    __version__ = "2.14.7"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -739,6 +739,8 @@ class Hockey(HockeyDev, commands.Cog):
         must be either `True` or `False` and a category must be provided
         """
         guild = ctx.message.guild
+        if team is None:
+            return await ctx.send(_("You must provide a valid current team."))
         if category is None and ctx.channel.category is not None:
             category = guild.get_channel(ctx.channel.category_id)
         else:
@@ -1181,6 +1183,8 @@ class Hockey(HockeyDev, commands.Cog):
         `channel` defaults to the current channel
         """
         guild = ctx.message.guild
+        if team is None:
+            return await ctx.send(_("You must provide a valid current team."))
         # team_data = await self.get_team(team)
         if channel is None:
             channel = ctx.message.channel
@@ -1261,6 +1265,8 @@ class Hockey(HockeyDev, commands.Cog):
     async def team_role(self, ctx, *, team: HockeyTeams):
         """Set your role to a team role"""
         guild = ctx.message.guild
+        if team is None:
+            return await ctx.send(_("You must provide a valid current team."))
         try:
             role = [
                 role
@@ -1478,6 +1484,8 @@ class Hockey(HockeyDev, commands.Cog):
                 season_str = f"{season.group(1)}{year}"
         if season:
             season_url = f"?season={season_str}"
+        if search is None:
+            return await ctx.send(_("You must provide a valid current team."))
         rosters = {}
         players = []
         teams = [team for team in TEAMS if search.lower() in team.lower()]
@@ -1757,6 +1765,8 @@ class Hockey(HockeyDev, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def setrules(self, ctx, team: HockeyTeams, *, rules):
         """Set the main rules page for the nhl rules command"""
+        if team is None:
+            return await ctx.send(_("You must provide a valid current team."))
         if not ctx.channel.permissions_for(ctx.guild.me).embed_links:
             await ctx.send(_("I don't have embed links permission!"))
             return
@@ -1773,6 +1783,8 @@ class Hockey(HockeyDev, commands.Cog):
         choosing all will create a nicely formatted list of
         all current NHL team discord server links
         """
+        if team is None:
+            return await ctx.send(_("You must provide a valid current team."))
         if team not in ["all"]:
             await ctx.send(TEAMS[team]["invite"])
         else:
