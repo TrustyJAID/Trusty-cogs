@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import logging
-from typing import Sequence, Union, cast
+from typing import Sequence, Union, cast, Optional, Tuple
 
 import discord
 from discord.ext.commands.converter import Converter
@@ -9,7 +9,13 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, VersionInfo, commands, modlog, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import escape, humanize_list, inline, humanize_timedelta
+from redbot.core.utils.chat_formatting import (
+    escape,
+    humanize_list,
+    inline,
+    humanize_timedelta,
+    pagify,
+)
 
 _ = Translator("ExtendedModLog", __file__)
 logger = logging.getLogger("red.trusty-cogs.ExtendedModLog")
@@ -650,15 +656,9 @@ class EventMixin:
         )
         time = datetime.datetime.utcnow()
         check_after = time + datetime.timedelta(minutes=-30)
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.kick
-            async for log in guild.audit_logs(limit=5, after=check_after, action=action):
-                if log.target.id == member.id:
-                    perp = log.user
-                    reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, member, discord.AuditLogAction.kick
+        )
         if embed_links:
             embed = discord.Embed(
                 description=member.mention,
@@ -710,6 +710,7 @@ class EventMixin:
         p_msg = ""
         before_perms = {}
         after_perms = {}
+        guild = before.guild
         for o, p in before.overwrites.items():
             before_perms[str(o.id)] = [i for i in p]
         for o, p in after.overwrites.items():
@@ -718,30 +719,59 @@ class EventMixin:
             entity_obj = before.guild.get_role(int(entity))
             if not entity_obj:
                 entity_obj = before.guild.get_member(int(entity))
+            name = entity_obj.mention if embed_links else entity_obj.name
             if entity not in after_perms:
-                if not embed_links:
-                    p_msg += f"{entity_obj.name} Overwrites removed.\n"
-                else:
-                    p_msg += f"{entity_obj.mention} Overwrites removed.\n"
+                perp, reason = await self.get_audit_log_reason(
+                    guild, before, discord.AuditLogAction.overwrite_delete
+                )
+                if perp:
+                    p_msg += _("{name} Removed overwrites.\n").format(
+                        name=perp.mention if embed_links else perp.name
+                    )
+                p_msg += _("{name} Overwrites removed.\n").format(name=name)
+
+                lost_perms = set(before_perms[entity])
+                for diff in lost_perms:
+                    if diff[1] is None:
+                        continue
+                    p_msg += _("{name} {perm} Reset.\n").format(name=name, perm=diff[0])
                 continue
             if after_perms[entity] != before_perms[entity]:
+                perp, reason = await self.get_audit_log_reason(
+                    guild, before, discord.AuditLogAction.overwrite_update
+                )
+                if perp:
+                    p_msg += _("{name} Updated overwrites.\n").format(
+                        name=perp.mention if embed_links else perp.name
+                    )
                 a = set(after_perms[entity])
                 b = set(before_perms[entity])
                 a_perms = list(a - b)
                 for diff in a_perms:
-                    if not embed_links:
-                        p_msg += f"{entity_obj.name} {diff[0]} Set to {diff[1]}\n"
-                    else:
-                        p_msg += f"{entity_obj.mention} {diff[0]} Set to {diff[1]}\n"
+                    p_msg += _("{name} {perm} Set to {value}.\n").format(
+                        name=name, perm=diff[0], value=diff[1]
+                    )
         for entity in after_perms:
             entity_obj = after.guild.get_role(int(entity))
             if not entity_obj:
                 entity_obj = after.guild.get_member(int(entity))
+            name = entity_obj.mention if embed_links else entity_obj.name
             if entity not in before_perms:
-                if not embed_links:
-                    p_msg += f"{entity_obj.name} Overwrites added.\n"
-                else:
-                    p_msg += f"{entity_obj.mention} Overwrites added.\n"
+                perp, reason = await self.get_audit_log_reason(
+                    guild, before, discord.AuditLogAction.overwrite_update
+                )
+                if perp:
+                    p_msg += _("{name} Added overwrites.\n").format(
+                        name=perp.mention if embed_links else perp.name
+                    )
+                p_msg += _("{name} Overwrites added.\n").format(name=name)
+                lost_perms = set(after_perms[entity])
+                for diff in lost_perms:
+                    if diff[1] is None:
+                        continue
+                    p_msg += _("{name} {perm} Set to {value}.\n").format(
+                        name=name, perm=diff[0], value=diff[1]
+                    )
                 continue
         return p_msg
 
@@ -778,16 +808,9 @@ class EventMixin:
             )
         )
         # msg = _("Channel Created ") + str(new_channel.id) + "\n"
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.channel_create
-            async for log in guild.audit_logs(limit=2, action=action):
-                if log.target.id == new_channel.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, new_channel, discord.AuditLogAction.channel_create
+        )
 
         perp_msg = ""
         embed.add_field(name=_("Type"), value=channel_type)
@@ -841,16 +864,10 @@ class EventMixin:
                 chan_type=channel_type, chan_name=old_channel.name, chan_id=old_channel.id
             )
         )
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.channel_delete
-            async for log in guild.audit_logs(limit=2, action=action):
-                if log.target.id == old_channel.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, old_channel, discord.AuditLogAction.channel_delete
+        )
+
         perp_msg = ""
         embed.add_field(name=_("Type"), value=channel_type)
         if perp:
@@ -870,6 +887,23 @@ class EventMixin:
             await channel.send(embed=embed)
         else:
             await channel.send(msg)
+
+    async def get_audit_log_reason(
+        self,
+        guild: discord.Guild,
+        target: Union[discord.abc.GuildChannel, discord.Member, discord.Role],
+        action: discord.AuditLogAction,
+    ) -> Tuple[Optional[discord.abc.User], Optional[str]]:
+        perp = None
+        reason = None
+        if guild.me.guild_permissions.view_audit_log:
+            async for log in guild.audit_logs(limit=5, action=action):
+                if log.target.id == target.id:
+                    perp = log.user
+                    if log.reason:
+                        reason = log.reason
+                    break
+        return perp, reason
 
     @commands.Cog.listener()
     async def on_guild_channel_update(
@@ -910,17 +944,9 @@ class EventMixin:
             time=time.strftime("%H:%M:%S"),
             channel=before.name,
         )
+        worth_updating = False
         perp = None
         reason = None
-        worth_updating = False
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.channel_update
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == before.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
         if type(before) == discord.TextChannel:
             text_updates = {
                 "name": _("Name:"),
@@ -942,17 +968,24 @@ class EventMixin:
                     msg += _("After ") + f"{name} {after_attr}\n"
                     embed.add_field(name=_("Before ") + name, value=str(before_attr)[:1024])
                     embed.add_field(name=_("After ") + name, value=str(after_attr)[:1024])
+                    perp, reason = await self.get_audit_log_reason(
+                        guild, before, discord.AuditLogAction.channel_update
+                    )
             if before.is_nsfw() != after.is_nsfw():
                 worth_updating = True
                 msg += _("Before ") + f"NSFW {before.is_nsfw()}\n"
                 msg += _("After ") + f"NSFW {after.is_nsfw()}\n"
                 embed.add_field(name=_("Before ") + "NSFW", value=str(before.is_nsfw()))
                 embed.add_field(name=_("After ") + "NSFW", value=str(after.is_nsfw()))
+                perp, reason = await self.get_audit_log_reason(
+                    guild, before, discord.AuditLogAction.channel_update
+                )
             p_msg = await self.get_permission_change(before, after, embed_links)
             if p_msg != "":
                 worth_updating = True
                 msg += _("Permissions Changed: ") + p_msg
-                embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+                for page in pagify(p_msg, page_length=1024):
+                    embed.add_field(name=_("Permissions"), value=page)
 
         if type(before) == discord.VoiceChannel:
             voice_updates = {
@@ -975,7 +1008,8 @@ class EventMixin:
             if p_msg != "":
                 worth_updating = True
                 msg += _("Permissions Changed: ") + p_msg
-                embed.add_field(name=_("Permissions"), value=p_msg[:1024])
+                for page in pagify(p_msg, page_length=1024):
+                    embed.add_field(name=_("Permissions"), value=page)
 
         if perp:
             msg += _("Updated by ") + str(perp) + "\n"
@@ -1043,16 +1077,9 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.role_update
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == before.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, before, discord.AuditLogAction.role_update
+        )
         embed_links = (
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_change"]["embed"]
@@ -1122,16 +1149,9 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.role_create
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == role.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, role, discord.AuditLogAction.role_create
+        )
         embed_links = (
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_create"]["embed"]
@@ -1175,16 +1195,9 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "role_change")
         except RuntimeError:
             return
-        perp = None
-        reason = None
-        if channel.permissions_for(guild.me).view_audit_log:
-            action = discord.AuditLogAction.role_delete
-            async for log in guild.audit_logs(limit=5, action=action):
-                if log.target.id == role.id:
-                    perp = log.user
-                    if log.reason:
-                        reason = log.reason
-                    break
+        perp, reason = await self.get_audit_log_reason(
+            guild, role, discord.AuditLogAction.role_delete
+        )
         embed_links = (
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_delete"]["embed"]
@@ -1668,23 +1681,13 @@ class EventMixin:
                                 author=after.mention, role=role.mention
                             )
                             worth_sending = True
-                    if channel.permissions_for(guild.me).view_audit_log:
-                        action = discord.AuditLogAction.member_role_update
-                        async for log in guild.audit_logs(limit=5, action=action):
-                            if log.target.id == before.id:
-                                perp = log.user
-                                if log.reason:
-                                    reason = log.reason
-                                break
+                    perp, reason = await self.get_audit_log_reason(
+                        guild, before, discord.AuditLogAction.member_role_update
+                    )
                 else:
-                    if channel.permissions_for(guild.me).view_audit_log:
-                        action = discord.AuditLogAction.member_update
-                        async for log in guild.audit_logs(limit=5, action=action):
-                            if log.target.id == before.id:
-                                perp = log.user
-                                if log.reason:
-                                    reason = log.reason
-                                break
+                    perp, reason = await self.get_audit_log_reason(
+                        guild, before, discord.AuditLogAction.member_update
+                    )
                     worth_sending = True
                     msg += _("Before ") + f"{name} {before_attr}\n"
                     msg += _("After ") + f"{name} {after_attr}\n"
