@@ -194,11 +194,13 @@ class Goal:
             goal_notifications = guild_notifications or channel_notifications
             publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
-            if goal_notifications:
-                log.debug(goal_notifications)
-                if version_info >= VersionInfo.from_str("3.4.0"):
+            role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
+            if version_info >= VersionInfo.from_str("3.4.0"):
+                if goal_notifications:
+                    log.debug(goal_notifications)
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-                role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
+                else:
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
 
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
@@ -300,10 +302,7 @@ class Goal:
             message = await channel.fetch_message(message_id)
             guild = message.guild
             game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
-            role = None
-            for roles in guild.roles:
-                if roles.name == self.team_name + " GOAL":
-                    role = roles
+            role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:

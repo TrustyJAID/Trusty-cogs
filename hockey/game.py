@@ -638,12 +638,17 @@ class Game:
             # heh inclusive or
             allowed_mentions = {}
             home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
-            if state_notifications:
-                if version_info >= VersionInfo.from_str("3.4.0"):
+            if version_info >= VersionInfo.from_str("3.4.0"):
+                if state_notifications:
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
+                else:
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if self.game_state == "R" and "OT" in self.period_ord:
                 if not await config.guild(guild).ot_notifications():
-                    allowed_mentions = {}
+                    if version_info >= VersionInfo.from_str("3.4.0"):
+                        allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                    else:
+                        allowed_mentions = {}
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
