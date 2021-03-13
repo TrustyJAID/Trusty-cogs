@@ -180,7 +180,8 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         if guild_id and not await self.bot.is_owner(ctx.author):
             return await ctx.send(_("That is only available for the bot owner."))
         elif guild_id and await self.bot.is_owner(ctx.author):
-            guild = self.bot.get_guild(guild_id)
+            if not (guild := self.bot.get_guild(guild_id)):
+                return await ctx.send(_("Guild `{guild_id}` not found.").format(guild_id=guild_id))
         else:
             guild = ctx.guild
         tr_keys = {
