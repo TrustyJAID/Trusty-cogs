@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.6"
+    __version__ = "1.5.7"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -466,10 +466,17 @@ class Destiny(DestinyAPI, commands.Cog):
             description=_("React with the user you would like to approve into the clan."),
         )
         for index, user in enumerate(pending_users["results"]):
-            destiny_name = user["destinyUserInfo"]["LastSeenDisplayName"]
-            bungie_name = user["bungieNetUserInfo"]["displayName"]
+            destiny_name = ""
+            destiny_info = user.get("destinyUserInfo", "")
+            if destiny_info:
+                destiny_name = destiny_info.get("LastSeenDisplayName", "")
+            bungie_name = ""
+            bungie_info = user.get("bungieNetUserInfo", "")
+            if bungie_info:
+                bungie_name = bungie_info.get("displayName", "")
             msg = _("Destiny/Steam Name: {destiny_name}\nBungie.net Name: {bungie_name}").format(
-                destiny_name=destiny_name, bungie_name=bungie_name
+                destiny_name=destiny_name if destiny_name else _("Not Set"),
+                bungie_name=bungie_name if bungie_name else _("Not Set"),
             )
             embed.add_field(name=_("User {count}").format(count=index + 1), value=msg)
         msg = await ctx.send(embed=embed)
@@ -514,8 +521,14 @@ class Destiny(DestinyAPI, commands.Cog):
         if not approved:
             return await ctx.send(_("No one will be approved into the clan."))
         try:
-            destiny_name = approved["destinyUserInfo"]["LastSeenDisplayName"]
-            bungie_name = approved["bungieNetUserInfo"]["displayName"]
+            destiny_name = ""
+            destiny_info = approved.get("destinyUserInfo", "")
+            if destiny_info:
+                destiny_name = destiny_info.get("LastSeenDisplayName", "")
+            bungie_name = ""
+            bungie_info = approved.get("bungieNetUserInfo", "")
+            if bungie_info:
+                bungie_name = bungie_info.get("displayName", "")
             membership_id = approved["destinyUserInfo"]["membershipId"]
             membership_type = approved["destinyUserInfo"]["membershipType"]
             await self.approve_clan_pending(
@@ -634,6 +647,53 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
+    async def test(self, ctx: commands.Context, user: discord.Member = None) -> None:
+        """
+        Display a menu of your basic character's info
+        `[user]` A member on the server who has setup their account on this bot.
+        """
+        async with ctx.typing():
+            if not await self.has_oauth(ctx, user):
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
+            if not user:
+                user = ctx.author
+            try:
+                chars = await self.get_characters(user)
+                await self.save(chars, "character.json")
+            except Destiny2APIError as e:
+                log.error(e, exc_info=True)
+                msg = _("I can't seem to find your Destiny profile.")
+                await ctx.send(msg)
+                return
+        msg = ""
+        for char, activity_info in chars["characterActivities"]["data"].items():
+            activity_hashes = []
+            for activity in activity_info["availableActivities"]:
+                if not activity["isCompleted"]:
+                    activity_hashes.append(activity["activityHash"])
+                if activity.get("challenges", []):
+                    for challenge in activity["challenges"]:
+                        if not challenge["objective"]["complete"]:
+                            activity_hashes.append(activity["activityHash"])
+            activity_hashes = [a["activityHash"] for a in activity_info["availableActivities"]]
+
+            activity_data = await self.get_definition("DestinyActivityDefinition", activity_hashes)
+            for act_hash, info in activity_data.items():
+                msg += (
+                    info["displayProperties"]["name"]
+                    + " **"
+                    + info["displayProperties"]["description"]
+                    + "**\n\n"
+                )
+            break
+        for page in pagify(msg):
+            await ctx.send(page)
+
+    @destiny.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def user(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
         Display a menu of your basic character's info
@@ -649,7 +709,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 user = ctx.author
             try:
                 chars = await self.get_characters(user)
-                # await self.save(chars, "character.json")
+                await self.save(chars, "character.json")
             except Destiny2APIError as e:
                 log.error(e, exc_info=True)
                 msg = _("I can't seem to find your Destiny profile.")
