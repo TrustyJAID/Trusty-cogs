@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.3"
+    __version__ = "1.2.4"
 
     def __init__(self, bot):
         self.bot = bot

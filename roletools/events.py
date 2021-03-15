@@ -176,14 +176,14 @@ class RoleEvents:
                 for role_id in inclusive:
                     log.debug(role_id)
                     r = guild.get_role(role_id)
-                    if r:
+                    if r and await self.config.role(r).selfassignable():
                         inclusive_roles.append(r)
                 await member.add_roles(*inclusive_roles, reason=_("Inclusive Roles"))
             if exclusive := await self.config.role(role).exclusive_to():
                 exclusive_roles = []
                 for role_id in exclusive:
                     r = guild.get_role(role_id)
-                    if r in member.roles:
+                    if r in member.roles and await self.config.role(r).selfremovable():
                         exclusive_roles.append(r)
                 await self.remove_roles(member, exclusive_roles, _("Exclusive Roles"))
             to_add.append(role)
