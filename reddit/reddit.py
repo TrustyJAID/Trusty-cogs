@@ -76,7 +76,7 @@ class Reddit(commands.Cog):
                 client_secret=keys["client_secret"],
                 password=keys["password"],
                 username=keys["username"],
-                user_agent=f"TrustyCogs/{self.__version__} on {self.bot.user}",
+                user_agent=f"Trusty-cogs/{self.__version__} on {self.bot.user}",
             )
             log.debug("Logged into Reddit.")
         except Exception:
@@ -96,7 +96,8 @@ class Reddit(commands.Cog):
         new posts as an event.
         """
         try:
-            async for submission in subreddit.new.stream(skip_existing=True):
+            stream = subreddit.new.stream(skip_existing=True, max_wait=300)
+            async for submission in stream:
                 self.bot.dispatch("reddit_post", subreddit, submission)
         except aiohttp.ContentTypeError:
             log.debug("Stream recieved incorrect data type.")
