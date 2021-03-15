@@ -824,7 +824,13 @@ class RoleTools(RoleEvents, commands.Cog):
 
         `<message>` can be the channel_id-message_id pair
         from copying message ID while holding SHIFT or a message link
-        `[role_emoji...]` Must be a role followed by the emoji tied to that role
+        `[role_emoji...]` Must be a role-emoji pair separated by either `;`, `,`, `|`, or `-`.
+
+        Note: Any spaces will be considered a new set of role-emoji pairs so ensure
+        there's no spaces between the role-emoji pair.
+
+        e.g. `[p]roletools bulkreact 461417772115558410-821105109097644052 @member-:smile:`
+        `[p]roletools bulkreact 461417772115558410-821105109097644052 role-:frown:`
         """
         if not message.guild or message.guild.id != ctx.guild.id:
             return await ctx.send(
