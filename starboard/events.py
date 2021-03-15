@@ -311,6 +311,11 @@ class StarboardEvents:
         star_channel = guild.get_channel(starboard.channel)
         if not star_channel:
             return
+        if (
+            not star_channel.permissions_for(guild.me).send_messages
+            or not star_channel.permissions_for(guild.me).embed_links
+        ):
+            return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
