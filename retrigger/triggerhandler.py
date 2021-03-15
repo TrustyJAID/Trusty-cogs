@@ -527,6 +527,8 @@ class TriggerHandler:
             )
             log.warning(error_msg)
             return (False, [])
+        except ValueError:
+            return (False, [])
         except Exception:
             log.error(
                 f"ReTrigger encountered an error {trigger.name} {trigger.regex} in {guild.name} {guild.id}",
