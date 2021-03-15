@@ -185,6 +185,12 @@ class RoleEvents:
                     r = guild.get_role(role_id)
                     if r in member.roles and await self.config.role(r).selfremovable():
                         exclusive_roles.append(r)
+                    else:
+                        # we want to only remove the role (and assign the new one)
+                        # if the current role is self-removable
+                        # If the role is not self-removable we don't want
+                        # to apply the initial role to begin with
+                        continue
                 await self.remove_roles(member, exclusive_roles, _("Exclusive Roles"))
             to_add.append(role)
         await member.add_roles(*to_add, reason=reason)
