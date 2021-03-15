@@ -2,6 +2,7 @@ import logging
 import apraw
 import re
 
+from typing import Optional, Union, Dict
 
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -55,7 +56,7 @@ async def make_embed_from_submission(
     channel: discord.TextChannel,
     subreddit: Subreddit,
     submission: Submission,
-):
+) -> Optional[Dict[str, Union[discord.Embed, str]]]:
     """
     Generates a discord embed from a provided submission object.
     """

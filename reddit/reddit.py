@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Optional, Mapping
 
@@ -23,7 +22,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -128,6 +127,8 @@ class Reddit(commands.Cog):
                     continue
                 use_embed = True  # channel.id not in self.regular_embed_channels
                 contents = await make_embed_from_submission(channel, subreddit, submission)
+                if not contents:
+                    continue
                 contents["subreddit"] = subreddit
                 contents["submission"] = submission
                 tasks.append(self.post_new_submissions(channel, contents, use_embed))
@@ -174,11 +175,12 @@ class Reddit(commands.Cog):
             log.exception(msg)
 
     def cog_unload(self):
-        try:
-            self.bot.loop.create_task(self.login.close())
-            log.debug("Closed the reddit login.")
-        except Exception:
-            log.exception("Error closing the login.")
+        if self.login:
+            try:
+                self.bot.loop.create_task(self.login.close())
+                log.debug("Closed the reddit login.")
+            except Exception:
+                log.exception("Error closing the login.")
         for name, stream in self._streams.items():
             try:
                 stream.cancel()
