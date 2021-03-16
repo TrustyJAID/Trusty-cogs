@@ -622,8 +622,9 @@ class RoleTools(RoleEvents, commands.Cog):
                     if not channel:
                         to_remove.append((key, role_id))
                         continue
-                    message = await channel.fetch_message(int(message_id))
-                    if not message:
+                    try:
+                        await channel.fetch_message(int(message_id))
+                    except Exception:
                         to_remove.append((key, role_id))
                         continue
                     role = guild.get_role(int(role_id))
