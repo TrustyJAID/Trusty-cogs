@@ -26,7 +26,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.6"
+    __version__ = "1.2.7"
 
     def __init__(self, bot):
         self.bot = bot
@@ -362,7 +362,9 @@ class RoleTools(RoleEvents, commands.Cog):
         self, ctx: Context, role: RoleHierarchyConverter, *exclude: RoleHierarchyConverter
     ):
         """
-        Add role exclusion (This will remove if the designated role is acquired)
+        Add role exclusion (This will remove if the designated role is acquired
+        if the included roles are not selfremovable they will not be removed
+        and the designated role will not be given)
 
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<exclude>` The role(s) you wish to have removed when a user gains the `<role>`
@@ -424,7 +426,9 @@ class RoleTools(RoleEvents, commands.Cog):
         self, ctx: Context, role: RoleHierarchyConverter, *include: RoleHierarchyConverter
     ):
         """
-        Add role inclusion (This will add roles if the designated role is acquired)
+        Add role inclusion (This will add roles if the designated role is acquired
+        if the designated role is removed the included roles will also be removed
+        if the included roles are set to selfremovable)
 
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) you wish to have added when a user gains the `<role>`

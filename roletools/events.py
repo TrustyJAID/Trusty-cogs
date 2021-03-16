@@ -216,6 +216,13 @@ class RoleEvents:
         for role in roles:
             if role is None or role.position >= guild.me.top_role.position:
                 continue
+            if inclusive := await self.config.role(role).inclusive_with():
+                inclusive_roles = []
+                for role_id in inclusive:
+                    r = guild.get_role(role_id)
+                    if r and await self.config.role(r).selfremovable():
+                        inclusive_roles.append(r)
+                await member.remove_roles(*inclusive_roles, reason=_("Inclusive Roles"))
             await member.remove_roles(role, reason=reason)
 
     async def _auto_give(self, member: discord.Member) -> None:
