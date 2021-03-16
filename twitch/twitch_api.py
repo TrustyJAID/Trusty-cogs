@@ -266,7 +266,7 @@ class TwitchAPI:
         tasks = []
         created_at = datetime.strptime(clip["created_at"], "%Y-%m-%dT%H:%M:%SZ")
         age = datetime.utcnow() - created_at
-        msg = f"{clip_data['display_name']} has a new clip! {clip['url']}"
+        msg = f"{clip_data['display_name']} has a new clip!\n{clip['url']}"
         for channel, info in clip_data["channels"].items():
             channel = self.bot.get_channel(int(channel))
             if not channel:
