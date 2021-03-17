@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Optional, Union
 
@@ -45,7 +45,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.19.1"
+    __version__ = "2.19.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -63,7 +63,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
         }
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1)
-        self.re_pool = ThreadPool()
+        self.re_pool = Pool()
         self.triggers = {}
         self.save_triggers = None
         self.__unload = self.cog_unload

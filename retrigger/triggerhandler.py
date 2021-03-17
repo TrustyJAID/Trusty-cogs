@@ -8,7 +8,7 @@ from copy import copy
 from datetime import datetime
 from io import BytesIO
 import multiprocessing as mp
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 from typing import Any, Dict, List, Literal, Pattern, Tuple, cast, Optional
 
 import aiohttp
@@ -65,7 +65,7 @@ class TriggerHandler:
 
     config: Config
     bot: Red
-    re_pool: ThreadPool
+    re_pool: Pool
     triggers: Dict[int, List[Trigger]]
     trigger_timeout: int
     ALLOW_RESIZE: bool = ALLOW_RESIZE
@@ -74,7 +74,7 @@ class TriggerHandler:
     def __init__(self, *args):
         self.config: Config
         self.bot: Red
-        self.re_pool: ThreadPool
+        self.re_pool: Pool
         self.triggers: Dict[int, List[Trigger]]
         self.trigger_timeout: int
         self.ALLOW_RESIZE = ALLOW_RESIZE
@@ -502,6 +502,7 @@ class TriggerHandler:
         things asynchronous. If the process takes too long to complete we log a
         warning and remove the trigger from trying to run again.
         """
+        log.debug(f"Checking {repr(trigger)}")
         if await self.config.guild(guild).bypass():
             # log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
             return (True, trigger.regex.findall(content))
@@ -510,6 +511,7 @@ class TriggerHandler:
             task = functools.partial(process.get, timeout=self.trigger_timeout)
             new_task = self.bot.loop.run_in_executor(None, task)
             search = await asyncio.wait_for(new_task, timeout=self.trigger_timeout + 5)
+            log.debug(f"Search results {search}")
         except mp.TimeoutError:
             error_msg = (
                 "ReTrigger: regex process took too long. Removing from memory "
