@@ -118,11 +118,11 @@ class Imgflip(commands.Cog):
                 results = await r.json()
         memelist = ", ".join(m["name"] for m in results["data"]["memes"])
         memelist += (
-            "Find a meme <https://imgflip.com/memetemplates> "
-            "click blank template and get the Template ID for more!"
+            "\nFind a meme at <https://imgflip.com/memetemplates> - "
+            "click `Blank Template` and get the Template ID for more!"
         )
-        for page in pagify(memelist, [","]):
-            await ctx.send(page)
+        for page in pagify(memelist, [", "]):
+            await ctx.send(page.lstrip(", "))
 
     @commands.command()
     async def meme(self, ctx: commands.Context, meme: Meme, *, text: str) -> None:
