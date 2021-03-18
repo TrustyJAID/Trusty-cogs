@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.8"
+    __version__ = "2.14.9"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -1359,6 +1359,7 @@ class Hockey(HockeyDev, commands.Cog):
         ).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def games(self, ctx, *, teams_and_date: Optional[TeamDateFinder] = {}):
         """
         Gets all NHL games for the current season
@@ -1374,6 +1375,7 @@ class Hockey(HockeyDev, commands.Cog):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
+    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def schedule(self, ctx, *, teams_and_date: Optional[TeamDateFinder] = {}):
         """
         Gets all upcoming NHL games for the current season as a list
