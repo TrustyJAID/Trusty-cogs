@@ -84,6 +84,8 @@ class MentionPrefix(commands.Cog):
         author = message.author
         guild = message.guild
         guild_id = guild.id if guild else None
+        if author.bot:
+            return
         if guild_id in self.disable_in:
             return
         if guild_id not in self.antispam:
