@@ -251,12 +251,11 @@ class StarboardEvents:
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent) -> None:
-        channel = self.bot.get_channel(id=payload.channel_id)
-        try:
-            guild = channel.guild
-        except AttributeError:
-            # DMChannels don't have guilds
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
             return
+        channel = guild.get_channel(payload.channel_id)
+
         if version_info >= VersionInfo.from_str("3.4.0"):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
@@ -269,7 +268,7 @@ class StarboardEvents:
         # starboards = await self.config.guild(guild).starboards()
         for name, starboard in self.starboards[guild.id].items():
             # starboard = StarboardEntry.from_json(s_board)
-            star_channel = self.bot.get_channel(starboard.channel)
+            star_channel = guild.get_channel(starboard.channel)
             if not star_channel:
                 continue
             async with starboard.lock:
@@ -280,12 +279,11 @@ class StarboardEvents:
         payload: Union[discord.RawReactionActionEvent, FakePayload],
         remove: Optional[int] = None,
     ) -> None:
-        channel = self.bot.get_channel(id=payload.channel_id)
-        try:
-            guild = channel.guild
-        except AttributeError:
-            # DMChannels don't have guilds
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
             return
+        channel = guild.get_channel(payload.channel_id)
+
         if guild.id not in self.starboards:
             return
         if version_info >= VersionInfo.from_str("3.4.0"):

@@ -307,7 +307,7 @@ class Spotify(commands.Cog):
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
 
-        channel = self.bot.get_channel(payload.channel_id)
+        channel = guild.get_channel(payload.channel_id)
         try:
             message = await channel.fetch_message(payload.message_id)
         except Exception:
