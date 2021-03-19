@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Union
 
 import discord
+from redbot import version_info, VersionInfo
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.commands import Context
@@ -26,7 +27,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.7"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -382,12 +383,17 @@ class RoleTools(RoleEvents, commands.Cog):
                 cur_setting.append(excluded_role.id)
         await self.config.role(role).exclusive_to.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
+        allowed_mentions = {}
         role_names = humanize_list([i.name for i in roles if i])
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+            role_names = humanize_list([i.mention for i in roles if i])
         await ctx.send(
             _(
                 "Role {role} will now remove the following roles if it "
                 "is acquired automatically or via reaction roles.\n{excluded_roles}."
-            ).format(role=role.name, excluded_roles=role_names)
+            ).format(role=role.name, excluded_roles=role_names),
+            **allowed_mentions
         )
 
     @exclusive.command(name="remove")
@@ -408,12 +414,17 @@ class RoleTools(RoleEvents, commands.Cog):
         await self.config.role(role).exclusive_to.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
         if roles:
+            allowed_mentions = {}
             role_names = humanize_list([i.name for i in roles if i])
+            if version_info >= VersionInfo.from_str("3.4.0"):
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                role_names = humanize_list([i.mention for i in roles if i])
             await ctx.send(
                 _(
                     "Role {role} will now remove the following roles if it "
                     "is acquired automatically or via reaction roles.\n{excluded_roles}."
-                ).format(role=role.name, excluded_roles=role_names)
+                ).format(role=role.name, excluded_roles=role_names),
+                **allowed_mentions
             )
         else:
             return await ctx.send(
@@ -446,12 +457,17 @@ class RoleTools(RoleEvents, commands.Cog):
                 cur_setting.append(included_role.id)
         await self.config.role(role).inclusive_with.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
+        allowed_mentions = {}
         role_names = humanize_list([i.name for i in roles if i])
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+            role_names = humanize_list([i.mention for i in roles if i])
         await ctx.send(
             _(
                 "Role {role} will now add the following roles if it "
                 "is acquired automatically or via reaction roles.\n{included_roles}."
-            ).format(role=role.name, included_roles=role_names)
+            ).format(role=role.name, included_roles=role_names),
+            **allowed_mentions
         )
 
     @inclusive.command(name="remove")
@@ -472,12 +488,17 @@ class RoleTools(RoleEvents, commands.Cog):
         await self.config.role(role).inclusive_with.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
         if roles:
+            allowed_mentions = {}
             role_names = humanize_list([i.name for i in roles if i])
+            if version_info >= VersionInfo.from_str("3.4.0"):
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                role_names = humanize_list([i.mention for i in roles if i])
             await ctx.send(
                 _(
                     "Role {role} will now add the following roles if it "
                     "is acquired automatically or via reaction roles.\n{included_roles}."
-                ).format(role=role.name, included_roles=role_names)
+                ).format(role=role.name, included_roles=role_names),
+                **allowed_mentions
             )
         else:
             return await ctx.send(
@@ -503,12 +524,17 @@ class RoleTools(RoleEvents, commands.Cog):
                 cur_setting.append(included_role.id)
         await self.config.role(role).required.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
+        allowed_mentions = {}
         role_names = humanize_list([i.name for i in roles if i])
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+            role_names = humanize_list([i.mention for i in roles if i])
         await ctx.send(
             _(
                 "Role {role} will now only be given if the following roles "
                 "are already owned.\n{included_roles}."
-            ).format(role=role.name, included_roles=role_names)
+            ).format(role=role.name, included_roles=role_names),
+            **allowed_mentions
         )
 
     @required_roles.command(name="remove")
@@ -531,12 +557,17 @@ class RoleTools(RoleEvents, commands.Cog):
         await self.config.role(role).required.set(cur_setting)
         roles = [ctx.guild.get_role(i) for i in cur_setting]
         if roles:
+            allowed_mentions = {}
             role_names = humanize_list([i.name for i in roles if i])
+            if version_info >= VersionInfo.from_str("3.4.0"):
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                role_names = humanize_list([i.mention for i in roles if i])
             await ctx.send(
                 _(
                     "Role {role} will now only be given if the following roles "
                     "are already owned.\n{included_roles}."
-                ).format(role=role.name, included_roles=role_names)
+                ).format(role=role.name, included_roles=role_names),
+                **allowed_mentions
             )
         else:
             return await ctx.send(

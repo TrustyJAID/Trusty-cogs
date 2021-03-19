@@ -54,27 +54,41 @@ class RolePages(menus.ListPageSource):
         inclusive_roles = [menu.ctx.guild.get_role(i) for i in role_settings["inclusive_with"]]
 
         settings = _(
+            "__ID:__ {role_id}\n"
             "__Sticky:__ **{sticky}**\n__Auto:__ **{auto}**\n"
             "__Self Assignable:__ **{selfassign}**\n"
             "__Self Removable:__ **{selfrem}**\n"
-            "__Inclusive with:__ {inclusive}\n"
-            "__Exclusive to: {exclusive}__\n"
-            "__Required:__ {required}\n"
             "__Colour: __ **{colour}**\n"
             "__Is Mod:__ **{mod}**\n"
             "__Is Admin:__ **{admin}**\n"
+            "__Hoisted:__ **{hoisted}**\n"
+            "__Mentionable:__ **{mentionable}**\n"
         ).format(
+            role_id=role.id,
             sticky=role_settings["sticky"],
             auto=role_settings["auto"],
             selfassign=role_settings["selfassignable"],
             selfrem=role_settings["selfremovable"],
-            inclusive=humanize_list([r.mention for r in inclusive_roles if r]),
-            exclusive=humanize_list([r.mention for r in exclusive_roles if r]),
-            required=humanize_list([r.mention for r in required_roles if r]),
             colour=str(role.colour),
             mod=role in mod_roles,
             admin=role in admin_roles,
+            hoisted=role.hoist,
+            mentionable=role.mentionable,
         )
+        if role.managed:
+            if getattr(role, "is_bot_managed", lambda: False)():
+                bot = role.guild.get_member(role.tags.bot_id)
+                settings += _("__Bot Role:__ {bot}").format(bot=bot.mention)
+            elif getattr(role, "is_premium_subscriber", lambda: False)():
+                settings += _("__Premium Role:__ **True**")
+            else:
+                settings += _("__Managed Role:__ **True**")
+        if inclusive_roles:
+            settings += _("__Inclusive with:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in inclusive_roles if r]))
+        if exclusive_roles:
+            settings += _("__Exclusive to:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in exclusive_roles if r]))
+        if required_roles:
+            settings += _("__Requires:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in required_roles if r]))
         reaction_roles = ""
         for reaction in role_settings["reactions"]:
             channel, message, emoji = reaction.split("-")
