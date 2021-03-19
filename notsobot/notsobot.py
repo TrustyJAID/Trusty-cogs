@@ -93,7 +93,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.4.5"
+    __version__ = "2.4.6"
 
     def __init__(self, bot):
         self.bot = bot
@@ -824,45 +824,55 @@ class NotSoBot(commands.Cog):
     @commands.cooldown(1, 5)
     @commands.bot_has_permissions(attach_files=True)  # ImageFinder consumes rest this is so goat'd
     async def merge(self, ctx, vertical: Optional[bool] = True, *, urls: Optional[ImageFinder]):
-        """Merge/Combine Two Photos"""
+        """
+        Merge/Combine Two Photos
+
+        `[vertical=True]` `true` or `false` to merge vertically.
+        `[urls]` The Image URL's you want to merge together. If not supplied
+        images are searched from message history.
+        """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         if not urls:
             return await ctx.send("No images found.")
         async with ctx.typing():
             if len(urls) == 1:
-                await ctx.send("You gonna merge one image?")
+                await ctx.send("You need to supply more than 1 image.")
                 return
             xx = await ctx.message.channel.send("ok, processing")
             count = 0
             list_im = []
             for url in urls:
+                log.debug(url)
                 count += 1
                 b, mime = await self.bytes_download(str(url))
                 if sys.getsizeof(b) == 215:
                     await ctx.send(":no_entry: Image `{0}` is invalid!".format(str(count)))
                     continue
+                if not b:
+                    continue
                 list_im.append(b)
 
-                def make_merge(b):
-                    imgs = [Image.open(i).convert("RGBA") for i in list_im]
-                    if vertical:
-                        # Vertical
-                        max_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[1][1]
-                        imgs_comb = np.vstack([np.asarray(i.resize(max_shape)) for i in imgs])
-                    else:
-                        # Horizontal
-                        min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
-                        imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
-                    imgs_comb = Image.fromarray(imgs_comb)
-                    final = BytesIO()
-                    imgs_comb.save(final, "png")
-                    file_size = final.tell()
-                    final.seek(0)
-                    return discord.File(final, filename="merge.png"), file_size
-
+            def make_merge(list_im):
+                imgs = [Image.open(i).convert("RGBA") for i in list_im]
+                if vertical:
+                    # Vertical
+                    max_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[1][1]
+                    imgs_comb = np.vstack([np.asarray(i.resize(max_shape)) for i in imgs])
+                else:
+                    # Horizontal
+                    min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
+                    imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
+                imgs_comb = Image.fromarray(imgs_comb)
+                final = BytesIO()
+                imgs_comb.save(final, "png")
+                file_size = final.tell()
+                final.seek(0)
+                return discord.File(final, filename="merge.png"), file_size
+            if len(list_im) < 2:
+                return await ctx.send("You need to supply more than 1 image.")
             await xx.delete()
-            task = ctx.bot.loop.run_in_executor(None, make_merge, b)
+            task = ctx.bot.loop.run_in_executor(None, make_merge, list_im)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
