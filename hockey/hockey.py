@@ -47,7 +47,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.9"
+    __version__ = "2.14.10"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -78,7 +78,8 @@ class Hockey(HockeyDev, commands.Cog):
             "goal_notifications": False,
             "start_notifications": False,
             "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
-            "ot_notifications": True
+            "ot_notifications": True,
+            "so_notifications": True,
         }
         default_channel = {
             "team": [],
@@ -874,13 +875,16 @@ class Hockey(HockeyDev, commands.Cog):
                 "followed by `on` or `off` to enable/disable this setting."
             )
             return await ctx.maybe_send_embed(reply)
-        await self.config.guild(ctx.guild).goal_notifications.set(on_off)
+
         if on_off:
+            await self.config.guild(ctx.guild).goal_notifications.set(on_off)
             reply = _("__Goal Notifications:__ **On**\n\n")
             reply += await self.check_notification_settings(ctx.guild)
             if reply:
                 await ctx.maybe_send_embed(reply)
         else:
+            await self.config.guild(ctx.guild).goal_notifications.clear()
+            # Default is False
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
 
     @hockey_notifications.command(name="otnotifications")
@@ -909,14 +913,59 @@ class Hockey(HockeyDev, commands.Cog):
                 "followed by `on` or `off` to enable/disable this setting."
             )
             return await ctx.maybe_send_embed(reply)
-        await self.config.guild(ctx.guild).goal_notifications.set(on_off)
-        if on_off:
+
+        elif on_off:
+            await self.config.guild(ctx.guild).ot_notifications.clear()
+            # Deftault is True
             reply = _("__OT Notifications:__ **On**\n\n")
             reply += await self.check_notification_settings(ctx.guild)
             if reply:
                 await ctx.maybe_send_embed(reply)
         else:
-            await ctx.maybe_send_embed(_("Okay, I will not mention OT in this server."))
+            await self.config.guild(ctx.guild).ot_notifications.set(on_off)
+            await ctx.maybe_send_embed(
+                _("Okay, I will not mention OT Period start in this server.")
+            )
+
+    @hockey_notifications.command(name="sonotifications")
+    @checks.mod_or_permissions(manage_roles=True)
+    async def set_so_notification_style(self, ctx, on_off: Optional[bool] = None):
+        """
+        Set the servers Shootout notification style. Options are:
+
+        `True` - The bot will try to find correct role names for each team and mention that role.
+        `False` - The bot will not post any mention for roles.
+
+        The role name must match exactly `@Team Name GOAL` to work. For example
+        `@Edmonton Oilers GOAL` will be pinged but `@edmonton oilers goal` will not.
+
+        If the role is mentionable by everyone when set to True this will ping the role.
+        Alternatively, if the role is not mentionable by everyone but the bot has permission
+        to mention everyone, setting this to True will allow the bot to ping.
+        """
+        if on_off is None:
+            cur_setting = await self.config.guild(ctx.guild).so_notifications()
+            verb = _("On") if cur_setting else _("Off")
+            reply = _("__SO Period Notifications:__ **{verb}**\n\n").format(verb=verb)
+            reply += await self.check_notification_settings(ctx.guild)
+            reply += _(
+                "No settings have been changed, run this command again "
+                "followed by `on` or `off` to enable/disable this setting."
+            )
+            return await ctx.maybe_send_embed(reply)
+
+        if on_off:
+            await self.config.guild(ctx.guild).so_notifications.clear()
+            # Deftault is True
+            reply = _("__SO Period Notifications:__ **On**\n\n")
+            reply += await self.check_notification_settings(ctx.guild)
+            if reply:
+                await ctx.maybe_send_embed(reply)
+        else:
+            await self.config.guild(ctx.guild).so_notifications.set(on_off)
+            await ctx.maybe_send_embed(
+                _("Okay, I will not notify SO Period start in this server.")
+            )
 
     @hockey_notifications.command(name="game")
     @checks.mod_or_permissions(manage_roles=True)
@@ -1302,7 +1351,9 @@ class Hockey(HockeyDev, commands.Cog):
                 await ctx.message.channel.send(f"{role_list} role applied.")
                 return
             else:
-                await ctx.send(_("Please provide the team you want the goal notification role for."))
+                await ctx.send(
+                    _("Please provide the team you want the goal notification role for.")
+                )
                 return
         else:
             try:
@@ -1396,7 +1447,9 @@ class Hockey(HockeyDev, commands.Cog):
         path = cog_data_path(self) / "players.json"
         if (now - saved) > timedelta(days=1) or not path.exists():
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster") as resp:
+                async with session.get(
+                    "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+                ) as resp:
                     with path.open(encoding="utf-8", mode="w") as f:
                         json.dump(await resp.json(), f)
             await self.config.player_db.set(int(now.timestamp()))

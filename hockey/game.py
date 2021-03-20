@@ -649,6 +649,12 @@ class Game:
                         allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
                     else:
                         allowed_mentions = {}
+            if "SO" in self.period_ord:
+                if not await config.guild(guild).so_notifications():
+                    if version_info >= VersionInfo.from_str("3.4.0"):
+                        allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+                    else:
+                        allowed_mentions = {}
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
