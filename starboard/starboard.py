@@ -27,7 +27,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.4.3"
+    __version__ = "2.4.4"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -272,6 +272,7 @@ class Starboard(StarboardEvents, commands.Cog):
             await ctx.send(error_msg)
             return
         fake_payload = FakePayload(
+            guild_id=guild.id,
             message_id=message.id,
             channel_id=message.channel.id,
             user_id=ctx.author.id,
@@ -323,6 +324,7 @@ class Starboard(StarboardEvents, commands.Cog):
             await ctx.send(error_msg)
             return
         fake_payload = FakePayload(
+            guild_id=guild.id,
             message_id=message.id,
             channel_id=message.channel.id,
             user_id=ctx.author.id,

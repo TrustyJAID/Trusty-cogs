@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Union
 @dataclass
 class FakePayload:
     """A fake payload object to utilize `_update_stars` method"""
+    guild_id: int
     channel_id: int
     message_id: int
     user_id: int
