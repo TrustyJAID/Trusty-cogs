@@ -253,7 +253,7 @@ class Tweets(commands.Cog):
                     em.set_image(url=reply.extended_entities["media"][0]["media_url_https"])
                 em.add_field(name=in_reply_to, value=reply_text)
             except IndexError:
-                log.debug(_("Error grabbing in reply to tweet."), exc_info=True)
+                log.debug("Error grabbing in reply to tweet.", exc_info=True)
 
         em.description = escape(unescape(text), formatting=True)
 

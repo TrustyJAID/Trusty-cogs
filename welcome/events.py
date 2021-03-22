@@ -396,7 +396,7 @@ class Events:
                 try:
                     old_msg = await channel.fetch_message(old_id)
                 except discord.errors.NotFound:
-                    log.debug(_("Message not found for deletion."))
+                    log.debug("Message not found for deletion.")
                     pass
                 except discord.errors.Forbidden:
                     await self.config.guild(guild).DELETE_PREVIOUS_GOODBYE.set(False)
