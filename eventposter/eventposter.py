@@ -30,7 +30,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -1129,8 +1129,7 @@ class EventPoster(commands.Cog):
         is found in the event title.
         """
         async with self.config.guild(ctx.guild).custom_links() as custom_links:
-            if keyword.lower() not in custom_links:
-                custom_links[keyword.lower()] = link
+            custom_links[keyword.lower()] = link
         await ctx.tick()
 
     @event_settings.command(name="viewlinks", aliases=["showlinks"])
