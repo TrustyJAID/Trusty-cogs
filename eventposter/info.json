@@ -20,7 +20,7 @@
         "add_reactions"
     ],
     "required_cogs" : {},
-    "requirements" : [],
+    "requirements" : ["python-dateutil", "pytz"],
     "short" : "Admin approved announcments/events",
     "tags" : [
         "events"
