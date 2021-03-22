@@ -502,7 +502,6 @@ class TriggerHandler:
         things asynchronous. If the process takes too long to complete we log a
         warning and remove the trigger from trying to run again.
         """
-        log.debug(f"Checking {repr(trigger)}")
         if await self.config.guild(guild).bypass():
             # log.debug(f"Bypassing safe regex in guild {guild.name} ({guild.id})")
             return (True, trigger.regex.findall(content))

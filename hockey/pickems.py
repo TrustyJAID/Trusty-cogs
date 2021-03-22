@@ -170,7 +170,7 @@ class Pickems:
         for name, p in pickems.items():
             if p.home_team == game.home_team and p.away_team == game.away_team:
                 if p.game_start == game.game_start:
-                    log.debug(_("Pickem already exists, adding channel"))
+                    log.debug("Pickem already exists, adding channel")
                     old_pickem = p
                     old_name = name
 
@@ -221,7 +221,7 @@ class Pickems:
                 if current_guild_pickem_channels:
                     pickems_channels_to_delete += current_guild_pickem_channels
             except Exception:
-                log.error(_("Error adding channels to delete"), exc_info=True)
+                log.error("Error adding channels to delete", exc_info=True)
             if leaderboard is None:
                 leaderboard = {}
             for user in leaderboard:
@@ -230,7 +230,7 @@ class Pickems:
         try:
             await Pickems.delete_pickems_channels(bot, pickems_channels_to_delete)
         except Exception:
-            log.error(_("Error deleting pickems Channels"), exc_info=True)
+            log.error("Error deleting pickems Channels", exc_info=True)
 
     @staticmethod
     async def create_pickems_channel(bot, name, guild):
@@ -333,7 +333,7 @@ class Pickems:
             except discord.errors.Forbidden:
                 pass
             except Exception:
-                log.error(_("Error deleting old pickems channels"), exc_info=True)
+                log.error("Error deleting old pickems channels", exc_info=True)
 
     @staticmethod
     async def tally_leaderboard(bot):
@@ -377,7 +377,7 @@ class Pickems:
                 # [p.to_json() for p in pickem_list if p.winner is None]
                 # )
             except Exception:
-                log.error(_("Error tallying leaderboard in ") + f"{guild.name}", exc_info=True)
+                log.error(f"Error tallying leaderboard in {guild.name}", exc_info=True)
 
     def to_json(self) -> dict:
         return {

@@ -271,7 +271,7 @@ class HockeyDev:
         guild = ctx.message.guild
         good_channels = []
         for channels in await self.config.guild(guild).gdc():
-            channel = self.bot.get_channel(channels)
+            channel = guild.get_channel(channels)
             if channel is None:
                 await self.config._clear_scope(Config.CHANNEL, str(channels))
                 log.info("Removed the following channels" + str(channels))
@@ -286,11 +286,23 @@ class HockeyDev:
         """
         Removes missing channels from the config
         """
-        for channels in await self.config.all_channels():
-            channel = self.bot.get_channel(channels)
+        all_channels = await self.config.all_channels()
+        for channel_id, data in all_channels.items():
+            if not data["guild_id"]:
+                channel = self.bot.get_channel(channel_id)
+                guild = channel.guild
+                await self.config.channel(channel).guild_id.set(guild.id)
+            else:
+                guild = self.bot.get_guild(data["guild_id"])
+                if not guild:
+                    await self.config._clear_scope(Config.CHANNEL, str(channel_id))
+                    log.info("Removed the following channels" + str(channel_id))
+                    continue
+                channel = guild.get_channel
+
             if channel is None:
-                await self.config._clear_scope(Config.CHANNEL, str(channels))
-                log.info("Removed the following channels" + str(channels))
+                await self.config._clear_scope(Config.CHANNEL, str(channel_id))
+                log.info("Removed the following channels" + str(channel_id))
                 continue
             # if await self.config.channel(channel).to_delete():
             # await self.config._clear_scope(Config.CHANNEL, str(channels))

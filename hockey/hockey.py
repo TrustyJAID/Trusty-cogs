@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Literal, Optional
 from urllib.parse import quote
+from pathlib import Path
 
 import aiohttp
 import discord
@@ -47,7 +48,7 @@ class Hockey(HockeyDev, commands.Cog):
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.14.10"
+    __version__ = "2.14.11"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -89,6 +90,7 @@ class Hockey(HockeyDev, commands.Cog):
             "game_state_notifications": False,
             "goal_notifications": False,
             "start_notifications": False,
+            "guild_id": None,
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
@@ -153,7 +155,7 @@ class Hockey(HockeyDev, commands.Cog):
                     async with session.get(f"{BASE_URL}/api/v1/schedule") as resp:
                         data = await resp.json()
             except Exception:
-                log.debug(_("Error grabbing the schedule for today."), exc_info=True)
+                log.debug("Error grabbing the schedule for today.", exc_info=True)
                 data = {"dates": []}
             if data["dates"] != []:
                 self.current_games = {
@@ -170,7 +172,7 @@ class Hockey(HockeyDev, commands.Cog):
                 await self.check_new_day()
             if self.TEST_LOOP:
                 self.current_games = {
-                    "https://statsapi.web.nhl.com/api/v1/game/2019030231/feed/live": {
+                    "https://statsapi.web.nhl.com/api/v1/game/2020020474/feed/live": {
                         "count": 0,
                         "game": None,
                     }
@@ -185,7 +187,7 @@ class Hockey(HockeyDev, commands.Cog):
                                 async with session.get(BASE_URL + link) as resp:
                                     data = await resp.json()
                         except Exception:
-                            log.error(_("Error grabbing game data: "), exc_info=True)
+                            log.error("Error grabbing game data: ", exc_info=True)
                             continue
                     else:
                         self.games_playing = False
@@ -195,7 +197,7 @@ class Hockey(HockeyDev, commands.Cog):
                         game = await Game.from_json(data)
                         self.current_games[link]["game"] = game
                     except Exception:
-                        log.error(_("Error creating game object from json."), exc_info=True)
+                        log.error("Error creating game object from json.", exc_info=True)
                         continue
                     try:
                         await self.check_new_day()
@@ -216,7 +218,7 @@ class Hockey(HockeyDev, commands.Cog):
                         try:
                             await Pickems.set_guild_pickem_winner(self.bot, game)
                         except Exception:
-                            log.error(_("Pickems Set Winner error: "), exc_info=True)
+                            log.error("Pickems Set Winner error: ", exc_info=True)
                         self.current_games[link]["count"] += 1
                         if posted_final:
                             self.current_games[link]["count"] = 10
@@ -230,11 +232,11 @@ class Hockey(HockeyDev, commands.Cog):
                     await asyncio.sleep(60)
                 else:
                     await asyncio.sleep(10)
-            log.debug(_("Games Done Playing"))
+            log.debug("Games Done Playing")
             try:
                 await Pickems.tally_leaderboard(self.bot)
             except Exception:
-                log.error(_("Error tallying leaderboard:"), exc_info=True)
+                log.error("Error tallying leaderboard:", exc_info=True)
                 pass
             if self.games_playing:
                 await self.config.created_gdc.set(False)
@@ -259,7 +261,7 @@ class Hockey(HockeyDev, commands.Cog):
                 try:
                     await Pickems.reset_weekly(self.bot)
                 except Exception:
-                    log.error(_("Error reseting the weekly leaderboard: "), exc_info=True)
+                    log.error("Error reseting the weekly leaderboard: ", exc_info=True)
                 try:
                     guilds_to_make_new_pickems = []
                     for guild_id in await self.config.all_guilds():
@@ -274,13 +276,13 @@ class Hockey(HockeyDev, commands.Cog):
                         )
 
                 except Exception:
-                    log.error(_("Error creating new weekly pickems pages"), exc_info=True)
+                    log.error("Error creating new weekly pickems pages", exc_info=True)
             try:
                 await Standings.post_automatic_standings(self.bot)
             except Exception:
                 log.error("Error updating standings", exc_info=True)
 
-            log.debug(_("Checking GDC"))
+            log.debug("Checking GDC")
 
             await GameDayChannels.check_new_gdc(self.bot)
             await self.config.created_gdc.set(True)
@@ -363,20 +365,19 @@ class Hockey(HockeyDev, commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        channel = self.bot.get_channel(id=payload.channel_id)
-        try:
-            guild = channel.guild
-        except Exception:
+        if payload.guild_id is None:
             return
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
         if str(guild.id) not in self.all_pickems:
             return
         try:
             msg = await channel.fetch_message(id=payload.message_id)
-        except discord.errors.NotFound:
+        except (discord.errors.NotFound, discord.errors.Forbidden):
             return
         user = guild.get_member(payload.user_id)
         # log.debug(payload.user_id)
-        if user.bot:
+        if not user or user.bot:
             return
         is_pickems_vote = False
         for name, pickem in self.all_pickems[str(guild.id)].items():
@@ -431,7 +432,8 @@ class Hockey(HockeyDev, commands.Cog):
             f"CONFIG_ID = {CONFIG_ID}\n"
             f"TEAMS = {team_data}"
         )
-        with open(__file__[:-9] + "constants.py", "w") as outfile:
+        path = Path(__file__).parent / "constants.py"
+        with path.open("w") as outfile:
             outfile.write(constants_string)
 
     async def wait_for_file(self, ctx):
@@ -580,7 +582,7 @@ class Hockey(HockeyDev, commands.Cog):
             if team is None:
                 team = "None"
             channels = await self.config.guild(guild).gdc()
-            category = self.bot.get_channel(await self.config.guild(guild).category())
+            category = guild.get_channel(await self.config.guild(guild).category())
             delete_gdc = await self.config.guild(guild).delete_gdc()
             game_states = await self.config.guild(guild).gdc_state_updates()
             if category is not None:
@@ -588,7 +590,7 @@ class Hockey(HockeyDev, commands.Cog):
             if channels is not None:
                 created_channels = ""
                 for channel in channels:
-                    chn = self.bot.get_channel(channel)
+                    chn = guild.get_channel(channel)
                     if chn is not None:
                         if ctx.channel.permissions_for(guild.me).embed_links:
                             created_channels += chn.mention

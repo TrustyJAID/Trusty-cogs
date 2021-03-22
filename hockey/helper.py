@@ -230,7 +230,7 @@ async def check_to_post(bot, channel, post_state, game_state):
     config = bot.get_cog("Hockey").config
     channel_teams = await config.channel(channel).team()
     if channel_teams is None:
-        await config.channel(channel).team.set([])
+        await config.channel(channel).team.clear
         return False
     should_post = False
     if game_state in await config.channel(channel).game_states():
@@ -260,9 +260,8 @@ async def get_team_role(guild, home_team, away_team):
     return home_role, away_role
 
 
-async def get_team(bot, team: str):
+async def get_team(bot, team: str) -> TeamEntry:
     config = bot.get_cog("Hockey").config
-    return_team = None
     team_list = await config.teams()
     if team_list is None:
         team_list = []
@@ -271,14 +270,13 @@ async def get_team(bot, team: str):
         await config.teams.set(team_list)
     for teams in team_list:
         if team == teams["team_name"]:
-            return_team = team
             return teams
     if return_team is None:
         # Add unknown teams to the config to track stats
         return_team = TeamEntry("Null", team, 0, [], {}, [], "")
         team_list.append(return_team.to_json())
         await config.teams.set(team_list)
-        return await get_team(bot, team)
+        return return_team
 
 
 async def check_valid_team(team_name: str, standings: bool = False) -> str:

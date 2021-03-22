@@ -547,12 +547,23 @@ class Game:
         tasks = []
         post_state = ["all", self.home_team, self.away_team]
         config = bot.get_cog("Hockey").config
-        for channels in await bot.get_cog("Hockey").config.all_channels():
-            channel = bot.get_channel(id=channels)
-            if channel is None:
-                await bot.get_cog("Hockey").config._clear_scope(Config.CHANNEL, str(channels))
-                log.info("{} channel was removed because it no longer exists".format(channels))
-                continue
+        all_channels = await bot.get_cog("Hockey").config.all_channels()
+        for channel_id, data in all_channels.items():
+            if not data["guild_id"]:
+                channel = bot.get_channel(id=channel_id)
+                guild = channel.guild
+                await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
+            else:
+                guild = bot.get_guild(data["guild_id"])
+                if not guild:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
+                channel = guild.get_channel(channel_id)
 
             should_post = await check_to_post(bot, channel, post_state, self.game_state)
             should_post &= "Periodrecap" in await config.channel(channel).game_states()
@@ -596,12 +607,23 @@ class Game:
         state_embed = await self.game_state_embed()
         state_text = await self.game_state_text()
         tasks = []
-        for channels in await bot.get_cog("Hockey").config.all_channels():
-            channel = bot.get_channel(id=channels)
-            if channel is None:
-                await bot.get_cog("Hockey").config._clear_scope(Config.CHANNEL, str(channels))
-                log.info("{} channel was removed because it no longer exists".format(channels))
-                continue
+        all_channels = await bot.get_cog("Hockey").config.all_channels()
+        for channel_id, data in all_channels.items():
+            if not data["guild_id"]:
+                channel = bot.get_channel(id=channel_id)
+                guild = channel.guild
+                await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
+            else:
+                guild = bot.get_guild(data["guild_id"])
+                if not guild:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
+                channel = guild.get_channel(channel_id)
             should_post = await check_to_post(bot, channel, post_state, self.game_state)
             if should_post:
                 tasks.append(self.actually_post_state(bot, channel, state_embed, state_text))
@@ -731,8 +753,12 @@ class Game:
         """
         Checks to see if a goal needs to be posted
         """
-        home_team_data = await get_team(bot, self.home_team)
-        away_team_data = await get_team(bot, self.away_team)
+        team_data = {
+            self.home_team: await get_team(bot, self.home_team),
+            self.away_team: await get_team(bot, self.away_team)
+        }
+        # home_team_data = await get_team(bot, self.home_team)
+        # away_team_data = await get_team(bot, self.away_team)
         # all_data = await get_team("all")
         team_list = await bot.get_cog("Hockey").config.teams()
         # post_state = ["all", self.home_team, self.away_team]
@@ -740,31 +766,31 @@ class Game:
         # home_goal_ids = [goal.goal_id for goal in self.home_goals]
         # away_goal_ids = [goal.goal_id for goal in self.away_goals]
 
-        home_goal_list = list(home_team_data["goal_id"])
-        away_goal_list = list(away_team_data["goal_id"])
+        home_goal_list = list(team_data[self.home_team]["goal_id"])
+        away_goal_list = list(team_data[self.away_team]["goal_id"])
 
         for goal in self.goals:
             # goal_id = str(goal["result"]["eventCode"])
             # team = goal["team"]["name"]
-            team_data = await get_team(bot, goal.team_name)
-            if goal.goal_id not in team_data["goal_id"]:
+            # team_data = await get_team(bot, goal.team_name)
+            if goal.goal_id not in team_data[goal.team_name]["goal_id"]:
                 # attempts to post the goal if there is a new goal
                 bot.dispatch("hockey_goal", self, goal)
                 msg_list = await goal.post_team_goal(bot, self)
-                team_list.remove(team_data)
-                team_data["goal_id"][goal.goal_id] = {"goal": goal.to_json(), "messages": msg_list}
-                team_list.append(team_data)
+                team_list.remove(team_data[goal.team_name])
+                team_data[goal.team_name]["goal_id"][goal.goal_id] = {"goal": goal.to_json(), "messages": msg_list}
+                team_list.append(team_data[goal.team_name])
                 await bot.get_cog("Hockey").config.teams.set(team_list)
                 continue
-            if goal.goal_id in team_data["goal_id"]:
+            if goal.goal_id in team_data[goal.team_name]["goal_id"]:
                 # attempts to edit the goal if the scorers have changed
-                old_goal = Goal(**team_data["goal_id"][goal.goal_id]["goal"])
+                old_goal = Goal(**team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"])
                 if goal.description != old_goal.description or goal.link != old_goal.link:
                     bot.dispatch("hockey_goal_edit", self, goal)
-                    old_msgs = team_data["goal_id"][goal.goal_id]["messages"]
-                    team_list.remove(team_data)
-                    team_data["goal_id"][goal.goal_id]["goal"] = goal.to_json()
-                    team_list.append(team_data)
+                    old_msgs = team_data[goal.team_name]["goal_id"][goal.goal_id]["messages"]
+                    team_list.remove(team_data[goal.team_name])
+                    team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"] = goal.to_json()
+                    team_list.append(team_data[goal.team_name])
                     await bot.get_cog("Hockey").config.teams.set(team_list)
                     await goal.edit_team_goal(bot, self, old_msgs)
         # attempts to delete the goal if it was called back
@@ -826,12 +852,23 @@ class Game:
             home=self.home_team,
         )
         tasks = []
-        for channels in await bot.get_cog("Hockey").config.all_channels():
-            channel = bot.get_channel(id=channels)
-            if channel is None:
-                await bot.get_cog("Hockey").config._clear_scope(Config.CHANNEL, str(channels))
-                log.info("{} channel was removed because it no longer exists".format(channels))
-                continue
+        all_channels = await bot.get_cog("Hockey").config.all_channels()
+        for channel_id, data in all_channels.items():
+            if not data["guild_id"]:
+                channel = bot.get_channel(id=channel_id)
+                guild = channel.guild
+                await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
+            else:
+                guild = bot.get_guild(data["guild_id"])
+                if not guild:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
+                channel = guild.get_channel(channel_id)
 
             should_post = await check_to_post(bot, channel, post_state, self.game_state)
             team_to_post = await bot.get_cog("Hockey").config.channel(channel).team()
@@ -865,7 +902,7 @@ class Game:
                     data = await resp.json()
             return await Game.from_json(data)
         except Exception:
-            log.error(_("Error grabbing game data: "), exc_info=True)
+            log.error("Error grabbing game data: ", exc_info=True)
             return
 
     @classmethod
@@ -906,9 +943,9 @@ class Game:
             period_time_left = "0"
             events = ["."]
         decisions = data["liveData"]["decisions"]
-        first_star = decisions["firstStar"]["fullName"] if "firstStar" in decisions else None
-        second_star = decisions["secondStar"]["fullName"] if "secondStar" in decisions else None
-        third_star = decisions["thirdStar"]["fullName"] if "thirdStar" in decisions else None
+        first_star = decisions.get("firstStar", {}).get("fullName")
+        second_star = decisions.get("secondStar", {}).get("fullName")
+        third_star = decisions.get("thirdStar", {}).get("fullName")
         game_type = data["gameData"]["game"]["type"]
         game_state = (
             data["gameData"]["status"]["abstractGameState"]

@@ -59,6 +59,7 @@ class Schedule(menus.PageSource):
 
     async def format_page(self, menu: menus.MenuPages, game: dict):
         async with aiohttp.ClientSession() as session:
+            log.debug(BASE_URL + game["link"])
             async with session.get(BASE_URL + game["link"]) as resp:
                 data = await resp.json()
         game_obj = await Game.from_json(data)
