@@ -238,7 +238,7 @@ class AddImage(commands.Cog):
                 try:
                     await channel.send(files=[file])
                 except discord.errors.Forbidden:
-                    log.error(_("Error sending image"))
+                    log.error("Error sending image")
                     pass
 
         if alias in [x["command_name"] for x in await self.config.guild(guild).images()]:
@@ -254,7 +254,7 @@ class AddImage(commands.Cog):
                 try:
                     await channel.send(files=[file])
                 except discord.errors.Forbidden:
-                    log.error(_("Error sending image"))
+                    log.error("Error sending image")
                     pass
 
     async def check_command_exists(self, command: str, guild: discord.Guild) -> bool:
@@ -348,7 +348,7 @@ class AddImage(commands.Cog):
             try:
                 os.remove(str(directory / file))
             except Exception:
-                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
+                log.error("Error deleting image {image}".format(image=file), exc_info=True)
 
     @addimage.command()
     @checks.mod_or_permissions(manage_channels=True)
@@ -362,7 +362,7 @@ class AddImage(commands.Cog):
             try:
                 os.remove(str(directory / file))
             except Exception:
-                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
+                log.error("Error deleting image {image}".format(image=file), exc_info=True)
         await ctx.tick()
 
     @addimage.command()
@@ -380,7 +380,7 @@ class AddImage(commands.Cog):
             try:
                 os.remove(str(directory / file))
             except Exception:
-                log.error(_("Error deleting image {image}").format(image=file), exc_info=True)
+                log.error("Error deleting image {image}".format(image=file), exc_info=True)
         await ctx.tick()
 
     @addimage.command(name="delete", aliases=["remove", "rem", "del"])
@@ -413,7 +413,7 @@ class AddImage(commands.Cog):
         await ctx.send(name + _(" has been deleted from this guild!"))
 
     @checks.is_owner()
-    @addimage.command(hidden=True, name="deleteglobal", aliases=["dg", "delglobal"])
+    @addimage.command(name="deleteglobal", aliases=["dg", "delglobal"])
     async def rem_image_global(self, ctx: commands.Context, name: str) -> None:
         """
         Remove a selected images
