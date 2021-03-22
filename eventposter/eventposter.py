@@ -30,7 +30,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.0.1"
+    __version__ = "2.0.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -134,7 +134,7 @@ class EventPoster(commands.Cog):
                         continue
                     if event is None:
                         continue
-                    if event.should_remove(seconds):
+                    if seconds is not None and event.should_remove(seconds):
                         continue
                     self.event_cache[guild_id][event.message] = event
         except Exception:
