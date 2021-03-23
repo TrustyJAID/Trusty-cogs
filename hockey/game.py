@@ -551,6 +551,14 @@ class Game:
         for channel_id, data in all_channels.items():
             if not data["guild_id"]:
                 channel = bot.get_channel(id=channel_id)
+                if not channel:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
                 guild = channel.guild
                 await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
             else:
@@ -611,6 +619,14 @@ class Game:
         for channel_id, data in all_channels.items():
             if not data["guild_id"]:
                 channel = bot.get_channel(id=channel_id)
+                if not channel:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
                 guild = channel.guild
                 await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
             else:
@@ -856,6 +872,14 @@ class Game:
         for channel_id, data in all_channels.items():
             if not data["guild_id"]:
                 channel = bot.get_channel(id=channel_id)
+                if not channel:
+                    await bot.get_cog("Hockey").config._clear_scope(
+                        Config.CHANNEL, str(channel_id)
+                    )
+                    log.info(
+                        "{} channel was removed because it no longer exists".format(channel_id)
+                    )
+                    continue
                 guild = channel.guild
                 await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
             else:
