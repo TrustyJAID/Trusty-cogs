@@ -30,7 +30,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.0.2"
+    __version__ = "2.0.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -917,7 +917,7 @@ class EventPoster(commands.Cog):
             await event.edit(ctx, content=_("This event has ended."))
             async with self.config.guild(ctx.guild).events() as cur_events:
                 del cur_events[str(event.hoster)]
-            del self.event_cache[ctx.guild.id][to_del]
+            del self.event_cache[ctx.guild.id][event.message]
         await ctx.tick()
 
     @event_settings.command(name="playerclass")
