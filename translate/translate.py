@@ -37,7 +37,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
 
     __author__ = ["Aziz", "TrustyJAID"]
-    __version__ = "2.3.6"
+    __version__ = "2.3.7"
 
     def __init__(self, bot):
         self.bot = bot
@@ -155,12 +155,12 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         if ctx.channel.permissions_for(ctx.me).embed_links:
             translation = (translated_text, from_lang, to_language)
             em = await self.translation_embed(author, translation, requestor)
-            if version_info >= VersionInfo.from_str("3.4.6"):
+            if version_info >= VersionInfo.from_str("3.4.6") and msg.channel.id == ctx.channel.id:
                 await ctx.send(embed=em, reference=msg, mention_author=False)
             else:
                 await ctx.send(embed=em)
         else:
-            if version_info >= VersionInfo.from_str("3.4.6"):
+            if version_info >= VersionInfo.from_str("3.4.6") and msg.channel.id == ctx.channel.id:
                 await ctx.send(translated_text, reference=msg, mention_author=False)
             else:
                 await ctx.send(translated_text)
