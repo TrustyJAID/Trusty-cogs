@@ -10,7 +10,6 @@ from redbot.core import commands
 from . import tarot_cards
 
 
-
 @dataclass
 class TarotCard:
     id: int
@@ -19,22 +18,24 @@ class TarotCard:
     card_url: str
     card_img: str
 
+
 TAROT_CARDS = {num: TarotCard(id=num, **data) for num, data in tarot_cards.card_list.items()}
 TAROT_RE = re.compile(r"|".join(t.card_name for _id, t in TAROT_CARDS.items()), flags=re.I)
 
-class TarotConverter(commands.Converter):
 
-    async def convert(self, ctx: commands.Context, argument: str) -> TarotCard:
-        if find := TAROT_RE.search(argument):
+class TarotConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> Optional[TarotCard]:
+        if find := TAROT_RE.match(argument):
             card_name = find.group(0)
             for card in TAROT_CARDS.values():
-                if card_name == card.card_name:
+                if card_name.lower() == card.card_name.lower():
                     return card
-        elif isdigit(argument):
+        else:
             try:
                 return TAROT_CARDS[str(argument)]
             except KeyError:
                 raise commands.BadArgument("`{argument}` is not an available Tarot card.")
+        return None
 
 
 class TarotReading(commands.Cog):
@@ -43,7 +44,7 @@ class TarotReading(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -97,9 +98,7 @@ class TarotReading(commands.Cog):
         number = 0
         for card in cards:
             embed.add_field(
-                name="{0}: {1}".format(
-                    card_meaning[number], TAROT_CARDS[str(card)].card_name
-                ),
+                name="{0}: {1}".format(card_meaning[number], TAROT_CARDS[str(card)].card_name),
                 value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
@@ -130,16 +129,16 @@ class TarotReading(commands.Cog):
         number = 0
         for card in cards:
             embed.add_field(
-                name="{0}: {1}".format(
-                    card_meaning[number], TAROT_CARDS[str(card)].card_name
-                ),
+                name="{0}: {1}".format(card_meaning[number], TAROT_CARDS[str(card)].card_name),
                 value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
         await ctx.send(embed=embed)
 
     @tarot.command(name="card")
-    async def _card(self, ctx: commands.Context, *, tarot_card: Optional[TarotConverter] = None) -> None:
+    async def _card(
+        self, ctx: commands.Context, *, tarot_card: Optional[TarotConverter] = None
+    ) -> None:
         """
         Random card or choose a card based on number or name.
 
