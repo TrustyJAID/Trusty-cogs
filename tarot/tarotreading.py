@@ -14,7 +14,7 @@ class TarotReading(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -113,7 +113,7 @@ class TarotReading(commands.Cog):
         elif msg.isdigit() and int(msg) > 0 and int(msg) < 79:
             card = self.tarot_cards[str(msg)]
 
-        elif not msg.isdigit():
+        elif not msg.isdigit() or int(msg) < 0 or int(msg) > 79:
             for cards in self.tarot_cards:
                 if msg.lower() in self.tarot_cards[cards]["card_name"].lower():
                     card = self.tarot_cards[cards]
