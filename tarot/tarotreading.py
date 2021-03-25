@@ -1,11 +1,40 @@
+import re
 import random
 from random import choice, sample
 from typing import Optional
+from dataclasses import dataclass
 
 import discord
 from redbot.core import commands
 
 from . import tarot_cards
+
+
+
+@dataclass
+class TarotCard:
+    id: int
+    card_meaning: str
+    card_name: str
+    card_url: str
+    card_img: str
+
+TAROT_CARDS = {num: TarotCard(id=num, **data) for num, data in tarot_cards.card_list.items()}
+TAROT_RE = re.compile(r"|".join(t.card_name for _id, t in TAROT_CARDS.items()), flags=re.I)
+
+class TarotConverter(commands.Converter):
+
+    async def convert(self, ctx: commands.Context, argument: str) -> TarotCard:
+        if find := TAROT_RE.search(argument):
+            card_name = find.group(0)
+            for card in TAROT_CARDS.values():
+                if card_name == card.card_name:
+                    return card
+        elif isdigit(argument):
+            try:
+                return TAROT_CARDS[str(argument)]
+            except KeyError:
+                raise commands.BadArgument("`{argument}` is not an available Tarot card.")
 
 
 class TarotReading(commands.Cog):
@@ -14,11 +43,10 @@ class TarotReading(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.0.1"
+    __version__ = "1.1.0"
 
     def __init__(self, bot):
         self.bot = bot
-        self.tarot_cards = tarot_cards.card_list
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -44,7 +72,12 @@ class TarotReading(commands.Cog):
 
     @tarot.command(name="life")
     async def _life(self, ctx: commands.Context, user: Optional[discord.Member] = None) -> None:
-        """Unique reading based on your discord user ID. Doesn't change."""
+        """
+        Unique reading based on your discord user ID. Doesn't change.
+
+        `[user]` Optional user who you want to see a life tarot reading for.
+        If no user is provided this will run for the user who is running the command.
+        """
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
         if user is None:
             user = ctx.message.author
@@ -58,23 +91,28 @@ class TarotReading(commands.Cog):
             title="Tarot reading for {}".format(user.display_name),
             colour=discord.Colour(value=self.get_colour()),
         )
-        embed.set_thumbnail(url=self.tarot_cards[str(cards[-1])]["card_img"])
+        embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
         embed.set_author(name=user.name, icon_url=user.avatar_url)
         number = 0
         for card in cards:
             embed.add_field(
                 name="{0}: {1}".format(
-                    card_meaning[number], self.tarot_cards[str(card)]["card_name"]
+                    card_meaning[number], TAROT_CARDS[str(card)].card_name
                 ),
-                value=self.tarot_cards[str(card)]["card_meaning"],
+                value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
         await ctx.send(embed=embed)
 
     @tarot.command(name="reading")
     async def _reading(self, ctx: commands.Context, user: Optional[discord.Member] = None) -> None:
-        """Unique reading as of this very moment."""
+        """
+        Unique reading as of this very moment.
+
+        `[user]` Optional user you want to view a tarot reading for.
+        If no user is provided this will run for the user who is running the command.
+        """
         card_meaning = ["Past", "Present", "Future", "Potential", "Reason"]
         if user is None:
             user = ctx.message.author
@@ -86,48 +124,45 @@ class TarotReading(commands.Cog):
             title="Tarot reading for {}".format(user.display_name),
             colour=discord.Colour(value=self.get_colour()),
         )
-        embed.set_thumbnail(url=self.tarot_cards[str(cards[-1])]["card_img"])
+        embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
         embed.set_author(name=user.name, icon_url=user.avatar_url)
         number = 0
         for card in cards:
             embed.add_field(
                 name="{0}: {1}".format(
-                    card_meaning[number], self.tarot_cards[str(card)]["card_name"]
+                    card_meaning[number], TAROT_CARDS[str(card)].card_name
                 ),
-                value=self.tarot_cards[str(card)]["card_meaning"],
+                value=TAROT_CARDS[str(card)].card_meaning,
             )
             number += 1
         await ctx.send(embed=embed)
 
     @tarot.command(name="card")
-    async def _card(self, ctx: commands.Context, *, msg: Optional[str] = None) -> None:
-        """Random card or choose a card based on number or name."""
+    async def _card(self, ctx: commands.Context, *, tarot_card: Optional[TarotConverter] = None) -> None:
+        """
+        Random card or choose a card based on number or name.
+
+        `[tarot_card]` Is the full name of any tarot card or a number corresponding to specific cards.
+        If this doesn't match any cards number or name then a random one will be displayed instead.
+        """
         user = ctx.message.author
         # msg = message.content
         card = None
 
-        if msg is None:
-            card = self.tarot_cards[str(random.randint(1, 78))]
+        if tarot_card is None:
+            card = TAROT_CARDS[str(random.randint(1, 78))]
 
-        elif msg.isdigit() and int(msg) > 0 and int(msg) < 79:
-            card = self.tarot_cards[str(msg)]
-
-        elif not msg.isdigit() or int(msg) < 0 or int(msg) > 79:
-            for cards in self.tarot_cards:
-                if msg.lower() in self.tarot_cards[cards]["card_name"].lower():
-                    card = self.tarot_cards[cards]
-            if card is None:
-                await ctx.send("That card does not exist!")
-                return
+        else:
+            card = tarot_card
 
         embed = discord.Embed(
-            title=card["card_name"],
-            description=card["card_meaning"],
+            title=card.card_name,
+            description=card.card_meaning,
             colour=discord.Colour(value=self.get_colour()),
-            url=card["card_url"],
+            url=card.card_url,
         )
         embed.timestamp = ctx.message.created_at
         embed.set_author(name=user.name, icon_url=user.avatar_url)
-        embed.set_image(url=card["card_img"])
+        embed.set_image(url=card.card_img)
         await ctx.send(embed=embed)
