@@ -311,11 +311,17 @@ class Player:
         em.description = self.description()
         return em
 
-    async def get_full_stats(self, season: Optional[str]):
+    async def get_full_stats(
+        self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
+    ):
         url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYear"
         log.debug(url)
         log.debug(season)
-        async with aiohttp.ClientSession() as session:
+        if session is None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+        else:
             async with session.get(url) as resp:
                 data = await resp.json()
         for seasons in reversed(data["stats"][0]["splits"]):
@@ -353,9 +359,14 @@ class Player:
         return f"https://www.capfriendly.com/players/{self.full_name_url()}"
 
     @classmethod
-    async def from_id(cls, player_id: int):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://records.nhl.com/site/api/player/{player_id}") as resp:
+    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None):
+        url = f"https://records.nhl.com/site/api/player/{player_id}"
+        if session is None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url) as resp:
                 data = await resp.json()
         return cls(*data["data"][0].values())
 
@@ -397,13 +408,19 @@ class Skater(Player):
     def __repr__(self) -> str:
         return "<Skater name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
 
-    async def get_full_stats(self, season: Optional[str]):
+    async def get_full_stats(
+        self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
+    ):
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
         log.debug(url)
         log.debug(season)
-        async with aiohttp.ClientSession() as session:
+        if session is None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+        else:
             async with session.get(url) as resp:
                 data = await resp.json()
         for seasons in reversed(data["stats"][0]["splits"]):
@@ -555,7 +572,11 @@ class SkaterPlayoffs(Skater):
             ["+/-", f"[ {self.plusminus} ]", f"[ {self.p_plusminus} ]"],
             [_("Blocked"), f"[ {self.blocked} ]", f"[ {self.p_blocked} ]"],
             [_("PIM"), f"[ {self.pim} ]", f"[ {self.p_pim} ]"],
-            [_("Avg. TOI"), f"[ {self.time_on_ice_average()} ]", f"[ {self.p_time_on_ice_average()} ]"],
+            [
+                _("Avg. TOI"),
+                f"[ {self.time_on_ice_average()} ]",
+                f"[ {self.p_time_on_ice_average()} ]",
+            ],
         ]
         stats_md = tabulate(
             post_data, headers=[_("Stats"), f"{self.season[:4]}-{self.season[4:]}", _("Playoffs")]
@@ -600,13 +621,19 @@ class Goalie(Player):
     def __repr__(self) -> str:
         return "<Goalie name={0.full_name} id={0.id} number={0.sweater_number}>".format(self)
 
-    async def get_full_stats(self, season: Optional[str]):
+    async def get_full_stats(
+        self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
+    ):
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
         log.debug(url)
         log.debug(season)
-        async with aiohttp.ClientSession() as session:
+        if session is None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+        else:
             async with session.get(url) as resp:
                 data = await resp.json()
         for seasons in reversed(data["stats"][0]["splits"]):

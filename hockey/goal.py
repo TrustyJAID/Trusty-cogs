@@ -6,11 +6,12 @@ from typing import List, Optional, Tuple
 import discord
 from redbot import VersionInfo, version_info
 from redbot.core import Config
-from redbot.core.utils import bounded_gather
+from redbot.core.bot import Red
+from redbot.core.utils import bounded_gather, AsyncIter
 from redbot.core.i18n import Translator
 
 from .constants import HEADSHOT_URL, TEAMS
-from .helper import check_to_post, get_team
+from .helper import check_to_post, get_team, get_channel_obj
 
 try:
     from .oilers import Oilers
@@ -138,7 +139,7 @@ class Goal:
             link=link,
         )
 
-    async def post_team_goal(self, bot, game_data):
+    async def post_team_goal(self, bot: Red, game_data):
         """
         Creates embed and sends message if a team has scored a goal
         """
@@ -155,36 +156,12 @@ class Goal:
         goal_text = await self.goal_post_text(game_data)
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
-        for channel_id, data in all_channels.items():
-            if not data["guild_id"]:
-                channel = bot.get_channel(id=channel_id)
-                if not channel:
-                    await bot.get_cog("Hockey").config._clear_scope(
-                        Config.CHANNEL, str(channel_id)
-                    )
-                    log.info(
-                        "{} channel was removed because it no longer exists".format(channel_id)
-                    )
-                    continue
-                guild = channel.guild
-                await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
-            else:
-                guild = bot.get_guild(data["guild_id"])
-                if not guild:
-                    await bot.get_cog("Hockey").config._clear_scope(
-                        Config.CHANNEL, str(channel_id)
-                    )
-                    log.info(
-                        "{} channel was removed because it no longer exists".format(channel_id)
-                    )
-                    continue
-                channel = guild.get_channel(channel_id)
-
-            if channel is None:
-                await bot.get_cog("Hockey").config._clear_scope(Config.CHANNEL, str(channel_id))
-                log.info("{} channel was removed because it no longer exists".format(channel_id))
+        async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+            channel = await get_channel_obj(bot, channel_id, data)
+            if not channel:
                 continue
-            should_post = await check_to_post(bot, channel, post_state, "Goal")
+
+            should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
                 tasks.append(self.actually_post_goal(bot, channel, goal_embed, goal_text))
         data = await bounded_gather(*tasks)
@@ -322,7 +299,7 @@ class Goal:
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
         tasks = []
-        for guild_id, channel_id, message_id in og_msg:
+        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=100):
             guild = bot.get_guild(guild_id)
             if not guild:
                 continue

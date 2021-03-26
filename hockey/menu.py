@@ -1,20 +1,17 @@
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, List, Optional, Pattern
 
-import aiohttp
 import discord
 from redbot.core import commands
-from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.vendored.discord.ext import menus
 
-from .constants import BASE_URL, HEADSHOT_URL, TEAMS
+from .constants import TEAMS
 from .errors import NoSchedule
-from .game import Game
 from .helper import DATE_RE
 from .standings import Standings
 from .player import Player
@@ -28,6 +25,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
     def __init__(
         self,
         source: menus.PageSource,
+        cog: Optional[commands.Cog] = None,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
@@ -42,6 +40,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
             message=message,
             **kwargs,
         )
+        self.cog = cog
 
     async def update(self, payload):
         """|coro|
@@ -246,7 +245,7 @@ class StandingsPages(menus.ListPageSource):
         self.pages = pages
 
     def is_paginating(self):
-        return False
+        return True
 
     async def format_page(self, menu: menus.MenuPages, page):
         return await Standings.all_standing_embed(self.pages)
@@ -318,9 +317,9 @@ class PlayerPages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        player = await Player.from_id(page)
+        player = await Player.from_id(page, session=menu.cog.session)
         log.debug(player)
-        player = await player.get_full_stats(self.season)
+        player = await player.get_full_stats(self.season, session=menu.cog.session)
         em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
@@ -408,12 +407,16 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         return payload.emoji in self.buttons
 
     def _skip_single_arrows(self):
+        if isinstance(self._source, StandingsPages):
+            return True
         max_pages = self._source.get_max_pages()
         if max_pages is None:
             return True
         return max_pages == 1
 
     def _skip_double_triangle_buttons(self):
+        if isinstance(self._source, StandingsPages):
+            return True
         max_pages = self._source.get_max_pages()
         if max_pages is None:
             return True

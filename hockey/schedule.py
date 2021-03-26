@@ -29,6 +29,7 @@ class Schedule(menus.PageSource):
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", None)
         self._last_searched = ""
+        self._session = kwargs.get("session")
 
     @property
     def index(self):
@@ -148,9 +149,8 @@ class Schedule(menus.PageSource):
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
         self._last_searched = f"{date_str} to {end_date_str}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                data = await resp.json()
+        async with self._session.get(url) as resp:
+            data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:
             # log.debug("No schedule, looking for more days")
@@ -176,6 +176,7 @@ class ScheduleList(menus.PageSource):
         self.limit = kwargs.get("limit", 10)
         self.team = kwargs.get("team", [])
         self._last_searched = ""
+        self._session = kwargs.get("session")
 
     @property
     def index(self):
@@ -384,9 +385,8 @@ class ScheduleList(menus.PageSource):
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
         self._last_searched = f"{date_str} to {end_date_str}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                data = await resp.json()
+        async with self._session.get(url) as resp:
+            data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:
             # log.debug("No schedule, looking for more days")

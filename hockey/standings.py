@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Optional, Literal, List
 
 import aiohttp
 import discord
@@ -7,6 +8,21 @@ import discord
 from .constants import BASE_URL, TEAMS
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
+
+DIVISIONS: List[str] = [
+    "central",
+    "discover",
+    "division",
+    "scotia",
+    "north",
+    "massmutual",
+    "east",
+    "honda",
+    "west",
+]
+
+CONFERENCES: List[str] = []  # ["eastern", "western", "conference"]
+# The NHL removed conferences from the standings in the 2021 season
 
 
 class Standings:
@@ -71,30 +87,29 @@ class Standings:
         }
 
     @staticmethod
-    async def get_team_standings(style):
+    async def get_team_standings(
+        style: str,
+        session: Optional[aiohttp.ClientSession] = None,
+    ):
         """
         Creates a list of standings when given a particular style
         accepts Division names, Conference names, and Team names
         returns a list of standings objects and the location of the given
         style in the list
         """
-        async with aiohttp.ClientSession() as session:
+        if session is None:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(BASE_URL + "/api/v1/standings") as resp:
+                    data = await resp.json()
+        else:
             async with session.get(BASE_URL + "/api/v1/standings") as resp:
                 data = await resp.json()
-        conference = []  # ["eastern", "western", "conference"]
-        # The NHL removed conferences from the standings
-        division = [
-            "central",
-            "discover",
-            "division",
-            "scotia",
-            "north",
-            "massmutual",
-            "east",
-            "honda",
-            "west"
-        ]
-        if style.lower() in conference:
+        return await Standings.get_team_standings_from_data(style, data)
+
+    @staticmethod
+    async def get_team_standings_from_data(style: str, data: dict):
+
+        if style.lower() in CONFERENCES:
             # Leaving this incase it comes back
             e = [
                 await Standings.from_json(
@@ -118,7 +133,7 @@ class Standings:
                 if div[0].conference.lower() == style and style != "conference":
                     index = [e, w].index(div)
             return [e, w], index
-        if style.lower() in division:
+        if style.lower() in DIVISIONS:
             new_list = []
             for record in data["records"]:
                 new_list.append(
@@ -156,44 +171,53 @@ class Standings:
         """
         log.debug("Updating Standings.")
         config = bot.get_cog("Hockey").config
+        async with bot.get_cog("Hockey").session.get(BASE_URL + "/api/v1/standings") as resp:
+            data = await resp.json()
+
         all_guilds = await config.all_guilds()
-        for guilds in all_guilds:
-            guild = bot.get_guild(guilds)
+        for guild_id, data in all_guilds.items():
+            guild = bot.get_guild(guild_id)
             if guild is None:
                 continue
             log.debug(guild.name)
-            if await config.guild(guild).post_standings():
+            if data["post_standings"]:
 
-                search = await config.guild(guild).standings_type()
+                search = data["standings_type"]
                 if search is None:
                     continue
-                standings_channel = await config.guild(guild).standings_channel()
+                standings_channel = data["standings_channel"]
                 if standings_channel is None:
                     continue
-                channel = bot.get_channel(standings_channel)
+                channel = guild.get_channel(standings_channel)
                 if channel is None:
                     continue
-                standings_msg = await config.guild(guild).standings_msg()
+                standings_msg = data["standings_msg"]
                 if standings_msg is None:
                     continue
                 try:
                     message = await channel.fetch_message(standings_msg)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
-                    await config.guild(guild).post_standings.set(False)
+                    await config.guild(guild).post_standings.clear()
+                    await config.guild(guild).standings_type.clear()
+                    await config.guild(guild).standings_channel.clear()
+                    await config.guild(guild).standings_msg.clear()
                     continue
 
-                standings, page = await Standings.get_team_standings(search)
+                standings, page = await Standings.get_team_standings_from_data(search, data)
                 team_stats = standings[page]
 
-                if len(standings) >= 2 and len(standings) < 4:
+                if search in DIVISIONS:
                     em = await Standings.make_division_standings_embed(team_stats)
 
-                elif len(standings) >= 4 and len(standings) < 31:
+                elif search in CONFERENCES:
                     em = await Standings.make_conference_standings_embed(team_stats)
                 else:
                     em = await Standings.all_standing_embed(standings)
                 if message is not None:
-                    await message.edit(embed=em)
+                    try:
+                        await message.edit(embed=em)
+                    except Exception:
+                        log.exception(f"Error editing standings message in {guild.id}")
 
     @classmethod
     async def from_json(cls, data: dict, division: str, conference: str):

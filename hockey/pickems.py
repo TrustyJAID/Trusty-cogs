@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import aiohttp
 import discord
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter
 
 from .constants import TEAMS
 from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
@@ -211,7 +212,7 @@ class Pickems:
         # Reset the weekly leaderboard for all servers
         config = bot.get_cog("Hockey").config
         pickems_channels_to_delete = []
-        for guild_id in await config.all_guilds():
+        async for guild_id, data in AsyncIter((await config.all_guilds()).items(), steps=100):
             guild = bot.get_guild(id=guild_id)
             if guild is None:
                 continue
@@ -252,7 +253,7 @@ class Pickems:
             new_chn = await guild.create_text_channel(name, category=category)
             await new_chn.send(msg)
         except discord.errors.Forbidden:
-            await config.guild(guild).pickems_category.set(None)
+            await config.guild(guild).pickems_category.clear()
             return None
         return new_chn
 
@@ -343,13 +344,13 @@ class Pickems:
         """
         config = bot.get_cog("Hockey").config
 
-        for guild_id, pickem_list in bot.get_cog("Hockey").all_pickems.items():
+        async for guild_id, pickem_list in AsyncIter(bot.get_cog("Hockey").all_pickems.items(), steps=100):
             guild = bot.get_guild(id=int(guild_id))
             if guild is None:
                 continue
             try:
                 to_remove = []
-                for name, pickems in pickem_list.items():
+                async for name, pickems in AsyncIter(pickem_list.items(), steps=50):
                     if pickems.winner is not None:
                         to_remove.append(name)
                         leaderboard = await config.guild(guild).leaderboard()
@@ -377,7 +378,7 @@ class Pickems:
                 # [p.to_json() for p in pickem_list if p.winner is None]
                 # )
             except Exception:
-                log.error(f"Error tallying leaderboard in {guild.name}", exc_info=True)
+                log.exception(f"Error tallying leaderboard in {guild.name}")
 
     def to_json(self) -> dict:
         return {
