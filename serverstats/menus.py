@@ -145,6 +145,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
     @menus.button(
         "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
         position=menus.First(1),
+        skip_if=_skip_single_arrows,
     )
     async def go_to_previous_page(self, payload):
         """go to the previous page"""
@@ -153,6 +154,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
     @menus.button(
         "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
         position=menus.Last(0),
+        skip_if=_skip_single_arrows,
     )
     async def go_to_next_page(self, payload):
         """go to the next page"""

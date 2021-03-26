@@ -44,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.1"
+    __version__ = "1.6.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1002,16 +1002,7 @@ class ServerStats(commands.Cog):
                     return
             else:
                 member = user_id
-            embed = discord.Embed()
-            since_created = (ctx.message.created_at - member.created_at).days
-            user_created = member.created_at.strftime("%d %b %Y %H:%M")
-            created_on = _("Joined Discord on {}\n({} days ago)").format(
-                user_created, since_created
-            )
-            embed.description = created_on
-            embed.set_thumbnail(url=member.avatar_url)
-            embed.colour = await ctx.embed_colour()
-            embed.set_author(name=f"{member} ({member.id})", icon_url=member.avatar_url)
+
             if await self.bot.is_owner(ctx.author):
                 guild_list = []
                 async for guild in AsyncIter(self.bot.guilds, steps=100):
@@ -1020,12 +1011,13 @@ class ServerStats(commands.Cog):
             else:
                 guild_list = []
                 async for guild in AsyncIter(self.bot.guilds, steps=100):
-                    if m:= guild.get_member(member.id) and guild.get_member(ctx.author.id):
+                    if m := guild.get_member(member.id) and guild.get_member(ctx.author.id):
                         guild_list.append(m)
-
+            embed_list = []
             if guild_list != []:
-                msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
-                embed_list = ""
+                robot = "\N{ROBOT FACE}" if member.bot else ""
+                msg = f"**{member}** ({member.id}) {robot}" + _("is on:\n\n")
+                embed_msg = ""
                 for m in guild_list:
                     # m = guild.get_member(member.id)
                     is_owner = ""
@@ -1035,20 +1027,39 @@ class ServerStats(commands.Cog):
                     if m.nick:
                         nick = f"`{m.nick}` in"
                     msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
-                    embed_list += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
+                    embed_msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for page in pagify(embed_list, ["\n"], shorten_by=1000):
-                        embed.add_field(name=_("Shared Servers"), value=page)
-                    await ctx.send(embed=embed)
+                    for em in pagify(embed_msg, ["\n"], page_length=6000):
+                        embed = discord.Embed()
+                        since_created = (ctx.message.created_at - member.created_at).days
+                        user_created = member.created_at.strftime("%d %b %Y %H:%M")
+                        created_on = _("Joined Discord on {}\n({} days ago)").format(
+                            user_created, since_created
+                        )
+                        embed.description = created_on
+                        embed.set_thumbnail(url=member.avatar_url)
+                        embed.colour = await ctx.embed_colour()
+                        embed.set_author(name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url)
+                        for page in pagify(em, ["\n"], page_length=1024):
+                            embed.add_field(name=_("Shared Servers"), value=page)
+                        embed_list.append(embed)
                 else:
-                    for page in pagify(msg, ["\n"], shorten_by=1000):
-                        await ctx.send(page)
+                    for page in pagify(msg, ["\n"]):
+                        embed_list.append(page)
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    await ctx.send(embed=embed)
+                    embed_list.append(embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
-                    await ctx.send(msg)
+                    embed_list.append(msg)
+            await BaseMenu(
+                source=ListPages(pages=embed_list),
+                delete_message_after=False,
+                clear_reactions_after=True,
+                timeout=60,
+                cog=self,
+                page_start=0,
+            ).start(ctx=ctx)
 
     @commands.command(hidden=True)
     @checks.is_owner()
