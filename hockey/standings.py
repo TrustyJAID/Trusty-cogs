@@ -172,10 +172,10 @@ class Standings:
         log.debug("Updating Standings.")
         config = bot.get_cog("Hockey").config
         async with bot.get_cog("Hockey").session.get(BASE_URL + "/api/v1/standings") as resp:
-            data = await resp.json()
+            standings_data = await resp.json()
 
         all_guilds = await config.all_guilds()
-        for guild_id, data in all_guilds.items():
+        async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
             guild = bot.get_guild(guild_id)
             if guild is None:
                 continue
@@ -203,7 +203,7 @@ class Standings:
                     await config.guild(guild).standings_msg.clear()
                     continue
 
-                standings, page = await Standings.get_team_standings_from_data(search, data)
+                standings, page = await Standings.get_team_standings_from_data(search, standings_data)
                 team_stats = standings[page]
 
                 if search in DIVISIONS:

@@ -170,11 +170,12 @@ class HockeyDev:
         """
         Test the automatic standings function/manually update standings
         """
-        try:
-            await Standings.post_automatic_standings(self.bot)
-        except Exception:
-            log.debug("error testing standings page", exc_info=True)
-        await ctx.tick()
+        async with ctx.typing():
+            try:
+                await Standings.post_automatic_standings(self.bot)
+            except Exception:
+                log.debug("error testing standings page", exc_info=True)
+        await ctx.send(_("Finished fixing all standings messages."))
 
     @hockeydev.command()
     async def cogstats(self, ctx: commands.Context):
