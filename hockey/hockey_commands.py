@@ -359,6 +359,7 @@ class HockeyCommands:
         if players:
             await BaseMenu(
                 source=PlayerPages(pages=players, season=season_str),
+                cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
                 timeout=60,

@@ -505,7 +505,7 @@ class HockeySetCommands:
         await self.config.guild(guild).standings_msg.set(message.id)
         await ctx.send(
             _("{standings_type} standings will now be automatically updated in {channel}.").format(
-                standings_type=standings_type, channel=channel.metion
+                standings_type=standings_type, channel=channel.mention
             )
         )
         await self.config.guild(guild).post_standings.set(True)

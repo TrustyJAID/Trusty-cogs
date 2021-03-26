@@ -35,7 +35,7 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.15.0"
+    __version__ = "2.15.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
