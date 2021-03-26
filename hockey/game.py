@@ -627,7 +627,7 @@ class Game:
         del guild_settings["pickems"]  # No need to keep this in memory twice
         game_day_channels = guild_settings["gdc"]
         can_embed = channel.permissions_for(guild.me).embed_links
-        publish_states = False  # await config.channel(channel).publish_states()
+        publish_states = []  # await config.channel(channel).publish_states()
         # can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
 
         if self.game_state == "Live":
