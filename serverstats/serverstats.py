@@ -44,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.0"
+    __version__ = "1.6.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1013,17 +1013,15 @@ class ServerStats(commands.Cog):
             embed.colour = await ctx.embed_colour()
             embed.set_author(name=f"{member} ({member.id})", icon_url=member.avatar_url)
             if await self.bot.is_owner(ctx.author):
-                guild_list = [
-                    m
-                    async for m in AsyncIter(self.bot.get_all_members(), steps=500)
-                    if m.id == member.id
-                ]
+                guild_list = []
+                async for guild in AsyncIter(self.bot.guilds, steps=100):
+                    if m := guild.get_member(member.id):
+                        guild_list.append(m)
             else:
-                guild_list = [
-                    m
-                    async for m in AsyncIter(self.bot.get_all_members(), steps=500)
-                    if m.id == member.id and ctx.author in m.guild.members
-                ]
+                guild_list = []
+                async for guild in AsyncIter(self.bot.guilds, steps=100):
+                    if m:= guild.get_member(member.id) and guild.get_member(ctx.author.id):
+                        guild_list.append(m)
 
             if guild_list != []:
                 msg = f"**{member}** ({member.id}) " + _("is on:\n\n")
@@ -1649,8 +1647,14 @@ class ServerStats(commands.Cog):
             for member_id, value in sorted_members[:5]:
                 member_messages.append(f"<@!{member_id}>: {bold(humanize_number(value))}\n")
 
-            most_messages_user_id = sorted_members[0][0]
-            most_messages_user_num = sorted_members[0][1]
+            try:
+                most_messages_user_id = sorted_members[0][0]
+            except IndexError:
+                most_messages_user_id = None
+            try:
+                most_messages_user_num = sorted_members[0][1]
+            except IndexError:
+                most_messages_user_num = 0
             new_msg = (
                 _("**Most posts on the server**\nTotal Messages: ")
                 + bold(humanize_number(guild_data["total"]))
@@ -1722,8 +1726,14 @@ class ServerStats(commands.Cog):
             log.info(channel_data)
             for member_id, value in sorted_members[:5]:
                 member_messages.append(f"<@!{member_id}>: {bold(humanize_number(value))}\n")
-            most_messages_user_id = sorted_members[0][0]
-            most_messages_user_num = sorted_members[0][1]
+            try:
+                most_messages_user_id = sorted_members[0][0]
+            except IndexError:
+                most_messages_user_id = None
+            try:
+                most_messages_user_num = sorted_members[0][1]
+            except IndexError:
+                most_messages_user_num = 0
             maybe_guild = f"<@!{most_messages_user_id}>: {bold(humanize_number(int(most_messages_user_num)))}\n"
             new_msg = (
                 _("**Most posts in <#{}>**\nTotal Messages: ").format(channel.id)
