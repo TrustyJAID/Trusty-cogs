@@ -5,6 +5,7 @@ from typing import List, Pattern, Tuple, Union, Optional
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
 from discord.ext.commands.errors import BadArgument
+from redbot import VersionInfo, version_info
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
@@ -190,10 +191,15 @@ class Trigger:
         self.enabled = not self.enabled
 
     def allowed_mentions(self):
-        return discord.AllowedMentions(
-            everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention,
-            replied_user=self.reply if self.reply is not None else False
-        )
+        if version_info >= VersionInfo.from_str("3.4.6"):
+            return discord.AllowedMentions(
+                everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention,
+                replied_user=self.reply if self.reply is not None else False
+            )
+        else:
+            return discord.AllowedMentions(
+                everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention
+            )
 
     def __repr__(self):
         return "<ReTrigger name={0.name} author={0.author} pattern={0.regex.pattern}>".format(self)

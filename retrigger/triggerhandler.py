@@ -510,7 +510,6 @@ class TriggerHandler:
             task = functools.partial(process.get, timeout=self.trigger_timeout)
             new_task = self.bot.loop.run_in_executor(None, task)
             search = await asyncio.wait_for(new_task, timeout=self.trigger_timeout + 5)
-            log.debug(f"Search results {search}")
         except mp.TimeoutError:
             error_msg = (
                 "ReTrigger: regex process took too long. Removing from memory "
