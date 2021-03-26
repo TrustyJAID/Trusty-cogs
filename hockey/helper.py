@@ -327,7 +327,7 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
 
 
 async def get_channel_obj(
-    self, bot: Red, channel_id: int, data: dict
+    bot: Red, channel_id: int, data: dict
 ) -> Optional[discord.TextChannel]:
     """
     Requires a bot object to access config, channel_id, and channel config data
