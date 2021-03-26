@@ -41,7 +41,7 @@ class RoleHierarchyConverter(commands.RoleConverter):
                 raise BadArgument(
                     _("That role is higher than my highest role in the discord hierarchy.")
                 )
-            if role.position >= ctx.author.top_role.position:
+            if role >= ctx.author.top_role:
                 raise BadArgument(_("That role is higher than your own in the discord hierarchy."))
         return role
 

@@ -27,7 +27,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -128,17 +128,17 @@ class RoleTools(RoleEvents, commands.Cog):
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
     async def selfadd(
-        self, ctx: Context, set_to: Optional[bool] = None, *, role: RoleHierarchyConverter
+        self, ctx: Context, true_or_false: Optional[bool] = None, *, role: RoleHierarchyConverter
     ):
         """
         Set whether or not a user can apply the role to themselves.
 
-        `[set_to]` optional boolean of what to set the setting to.
+        `[true_or_false]` optional boolean of what to set the setting to.
         If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).selfassignable()
-        if set_to is None:
+        if true_or_false is None:
             if cur_setting:
                 return await ctx.send(_("The role {role} is self assignable.").format(role=role))
             else:
@@ -148,27 +148,27 @@ class RoleTools(RoleEvents, commands.Cog):
                         "`{prefix}roletools selfadd yes {role}` to make it self assignable."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
-        if set_to is True:
+        if true_or_false is True:
             await self.config.role(role).selfassignable.set(True)
             return await ctx.send(_("{role} is now self assignable.").format(role=role.name))
-        if set_to is False:
+        if true_or_false is False:
             await self.config.role(role).selfassignable.set(False)
             return await ctx.send(_("{role} is no longer self assignable.").format(role=role.name))
 
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
     async def selfrem(
-        self, ctx: Context, set_to: Optional[bool] = None, *, role: RoleHierarchyConverter
+        self, ctx: Context, true_or_false: Optional[bool] = None, *, role: RoleHierarchyConverter
     ):
         """
         Set whether or not a user can remove the role from themselves.
 
-        `[set_to]` optional boolean of what to set the setting to.
+        `[true_or_false]` optional boolean of what to set the setting to.
         If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).selfremovable()
-        if set_to is None:
+        if true_or_false is None:
             if cur_setting:
                 return await ctx.send(_("The role {role} is self removeable.").format(role=role))
             else:
@@ -178,10 +178,10 @@ class RoleTools(RoleEvents, commands.Cog):
                         "`{prefix}roletools selfrem yes {role}` to make it self removeable."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
-        if set_to is True:
+        if true_or_false is True:
             await self.config.role(role).selfremovable.set(True)
             return await ctx.send(_("{role} is now self removeable.").format(role=role.name))
-        if set_to is False:
+        if true_or_false is False:
             await self.config.role(role).selfremovable.set(False)
             return await ctx.send(_("{role} is no longer self removeable.").format(role=role.name))
 
@@ -279,17 +279,17 @@ class RoleTools(RoleEvents, commands.Cog):
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
     async def sticky(
-        self, ctx: Context, set_to: Optional[bool] = None, *, role: RoleHierarchyConverter
+        self, ctx: Context, true_or_false: Optional[bool] = None, *, role: RoleHierarchyConverter
     ):
         """
         Set whether or not a role will be re-applied when a user leaves and rejoins the server.
 
-        `[set_to]` optional boolean of what to set the setting to.
+        `[true_or_false]` optional boolean of what to set the setting to.
         If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).sticky()
-        if set_to is None:
+        if true_or_false is None:
             if cur_setting:
                 return await ctx.send(_("The role {role} is sticky.").format(role=role))
             else:
@@ -299,27 +299,27 @@ class RoleTools(RoleEvents, commands.Cog):
                         "`{prefix}roletools sticky yes {role}` to make it sticky."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
-        if set_to is True:
+        if true_or_false is True:
             await self.config.role(role).sticky.set(True)
             return await ctx.send(_("{role} is now sticky.").format(role=role.name))
-        if set_to is False:
+        if true_or_false is False:
             await self.config.role(role).sticky.set(False)
             return await ctx.send(_("That role is no longer sticky."))
 
     @roletools.command(aliases=["autorole"])
     @commands.admin_or_permissions(manage_roles=True)
     async def auto(
-        self, ctx: Context, set_to: Optional[bool] = None, *, role: RoleHierarchyConverter
+        self, ctx: Context, true_or_false: Optional[bool] = None, *, role: RoleHierarchyConverter
     ):
         """
         Set a role to be automatically applied when a user joins the server.
 
-        `[set_to]` optional boolean of what to set the setting to.
+        `[true_or_false]` optional boolean of what to set the setting to.
         If not provided the current setting will be shown instead.
         `<role>` The role you want to set.
         """
         cur_setting = await self.config.role(role).auto()
-        if set_to is None:
+        if true_or_false is None:
             if cur_setting:
                 return await ctx.send(
                     _("The role {role} is automatically applied on joining.").format(role=role)
@@ -333,7 +333,7 @@ class RoleTools(RoleEvents, commands.Cog):
                         "it automatically apply when a user joins."
                     ).format(role=role.name, prefix=ctx.clean_prefix)
                 )
-        if set_to is True:
+        if true_or_false is True:
             async with self.config.guild(ctx.guild).auto_roles() as current_roles:
                 if role.id not in current_roles:
                     current_roles.append(role.id)
@@ -345,7 +345,7 @@ class RoleTools(RoleEvents, commands.Cog):
             return await ctx.send(
                 _("{role} is now automatically applied when a user joins.").format(role=role.name)
             )
-        if set_to is False:
+        if true_or_false is False:
             async with self.config.guild(ctx.guild).auto_roles() as current_roles:
                 if role.id in current_roles:
                     current_roles.remove(role.id)
