@@ -98,6 +98,7 @@ class TriggerHandler:
             return True
         if author is author.guild.owner and "mock" not in trigger.response_type:
             return True
+        return False
 
     async def check_bw_list(self, trigger: Trigger, message: discord.Message) -> bool:
         can_run = True
@@ -332,9 +333,20 @@ class TriggerHandler:
             return
         if "guild_id" not in payload.data:
             return
+        guild = self.bot.get_guild(int(payload.data["guild_id"]))
+        if not guild:
+            return
+        if guild.id not in self.triggers:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        if not any(t.check_edits for t in self.triggers[guild.id]):
+            log.debug(f"No triggers in {guild=} have check_edits enabled")
+            return
         if "bot" in payload.data["author"]:
             return
-        channel = self.bot.get_channel(int(payload.data["channel_id"]))
+        channel = guild.get_channel(int(payload.data["channel_id"]))
         try:
             message = await channel.fetch_message(int(payload.data["id"]))
         except (discord.errors.Forbidden, discord.errors.NotFound):
@@ -349,9 +361,6 @@ class TriggerHandler:
         if message.author.bot:
             # somehow we got a bot through the previous check :thonk:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, message.guild):
-                return
         await self.check_triggers(message, True)
 
     async def check_triggers(self, message: discord.Message, edit: bool) -> None:
@@ -379,7 +388,7 @@ class TriggerHandler:
         for trigger in self.triggers[guild.id]:
             if not trigger.enabled:
                 continue
-            if edit and trigger.ignore_edits:
+            if edit and not trigger.check_edits:
                 continue
             if trigger.chance:
                 if random.randint(0, trigger.chance) != 0:

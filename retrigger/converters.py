@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import List, Pattern, Tuple, Union, Optional
+from typing import List, Pattern, Tuple, Union, Optional, Literal
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
@@ -127,7 +127,23 @@ class Trigger:
 
     name: str
     regex: Pattern
-    response_type: list
+    response_type: List[
+        Literal[
+            "dm",
+            "dmme",
+            "remove_role",
+            "add_role",
+            "ban",
+            "kick",
+            "text",
+            "delete",
+            "publish",
+            "react",
+            "rename",
+            "command",
+            "mock",
+        ]
+    ]
     author: int
     count: int
     image: Union[List[Union[int, str]], str, None]
@@ -138,7 +154,7 @@ class Trigger:
     multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]]
     created: int
     ignore_commands: bool
-    ignore_edits: bool
+    check_edits: bool
     ocr_search: bool
     delete_after: int
     read_filenames: bool
@@ -167,7 +183,7 @@ class Trigger:
         self.multi_payload = kwargs.get("multi_payload", [])
         self.created_at = kwargs.get("created_at", 0)
         self.ignore_commands = kwargs.get("ignore_commands", False)
-        self.ignore_edits = kwargs.get("ignore_edits", False)
+        self.check_edits = kwargs.get("check_edits", False)
         self.ocr_search = kwargs.get("ocr_search", False)
         self.delete_after = kwargs.get("delete_after", None)
         self.read_filenames = kwargs.get("read_filenames", False)
@@ -193,8 +209,10 @@ class Trigger:
     def allowed_mentions(self):
         if version_info >= VersionInfo.from_str("3.4.6"):
             return discord.AllowedMentions(
-                everyone=self.everyone_mention, users=self.user_mention, roles=self.role_mention,
-                replied_user=self.reply if self.reply is not None else False
+                everyone=self.everyone_mention,
+                users=self.user_mention,
+                roles=self.role_mention,
+                replied_user=self.reply if self.reply is not None else False,
             )
         else:
             return discord.AllowedMentions(
@@ -202,7 +220,9 @@ class Trigger:
             )
 
     def __repr__(self):
-        return "<ReTrigger name={0.name} author={0.author} pattern={0.regex.pattern}>".format(self)
+        return "<ReTrigger name={0.name} author={0.author} response={0.response_type} pattern={0.regex.pattern}>".format(
+            self
+        )
 
     def __str__(self):
         """This is defined moreso for debugging purposes but may prove useful for elaborating
@@ -238,7 +258,7 @@ class Trigger:
             "multi_payload": self.multi_payload,
             "created_at": self.created_at,
             "ignore_commands": self.ignore_commands,
-            "ignore_edits": self.ignore_edits,
+            "check_edits": self.check_edits,
             "ocr_search": self.ocr_search,
             "delete_after": self.delete_after,
             "read_filenames": self.read_filenames,
@@ -247,90 +267,28 @@ class Trigger:
             "tts": self.tts,
             "user_mention": self.user_mention,
             "everyone_mention": self.everyone_mention,
-            "role_mention": self.role_mention
+            "role_mention": self.role_mention,
         }
 
     @classmethod
     async def from_json(cls, data: dict):
-        cooldown: dict = {}
-        multi_payload: List[MultiResponse] = []
-        created_at: int = 0
-        ignore_commands = False
-        ignore_edits = False
-        ocr_search = False
-        delete_after = None
-        enabled = True
-        read_filenames = True
-        chance = 0
-        reply = None
-        tts = False
-        user_mention = True
-        everyone_mention = False
-        role_mention = False
-        if "cooldown" in data:
-            cooldown = data["cooldown"]
-        if type(data["response_type"]) is str:
+        # This should be used only for correcting improper types
+        # All the defaults are handled in the class setup
+        name = data.pop("name")
+        regex = data.pop("regex")
+        author = data.pop("author")
+        response_type = data.pop("response_type", [])
+        if isinstance(response_type, str):
             response_type = [data["response_type"]]
-        else:
-            response_type = data["response_type"]
-        if "multi_payload" in data:
-            multi_payload = data["multi_payload"]
-        if "created_at" in data:
-            created_at = data["created_at"]
-        if "ignore_commands" in data:
-            ignore_commands = data["ignore_commands"]
-        if "ignore_edits" in data:
-            ignore_edits = data["ignore_edits"]
-        if "ocr_search" in data:
-            ocr_search = data["ocr_search"]
-        if "delete_after" in data:
-            delete_after = data["delete_after"]
-        if "enabled" in data:
-            enabled = data["enabled"]
-        if "read_filenames" in data:
-            read_filenames = data["read_filenames"]
-        if "delete" in response_type and type(data["text"]) == bool:
+        if "delete" in response_type and isinstance(data["text"], bool):
             # replace old setting with new flag
-            read_filenames = data["text"]
-            data["text"] = ""
-        if "chance" in data:
-            chance = data["chance"]
-        if "reply" in data:
-            reply = data["reply"]
-        if "tts" in data:
-            tts = data["tts"]
-        if "user_mention" in data:
-            user_mention = data["user_mention"]
-        if "everyone_mention" in data:
-            everyone_mention = data["everyone_mention"]
-        if "role_mention" in data:
-            role_mention = data["role_mention"]
-        return cls(
-            data["name"],
-            data["regex"],
-            response_type,
-            data["author"],
-            count=data["count"],
-            enabled=enabled,
-            image=data["image"],
-            text=data["text"],
-            whitelist=data["whitelist"],
-            blacklist=data["blacklist"],
-            cooldown=cooldown,
-            multi_payload=multi_payload,
-            created_at=created_at,
-            delete_after=delete_after,
-            ignore_commands=ignore_commands,
-            ignore_edits=ignore_edits,
-            ocr_search=ocr_search,
-            read_filenames=read_filenames,
-            chance=chance,
-            reply=reply,
-            tts=tts,
-            user_mention=user_mention,
-            everyone_mention=everyone_mention,
-            role_mention=role_mention,
-        )
+            data["read_filenames"] = data["text"]
+            data["text"] = None
+        ignore_edits = data.get("ignore_edits", False)
+        check_edits = data.get("check_edits")
+        if check_edits is None and any(t in ["ban", "kick", "delete"] for t in response_type):
+            data["check_edits"] = not ignore_edits
+        return cls(name, regex, response_type, author, **data)
 
 
 class TriggerExists(Converter):

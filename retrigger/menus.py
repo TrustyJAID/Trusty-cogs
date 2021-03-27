@@ -195,8 +195,8 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("__Cooldown__: ") + "**{}s per {}**\n".format(time, style)
         if trigger.ocr_search:
             info += _("__OCR__: **Enabled**\n")
-        if trigger.ignore_edits:
-            info += _("__Ignoring edits__: **Enabled**\n")
+        if trigger.check_edits:
+            info += _("__Checking edits__: **Enabled**\n")
         if trigger.delete_after:
             info += _("__Message deleted after__: {time} seconds.\n").format(time=trigger.delete_after)
         if trigger.read_filenames:

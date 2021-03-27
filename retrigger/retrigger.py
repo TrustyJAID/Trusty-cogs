@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import discord
+from discord.ext import tasks
 from redbot.core import Config, VersionInfo, checks, commands, modlog, version_info
 from redbot.core.commands import TimedeltaConverter
 from redbot.core.i18n import Translator, cog_i18n
@@ -45,7 +46,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.19.3"
+    __version__ = "2.20.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -65,9 +66,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         self.config.register_global(trigger_timeout=1)
         self.re_pool = Pool()
         self.triggers = {}
-        self.save_triggers = None
         self.__unload = self.cog_unload
         self.trigger_timeout = 1
+        self.save_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -86,9 +87,36 @@ class ReTrigger(TriggerHandler, commands.Cog):
         log.debug("Closing process pools.")
         self.re_pool.close()
         self.bot.loop.run_in_executor(None, self.re_pool.join)
-        self.save_triggers.cancel()
+        self.save_loop.cancel()
 
-    async def initialize(self):
+    async def save_all_triggers(self):
+        for guild_id, triggers in self.triggers.items():
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                continue
+            async with self.config.guild(guild).trigger_list() as trigger_list:
+                for trigger in triggers:
+                    try:
+                        trigger_list[trigger.name] = trigger.to_json()
+                    except KeyError:
+                        continue
+                    await asyncio.sleep(0.1)
+
+    @tasks.loop(seconds=120)
+    async def save_loop(self):
+        await self.save_all_triggers()
+
+    @save_loop.after_loop
+    async def after_save_loop(self):
+        if self.save_loop.is_being_cancelled():
+            await self.save_all_triggers()
+
+    @save_loop.before_loop
+    async def before_save_loop(self):
+        if version_info >= VersionInfo.from_str("3.2.0"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
         if 218773382617890828 in self.bot.owner_ids:
             # This doesn't work on bot startup but that's fine
             try:
@@ -108,26 +136,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild].append(new_trigger)
-        self.save_triggers = asyncio.create_task(self.save_loop())
-
-    async def save_loop(self):
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
-        while self is self.bot.get_cog("ReTrigger"):
-            for guild_id, triggers in self.triggers.items():
-                guild = self.bot.get_guild(guild_id)
-                if not guild:
-                    continue
-                async with self.config.guild(guild).trigger_list() as trigger_list:
-                    for trigger in triggers:
-                        try:
-                            trigger_list[trigger.name]["count"] = trigger.count
-                        except KeyError:
-                            continue
-                        await asyncio.sleep(0.1)
-            await asyncio.sleep(120)
 
     @commands.group()
     @commands.guild_only()
@@ -624,7 +632,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="reply", aliases=["replies"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def set_reply(self, ctx: commands.Context, trigger: TriggerExists, set_to: Optional[bool] = None) -> None:
+    async def set_reply(
+        self, ctx: commands.Context, trigger: TriggerExists, set_to: Optional[bool] = None
+    ) -> None:
         """
         Set whether or not to reply to the triggered message
 
@@ -678,7 +688,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="usermention", aliases=["userping"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def set_user_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+    async def set_user_mention(
+        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
+    ) -> None:
         """
         Set whether or not to send this trigger will mention users in the reply
 
@@ -704,7 +716,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="everyonemention", aliases=["everyoneping"])
     @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
-    async def set_everyone_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+    async def set_everyone_mention(
+        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
+    ) -> None:
         """
         Set whether or not to send this trigger will allow everyone mentions
 
@@ -730,7 +744,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="rolemention", aliases=["roleping"])
     @checks.mod_or_permissions(manage_messages=True, mention_everyone=True)
-    async def set_role_mention(self, ctx: commands.Context, trigger: TriggerExists, set_to: bool) -> None:
+    async def set_role_mention(
+        self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
+    ) -> None:
         """
         Set whether or not to send this trigger will allow role mentions
 
@@ -756,7 +772,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
 
     @_edit.command(name="edited")
     @checks.mod_or_permissions(manage_messages=True)
-    async def toggle_ignore_edits(self, ctx: commands.Context, trigger: TriggerExists) -> None:
+    async def toggle_check_edits(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
         Toggle whether the bot will listen to edited messages as well as on_message for
         the specified trigger.
@@ -771,13 +787,13 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if not await self.can_edit(ctx.author, trigger):
             return await ctx.send(_("You are not authorized to edit this trigger."))
-        trigger.ignore_edits = not trigger.ignore_edits
+        trigger.check_edits = not trigger.check_edits
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         self.triggers[ctx.guild.id].append(trigger)
-        msg = _("Trigger {name} ignore edits set to: {ignore_edits}")
-        await ctx.send(msg.format(name=trigger.name, ignore_edits=trigger.ignore_edits))
+        msg = _("Trigger {name} check edits set to: {ignore_edits}")
+        await ctx.send(msg.format(name=trigger.name, ignore_edits=trigger.check_edits))
 
     @_edit.command(name="text", aliases=["msg"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1622,7 +1638,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["ban"], author, created_at=ctx.message.id)
+        new_trigger = Trigger(
+            name, regex, ["ban"], author, created_at=ctx.message.id, check_edits=True
+        )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1652,7 +1670,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(msg)
         guild = ctx.guild
         author = ctx.message.author.id
-        new_trigger = Trigger(name, regex, ["kick"], author, created_at=ctx.message.id)
+        new_trigger = Trigger(
+            name, regex, ["kick"], author, created_at=ctx.message.id, check_edits=True
+        )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
         self.triggers[ctx.guild.id].append(new_trigger)
@@ -1845,6 +1865,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             author,
             read_filenames=check_filenames,
             created_at=ctx.message.id,
+            check_edits=True,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = []
