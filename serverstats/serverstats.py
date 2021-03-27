@@ -1048,6 +1048,13 @@ class ServerStats(commands.Cog):
                         embed_list.append(page)
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
+                    embed = discord.Embed()
+                    since_created = (ctx.message.created_at - member.created_at).days
+                    user_created = member.created_at.strftime("%d %b %Y %H:%M")
+                    created_on = _("Joined Discord on {}\n({} days ago)").format(
+                        user_created, since_created
+                    )
+                    embed.description = created_on
                     embed_list.append(embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
