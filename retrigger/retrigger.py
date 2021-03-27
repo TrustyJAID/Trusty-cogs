@@ -97,7 +97,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             async with self.config.guild(guild).trigger_list() as trigger_list:
                 for trigger in triggers:
                     try:
-                        trigger_list[trigger.name] = trigger.to_json()
+                        trigger_list[trigger.name] = await trigger.to_json()
                     except KeyError:
                         continue
                     await asyncio.sleep(0.1)
