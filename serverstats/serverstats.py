@@ -1039,7 +1039,9 @@ class ServerStats(commands.Cog):
                         embed.description = created_on
                         embed.set_thumbnail(url=member.avatar_url)
                         embed.colour = await ctx.embed_colour()
-                        embed.set_author(name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url)
+                        embed.set_author(
+                            name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                        )
                         for page in pagify(em, ["\n"], page_length=1024):
                             embed.add_field(name=_("Shared Servers"), value=page)
                         embed_list.append(embed)
@@ -1055,6 +1057,11 @@ class ServerStats(commands.Cog):
                         user_created, since_created
                     )
                     embed.description = created_on
+                    embed.set_thumbnail(url=member.avatar_url)
+                    embed.colour = await ctx.embed_colour()
+                    embed.set_author(
+                        name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                    )
                     embed_list.append(embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
