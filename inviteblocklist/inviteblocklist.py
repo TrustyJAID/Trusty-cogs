@@ -79,7 +79,7 @@ class ChannelUserRole(IDConverter):
 class InviteBlocklist(commands.Cog):
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -111,14 +111,24 @@ class InviteBlocklist(commands.Cog):
         Handle messages edited with links
         """
         if payload.cached_message:
-            if not payload.cached_message.guild:
-                return
-        chan = self.bot.get_channel(payload.channel_id)
-        try:
-            msg = await chan.fetch_message(payload.message_id)
-        except (discord.errors.Forbidden, discord.errors.NotFound):
+            guild = payload.cached_message.guild
+        else:
+            guild = self.bot.get_guild(int(payload.data["guild_id"]))
+        if guild is None:
             return
-        await self._handle_message_search(msg)
+        chan = guild.get_channel(payload.channel_id)
+        if chan is None:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        guild_settings = await self.config.guild(guild).all()
+        if guild_settings["blacklist"] or guild_settings["whitelist"] or guild_settings["all_invites"]:
+            try:
+                msg = await chan.fetch_message(payload.message_id)
+            except (discord.errors.Forbidden, discord.errors.NotFound):
+                return
+            await self._handle_message_search(msg)
 
     async def check_immunity_list(self, message: discord.Message) -> bool:
         is_immune = False
