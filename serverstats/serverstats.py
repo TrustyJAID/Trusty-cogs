@@ -1014,8 +1014,8 @@ class ServerStats(commands.Cog):
                     if m := guild.get_member(member.id) and guild.get_member(ctx.author.id):
                         guild_list.append(m)
             embed_list = []
+            robot = "\N{ROBOT FACE}" if member.bot else ""
             if guild_list != []:
-                robot = "\N{ROBOT FACE}" if member.bot else ""
                 msg = f"**{member}** ({member.id}) {robot}" + _("is on:\n\n")
                 embed_msg = ""
                 for m in guild_list:
