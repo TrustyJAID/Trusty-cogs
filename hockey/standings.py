@@ -5,6 +5,9 @@ from typing import Optional, Literal, List
 import aiohttp
 import discord
 
+from redbot import VersionInfo, version_info
+from redbot.core.utils import AsyncIter
+
 from .constants import BASE_URL, TEAMS
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
@@ -195,7 +198,10 @@ class Standings:
                 if standings_msg is None:
                     continue
                 try:
-                    message = await channel.fetch_message(standings_msg)
+                    if version_info >= VersionInfo.from_str("3.4.6"):
+                        message = channel.get_partial_message(standings_msg)
+                    else:
+                        message = await channel.fetch_message(standings_msg)
                 except (discord.errors.NotFound, discord.errors.Forbidden):
                     await config.guild(guild).post_standings.clear()
                     await config.guild(guild).standings_type.clear()
@@ -216,6 +222,11 @@ class Standings:
                 if message is not None:
                     try:
                         await message.edit(embed=em)
+                    except (discord.errors.NotFound, discord.errors.Forbidden):
+                        await config.guild(guild).post_standings.clear()
+                        await config.guild(guild).standings_type.clear()
+                        await config.guild(guild).standings_channel.clear()
+                        await config.guild(guild).standings_msg.clear()
                     except Exception:
                         log.exception(f"Error editing standings message in {guild.id}")
 

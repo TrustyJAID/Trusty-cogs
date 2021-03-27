@@ -263,8 +263,10 @@ class Goal:
         if goal not in [goal.goal_id for goal in data.goals]:
             try:
                 old_msgs = team_data["goal_id"][goal]["messages"]
+            except KeyError:
+                return
             except Exception:
-                log.error("Error iterating saved goals", exc_info=True)
+                log.exception("Error iterating saved goals")
                 return
             for guild_id, channel_id, message_id in old_msgs:
                 guild = bot.get_guild(guild_id)
@@ -273,12 +275,28 @@ class Goal:
                 channel = guild.get_channel(int(channel_id))
                 if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
-                        message = await channel.fetch_message(message_id)
-                        if message is not None:
-                            await message.delete()
+                        if version_info >= VersionInfo.from_str("3.4.6"):
+                            message = channel.get_partial_message(message_id)
+                        else:
+                            message = await channel.fetch_message(message_id)
+                    except (discord.errors.NotFound, discord.errors.Forbidden):
+                        continue
                     except Exception:
-                        log.error(f"Cannot find message {str(team)} {str(goal)}", exc_info=True)
+                        log.exception(
+                            f"Error getting old goal for {str(team)} {str(goal)} in "
+                            f"{guild_id=} {channel_id=}"
+                        )
                         pass
+                    if message is not None:
+                        try:
+                            await message.delete()
+                        except (discord.errors.NotFound, discord.errors.Forbidden):
+                            pass
+                        except Exception:
+                            log.exception(
+                                f"Error getting old goal for {str(team)} {str(goal)} in "
+                                f"{guild_id=} {channel_id=}"
+                            )
                 else:
                     log.debug("Channel does not have permission to read history")
             try:
@@ -287,7 +305,7 @@ class Goal:
                 team_list.append(team_data)
                 await config.teams.set(team_list)
             except Exception:
-                log.error("Error removing team data", exc_info=True)
+                log.exception("Error removing teams goals")
                 return
         return
 
@@ -315,7 +333,13 @@ class Goal:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
-            message = await channel.fetch_message(message_id)
+            try:
+                if version_info >= VersionInfo.from_str("3.4.6"):
+                    message = channel.get_partial_message(message_id)
+                else:
+                    message = await channel.fetch_message(message_id)
+            except (discord.errors.NotFound, discord.errors.Forbidden):
+                return
             guild = channel.guild
             game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
             role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
@@ -327,8 +351,10 @@ class Goal:
                 await message.edit(embed=em)
             else:
                 await message.edit(content=role.mention, embed=em)
+        except (discord.errors.NotFound, discord.errors.Forbidden):
+            return
         except Exception:
-            log.error("Could not edit goal in ")
+            log.exception(f"Could not edit goal in {channel=}")
 
     async def get_shootout_display(self, game):
         """
