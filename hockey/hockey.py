@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from copy import copy
 from datetime import datetime
 from typing import Literal
 from pathlib import Path
@@ -285,7 +286,8 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
         try:
             async with self.pickems_save_lock:
                 log.debug("Saving pickems data")
-                for guild_id, pickems in self.all_pickems.items():
+                all_pickems = copy(self.all_pickems)
+                for guild_id, pickems in all_pickems.items():
                     data = {}
                     for name, pickem in pickems.items():
                         pickem = await pickem.check_winner()

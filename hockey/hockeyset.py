@@ -767,7 +767,7 @@ class HockeySetCommands:
         await self.config.guild(ctx.guild).pickems_category.set(None)
         await ctx.tick()
 
-    @pickems_commands.command(name="page", hidden=True)
+    @pickems_commands.command(name="page")
     @checks.admin_or_permissions(manage_channels=True)
     async def pickems_page(self, ctx, date: str = None):
         """
