@@ -46,7 +46,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.20.0"
+    __version__ = "2.20.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -882,8 +882,6 @@ class ReTrigger(TriggerHandler, commands.Cog):
             return await ctx.send(_("Trigger `{name}` doesn't exist.").format(name=trigger))
         if not await self.can_edit(ctx.author, trigger):
             return await ctx.send(_("You are not authorized to edit this trigger."))
-        if trigger.multi_payload:
-            return await ctx.send(_("You cannot edit multi triggers response."))
         if "text" not in trigger.response_type:
             return await ctx.send(_("That trigger cannot be edited this way."))
         if delete_after:
@@ -949,7 +947,9 @@ class ReTrigger(TriggerHandler, commands.Cog):
         cmd_list = command.split(" ")
         existing_cmd = self.bot.get_command(cmd_list[0])
         if existing_cmd is None:
-            await ctx.send(command + _(" doesn't seem to be an available command."))
+            await ctx.send(
+                _("`{command}` doesn't seem to be an available command.").format(command=command)
+            )
             return
         if "command" not in trigger.response_type:
             return await ctx.send(_("That trigger cannot be edited this way."))
