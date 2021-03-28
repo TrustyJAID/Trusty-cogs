@@ -283,6 +283,7 @@ class Pickems:
     @staticmethod
     async def create_weekly_pickems_pages(bot, guilds, game_obj):
         config = bot.get_cog("Hockey").config
+        session = bot.get_cog("Hockey").session
         save_data = {}
         today = datetime.now()
         new_day = timedelta(days=1)
@@ -303,7 +304,7 @@ class Pickems:
                 else:
                     save_data[new_channel.guild.id].append(new_channel.id)
 
-            games_list = await game_obj.get_games(None, today, today)
+            games_list = await game_obj.get_games(None, today, today, session)
 
             for game in games_list:
                 for channel in data:
