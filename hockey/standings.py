@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime
-from typing import Optional, Literal, List
+from typing import List, Literal, Optional
 
 import aiohttp
 import discord
-
 from redbot import VersionInfo, version_info
 from redbot.core.utils import AsyncIter
 

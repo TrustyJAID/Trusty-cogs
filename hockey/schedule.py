@@ -1,12 +1,12 @@
-import discord
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
 import aiohttp
+import discord
 from redbot.core.i18n import Translator
-from redbot.vendored.discord.ext import menus
 from redbot.core.utils.chat_formatting import pagify
+from redbot.vendored.discord.ext import menus
 
 from .constants import BASE_URL, TEAMS
 from .errors import NoSchedule

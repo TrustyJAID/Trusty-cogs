@@ -1,27 +1,26 @@
 import asyncio
 import json
 import logging
-from copy import copy
+from abc import ABC
 from datetime import datetime
-from typing import Literal
 from pathlib import Path
+from typing import Literal
 
 import aiohttp
-import discord
 import yaml
-from discord.ext import tasks
+from redbot import version_info
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils import AsyncIter
 
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
-from .errors import InvalidFileError, NotAValidTeamError, UserHasVotedError, VotingHasEndedError
+from .errors import InvalidFileError
 from .game import Game
 from .gamedaychannels import GameDayChannels
 from .hockey_commands import HockeyCommands
+from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
-
-from .pickems import Pickems
 from .standings import Standings
 from .teamentry import TeamEntry
 
@@ -30,13 +29,30 @@ _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
+class CompositeMetaClass(type(commands.Cog), type(ABC)):
+    """
+    This allows the metaclass used for proper type detection to
+    coexist with discord.py's metaclass
+    """
+
+    pass
+
+
 @cog_i18n(_)
-class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, commands.Cog):
+class Hockey(
+    HockeyCommands,
+    HockeySetCommands,
+    GameDayChannels,
+    HockeyDev,
+    HockeyPickems,
+    commands.Cog,
+    metaclass=CompositeMetaClass,
+):
     """
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "2.15.2"
+    __version__ = "3.0.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -82,18 +98,26 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
-        self.config.register_global(**default_global)
+        self.config.register_global(**default_global, version="0.0.0")
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
+        self.pickems_config = Config.get_conf(
+            None, CONFIG_ID, cog_name="Hockey_Pickems", force_registration=True
+        )
+        self.pickems_config.register_guild(
+            leaderboard={}, pickems={}, pickems_channels=[], pickems_category=None
+        )
         self.loop = None
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
         self.pickems_loop.start()
-        self.pickems_save_lock = asyncio.Lock()
         self.current_games = {}
         self.games_playing = False
         self.session = aiohttp.ClientSession()
+        self._ready: asyncio.Event = asyncio.Event()
+        # self._ready is used to prevent pickems from opening
+        # data from the wrong file location
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -107,10 +131,11 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
             self.bot.remove_dev_env_value("hockey")
         except Exception:
             pass
-        self.bot.loop.create_task(self.session.close())
+
         if self.loop is not None:
             self.loop.cancel()
         self.pickems_loop.cancel()
+        self.bot.loop.create_task(self.session.close())
 
     async def red_delete_data_for_user(
         self,
@@ -131,9 +156,43 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
             except Exception:
                 pass
         self.loop = asyncio.create_task(self.game_check_loop())
+        await self.migrate_settings()
+
+    async def migrate_settings(self):
+        if version_info.from_str(await self.config.version()) <= version_info.from_str("3.0.0"):
+            log.info("Migrating old pickems to new file")
+            all_guilds = await self.config.all_guilds()
+            async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
+                if data["leaderboard"]:
+                    await self.pickems_config.guild_from_id(guild_id).leaderboard.set(
+                        data["leaderboard"]
+                    )
+                    await self.config.guild_from_id(guild_id).leaderboard.clear()
+                    log.info(f"Migrating leaderboard for {guild_id}")
+                if data["pickems"]:
+                    await self.pickems_config.guild_from_id(guild_id).pickems.set(data["pickems"])
+                    await self.config.guild_from_id(guild_id).pickems.clear()
+                    log.info(f"Migrating pickems for {guild_id}")
+                if data["pickems_channels"]:
+                    await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
+                        data["pickems_channels"]
+                    )
+                    await self.config.guild_from_id(guild_id).pickems_channels.clear()
+                    log.info(f"Migrating pickems channels for {guild_id}")
+                if data["pickems_category"]:
+                    await self.pickems_config.guild_from_id(guild_id).pickems_category.set(
+                        data["pickems_category"]
+                    )
+                    await self.config.guild_from_id(guild_id).pickems_category.clear()
+                    log.info(f"Migrating pickems categories for {guild_id}")
+            # await self.config.version.set("3.0.0")
+        self._ready.set()
 
     ##############################################################################
-    # Here is all the logic for gathering game data and updating information
+    # Here is all the logic for gathering game data and updating information     #
+    # This is essentially the "core" of the Hockey cog and dictates all the      #
+    # main timing logic which is in turn dictated by nhl.com                     #
+    ##############################################################################
 
     async def game_check_loop(self):
         """
@@ -206,7 +265,7 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
 
                     if game.game_state in ["Final", "Postponed"]:
                         try:
-                            await Pickems.set_guild_pickem_winner(self.bot, game)
+                            await self.set_guild_pickem_winner(game)
                         except Exception:
                             log.error("Pickems Set Winner error: ", exc_info=True)
                         self.current_games[link]["count"] += 1
@@ -224,7 +283,7 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
                     await asyncio.sleep(10)
             log.debug("Games Done Playing")
             try:
-                await Pickems.tally_leaderboard(self.bot)
+                await self.tally_leaderboard()
             except Exception:
                 log.error("Error tallying leaderboard:", exc_info=True)
                 pass
@@ -249,7 +308,7 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
         if not await self.config.created_gdc():
             if datetime.now().weekday() == 6:
                 try:
-                    await Pickems.reset_weekly(self.bot)
+                    await self.reset_weekly()
                 except Exception:
                     log.error("Error reseting the weekly leaderboard: ", exc_info=True)
                 try:
@@ -260,10 +319,7 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
                             continue
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
-                    async with self.pickems_save_lock:
-                        await Pickems.create_weekly_pickems_pages(
-                            self.bot, guilds_to_make_new_pickems, Game
-                        )
+                    await self.create_weekly_pickems_pages(guilds_to_make_new_pickems, Game)
 
                 except Exception:
                     log.error("Error creating new weekly pickems pages", exc_info=True)
@@ -276,109 +332,6 @@ class Hockey(HockeyCommands, HockeySetCommands, GameDayChannels, HockeyDev, comm
 
             await self.check_new_gdc()
             await self.config.created_gdc.set(True)
-
-    @tasks.loop(seconds=120)
-    async def pickems_loop(self):
-        await self.save_pickems_data()
-        log.debug("Saved pickems data.")
-
-    async def save_pickems_data(self):
-        try:
-            async with self.pickems_save_lock:
-                log.debug("Saving pickems data")
-                all_pickems = copy(self.all_pickems)
-                for guild_id, pickems in all_pickems.items():
-                    data = {}
-                    for name, pickem in pickems.items():
-                        pickem = await pickem.check_winner()
-                        data[name] = pickem.to_json()
-                    await self.config.guild_from_id(guild_id).pickems.set(data)
-        except Exception:
-            log.exception("Error saving pickems Data")
-            # catch all errors cause we don't want this loop to fail for something dumb
-
-    @pickems_loop.after_loop
-    async def after_pickems_loop(self):
-        if self.pickems_loop.is_being_cancelled():
-            await self.save_pickems_data()
-
-    @pickems_loop.before_loop
-    async def before_pickems_loop(self):
-        await self.bot.wait_until_ready()
-        data = await self.config.all_guilds()
-        for guild_id, data in data.items():
-            pickems_list = data.get("pickems", {})
-            if pickems_list is None:
-                log.info(f"Resetting pickems in {guild_id} for incompatible type")
-                await self.config.guild_from_id(guild_id).pickems.clear()
-                continue
-            if type(pickems_list) is list:
-                log.info(f"Resetting pickems in {guild_id} for incompatible type")
-                await self.config.guild_from_id(guild_id).pickems.clear()
-                continue
-            # pickems = [Pickems.from_json(p) for p in pickems_list]
-            pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}
-            self.all_pickems[str(guild_id)] = pickems
-
-    @commands.Cog.listener()
-    async def on_hockey_preview_message(self, channel, message, game):
-        """
-        Handles adding preview messages to the pickems object.
-        """
-        # a little hack to avoid circular imports
-        await Pickems.create_pickem_object(self.bot, channel.guild, message, channel, game)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.guild_id is None:
-            return
-        guild = self.bot.get_guild(payload.guild_id)
-        if not guild:
-            return
-        channel = guild.get_channel(payload.channel_id)
-        if not channel:
-            return
-        if str(guild.id) not in self.all_pickems:
-            return
-        user = guild.get_member(payload.user_id)
-        # log.debug(payload.user_id)
-        if not user or user.bot:
-            return
-        try:
-            msg = await channel.fetch_message(id=payload.message_id)
-        except (discord.errors.NotFound, discord.errors.Forbidden):
-            return
-
-        is_pickems_vote = False
-        for name, pickem in self.all_pickems[str(guild.id)].items():
-            if msg.id in pickem.message:
-                is_pickems_vote = True
-                reply_message = ""
-                try:
-                    # log.debug(payload.emoji)
-                    pickem.add_vote(user.id, payload.emoji)
-                except UserHasVotedError as team:
-                    if msg.channel.permissions_for(msg.guild.me).manage_messages:
-                        emoji = (
-                            pickem.home_emoji
-                            if str(payload.emoji.id) in pickem.away_emoji
-                            else pickem.away_emoji
-                        )
-                        await msg.remove_reaction(emoji, user)
-                    reply_message = _("You have already voted! Changing vote to: ") + str(team)
-                except VotingHasEndedError as error_msg:
-                    if msg.channel.permissions_for(msg.guild.me).manage_messages:
-                        await msg.remove_reaction(payload.emoji, user)
-                    reply_message = _("Voting has ended!") + str(error_msg)
-                except NotAValidTeamError:
-                    if msg.channel.permissions_for(msg.guild.me).manage_messages:
-                        await msg.remove_reaction(payload.emoji, user)
-                    reply_message = _("Don't clutter the voting message with emojis!")
-                if reply_message != "":
-                    try:
-                        await user.send(reply_message)
-                    except Exception:
-                        pass
 
     async def change_custom_emojis(self, attachments):
         """

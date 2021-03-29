@@ -5,13 +5,12 @@ from typing import List, Optional, Tuple
 
 import discord
 from redbot import VersionInfo, version_info
-from redbot.core import Config
 from redbot.core.bot import Red
-from redbot.core.utils import bounded_gather, AsyncIter
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import HEADSHOT_URL, TEAMS
-from .helper import check_to_post, get_team, get_channel_obj
+from .helper import check_to_post, get_channel_obj, get_team
 
 try:
     from .oilers import Oilers

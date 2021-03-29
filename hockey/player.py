@@ -1,15 +1,14 @@
-import aiohttp
 import json
 import logging
-import discord
-
 from dataclasses import dataclass
-from typing import Optional, Literal, Union
-from tabulate import tabulate
 from datetime import datetime
+from typing import Literal, Optional, Union
 
+import aiohttp
+import discord
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
+from tabulate import tabulate
 
 from .constants import BASE_URL, HEADSHOT_URL, TEAMS
 

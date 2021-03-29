@@ -13,9 +13,9 @@ from redbot.vendored.discord.ext import menus
 from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import DATE_RE
-from .standings import Standings
 from .player import Player
 from .schedule import ScheduleList
+from .standings import Standings
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")

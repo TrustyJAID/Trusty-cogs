@@ -8,6 +8,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify
 
+from .abc import MixinMeta
 from .constants import TEAMS
 from .errors import InvalidFileError
 from .game import Game
@@ -27,27 +28,10 @@ _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
 
 
-class HockeyDev:
+class HockeyDev(MixinMeta):
     """
     All the commands grouped under `[p]hockeydev`
     """
-
-    bot: Red
-    config: Config
-    TEST_LOOP: bool
-    all_pickems: dict
-    save_pickems: bool
-    pickems_save_lock: asyncio.Lock
-    channel_settings: dict
-
-    def __init__(self, *args):
-        self.bot
-        self.config
-        self.TEST_LOOP
-        self.all_pickems
-        self.save_pickems
-        self.pickems_save_lock
-        self.channel_settings
 
     #######################################################################
     # Owner Only Commands Mostly for Testing and debuggings               #
@@ -69,16 +53,15 @@ class HockeyDev:
         """
         Force reset all pickems data for the week
         """
-        await Pickems.reset_weekly(self.bot)
+        await self.reset_weekly()
         guilds_to_make_new_pickems = []
-        for guild_id in await self.config.all_guilds():
+        for guild_id in await self.pickems_config.all_guilds():
             guild = self.bot.get_guild(guild_id)
             if guild is None:
                 continue
-            if await self.config.guild(guild).pickems_category():
+            if await self.pickems_config.guild(guild).pickems_category():
                 guilds_to_make_new_pickems.append(guild)
-        async with self.pickems_save_lock:
-            await Pickems.create_weekly_pickems_pages(self.bot, guilds_to_make_new_pickems, Game)
+        await self.create_weekly_pickems_pages(guilds_to_make_new_pickems, Game)
         await ctx.send("Finished resetting all pickems data.")
 
     @hockeydev.command()
@@ -114,7 +97,7 @@ class HockeyDev:
         """
         Manually tally the leaderboard
         """
-        await Pickems.tally_leaderboard(self.bot)
+        await self.tally_leaderboard()
         await ctx.send(_("Leaderboard tallying complete."))
 
     @hockeydev.command()
@@ -124,13 +107,13 @@ class HockeyDev:
         """
         start = date(year, month, day)
         good_list = {}
-        for guild_id in await self.config.all_guilds():
+        for guild_id in await self.pickems_config.all_guilds():
             g = self.bot.get_guild(guild_id)
-            pickems = [Pickems.from_json(p) for p in await self.config.guild(g).pickems()]
+            pickems = [Pickems.from_json(p) for p in await self.pickems_config.guild(g).pickems()]
             for p in pickems:
                 if p.game_start > start:
                     good_list[p.name] = p.to_json()
-            await self.config.guild(g).pickems.set(good_list)
+            await self.pickems_config.guild(g).pickems.set(good_list)
         await ctx.send(_("All old pickems objects deleted."))
 
     @hockeydev.command()
@@ -147,7 +130,7 @@ class HockeyDev:
             check_day = now + delta
             games = await Game.get_games(None, check_day, check_day)
             for game in games:
-                await Pickems.set_guild_pickem_winner(self.bot, game)
+                await self.set_guild_pickem_winner(game)
         await ctx.send(_("Pickems winners set."))
 
     @hockeydev.command()
@@ -162,7 +145,7 @@ class HockeyDev:
                     oldest = p.game_start
         games = await Game.get_games(None, oldest, datetime.now())
         for game in games:
-            await Pickems.set_guild_pickem_winner(self.bot, game)
+            await self.set_guild_pickem_winner(game)
         await ctx.send(_("All pickems winners set."))
 
     @hockeydev.command()
@@ -272,10 +255,6 @@ class HockeyDev:
             channel = guild.get_channel(channel_id)
             if channel is None:
                 await self.config.channel_from_id(channel_id).clear()
-                try:
-                    del self.channel_settings[channel_id]
-                except KeyError:
-                    pass
                 log.info(f"Removed the following channels {channel_id}")
                 continue
             else:
@@ -299,20 +278,12 @@ class HockeyDev:
                 if not guild:
                     await self.config.channel_from_id(channel_id).clear()
                     await self.config.guild_from_id(data["guild_id"]).clear()
-                    try:
-                        del self.channel_settings[channel_id]
-                    except KeyError:
-                        pass
                     log.info(f"Removed the following channels {channel_id}")
                     continue
                 channel = guild.get_channel
 
             if channel is None:
                 await self.config.channel_from_id(channel_id).clear()
-                try:
-                    del self.channel_settings[channel_id]
-                except KeyError:
-                    pass
                 log.info(f"Removed the following channels {channel_id}")
                 continue
             # if await self.config.channel(channel).to_delete():
@@ -361,6 +332,6 @@ class HockeyDev:
         """
         Clears the bots seasonal pickems leaderboard
         """
-        for guild_id in await self.config.all_guilds():
+        for guild_id in await self.pickems_config.all_guilds():
             await self.config.guild_from_id(guild_id).leaderboard.clear()
         await ctx.send(_("Seasonal pickems leaderboards cleared."))

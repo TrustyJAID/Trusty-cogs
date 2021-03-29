@@ -1,15 +1,14 @@
 import asyncio
-import discord
 import logging
 import re
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Pattern, Union, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Pattern, Tuple, Union
 
-from redbot.core.bot import Red
-
+import discord
 import pytz
 from discord.ext.commands.converter import Converter  # type: ignore[import]
 from discord.ext.commands.errors import BadArgument  # type: ignore[import]
+from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 
@@ -326,9 +325,7 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     return is_team
 
 
-async def get_channel_obj(
-    bot: Red, channel_id: int, data: dict
-) -> Optional[discord.TextChannel]:
+async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:
     """
     Requires a bot object to access config, channel_id, and channel config data
     Returns the channel object and sets the guild ID if it's missing from config

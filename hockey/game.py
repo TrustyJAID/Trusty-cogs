@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import datetime
 from typing import Literal, Optional
@@ -8,12 +7,12 @@ import discord  # type: ignore[import]
 from redbot import VersionInfo, version_info
 from redbot.core import Config
 from redbot.core.bot import Red
-from redbot.core.utils import bounded_gather, AsyncIter
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
-from .helper import check_to_post, get_team, get_team_role, utc_to_local, get_channel_obj
+from .helper import check_to_post, get_channel_obj, get_team, get_team_role, utc_to_local
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)
@@ -143,9 +142,9 @@ class Game:
 
     @staticmethod
     async def get_games(
-        team=None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        team: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
     ):
         """
@@ -178,9 +177,9 @@ class Game:
 
     @staticmethod
     async def get_games_list(
-        team=None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        team: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
     ):
         """
@@ -261,19 +260,11 @@ class Game:
             )
 
         if self.game_state != "Preview":
-            home_msg = (
-                _("Goals: **")
-                + str(self.home_score)
-                + _("** \nShots: **")
-                + str(self.home_shots)
-                + "**"
+            home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=self.home_shots
             )
-            away_msg = (
-                _("Goals: **")
-                + str(self.away_score)
-                + _("** \nShots: **")
-                + str(self.away_shots)
-                + "**"
+            away_msg = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=self.away_shots
             )
             em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_msg
@@ -340,14 +331,13 @@ class Game:
             if self.game_state == "Live":
                 period = self.period_ord
                 if self.period_time_left[0].isdigit():
-                    msg = (
-                        str(self.period_time_left)
-                        + _(" Left in the ")
-                        + str(period)
-                        + _(" period")
+                    msg = _("{time} Left in the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
                     )
                 else:
-                    msg = str(self.period_time_left) + _(" of the ") + str(period) + _(" period")
+                    msg = _("{time} Left of the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
+                    )
                 if include_plays:
                     em.description = self.plays[-1]["result"]["description"]
                 em.add_field(name="Period", value=msg)
@@ -364,19 +354,11 @@ class Game:
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
         if self.game_state != "Preview":
-            home_str = (
-                _("Goals: **")
-                + str(self.home_score)
-                + _("** \nShots: **")
-                + str(self.home_shots)
-                + "**"
+            home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=self.home_shots
             )
-            away_str = (
-                _("Goals: **")
-                + str(self.away_score)
-                + _("** \nShots: **")
-                + str(self.away_shots)
-                + "**"
+            away_str = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=self.away_shots
             )
         else:
             home_str, away_str = await self.get_stats_msg()
@@ -858,6 +840,7 @@ class Game:
 
     @staticmethod
     async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None):
+        url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
         try:
             if session is None:
                 # this should only happen in pickems objects

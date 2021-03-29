@@ -1,30 +1,28 @@
-import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Optional, Literal
+from typing import Literal, Optional
 from urllib.parse import quote
 
-import aiohttp
 import discord
-from redbot.core import Config, checks, commands
-from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils import AsyncIter
+from redbot.core import checks, commands
 from redbot.core.data_manager import cog_data_path
+from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter
 
+from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder, YEAR_RE
+from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
     DivisionStandingsPages,
     GamesMenu,
     LeaderboardPages,
+    PlayerPages,
     StandingsPages,
     TeamStandingsPages,
-    PlayerPages,
 )
 from .schedule import Schedule, ScheduleList
 from .standings import Standings
@@ -34,28 +32,10 @@ _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
-@cog_i18n(_)
-class HockeyCommands:
+class HockeyCommands(MixinMeta):
     """
     All the commands grouped under `[p]hockey`
     """
-
-    bot: Red
-    config: Config
-    TEST_LOOP: bool
-    all_pickems: dict
-    save_pickems: bool
-    pickems_save_lock: asyncio.Lock
-    session: aiohttp.ClientSession
-
-    def __init__(self, *args):
-        self.bot
-        self.config
-        self.TEST_LOOP
-        self.all_pickems
-        self.save_pickems
-        self.pickems_save_lock
-        self.session
 
     #######################################################################
     # All the basic commands                                              #
