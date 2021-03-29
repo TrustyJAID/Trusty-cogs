@@ -55,22 +55,26 @@ class HockeyPickems(MixinMeta):
                 if (channel.id, payload.message_id) not in pickem.messages:
                     pickem.messages.append((channel.id, payload.message_id))
                 reply_message = ""
-                remove_emoji = False
+                remove_emoji = None
                 try:
                     # log.debug(payload.emoji)
                     pickem.add_vote(user.id, payload.emoji)
                 except UserHasVotedError as team:
-                    remove_emoji = True
+                    remove_emoji = (
+                            pickem.home_emoji
+                            if str(payload.emoji.id) in pickem.away_emoji
+                            else pickem.away_emoji
+                        )
                     reply_message = _("You have already voted! Changing vote to: {team}").format(
                         team=team
                     )
                 except VotingHasEndedError as error_msg:
-                    remove_emoji = True
+                    remove_emoji = payload.emoji
                     reply_message = _("Voting has ended! {voted_for}").format(
                         voted_for=str(error_msg)
                     )
                 except NotAValidTeamError:
-                    remove_emoji = True
+                    remove_emoji = payload.emoji
                     reply_message = _("Don't clutter the voting message with emojis!")
                 if remove_emoji and channel.permissions_for(guild.me).manage_messages:
                     try:
@@ -78,7 +82,7 @@ class HockeyPickems(MixinMeta):
                             msg = channel.get_partial_message(payload.message_id)
                         else:
                             msg = await channel.fetch_message(id=payload.message_id)
-                        await msg.remove_reaction(payload.emoji, user)
+                        await msg.remove_reaction(remove_emoji, user)
                     except (discord.errors.NotFound, discord.errors.Forbidden):
                         pass
                 if reply_message != "":
