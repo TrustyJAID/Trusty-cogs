@@ -3,15 +3,17 @@ import json
 import logging
 from datetime import date, datetime, timedelta
 
-from redbot.core import Config, checks, commands
+from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .constants import TEAMS
 from .errors import InvalidFileError
 from .game import Game
+from .helper import get_channel_obj
 from .pickems import Pickems
 from .standings import Standings
 
@@ -38,7 +40,7 @@ class HockeyDev(MixinMeta):
     #######################################################################
 
     @commands.group(aliases=["nhldev"])
-    @checks.is_owner()
+    @commands.is_owner()
     async def hockeydev(self, ctx: commands.Context):
         """
         Secret dev only commands for Hockey
@@ -63,6 +65,29 @@ class HockeyDev(MixinMeta):
                 guilds_to_make_new_pickems.append(guild)
         await self.create_weekly_pickems_pages(guilds_to_make_new_pickems, Game)
         await ctx.send("Finished resetting all pickems data.")
+
+    @hockeydev.command(name="pickemsannounce")
+    async def announce_pickems(self, ctx: commands.Context, *, message: str):
+        """
+        Announce a message in all setup pickems channels
+
+        This is only useful if there was an error and you want to
+        announce to people that their vote might not have counted.
+        """
+        all_guilds = await self.pickems_config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            g = bot.get_guild(guild_id)
+            if g is None:
+                continue
+            if data["pickems_channels"]:
+                for channel_id in data["pickems_channels"]:
+                    chan = g.get_channel(channel_id)
+                    if chan:
+                        try:
+                            await chan.send(msg)
+                        except Exception:
+                            pass
+        await ctx.send(_("Message announced in pickems channels."))
 
     @hockeydev.command()
     async def getgoals(self, ctx: commands.Context):
@@ -92,15 +117,15 @@ class HockeyDev(MixinMeta):
         await self.config.teams.set(all_teams)
         await ctx.send("Done testing.")
 
-    @hockeydev.command()
+    @hockeydev.command(name="pickemstally")
     async def pickems_tally(self, ctx: commands.Context):
         """
-        Manually tally the leaderboard
+        Manually tally the leaderboard for all servers
         """
         await self.tally_leaderboard()
         await ctx.send(_("Leaderboard tallying complete."))
 
-    @hockeydev.command()
+    @hockeydev.command(name="removeoldpickems")
     async def remove_old_pickems(self, ctx: commands.Context, year: int, month: int, day: int):
         """
         Remove pickems objects created before a specified date.
@@ -116,7 +141,7 @@ class HockeyDev(MixinMeta):
             await self.pickems_config.guild(g).pickems.set(good_list)
         await ctx.send(_("All old pickems objects deleted."))
 
-    @hockeydev.command()
+    @hockeydev.command(name="checkpickemswinner")
     async def check_pickem_winner(self, ctx: commands.Context, days: int = 1):
         """
         Manually check all pickems objects for winners
@@ -133,7 +158,7 @@ class HockeyDev(MixinMeta):
                 await self.set_guild_pickem_winner(game)
         await ctx.send(_("Pickems winners set."))
 
-    @hockeydev.command()
+    @hockeydev.command(name="fixallpickems")
     async def fix_all_pickems(self, ctx: commands.Context):
         """
         Fixes winner on all current pickems objects if possible
@@ -167,19 +192,86 @@ class HockeyDev(MixinMeta):
         the cog is storing in console
         """
         all_channels = await self.config.all_channels()
-        all_guilds = await self.config.all_guilds()
-        guild_list = {}
-        for channels in all_channels.keys():
-            channel = self.bot.get_channel(channels)
-            if channel is None:
-                log.debug(channels)
+        all_pickems = await self.pickems_config.all_guilds()
+        guild_list = {
+            "guilds": 0,
+            "goal_updates": {"total": 0},
+            "gdc": {"total": 0},
+            "standings": {"total": 0},
+            "pickems": {"voters": [], "channels": 0, "waiting_pickems": []},
+        }
+        for guild in self.bot.guilds:
+            hockey_data = await self.config.guild(guild).all()
+            added_guild = False
+            if gdc := hockey_data.get("gdc"):
+                if not added_guild:
+                    guild_list["guilds"] += 1
+                    added_guild = True
+                for channel_id in gdc:
+                    if guild.get_channel(channel_id):
+                        guild_list["gdc"]["total"] += 1
+                if gdc_team := hockey_data.get("gdc_team"):
+                    if gdc_team not in guild_list["gdc"]:
+                        guild_list["gdc"][gdc_team] = 0
+                    guild_list["gdc"][gdc_team] += 1
+            if hockey_data.get("post_standings"):
+                if not added_guild:
+                    guild_list["guilds"] += 1
+                    added_guild = True
+                guild_list["standings"]["total"] += 1
+                if standings := hockey_data.get("standings_type"):
+                    if standings not in guild_list["standings"]:
+                        guild_list["standings"][standings] = 0
+                    guild_list["standings"][standings] += 1
+        async for channel_id, data in AsyncIter(all_channels.items()):
+            channel = await get_channel_obj(self.bot, channel_id, data)
+            if not channel:
                 continue
-            if channel.guild.name not in guild_list:
-                guild_list[channel.guild.name] = 1
-            else:
-                guild_list[channel.guild.name] += 1
-        msg = f"Number of Servers: {len(all_guilds)}\nNumber of Channels: {len(all_channels)}"
-        await ctx.send(msg)
+            guild_list["goal_updates"]["total"] += 1
+            for team in data["team"]:
+                if team not in guild_list["goal_updates"]:
+                    guild_list["goal_updates"][team] = 0
+                guild_list["goal_updates"][team] += 1
+        async for guild_id, data in AsyncIter(all_pickems.items()):
+            guild = self.bot.get_guild(guild_id)
+            if leaderboard := data.get("leaderboard", {}):
+                guild_list["pickems"]["voters"] += list(leaderboard.keys())
+            if channels := data.get("pickems_channels"):
+                for channel_id in channels:
+                    if guild.get_channel(channel_id):
+                        guild_list["pickems"]["channels"] += 1
+            if pickems := data.get("pickems", {}):
+                guild_list["pickems"]["waiting_pickems"] += pickems.keys()
+
+        msg = ""
+        for key, value in guild_list.items():
+            if key == "guilds":
+                msg += f"__Total Guilds:__ **{value}**\n"
+            if key == "pickems":
+                msg += "**Pickems**\n"
+                for name, count in value.items():
+                    if name == "voters":
+                        msg += f"__Total Pickems Voters:__ **{len(count)}**\n"
+                        msg += f"__Total Unique Pickems Voters:__ **{len(set(count))}**\n"
+                    if name == "waiting_pickems":
+                        msg += f"__Total Waiting Pickems:__ **{len(set(count))}**\n"
+                    if name == "channels":
+                        msg += f"__Total Pickems Channels:__ **{count}**\n"
+                msg += "\n"
+            if key == "goal_updates":
+                for name, count in value.items():
+                    msg += f"__{name.title()} Goal Update Channels:__ **{count}**\n"
+                msg += "\n"
+            if key == "gdc":
+                for name, count in value.items():
+                    msg += f"__{name.title()} GDC:__ **{count}**\n"
+                msg += "\n"
+            if key == "standings":
+                for name, count in value.items():
+                    msg += f"__{name.title()} Standings Updates:__ **{count}**\n"
+                msg += "\n"
+        for page in pagify(msg):
+            await ctx.maybe_send_embed(page)
 
     @hockeydev.command()
     async def customemoji(self, ctx: commands.Context):
@@ -262,7 +354,7 @@ class HockeyDev(MixinMeta):
         await self.config.guild(guild).gdc.set(good_channels)
         await ctx.tick()
 
-    @hockeydev.command()
+    @hockeydev.command(name="clearbrokenchannels")
     async def clear_broken_channels(self, ctx: commands.Context):
         """
         Removes missing channels from the config

@@ -177,9 +177,14 @@ class MixinMeta(ABC):
     # hockeyset.py                                                        #
     #######################################################################
 
-    @abstractmethod
+    @commands.group(name="hockeyset", aliases=["nhlset"])
+    @commands.guild_only()
+    @commands.mod_or_permissions(manage_channels=True)
     async def hockeyset_commands(self, ctx: commands.Context):
-        raise NotImplementedError()
+        """
+        Setup Hockey commands for the server
+        """
+        pass
 
     @abstractmethod
     async def hockey_settings(self, ctx: commands.Context):
@@ -284,52 +289,6 @@ class MixinMeta(ABC):
     ):
         raise NotImplementedError()
 
-    @abstractmethod
-    async def pickems_commands(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def setup_auto_pickems(
-        self, ctx: commands.Context, category: Optional[discord.CategoryChannel] = None
-    ):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def delete_auto_pickems(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def toggle_auto_pickems(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def pickems_page(self, ctx, date: Optional[str] = None):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def rempickem(self, ctx: commands.Context, true_or_false: bool):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def pickems_leaderboard_commands(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        raise NotImplementedError()
-
     #######################################################################
     # pickems.py                                                          #
     #######################################################################
@@ -402,6 +361,56 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def tally_leaderboard(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_commands(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_settings(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def setup_auto_pickems(
+        self, ctx: commands.Context, category: Optional[discord.CategoryChannel] = None
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def delete_auto_pickems(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def toggle_auto_pickems(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_page(self, ctx, date: Optional[str] = None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def rempickem(self, ctx: commands.Context, true_or_false: bool):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_leaderboard_commands(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool):
         raise NotImplementedError()
 
     #######################################################################

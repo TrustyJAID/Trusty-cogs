@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 import discord
-from redbot.core import checks, commands
+from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -29,7 +29,7 @@ class GameDayChannels(MixinMeta):
     #######################################################################
 
     @commands.group()
-    @checks.mod_or_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
     async def gdc(self, ctx: commands.Context):
         """

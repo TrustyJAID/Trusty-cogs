@@ -6,7 +6,7 @@ from typing import Literal, Optional
 from urllib.parse import quote
 
 import discord
-from redbot.core import checks, commands
+from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -77,7 +77,7 @@ class HockeyCommands(MixinMeta):
         await ctx.send("https://hh.sbstp.ca/?search=" + search)
 
     @hockey_commands.command(name="role")
-    @checks.bot_has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def team_role(self, ctx: commands.Context, *, team: HockeyTeams):
         """Set your role to a team role"""
         guild = ctx.message.guild
@@ -135,7 +135,7 @@ class HockeyCommands(MixinMeta):
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
-    @checks.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def standings(self, ctx: commands.Context, *, search: HockeyStandings = None):
         """
         Displays current standings
@@ -356,7 +356,7 @@ class HockeyCommands(MixinMeta):
             )
 
     @hockey_commands.command(hidden=True)
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     async def rules(self, ctx: commands.Context):
         """
         Display a nice embed of server specific rules
@@ -490,7 +490,7 @@ class HockeyCommands(MixinMeta):
             await self.post_leaderboard(ctx, "worst")
 
     @hockey_commands.command(hidden=True)
-    @checks.mod_or_permissions(manage_messages=True)
+    @commands.mod_or_permissions(manage_messages=True)
     async def setrules(self, ctx: commands.Context, team: HockeyTeams, *, rules):
         """Set the main rules page for the nhl rules command"""
         if team is None:

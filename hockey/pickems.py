@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from redbot.core.i18n import Translator
 
@@ -126,9 +126,10 @@ class Pickems:
         `True` if the winner has been set or the game is postponed
         `False` if the winner has not set and it's not time to clear it yet.
         """
+        log.debug(f"Setting winner for {repr(self)}")
         if not game:
             return False
-        if game.gatem_state == "Postponed":
+        if game.game_state == "Postponed":
             # Postponed games we want to remove
             return True
         if game.home_score > game.away_score:
@@ -139,7 +140,7 @@ class Pickems:
             return True
         return False
 
-    async def check_winner(self) -> bool:
+    async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
         allow the pickems objects to check winner on their own
 
@@ -149,8 +150,11 @@ class Pickems:
         This realistically only gets called once all the games are done playing
         """
         after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=2))
+        log.debug(f"Checking winner for {repr(self)}")
         if self.winner:
             return True
+        if game is not None:
+            return await self.set_pickem_winner(game)
         if self.link and after_game:
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)

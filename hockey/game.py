@@ -295,7 +295,7 @@ class Game:
                     for goal in list_goals[ordinal]:
                         if count == 4:
                             em.add_field(
-                                name=str(ordinal) + _(" Period Goals"),
+                                name=_("{ordinal} Period Goals").format(ordinal=ordinal),
                                 value=goal_msg[:1024],
                                 inline=False,
                             )
@@ -306,25 +306,38 @@ class Game:
                         except KeyError:
                             emoji = ""
                         if not goal.link:
-                            goal_msg += f"{emoji} {goal.team_name} Goal By {goal.description}\n\n"
+                            goal_msg += _("{emoji} {team} Goal By {description}\n\n").format(
+                                emoji=emoji, team=goal.team_name, description=goal.description
+                            )
                         else:
-                            goal_msg += f"{emoji} [{goal.team_name} Goal By {goal.description}]({goal.link})\n\n"
+                            goal_msg += _(
+                                "{emoji} [{team} Goal By {description}]({link})\n\n"
+                            ).format(
+                                emoji=emoji,
+                                team=goal.team_name,
+                                description=goal.description,
+                                link=goal.link,
+                            )
                         count += 1
                     if len(list_goals[ordinal]) > 4 and goal_msg != "":
                         em.add_field(
-                            name=str(ordinal) + _(" Period Goals (Continued)"),
+                            name=_("{ordinal} Period Goals (Continued)").format(ordinal=ordinal),
                             value=goal_msg[:1024],
                         )
                     if len(list_goals[ordinal]) <= 4 and goal_msg != "":
                         em.add_field(
-                            name=str(ordinal) + _(" Period Goals"),
+                            name=_("{ordinal} Period Goals").format(ordinal=ordinal),
                             value=goal_msg[:1024],
                             inline=False,
                         )
                 if len(so_goals) != 0:
                     home_msg, away_msg = await self.goals[0].get_shootout_display(self)
-                    em.add_field(name=f"{self.home_team}" + _(" Shootout"), value=home_msg)
-                    em.add_field(name=f"{self.away_team}" + _(" Shootout"), value=away_msg)
+                    em.add_field(
+                        name=_("{team} Shootout").format(team=self.home_team), value=home_msg
+                    )
+                    em.add_field(
+                        name=+_("{team} Shootout").format(team=self.away_team), value=away_msg
+                    )
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
@@ -550,11 +563,7 @@ class Game:
         Posts the period recap in designated channels
         """
         if not channel.permissions_for(channel.guild.me).send_messages:
-            log.debug(
-                _("No permission to send messages in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                )
-            )
+            log.debug(f"No permission to send messages in {repr(channel)}")
             return
         try:
             msg = await channel.send(embed=embed)
@@ -562,12 +571,7 @@ class Game:
                 pass
                 # await msg.publish()
         except Exception:
-            log.error(
-                _("Could not post goal in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                ),
-                exc_info=True,
-            )
+            log.exception(f"Could not post goal in {repr(channel)}")
 
     async def post_game_state(self, bot):
         """
@@ -597,11 +601,7 @@ class Game:
     async def actually_post_state(self, bot, channel, state_embed, state_text):
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
-            log.debug(
-                _("No permission to send messages in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                )
-            )
+            log.debug(f"No permission to send messages in {repr(channel)}")
             return
         config = bot.get_cog("Hockey").config
         guild_settings = await config.guild(guild).all()
@@ -666,12 +666,7 @@ class Game:
                     except Exception:
                         pass
             except Exception:
-                log.error(
-                    _("Could not post goal in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ),
-                    exc_info=True,
-                )
+                log.exception(f"Could not post goal in {repr(channel)}")
 
         else:
             if self.game_state == "Preview":
@@ -704,12 +699,7 @@ class Game:
                             log.debug("Could not add reactions")
                         return channel, preview_msg
             except Exception:
-                log.error(
-                    _("Could not post goal in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ),
-                    exc_info=True,
-                )
+                log.exception(f"Could not post goal in {repr(channel)}")
 
     async def check_team_goals(self, bot):
         """
