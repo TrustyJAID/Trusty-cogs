@@ -63,7 +63,7 @@ class HockeyDev(MixinMeta):
                 continue
             if await self.pickems_config.guild(guild).pickems_category():
                 guilds_to_make_new_pickems.append(guild)
-        await self.create_weekly_pickems_pages(guilds_to_make_new_pickems, Game)
+        await self.create_weekly_pickems_pages(guilds_to_make_new_pickems)
         await ctx.send("Finished resetting all pickems data.")
 
     @hockeydev.command(name="pickemsannounce")

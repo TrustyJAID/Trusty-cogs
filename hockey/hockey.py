@@ -319,7 +319,7 @@ class Hockey(
                             continue
                         if await self.config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
-                    await self.create_weekly_pickems_pages(guilds_to_make_new_pickems, Game)
+                    await self.create_weekly_pickems_pages(guilds_to_make_new_pickems)
 
                 except Exception:
                     log.error("Error creating new weekly pickems pages", exc_info=True)

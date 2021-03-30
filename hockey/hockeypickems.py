@@ -58,7 +58,6 @@ class HockeyPickems(MixinMeta):
         # log.debug(payload.user_id)
         if not user or user.bot:
             return
-        log.debug("Checking pickems votes")
         for name, pickem in self.all_pickems[str(guild.id)].items():
             if f"{channel.id}-{payload.message_id}" in pickem.messages:
                 reply_message = ""
@@ -88,7 +87,7 @@ class HockeyPickems(MixinMeta):
                     remove_emoji = payload.emoji
                     reply_message = _("Don't clutter the voting message with emojis!")
                 except Exception:
-                    log.exception(f"Error adding vote to {repr(pickems)}")
+                    log.exception(f"Error adding vote to {repr(pickem)}")
                 if remove_emoji and channel.permissions_for(guild.me).manage_messages:
 
                     try:
@@ -206,7 +205,6 @@ class HockeyPickems(MixinMeta):
         if old_pickem is None:
             pickems[new_name] = Pickems.from_json(
                 {
-                    "message": [message.id],
                     "messages": [f"{channel.id}-{message.id}"],
                     "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "home_team": game.home_team,
@@ -219,13 +217,9 @@ class HockeyPickems(MixinMeta):
             )
 
             self.all_pickems[str(guild.id)] = pickems
-            log.debug(f"creating new pickems {pickems}")
+            log.debug(f"creating new pickems {pickems[new_name]}")
             return True
         else:
-            old_pickem.message.append(message.id)
-            # The message attribute should eventually be removed
-            # This has been running fine but I'd feel safer actually
-            # saving channel ID's for compatibility
             old_pickem.messages.append(f"{channel.id}-{message.id}")
             if not old_pickem.link:
                 old_pickem.link = game.link
@@ -304,43 +298,57 @@ class HockeyPickems(MixinMeta):
         if channel.permissions_for(channel.guild.me).add_reactions:
             start_adding_reactions(new_msg, [game.away_emoji[2:-1], game.home_emoji[2:-1]])
 
-    async def create_weekly_pickems_pages(self, guilds: List[discord.Guild], game_obj: Game):
+    async def create_pickems_channels_and_message(
+        self, guilds: List[discord.Guild], day: datetime
+    ):
+        chn_name = _("pickems-{month}-{day}").format(month=day.month, day=day.day)
+        data = []
+        channel_tasks = []
+        save_data = {}
+        for guild in guilds:
+            channel_tasks.append(self.create_pickems_channel(chn_name, guild))
+        data = await bounded_gather(*channel_tasks)
+
+        for new_channel in data:
+            if new_channel is None:
+                continue
+            if new_channel.guild.id not in save_data:
+                save_data[new_channel.guild.id] = [new_channel.id]
+            else:
+                save_data[new_channel.guild.id].append(new_channel.id)
+
+        games_list = await Game.get_games(None, day, day, self.session)
+
+        msg_tasks = []
+        for game in games_list:
+            for channel in data:
+                if channel:
+                    msg_tasks.append(self.create_pickems_game_msg(channel, game))
+        await bounded_gather(*msg_tasks)
+        return save_data
+
+    async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]):
         save_data = {}
         today = datetime.now()
-        new_day = timedelta(days=1)
-        count = 0
-
-        while True:
-            chn_name = _("pickems-{month}-{day}").format(month=today.month, day=today.day)
-            data = []
-            channel_tasks = []
-            for guild in guilds:
-                channel_tasks.append(self.create_pickems_channel(chn_name, guild))
-            data = await bounded_gather(*channel_tasks)
-
-            for new_channel in data:
-                if new_channel is None:
-                    continue
-                if new_channel.guild.id not in save_data:
-                    save_data[new_channel.guild.id] = [new_channel.id]
-                else:
-                    save_data[new_channel.guild.id].append(new_channel.id)
-
-            games_list = await game_obj.get_games(None, today, today, self.session)
-
-            msg_tasks = []
-            for game in games_list:
-                for channel in data:
-                    if channel:
-                        msg_tasks.append(self.create_pickems_game_msg(channel, game))
-            await bounded_gather(*msg_tasks)
-
-            today = today + new_day
-            count += 1
-            if today.weekday() == 6 or count == 7:
+        tasks = []
+        for days in range(7):
+            tasks.append(
+                self.create_pickems_channels_and_message(guilds, today + timedelta(days=days))
+            )
+            if today.weekday() == 6:
                 # just incase we end up in an infinite loop somehow
                 # can never be too careful with async coding
                 break
+
+        guild_data = await bounded_gather(*tasks)
+        for channel_data in guild_data:
+            for guild_id, channels in channel_data.items():
+                if guild_id not in save_data:
+                    save_data[guild_id] = channels
+                    continue
+                for channel in channels:
+                    save_data[guild_id].append(channel)
+
         for guild_id, channels in save_data.items():
             guild = self.bot.get_guild(guild_id)
             if not guild:
@@ -469,7 +477,7 @@ class HockeyPickems(MixinMeta):
                             "I tried to delete the following channels without success:\n{chans}"
                         ).format(chans=chans)
                     )
-        await self.create_weekly_pickems_pages([ctx.guild], Game)
+        await self.create_weekly_pickems_pages([ctx.guild])
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
     @pickems_commands.command(name="clear")

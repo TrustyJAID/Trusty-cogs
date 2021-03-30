@@ -17,8 +17,7 @@ class Pickems:
     Pickems object for handling votes on games for the day
     """
 
-    message: List[int]
-    messages: List[Tuple[int, int]]
+    messages: List[str]
     game_start: datetime
     home_team: str
     away_team: str
@@ -29,7 +28,6 @@ class Pickems:
 
     def __init__(self, **kwargs):
         super().__init__()
-        self.message = kwargs.get("message")
         self.messages = kwargs.get("messages", [])
         game_start = kwargs.get("game_start")
         self.game_start = datetime.strptime(game_start, "%Y-%m-%dT%H:%M:%SZ")
@@ -91,7 +89,6 @@ class Pickems:
 
     def to_json(self) -> dict:
         return {
-            "message": self.message,
             "messages": self.messages,
             "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "home_team": self.home_team,
@@ -106,7 +103,6 @@ class Pickems:
     def from_json(cls, data: dict):
         # log.debug(data)
         return cls(
-            message=data["message"],
             messages=data.get("messages", []),
             game_start=data["game_start"],
             home_team=data["home_team"],

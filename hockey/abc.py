@@ -322,9 +322,7 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def create_weekly_pickems_pages(
-        self, guilds: List[discord.Guild], game_obj: Game
-    ) -> bool:
+    async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
