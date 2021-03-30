@@ -308,6 +308,12 @@ class GameDayChannels(MixinMeta):
         if category is None:
             # Return none if there's no category to create the channel
             return
+        if not category.permissions_for(guild.me).manage_channels:
+            log.info(f"Cannot create new GDC in {repr(guild)} due to too many missing permissions.")
+            return
+        if len(category.channels) >= 50:
+            log.info(f"Cannot create new GDC in {repr(guild)} due to too many channels in category.")
+            return
         if game_data is None:
             team = await self.config.guild(guild).gdc_team()
 
@@ -326,8 +332,10 @@ class GameDayChannels(MixinMeta):
         chn_name = await self.get_chn_name(next_game)
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
+        except discord.Forbidden:
+            log.error(f"Error creating channel in {repr(guild)}")
         except Exception:
-            log.error("Error creating channels in {}".format(guild.name), exc_info=True)
+            log.exception(f"Error creating channels in {repr(guild)}")
             return
         async with self.config.guild(guild).gdc() as current_gdc:
             current_gdc.append(new_chn.id)
