@@ -5,6 +5,7 @@ from typing import List, Literal, Optional
 import aiohttp
 import discord
 from redbot import VersionInfo, version_info
+from redbot.core import Config
 from redbot.core.utils import AsyncIter
 
 from .constants import BASE_URL, TEAMS
@@ -208,7 +209,9 @@ class Standings:
                     await config.guild(guild).standings_msg.clear()
                     continue
 
-                standings, page = await Standings.get_team_standings_from_data(search, standings_data)
+                standings, page = await Standings.get_team_standings_from_data(
+                    search, standings_data
+                )
                 team_stats = standings[page]
 
                 if search in DIVISIONS:
@@ -219,15 +222,23 @@ class Standings:
                 else:
                     em = await Standings.all_standing_embed(standings)
                 if message is not None:
-                    try:
-                        await message.edit(embed=em)
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        await config.guild(guild).post_standings.clear()
-                        await config.guild(guild).standings_type.clear()
-                        await config.guild(guild).standings_channel.clear()
-                        await config.guild(guild).standings_msg.clear()
-                    except Exception:
-                        log.exception(f"Error editing standings message in {guild.id}")
+                    bot.loop.create_task(
+                        Standings.edit_standings_message(em, guild, message, config)
+                    )
+
+    @staticmethod
+    async def edit_standings_message(
+        embed: discord.Embed, guild: discord.Guild, message: discord.Message, config: Config
+    ):
+        try:
+            await message.edit(embed=embed)
+        except (discord.errors.NotFound, discord.errors.Forbidden):
+            await config.guild(guild).post_standings.clear()
+            await config.guild(guild).standings_type.clear()
+            await config.guild(guild).standings_channel.clear()
+            await config.guild(guild).standings_msg.clear()
+        except Exception:
+            log.exception(f"Error editing standings message in {repr(guild)}")
 
     @classmethod
     async def from_json(cls, data: dict, division: str, conference: str):

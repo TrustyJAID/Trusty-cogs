@@ -315,7 +315,6 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
-        tasks = []
         async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=100):
             guild = bot.get_guild(guild_id)
             if not guild:
@@ -323,9 +322,14 @@ class Goal:
             channel = guild.get_channel(int(channel_id))
             if channel is None:
                 continue
-            tasks.append(self.edit_goal(bot, channel, message_id, em))
+            bot.loop.create_task(self.edit_goal(bot, channel, message_id, em))
+            # This is to prevent endlessly waiting incase someone
+            # decided to publish one of our messages we want to edit
+            # if we did bounded_gather here the gather would wait until
+            # rate limits are up for editing that one message
+            # in this case we can send off the task to do it's thing
+            # and forget about it. If one never finishes I don't care
 
-        await bounded_gather(*tasks)
         return
 
     async def edit_goal(self, bot, channel, message_id, em):
