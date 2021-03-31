@@ -10,13 +10,15 @@ from redbot import VersionInfo, version_info
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 
 
 from .abc import MixinMeta
+from .constants import TEAMS
 from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
+from .helper import utc_to_local, TimezoneFinder
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -24,6 +26,15 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 
 hockeyset_commands = MixinMeta.hockeyset_commands
 # defined in abc.py allowing this to be inherited by multiple files
+
+PICKEMS_MESSAGE = (
+    "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
+    "  Vote for who you think will win!  You get one point for each correct prediction. "
+    "Votes are weighted based on total number of votes you have made. So the more "
+    "you play and guess correctly the higher you will be on the leaderboard.**\n\n"
+    "- Click the reaction for the team you think will win the day's match-up.\n"
+    "{guild_message}"
+)
 
 
 class HockeyPickems(MixinMeta):
@@ -60,7 +71,7 @@ class HockeyPickems(MixinMeta):
             return
         for name, pickem in self.all_pickems[str(guild.id)].items():
             if f"{channel.id}-{payload.message_id}" in pickem.messages:
-                reply_message = ""
+                reply_message = None
                 remove_emoji = None
                 try:
                     # log.debug(payload.emoji)
@@ -98,11 +109,11 @@ class HockeyPickems(MixinMeta):
                         await msg.remove_reaction(remove_emoji, user)
                     except (discord.errors.NotFound, discord.errors.Forbidden):
                         pass
-                if reply_message != "":
+                if reply_message is not None:
                     try:
                         await user.send(reply_message)
                     except discord.HTTPException:
-                        log.error(f"Error trying to DM {repr(user)}")
+                        log.error(f"Could not send message to {repr(user)}.")
                     except Exception:
                         log.exception(f"Error trying to send message to {repr(user)}")
                         pass
@@ -179,8 +190,39 @@ class HockeyPickems(MixinMeta):
             if pickems is None:
                 pickems = {}
             pickem_name = self.pickems_name(game)
+            pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
             if pickem_name in pickems:
                 await self.all_pickems[str(guild_id)][pickem_name].check_winner(game)
+                pickem = self.all_pickems[str(guild_id)][pickem_name]
+                for message in pickem.messages:
+                    try:
+                        channel_id, message_id = message.split("-")
+                    except ValueError:
+                        continue
+                    if int(channel_id) not in pickems_channels:
+                        continue
+                    channel = guild.get_channel(int(channel_id))
+                    if not channel:
+                        continue
+                    msg = await self.make_pickems_msg(guild, game)
+                    self.bot.loop.create_task(
+                        self.edit_pickems_message(channel, int(message_id), msg)
+                    )
+
+    async def edit_pickems_message(
+        self, channel: discord.TextChannel, message_id: int, content: str
+    ):
+        try:
+            if version_info >= VersionInfo.from_str("3.4.6"):
+                message = channel.get_partial_message(message_id)
+            else:
+                message = await channel.fetch_message(message_id)
+            await message.edit(content=content)
+        except (discord.errors.NotFound, discord.errors.Forbidden):
+            log.error(f"Error editing pickems message in {repr(channel)}")
+            return
+        except Exception:
+            log.exception(f"Error editing pickems message in {repr(channel)}")
 
     async def create_pickem_object(
         self,
@@ -259,42 +301,62 @@ class HockeyPickems(MixinMeta):
     async def create_pickems_channel(
         self, name: str, guild: discord.Guild
     ) -> Optional[discord.TextChannel]:
-        msg = _(
-            "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
-            "  Vote for who you think will win!  You get one point for each correct prediction."
-            "  We will be tracking points over the course "
-            "of the season and will be rewarding weekly,"
-            " worst and full-season winners!**\n\n"
-            "- Click the reaction for the team you think will win the day's match-up.\n"
-            "- Anyone who votes for both teams will have their "
-            "vote removed and will receive no points!\n\n\n\n"
-        )
+        guild_message = await self.pickems_config.guild(guild).pickems_message()
+        msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         category = guild.get_channel(await self.pickems_config.guild(guild).pickems_category())
         if not category:
             return None
         try:
             new_chn = await guild.create_text_channel(name, category=category)
-            await new_chn.send(msg)
+            for page in pagify(msg):
+                await new_chn.send(page)
         except discord.errors.Forbidden:
             await self.pickems_config.guild(guild).pickems_category.clear()
             return None
         return new_chn
 
-    async def create_pickems_game_msg(self, channel: discord.TextChannel, game: Game):
+    async def make_pickems_msg(self, guild: discord.Guild, game: Game) -> str:
+        winner = ""
+        if game.game_state == "Final":
+            team = game.home_team if game.home_score > game.away_score else game.away_team
+            team_emoji = game.home_emoji if game.home_score > game.away_score else game.away_emoji
+            winner = _("**WINNER:** {team_emoji} {team}").format(team_emoji=team_emoji, team=team)
+        timezone = await self.pickems_config.guild(guild).pickems_timezone()
+        if timezone is None:
+            game_start = utc_to_local(game.game_start, TEAMS[game.home_team]["timezone"])
+        else:
+            game_start = utc_to_local(game.game_start, timezone)
+        time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+
+        msg = (
+            "__**{away_emoji} {away_name}**__ @ "
+            "__**{home_emoji} {home_name}**__ "
+            "{start_time}\n{winner}"
+        ).format(
+            away_emoji=game.away_emoji,
+            away_name=game.away_team,
+            home_emoji=game.home_emoji,
+            home_name=game.home_team,
+            start_time=time_str,
+            winner=winner,
+        )
+        return msg
+
+    async def create_pickems_game_message(self, channel: discord.TextChannel, game: Game):
+        msg = await self.make_pickems_msg(channel.guild, game)
         try:
-            new_msg = await channel.send(
-                "__**{} {}**__ @ __**{} {}**__".format(
-                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
-                )
-            )
+            new_msg = await channel.send(msg)
+        except discord.HTTPException:
+            log.error(f"Could not send pickems message in {repr(channel)}")
+            return
         except Exception:
-            log.error("Error sending messages in pickems channel.")
+            log.exception("Error sending messages in pickems channel.")
             return
         # Create new pickems object for the game
         try:
             await self.create_pickem_object(channel.guild, new_msg, channel, game)
-        except Exception as e:
-            log.error("Error creating pickems Object.", exc_info=e)
+        except Exception:
+            log.exception("Error creating pickems Object.")
         if channel.permissions_for(channel.guild.me).add_reactions:
             start_adding_reactions(new_msg, [game.away_emoji[2:-1], game.home_emoji[2:-1]])
 
@@ -323,7 +385,7 @@ class HockeyPickems(MixinMeta):
         for game in games_list:
             for channel in data:
                 if channel:
-                    msg_tasks.append(self.create_pickems_game_msg(channel, game))
+                    msg_tasks.append(self.create_pickems_game_message(channel, game))
         await bounded_gather(*msg_tasks)
         return save_data
 
@@ -335,7 +397,7 @@ class HockeyPickems(MixinMeta):
             tasks.append(
                 self.create_pickems_channels_and_message(guilds, today + timedelta(days=days))
             )
-            if today.weekday() == 6:
+            if (today + timedelta(days=days)).weekday() == 6:
                 # just incase we end up in an infinite loop somehow
                 # can never be too careful with async coding
                 break
@@ -429,12 +491,50 @@ class HockeyPickems(MixinMeta):
         data = await self.pickems_config.guild(ctx.guild).all()
         category_channel = ctx.guild.get_channel(data.get("pickems_category"))
         category = category_channel.mention if category_channel else None
-        msg = _("Pickems Settings for {guild}\nCategory: {category}\nChannels: {channels}").format(
+        timezone = data["pickems_timezone"] or _("Home Teams Timezone")
+        if timezone is None:
+            timezone = _("Home Teams Timezone")
+        msg = _(
+            "**Pickems Settings for {guild}**\n"
+            "__Category:__ **{category}**\n"
+            "__Timezone:__ **{timezone}**\n"
+            "__Channels:__\n {channels}\n"
+        ).format(
             guild=ctx.guild.name,
             category=category,
-            channels=humanize_list([f"<#{chan}>" for chan in data.get("pickems_channels")]),
+            channels="\n".join([f"<#{chan}>" for chan in data.get("pickems_channels")]),
+            timezone=timezone,
         )
         await ctx.maybe_send_embed(msg)
+
+    @pickems_commands.command(name="message")
+    async def set_pickems_message(self, ctx: commands.Context, *, message: Optional[str] = ""):
+        """
+        Customize the pickems message for this server
+
+        `[message]` Optional additional messaged added at the end of pickems message setup.
+        If not provided the default message will only be sent at the start of the pickems page.
+        """
+        await self.pickems_config.guild(ctx.guild).pickems_message.set(message)
+        msg = _("Pickems custom message set to:\n{message}").format(message=message)
+        for page in pagify(msg):
+            await ctx.send(page)
+
+    @pickems_commands.command(name="timezone", aliases=["timezones", "tz"])
+    async def set_pickems_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+        """
+        Customize the timezone pickems utilize in this server
+
+        `[timezone]` The full name of the timezone you want to set. For a list of
+        available timezone names use `[p]hockeyset pickems timezone list`
+        """
+        if timezone is not None:
+            await self.pickems_config.guild(ctx.guild).pickems_timezone.set(timezone)
+        else:
+            await self.pickems_config.guild(ctx.guild).pickems_timezone.clear()
+            timezone = _("Home Teams Timezone")
+        msg = _("Pickems Timezone set to {timezone}").format(timezone=timezone)
+        await ctx.send(msg)
 
     @pickems_commands.command(name="setup", aliases=["auto", "set"])
     @commands.admin_or_permissions(manage_channels=True)
@@ -528,33 +628,13 @@ class HockeyPickems(MixinMeta):
                 new_date = datetime.strptime(date, "%Y-%m-%d")
             except ValueError:
                 return await ctx.send(_("`date` must be in the format `YYYY-MM-DD`."))
-        msg = _(
-            "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
-            "  Vote for who you think will win!  You get one point for each correct prediction."
-            "  We will be tracking points over the course "
-            "of the season and will be rewarding weekly,"
-            " worst and full-season winners!**\n\n"
-            "- Click the reaction for the team you think will win the day's match-up.\n"
-            "- Anyone who votes for both teams will have their "
-            "vote removed and will receive no points!\n\n\n\n"
-        )
+        guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
+        msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         games_list = await Game.get_games(None, new_date, new_date, session=self.session)
-        await ctx.send(msg)
+        for page in pagify(msg):
+            await ctx.send(page)
         for game in games_list:
-            new_msg = await ctx.send(
-                "__**{} {}**__ @ __**{} {}**__".format(
-                    game.away_emoji, game.away_team, game.home_emoji, game.home_team
-                )
-            )
-            # Create new pickems object for the game
-
-            await self.create_pickem_object(ctx.guild, new_msg, ctx.channel, game)
-            if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
-                try:
-                    await new_msg.add_reaction(game.away_emoji[2:-1])
-                    await new_msg.add_reaction(game.home_emoji[2:-1])
-                except Exception:
-                    log.debug("Error adding reactions")
+            await self.create_pickems_game_message(ctx.channel, game)
 
     @pickems_commands.command(name="remove")
     async def rempickem(self, ctx: commands.Context, true_or_false: bool):

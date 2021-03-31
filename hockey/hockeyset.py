@@ -1,14 +1,16 @@
 import logging
+import pytz
 from typing import Optional
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .constants import TEAMS
-from .helper import HockeyStates, HockeyTeams
+from .helper import HockeyStates, HockeyTeams, TimezoneFinder
+from .menu import BaseMenu, SimplePages
 from .standings import CONFERENCES, DIVISIONS, Standings
 
 _ = Translator("Hockey", __file__)
@@ -37,6 +39,7 @@ class HockeySetCommands(MixinMeta):
                 _("On") if await self.config.guild(guild).post_standings() else _("Off")
             )
             gdc_channels = await self.config.guild(guild).gdc()
+            timezone = await self.config.guild(guild).timezone() or _("Home Teams Timezone")
             if gdc_channels is None:
                 gdc_channels = []
             if standings_channel is not None:
@@ -88,17 +91,20 @@ class HockeySetCommands(MixinMeta):
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
                 em.add_field(name=_("Notifications"), value=notification_settings)
+                em.add_field(name=_("Timezone"), value=timezone)
                 await ctx.send(embed=em)
             else:
                 msg = _(
                     "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
-                    "\nStandings Settings\n{standings_chn}: {standings}"
+                    "\nStandings Settings\n{standings_chn}: {standings}\n"
+                    "Timezone: {timezone}"
                 ).format(
                     guild=guild.name,
                     channels=channels,
                     notifications=notification_settings,
                     standings_chn=standings_chn,
                     standings=standings_msg,
+                    timezone=timezone,
                 )
                 await ctx.send(msg)
 
@@ -118,6 +124,47 @@ class HockeySetCommands(MixinMeta):
         self.loop = self.bot.loop.create_task(self.game_check_loop())
         await msg.edit(content=msg.content + _("restarted"))
         # await ctx.send("Done.")
+
+    @hockeyset_commands.group(
+        name="timezone", aliases=["timezones", "tz"], invoke_without_command=True
+    )
+    async def set_hockey_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+        """
+        Customize the servers timezone
+
+        This is utilized in `[p]hockey schedule` and game day channel creation
+
+        `[timezone]` The full name of the timezone you want to set. For a list of
+        available timezone names use `[p]hockeyset timezone list`
+        """
+        if ctx.invoked_subcommand is None:
+            if timezone is not None:
+                await self.config.guild(ctx.guild).timezone.set(timezone)
+            else:
+                await self.config.guild(ctx.guild).timezone.clear()
+                timezone = _("Home Teams Timezone")
+            msg = _("Server Timezone set to {timezone}").format(timezone=timezone)
+            await ctx.send(msg)
+
+    @set_hockey_timezone.command(name="list")
+    async def list_hockey_timezones(self, ctx: commands.Context):
+        """
+        List the available timezones for pickems messages
+        """
+        msg = "\n".join(tz for tz in pytz.common_timezones)
+        msgs = []
+        embeds = ctx.channel.permissions_for(ctx.me).embed_links
+        for page in pagify(msg, page_length=512):
+            if embeds:
+                msgs.append(discord.Embed(title=_("Timezones Available"), description=page))
+            else:
+                msgs.append(page)
+        await BaseMenu(
+            source=SimplePages(pages=msgs),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+        ).start(ctx=ctx)
 
     @hockeyset_commands.command(hidden=True)
     async def leaderboardset(

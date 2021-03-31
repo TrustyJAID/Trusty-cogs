@@ -27,6 +27,8 @@ DAY_REF_RE = re.compile(r"(yesterday|tomorrow|today)", re.I)
 YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 # https://www.regular-expressions.info/dates.html
 
+TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
+
 
 def utc_to_local(utc_dt, new_timezone="US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
@@ -41,7 +43,6 @@ class YearFinder(Converter):
     """
 
     async def convert(self, ctx: Context, argument: str) -> re.Match:
-        result = None
         find = YEAR_RE.search(argument)
         if find:
             return find
@@ -57,13 +58,30 @@ class DateFinder(Converter):
     """
 
     async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
-        result = None
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
             return datetime.strptime(date_str, "%Y-%m-%d")
         else:
             return datetime.utcnow()
+
+
+class TimezoneFinder(Converter):
+    """
+    Converts user input into valid timezones for pytz to use
+    """
+
+    async def convert(self, ctx: Context, argument: str) -> str:
+        find = TIMEZONE_RE.search(argument)
+        if find:
+            return find.group(0)
+        else:
+            raise BadArgument(
+                _(
+                    "`{argument}` is not a valid timezone. Please see "
+                    "`{prefix}hockeyset timezone list`."
+                ).format(argument=argument, prefix=ctx.clean_prefix)
+            )
 
 
 class TeamDateFinder(Converter):

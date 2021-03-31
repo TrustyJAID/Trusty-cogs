@@ -8,7 +8,14 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 
 from .game import Game
-from .helper import HockeyStandings, HockeyStates, HockeyTeams, TeamDateFinder, YearFinder
+from .helper import (
+    HockeyStandings,
+    HockeyStates,
+    HockeyTeams,
+    TeamDateFinder,
+    YearFinder,
+    TimezoneFinder,
+)
 from .pickems import Pickems
 
 
@@ -195,6 +202,14 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def set_hockey_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def list_hockey_timezones(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def leaderboardset(
         self,
         ctx: commands.Context,
@@ -322,6 +337,12 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def edit_pickems_message(
+        self, channel: discord.TextChannel, message_id: int, content: str
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> bool:
         raise NotImplementedError()
 
@@ -346,7 +367,11 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def create_pickems_game_msg(self, channel: discord.TextChannel, game: Game):
+    async def make_pickems_msg(self, guild: discord.Guild, game: Game) -> str:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def create_pickems_game_message(self, channel: discord.TextChannel, game: Game):
         raise NotImplementedError()
 
     @abstractmethod
@@ -367,6 +392,14 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def pickems_settings(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def set_pickems_message(self, ctx: commands.Context, *, message: Optional[str] = ""):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def set_pickems_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
         raise NotImplementedError()
 
     @abstractmethod

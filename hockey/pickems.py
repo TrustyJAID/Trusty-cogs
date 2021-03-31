@@ -49,7 +49,7 @@ class Pickems:
         self.link = kwargs.get("link")
 
     def __repr__(self):
-        return "<Pickems home_team={0.home_team} away_team={0.away_team} name={0.name} >".format(
+        return "<Pickems home_team={0.home_team} away_team={0.away_team} name={0.name}>".format(
             self
         )
 

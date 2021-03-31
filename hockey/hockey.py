@@ -85,6 +85,7 @@ class Hockey(
             "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
             "ot_notifications": True,
             "so_notifications": True,
+            "timezone": None,
         }
         default_channel = {
             "team": [],
@@ -98,14 +99,19 @@ class Hockey(
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
-        self.config.register_global(**default_global, version="0.0.0")
+        self.config.register_global(**default_global, schema_version=0)
         self.config.register_guild(**default_guild)
         self.config.register_channel(**default_channel)
         self.pickems_config = Config.get_conf(
             None, CONFIG_ID, cog_name="Hockey_Pickems", force_registration=True
         )
         self.pickems_config.register_guild(
-            leaderboard={}, pickems={}, pickems_channels=[], pickems_category=None
+            leaderboard={},
+            pickems={},
+            pickems_channels=[],
+            pickems_category=None,
+            pickems_message="",
+            pickems_timezone="US/Pacific",
         )
         self.loop = None
         self.TEST_LOOP = False
@@ -159,7 +165,8 @@ class Hockey(
         await self.migrate_settings()
 
     async def migrate_settings(self):
-        if version_info.from_str(await self.config.version()) <= version_info.from_str("3.0.0"):
+        schema_version = await self.config.schema_version()
+        if schema_version == 0:
             log.info("Migrating old pickems to new file")
             all_guilds = await self.config.all_guilds()
             async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
@@ -185,7 +192,7 @@ class Hockey(
                     )
                     await self.config.guild_from_id(guild_id).pickems_category.clear()
                     log.info(f"Migrating pickems categories for {guild_id}")
-            # await self.config.version.set("3.0.0")
+            # await self.config.schema_version.set(1)
         self._ready.set()
 
     ##############################################################################

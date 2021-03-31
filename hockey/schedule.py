@@ -177,6 +177,7 @@ class ScheduleList(menus.PageSource):
         self.team = kwargs.get("team", [])
         self._last_searched = ""
         self._session = kwargs.get("session")
+        self.timezone = kwargs.get("timezone")
 
     @property
     def index(self):
@@ -257,11 +258,12 @@ class ScheduleList(menus.PageSource):
                 )
             else:
                 if self.team == []:
-                    game_time = utc_to_local(game_start, TEAMS[home_team]["timezone"])
+                    timezone = self.timezone or TEAMS[home_team]["timezone"]
+                    game_time = utc_to_local(game_start, timezone)
                     time_str = game_time.strftime("%I:%M %p %Z")
                 else:
-
-                    game_time = utc_to_local(game_start, TEAMS[self.team[0]]["timezone"])
+                    timezone = self.timezone or TEAMS[self.team[0]]["timezone"]
+                    game_time = utc_to_local(game_start, timezone)
                     time_str = game_time.strftime("%I:%M %p %Z")
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "

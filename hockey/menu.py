@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 from datetime import datetime
-from typing import Any, List, Optional, Pattern
+from typing import Any, List, Optional, Pattern, Union
 
 import discord
 from redbot.core import commands
@@ -323,6 +323,19 @@ class PlayerPages(menus.ListPageSource):
         em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
+
+
+class SimplePages(menus.ListPageSource):
+    def __init__(self, pages: List[Union[discord.Embed, str]]):
+        super().__init__(pages, per_page=1)
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, page):
+        if isinstance(page, discord.Embed):
+            page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return page
 
 
 class BaseMenu(menus.MenuPages, inherit_buttons=False):

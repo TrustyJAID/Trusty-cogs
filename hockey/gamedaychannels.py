@@ -309,10 +309,14 @@ class GameDayChannels(MixinMeta):
             # Return none if there's no category to create the channel
             return
         if not category.permissions_for(guild.me).manage_channels:
-            log.info(f"Cannot create new GDC in {repr(guild)} due to too many missing permissions.")
+            log.info(
+                f"Cannot create new GDC in {repr(guild)} due to too many missing permissions."
+            )
             return
         if len(category.channels) >= 50:
-            log.info(f"Cannot create new GDC in {repr(guild)} due to too many channels in category.")
+            log.info(
+                f"Cannot create new GDC in {repr(guild)} due to too many channels in category."
+            )
             return
         if game_data is None:
             team = await self.config.guild(guild).gdc_team()
@@ -351,7 +355,7 @@ class GameDayChannels(MixinMeta):
         # guild_team = await config.guild(guild).gdc_team()
         channel_team = team if team != "all" else next_game.home_team
         timezone = (
-            TEAMS[channel_team]["timezone"]
+            await self.config.guild(guild).timezone() or TEAMS[channel_team]["timezone"]
             if channel_team in TEAMS
             else TEAMS[next_game.away_team]["timezone"]
         )
