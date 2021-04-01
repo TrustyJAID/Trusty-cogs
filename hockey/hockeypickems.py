@@ -191,8 +191,11 @@ class HockeyPickems(MixinMeta):
                 pickems = {}
             pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
             if str(game.game_id) in pickems:
-                await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
                 pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
+                if pickem.winner is not None:
+                    continue
+                await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
+
                 for message in pickem.messages:
                     try:
                         channel_id, message_id = message.split("-")
@@ -203,14 +206,14 @@ class HockeyPickems(MixinMeta):
                     channel = guild.get_channel(int(channel_id))
                     if not channel:
                         continue
-                    msg = await self.make_pickems_msg(guild, game)
                     self.bot.loop.create_task(
-                        self.edit_pickems_message(channel, int(message_id), msg)
+                        self.edit_pickems_message(channel, int(message_id), game)
                     )
 
     async def edit_pickems_message(
-        self, channel: discord.TextChannel, message_id: int, content: str
+        self, channel: discord.TextChannel, message_id: int, game: Game
     ):
+        content = await self.make_pickems_msg(channel.guild, game)
         try:
             if version_info >= VersionInfo.from_str("3.4.6"):
                 message = channel.get_partial_message(message_id)
@@ -325,6 +328,8 @@ class HockeyPickems(MixinMeta):
         else:
             game_start = utc_to_local(game.game_start, timezone)
         time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+        if game.game_state == "Postponed":
+            time_str = _("Postponed")
 
         msg = (
             "__**{away_emoji} {away_name}**__ @ "
