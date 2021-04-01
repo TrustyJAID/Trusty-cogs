@@ -156,12 +156,12 @@ class Pickems:
         This realistically only gets called once all the games are done playing
         """
         after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=2))
-        log.debug(f"Checking winner for {repr(self)}")
         if self.winner:
             return True
         if game is not None:
             return await self.set_pickem_winner(game)
         if self.link and after_game:
+            log.debug(f"Checking winner for {repr(self)}")
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
         return False

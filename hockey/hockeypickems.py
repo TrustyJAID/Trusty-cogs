@@ -187,12 +187,11 @@ class HockeyPickems(MixinMeta):
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue
-            if pickems is None:
-                pickems = {}
             pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
             if str(game.game_id) in pickems:
                 pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
                 if pickem.winner is not None:
+                    log.debug(f"Pickems winner is not None {repr(pickem)}")
                     continue
                 await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
 
@@ -213,8 +212,10 @@ class HockeyPickems(MixinMeta):
     async def edit_pickems_message(
         self, channel: discord.TextChannel, message_id: int, game: Game
     ):
-        content = await self.make_pickems_msg(channel.guild, game)
+        log.debug("Editing Pickems")
+
         try:
+            content = await self.make_pickems_msg(channel.guild, game)
             if version_info >= VersionInfo.from_str("3.4.6"):
                 message = channel.get_partial_message(message_id)
             else:

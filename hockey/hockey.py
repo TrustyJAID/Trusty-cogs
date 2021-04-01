@@ -208,7 +208,7 @@ class Hockey(
                 async with self.session.get(f"{BASE_URL}/api/v1/schedule") as resp:
                     data = await resp.json()
             except Exception:
-                log.debug("Error grabbing the schedule for today.", exc_info=True)
+                log.exception("Error grabbing the schedule for today.")
                 data = {"dates": []}
             if data["dates"] != []:
                 self.current_games = {
@@ -218,7 +218,6 @@ class Hockey(
                     and game["status"]["detailedState"] != "Postponed"
                 }
             else:
-                games = []
                 # Only try to create game day channels if there's no games for the day
                 # Otherwise make the game day channels once we see
                 # the first preview message to delete old ones
@@ -295,16 +294,15 @@ class Hockey(
 
             # Final cleanup of config incase something went wrong
             # Should be mostly unnecessary at this point
-            all_teams = await self.config.teams()
-            for team in await self.config.teams():
-                all_teams.remove(team)
-                team["goal_id"] = {}
-                team["game_state"] = "Null"
-                team["game_start"] = ""
-                team["period"] = 0
-                all_teams.append(team)
+            async with self.config.teams() as all_teams:
+                for team in await self.config.teams():
+                    all_teams.remove(team)
+                    team["goal_id"] = {}
+                    team["game_state"] = "Null"
+                    team["game_start"] = ""
+                    team["period"] = 0
+                    all_teams.append(team)
 
-            await self.config.teams.set(all_teams)
             await asyncio.sleep(300)
 
     async def check_new_day(self):
@@ -316,11 +314,11 @@ class Hockey(
                     log.error("Error reseting the weekly leaderboard: ", exc_info=True)
                 try:
                     guilds_to_make_new_pickems = []
-                    for guild_id in await self.config.all_guilds():
+                    for guild_id in await self.pickems_config.all_guilds():
                         guild = self.bot.get_guild(guild_id)
                         if guild is None:
                             continue
-                        if await self.config.guild(guild).pickems_category():
+                        if await self.pickems_config.guild(guild).pickems_category():
                             guilds_to_make_new_pickems.append(guild)
                     await self.create_weekly_pickems_pages(guilds_to_make_new_pickems)
 
