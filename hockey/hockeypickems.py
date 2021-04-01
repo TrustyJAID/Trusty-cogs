@@ -189,11 +189,10 @@ class HockeyPickems(MixinMeta):
                 continue
             if pickems is None:
                 pickems = {}
-            pickem_name = self.pickems_name(game)
             pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
-            if pickem_name in pickems:
-                await self.all_pickems[str(guild_id)][pickem_name].check_winner(game)
-                pickem = self.all_pickems[str(guild_id)][pickem_name]
+            if str(game.game_id) in pickems:
+                await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
+                pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
                 for message in pickem.messages:
                     try:
                         channel_id, message_id = message.split("-")

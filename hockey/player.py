@@ -317,8 +317,8 @@ class Player:
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -361,8 +361,8 @@ class Player:
     async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None):
         url = f"https://records.nhl.com/site/api/player/{player_id}"
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -416,8 +416,8 @@ class Skater(Player):
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -629,8 +629,8 @@ class Goalie(Player):
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:

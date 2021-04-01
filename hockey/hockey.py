@@ -270,7 +270,7 @@ class Hockey(
                         try:
                             await self.set_guild_pickem_winner(game)
                         except Exception:
-                            log.error("Pickems Set Winner error: ", exc_info=True)
+                            log.exception("Pickems Set Winner error: ")
                         self.current_games[link]["count"] += 1
                         if posted_final:
                             self.current_games[link]["count"] = 10

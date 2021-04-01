@@ -162,8 +162,8 @@ class Game:
             for games in games_list:
                 try:
                     if session is None:
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(BASE_URL + games["link"]) as resp:
+                        async with aiohttp.ClientSession() as new_session:
+                            async with new_session.get(BASE_URL + games["link"]) as resp:
                                 data = await resp.json()
                     else:
                         async with session.get(BASE_URL + games["link"]) as resp:
@@ -210,8 +210,8 @@ class Game:
             # if a team is provided get just that TEAMS data
             url += "&teamId={}".format(TEAMS[team]["id"])
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:

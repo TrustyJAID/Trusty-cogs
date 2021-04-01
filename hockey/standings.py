@@ -101,8 +101,8 @@ class Standings:
         style in the list
         """
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(BASE_URL + "/api/v1/standings") as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(BASE_URL + "/api/v1/standings") as resp:
                     data = await resp.json()
         else:
             async with session.get(BASE_URL + "/api/v1/standings") as resp:
