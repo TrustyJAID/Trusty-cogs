@@ -17,7 +17,9 @@ class Pickems:
     Pickems object for handling votes on games for the day
     """
 
+    game_id: int
     messages: List[str]
+    guild: int
     game_start: datetime
     home_team: str
     away_team: str
@@ -28,7 +30,9 @@ class Pickems:
 
     def __init__(self, **kwargs):
         super().__init__()
+        self.game_id = kwargs.get("game_id")
         self.messages = kwargs.get("messages", [])
+        self.guild = kwargs.get("guild")
         game_start = kwargs.get("game_start")
         self.game_start = datetime.strptime(game_start, "%Y-%m-%dT%H:%M:%SZ")
         self.home_team = kwargs.get("home_team")
@@ -49,8 +53,10 @@ class Pickems:
         self.link = kwargs.get("link")
 
     def __repr__(self):
-        return "<Pickems home_team={0.home_team} away_team={0.away_team} name={0.name}>".format(
-            self
+        return (
+            "<Pickems game_id={0.game_id} name={0.name} guild={0.guild} winner={0.winner}>".format(
+                self
+            )
         )
 
     def compare_game(self, game: Game) -> bool:
@@ -89,7 +95,9 @@ class Pickems:
 
     def to_json(self) -> dict:
         return {
+            "game_id": self.game_id,
             "messages": self.messages,
+            "guild": self.guild,
             "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "home_team": self.home_team,
             "away_team": self.away_team,
@@ -103,7 +111,9 @@ class Pickems:
     def from_json(cls, data: dict):
         # log.debug(data)
         return cls(
+            game_id=data.get("game_id"),
             messages=data.get("messages", []),
+            guild=data.get("guild"),
             game_start=data["game_start"],
             home_team=data["home_team"],
             away_team=data["away_team"],

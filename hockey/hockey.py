@@ -75,10 +75,6 @@ class Hockey(
             "delete_gdc": True,
             "rules": "",
             "team_rules": "",
-            "pickems": {},
-            "leaderboard": {},
-            "pickems_category": None,
-            "pickems_channels": [],
             "game_state_notifications": False,
             "goal_notifications": False,
             "start_notifications": False,
@@ -177,7 +173,6 @@ class Hockey(
                     await self.config.guild_from_id(guild_id).leaderboard.clear()
                     log.info(f"Migrating leaderboard for {guild_id}")
                 if data["pickems"]:
-                    await self.pickems_config.guild_from_id(guild_id).pickems.set(data["pickems"])
                     await self.config.guild_from_id(guild_id).pickems.clear()
                     log.info(f"Migrating pickems for {guild_id}")
                 if data["pickems_channels"]:
@@ -207,6 +202,7 @@ class Hockey(
         then passes off to other functions as necessary
         """
         await self.bot.wait_until_red_ready()
+        await self._ready.wait()
         while True:
             try:
                 async with self.session.get(f"{BASE_URL}/api/v1/schedule") as resp:

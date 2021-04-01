@@ -235,38 +235,37 @@ class HockeyPickems(MixinMeta):
         Checks to see if a pickem object is already created for the game
         if not it creates one or adds the message, channel to the current ones
         """
-        pickems = self.all_pickems.get(str(guild.id), None)
+        pickems = self.all_pickems.get(str(guild.id), {})
         new_name = self.pickems_name(game)
-        if type(pickems) is list:
-            pickems = {}
-        if pickems is None:
+        if str(guild.id) not in self.all_pickems:
             self.all_pickems[str((guild.id))] = {}
-            pickems = {}
-        old_pickem = self.all_pickems[str(guild.id)].get(new_name, None)
+        old_pickem = self.all_pickems[str(guild.id)].get(str(game.game_id))
 
         if old_pickem is None:
-            pickems[new_name] = Pickems.from_json(
-                {
-                    "messages": [f"{channel.id}-{message.id}"],
-                    "game_start": game.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "home_team": game.home_team,
-                    "away_team": game.away_team,
-                    "votes": {},
-                    "name": new_name,
-                    "winner": None,
-                    "link": game.link,
-                }
+            pickem = Pickems(
+                game_id=game.game_id,
+                messages=[f"{channel.id}-{message.id}"],
+                guild=guild.id,
+                game_start=game.game_start,
+                home_team=game.home_team,
+                away_team=game.away_team,
+                votes={},
+                name=new_name,
+                winner=None,
+                link=game.link,
             )
 
-            self.all_pickems[str(guild.id)] = pickems
-            log.debug(f"creating new pickems {pickems[new_name]}")
+            self.all_pickems[str(guild.id)][str(game.game_id)] = pickem
+            log.debug(f"creating new pickems {pickems[str(game.game_id)]}")
             return True
         else:
-            old_pickem.messages.append(f"{channel.id}-{message.id}")
-            if not old_pickem.link:
-                old_pickem.link = game.link
-            pickems[old_pickem.name] = old_pickem
-            # self.all_pickems[str(guild.id)] = pickems
+            self.all_pickems[str(guild.id)][str(game.game_id)].messages.append(
+                f"{channel.id}-{message.id}"
+            )
+            if old_pickem.name != new_name:
+                self.all_pickems[str(guild.id)][str(game.game_id)].name = new_name
+            if old_pickem.game_start != game.game_start:
+                self.all_pickems[str(guild.id)][str(game.game_id)].game_start = game.game_start
             log.debug("using old pickems")
             return False
 
@@ -521,18 +520,21 @@ class HockeyPickems(MixinMeta):
             await ctx.send(page)
 
     @pickems_commands.command(name="timezone", aliases=["timezones", "tz"])
-    async def set_pickems_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+    async def set_pickems_timezone(
+        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
+    ):
         """
         Customize the timezone pickems utilize in this server
 
         `[timezone]` The full name of the timezone you want to set. For a list of
         available timezone names use `[p]hockeyset pickems timezone list`
+        defaults to US/Pacific if not provided.
         """
         if timezone is not None:
             await self.pickems_config.guild(ctx.guild).pickems_timezone.set(timezone)
         else:
             await self.pickems_config.guild(ctx.guild).pickems_timezone.clear()
-            timezone = _("Home Teams Timezone")
+            timezone = "US/Pacific"
         msg = _("Pickems Timezone set to {timezone}").format(timezone=timezone)
         await ctx.send(msg)
 

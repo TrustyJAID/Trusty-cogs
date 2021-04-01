@@ -128,7 +128,9 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.group(
         name="timezone", aliases=["timezones", "tz"], invoke_without_command=True
     )
-    async def set_hockey_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+    async def set_hockey_timezone(
+        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
+    ):
         """
         Customize the servers timezone
 
@@ -136,6 +138,7 @@ class HockeySetCommands(MixinMeta):
 
         `[timezone]` The full name of the timezone you want to set. For a list of
         available timezone names use `[p]hockeyset timezone list`
+        defaults to Home Teams Tmezone if not provided
         """
         if ctx.invoked_subcommand is None:
             if timezone is not None:

@@ -202,7 +202,9 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_hockey_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+    async def set_hockey_timezone(
+        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
+    ):
         raise NotImplementedError()
 
     @abstractmethod
@@ -399,7 +401,9 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_pickems_timezone(self, ctx: commands.Context, timezone: TimezoneFinder = None):
+    async def set_pickems_timezone(
+        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
+    ):
         raise NotImplementedError()
 
     @abstractmethod
