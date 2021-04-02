@@ -4,7 +4,7 @@ from typing import Optional
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta

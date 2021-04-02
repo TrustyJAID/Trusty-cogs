@@ -29,6 +29,7 @@ class MixinMeta(ABC):
     def __init__(self, *_args):
         self.config: Config
         self.bot: Red
+        self.loop: Optional[asyncio.Task]
         self.TEST_LOOP: bool
         self.all_pickems: dict
         self.session: aiohttp.ClientSession
@@ -363,6 +364,10 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def add_weekly_pickems_credits(self, guild: discord.Guild, top_members: List[int]):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def create_pickems_channel(
         self, name: str, guild: discord.Guild
     ) -> Optional[discord.TextChannel]:
@@ -394,6 +399,22 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def pickems_settings(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_credits(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_credits_base(self, ctx: commands.Context, credits: Optional[int] = None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_credits_top(self, ctx: commands.Context, credits: Optional[int] = None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def pickems_credits_amount(self, ctx: commands.Context, amount: Optional[int] = None):
         raise NotImplementedError()
 
     @abstractmethod

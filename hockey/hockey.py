@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 import aiohttp
 import yaml
@@ -108,8 +108,12 @@ class Hockey(
             pickems_category=None,
             pickems_message="",
             pickems_timezone="US/Pacific",
+            base_credits=0,
+            top_credits=0,
+            top_amount=0,
         )
-        self.loop = None
+        self.pickems_config.register_global(base_credits=0, top_credits=0, top_amount=0)
+        self.loop: Optional[asyncio.Task] = None
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
         self.all_pickems = {}
@@ -166,22 +170,22 @@ class Hockey(
             log.info("Migrating old pickems to new file")
             all_guilds = await self.config.all_guilds()
             async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
-                if data["leaderboard"]:
+                if data.get("leaderboard"):
                     await self.pickems_config.guild_from_id(guild_id).leaderboard.set(
                         data["leaderboard"]
                     )
                     await self.config.guild_from_id(guild_id).leaderboard.clear()
                     log.info(f"Migrating leaderboard for {guild_id}")
-                if data["pickems"]:
+                if data.get("pickems"):
                     await self.config.guild_from_id(guild_id).pickems.clear()
                     log.info(f"Migrating pickems for {guild_id}")
-                if data["pickems_channels"]:
+                if data.get("pickems_channels"):
                     await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
                         data["pickems_channels"]
                     )
                     await self.config.guild_from_id(guild_id).pickems_channels.clear()
                     log.info(f"Migrating pickems channels for {guild_id}")
-                if data["pickems_category"]:
+                if data.get("pickems_category"):
                     await self.pickems_config.guild_from_id(guild_id).pickems_category.set(
                         data["pickems_category"]
                     )

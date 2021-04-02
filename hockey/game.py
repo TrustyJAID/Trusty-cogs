@@ -606,7 +606,6 @@ class Game:
         config = bot.get_cog("Hockey").config
         guild_settings = await config.guild(guild).all()
         channel_settings = await config.channel(channel).all()
-        del guild_settings["pickems"]  # No need to keep this in memory twice
         game_day_channels = guild_settings["gdc"]
         can_embed = channel.permissions_for(guild.me).embed_links
         publish_states = []  # await config.channel(channel).publish_states()

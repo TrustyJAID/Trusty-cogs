@@ -2,12 +2,12 @@ import asyncio
 import logging
 from copy import copy
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import discord
 from discord.ext import tasks
 from redbot import VersionInfo, version_info
-from redbot.core import commands
+from redbot.core import commands, bank
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -281,7 +281,6 @@ class HockeyPickems(MixinMeta):
             guild = self.bot.get_guild(id=guild_id)
             if guild is None:
                 continue
-            leaderboard = await self.pickems_config.guild(guild).leaderboard()
             try:
                 current_guild_pickem_channels = await self.pickems_config.guild(
                     guild
@@ -290,15 +289,42 @@ class HockeyPickems(MixinMeta):
                     pickems_channels_to_delete += current_guild_pickem_channels
             except Exception:
                 log.error("Error adding channels to delete", exc_info=True)
-            if leaderboard is None:
-                leaderboard = {}
-            for user in leaderboard:
-                leaderboard[str(user)]["weekly"] = 0
-            await self.pickems_config.guild(guild).leaderboard.set(leaderboard)
+
+            top_users: List[int] = []
+            global_bank = await bank.is_global()
+            if global_bank:
+                top_amount = await self.pickems_config.top_amount()
+            else:
+                top_amount = await self.pickems_config.guild(guild).top_amount()
+            async with self.pickems_config.guild(guild).leaderboard() as leaderboard:
+                try:
+                    top_members = sorted(
+                        leaderboard.items(), key=lambda i: i[1]["weekly"], reverse=True
+                    )[:top_amount]
+                    top_users = [int(user_id) for user_id, data in top_members]
+                except Exception:
+                    log.exception("Error getting top users for pickems weekly.")
+
+                for user, data in leaderboard.items():
+                    data["weekly"] = 0
+            self.bot.loop.create_task(self.add_weekly_pickems_credits(guild, top_users))
         try:
             await self.delete_pickems_channels(pickems_channels_to_delete)
         except Exception:
-            log.error("Error deleting pickems Channels", exc_info=True)
+            log.exception("Error deleting pickems Channels")
+
+    async def add_weekly_pickems_credits(self, guild: discord.Guild, top_members: List[int]):
+        global_bank = await bank.is_global()
+        if global_bank:
+            top_credits = await self.pickems_config.top_credits()
+        else:
+            top_credits = await self.pickems_config.guild(guild).top_credits()
+        for user_id in top_members:
+            if member := guild.get_member(user_id):
+                try:
+                    await bank.deposit_credits(member, top_credits)
+                except Exception:
+                    log.error(f"Could not add credits to {repr(member)}")
 
     async def create_pickems_channel(
         self, name: str, guild: discord.Guild
@@ -438,26 +464,37 @@ class HockeyPickems(MixinMeta):
         """
         Allows individual guilds to tally pickems leaderboard
         """
+        global_bank = await bank.is_global()
+        if global_bank:
+            base_credits = await self.pickems_config.base_credits()
+        else:
+            base_credits = await self.pickems_config.guild(guild).base_credits()
         pickems_list = copy(self.all_pickems.get(str(guild.id)))
         to_remove = []
         async for name, pickems in AsyncIter(pickems_list.items(), steps=50):
             # check for definitive winner here just incase
-            if await pickems.check_winner():
-                log.debug(f"Tallying results for {repr(pickems)}")
-                to_remove.append(name)
-                async with self.pickems_config.guild(guild).leaderboard() as leaderboard:
-                    for user, choice in pickems.votes.items():
+            if not await pickems.check_winner():
+                continue
+            log.debug(f"Tallying results for {repr(pickems)}")
+            to_remove.append(name)
+            async with self.pickems_config.guild(guild).leaderboard() as leaderboard:
+                for user, choice in pickems.votes.items():
+                    if str(user) not in leaderboard:
+                        leaderboard[str(user)] = {"season": 0, "weekly": 0, "total": 0}
+                    if choice == pickems.winner:
+                        if member := guild.get_member(int(user)):
+                            try:
+                                await bank.deposit_credits(member, int(base_credits))
+                            except Exception:
+                                log.debug(f"Could not deposit pickems credits for {repr(member)}")
                         if str(user) not in leaderboard:
-                            leaderboard[str(user)] = {"season": 0, "weekly": 0, "total": 0}
-                        if choice == pickems.winner:
-                            if str(user) not in leaderboard:
-                                leaderboard[str(user)] = {"season": 1, "weekly": 1, "total": 0}
-                            else:
-                                leaderboard[str(user)]["season"] += 1
-                                leaderboard[str(user)]["weekly"] += 1
-                        if "total" not in leaderboard[str(user)]:
-                            leaderboard[str(user)]["total"] = 0
-                        leaderboard[str(user)]["total"] += 1
+                            leaderboard[str(user)] = {"season": 1, "weekly": 1, "total": 0}
+                        else:
+                            leaderboard[str(user)]["season"] += 1
+                            leaderboard[str(user)]["weekly"] += 1
+                    if "total" not in leaderboard[str(user)]:
+                        leaderboard[str(user)]["total"] = 0
+                    leaderboard[str(user)]["total"] += 1
         for name in to_remove:
             try:
                 log.debug(f"Removing pickem {name}")
@@ -510,6 +547,128 @@ class HockeyPickems(MixinMeta):
             timezone=timezone,
         )
         await ctx.maybe_send_embed(msg)
+
+    @pickems_commands.group(name="credits")
+    async def pickems_credits(self, ctx: commands.Context):
+        """
+        Settings for awarding credits on correct pickems votes
+        """
+        pass
+
+    @pickems_credits.command(name="base")
+    async def pickems_credits_base(self, ctx: commands.Context, _credits: Optional[int] = None):
+        """
+        Set the base awarded credits for correct pickems votes.
+
+        `<_credits>` The number of credits that will be awarded to everyone
+        who voted correctly on the game.
+        """
+        if _credits and _credits <= 0:
+            _credits = None
+        global_bank = await bank.is_global()
+        set_credits = False
+        if global_bank and not await self.bot.is_owner(ctx.author):
+            return await ctx.send(
+                _("This command is restricted to bot owner while the bank is global.")
+            )
+        elif global_bank and await self.bot.is_owner(ctx.author):
+            if _credits is not None:
+                set_credits = True
+                await self.pickems_config.base_credits.set(int(_credits))
+            else:
+                await self.pickems_config.base_credits.clear()
+        elif not global_bank:
+            if _credits is not None:
+                set_credits = True
+                await self.pickems_config.guild(ctx.guild).base_credits.set(int(_credits))
+            else:
+                await self.pickems_config.guild(ctx.guild).base_credits.clear()
+        if set_credits:
+            await ctx.send(
+                _("Correct pickems voters will receive {credits} {credits_name}.").format(
+                    credits=_credits,
+                    credits_name=await bank.get_currency_name(ctx.guild),
+                )
+            )
+        else:
+            await ctx.send(_("Base credits for correct pickems votes have been removed."))
+
+    @pickems_credits.command(name="top")
+    async def pickems_credits_top(self, ctx: commands.Context, _credits: Optional[int] = None):
+        """
+        Set the amount of credits awarded for the top x winners of pickems.
+
+        `<credits>` The number of credits that will be awarded to the winners
+        every week.
+        """
+        if _credits and _credits <= 0:
+            _credits = None
+        global_bank = await bank.is_global()
+        if global_bank and not await self.bot.is_owner(ctx.author):
+            return await ctx.send(
+                _("This command is restricted to bot owner while the bank is global.")
+            )
+        elif global_bank and await self.bot.is_owner(ctx.author):
+            if _credits is not None:
+                await self.pickems_config.top_credits.set(int(_credits))
+            else:
+                await self.pickems_config.top_credits.clear()
+        elif not global_bank:
+            if _credits is not None:
+                await self.pickems_config.guild(ctx.guild).top_credits.set(int(_credits))
+            else:
+                await self.pickems_config.guild(ctx.guild).top_credits.clear()
+        if global_bank:
+            amount = await self.pickems_config.top_amount()
+        else:
+            amount = await self.pickems_config.guild(ctx.guild).top_amount()
+        await ctx.send(
+            _(
+                "The top {amount} users every week will receive {pickems_credits} {currency_name}."
+            ).format(
+                amount=amount,
+                pickems_credits=_credits,
+                currency_name=await bank.get_currency_name(ctx.guild),
+            )
+        )
+
+    @pickems_credits.command(name="amount")
+    async def pickems_credits_amount(self, ctx: commands.Context, amount: Optional[int] = None):
+        """
+        Set the number of top winners to receive the top weekly award credits.
+
+        `<amount>` The number of top members to receive the weekly awarded amount.
+        """
+        if amount and amount <= 0:
+            amount = None
+        global_bank = await bank.is_global()
+        if global_bank and not await self.bot.is_owner(ctx.author):
+            return await ctx.send(
+                _("This command is restricted to bot owner while the bank is global.")
+            )
+        elif global_bank and await self.bot.is_owner(ctx.author):
+            if amount is not None:
+                await self.pickems_config.top_amount.set(int(amount))
+            else:
+                await self.pickems_config.top_amount.clear()
+        elif not global_bank:
+            if amount is not None:
+                await self.pickems_config.guild(ctx.guild).top_amount.set(int(amount))
+            else:
+                await self.pickems_config.guild(ctx.guild).top_amount.clear()
+        if global_bank:
+            pickems_credits = await self.pickems_config.top_credits()
+        else:
+            pickems_credits = await self.pickems_config.guild(ctx.guild).top_credits()
+        await ctx.send(
+            _(
+                "The top {amount} users every week will receive {pickems_credits} {currency_name}."
+            ).format(
+                amount=amount,
+                pickems_credits=pickems_credits,
+                currency_name=await bank.get_currency_name(ctx.guild),
+            )
+        )
 
     @pickems_commands.command(name="message")
     async def set_pickems_message(self, ctx: commands.Context, *, message: Optional[str] = ""):
