@@ -18,6 +18,7 @@ class Pickems:
     """
 
     game_id: int
+    game_state: str
     messages: List[str]
     guild: int
     game_start: datetime
@@ -31,10 +32,10 @@ class Pickems:
     def __init__(self, **kwargs):
         super().__init__()
         self.game_id = kwargs.get("game_id")
+        self.game_state = kwargs.get("game_state")
         self.messages = kwargs.get("messages", [])
         self.guild = kwargs.get("guild")
-        game_start = kwargs.get("game_start")
-        self.game_start = datetime.strptime(game_start, "%Y-%m-%dT%H:%M:%SZ")
+        self.game_start = kwargs.get("game_start")
         self.home_team = kwargs.get("home_team")
         self.away_team = kwargs.get("away_team")
         self.votes = kwargs.get("votes")
@@ -54,10 +55,9 @@ class Pickems:
 
     def __repr__(self):
         return (
-            "<Pickems game_id={0.game_id} name={0.name} guild={0.guild} winner={0.winner}>".format(
-                self
-            )
-        )
+            "<Pickems game_id={0.game_id} game_state={0.game_state} "
+            "name={0.name} guild={0.guild} winner={0.winner}>"
+        ).format(self)
 
     def compare_game(self, game: Game) -> bool:
         return (
@@ -96,6 +96,7 @@ class Pickems:
     def to_json(self) -> dict:
         return {
             "game_id": self.game_id,
+            "game_state": self.game_state,
             "messages": self.messages,
             "guild": self.guild,
             "game_start": self.game_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -112,9 +113,10 @@ class Pickems:
         # log.debug(data)
         return cls(
             game_id=data.get("game_id"),
+            game_state=data.get("game_state"),
             messages=data.get("messages", []),
             guild=data.get("guild"),
-            game_start=data["game_start"],
+            game_start=datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ"),
             home_team=data["home_team"],
             away_team=data["away_team"],
             votes=data["votes"],

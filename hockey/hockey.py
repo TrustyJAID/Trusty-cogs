@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 
 import aiohttp
 import yaml
@@ -124,6 +124,11 @@ class Hockey(
         self._ready: asyncio.Event = asyncio.Event()
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
+        self.pickems_games: Dict[str, Game] = {}
+        # This is a temporary class attr used for
+        # storing only 1 copy of the game object so
+        # we're not spamming the API with the same game over and over
+        # this gets cleared and is only used with leaderboard tallying
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -243,7 +248,7 @@ class Hockey(
                             async with self.session.get(BASE_URL + link) as resp:
                                 data = await resp.json()
                         except Exception:
-                            log.error("Error grabbing game data: ", exc_info=True)
+                            log.exception("Error grabbing game data: ")
                             continue
                     else:
                         self.games_playing = False
@@ -253,7 +258,7 @@ class Hockey(
                         game = await Game.from_json(data)
                         self.current_games[link]["game"] = game
                     except Exception:
-                        log.error("Error creating game object from json.", exc_info=True)
+                        log.exception("Error creating game object from json.")
                         continue
                     try:
                         await self.check_new_day()
@@ -261,7 +266,7 @@ class Hockey(
                             self.bot, self.current_games[link]["count"]
                         )
                     except Exception:
-                        log.error("Error checking game state: ", exc_info=True)
+                        log.exception("Error checking game state: ")
 
                     log.debug(
                         (

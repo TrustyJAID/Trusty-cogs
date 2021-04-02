@@ -44,10 +44,6 @@ class HockeyPickems(MixinMeta):
 
     def __init__(self, *args):
         self.pickems_games: Dict[str, Game] = {}
-        # This is a temporary class attr used for
-        # storing only 1 copy of the game object so
-        # we're not spamming the API with the same game over and over
-        # this gets cleared and is only used with leaderboard tallying
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(self, channel, message, game):
@@ -198,7 +194,9 @@ class HockeyPickems(MixinMeta):
                     log.debug(f"Pickems winner is not None {repr(pickem)}")
                     continue
                 await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
-
+                if game.game_state == pickem.game_state:
+                    continue
+                self.all_pickems[str(guild_id)][str(game.game_id)].game_state = game.game_state
                 for message in pickem.messages:
                     try:
                         channel_id, message_id = message.split("-")
@@ -251,6 +249,7 @@ class HockeyPickems(MixinMeta):
         if old_pickem is None:
             pickem = Pickems(
                 game_id=game.game_id,
+                game_state=game.game_state,
                 messages=[f"{channel.id}-{message.id}"],
                 guild=guild.id,
                 game_start=game.game_start,
@@ -273,6 +272,8 @@ class HockeyPickems(MixinMeta):
                 self.all_pickems[str(guild.id)][str(game.game_id)].name = new_name
             if old_pickem.game_start != game.game_start:
                 self.all_pickems[str(guild.id)][str(game.game_id)].game_start = game.game_start
+            if old_pickem.game_state != game.game_state:
+                self.all_pickems[str(guild.id)][str(game.game_id)].game_state = game.game_state
             log.debug("using old pickems")
             return False
 
@@ -584,7 +585,6 @@ class HockeyPickems(MixinMeta):
             "__Base {currency}:__ {base_credits}\n"
             "__Weekly {currency}:__ Top {top_members} members will earn {top_credits} {currency}\n"
             "__Channels:__\n {channels}\n"
-
         ).format(
             guild=ctx.guild.name,
             category=category,
