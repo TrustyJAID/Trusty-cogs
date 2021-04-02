@@ -191,7 +191,8 @@ class Hockey(
                     )
                     await self.config.guild_from_id(guild_id).pickems_category.clear()
                     log.info(f"Migrating pickems categories for {guild_id}")
-            # await self.config.schema_version.set(1)
+            schema_version += 1
+            await self.config.schema_version.set(schema_version)
         self._ready.set()
 
     ##############################################################################
@@ -288,13 +289,21 @@ class Hockey(
                 else:
                     await asyncio.sleep(10)
             log.debug("Games Done Playing")
-            try:
-                await self.tally_leaderboard()
-            except Exception:
-                log.error("Error tallying leaderboard:", exc_info=True)
-                pass
+
             if self.games_playing:
                 await self.config.created_gdc.set(False)
+                try:
+                    await self.tally_leaderboard()
+                    # Only tally the leaderboard once per day
+                    # The tally function will iterate
+                    # over all servers and pull all pickems games
+                    # This is stored temporarily until we're done
+                    # iterating over all guilds and then forget
+                    # about the results
+                except Exception:
+                    log.exception("Error tallying leaderboard:")
+                    pass
+                self.games_playing = False
 
             # Final cleanup of config incase something went wrong
             # Should be mostly unnecessary at this point

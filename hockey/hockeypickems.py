@@ -2,7 +2,7 @@ import asyncio
 import logging
 from copy import copy
 from datetime import datetime, timedelta
-from typing import List, Optional, Set
+from typing import List, Optional, Dict
 
 import discord
 from discord.ext import tasks
@@ -43,7 +43,11 @@ class HockeyPickems(MixinMeta):
     """
 
     def __init__(self, *args):
-        self.pickems_lock = asyncio.lock()
+        self.pickems_games: Dict[str, Game] = {}
+        # This is a temporary class attr used for
+        # storing only 1 copy of the game object so
+        # we're not spamming the API with the same game over and over
+        # this gets cleared and is only used with leaderboard tallying
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(self, channel, message, game):
@@ -488,9 +492,17 @@ class HockeyPickems(MixinMeta):
             base_credits = await self.pickems_config.guild(guild).base_credits()
         pickems_list = copy(self.all_pickems.get(str(guild.id)))
         to_remove = []
-        async for name, pickems in AsyncIter(pickems_list.items(), steps=50):
+        async for name, pickems in AsyncIter(pickems_list.items(), steps=10):
             # check for definitive winner here just incase
-            if not await pickems.check_winner():
+            if name not in self.pickems_games:
+                game = await pickems.get_game()
+                self.pickems_games[name] = game
+                await self.set_guild_pickem_winner(self.pickems_games[name])
+                # Go through all the current pickems for every server
+                # and handle editing postponed games, etc here
+                # This will ensure any games that never make it to
+                # the main loop still get checked
+            if not await pickems.check_winner(self.pickems_games[name]):
                 continue
             log.debug(f"Tallying results for {repr(pickems)}")
             to_remove.append(name)
@@ -532,6 +544,9 @@ class HockeyPickems(MixinMeta):
                 await self.tally_guild_leaderboard(guild)
             except Exception:
                 log.exception(f"Error tallying leaderboard in {guild.name}")
+        self.pickems_games = {}
+        # Clear the data since we no longer need it after this
+        # anything new will be a new day and that's when we care
 
     @hockeyset_commands.group(name="pickems")
     @commands.admin_or_permissions(manage_channels=True)

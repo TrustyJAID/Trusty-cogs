@@ -136,8 +136,9 @@ class Pickems:
         if not game:
             return False
         if game.game_state == "Postponed":
-            # Postponed games we want to remove
-            return True
+            if game.game_start != self.game_start:
+                self.game_start = game.game_start
+            return False
         if game.home_score > game.away_score:
             self.winner = self.home_team
             return True
@@ -145,6 +146,9 @@ class Pickems:
             self.winner = self.away_team
             return True
         return False
+
+    async def get_game(self) -> Game:
+        return await Game.from_url(self.link)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """
