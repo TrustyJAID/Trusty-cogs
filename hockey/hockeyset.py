@@ -26,7 +26,7 @@ class HockeySetCommands(MixinMeta):
     """
 
     @hockeyset_commands.command(name="settings")
-    async def hockey_settings(self, ctx: commands.Context):
+    async def hockey_settings(self, ctx: commands.Context) -> None:
         """
         Show hockey settings for this server
         """
@@ -114,7 +114,7 @@ class HockeySetCommands(MixinMeta):
 
     @hockeyset_commands.command(hidden=True)
     @commands.admin_or_permissions(administrator=True)
-    async def reset(self, ctx: commands.Context):
+    async def reset(self, ctx: commands.Context) -> None:
         """
         Restarts the hockey loop incase there are issues with the posts
         """
@@ -130,7 +130,7 @@ class HockeySetCommands(MixinMeta):
     )
     async def set_hockey_timezone(
         self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
-    ):
+    ) -> None:
         """
         Customize the servers timezone
 
@@ -150,7 +150,7 @@ class HockeySetCommands(MixinMeta):
             await ctx.send(msg)
 
     @set_hockey_timezone.command(name="list")
-    async def list_hockey_timezones(self, ctx: commands.Context):
+    async def list_hockey_timezones(self, ctx: commands.Context) -> None:
         """
         List the available timezones for pickems messages
         """
@@ -177,7 +177,7 @@ class HockeySetCommands(MixinMeta):
         season: int,
         weekly: int = None,
         total: int = None,
-    ):
+    ) -> None:
         """
         Allows moderators to set a users points on the leaderboard
         """
@@ -231,7 +231,7 @@ class HockeySetCommands(MixinMeta):
         return reply
 
     @hockeyset_commands.group(name="notifications")
-    async def hockey_notifications(self, ctx: commands.Context):
+    async def hockey_notifications(self, ctx: commands.Context) -> None:
         """
         Settings related to role notifications
         """
@@ -241,7 +241,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_goal_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers goal notification style. Options are:
 
@@ -281,7 +281,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_ot_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers Regular Season OT notification style. Options are:
 
@@ -323,7 +323,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_so_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers Shootout notification style. Options are:
 
@@ -365,7 +365,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_game_start_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers game start notification style. Options are:
 
@@ -403,7 +403,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_goal_notification_style(
         self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the specified channels goal notification style. Options are:
 
@@ -446,7 +446,7 @@ class HockeySetCommands(MixinMeta):
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_game_start_notification_style(
         self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the specified channels game start notification style. Options are:
 
@@ -492,7 +492,7 @@ class HockeySetCommands(MixinMeta):
         ctx: commands.Context,
         standings_type: str,
         channel: Optional[discord.TextChannel] = None,
-    ):
+    ) -> None:
         """
         Posts automatic standings when all games for the day are done
 
@@ -532,7 +532,7 @@ class HockeySetCommands(MixinMeta):
         await self.config.guild(guild).post_standings.set(True)
 
     @hockeyset_commands.command()
-    async def togglestandings(self, ctx: commands.Context):
+    async def togglestandings(self, ctx: commands.Context) -> None:
         """
         Toggles automatic standings updates
 
@@ -548,7 +548,7 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="stateupdates")
     async def set_game_state_updates(
         self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
-    ):
+    ) -> None:
         """
         Set what type of game updates to be posted in the designated channel.
 
@@ -582,7 +582,7 @@ class HockeySetCommands(MixinMeta):
     @commands.is_owner()
     async def set_game_publish_updates(
         self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
-    ):
+    ) -> None:
         """
         Set what type of game updates will be published in the designated news channel.
 
@@ -621,7 +621,7 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
     async def add_goals(
         self, ctx: commands.Context, team: HockeyTeams, channel: Optional[discord.TextChannel]
-    ):
+    ) -> None:
         """
         Adds a hockey team goal updates to a channel do 'all' for all teams
 
@@ -659,7 +659,7 @@ class HockeySetCommands(MixinMeta):
         ctx: commands.Context,
         team: Optional[HockeyTeams] = None,
         channel: Optional[discord.TextChannel] = None,
-    ):
+    ) -> None:
         """
         Removes a teams goal updates from a channel
         defaults to the current channel

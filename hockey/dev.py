@@ -41,7 +41,7 @@ class HockeyDev(MixinMeta):
 
     @commands.group(aliases=["nhldev"])
     @commands.is_owner()
-    async def hockeydev(self, ctx: commands.Context):
+    async def hockeydev(self, ctx: commands.Context) -> None:
         """
         Secret dev only commands for Hockey
 
@@ -51,7 +51,7 @@ class HockeyDev(MixinMeta):
         pass
 
     @hockeydev.command(name="resetpickemsweekly")
-    async def reset_weekly_pickems_data(self, ctx: commands.Context):
+    async def reset_weekly_pickems_data(self, ctx: commands.Context) -> None:
         """
         Force reset all pickems data for the week
         """
@@ -67,7 +67,7 @@ class HockeyDev(MixinMeta):
         await ctx.send("Finished resetting all pickems data.")
 
     @hockeydev.command(name="pickemsannounce")
-    async def announce_pickems(self, ctx: commands.Context, *, message: str):
+    async def announce_pickems(self, ctx: commands.Context, *, message: str) -> None:
         """
         Announce a message in all setup pickems channels
 
@@ -90,7 +90,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Message announced in pickems channels."))
 
     @hockeydev.command()
-    async def getgoals(self, ctx: commands.Context):
+    async def getgoals(self, ctx: commands.Context) -> None:
         """
         Testing function with testgame.json
         """
@@ -118,7 +118,7 @@ class HockeyDev(MixinMeta):
         await ctx.send("Done testing.")
 
     @hockeydev.command(name="pickemstally")
-    async def pickems_tally(self, ctx: commands.Context):
+    async def pickems_tally(self, ctx: commands.Context) -> None:
         """
         Manually tally the leaderboard for all servers
         """
@@ -126,7 +126,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Leaderboard tallying complete."))
 
     @hockeydev.command(name="removeoldpickems")
-    async def remove_old_pickems(self, ctx: commands.Context, year: int, month: int, day: int):
+    async def remove_old_pickems(self, ctx: commands.Context, year: int, month: int, day: int) -> None:
         """
         Remove pickems objects created before a specified date.
         """
@@ -142,7 +142,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("All old pickems objects deleted."))
 
     @hockeydev.command(name="checkpickemswinner")
-    async def check_pickem_winner(self, ctx: commands.Context, days: int = 1):
+    async def check_pickem_winner(self, ctx: commands.Context, days: int = 1) -> None:
         """
         Manually check all pickems objects for winners
 
@@ -159,7 +159,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Pickems winners set."))
 
     @hockeydev.command(name="fixallpickems")
-    async def fix_all_pickems(self, ctx: commands.Context):
+    async def fix_all_pickems(self, ctx: commands.Context) -> None:
         """
         Fixes winner on all current pickems objects if possible
         """
@@ -174,7 +174,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("All pickems winners set."))
 
     @hockeydev.command()
-    async def teststandings(self, ctx: commands.Context):
+    async def teststandings(self, ctx: commands.Context) -> None:
         """
         Test the automatic standings function/manually update standings
         """
@@ -186,7 +186,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Finished fixing all standings messages."))
 
     @hockeydev.command()
-    async def cogstats(self, ctx: commands.Context):
+    async def cogstats(self, ctx: commands.Context) -> None:
         """
         Display current number of servers and channels
         the cog is storing in console
@@ -274,7 +274,7 @@ class HockeyDev(MixinMeta):
             await ctx.maybe_send_embed(page)
 
     @hockeydev.command()
-    async def customemoji(self, ctx: commands.Context):
+    async def customemoji(self, ctx: commands.Context) -> None:
         """
         Set custom emojis for the bot to use
 
@@ -311,7 +311,7 @@ class HockeyDev(MixinMeta):
         await ctx.send("You should reload the cog for everything to work correctly.")
 
     @hockeydev.command()
-    async def resetgames(self, ctx: commands.Context):
+    async def resetgames(self, ctx: commands.Context) -> None:
         """
         Resets the bots game data incase something goes wrong
         """
@@ -328,7 +328,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Saved game data reset."))
 
     @hockeydev.command()
-    async def setcreated(self, ctx: commands.Context, created: bool):
+    async def setcreated(self, ctx: commands.Context, created: bool) -> None:
         """
         Sets whether or not the game day channels have been created
         """
@@ -336,7 +336,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("created_gdc set to ") + str(created))
 
     @hockeydev.command()
-    async def cleargdc(self, ctx: commands.Context):
+    async def cleargdc(self, ctx: commands.Context) -> None:
         """
         Checks for manually deleted channels from the GDC channel list
         and removes them
@@ -355,7 +355,7 @@ class HockeyDev(MixinMeta):
         await ctx.tick()
 
     @hockeydev.command(name="clearbrokenchannels")
-    async def clear_broken_channels(self, ctx: commands.Context):
+    async def clear_broken_channels(self, ctx: commands.Context) -> None:
         """
         Removes missing channels from the config
         """
@@ -383,7 +383,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Broken channels removed"))
 
     @hockeydev.command()
-    async def remove_broken_guild(self, ctx: commands.Context):
+    async def remove_broken_guild(self, ctx: commands.Context) -> None:
         """
         Removes a server that no longer exists on the bot
         """
@@ -399,7 +399,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Saved servers the bot is no longer on have been removed."))
 
     @hockeydev.command(hidden=True)
-    async def lights(self, ctx: commands.Context):
+    async def lights(self, ctx: commands.Context) -> None:
         """
         Tests the philips Hue light integration
         This is hard coded at the moment with no plans to make work generally
@@ -412,7 +412,7 @@ class HockeyDev(MixinMeta):
         await ctx.tick()
 
     @hockeydev.command(hidden=True)
-    async def testloop(self, ctx: commands.Context):
+    async def testloop(self, ctx: commands.Context) -> None:
         """
         Toggle the test game loop
         """
@@ -420,7 +420,7 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Test loop set to ") + str(self.TEST_LOOP))
 
     @hockeydev.command()
-    async def clear_seasonal_leaderboard_all(self, ctx: commands.Context):
+    async def clear_seasonal_leaderboard_all(self, ctx: commands.Context) -> None:
         """
         Clears the bots seasonal pickems leaderboard
         """

@@ -4,7 +4,6 @@ from typing import Optional
 
 import discord
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.menus import start_adding_reactions
@@ -31,7 +30,7 @@ class GameDayChannels(MixinMeta):
     @commands.group()
     @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def gdc(self, ctx: commands.Context):
+    async def gdc(self, ctx: commands.Context) -> None:
         """
         Game Day Channel setup for the server
 
@@ -41,7 +40,7 @@ class GameDayChannels(MixinMeta):
         """
 
     @gdc.command(name="settings")
-    async def gdc_settings(self, ctx: commands.Context):
+    async def gdc_settings(self, ctx: commands.Context) -> None:
         """
         Show the current Game Day Channel Settings
         """
@@ -99,7 +98,7 @@ class GameDayChannels(MixinMeta):
                 await ctx.send(embed=em)
 
     @gdc.command(name="delete")
-    async def gdc_delete(self, ctx: commands.Context):
+    async def gdc_delete(self, ctx: commands.Context) -> None:
         """
         Delete all current game day channels for the server
         """
@@ -107,7 +106,7 @@ class GameDayChannels(MixinMeta):
         await ctx.send(_("Game day channels deleted."))
 
     @gdc.command(name="defaultstate")
-    async def gdc_default_game_state(self, ctx: commands.Context, *state: HockeyStates):
+    async def gdc_default_game_state(self, ctx: commands.Context, *state: HockeyStates) -> None:
         """
         Set the default game state updates for Game Day Channels.
 
@@ -129,7 +128,7 @@ class GameDayChannels(MixinMeta):
             await ctx.send(_("GDC game updates not set"))
 
     @gdc.command(name="create")
-    async def gdc_create(self, ctx: commands.Context):
+    async def gdc_create(self, ctx: commands.Context) -> None:
         """
         Creates the next gdc for the server
         """
@@ -146,7 +145,7 @@ class GameDayChannels(MixinMeta):
         await ctx.send(_("Game day channels created."))
 
     @gdc.command(name="toggle")
-    async def gdc_toggle(self, ctx: commands.Context):
+    async def gdc_toggle(self, ctx: commands.Context) -> None:
         """
         Toggles the game day channel creation on this server
         """
@@ -158,7 +157,7 @@ class GameDayChannels(MixinMeta):
         await ctx.send(msg)
 
     @gdc.command(name="category")
-    async def gdc_category(self, ctx: commands.Context, category: discord.CategoryChannel):
+    async def gdc_category(self, ctx: commands.Context, category: discord.CategoryChannel) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.
         """
@@ -171,7 +170,7 @@ class GameDayChannels(MixinMeta):
         await ctx.send(msg + category.name)
 
     @gdc.command(name="autodelete")
-    async def gdc_autodelete(self, ctx: commands.Context):
+    async def gdc_autodelete(self, ctx: commands.Context) -> None:
         """
         Toggle's auto deletion of game day channels.
         """
@@ -188,7 +187,7 @@ class GameDayChannels(MixinMeta):
 
     @gdc.command(name="test")
     @commands.is_owner()
-    async def test_gdc(self, ctx: commands.Context):
+    async def test_gdc(self, ctx: commands.Context) -> None:
         """
         Test checking for new game day channels
         """
@@ -203,7 +202,7 @@ class GameDayChannels(MixinMeta):
         team: HockeyTeams,
         category: discord.CategoryChannel = None,
         delete_gdc: bool = True,
-    ):
+    ) -> None:
         """
         Setup game day channels for a single team or all teams
 
@@ -245,7 +244,7 @@ class GameDayChannels(MixinMeta):
     # GDC logic                                                           #
     #######################################################################
 
-    async def get_chn_name(self, game: Game):
+    async def get_chn_name(self, game: Game) -> str:
         """
         Creates game day channel name
         """
@@ -255,7 +254,7 @@ class GameDayChannels(MixinMeta):
         )
         return chn_name.lower()
 
-    async def check_new_gdc(self):
+    async def check_new_gdc(self) -> None:
         game_list = await Game.get_games(
             session=self.session
         )  # Do this once so we don't spam the api
@@ -295,7 +294,7 @@ class GameDayChannels(MixinMeta):
                 for game in game_list:
                     await self.create_gdc(guild, game)
 
-    async def create_gdc(self, guild: discord.Guild, game_data: Optional[Game] = None):
+    async def create_gdc(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
         """
         Creates a game day channel for the given game object
         if no game object is passed it looks for the set team for the guild
@@ -397,7 +396,7 @@ class GameDayChannels(MixinMeta):
                 preview_msg, [next_game.away_emoji[2:-1], next_game.home_emoji[2:-1]]
             )
 
-    async def delete_gdc(self, guild: discord.Guild):
+    async def delete_gdc(self, guild: discord.Guild) -> None:
         """
         Deletes all game day channels in a given guild
         """

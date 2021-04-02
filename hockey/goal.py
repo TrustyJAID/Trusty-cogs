@@ -1,7 +1,8 @@
+from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import discord
 from redbot import VersionInfo, version_info
@@ -11,6 +12,9 @@ from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import HEADSHOT_URL, TEAMS
 from .helper import check_to_post, get_channel_obj, get_team
+
+if TYPE_CHECKING:
+    from .game import Game
 
 try:
     from .oilers import Oilers
@@ -85,7 +89,9 @@ class Goal:
         }
 
     @classmethod
-    async def from_json(cls, data: dict, players: dict, media_content: Optional[dict] = None):
+    async def from_json(
+        cls, data: dict, players: dict, media_content: Optional[dict] = None
+    ) -> Goal:
         scorer_id = []
         if "players" in data:
             scorer_id = [
@@ -138,7 +144,7 @@ class Goal:
             link=link,
         )
 
-    async def post_team_goal(self, bot: Red, game_data):
+    async def post_team_goal(self, bot: Red, game_data: Game) -> List[Tuple[int, int, int]]:
         """
         Creates embed and sends message if a team has scored a goal
         """
@@ -172,7 +178,7 @@ class Goal:
         return msg_list
 
     async def actually_post_goal(
-        self, bot, channel, goal_embed, goal_text
+        self, bot: Red, channel: discord.TextChannel, goal_embed: discord.Embed, goal_text: str
     ) -> Optional[Tuple[int, int, int]]:
         try:
             guild = channel.guild
@@ -182,7 +188,7 @@ class Goal:
                         channel=channel, id=channel.id
                     )
                 )
-                return
+                return None
             config = bot.get_cog("Hockey").config
             game_day_channels = await config.guild(guild).gdc()
             # Don't want to ping people in the game day channels
@@ -229,7 +235,7 @@ class Goal:
                     webhook = await channel.create_webhook(name=guild.me.name)
                 url = TEAMS[self.team_name]["logo"]
                 await webhook.send(username=self.team_name, avatar_url=url, embed=goal_embed)
-                return
+                return None
 
             if not can_embed and not can_manage_webhooks:
                 # Create text only message if embed_links permission is not set
@@ -249,10 +255,10 @@ class Goal:
             return channel.guild.id, channel.id, msg.id
         except Exception:
             log.error("Could not post goal in ", exc_info=True)
-            return
+            return None
 
     @staticmethod
-    async def remove_goal_post(bot, goal, team, data):
+    async def remove_goal_post(bot: Red, goal: str, team: str, data: Game) -> None:
         """
         Attempt to delete a goal if it was pulled back
         """
@@ -308,7 +314,9 @@ class Goal:
                 return
         return
 
-    async def edit_team_goal(self, bot, game_data, og_msg):
+    async def edit_team_goal(
+        self, bot: Red, game_data: Game, og_msg: Tuple[int, int, int]
+    ) -> None:
         """
         When a goal scorer has changed we want to edit the original post
         """
@@ -332,7 +340,9 @@ class Goal:
 
         return
 
-    async def edit_goal(self, bot, channel, message_id, em):
+    async def edit_goal(
+        self, bot: Red, channel: discord.TextChannel, message_id: int, em: discord.Embed
+    ) -> None:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
@@ -359,7 +369,7 @@ class Goal:
         except Exception:
             log.exception(f"Could not edit goal in {channel=}")
 
-    async def get_shootout_display(self, game):
+    async def get_shootout_display(self, game: Game) -> Tuple[str, str]:
         """
         Gets a string for the shootout display
         """
@@ -388,7 +398,7 @@ class Goal:
                 away_msg += score.format(scorer=scorer)
         return home_msg, away_msg
 
-    async def goal_post_embed(self, game):
+    async def goal_post_embed(self, game: Game) -> discord.Embed:
         """
         Gets the embed for goal posts
         """
@@ -400,7 +410,7 @@ class Goal:
         colour = (
             int(TEAMS[self.team_name]["home"].replace("#", ""), 16)
             if self.team_name in TEAMS
-            else None
+            else 0
         )
         title = "🚨 {} #{} {} {} 🚨".format(
             self.team_name, self.jersey_no, self.strength, self.event
@@ -415,29 +425,20 @@ class Goal:
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
-            home_str = (
-                _("Goals: **")
-                + str(self.home_score)
-                + _("** \nShots: **")
-                + str(game.home_shots)
-                + "**"
+            home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=game.home_shots
             )
-            away_str = (
-                _("Goals: **")
-                + str(self.away_score)
-                + _("** \nShots: **")
-                + str(game.away_shots)
-                + "**"
+            away_str = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=game.away_shots
             )
             home_field = f"{game.home_emoji} {game.home_team} {game.home_emoji}"
             away_field = f"{game.away_emoji} {game.away_team} {game.away_emoji}"
             em.add_field(name=home_field, value=home_str, inline=True)
             em.add_field(name=away_field, value=away_str, inline=True)
             em.set_footer(
-                text=str(self.time_remaining)
-                + _(" left in the ")
-                + str(self.period_ord)
-                + _(" period"),
+                text=_("{time_remaining} left in the {period_ord} period").format(
+                    time_remaining=self.time_remaining, period_ord=self.period_ord
+                ),
                 icon_url=logo,
             )
             em.timestamp = self.time
@@ -461,7 +462,7 @@ class Goal:
             em.timestamp = self.time
         return em
 
-    async def goal_post_text(self, game):
+    async def goal_post_text(self, game: Game) -> str:
         """
         Gets the text to send for goal posts
         """
@@ -469,21 +470,17 @@ class Goal:
             text = (
                 f"{game.home_emoji} {game.home_team}: {game.home_score}\n"
                 f"{game.away_emoji} {game.away_team}: {game.away_score}\n "
-                f"({self.time_remaining}"
-                + _(" left in the ")
-                + f"{game.period_ord}"
-                + _(" period")
-                + ")"
+            )
+            text += _("{time_remaining} left in the {period_ord} period").format(
+                time_remaining=self.time_remaining, period_ord=self.period_ord
             )
         else:
             home_msg, away_msg = await self.get_shootout_display(game)
             text = (
                 f"{game.home_emoji} {game.home_team}: {home_msg}\n"
                 f"{game.away_emoji} {game.away_team}: {away_msg}\n "
-                f"({self.time_remaining}"
-                + _(" left in the ")
-                + f"{game.period_ord}"
-                + _(" period")
-                + ")"
+            )
+            text += _("{time_remaining} left in the {period_ord} period").format(
+                time_remaining=self.time_remaining, period_ord=self.period_ord
             )
         return text

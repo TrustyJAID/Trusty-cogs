@@ -1,11 +1,11 @@
+from __future__ import annotations
 import logging
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, List, Dict, Union, Tuple
 
 import aiohttp
-import discord  # type: ignore[import]
+import discord
 from redbot import VersionInfo, version_info
-from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
@@ -43,7 +43,7 @@ class Game:
     away_abr: str
     period_ord: str
     period_time_left: str
-    plays: list
+    plays: List[dict]
     first_star: Optional[str]
     second_star: Optional[str]
     third_star: Optional[str]
@@ -110,7 +110,7 @@ class Game:
         game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
         return game_types.get(self.game_type, _("Unknown"))
 
-    def to_json(self) -> dict:
+    def to_json(self) -> Dict[str, Union[str, int]]:
         return {
             "game_state": self.game_state,
             "home_team": self.home_team,
@@ -146,7 +146,7 @@ class Game:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
-    ):
+    ) -> List[Game]:
         """
         Get a specified days games, defaults to the current day
         requires a datetime object
@@ -181,7 +181,7 @@ class Game:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
-    ):
+    ) -> List[str]:
         """
         Get a specified days games, defaults to the current day
         requires a datetime object
@@ -223,7 +223,7 @@ class Game:
         self,
         include_plays: bool = False,
         period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
-    ):
+    ) -> discord.Embed:
         """
         Builds the game embed when the command is called
         provides as much data as possible
@@ -356,7 +356,7 @@ class Game:
                 em.add_field(name="Period", value=msg)
         return em
 
-    async def game_state_embed(self):
+    async def game_state_embed(self) -> discord.Embed:
         """
         Makes the game state embed based on the game self provided
         """
@@ -395,7 +395,7 @@ class Game:
         em.set_footer(text=_("Game start "), icon_url=self.away_logo)
         return em
 
-    async def game_state_text(self):
+    async def game_state_text(self) -> str:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         time_string = utc_to_local(self.game_start).strftime("%I:%M %p %Z")
@@ -411,7 +411,7 @@ class Game:
             )
         return em
 
-    async def get_stats_msg(self):
+    async def get_stats_msg(self) -> Tuple[str, str]:
         """
         returns team stats on the season from standings object
         """
@@ -446,7 +446,7 @@ class Game:
             pass
         return home_str, away_str
 
-    async def check_game_state(self, bot, count=0):
+    async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(bot, self.home_team)
         # away = await get_team(self.away_team)
@@ -535,7 +535,7 @@ class Game:
                 return True
         return False
 
-    async def period_recap(self, bot, period: Literal["1st", "2nd", "3rd"]):
+    async def period_recap(self, bot: Red, period: Literal["1st", "2nd", "3rd"]) -> None:
         """
         Builds the period recap
         """
@@ -558,7 +558,7 @@ class Game:
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
-    ):
+    ) -> None:
         """
         Posts the period recap in designated channels
         """
@@ -573,7 +573,7 @@ class Game:
         except Exception:
             log.exception(f"Could not post goal in {repr(channel)}")
 
-    async def post_game_state(self, bot):
+    async def post_game_state(self, bot: Red) -> None:
         """
         When a game state has changed this is called to create the embed
         and post in all channels
@@ -598,11 +598,13 @@ class Game:
             else:
                 bot.dispatch("hockey_preview_message", preview[0], preview[1], self)
 
-    async def actually_post_state(self, bot, channel, state_embed, state_text):
+    async def actually_post_state(
+        self, bot: Red, channel: discord.TextChannel, state_embed: discord.Embed, state_text: str
+    ) -> Optional[Tuple[discord.TextChannel, discord.Message]]:
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
             log.debug(f"No permission to send messages in {repr(channel)}")
-            return
+            return None
         config = bot.get_cog("Hockey").config
         guild_settings = await config.guild(guild).all()
         channel_settings = await config.channel(channel).all()
@@ -672,7 +674,7 @@ class Game:
                 if game_day_channels is not None:
                     # Don't post the preview message twice in the channel
                     if channel.id in game_day_channels:
-                        return
+                        return None
             try:
                 if not can_embed:
                     preview_msg = await channel.send(state_text)
@@ -699,8 +701,9 @@ class Game:
                         return channel, preview_msg
             except Exception:
                 log.exception(f"Could not post goal in {repr(channel)}")
+        return None
 
-    async def check_team_goals(self, bot):
+    async def check_team_goals(self, bot: Red) -> None:
         """
         Checks to see if a goal needs to be posted
         """
@@ -753,7 +756,7 @@ class Game:
         for goal_str in away_goal_list:
             await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
 
-    async def save_game_state(self, bot, time_to_game_start: str = "0"):
+    async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """
         Saves the data do the config to compare against new data
         """
@@ -793,7 +796,7 @@ class Game:
         team_list.append(away)
         await bot.get_cog("Hockey").config.teams.set(team_list)
 
-    async def post_time_to_game_start(self, bot, time_left):
+    async def post_time_to_game_start(self, bot: Red, time_left: str) -> None:
         """
         Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
@@ -818,7 +821,7 @@ class Game:
                 tasks.append(self.post_game_start(channel, msg))
         await bounded_gather(*tasks)
 
-    async def post_game_start(self, channel, msg):
+    async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:
         if not channel.permissions_for(channel.guild.me).send_messages:
             log.debug(f"No permission to send messages in {channel} ({channel.id})")
             return
@@ -828,15 +831,15 @@ class Game:
             log.exception(f"Could not post goal in {channel} ({channel.id})")
 
     @staticmethod
-    async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None):
+    async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None) -> Optional[Game]:
         url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
         try:
             if session is None:
                 # this should only happen in pickems objects
                 # since pickems don't have access to the full
                 # cogs session
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(BASE_URL + url) as resp:
+                async with aiohttp.ClientSession() as new_session:
+                    async with new_session.get(BASE_URL + url) as resp:
                         data = await resp.json()
             else:
                 async with session.get(BASE_URL + url) as resp:
@@ -844,10 +847,10 @@ class Game:
             return await Game.from_json(data)
         except Exception:
             log.error("Error grabbing game data: ", exc_info=True)
-            return
+            return None
 
     @classmethod
-    async def from_json(cls, data: dict):
+    async def from_json(cls, data: dict) -> Game:
         event = data["liveData"]["plays"]["allPlays"]
         home_team = data["gameData"]["teams"]["home"]["name"]
         away_team = data["gameData"]["teams"]["away"]["name"]

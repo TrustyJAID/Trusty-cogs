@@ -1,14 +1,14 @@
 import asyncio
+import discord
 import json
 import logging
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, List
 
 import aiohttp
 import yaml
-from redbot import version_info
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
@@ -160,7 +160,7 @@ class Hockey(
                 del data["leaderboard"][str(user_id)]
                 await self.config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
             try:
                 self.bot.add_dev_env_value("hockey", lambda x: self)
@@ -169,7 +169,7 @@ class Hockey(
         self.loop = asyncio.create_task(self.game_check_loop())
         await self.migrate_settings()
 
-    async def migrate_settings(self):
+    async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()
         if schema_version == 0:
             log.info("Migrating old pickems to new file")
@@ -206,7 +206,7 @@ class Hockey(
     # main timing logic which is in turn dictated by nhl.com                     #
     ##############################################################################
 
-    async def game_check_loop(self):
+    async def game_check_loop(self) -> None:
         """
         This loop grabs the current games for the day
         then passes off to other functions as necessary
@@ -323,7 +323,7 @@ class Hockey(
 
             await asyncio.sleep(300)
 
-    async def check_new_day(self):
+    async def check_new_day(self) -> None:
         if not await self.config.created_gdc():
             if datetime.now().weekday() == 6:
                 try:
@@ -352,7 +352,7 @@ class Hockey(
             await self.check_new_gdc()
             await self.config.created_gdc.set(True)
 
-    async def change_custom_emojis(self, attachments):
+    async def change_custom_emojis(self, attachments: List[discord.Attachment]) -> None:
         """
         This overwrites the emojis in constants.py
          with values in a properly formatted .yaml file
@@ -377,7 +377,7 @@ class Hockey(
         with path.open("w") as outfile:
             outfile.write(constants_string)
 
-    async def wait_for_file(self, ctx):
+    async def wait_for_file(self, ctx: commands.Context) -> None:
         """
         Waits for the author to upload a file
         """

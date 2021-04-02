@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 from urllib.parse import quote
 
 import discord
@@ -42,21 +42,21 @@ class HockeyCommands(MixinMeta):
     #######################################################################
 
     @commands.group(name="hockey", aliases=["nhl"])
-    async def hockey_commands(self, ctx: commands.Context):
+    async def hockey_commands(self, ctx: commands.Context) -> None:
         """
         Get information from NHL.com
         """
         pass
 
     @hockey_commands.command()
-    async def version(self, ctx: commands.Context):
+    async def version(self, ctx: commands.Context) -> None:
         """
         Display the current version
         """
         await ctx.send(_("Hockey version ") + self.__version__)
 
     @commands.command()
-    async def hockeyhub(self, ctx: commands.Context, *, search: str):
+    async def hockeyhub(self, ctx: commands.Context, *, search: str) -> None:
         """
         Search for hockey related items on https://hockeyhub.github.io/
 
@@ -78,7 +78,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(name="role")
     @commands.bot_has_permissions(manage_roles=True)
-    async def team_role(self, ctx: commands.Context, *, team: HockeyTeams):
+    async def team_role(self, ctx: commands.Context, *, team: HockeyTeams) -> None:
         """Set your role to a team role"""
         guild = ctx.message.guild
         if team is None:
@@ -98,7 +98,7 @@ class HockeyCommands(MixinMeta):
             await ctx.send(team + _(" is not an available role!"))
 
     @hockey_commands.command(name="goalsrole")
-    async def team_goals(self, ctx: commands.Context, *, team: HockeyTeams = None):
+    async def team_goals(self, ctx: commands.Context, *, team: HockeyTeams = None) -> None:
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
         member = ctx.message.author
@@ -136,7 +136,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def standings(self, ctx: commands.Context, *, search: HockeyStandings = None):
+    async def standings(self, ctx: commands.Context, *, search: HockeyStandings = None) -> None:
         """
         Displays current standings
 
@@ -178,7 +178,9 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(aliases=["score"])
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def games(self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}):
+    async def games(
+        self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
+    ) -> None:
         """
         Gets all NHL games for the current season
 
@@ -201,7 +203,7 @@ class HockeyCommands(MixinMeta):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def schedule(
         self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
-    ):
+    ) -> None:
         """
         Gets all upcoming NHL games for the current season as a list
 
@@ -222,7 +224,7 @@ class HockeyCommands(MixinMeta):
             timeout=60,
         ).start(ctx=ctx)
 
-    async def player_id_lookup(self, name: str):
+    async def player_id_lookup(self, name: str) -> List[int]:
         now = datetime.utcnow()
         saved = datetime.fromtimestamp(await self.config.player_db())
         path = cog_data_path(self) / "players.json"
@@ -252,7 +254,7 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         *,
         search: str,
-    ):
+    ) -> None:
         """
         Lookup information about a specific player
 
@@ -297,7 +299,7 @@ class HockeyCommands(MixinMeta):
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     async def roster(
         self, ctx: commands.Context, season: Optional[YearFinder] = None, *, search: HockeyTeams
-    ):
+    ) -> None:
         """
         Search for a player or get a team roster
 
@@ -359,7 +361,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(hidden=True)
     @commands.mod_or_permissions(manage_messages=True)
-    async def rules(self, ctx: commands.Context):
+    async def rules(self, ctx: commands.Context) -> None:
         """
         Display a nice embed of server specific rules
         """
@@ -375,7 +377,7 @@ class HockeyCommands(MixinMeta):
         await ctx.send(embed=em)
 
     @staticmethod
-    async def make_rules_embed(guild, team, rules):
+    async def make_rules_embed(guild: discord.Guild, team: str, rules: str) -> discord.Embed:
         """
         Builds the rule embed for the server
         """
@@ -388,13 +390,13 @@ class HockeyCommands(MixinMeta):
         em.description = rules
         em.title = _("__RULES__")
         em.add_field(name=_("__**WARNING**__"), value=warning)
-        em.set_thumbnail(url=guild.icon_url)
-        em.set_author(name=guild.name, icon_url=guild.icon_url)
+        em.set_thumbnail(url=str(guild.icon_url))
+        em.set_author(name=guild.name, icon_url=str(guild.icon_url))
         return em
 
     async def post_leaderboard(
         self, ctx: commands.Context, leaderboard_type: Literal["season", "weekly", "worst"]
-    ):
+    ) -> None:
         """
         Posts the leaderboard based on specific style
         """
@@ -473,7 +475,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command()
     @commands.guild_only()
-    async def leaderboard(self, ctx: commands.Context, leaderboard_type: str = "seasonal"):
+    async def leaderboard(self, ctx: commands.Context, leaderboard_type: str = "seasonal") -> None:
         """
         Shows the current server leaderboard
 
@@ -493,7 +495,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(hidden=True)
     @commands.mod_or_permissions(manage_messages=True)
-    async def setrules(self, ctx: commands.Context, team: HockeyTeams, *, rules):
+    async def setrules(self, ctx: commands.Context, team: HockeyTeams, *, rules) -> None:
         """Set the main rules page for the nhl rules command"""
         if team is None:
             return await ctx.send(_("You must provide a valid current team."))
@@ -506,7 +508,7 @@ class HockeyCommands(MixinMeta):
         await ctx.send(_("Done, here's how it will look."), embed=em)
 
     @hockey_commands.command(aliases=["link", "invite"])
-    async def otherdiscords(self, ctx: commands.Context, team: HockeyTeams):
+    async def otherdiscords(self, ctx: commands.Context, team: HockeyTeams) -> None:
         """
         Get team specific discord links
 

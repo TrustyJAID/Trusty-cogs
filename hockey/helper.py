@@ -6,8 +6,8 @@ from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 import pytz
-from discord.ext.commands.converter import Converter  # type: ignore[import]
-from discord.ext.commands.errors import BadArgument  # type: ignore[import]
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -30,7 +30,7 @@ YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
 
 
-def utc_to_local(utc_dt, new_timezone="US/Pacific") -> datetime:
+def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
 
@@ -213,12 +213,12 @@ class HockeyStandings(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx: Context, argument: str) -> List[str]:
-        result = []
+    async def convert(self, ctx: Context, argument: str) -> Optional[str]:
+        result = None
         team_list = await check_valid_team(argument, True)
         if team_list == []:
             raise BadArgument('Standing or Team "{}" not found'.format(argument))
-        if len(team_list) == 1:
+        if len(team_list) >= 1:
             result = team_list[0]
         return result
 
@@ -254,9 +254,11 @@ async def check_to_post(
     return should_post
 
 
-async def get_team_role(
-    guild: discord.Guild, home_team: str, away_team: str
-) -> Tuple[Optional[discord.Role], Optional[discord.Role]]:
+async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) -> Tuple[str, str]:
+    """
+    This returns the role mentions if they exist
+    Otherwise it returns the name of the team as a str
+    """
     home_role = None
     away_role = None
 
@@ -276,7 +278,7 @@ async def get_team_role(
     return home_role, away_role
 
 
-async def get_team(bot, team: str) -> TeamEntry:
+async def get_team(bot: Red, team: str) -> TeamEntry:
     config = bot.get_cog("Hockey").config
     team_list = await config.teams()
     if team_list is None:

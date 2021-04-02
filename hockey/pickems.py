@@ -1,4 +1,6 @@
+from __future__ import annotations
 import logging
+import discord
 from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
@@ -66,7 +68,7 @@ class Pickems:
             and self.game_start == game.game_start
         )
 
-    def add_vote(self, user_id, team):
+    def add_vote(self, user_id: int, team: discord.Emoji) -> None:
         time_now = datetime.utcnow()
 
         team_choice = None
@@ -109,7 +111,7 @@ class Pickems:
         }
 
     @classmethod
-    def from_json(cls, data: dict):
+    def from_json(cls, data: dict) -> Pickems:
         # log.debug(data)
         return cls(
             game_id=data.get("game_id"),

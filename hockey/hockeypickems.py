@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from copy import copy
 from datetime import datetime, timedelta
@@ -46,7 +45,9 @@ class HockeyPickems(MixinMeta):
         self.pickems_games: Dict[str, Game] = {}
 
     @commands.Cog.listener()
-    async def on_hockey_preview_message(self, channel, message, game):
+    async def on_hockey_preview_message(
+        self, channel: discord.TextChannel, message: discord.Message, game: Game
+    ) -> None:
         """
         Handles adding preview messages to the pickems object.
         """
@@ -54,7 +55,7 @@ class HockeyPickems(MixinMeta):
         await self.create_pickem_object(channel.guild, message, channel, game)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         if payload.guild_id is None:
             return
         guild = self.bot.get_guild(payload.guild_id)
@@ -119,7 +120,7 @@ class HockeyPickems(MixinMeta):
                         pass
 
     @tasks.loop(seconds=120)
-    async def pickems_loop(self):
+    async def pickems_loop(self) -> None:
         await self.save_pickems_data()
         log.debug("Saved pickems data.")
 
@@ -138,12 +139,12 @@ class HockeyPickems(MixinMeta):
             # catch all errors cause we don't want this loop to fail for something dumb
 
     @pickems_loop.after_loop
-    async def after_pickems_loop(self):
+    async def after_pickems_loop(self) -> None:
         if self.pickems_loop.is_being_cancelled():
             await self.save_pickems_data()
 
     @pickems_loop.before_loop
-    async def before_pickems_loop(self):
+    async def before_pickems_loop(self) -> None:
         await self.bot.wait_until_ready()
         await self._ready.wait()
         # wait until migration if necessary
@@ -182,7 +183,7 @@ class HockeyPickems(MixinMeta):
 
         return return_pickems
 
-    async def set_guild_pickem_winner(self, game: Game):
+    async def set_guild_pickem_winner(self, game: Game) -> None:
         for guild_id, pickems in self.all_pickems.items():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
@@ -213,7 +214,7 @@ class HockeyPickems(MixinMeta):
 
     async def edit_pickems_message(
         self, channel: discord.TextChannel, message_id: int, game: Game
-    ):
+    ) -> None:
         log.debug("Editing Pickems")
 
         try:
@@ -277,7 +278,7 @@ class HockeyPickems(MixinMeta):
             log.debug("using old pickems")
             return False
 
-    async def reset_weekly(self):
+    async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers
         pickems_channels_to_delete = []
         async for guild_id, data in AsyncIter(
@@ -318,7 +319,9 @@ class HockeyPickems(MixinMeta):
         except Exception:
             log.exception("Error deleting pickems Channels")
 
-    async def add_weekly_pickems_credits(self, guild: discord.Guild, top_members: List[int]):
+    async def add_weekly_pickems_credits(
+        self, guild: discord.Guild, top_members: List[int]
+    ) -> None:
         global_bank = await bank.is_global()
         if global_bank:
             top_credits = await self.pickems_config.top_credits()
@@ -394,7 +397,7 @@ class HockeyPickems(MixinMeta):
         )
         return msg
 
-    async def create_pickems_game_message(self, channel: discord.TextChannel, game: Game):
+    async def create_pickems_game_message(self, channel: discord.TextChannel, game: Game) -> None:
         msg = await self.make_pickems_msg(channel.guild, game)
         try:
             new_msg = await channel.send(msg)
@@ -414,7 +417,7 @@ class HockeyPickems(MixinMeta):
 
     async def create_pickems_channels_and_message(
         self, guilds: List[discord.Guild], day: datetime
-    ):
+    ) -> Dict[int, List[int]]:
         chn_name = _("pickems-{month}-{day}").format(month=day.month, day=day.day)
         data = []
         channel_tasks = []
@@ -441,7 +444,7 @@ class HockeyPickems(MixinMeta):
         await bounded_gather(*msg_tasks)
         return save_data
 
-    async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]):
+    async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> None:
         save_data = {}
         today = datetime.now()
         tasks = []
@@ -469,7 +472,7 @@ class HockeyPickems(MixinMeta):
                 continue
             await self.pickems_config.guild(guild).pickems_channels.set(channels)
 
-    async def delete_pickems_channels(self, channels: List[int]):
+    async def delete_pickems_channels(self, channels: List[int]) -> None:
         log.debug("Deleting pickems channels")
         for channel_id in channels:
             channel = self.bot.get_channel(channel_id)
@@ -482,7 +485,7 @@ class HockeyPickems(MixinMeta):
             except Exception:
                 log.error("Error deleting old pickems channels", exc_info=True)
 
-    async def tally_guild_leaderboard(self, guild: discord.Guild):
+    async def tally_guild_leaderboard(self, guild: discord.Guild) -> None:
         """
         Allows individual guilds to tally pickems leaderboard
         """
@@ -532,7 +535,7 @@ class HockeyPickems(MixinMeta):
             except Exception:
                 log.error("Error removing pickems from memory", exc_info=True)
 
-    async def tally_leaderboard(self):
+    async def tally_leaderboard(self) -> None:
         """
         This should be where the pickems is removed and tallies are added
         to the leaderboard
@@ -549,16 +552,20 @@ class HockeyPickems(MixinMeta):
         # Clear the data since we no longer need it after this
         # anything new will be a new day and that's when we care
 
+    #######################################################################
+    # All pickems related commands for setup, etc.                        #
+    #######################################################################
+
     @hockeyset_commands.group(name="pickems")
     @commands.admin_or_permissions(manage_channels=True)
-    async def pickems_commands(self, ctx: commands.Context):
+    async def pickems_commands(self, ctx: commands.Context) -> None:
         """
         Commands for managing pickems
         """
         pass
 
     @pickems_commands.command(name="settings")
-    async def pickems_settings(self, ctx: commands.Context):
+    async def pickems_settings(self, ctx: commands.Context) -> None:
         """
         Show the servers current pickems settings
         """
@@ -598,14 +605,16 @@ class HockeyPickems(MixinMeta):
         await ctx.maybe_send_embed(msg)
 
     @pickems_commands.group(name="credits")
-    async def pickems_credits(self, ctx: commands.Context):
+    async def pickems_credits(self, ctx: commands.Context) -> None:
         """
         Settings for awarding credits on correct pickems votes
         """
         pass
 
     @pickems_credits.command(name="base")
-    async def pickems_credits_base(self, ctx: commands.Context, _credits: Optional[int] = None):
+    async def pickems_credits_base(
+        self, ctx: commands.Context, _credits: Optional[int] = None
+    ) -> None:
         """
         Set the base awarded credits for correct pickems votes.
 
@@ -643,7 +652,9 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("Base credits for correct pickems votes have been removed."))
 
     @pickems_credits.command(name="top")
-    async def pickems_credits_top(self, ctx: commands.Context, _credits: Optional[int] = None):
+    async def pickems_credits_top(
+        self, ctx: commands.Context, _credits: Optional[int] = None
+    ) -> None:
         """
         Set the amount of credits awarded for the top x winners of pickems.
 
@@ -682,7 +693,9 @@ class HockeyPickems(MixinMeta):
         )
 
     @pickems_credits.command(name="amount")
-    async def pickems_credits_amount(self, ctx: commands.Context, amount: Optional[int] = None):
+    async def pickems_credits_amount(
+        self, ctx: commands.Context, amount: Optional[int] = None
+    ) -> None:
         """
         Set the number of top winners to receive the top weekly award credits.
 
@@ -720,7 +733,9 @@ class HockeyPickems(MixinMeta):
         )
 
     @pickems_commands.command(name="message")
-    async def set_pickems_message(self, ctx: commands.Context, *, message: Optional[str] = ""):
+    async def set_pickems_message(
+        self, ctx: commands.Context, *, message: Optional[str] = ""
+    ) -> None:
         """
         Customize the pickems message for this server
 
@@ -745,7 +760,7 @@ class HockeyPickems(MixinMeta):
     @pickems_commands.command(name="timezone", aliases=["timezones", "tz"])
     async def set_pickems_timezone(
         self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
-    ):
+    ) -> None:
         """
         Customize the timezone pickems utilize in this server
 
@@ -765,7 +780,7 @@ class HockeyPickems(MixinMeta):
     @commands.admin_or_permissions(manage_channels=True)
     async def setup_auto_pickems(
         self, ctx: commands.Context, category: Optional[discord.CategoryChannel] = None
-    ):
+    ) -> None:
         """
         Sets up automatically created pickems channels every week.
 
@@ -807,7 +822,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_commands.command(name="clear")
     @commands.admin_or_permissions(manage_channels=True)
-    async def delete_auto_pickems(self, ctx: commands.Context):
+    async def delete_auto_pickems(self, ctx: commands.Context) -> None:
         """
         Automatically delete all the saved pickems channels.
         """
@@ -833,7 +848,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_commands.command(name="toggle")
     @commands.admin_or_permissions(manage_channels=True)
-    async def toggle_auto_pickems(self, ctx: commands.Context):
+    async def toggle_auto_pickems(self, ctx: commands.Context) -> None:
         """
         Turn off automatic pickems page creation
         """
@@ -842,7 +857,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_commands.command(name="page")
     @commands.admin_or_permissions(manage_channels=True)
-    async def pickems_page(self, ctx, date: Optional[str] = None):
+    async def pickems_page(self, ctx, date: Optional[str] = None) -> None:
         """
         Generates a pickems page for voting on a specified day must be "YYYY-MM-DD"
         """
@@ -862,7 +877,7 @@ class HockeyPickems(MixinMeta):
             await self.create_pickems_game_message(ctx.channel, game)
 
     @pickems_commands.command(name="remove")
-    async def rempickem(self, ctx: commands.Context, true_or_false: bool):
+    async def rempickem(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the servers current pickems object list
 
@@ -879,14 +894,14 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not remove the current pickems on this server."))
 
     @pickems_commands.group(name="leaderboard")
-    async def pickems_leaderboard_commands(self, ctx: commands.Context):
+    async def pickems_leaderboard_commands(self, ctx: commands.Context) -> None:
         """
         Settings for clearing/resetting pickems leaderboards
         """
         pass
 
     @pickems_leaderboard_commands.command(name="clear")
-    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the entire pickems leaderboard in the server.
 
@@ -899,7 +914,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not reset the pickems leaderboard in this server."))
 
     @pickems_leaderboard_commands.command(name="tally")
-    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Manually tallies this servers pickems leaderboard incase votes
         aren't working properly.
@@ -913,7 +928,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not tally this servers pickems leaderboard."))
 
     @pickems_leaderboard_commands.command(name="clearweekly")
-    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the weekly tracker on the current servers pickems
 
@@ -930,7 +945,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not reset the pickems weekly leaderboard in this server."))
 
     @pickems_leaderboard_commands.command(name="clearseason")
-    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool):
+    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the weekly tracker on the current servers pickems
 

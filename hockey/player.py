@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
@@ -238,7 +239,7 @@ class Player:
                         name
                         + f"{self.height//12}' {self.height%12}\" / {int(self.height * 2.54)} cm\n"
                     )
-                elif attr == "birth_date":
+                elif attr == "birth_date" and self.birth_date is not None:
                     years = int(
                         (datetime.now() - datetime.strptime(self.birth_date, "%Y-%m-%d")).days
                         / 365.25
@@ -312,7 +313,7 @@ class Player:
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Player, Goalie, Skater]:
         url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYear"
         log.debug(url)
         log.debug(season)
@@ -358,7 +359,7 @@ class Player:
         return f"https://www.capfriendly.com/players/{self.full_name_url()}"
 
     @classmethod
-    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None):
+    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None) -> Player:
         url = f"https://records.nhl.com/site/api/player/{player_id}"
         if session is None:
             async with aiohttp.ClientSession() as new_session:
@@ -409,7 +410,7 @@ class Skater(Player):
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Skater, SkaterPlayoffs]:
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
@@ -622,7 +623,7 @@ class Goalie(Player):
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Goalie, GoaliePlayoffs]:
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
