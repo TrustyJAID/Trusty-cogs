@@ -290,7 +290,7 @@ class HockeyPickems(MixinMeta):
             except Exception:
                 log.error("Error adding channels to delete", exc_info=True)
 
-            top_users: List[int] = []
+            top_members: List[int] = []
             global_bank = await bank.is_global()
             if global_bank:
                 top_amount = await self.pickems_config.top_amount()
@@ -301,13 +301,13 @@ class HockeyPickems(MixinMeta):
                     top_members = sorted(
                         leaderboard.items(), key=lambda i: i[1]["weekly"], reverse=True
                     )[:top_amount]
-                    top_users = [int(user_id) for user_id, data in top_members]
+                    top_members = [int(user_id) for user_id, data in top_members]
                 except Exception:
                     log.exception("Error getting top users for pickems weekly.")
 
                 for user, data in leaderboard.items():
                     data["weekly"] = 0
-            self.bot.loop.create_task(self.add_weekly_pickems_credits(guild, top_users))
+            self.bot.loop.create_task(self.add_weekly_pickems_credits(guild, top_members))
         try:
             await self.delete_pickems_channels(pickems_channels_to_delete)
         except Exception:
@@ -330,7 +330,24 @@ class HockeyPickems(MixinMeta):
         self, name: str, guild: discord.Guild
     ) -> Optional[discord.TextChannel]:
         guild_message = await self.pickems_config.guild(guild).pickems_message()
-        msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
+        global_bank = await bank.is_global()
+        currency_name = await bank.get_currency_name(guild)
+        if global_bank:
+            base_credits = await self.pickems_config.base_credits()
+            top_credits = await self.pickems_config.top_credits()
+            top_members = await self.pickems_config.top_amount()
+        else:
+            base_credits = await self.pickems_config.guild(guild).base_credits()
+            top_credits = await self.pickems_config.guild(guild).top_credits()
+            top_members = await self.pickems_config.guild(guild).top_amount()
+
+        msg = _(PICKEMS_MESSAGE).replace("{guild_message}", guild_message)
+        msg = (
+            msg.replace("{currency}", str(currency_name))
+            .replace("{base_credits}", str(base_credits))
+            .replace("{top_credits}", str(top_credits))
+            .replace("{top_members}", str(top_members))
+        )
         category = guild.get_channel(await self.pickems_config.guild(guild).pickems_category())
         if not category:
             return None
@@ -533,18 +550,35 @@ class HockeyPickems(MixinMeta):
         category_channel = ctx.guild.get_channel(data.get("pickems_category"))
         category = category_channel.mention if category_channel else None
         timezone = data["pickems_timezone"] or _("Home Teams Timezone")
+        global_bank = await bank.is_global()
+        currency_name = await bank.get_currency_name(ctx.guild)
+        if global_bank:
+            base_credits = await self.pickems_config.base_credits()
+            top_credits = await self.pickems_config.top_credits()
+            top_members = await self.pickems_config.top_amount()
+        else:
+            base_credits = await self.pickems_config.guild(ctx.guild).base_credits()
+            top_credits = await self.pickems_config.guild(ctx.guild).top_credits()
+            top_members = await self.pickems_config.guild(ctx.guild).top_amount()
         if timezone is None:
             timezone = _("Home Teams Timezone")
         msg = _(
             "**Pickems Settings for {guild}**\n"
             "__Category:__ **{category}**\n"
             "__Timezone:__ **{timezone}**\n"
+            "__Base {currency}:__ {base_credits}\n"
+            "__Weekly {currency}:__ Top {top_members} members will earn {top_credits} {currency}\n"
             "__Channels:__\n {channels}\n"
+
         ).format(
             guild=ctx.guild.name,
             category=category,
             channels="\n".join([f"<#{chan}>" for chan in data.get("pickems_channels")]),
             timezone=timezone,
+            currency=currency_name,
+            top_members=top_members,
+            top_credits=top_credits,
+            base_credits=base_credits,
         )
         await ctx.maybe_send_embed(msg)
 
@@ -675,8 +709,18 @@ class HockeyPickems(MixinMeta):
         """
         Customize the pickems message for this server
 
-        `[message]` Optional additional messaged added at the end of pickems message setup.
-        If not provided the default message will only be sent at the start of the pickems page.
+        `[message]` Optional additional messaged added at the
+        end of pickems message setup. If not provided the default
+        message will only be sent at the start of the pickems page.
+
+        `{currency}` will be replaced the bots currency name.
+        `{base_credits}` will be replaced with the credits earned
+        by each member who votes correctly.
+        `{top_credits}` will be replaced with the credits earned
+        by the top users weekly.
+        `{top_members}` will be replaced with the top number of
+        users per week to earn the weekly reward.
+
         """
         await self.pickems_config.guild(ctx.guild).pickems_message.set(message)
         msg = _("Pickems custom message set to:\n{message}").format(message=message)
