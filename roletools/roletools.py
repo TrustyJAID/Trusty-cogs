@@ -27,7 +27,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -811,19 +811,18 @@ class RoleTools(RoleEvents, commands.Cog):
         if not self.settings[ctx.guild.id]["reaction_roles"]:
             return await ctx.send(_("There are no reaction roles setup for this guild."))
         found = False
-        for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
-            if isinstance(role_or_emoji, discord.Role):
-                if role_or_emoji.id == role_id:
+        if isinstance(role_or_emoji, discord.Role):
+            for keys, role_ids in self.settings[ctx.guild.id]["reaction_roles"].items():
+                if role_or_emoji.id == role_ids and f"{message.channel.id}-{message.id}" in keys:
+                    key = keys
                     found = True
-                    break
-            elif isinstance(role_or_emoji, discord.Emoji):
-                if str(role_or_emoji.id) in key:
-                    found = True
-                    break
-            else:
-                if str(role_or_emoji.strip("\N{VARIATION SELECTOR-16}")) in key:
-                    found = True
-                    break
+                    role_id = role_ids
+        else:
+            final_key = str(getattr(role_or_emoji, "id")).strip("\N{VARIATION SELECTOR-16}")
+            key = f"{message.channel.id}-{message.id}-{final_key}"
+            if key in self.settings[ctx.guild.id]["reaction_roles"]:
+                found = True
+                role_id = self.settings[ctx.guild.id]["reaction_roles"][key]
         if found:
             channel, message_id, emoji = key.split("-")
             if emoji.isdigit():
