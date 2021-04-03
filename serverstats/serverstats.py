@@ -44,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.2"
+    __version__ = "1.6.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1011,7 +1011,9 @@ class ServerStats(commands.Cog):
             else:
                 guild_list = []
                 async for guild in AsyncIter(self.bot.guilds, steps=100):
-                    if m := guild.get_member(member.id) and guild.get_member(ctx.author.id):
+                    if not guild.get_member(ctx.author.id):
+                        continue
+                    if m := guild.get_member(member.id):
                         guild_list.append(m)
             embed_list = []
             robot = "\N{ROBOT FACE}" if member.bot else ""
