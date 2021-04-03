@@ -941,7 +941,12 @@ class TriggerHandler:
         results = RE_POS.findall(raw_response)
         if results:
             for result in results:
-                search = trigger.regex.search(message.content)
+                content = message.content
+                if trigger.read_filenames and message.attachments:
+                    content = (
+                        message.content + " " + " ".join(f.filename for f in message.attachments)
+                    )
+                search = trigger.regex.search(content)
                 if not search:
                     continue
                 try:
