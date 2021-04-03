@@ -202,10 +202,6 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def reset(self, ctx: commands.Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def set_hockey_timezone(
         self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
     ) -> None:

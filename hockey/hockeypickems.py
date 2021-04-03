@@ -43,6 +43,10 @@ class HockeyPickems(MixinMeta):
 
     def __init__(self, *args):
         self.pickems_games: Dict[str, Game] = {}
+        # This is a temporary class attr used for
+        # storing only 1 copy of the game object so
+        # we're not spamming the API with the same game over and over
+        # this gets cleared and is only used with leaderboard tallying
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(
@@ -357,14 +361,21 @@ class HockeyPickems(MixinMeta):
             .replace("{top_members}", str(top_members))
         )
         category = guild.get_channel(await self.pickems_config.guild(guild).pickems_category())
-        if not category:
+        if category is None or not isinstance(category, discord.CategoryChannel):
+            await self.pickems_config.guild(guild).pickems_category.clear()
+            return None
+        if not category.permissions_for(guild.me).manage_channels:
+            return None
+        if len(category.channels) >= 50 or len(guild.channels) > 500:
             return None
         try:
             new_chn = await guild.create_text_channel(name, category=category)
             for page in pagify(msg):
                 await new_chn.send(page)
-        except discord.errors.Forbidden:
+        except discord.Forbidden:
             await self.pickems_config.guild(guild).pickems_category.clear()
+            return None
+        except discord.HTTPException:
             return None
         return new_chn
 
@@ -401,7 +412,7 @@ class HockeyPickems(MixinMeta):
         msg = await self.make_pickems_msg(channel.guild, game)
         try:
             new_msg = await channel.send(msg)
-        except discord.HTTPException:
+        except discord.Forbidden:
             log.error(f"Could not send pickems message in {repr(channel)}")
             return
         except Exception:
@@ -752,8 +763,26 @@ class HockeyPickems(MixinMeta):
         users per week to earn the weekly reward.
 
         """
+        global_bank = await bank.is_global()
+        currency_name = await bank.get_currency_name(ctx.guild)
+        if global_bank:
+            base_credits = await self.pickems_config.base_credits()
+            top_credits = await self.pickems_config.top_credits()
+            top_members = await self.pickems_config.top_amount()
+        else:
+            base_credits = await self.pickems_config.guild(ctx.guild).base_credits()
+            top_credits = await self.pickems_config.guild(ctx.guild).top_credits()
+            top_members = await self.pickems_config.guild(ctx.guild).top_amount()
+
+        msg = _(PICKEMS_MESSAGE).replace("{guild_message}", message)
+        msg = (
+            msg.replace("{currency}", str(currency_name))
+            .replace("{base_credits}", str(base_credits))
+            .replace("{top_credits}", str(top_credits))
+            .replace("{top_members}", str(top_members))
+        )
         await self.pickems_config.guild(ctx.guild).pickems_message.set(message)
-        msg = _("Pickems custom message set to:\n{message}").format(message=message)
+        msg = _("Pickems pages will now start with:\n{message}").format(message=msg)
         for page in pagify(msg):
             await ctx.send(page)
 
@@ -859,7 +888,10 @@ class HockeyPickems(MixinMeta):
     @commands.admin_or_permissions(manage_channels=True)
     async def pickems_page(self, ctx, date: Optional[str] = None) -> None:
         """
-        Generates a pickems page for voting on a specified day must be "YYYY-MM-DD"
+        Generates a pickems page for voting on
+
+        `[date]` is a specified day in the format "YYYY-MM-DD"
+        if `date` is not provided the current day is used instead.
         """
         if date is None:
             new_date = datetime.now()
@@ -894,6 +926,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not remove the current pickems on this server."))
 
     @pickems_commands.group(name="leaderboard")
+    @commands.admin_or_permissions(administrator=True)
     async def pickems_leaderboard_commands(self, ctx: commands.Context) -> None:
         """
         Settings for clearing/resetting pickems leaderboards
@@ -960,3 +993,35 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("Servers weekly leaderboard reset."))
         else:
             await ctx.send(_("I will not reset the pickems seasonal leaderboard in this server."))
+
+    @pickems_leaderboard_commands.command(name="setuser")
+    async def leaderboardset(
+        self,
+        ctx: commands.Context,
+        user: discord.Member,
+        season: int,
+        weekly: int = None,
+        total: int = None,
+    ) -> None:
+        """
+        Allows moderators to set a users points on the leaderboard
+        """
+        if weekly is None:
+            weekly = season
+        if total is None:
+            total = season
+        leaderboard = await self.config.guild(ctx.guild).leaderboard()
+        if leaderboard == {} or leaderboard is None:
+            await ctx.send(_("There is no current leaderboard for this server!"))
+            return
+        if str(user.id) not in leaderboard:
+            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
+        else:
+            del leaderboard[str(user.id)]
+            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
+        await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
+        msg = _(
+            "{user} now has {season} points on the season, "
+            "{weekly} points for the week, and {total} votes overall."
+        ).format(user=user.display_name, season=season, weekly=weekly, total=total)
+        await ctx.send(msg)

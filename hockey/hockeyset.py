@@ -112,19 +112,6 @@ class HockeySetCommands(MixinMeta):
     # All Hockey setup commands                                           #
     #######################################################################
 
-    @hockeyset_commands.command(hidden=True)
-    @commands.admin_or_permissions(administrator=True)
-    async def reset(self, ctx: commands.Context) -> None:
-        """
-        Restarts the hockey loop incase there are issues with the posts
-        """
-        msg = await ctx.send(_("Restarting..."))
-        self.loop.cancel()
-        await msg.edit(content=msg.content + _("loop closed..."))
-        self.loop = self.bot.loop.create_task(self.game_check_loop())
-        await msg.edit(content=msg.content + _("restarted"))
-        # await ctx.send("Done.")
-
     @hockeyset_commands.group(
         name="timezone", aliases=["timezones", "tz"], invoke_without_command=True
     )
@@ -168,38 +155,6 @@ class HockeySetCommands(MixinMeta):
             clear_reactions_after=True,
             timeout=60,
         ).start(ctx=ctx)
-
-    @hockeyset_commands.command(hidden=True)
-    async def leaderboardset(
-        self,
-        ctx: commands.Context,
-        user: discord.Member,
-        season: int,
-        weekly: int = None,
-        total: int = None,
-    ) -> None:
-        """
-        Allows moderators to set a users points on the leaderboard
-        """
-        if weekly is None:
-            weekly = season
-        if total is None:
-            total = season
-        leaderboard = await self.config.guild(ctx.guild).leaderboard()
-        if leaderboard == {} or leaderboard is None:
-            await ctx.send(_("There is no current leaderboard for this server!"))
-            return
-        if str(user.id) not in leaderboard:
-            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
-        else:
-            del leaderboard[str(user.id)]
-            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
-        await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-        msg = _(
-            "{user} now has {season} points on the season, "
-            "{weekly} points for the week, and {total} votes overall."
-        ).format(user=user.display_name, season=season, weekly=weekly, total=total)
-        await ctx.send(msg)
 
     async def check_notification_settings(self, guild: discord.Guild) -> str:
         reply = ""

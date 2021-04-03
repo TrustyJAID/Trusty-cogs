@@ -56,6 +56,7 @@ class Hockey(
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
+        super().__init__(self)
         self.bot = bot
         default_global = {"teams": [], "created_gdc": False, "print": False}
         for team in TEAMS:
@@ -124,11 +125,7 @@ class Hockey(
         self._ready: asyncio.Event = asyncio.Event()
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
-        self.pickems_games: Dict[str, Game] = {}
-        # This is a temporary class attr used for
-        # storing only 1 copy of the game object so
-        # we're not spamming the API with the same game over and over
-        # this gets cleared and is only used with leaderboard tallying
+
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
