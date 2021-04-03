@@ -4,13 +4,13 @@ import logging
 from datetime import datetime
 from html import unescape
 from io import BytesIO
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Dict
 
 import discord
 import tweepy as tw
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
-from redbot.core.utils import bounded_gather
+from redbot.core.utils import bounded_gather, AsyncIter
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import escape, humanize_list, pagify
 
@@ -60,7 +60,7 @@ class Tweets(commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.6.6"
+    __version__ = "2.6.7"
 
     def __init__(self, bot):
         self.bot = bot
@@ -987,50 +987,78 @@ class Tweets(commands.Cog):
             for page in pagify(msg_send, ["\n"]):
                 await ctx.send(page)
 
-    async def del_account(self, channel_id: int, user_id: int, screen_name: str = "") -> bool:
-        # account_ids = [x["twitter_id"] for x in await self.config.accounts()]
-        if str(user_id) not in self.accounts:
-            return False
-        # account_list = [x for x in await self.config.accounts()]
-        # twitter_account = [x for x in account_list if user_id == x["twitter_id"]][0]
-        if channel_id in self.accounts[str(user_id)]["channel"]:
+    async def del_account(
+        self, channel_id: int, user_id: Optional[int], screen_name: Optional[str]
+    ) -> Optional[Dict[str, str]]:
+        removed: Dict[str, str] = {}
+        if user_id and str(user_id) not in self.accounts:
+            return removed
+
+        elif user_id and channel_id in self.accounts[str(user_id)]["channel"]:
+            removed[str(user_id)] = self.accounts[str(user_id)]["twitter_name"]
             self.accounts[str(user_id)]["channel"].remove(channel_id)
             # await self.config.accounts.set(account_list)
+
             if len(self.accounts[str(user_id)]["channel"]) < 1:
                 del self.accounts[str(user_id)]
+
         else:
-            return False
+            async for user_id, data in AsyncIter(self.accounts.items()):
+                if screen_name is not None:
+                    if (
+                        screen_name.lower() == data["twitter_name"].lower()
+                        and channel_id in data["channel"]
+                    ):
+                        self.accounts[user_id]["channel"].remove(channel_id)
+                        removed[str(user_id)] = self.accounts[str(user_id)]["twitter_name"]
+                        if len(self.accounts[str(user_id)]["channel"]) < 1:
+                            del self.accounts[str(user_id)]
+                else:
+                    if channel_id in data["channel"]:
+                        removed[str(user_id)] = self.accounts[str(user_id)]["twitter_name"]
+                        if len(self.accounts[str(user_id)]["channel"]) < 1:
+                            del self.accounts[str(user_id)]
         await self.config.accounts.set(self.accounts)
-        return True
+        return removed
 
     @_autotweet.command(name="del", aliases=["delete", "rem", "remove"])
     async def _del(
-        self, ctx, username: str, channel: Optional[discord.TextChannel] = None
+        self, ctx, channel: discord.TextChannel, username: Optional[str]
     ) -> None:
         """
         Removes a twitter username to the specified channel
 
-        `username` must be the users @handle
-        `channel` is the channel where the username is currently being posted
+        `<channel>` The channel in which you want to remove twitter posts for.
+        `[username]` Optional @handle name for the user you want to remove.
+        If `username` is not provided all users posting in the provided channel
+        will be removed.
         """
-        username = username.lower()
         api = await self.authenticate()
-        if channel is None:
-            channel = ctx.message.channel
-        try:
-            for status in tw.Cursor(api.user_timeline, id=username).items(1):
-                user_id: int = status.user.id
-                screen_name: str = status.user.screen_name
-        except tw.TweepError as e:
-            msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
-            log.error(msg, exc_info=True)
-            await ctx.send(_("Something went wrong here! Try again"))
-            return
+        user_id: Optional[int] = None
+        screen_name: Optional[str] = None
+        if username:
+            try:
+                for status in tw.Cursor(api.user_timeline, id=username).items(1):
+                    user_id = status.user.id
+                    screen_name = status.user.screen_name
+            except tw.TweepError as e:
+                msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
+                log.error(msg, exc_info=True)
+                await ctx.send(_("Something went wrong here! Try again"))
+                return
         removed = await self.del_account(channel.id, user_id, screen_name)
         if removed:
-            await ctx.send(username + _(" has been removed from ") + channel.mention)
+            msg = _("The following users have been removed from {channel}:").format(
+                channel=channel.mention
+            )
+            msg += humanize_list([i for i in removed.values()])
+            await ctx.send(msg)
         else:
-            await ctx.send(username + _(" doesn't seem to be posting in ") + channel.mention)
+            await ctx.send(
+                _("{username} doesn't seem to be posting in {channel}").format(
+                    username=username, channel=channel.mention
+                )
+            )
 
     @commands.group(name="tweetset")
     @checks.admin_or_permissions(manage_guild=True)
