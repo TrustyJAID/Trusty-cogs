@@ -27,7 +27,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -578,6 +578,7 @@ class RoleTools(RoleEvents, commands.Cog):
 
     @roletools.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reactroles(self, ctx: Context):
         """
         View current bound roles in the server
@@ -617,7 +618,7 @@ class RoleTools(RoleEvents, commands.Cog):
         ).start(ctx=ctx)
 
     @roletools.command(aliases=["viewrole"])
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def viewroles(self, ctx: Context, *, role: Optional[discord.Role]):
         """
         View current roletools setup for each role in the server
