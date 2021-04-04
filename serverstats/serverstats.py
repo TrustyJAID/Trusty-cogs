@@ -44,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.5"
+    __version__ = "1.6.6"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -84,7 +84,7 @@ class ServerStats(commands.Cog):
                 await self.config.guild_from_id(guild_id).set(data)
 
     @commands.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def avatar(self, ctx: commands.Context, *, members: Optional[FuzzyMember]):
         """
         Display a users avatar in chat
@@ -751,6 +751,7 @@ class ServerStats(commands.Cog):
         pass
 
     @pruneroles.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def list(self, ctx: commands.Context, days: int, role: discord.Role = None) -> None:
         """
         List the users who have not talked in x days
@@ -981,6 +982,7 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Not a cheater"))
 
     @commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def whois(
         self, ctx: commands.Context, *, user_id: Union[int, discord.Member, discord.User]
     ) -> None:
@@ -1079,6 +1081,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def topservers(self, ctx: commands.Context) -> None:
         """
         Lists servers by number of users and shows number of users
@@ -1092,9 +1095,12 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{escape(server.name, mass_mentions=True, formatting=True)}: `{humanize_number(server.member_count)}`\n"
+            msg += (
+                f"{escape(server.name, mass_mentions=True, formatting=True)}: "
+                f"`{humanize_number(server.member_count)}`\n"
+            )
             count += 1
-        msg_list.append(msg)
+            msg_list.append(msg)
         await BaseMenu(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
@@ -1106,6 +1112,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def newservers(self, ctx: commands.Context) -> None:
         """
         Lists servers by when the bot was added to the server
@@ -1119,9 +1126,12 @@ class ServerStats(commands.Cog):
                 msg_list.append(msg)
                 msg = ""
                 count = 0
-            msg += f"{escape(server.name, mass_mentions=True, formatting=True)}: `{humanize_number(server.member_count)}`\n"
+            msg += (
+                f"{escape(server.name, mass_mentions=True, formatting=True)}: "
+                f"`{humanize_number(server.member_count)}`\n"
+            )
             count += 1
-        msg_list.append(msg)
+            msg_list.append(msg)
         await BaseMenu(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
@@ -1242,6 +1252,7 @@ class ServerStats(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def topmembers(
         self, ctx: commands.Context, number: int = 10, guild: GuildConverter = None
     ) -> None:
@@ -1391,6 +1402,7 @@ class ServerStats(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def getguild(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
         Display info about servers the bot is on
@@ -1408,18 +1420,19 @@ class ServerStats(commands.Cog):
                 if guild:
                     page = ctx.bot.guilds.index(guild)
 
-            await BaseMenu(
-                source=GuildPages(guilds=guilds),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
-                cog=self,
-                page_start=page,
-            ).start(ctx=ctx)
+        await BaseMenu(
+            source=GuildPages(guilds=guilds),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=page,
+        ).start(ctx=ctx)
 
     @commands.command()
     @commands.bot_has_permissions(embed_links=True)
     @checks.admin()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def getguilds(self, ctx: commands.Context, *, guilds: MultiGuildConverter) -> None:
         """
         Display info about multiple servers
@@ -1431,14 +1444,14 @@ class ServerStats(commands.Cog):
             if not guilds:
                 guilds = ctx.bot.guilds
                 page = ctx.bot.guilds.index(ctx.guild)
-            await BaseMenu(
-                source=GuildPages(guilds=guilds),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
-                cog=self,
-                page_start=page,
-            ).start(ctx=ctx)
+        await BaseMenu(
+            source=GuildPages(guilds=guilds),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=page,
+        ).start(ctx=ctx)
 
     @commands.command()
     @commands.guild_only()
@@ -1458,6 +1471,7 @@ class ServerStats(commands.Cog):
     @commands.guild_only()
     @commands.command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
         """
         Displays all roles their ID and number of members in order of
@@ -1502,6 +1516,7 @@ class ServerStats(commands.Cog):
 
     @commands.command(name="getreactions", aliases=["getreaction"])
     @checks.mod_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def get_reactions(self, ctx: commands.Context, message: discord.Message) -> None:
         """
         Gets a list of all reactions from specified message and displays the user ID,
@@ -1528,14 +1543,14 @@ class ServerStats(commands.Cog):
             for page in temp_pages:
                 pages.append(f"`Page {i}/{max_i}`\n" + page)
                 i += 1
-            await BaseMenu(
-                source=ListPages(pages=pages),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
-                cog=self,
-                page_start=0,
-            ).start(ctx=ctx)
+        await BaseMenu(
+            source=ListPages(pages=pages),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=0,
+        ).start(ctx=ctx)
 
     async def get_server_stats(
         self, guild: discord.Guild
@@ -1788,7 +1803,7 @@ class ServerStats(commands.Cog):
 
     @commands.guild_only()
     @commands.command(aliases=["serveremojis"])
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def guildemojis(
         self,
         ctx: commands.Context,
