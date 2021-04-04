@@ -481,7 +481,7 @@ class EventMixin:
                     "max_uses": getattr(invite, "max_uses", None),
                     "temporary": getattr(invite, "temporary", False),
                     "inviter": getattr(inviter, "id", "Unknown"),
-                    "channel": channel.id,
+                    "channel": getattr(channel, "id", "Unknown"),
                 }
             except Exception:
                 logger.exception("Error saving invites.")
