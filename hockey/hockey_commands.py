@@ -135,7 +135,7 @@ class HockeyCommands(MixinMeta):
                 await ctx.message.channel.send(team + _(" is not an available role!"))
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def standings(self, ctx: commands.Context, *, search: HockeyStandings = None) -> None:
         """
         Displays current standings
@@ -177,7 +177,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def games(
         self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
     ) -> None:
@@ -200,7 +200,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def schedule(
         self, ctx: commands.Context, *, teams_and_date: Optional[TeamDateFinder] = {}
     ) -> None:
@@ -248,7 +248,7 @@ class HockeyCommands(MixinMeta):
         return players
 
     @hockey_commands.command(aliases=["players"])
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def player(
         self,
         ctx: commands.Context,
@@ -296,7 +296,7 @@ class HockeyCommands(MixinMeta):
             )
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def roster(
         self, ctx: commands.Context, season: Optional[YearFinder] = None, *, search: HockeyTeams
     ) -> None:
@@ -475,6 +475,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command()
     @commands.guild_only()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def leaderboard(self, ctx: commands.Context, leaderboard_type: str = "seasonal") -> None:
         """
         Shows the current server leaderboard
