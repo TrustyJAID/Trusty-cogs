@@ -44,7 +44,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.3"
+    __version__ = "1.6.5"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1142,20 +1142,23 @@ class ServerStats(commands.Cog):
     async def guild_name(self, ctx: commands.Context, *, name: str):
         """
         Change the server name
+
+        `<name>` The new name of the server.
         """
         reason = _("Requested by {author}").format(author=ctx.author)
         try:
             await ctx.guild.edit(name=name, reason=reason)
-        except Exception as e:
-            print(e)
-            pass
+        except Exception:
+            log.exception("Could not edit guild name")
+            return await ctx.send(_("I could not edit the servers name."))
+        await ctx.send(_("Server name set to {name}.").format(name=name))
 
     @guildedit.command(name="verificationlevel", aliases=["verification"])
     async def verifivation_level(self, ctx: commands.Context, *, level: str) -> None:
         """
         Modify the guilds verification level
 
-        `level` must be one of:
+        `<level>` must be one of:
         `none`, `low`, `medium`, `table flip`(`high`), or `double table flip`(`extreme`)
         """
 
@@ -1174,48 +1177,56 @@ class ServerStats(commands.Cog):
             return
         try:
             await ctx.guild.edit(verification_level=levels[level], reason=reason)
-        except Exception as e:
-            print(e)
-            pass
+        except Exception:
+            log.exception("Could not edit guild verification level")
+            return await ctx.send(_("I could not edit the servers verification level."))
+        await ctx.send(_("Server verification level set to {level}").format(level=level))
 
     @guildedit.command(name="systemchannel", aliases=["welcomechannel"])
     async def system_channel(
-        self, ctx: commands.Context, channel: discord.TextChannel = None
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
     ) -> None:
         """
         Change the system channel
 
         This is the default discord welcome channel.
+        `[channel]` The channel you want to set as the system channel.
+        If not provided will be set to `None`.
         """
         reason = _("Requested by {author}").format(author=ctx.author)
         try:
             await ctx.guild.edit(system_channel=channel, reason=reason)
-        except Exception as e:
-            print(e)
-            pass
+        except Exception:
+            log.exception("Could not edit guild systemchannel")
+            return await ctx.send(_("I could not edit the servers systemchannel."))
+        channel_name = getattr(channel, "mention", "None")
+        await ctx.send(_("Server systemchannel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afkchannel")
     async def afk_channel(
-        self, ctx: commands.Context, channel: discord.VoiceChannel = None
+        self, ctx: commands.Context, channel: Optional[discord.VoiceChannel] = None
     ) -> None:
         """
         Change the servers AFK voice channel
 
-        Defaults to no AFK channel.
+        `[channel]` The channel you want to set as the system channel.
+        If not provided will be set to `None`.
         """
         reason = _("Requested by {author}").format(author=ctx.author)
         try:
             await ctx.guild.edit(afk_channel=channel, reason=reason)
-        except Exception as e:
-            print(e)
-            pass
+        except Exception:
+            log.exception("Could not edit guild afk channel")
+            return await ctx.send(_("I could not edit the servers afk channel."))
+        channel_name = getattr(channel, "mention", "None")
+        await ctx.send(_("Server afk channel set to {channel}").format(channel=channel_name))
 
     @guildedit.command(name="afktimeout")
     async def afk_timeout(self, ctx: commands.Context, timeout: int) -> None:
         """
         Change the servers AFK timeout
 
-        `timeout` must be a value of 60, 300, 900, 1800, or 3600.
+        `<timeout>` must be a value of 60, 300, 900, 1800, or 3600.
         """
         if timeout not in [60, 300, 900, 1800, 3600]:
             await ctx.send(_("`timeout` must be a value of 60, 300, 900, 1800, or 3600."))
@@ -1223,9 +1234,10 @@ class ServerStats(commands.Cog):
         reason = _("Requested by {author}").format(author=ctx.author)
         try:
             await ctx.guild.edit(afk_timeout=timeout, reason=reason)
-        except Exception as e:
-            print(e)
-            pass
+        except Exception:
+            log.exception("Could not edit guild afk timeout")
+            return await ctx.send(_("I could not edit the servers afk timeout."))
+        await ctx.send(_("Server AFK timeout set to {timeout} seconds.").format(timeout=timeout))
 
     @commands.command()
     @commands.guild_only()
@@ -1750,7 +1762,6 @@ class ServerStats(commands.Cog):
                 key=lambda x: x[1],
                 reverse=True,
             )
-            log.info(channel_data)
             for member_id, value in sorted_members[:5]:
                 member_messages.append(f"<@!{member_id}>: {bold(humanize_number(value))}\n")
             try:
