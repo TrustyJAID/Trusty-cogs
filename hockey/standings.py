@@ -1,11 +1,12 @@
+from __future__ import annotations
 import logging
 from datetime import datetime
-from typing import Optional, Literal, List
+from typing import List, Literal, Optional, Tuple
 
 import aiohttp
 import discord
-
 from redbot import VersionInfo, version_info
+from redbot.core import Config
 from redbot.core.utils import AsyncIter
 
 from .constants import BASE_URL, TEAMS
@@ -93,7 +94,7 @@ class Standings:
     async def get_team_standings(
         style: str,
         session: Optional[aiohttp.ClientSession] = None,
-    ):
+    ) -> List[Standings]:
         """
         Creates a list of standings when given a particular style
         accepts Division names, Conference names, and Team names
@@ -101,8 +102,8 @@ class Standings:
         style in the list
         """
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(BASE_URL + "/api/v1/standings") as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(BASE_URL + "/api/v1/standings") as resp:
                     data = await resp.json()
         else:
             async with session.get(BASE_URL + "/api/v1/standings") as resp:
@@ -110,7 +111,7 @@ class Standings:
         return await Standings.get_team_standings_from_data(style, data)
 
     @staticmethod
-    async def get_team_standings_from_data(style: str, data: dict):
+    async def get_team_standings_from_data(style: str, data: dict) -> Tuple[List[Standings], int]:
 
         if style.lower() in CONFERENCES:
             # Leaving this incase it comes back
@@ -167,7 +168,7 @@ class Standings:
             return all_teams, index
 
     @staticmethod
-    async def post_automatic_standings(bot):
+    async def post_automatic_standings(bot) -> None:
         """
         Automatically update a standings embed with the latest stats
         run when new games for the day is updated
@@ -209,7 +210,9 @@ class Standings:
                     await config.guild(guild).standings_msg.clear()
                     continue
 
-                standings, page = await Standings.get_team_standings_from_data(search, standings_data)
+                standings, page = await Standings.get_team_standings_from_data(
+                    search, standings_data
+                )
                 team_stats = standings[page]
 
                 if search in DIVISIONS:
@@ -220,18 +223,26 @@ class Standings:
                 else:
                     em = await Standings.all_standing_embed(standings)
                 if message is not None:
-                    try:
-                        await message.edit(embed=em)
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        await config.guild(guild).post_standings.clear()
-                        await config.guild(guild).standings_type.clear()
-                        await config.guild(guild).standings_channel.clear()
-                        await config.guild(guild).standings_msg.clear()
-                    except Exception:
-                        log.exception(f"Error editing standings message in {guild.id}")
+                    bot.loop.create_task(
+                        Standings.edit_standings_message(em, guild, message, config)
+                    )
+
+    @staticmethod
+    async def edit_standings_message(
+        embed: discord.Embed, guild: discord.Guild, message: discord.Message, config: Config
+    ) -> None:
+        try:
+            await message.edit(embed=embed)
+        except (discord.errors.NotFound, discord.errors.Forbidden):
+            await config.guild(guild).post_standings.clear()
+            await config.guild(guild).standings_type.clear()
+            await config.guild(guild).standings_channel.clear()
+            await config.guild(guild).standings_msg.clear()
+        except Exception:
+            log.exception(f"Error editing standings message in {repr(guild)}")
 
     @classmethod
-    async def from_json(cls, data: dict, division: str, conference: str):
+    async def from_json(cls, data: dict, division: str, conference: str) -> Standings:
         if "streak" in data:
             streak_number = data["streak"]["streakNumber"]
             streak_type = data["streak"]["streakType"]
@@ -259,7 +270,7 @@ class Standings:
         )
 
     @staticmethod
-    async def all_standing_embed(post_standings):
+    async def all_standing_embed(post_standings: List[Standings]) -> discord.Embed:
         """
         Builds the standing embed when all TEAMS are selected
         """
@@ -292,7 +303,7 @@ class Standings:
         return em
 
     @staticmethod
-    async def make_division_standings_embed(team_stats):
+    async def make_division_standings_embed(team_stats: List[Standings]) -> discord.Embed:
         em = discord.Embed()
         msg = ""
         # timestamp = datetime.strptime(team_stats[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
@@ -319,7 +330,7 @@ class Standings:
         return em
 
     @staticmethod
-    async def make_conference_standings_embed(team_stats):
+    async def make_conference_standings_embed(team_stats: List[Standings]) -> discord.Embed:
         em = discord.Embed()
         msg = ""
         newteam_stats = sorted(team_stats, key=lambda k: int(k.conference_rank))
@@ -353,7 +364,7 @@ class Standings:
         return em
 
     @staticmethod
-    async def make_team_standings_embed(team_stats):
+    async def make_team_standings_embed(team_stats: Standings) -> discord.Embed:
         em = discord.Embed()
         em.set_author(
             name="# {} {}".format(team_stats.league_rank, team_stats.name),
@@ -362,15 +373,15 @@ class Standings:
         )
         em.colour = int(TEAMS[team_stats.name]["home"].replace("#", ""), 16)
         em.set_thumbnail(url=TEAMS[team_stats.name]["logo"])
-        em.add_field(name="Division", value="# " + team_stats.division_rank)
-        em.add_field(name="Conference", value="# " + team_stats.conference_rank)
-        em.add_field(name="Wins", value=team_stats.wins)
-        em.add_field(name="Losses", value=team_stats.losses)
-        em.add_field(name="OT", value=team_stats.ot)
-        em.add_field(name="Points", value=team_stats.pts)
-        em.add_field(name="Games Played", value=team_stats.gp)
-        em.add_field(name="Goals Scored", value=team_stats.goals)
-        em.add_field(name="Goals Against", value=team_stats.gaa)
+        em.add_field(name="Division", value=f"# {team_stats.division_rank}")
+        em.add_field(name="Conference", value=f"# {team_stats.conference_rank}")
+        em.add_field(name="Wins", value=str(team_stats.wins))
+        em.add_field(name="Losses", value=str(team_stats.losses))
+        em.add_field(name="OT", value=str(team_stats.ot))
+        em.add_field(name="Points", value=str(team_stats.pts))
+        em.add_field(name="Games Played", value=str(team_stats.gp))
+        em.add_field(name="Goals Scored", value=str(team_stats.goals))
+        em.add_field(name="Goals Against", value=str(team_stats.gaa))
         em.add_field(
             name="Current Streak",
             value="{} {}".format(team_stats.streak, team_stats.streak_type),
@@ -381,7 +392,7 @@ class Standings:
         return em
 
     @staticmethod
-    async def build_standing_embed(post_list, page=0):
+    async def build_standing_embed(post_list: List[Standings], page=0) -> discord.Embed:
         """
         Builds the standings type based on number of items in the list
         """

@@ -1,19 +1,18 @@
-import asyncio
+from __future__ import annotations
 import logging
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, List, Dict, Union, Tuple
 
 import aiohttp
-import discord  # type: ignore[import]
+import discord
 from redbot import VersionInfo, version_info
-from redbot.core import Config
 from redbot.core.bot import Red
-from redbot.core.utils import bounded_gather, AsyncIter
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
-from .helper import check_to_post, get_team, get_team_role, utc_to_local, get_channel_obj
+from .helper import check_to_post, get_channel_obj, get_team, get_team_role, utc_to_local
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)
@@ -44,7 +43,7 @@ class Game:
     away_abr: str
     period_ord: str
     period_time_left: str
-    plays: list
+    plays: List[dict]
     first_star: Optional[str]
     second_star: Optional[str]
     third_star: Optional[str]
@@ -111,7 +110,7 @@ class Game:
         game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
         return game_types.get(self.game_type, _("Unknown"))
 
-    def to_json(self) -> dict:
+    def to_json(self) -> Dict[str, Union[str, int]]:
         return {
             "game_state": self.game_state,
             "home_team": self.home_team,
@@ -143,11 +142,11 @@ class Game:
 
     @staticmethod
     async def get_games(
-        team=None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        team: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
-    ):
+    ) -> List[Game]:
         """
         Get a specified days games, defaults to the current day
         requires a datetime object
@@ -163,8 +162,8 @@ class Game:
             for games in games_list:
                 try:
                     if session is None:
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(BASE_URL + games["link"]) as resp:
+                        async with aiohttp.ClientSession() as new_session:
+                            async with new_session.get(BASE_URL + games["link"]) as resp:
                                 data = await resp.json()
                     else:
                         async with session.get(BASE_URL + games["link"]) as resp:
@@ -178,11 +177,11 @@ class Game:
 
     @staticmethod
     async def get_games_list(
-        team=None,
-        start_date: datetime = None,
-        end_date: datetime = None,
+        team: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         session: Optional[aiohttp.ClientSession] = None,
-    ):
+    ) -> List[dict]:
         """
         Get a specified days games, defaults to the current day
         requires a datetime object
@@ -211,8 +210,8 @@ class Game:
             # if a team is provided get just that TEAMS data
             url += "&teamId={}".format(TEAMS[team]["id"])
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -224,7 +223,7 @@ class Game:
         self,
         include_plays: bool = False,
         period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
-    ):
+    ) -> discord.Embed:
         """
         Builds the game embed when the command is called
         provides as much data as possible
@@ -261,19 +260,11 @@ class Game:
             )
 
         if self.game_state != "Preview":
-            home_msg = (
-                _("Goals: **")
-                + str(self.home_score)
-                + _("** \nShots: **")
-                + str(self.home_shots)
-                + "**"
+            home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=self.home_shots
             )
-            away_msg = (
-                _("Goals: **")
-                + str(self.away_score)
-                + _("** \nShots: **")
-                + str(self.away_shots)
-                + "**"
+            away_msg = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=self.away_shots
             )
             em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_msg
@@ -304,7 +295,7 @@ class Game:
                     for goal in list_goals[ordinal]:
                         if count == 4:
                             em.add_field(
-                                name=str(ordinal) + _(" Period Goals"),
+                                name=_("{ordinal} Period Goals").format(ordinal=ordinal),
                                 value=goal_msg[:1024],
                                 inline=False,
                             )
@@ -315,45 +306,57 @@ class Game:
                         except KeyError:
                             emoji = ""
                         if not goal.link:
-                            goal_msg += f"{emoji} {goal.team_name} Goal By {goal.description}\n\n"
+                            goal_msg += _("{emoji} {team} Goal By {description}\n\n").format(
+                                emoji=emoji, team=goal.team_name, description=goal.description
+                            )
                         else:
-                            goal_msg += f"{emoji} [{goal.team_name} Goal By {goal.description}]({goal.link})\n\n"
+                            goal_msg += _(
+                                "{emoji} [{team} Goal By {description}]({link})\n\n"
+                            ).format(
+                                emoji=emoji,
+                                team=goal.team_name,
+                                description=goal.description,
+                                link=goal.link,
+                            )
                         count += 1
                     if len(list_goals[ordinal]) > 4 and goal_msg != "":
                         em.add_field(
-                            name=str(ordinal) + _(" Period Goals (Continued)"),
+                            name=_("{ordinal} Period Goals (Continued)").format(ordinal=ordinal),
                             value=goal_msg[:1024],
                         )
                     if len(list_goals[ordinal]) <= 4 and goal_msg != "":
                         em.add_field(
-                            name=str(ordinal) + _(" Period Goals"),
+                            name=_("{ordinal} Period Goals").format(ordinal=ordinal),
                             value=goal_msg[:1024],
                             inline=False,
                         )
                 if len(so_goals) != 0:
                     home_msg, away_msg = await self.goals[0].get_shootout_display(self)
-                    em.add_field(name=f"{self.home_team}" + _(" Shootout"), value=home_msg)
-                    em.add_field(name=f"{self.away_team}" + _(" Shootout"), value=away_msg)
+                    em.add_field(
+                        name=_("{team} Shootout").format(team=self.home_team), value=home_msg
+                    )
+                    em.add_field(
+                        name=+_("{team} Shootout").format(team=self.away_team), value=away_msg
+                    )
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
             if self.game_state == "Live":
                 period = self.period_ord
                 if self.period_time_left[0].isdigit():
-                    msg = (
-                        str(self.period_time_left)
-                        + _(" Left in the ")
-                        + str(period)
-                        + _(" period")
+                    msg = _("{time} Left in the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
                     )
                 else:
-                    msg = str(self.period_time_left) + _(" of the ") + str(period) + _(" period")
+                    msg = _("{time} Left of the {ordinal} period").format(
+                        time=self.period_time_left, ordinal=period
+                    )
                 if include_plays:
                     em.description = self.plays[-1]["result"]["description"]
                 em.add_field(name="Period", value=msg)
         return em
 
-    async def game_state_embed(self):
+    async def game_state_embed(self) -> discord.Embed:
         """
         Makes the game state embed based on the game self provided
         """
@@ -364,19 +367,11 @@ class Game:
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
         if self.game_state != "Preview":
-            home_str = (
-                _("Goals: **")
-                + str(self.home_score)
-                + _("** \nShots: **")
-                + str(self.home_shots)
-                + "**"
+            home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
+                home_score=self.home_score, home_shots=self.home_shots
             )
-            away_str = (
-                _("Goals: **")
-                + str(self.away_score)
-                + _("** \nShots: **")
-                + str(self.away_shots)
-                + "**"
+            away_str = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
+                away_score=self.away_score, away_shots=self.away_shots
             )
         else:
             home_str, away_str = await self.get_stats_msg()
@@ -400,7 +395,7 @@ class Game:
         em.set_footer(text=_("Game start "), icon_url=self.away_logo)
         return em
 
-    async def game_state_text(self):
+    async def game_state_text(self) -> str:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         time_string = utc_to_local(self.game_start).strftime("%I:%M %p %Z")
@@ -416,7 +411,7 @@ class Game:
             )
         return em
 
-    async def get_stats_msg(self):
+    async def get_stats_msg(self) -> Tuple[str, str]:
         """
         returns team stats on the season from standings object
         """
@@ -451,7 +446,7 @@ class Game:
             pass
         return home_str, away_str
 
-    async def check_game_state(self, bot, count=0):
+    async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
         home = await get_team(bot, self.home_team)
         # away = await get_team(self.away_team)
@@ -540,7 +535,7 @@ class Game:
                 return True
         return False
 
-    async def period_recap(self, bot, period: Literal["1st", "2nd", "3rd"]):
+    async def period_recap(self, bot: Red, period: Literal["1st", "2nd", "3rd"]) -> None:
         """
         Builds the period recap
         """
@@ -563,16 +558,12 @@ class Game:
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
-    ):
+    ) -> None:
         """
         Posts the period recap in designated channels
         """
         if not channel.permissions_for(channel.guild.me).send_messages:
-            log.debug(
-                _("No permission to send messages in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                )
-            )
+            log.debug(f"No permission to send messages in {repr(channel)}")
             return
         try:
             msg = await channel.send(embed=embed)
@@ -580,14 +571,9 @@ class Game:
                 pass
                 # await msg.publish()
         except Exception:
-            log.error(
-                _("Could not post goal in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                ),
-                exc_info=True,
-            )
+            log.exception(f"Could not post goal in {repr(channel)}")
 
-    async def post_game_state(self, bot):
+    async def post_game_state(self, bot: Red) -> None:
         """
         When a game state has changed this is called to create the embed
         and post in all channels
@@ -612,19 +598,16 @@ class Game:
             else:
                 bot.dispatch("hockey_preview_message", preview[0], preview[1], self)
 
-    async def actually_post_state(self, bot, channel, state_embed, state_text):
+    async def actually_post_state(
+        self, bot: Red, channel: discord.TextChannel, state_embed: discord.Embed, state_text: str
+    ) -> Optional[Tuple[discord.TextChannel, discord.Message]]:
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
-            log.debug(
-                _("No permission to send messages in {channel} ({id})").format(
-                    channel=channel, id=channel.id
-                )
-            )
-            return
+            log.debug(f"No permission to send messages in {repr(channel)}")
+            return None
         config = bot.get_cog("Hockey").config
         guild_settings = await config.guild(guild).all()
         channel_settings = await config.channel(channel).all()
-        del guild_settings["pickems"]  # No need to keep this in memory twice
         game_day_channels = guild_settings["gdc"]
         can_embed = channel.permissions_for(guild.me).embed_links
         publish_states = []  # await config.channel(channel).publish_states()
@@ -684,19 +667,14 @@ class Game:
                     except Exception:
                         pass
             except Exception:
-                log.error(
-                    _("Could not post goal in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ),
-                    exc_info=True,
-                )
+                log.exception(f"Could not post goal in {repr(channel)}")
 
         else:
             if self.game_state == "Preview":
                 if game_day_channels is not None:
                     # Don't post the preview message twice in the channel
                     if channel.id in game_day_channels:
-                        return
+                        return None
             try:
                 if not can_embed:
                     preview_msg = await channel.send(state_text)
@@ -722,14 +700,10 @@ class Game:
                             log.debug("Could not add reactions")
                         return channel, preview_msg
             except Exception:
-                log.error(
-                    _("Could not post goal in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    ),
-                    exc_info=True,
-                )
+                log.exception(f"Could not post goal in {repr(channel)}")
+        return None
 
-    async def check_team_goals(self, bot):
+    async def check_team_goals(self, bot: Red) -> None:
         """
         Checks to see if a goal needs to be posted
         """
@@ -756,6 +730,8 @@ class Game:
             if goal.goal_id not in team_data[goal.team_name]["goal_id"]:
                 # attempts to post the goal if there is a new goal
                 bot.dispatch("hockey_goal", self, goal)
+                goal.home_shots = self.home_shots
+                goal.away_shots = self.away_shots
                 msg_list = await goal.post_team_goal(bot, self)
                 team_list.remove(team_data[goal.team_name])
                 team_data[goal.team_name]["goal_id"][goal.goal_id] = {
@@ -769,6 +745,10 @@ class Game:
                 # attempts to edit the goal if the scorers have changed
                 old_goal = Goal(**team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"])
                 if goal.description != old_goal.description or goal.link != old_goal.link:
+                    goal.home_shots = old_goal.home_shots
+                    goal.away_shots = old_goal.away_shots
+                    # This is to keep shots consistent between edits
+                    # Shots should not update as the game continues
                     bot.dispatch("hockey_goal_edit", self, goal)
                     old_msgs = team_data[goal.team_name]["goal_id"][goal.goal_id]["messages"]
                     team_list.remove(team_data[goal.team_name])
@@ -782,7 +762,7 @@ class Game:
         for goal_str in away_goal_list:
             await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
 
-    async def save_game_state(self, bot, time_to_game_start: str = "0"):
+    async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """
         Saves the data do the config to compare against new data
         """
@@ -822,7 +802,7 @@ class Game:
         team_list.append(away)
         await bot.get_cog("Hockey").config.teams.set(team_list)
 
-    async def post_time_to_game_start(self, bot, time_left):
+    async def post_time_to_game_start(self, bot: Red, time_left: str) -> None:
         """
         Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
@@ -847,7 +827,7 @@ class Game:
                 tasks.append(self.post_game_start(channel, msg))
         await bounded_gather(*tasks)
 
-    async def post_game_start(self, channel, msg):
+    async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:
         if not channel.permissions_for(channel.guild.me).send_messages:
             log.debug(f"No permission to send messages in {channel} ({channel.id})")
             return
@@ -857,14 +837,15 @@ class Game:
             log.exception(f"Could not post goal in {channel} ({channel.id})")
 
     @staticmethod
-    async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None):
+    async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None) -> Optional[Game]:
+        url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
         try:
             if session is None:
                 # this should only happen in pickems objects
                 # since pickems don't have access to the full
                 # cogs session
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(BASE_URL + url) as resp:
+                async with aiohttp.ClientSession() as new_session:
+                    async with new_session.get(BASE_URL + url) as resp:
                         data = await resp.json()
             else:
                 async with session.get(BASE_URL + url) as resp:
@@ -872,10 +853,10 @@ class Game:
             return await Game.from_json(data)
         except Exception:
             log.error("Error grabbing game data: ", exc_info=True)
-            return
+            return None
 
     @classmethod
-    async def from_json(cls, data: dict):
+    async def from_json(cls, data: dict) -> Game:
         event = data["liveData"]["plays"]["allPlays"]
         home_team = data["gameData"]["teams"]["home"]["name"]
         away_team = data["gameData"]["teams"]["away"]["name"]

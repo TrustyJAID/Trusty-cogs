@@ -1,15 +1,14 @@
 import asyncio
-import discord
 import logging
 import re
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Pattern, Union, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Pattern, Tuple, Union
 
-from redbot.core.bot import Red
-
+import discord
 import pytz
-from discord.ext.commands.converter import Converter  # type: ignore[import]
-from discord.ext.commands.errors import BadArgument  # type: ignore[import]
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
+from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 
@@ -28,8 +27,10 @@ DAY_REF_RE = re.compile(r"(yesterday|tomorrow|today)", re.I)
 YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 # https://www.regular-expressions.info/dates.html
 
+TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
 
-def utc_to_local(utc_dt, new_timezone="US/Pacific") -> datetime:
+
+def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
 
@@ -42,7 +43,6 @@ class YearFinder(Converter):
     """
 
     async def convert(self, ctx: Context, argument: str) -> re.Match:
-        result = None
         find = YEAR_RE.search(argument)
         if find:
             return find
@@ -58,13 +58,30 @@ class DateFinder(Converter):
     """
 
     async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
-        result = None
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
             return datetime.strptime(date_str, "%Y-%m-%d")
         else:
             return datetime.utcnow()
+
+
+class TimezoneFinder(Converter):
+    """
+    Converts user input into valid timezones for pytz to use
+    """
+
+    async def convert(self, ctx: Context, argument: str) -> str:
+        find = TIMEZONE_RE.search(argument)
+        if find:
+            return find.group(0)
+        else:
+            raise BadArgument(
+                _(
+                    "`{argument}` is not a valid timezone. Please see "
+                    "`{prefix}hockeyset timezone list`."
+                ).format(argument=argument, prefix=ctx.clean_prefix)
+            )
 
 
 class TeamDateFinder(Converter):
@@ -196,12 +213,12 @@ class HockeyStandings(Converter):
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
-    async def convert(self, ctx: Context, argument: str) -> List[str]:
-        result = []
+    async def convert(self, ctx: Context, argument: str) -> Optional[str]:
+        result = None
         team_list = await check_valid_team(argument, True)
         if team_list == []:
             raise BadArgument('Standing or Team "{}" not found'.format(argument))
-        if len(team_list) == 1:
+        if len(team_list) >= 1:
             result = team_list[0]
         return result
 
@@ -237,9 +254,11 @@ async def check_to_post(
     return should_post
 
 
-async def get_team_role(
-    guild: discord.Guild, home_team: str, away_team: str
-) -> Tuple[Optional[discord.Role], Optional[discord.Role]]:
+async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) -> Tuple[str, str]:
+    """
+    This returns the role mentions if they exist
+    Otherwise it returns the name of the team as a str
+    """
     home_role = None
     away_role = None
 
@@ -259,7 +278,7 @@ async def get_team_role(
     return home_role, away_role
 
 
-async def get_team(bot, team: str) -> TeamEntry:
+async def get_team(bot: Red, team: str) -> TeamEntry:
     config = bot.get_cog("Hockey").config
     team_list = await config.teams()
     if team_list is None:
@@ -326,9 +345,7 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     return is_team
 
 
-async def get_channel_obj(
-    bot: Red, channel_id: int, data: dict
-) -> Optional[discord.TextChannel]:
+async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:
     """
     Requires a bot object to access config, channel_id, and channel config data
     Returns the channel object and sets the guild ID if it's missing from config

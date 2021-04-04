@@ -1,55 +1,36 @@
-import asyncio
-import aiohttp
 import logging
 from datetime import datetime
+from typing import Optional
 
 import discord
-from redbot.core import Config, commands, checks
-from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core import commands
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.menus import start_adding_reactions
 
+from .abc import MixinMeta
 from .constants import TEAMS
 from .game import Game
-from .helper import utc_to_local, HockeyStates, HockeyTeams
-from .pickems import Pickems
+from .helper import HockeyStates, HockeyTeams, utc_to_local
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
 
 
-@cog_i18n(_)
-class GameDayChannels:
+class GameDayChannels(MixinMeta):
     """
     All the commands grouped under `[p]gdc`
     """
-
-    bot: Red
-    config: Config
-    TEST_LOOP: bool
-    all_pickems: dict
-    save_pickems: bool
-    pickems_save_lock: asyncio.Lock
-    session: aiohttp.ClientSession
-
-    def __init__(self, *args):
-        self.bot
-        self.config
-        self.TEST_LOOP
-        self.all_pickems
-        self.save_pickems
-        self.pickems_save_lock
-        self.session
 
     #######################################################################
     # GDC Commands                                                        #
     #######################################################################
 
     @commands.group()
-    @checks.mod_or_permissions(manage_channels=True)
+    @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def gdc(self, ctx: commands.Context):
+    async def gdc(self, ctx: commands.Context) -> None:
         """
         Game Day Channel setup for the server
 
@@ -58,8 +39,8 @@ class GameDayChannels:
         usually around 9AM PST
         """
 
-    @gdc.command()
-    async def settings(self, ctx: commands.Context):
+    @gdc.command(name="settings")
+    async def gdc_settings(self, ctx: commands.Context) -> None:
         """
         Show the current Game Day Channel Settings
         """
@@ -90,25 +71,19 @@ class GameDayChannels:
             else:
                 created_channels = "None"
             if not ctx.channel.permissions_for(guild.me).embed_links:
-                msg = (
-                    _("```GDC settings for ")
-                    + guild.name
-                    + "\n"
-                    + _("Create Game Day Channels:")
-                    + create_channels
-                    + "\n"
-                    + _("Delete Game Day Channels: ")
-                    + delete_gdc
-                    + "\n"
-                    + _("Team:")
-                    + team
-                    + "\n"
-                    + _("Current Channels: ")
-                    + created_channels
-                    + _("Default Game States: ")
-                    + humanize_list(game_states)
-                    + "```"
+                msg = _(
+                    "```GDC settings for {guild}\nCreate Game Day Channels: {create_channels}"
+                    "\nDelete Game Day Channels: {delete_gdc}\nTeam: {team}\n"
+                    "Current Channels: {created_channels}\nDefault Game State: {game_states}\n```"
+                ).format(
+                    guild=guild.name,
+                    create_channels=create_channels,
+                    delete_gdc=delete_gdc,
+                    team=team,
+                    created_channels=created_channels,
+                    game_states=humanize_list(game_states),
                 )
+
                 await ctx.send(msg)
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=_("GDC settings for ") + guild.name)
@@ -123,7 +98,7 @@ class GameDayChannels:
                 await ctx.send(embed=em)
 
     @gdc.command(name="delete")
-    async def gdc_delete(self, ctx: commands.Context):
+    async def gdc_delete(self, ctx: commands.Context) -> None:
         """
         Delete all current game day channels for the server
         """
@@ -131,7 +106,7 @@ class GameDayChannels:
         await ctx.send(_("Game day channels deleted."))
 
     @gdc.command(name="defaultstate")
-    async def gdc_default_game_state(self, ctx: commands.Context, *state: HockeyStates):
+    async def gdc_default_game_state(self, ctx: commands.Context, *state: HockeyStates) -> None:
         """
         Set the default game state updates for Game Day Channels.
 
@@ -153,7 +128,7 @@ class GameDayChannels:
             await ctx.send(_("GDC game updates not set"))
 
     @gdc.command(name="create")
-    async def gdc_create(self, ctx: commands.Context):
+    async def gdc_create(self, ctx: commands.Context) -> None:
         """
         Creates the next gdc for the server
         """
@@ -170,7 +145,7 @@ class GameDayChannels:
         await ctx.send(_("Game day channels created."))
 
     @gdc.command(name="toggle")
-    async def gdc_toggle(self, ctx: commands.Context):
+    async def gdc_toggle(self, ctx: commands.Context) -> None:
         """
         Toggles the game day channel creation on this server
         """
@@ -182,7 +157,7 @@ class GameDayChannels:
         await ctx.send(msg)
 
     @gdc.command(name="category")
-    async def gdc_category(self, ctx: commands.Context, category: discord.CategoryChannel):
+    async def gdc_category(self, ctx: commands.Context, category: discord.CategoryChannel) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.
         """
@@ -195,7 +170,7 @@ class GameDayChannels:
         await ctx.send(msg + category.name)
 
     @gdc.command(name="autodelete")
-    async def gdc_autodelete(self, ctx: commands.Context):
+    async def gdc_autodelete(self, ctx: commands.Context) -> None:
         """
         Toggle's auto deletion of game day channels.
         """
@@ -203,18 +178,16 @@ class GameDayChannels:
 
         cur_setting = await self.config.guild(guild).delete_gdc()
         verb = _("won't") if cur_setting else _("will")
-        msg = (
-            _("Game day channels ")
-            + verb
-            + _(" be deleted on this server.\n")
-            + _("Note, this may not happen until the next set of games.")
-        )
+        msg = _(
+            "Game day channels {verb} be deleted on this server.\n"
+            "Note, this may not happen until the next set of games."
+        ).format(verb=verb)
         await self.config.guild(guild).delete_gdc.set(not cur_setting)
         await ctx.send(msg)
 
     @gdc.command(name="test")
     @commands.is_owner()
-    async def test_gdc(self, ctx: commands.Context):
+    async def test_gdc(self, ctx: commands.Context) -> None:
         """
         Test checking for new game day channels
         """
@@ -229,7 +202,7 @@ class GameDayChannels:
         team: HockeyTeams,
         category: discord.CategoryChannel = None,
         delete_gdc: bool = True,
-    ):
+    ) -> None:
         """
         Setup game day channels for a single team or all teams
 
@@ -271,7 +244,7 @@ class GameDayChannels:
     # GDC logic                                                           #
     #######################################################################
 
-    async def get_chn_name(self, game):
+    async def get_chn_name(self, game: Game) -> str:
         """
         Creates game day channel name
         """
@@ -281,7 +254,7 @@ class GameDayChannels:
         )
         return chn_name.lower()
 
-    async def check_new_gdc(self):
+    async def check_new_gdc(self) -> None:
         game_list = await Game.get_games(
             session=self.session
         )  # Do this once so we don't spam the api
@@ -321,7 +294,7 @@ class GameDayChannels:
                 for game in game_list:
                     await self.create_gdc(guild, game)
 
-    async def create_gdc(self, guild: discord.Guild, game_data=None):
+    async def create_gdc(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
         """
         Creates a game day channel for the given game object
         if no game object is passed it looks for the set team for the guild
@@ -333,6 +306,16 @@ class GameDayChannels:
         category = self.bot.get_channel(category_id)
         if category is None:
             # Return none if there's no category to create the channel
+            return
+        if not category.permissions_for(guild.me).manage_channels:
+            log.info(
+                f"Cannot create new GDC in {repr(guild)} due to too many missing permissions."
+            )
+            return
+        if len(category.channels) >= 50:
+            log.info(
+                f"Cannot create new GDC in {repr(guild)} due to too many channels in category."
+            )
             return
         if game_data is None:
             team = await self.config.guild(guild).gdc_team()
@@ -352,8 +335,10 @@ class GameDayChannels:
         chn_name = await self.get_chn_name(next_game)
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
+        except discord.Forbidden:
+            log.error(f"Error creating channel in {repr(guild)}")
         except Exception:
-            log.error("Error creating channels in {}".format(guild.name), exc_info=True)
+            log.exception(f"Error creating channels in {repr(guild)}")
             return
         async with self.config.guild(guild).gdc() as current_gdc:
             current_gdc.append(new_chn.id)
@@ -369,7 +354,7 @@ class GameDayChannels:
         # guild_team = await config.guild(guild).gdc_team()
         channel_team = team if team != "all" else next_game.home_team
         timezone = (
-            TEAMS[channel_team]["timezone"]
+            await self.config.guild(guild).timezone() or TEAMS[channel_team]["timezone"]
             if channel_team in TEAMS
             else TEAMS[next_game.away_team]["timezone"]
         )
@@ -400,20 +385,18 @@ class GameDayChannels:
 
         # Create new pickems object for the game
         try:
-            await Pickems.create_pickem_object(self.bot, guild, preview_msg, new_chn, next_game)
+            await self.create_pickem_object(guild, preview_msg, new_chn, next_game)
         except Exception:
             log.error("Error creating pickems object in GDC channel.")
 
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()
         if new_chn.permissions_for(guild.me).add_reactions:
-            try:
-                await preview_msg.add_reaction(next_game.away_emoji[2:-1])
-                await preview_msg.add_reaction(next_game.home_emoji[2:-1])
-            except Exception:
-                log.debug("cannot add reactions")
+            start_adding_reactions(
+                preview_msg, [next_game.away_emoji[2:-1], next_game.home_emoji[2:-1]]
+            )
 
-    async def delete_gdc(self, guild):
+    async def delete_gdc(self, guild: discord.Guild) -> None:
         """
         Deletes all game day channels in a given guild
         """

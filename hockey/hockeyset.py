@@ -1,60 +1,32 @@
-import asyncio
-import aiohttp
 import logging
+import pytz
 from typing import Optional
-from datetime import datetime
 
 import discord
-from redbot.core import Config, checks, commands
-from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core import commands
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
+from .abc import MixinMeta
 from .constants import TEAMS
-from .helper import HockeyStates, HockeyTeams
-
-from .standings import Standings, DIVISIONS, CONFERENCES
-from .game import Game
-from .pickems import Pickems
+from .helper import HockeyStates, HockeyTeams, TimezoneFinder
+from .menu import BaseMenu, SimplePages
+from .standings import CONFERENCES, DIVISIONS, Standings
 
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
+hockeyset_commands = MixinMeta.hockeyset_commands
 
-@cog_i18n(_)
-class HockeySetCommands:
+
+class HockeySetCommands(MixinMeta):
     """
     All the commands grouped under `[p]hockeyset`
     """
 
-    bot: Red
-    config: Config
-    TEST_LOOP: bool
-    all_pickems: dict
-    save_pickems: bool
-    pickems_save_lock: asyncio.Lock
-    session: aiohttp.ClientSession
-
-    def __init__(self, *args):
-        self.bot
-        self.config
-        self.TEST_LOOP
-        self.all_pickems
-        self.save_pickems
-        self.pickems_save_lock
-        self.session
-
-    @commands.group(name="hockeyset", aliases=["nhlset"])
-    @commands.guild_only()
-    @checks.mod_or_permissions(manage_channels=True)
-    async def hockeyset_commands(self, ctx: commands.Context):
-        """
-        Setup Hockey commands for the server
-        """
-
     @hockeyset_commands.command(name="settings")
-    async def hockey_settings(self, ctx: commands.Context):
+    async def hockey_settings(self, ctx: commands.Context) -> None:
         """
         Show hockey settings for this server
         """
@@ -67,6 +39,7 @@ class HockeySetCommands:
                 _("On") if await self.config.guild(guild).post_standings() else _("Off")
             )
             gdc_channels = await self.config.guild(guild).gdc()
+            timezone = await self.config.guild(guild).timezone() or _("Home Teams Timezone")
             if gdc_channels is None:
                 gdc_channels = []
             if standings_channel is not None:
@@ -118,70 +91,70 @@ class HockeySetCommands:
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
                 em.add_field(name=_("Notifications"), value=notification_settings)
+                em.add_field(name=_("Timezone"), value=timezone)
                 await ctx.send(embed=em)
             else:
-                msg = (
-                    f"```\n{guild.name} "
-                    + _("Hockey Settings\n")
-                    + f"{channels}\n"
-                    + _("Notifications")
-                    + notification_settings
-                    + _("Standings Settings")
-                    + "\n#{standings_chn}: {standings_msg}"
+                msg = _(
+                    "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
+                    "\nStandings Settings\n{standings_chn}: {standings}\n"
+                    "Timezone: {timezone}"
+                ).format(
+                    guild=guild.name,
+                    channels=channels,
+                    notifications=notification_settings,
+                    standings_chn=standings_chn,
+                    standings=standings_msg,
+                    timezone=timezone,
                 )
-                if standings_msg is not None:
-                    await ctx.send(msg)
-                else:
-                    await ctx.send(msg + "```")
+                await ctx.send(msg)
 
     #######################################################################
     # All Hockey setup commands                                           #
     #######################################################################
 
-    @hockeyset_commands.command(hidden=True)
-    @checks.admin_or_permissions(administrator=True)
-    async def reset(self, ctx: commands.Context):
+    @hockeyset_commands.group(
+        name="timezone", aliases=["timezones", "tz"], invoke_without_command=True
+    )
+    async def set_hockey_timezone(
+        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
+    ) -> None:
         """
-        Restarts the hockey loop incase there are issues with the posts
-        """
-        msg = await ctx.send(_("Restarting..."))
-        self.loop.cancel()
-        await msg.edit(content=msg.content + _("loop closed..."))
-        self.loop = self.bot.loop.create_task(self.game_check_loop())
-        await msg.edit(content=msg.content + _("restarted"))
-        # await ctx.send("Done.")
+        Customize the servers timezone
 
-    @hockeyset_commands.command(hidden=True)
-    async def leaderboardset(
-        self,
-        ctx: commands.Context,
-        user: discord.Member,
-        season: int,
-        weekly: int = None,
-        total: int = None,
-    ):
+        This is utilized in `[p]hockey schedule` and game day channel creation
+
+        `[timezone]` The full name of the timezone you want to set. For a list of
+        available timezone names use `[p]hockeyset timezone list`
+        defaults to Home Teams Tmezone if not provided
         """
-        Allows moderators to set a users points on the leaderboard
+        if ctx.invoked_subcommand is None:
+            if timezone is not None:
+                await self.config.guild(ctx.guild).timezone.set(timezone)
+            else:
+                await self.config.guild(ctx.guild).timezone.clear()
+                timezone = _("Home Teams Timezone")
+            msg = _("Server Timezone set to {timezone}").format(timezone=timezone)
+            await ctx.send(msg)
+
+    @set_hockey_timezone.command(name="list")
+    async def list_hockey_timezones(self, ctx: commands.Context) -> None:
         """
-        if weekly is None:
-            weekly = season
-        if total is None:
-            total = season
-        leaderboard = await self.config.guild(ctx.guild).leaderboard()
-        if leaderboard == {} or leaderboard is None:
-            await ctx.send(_("There is no current leaderboard for this server!"))
-            return
-        if str(user.id) not in leaderboard:
-            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
-        else:
-            del leaderboard[str(user.id)]
-            leaderboard[str(user.id)] = {"season": season, "weekly": weekly, "total": total}
-        await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-        msg = _(
-            "{user} now has {season} points on the season, "
-            "{weekly} points for the week, and {total} votes overall."
-        ).format(user=user.display_name, season=season, weekly=weekly, total=total)
-        await ctx.send(msg)
+        List the available timezones for pickems messages
+        """
+        msg = "\n".join(tz for tz in pytz.common_timezones)
+        msgs = []
+        embeds = ctx.channel.permissions_for(ctx.me).embed_links
+        for page in pagify(msg, page_length=512):
+            if embeds:
+                msgs.append(discord.Embed(title=_("Timezones Available"), description=page))
+            else:
+                msgs.append(page)
+        await BaseMenu(
+            source=SimplePages(pages=msgs),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+        ).start(ctx=ctx)
 
     async def check_notification_settings(self, guild: discord.Guild) -> str:
         reply = ""
@@ -213,17 +186,17 @@ class HockeySetCommands:
         return reply
 
     @hockeyset_commands.group(name="notifications")
-    async def hockey_notifications(self, ctx: commands.Context):
+    async def hockey_notifications(self, ctx: commands.Context) -> None:
         """
         Settings related to role notifications
         """
         pass
 
     @hockey_notifications.command(name="goal")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_goal_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers goal notification style. Options are:
 
@@ -260,10 +233,10 @@ class HockeySetCommands:
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
 
     @hockey_notifications.command(name="otnotifications")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_ot_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers Regular Season OT notification style. Options are:
 
@@ -302,10 +275,10 @@ class HockeySetCommands:
             )
 
     @hockey_notifications.command(name="sonotifications")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_so_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers Shootout notification style. Options are:
 
@@ -344,10 +317,10 @@ class HockeySetCommands:
             )
 
     @hockey_notifications.command(name="game")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_game_start_notification_style(
         self, ctx: commands.Context, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the servers game start notification style. Options are:
 
@@ -382,10 +355,10 @@ class HockeySetCommands:
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
 
     @hockey_notifications.command(name="goalchannel")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_goal_notification_style(
         self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the specified channels goal notification style. Options are:
 
@@ -425,10 +398,10 @@ class HockeySetCommands:
             )
 
     @hockey_notifications.command(name="gamechannel")
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_game_start_notification_style(
         self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
-    ):
+    ) -> None:
         """
         Set the specified channels game start notification style. Options are:
 
@@ -470,8 +443,11 @@ class HockeySetCommands:
 
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
     async def post_standings(
-        self, ctx: commands.Context, standings_type: str, channel: Optional[discord.TextChannel] = None
-    ):
+        self,
+        ctx: commands.Context,
+        standings_type: str,
+        channel: Optional[discord.TextChannel] = None,
+    ) -> None:
         """
         Posts automatic standings when all games for the day are done
 
@@ -511,7 +487,7 @@ class HockeySetCommands:
         await self.config.guild(guild).post_standings.set(True)
 
     @hockeyset_commands.command()
-    async def togglestandings(self, ctx: commands.Context):
+    async def togglestandings(self, ctx: commands.Context) -> None:
         """
         Toggles automatic standings updates
 
@@ -527,7 +503,7 @@ class HockeySetCommands:
     @hockeyset_commands.command(name="stateupdates")
     async def set_game_state_updates(
         self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
-    ):
+    ) -> None:
         """
         Set what type of game updates to be posted in the designated channel.
 
@@ -558,10 +534,10 @@ class HockeySetCommands:
             )
 
     @hockeyset_commands.command(name="publishupdates", hidden=True)
-    @checks.is_owner()
+    @commands.is_owner()
     async def set_game_publish_updates(
         self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
-    ):
+    ) -> None:
         """
         Set what type of game updates will be published in the designated news channel.
 
@@ -600,7 +576,7 @@ class HockeySetCommands:
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
     async def add_goals(
         self, ctx: commands.Context, team: HockeyTeams, channel: Optional[discord.TextChannel]
-    ):
+    ) -> None:
         """
         Adds a hockey team goal updates to a channel do 'all' for all teams
 
@@ -638,7 +614,7 @@ class HockeySetCommands:
         ctx: commands.Context,
         team: Optional[HockeyTeams] = None,
         channel: Optional[discord.TextChannel] = None,
-    ):
+    ) -> None:
         """
         Removes a teams goal updates from a channel
         defaults to the current channel
@@ -677,204 +653,3 @@ class HockeySetCommands:
                             team=team, channel=channel.mention
                         )
                     )
-
-    @hockeyset_commands.group(name="pickems")
-    @checks.admin_or_permissions(manage_channels=True)
-    async def pickems_commands(self, ctx: commands.Context):
-        """
-        Commands for managing pickems
-        """
-        pass
-
-    @pickems_commands.command(name="setup", aliases=["auto", "set"])
-    @checks.admin_or_permissions(manage_channels=True)
-    async def setup_auto_pickems(
-        self, ctx: commands.Context, category: discord.CategoryChannel = None
-    ):
-        """
-        Sets up automatically created pickems channels every week.
-
-        `[category]` the channel category where pickems channels will be created.
-        This must be the category ID. If not provided this will use the current
-        channels category if it exists.
-        """
-
-        if category is None and not ctx.channel.category:
-            return await ctx.send(_("A channel category is required."))
-        elif category is None and ctx.channel.category is not None:
-            category = ctx.channel.category
-
-        if not category.permissions_for(ctx.me).manage_channels:
-            await ctx.send(_("I don't have manage channels permission!"))
-            return
-
-        await self.config.guild(ctx.guild).pickems_category.set(category.id)
-        existing_channels = await self.config.guild(ctx.guild).pickems_channels()
-        if existing_channels:
-            cant_delete = []
-            for chan_id in existing_channels:
-                channel = ctx.guild.get_channel(chan_id)
-                if channel:
-                    try:
-                        await channel.delete()
-                    except discord.errors.Forbidden:
-                        cant_delete.append(chan_id)
-                await self.config.guild(ctx.guild).pickems_channels.clear()
-                if cant_delete:
-                    chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
-                    await ctx.send(
-                        _(
-                            "I tried to delete the following channels without success:\n{chans}"
-                        ).format(chans=chans)
-                    )
-        async with self.pickems_save_lock:
-            log.debug("Locking save")
-            await Pickems.create_weekly_pickems_pages(self.bot, [ctx.guild], Game)
-        await ctx.send(_("I will now automatically create pickems pages every Sunday."))
-
-    @pickems_commands.command(name="clear")
-    @checks.admin_or_permissions(manage_channels=True)
-    async def delete_auto_pickems(self, ctx: commands.Context):
-        """
-        Automatically delete all the saved pickems channels.
-        """
-        existing_channels = await self.config.guild(ctx.guild).pickems_channels()
-        if existing_channels:
-            cant_delete = []
-            for chan_id in existing_channels:
-                channel = ctx.guild.get_channel(chan_id)
-                if channel:
-                    try:
-                        await channel.delete()
-                    except discord.errors.Forbidden:
-                        cant_delete.append(chan_id)
-                await self.config.guild(ctx.guild).pickems_channels.clear()
-                if cant_delete:
-                    chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
-                    await ctx.send(
-                        _(
-                            "I tried to delete the following channels without success:\n{chans}"
-                        ).format(chans=chans)
-                    )
-        await ctx.send(_("I have deleted existing pickems channels."))
-
-    @pickems_commands.command(name="toggle")
-    @checks.admin_or_permissions(manage_channels=True)
-    async def toggle_auto_pickems(self, ctx: commands.Context):
-        """
-        Turn off automatic pickems page creation
-        """
-        await self.config.guild(ctx.guild).pickems_category.set(None)
-        await ctx.tick()
-
-    @pickems_commands.command(name="page")
-    @checks.admin_or_permissions(manage_channels=True)
-    async def pickems_page(self, ctx, date: str = None):
-        """
-        Generates a pickems page for voting on a specified day must be "YYYY-MM-DD"
-        """
-        if date is None:
-            new_date = datetime.now()
-        else:
-            new_date = datetime.strptime(date, "%Y-%m-%d")
-        msg = _(
-            "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
-            "  Vote for who you think will win!  You get one point for each correct prediction."
-            "  We will be tracking points over the course "
-            "of the season and will be rewarding weekly,"
-            " worst and full-season winners!**\n\n"
-            "- Click the reaction for the team you think will win the day's match-up.\n"
-            "- Anyone who votes for both teams will have their "
-            "vote removed and will receive no points!\n\n\n\n"
-        )
-        games_list = await Game.get_games(None, new_date, new_date, session=self.session)
-        await ctx.send(msg)
-        async with self.pickems_save_lock:
-            for game in games_list:
-                new_msg = await ctx.send(
-                    "__**{} {}**__ @ __**{} {}**__".format(
-                        game.away_emoji, game.away_team, game.home_emoji, game.home_team
-                    )
-                )
-                # Create new pickems object for the game
-
-                await Pickems.create_pickem_object(self.bot, ctx.guild, new_msg, ctx.channel, game)
-                if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
-                    try:
-                        await new_msg.add_reaction(game.away_emoji[2:-1])
-                        await new_msg.add_reaction(game.home_emoji[2:-1])
-                    except Exception:
-                        log.debug("Error adding reactions")
-
-    @pickems_commands.command(name="remove")
-    async def rempickem(self, ctx: commands.Context, true_or_false: bool):
-        """
-        Clears the servers current pickems object list
-
-        `<true_or_false>` `True` if you're sure you want to clear the settings.
-        """
-        if true_or_false:
-            await self.config.guild(ctx.guild).pickems.clear()
-            try:
-                del self.all_pickems[str(ctx.guild.id)]
-            except KeyError:
-                pass
-            await ctx.send(_("All pickems removed on this server."))
-        else:
-            await ctx.send(_("I will not remove the current pickems on this server."))
-
-    @pickems_commands.group(name="leaderboard")
-    async def pickems_leaderboard_commands(self, ctx: commands.Context):
-        """
-        Settings for clearing/resetting pickems leaderboards
-        """
-        pass
-
-    @pickems_leaderboard_commands.command(name="clear")
-    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        """
-        Clears the entire pickems leaderboard in the server.
-
-        `<true_or_false>` `True` if you're sure you want to clear the settings.
-        """
-        if true_or_false:
-            await self.config.guild(ctx.guild).leaderboard.clear()
-            await ctx.send(_("Server leaderboard reset."))
-        else:
-            await ctx.send(_("I will not reset the pickems leaderboard in this server."))
-
-    @pickems_leaderboard_commands.command(name="clearweekly")
-    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        """
-        Clears the weekly tracker on the current servers pickems
-
-        `<true_or_false>` `True` if you're sure you want to clear the settings.
-        """
-        if true_or_false:
-            leaderboard = await self.config.guild(ctx.guild).leaderboard()
-            if leaderboard is None:
-                leaderboard = {}
-            for user in leaderboard:
-                leaderboard[str(user)]["weekly"] = 0
-            await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-            await ctx.send(_("Servers weekly leaderboard reset."))
-        else:
-            await ctx.send(_("I will not reset the pickems weekly leaderboard in this server."))
-
-    @pickems_leaderboard_commands.command(name="clearseason")
-    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool):
-        """
-        Clears the weekly tracker on the current servers pickems
-
-        `<true_or_false>` `True` if you're sure you want to clear the settings.
-        """
-        if true_or_false:
-            leaderboard = await self.config.guild(ctx.guild).leaderboard()
-            if leaderboard is None:
-                leaderboard = {}
-            for user in leaderboard:
-                leaderboard[str(user)]["season"] = 0
-            await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
-            await ctx.send(_("Servers weekly leaderboard reset."))
-        else:
-            await ctx.send(_("I will not reset the pickems seasonal leaderboard in this server."))

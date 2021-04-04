@@ -1,15 +1,15 @@
-import aiohttp
+from __future__ import annotations
 import json
 import logging
-import discord
-
 from dataclasses import dataclass
-from typing import Optional, Literal, Union
-from tabulate import tabulate
 from datetime import datetime
+from typing import Literal, Optional, Union
 
+import aiohttp
+import discord
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
+from tabulate import tabulate
 
 from .constants import BASE_URL, HEADSHOT_URL, TEAMS
 
@@ -239,7 +239,7 @@ class Player:
                         name
                         + f"{self.height//12}' {self.height%12}\" / {int(self.height * 2.54)} cm\n"
                     )
-                elif attr == "birth_date":
+                elif attr == "birth_date" and self.birth_date is not None:
                     years = int(
                         (datetime.now() - datetime.strptime(self.birth_date, "%Y-%m-%d")).days
                         / 365.25
@@ -313,13 +313,13 @@ class Player:
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Player, Goalie, Skater]:
         url = f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYear"
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -359,11 +359,11 @@ class Player:
         return f"https://www.capfriendly.com/players/{self.full_name_url()}"
 
     @classmethod
-    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None):
+    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None) -> Player:
         url = f"https://records.nhl.com/site/api/player/{player_id}"
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -410,15 +410,15 @@ class Skater(Player):
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Skater, SkaterPlayoffs]:
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:
@@ -623,15 +623,15 @@ class Goalie(Player):
 
     async def get_full_stats(
         self, season: Optional[str], session: Optional[aiohttp.ClientSession] = None
-    ):
+    ) -> Union[Goalie, GoaliePlayoffs]:
         url = (
             f"https://statsapi.web.nhl.com/api/v1/people/{self.id}/stats?stats=yearByYearPlayoffs"
         )
         log.debug(url)
         log.debug(season)
         if session is None:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
                     data = await resp.json()
         else:
             async with session.get(url) as resp:

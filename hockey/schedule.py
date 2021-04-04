@@ -1,12 +1,12 @@
-import discord
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 import aiohttp
+import discord
 from redbot.core.i18n import Translator
-from redbot.vendored.discord.ext import menus
 from redbot.core.utils.chat_formatting import pagify
+from redbot.vendored.discord.ext import menus
 
 from .constants import BASE_URL, TEAMS
 from .errors import NoSchedule
@@ -19,27 +19,28 @@ log = logging.getLogger("red.trusty-cogs.hockey")
 
 class Schedule(menus.PageSource):
     def __init__(self, **kwargs):
-        self._yielded = 0
-        self._listing = None
-        self._index = 0
-        self._cache = []
-        self._checks = 0
-        self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
-        self.limit = kwargs.get("limit", 10)
-        self.team = kwargs.get("team", None)
-        self._last_searched = ""
-        self._session = kwargs.get("session")
+        self._yielded: int = 0
+        self._index: int = 0
+        self._cache: List[dict] = []
+        self._checks: int = 0
+        self._last_page: int = 0
+        self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        self.limit: int = kwargs.get("limit", 10)
+        self.team: str = kwargs.get("team", None)
+        self._last_searched: str = ""
+        self._session: aiohttp.CLientSession = kwargs.get("session")
 
     @property
-    def index(self):
+    def index(self) -> int:
         return self._index
 
     @property
-    def last_page(self):
+    def last_page(self) -> int:
         return self._last_page
 
-    async def get_page(self, page_number, *, skip_next: bool = False, skip_prev: bool = False):
+    async def get_page(
+        self, page_number, *, skip_next: bool = False, skip_prev: bool = False
+    ) -> dict:
         # log.info(f"Cache size is {len(self._cache)}")
 
         if page_number < self.last_page:
@@ -58,7 +59,7 @@ class Schedule(menus.PageSource):
         self._last_page = page_number
         return page
 
-    async def format_page(self, menu: menus.MenuPages, game: dict):
+    async def format_page(self, menu: menus.MenuPages, game: dict) -> discord.Embed:
         async with aiohttp.ClientSession() as session:
             log.debug(BASE_URL + game["link"])
             async with session.get(BASE_URL + game["link"]) as resp:
@@ -67,7 +68,7 @@ class Schedule(menus.PageSource):
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
         return await game_obj.make_game_embed(True)
 
-    async def next(self, skip: bool = False):
+    async def next(self, skip: bool = False) -> dict:
         """
         Returns the next element from the list
 
@@ -90,7 +91,7 @@ class Schedule(menus.PageSource):
         # log.info(f"getting next data {len(self._cache)}")
         return self._cache[self.index]
 
-    async def prev(self, skip: bool = False):
+    async def prev(self, skip: bool = False) -> dict:
         """
         Returns the previous element from the list
 
@@ -114,13 +115,13 @@ class Schedule(menus.PageSource):
                 raise NoSchedule(e)
         return self._cache[self.index]
 
-    async def prepare(self):
+    async def prepare(self) -> None:
         try:
             await self._next_batch(date=self.date)
         except NoSchedule:
             pass
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
     async def _next_batch(
@@ -131,7 +132,7 @@ class Schedule(menus.PageSource):
         end_date: Optional[datetime] = None,
         _next: bool = False,
         _prev: bool = False,
-    ):
+    ) -> List[dict]:
         """
         Actually grab the list of games.
         """
@@ -166,27 +167,29 @@ class Schedule(menus.PageSource):
 
 class ScheduleList(menus.PageSource):
     def __init__(self, **kwargs):
-        self._yielded = 0
-        self._listing = None
-        self._index = 0
-        self._cache = []
-        self._checks = 0
-        self._last_page = 0
-        self.date = kwargs.get("date", utc_to_local(datetime.utcnow()))
-        self.limit = kwargs.get("limit", 10)
-        self.team = kwargs.get("team", [])
-        self._last_searched = ""
-        self._session = kwargs.get("session")
+        self._yielded: int = 0
+        self._index: int = 0
+        self._cache: List[dict] = []
+        self._checks: int = 0
+        self._last_page: int = 0
+        self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        self.limit: int = kwargs.get("limit", 10)
+        self.team: List[str] = kwargs.get("team", [])
+        self._last_searched: str = ""
+        self._session: aiohttp.ClientSession = kwargs.get("session")
+        self.timezone: str = kwargs.get("timezone")
 
     @property
-    def index(self):
+    def index(self) -> int:
         return self._index
 
     @property
-    def last_page(self):
+    def last_page(self) -> int:
         return self._last_page
 
-    async def get_page(self, page_number, *, skip_next: bool = False, skip_prev: bool = False):
+    async def get_page(
+        self, page_number, *, skip_next: bool = False, skip_prev: bool = False
+    ) -> List[dict]:
         # log.info(f"Cache size is {len(self._cache)}")
 
         if page_number < self.last_page:
@@ -205,7 +208,7 @@ class ScheduleList(menus.PageSource):
         self._last_page = page_number
         return page
 
-    async def format_page(self, menu: menus.MenuPages, games: dict):
+    async def format_page(self, menu: menus.MenuPages, games: List[dict]) -> discord.Embed:
         states = {
             "Preview": "\N{LARGE RED CIRCLE}",
             "Live": "\N{LARGE GREEN CIRCLE}",
@@ -257,11 +260,12 @@ class ScheduleList(menus.PageSource):
                 )
             else:
                 if self.team == []:
-                    game_time = utc_to_local(game_start, TEAMS[home_team]["timezone"])
+                    timezone = self.timezone or TEAMS[home_team]["timezone"]
+                    game_time = utc_to_local(game_start, timezone)
                     time_str = game_time.strftime("%I:%M %p %Z")
                 else:
-
-                    game_time = utc_to_local(game_start, TEAMS[self.team[0]]["timezone"])
+                    timezone = self.timezone or TEAMS[self.team[0]]["timezone"]
+                    game_time = utc_to_local(game_start, timezone)
                     time_str = game_time.strftime("%I:%M %p %Z")
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "
@@ -295,7 +299,7 @@ class ScheduleList(menus.PageSource):
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
         return em
 
-    async def next(self, skip: bool = False):
+    async def next(self, skip: bool = False) -> List[dict]:
         """
         Returns the next element from the list
 
@@ -320,7 +324,7 @@ class ScheduleList(menus.PageSource):
         # log.info(f"getting next data {len(self._cache)}")
         return self._cache
 
-    async def prev(self, skip: bool = False):
+    async def prev(self, skip: bool = False) -> List[dict]:
         """
         Returns the previous element from the list
 
@@ -363,7 +367,7 @@ class ScheduleList(menus.PageSource):
         end_date: Optional[datetime] = None,
         _next: bool = False,
         _prev: bool = False,
-    ):
+    ) -> List[dict]:
         """
         Actually grab the list of games.
         """

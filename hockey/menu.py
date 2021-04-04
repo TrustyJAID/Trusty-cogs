@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 from datetime import datetime
-from typing import Any, List, Optional, Pattern
+from typing import Any, List, Optional, Pattern, Union
 
 import discord
 from redbot.core import commands
@@ -13,9 +13,9 @@ from redbot.vendored.discord.ext import menus
 from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import DATE_RE
-from .standings import Standings
 from .player import Player
 from .schedule import ScheduleList
+from .standings import Standings
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
@@ -42,7 +42,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         )
         self.cog = cog
 
-    async def update(self, payload):
+    async def update(self, payload: discord.RawReactionActionEvent) -> None:
         """|coro|
 
         Updates the menu after an event has been received.
@@ -66,7 +66,9 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         except Exception as exc:
             log.debug("Ignored exception on reaction event", exc_info=exc)
 
-    async def show_page(self, page_number, *, skip_next=False, skip_prev=False):
+    async def show_page(
+        self, page_number: int, *, skip_next: bool = False, skip_prev: bool = False
+    ) -> None:
         try:
             page = await self._source.get_page(
                 page_number, skip_next=skip_next, skip_prev=skip_prev
@@ -84,7 +86,9 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs)
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(
+        self, ctx: commands.Context, channel: discord.TextChannel
+    ) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -114,7 +118,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload):
+    def reaction_check(self, payload: discord.RawReactionActionEvent) -> bool:
         """Just extends the default reaction_check to use owner_ids"""
         if payload.message_id != self.message.id:
             return False
@@ -122,13 +126,13 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return payload.emoji in self.buttons
 
-    def _skip_single_arrows(self):
+    def _skip_single_arrows(self) -> bool:
         max_pages = self._source.get_max_pages()
         if max_pages is None:
             return True
         return max_pages == 1
 
-    def _skip_double_arrows(self):
+    def _skip_double_arrows(self) -> bool:
         if isinstance(self._source, ScheduleList):
             return True
         return False
@@ -137,7 +141,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
         position=menus.First(1),
     )
-    async def go_to_previous_page(self, payload):
+    async def go_to_previous_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the previous page"""
         await self.show_checked_page(self.current_page - 1)
 
@@ -145,7 +149,7 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
         "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
         position=menus.Last(0),
     )
-    async def go_to_next_page(self, payload):
+    async def go_to_next_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the next page"""
         # log.info(f"Moving to next page, {self.current_page + 1}")
         await self.show_checked_page(self.current_page + 1)
@@ -153,18 +157,18 @@ class GamesMenu(menus.MenuPages, inherit_buttons=False):
     @menus.button(
         "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
         position=menus.First(0),
-        skip_if=_skip_double_arrows
+        skip_if=_skip_double_arrows,
     )
-    async def go_to_first_page(self, payload):
+    async def go_to_first_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the first page"""
         await self.show_page(0, skip_prev=True)
 
     @menus.button(
         "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
         position=menus.Last(1),
-        skip_if=_skip_double_arrows
+        skip_if=_skip_double_arrows,
     )
-    async def go_to_last_page(self, payload):
+    async def go_to_last_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the last page"""
         # The call here is safe because it's guarded by skip_if
         await self.show_page(0, skip_next=True)
@@ -244,10 +248,10 @@ class StandingsPages(menus.ListPageSource):
         super().__init__(pages, per_page=1)
         self.pages = pages
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
         return await Standings.all_standing_embed(self.pages)
 
 
@@ -255,10 +259,10 @@ class TeamStandingsPages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: Standings) -> discord.Embed:
         return await Standings.make_team_standings_embed(page)
 
 
@@ -266,10 +270,10 @@ class ConferenceStandingsPages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
         return await Standings.make_conference_standings_embed(page)
 
 
@@ -277,10 +281,10 @@ class DivisionStandingsPages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
         return await Standings.make_division_standings_embed(page)
 
 
@@ -289,10 +293,10 @@ class LeaderboardPages(menus.ListPageSource):
         super().__init__(pages, per_page=1)
         self.style = style
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: List[str]) -> discord.Embed:
         em = discord.Embed(timestamp=datetime.utcnow())
         description = ""
         for msg in page:
@@ -310,19 +314,32 @@ class LeaderboardPages(menus.ListPageSource):
 class PlayerPages(menus.ListPageSource):
     def __init__(self, pages: list, season: str):
         super().__init__(pages, per_page=1)
-        self.pages = pages
-        self.season = season
+        self.pages: List[int] = pages
+        self.season: str = season
 
-    def is_paginating(self):
+    def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
+    async def format_page(self, menu: menus.MenuPages, page: int) -> discord.Embed:
         player = await Player.from_id(page, session=menu.cog.session)
         log.debug(player)
         player = await player.get_full_stats(self.season, session=menu.cog.session)
         em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
+
+
+class SimplePages(menus.ListPageSource):
+    def __init__(self, pages: List[Union[discord.Embed, str]]):
+        super().__init__(pages, per_page=1)
+
+    def is_paginating(self) -> bool:
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, page: Any) -> Union[discord.Embed, str]:
+        if isinstance(page, discord.Embed):
+            page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return page
 
 
 class BaseMenu(menus.MenuPages, inherit_buttons=False):
@@ -348,7 +365,9 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         self.cog = cog
         self.page_start = page_start
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(
+        self, ctx: commands.Context, channel: discord.TextChannel
+    ) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -358,7 +377,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         kwargs = await self._get_kwargs_from_page(page)
         return await channel.send(**kwargs)
 
-    async def update(self, payload):
+    async def update(self, payload: discord.RawReactionActionEvent) -> None:
         """|coro|
 
         Updates the menu after an event has been received.
@@ -398,7 +417,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload):
+    def reaction_check(self, payload: discord.RawReactionActionEvent) -> bool:
         """Just extends the default reaction_check to use owner_ids"""
         if payload.message_id != self.message.id:
             return False
@@ -406,7 +425,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return payload.emoji in self.buttons
 
-    def _skip_single_arrows(self):
+    def _skip_single_arrows(self) -> bool:
         if isinstance(self._source, StandingsPages):
             return True
         max_pages = self._source.get_max_pages()
@@ -414,7 +433,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
             return True
         return max_pages == 1
 
-    def _skip_double_triangle_buttons(self):
+    def _skip_double_triangle_buttons(self) -> bool:
         if isinstance(self._source, StandingsPages):
             return True
         max_pages = self._source.get_max_pages()
@@ -427,7 +446,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         position=menus.First(1),
         skip_if=_skip_single_arrows,
     )
-    async def go_to_previous_page(self, payload):
+    async def go_to_previous_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the previous page"""
         await self.show_checked_page(self.current_page - 1)
 
@@ -436,7 +455,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         position=menus.Last(0),
         skip_if=_skip_single_arrows,
     )
-    async def go_to_next_page(self, payload):
+    async def go_to_next_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the next page"""
         await self.show_checked_page(self.current_page + 1)
 
@@ -445,7 +464,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         position=menus.First(0),
         skip_if=_skip_double_triangle_buttons,
     )
-    async def go_to_first_page(self, payload):
+    async def go_to_first_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the first page"""
         await self.show_page(0)
 
@@ -454,7 +473,7 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         position=menus.Last(1),
         skip_if=_skip_double_triangle_buttons,
     )
-    async def go_to_last_page(self, payload):
+    async def go_to_last_page(self, payload: discord.RawReactionActionEvent) -> None:
         """go to the last page"""
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
