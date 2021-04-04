@@ -123,15 +123,15 @@ class HockeyPickems(MixinMeta):
                         log.exception(f"Error trying to send message to {repr(user)}")
                         pass
 
-    @tasks.loop(seconds=120)
+    @tasks.loop(seconds=300)
     async def pickems_loop(self) -> None:
         await self.save_pickems_data()
-        log.debug("Saved pickems data.")
+        # log.debug("Saved pickems data.")
 
     async def save_pickems_data(self):
         try:
 
-            log.debug("Saving pickems data")
+            # log.debug("Saving pickems data")
             all_pickems = copy(self.all_pickems)
             for guild_id, pickems in all_pickems.items():
                 data = {}
@@ -460,13 +460,15 @@ class HockeyPickems(MixinMeta):
         today = datetime.now()
         tasks = []
         for days in range(7):
+            if (today + timedelta(days=days)).weekday() == 6 and days != 0:
+                # This was originally to prevent an infinite loop
+                # now this is required to only make pages until the following
+                # Sunday so that we're not creating more channels than necessary
+                # unless it's sunday
+                break
             tasks.append(
                 self.create_pickems_channels_and_message(guilds, today + timedelta(days=days))
             )
-            if (today + timedelta(days=days)).weekday() == 6:
-                # just incase we end up in an infinite loop somehow
-                # can never be too careful with async coding
-                break
 
         guild_data = await bounded_gather(*tasks)
         for channel_data in guild_data:

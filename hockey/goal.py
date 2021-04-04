@@ -65,6 +65,8 @@ class Goal:
         self.event = kwargs.get("event")
         self.link = kwargs.get("link", None)
         self.tasks: List[asyncio.Task] = []
+        self.home_shots: int = 0
+        self.away_shots: int = 0
 
     def __repr__(self):
         return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
@@ -86,6 +88,8 @@ class Goal:
             "empty_net": self.empty_net,
             "event": self.event,
             "link": self.link,
+            "home_shots": self.home_shots,
+            "away_shots": self.away_shots,
         }
 
     @classmethod
@@ -142,6 +146,8 @@ class Goal:
             empty_net=empty_net,
             event=data["result"]["event"],
             link=link,
+            home_shots=data.get("home_shots", 0),
+            away_shots=data.get("away_shots", 0),
         )
 
     async def post_team_goal(self, bot: Red, game_data: Game) -> List[Tuple[int, int, int]]:
@@ -426,10 +432,10 @@ class Goal:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
             home_str = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
-                home_score=self.home_score, home_shots=game.home_shots
+                home_score=self.home_score, home_shots=self.home_shots
             )
             away_str = _("Goals: **{away_score}**\nShots: **{away_shots}**").format(
-                away_score=self.away_score, away_shots=game.away_shots
+                away_score=self.away_score, away_shots=self.away_shots
             )
             home_field = f"{game.home_emoji} {game.home_team} {game.home_emoji}"
             away_field = f"{game.away_emoji} {game.away_team} {game.away_emoji}"

@@ -76,7 +76,7 @@ class HockeyDev(MixinMeta):
         """
         all_guilds = await self.pickems_config.all_guilds()
         for guild_id, data in all_guilds.items():
-            g = bot.get_guild(guild_id)
+            g = self.bot.get_guild(guild_id)
             if g is None:
                 continue
             if data["pickems_channels"]:
@@ -84,7 +84,7 @@ class HockeyDev(MixinMeta):
                     chan = g.get_channel(channel_id)
                     if chan:
                         try:
-                            await chan.send(msg)
+                            await chan.send(message)
                         except Exception:
                             pass
         await ctx.send(_("Message announced in pickems channels."))
@@ -122,11 +122,19 @@ class HockeyDev(MixinMeta):
         """
         Manually tally the leaderboard for all servers
         """
-        await self.tally_leaderboard()
+        try:
+            await self.tally_leaderboard()
+        except Exception:
+            log.exception("Error manually tallying pickems Leaderboard.")
+            return await ctx.send(
+                _("There was an error tallying pickems leaerboard. Check the console fore errors.")
+            )
         await ctx.send(_("Leaderboard tallying complete."))
 
     @hockeydev.command(name="removeoldpickems")
-    async def remove_old_pickems(self, ctx: commands.Context, year: int, month: int, day: int) -> None:
+    async def remove_old_pickems(
+        self, ctx: commands.Context, year: int, month: int, day: int
+    ) -> None:
         """
         Remove pickems objects created before a specified date.
         """
