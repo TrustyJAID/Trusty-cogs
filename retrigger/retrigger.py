@@ -46,7 +46,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.20.3"
+    __version__ = "2.20.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1159,6 +1159,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
             await ctx.send(_("Safe Regex search re-enabled."))
 
     @retrigger.command(usage="[trigger]")
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def list(
         self, ctx: commands.Context, guild_id: Optional[int], trigger: TriggerExists = None
     ) -> None:
