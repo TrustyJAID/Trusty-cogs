@@ -1,4 +1,4 @@
-import asyncio
+import discord
 import json
 import logging
 from datetime import date, datetime, timedelta
@@ -14,6 +14,7 @@ from .constants import TEAMS
 from .errors import InvalidFileError
 from .game import Game
 from .helper import get_channel_obj
+from .menu import BaseMenu, SimplePages
 from .pickems import Pickems
 from .standings import Standings
 
@@ -194,92 +195,115 @@ class HockeyDev(MixinMeta):
         await ctx.send(_("Finished fixing all standings messages."))
 
     @hockeydev.command()
+    @commands.bot_has_permissions(embed_links=True)
     async def cogstats(self, ctx: commands.Context) -> None:
         """
         Display current number of servers and channels
         the cog is storing in console
         """
-        all_channels = await self.config.all_channels()
-        all_pickems = await self.pickems_config.all_guilds()
-        guild_list = {
-            "guilds": 0,
-            "goal_updates": {"total": 0},
-            "gdc": {"total": 0},
-            "standings": {"total": 0},
-            "pickems": {"voters": [], "channels": 0, "waiting_pickems": []},
-        }
-        for guild in self.bot.guilds:
-            hockey_data = await self.config.guild(guild).all()
-            added_guild = False
-            if gdc := hockey_data.get("gdc"):
-                if not added_guild:
-                    guild_list["guilds"] += 1
-                    added_guild = True
-                for channel_id in gdc:
-                    if guild.get_channel(channel_id):
-                        guild_list["gdc"]["total"] += 1
-                if gdc_team := hockey_data.get("gdc_team"):
-                    if gdc_team not in guild_list["gdc"]:
-                        guild_list["gdc"][gdc_team] = 0
-                    guild_list["gdc"][gdc_team] += 1
-            if hockey_data.get("post_standings"):
-                if not added_guild:
-                    guild_list["guilds"] += 1
-                    added_guild = True
-                guild_list["standings"]["total"] += 1
-                if standings := hockey_data.get("standings_type"):
-                    if standings not in guild_list["standings"]:
-                        guild_list["standings"][standings] = 0
-                    guild_list["standings"][standings] += 1
-        async for channel_id, data in AsyncIter(all_channels.items()):
-            channel = await get_channel_obj(self.bot, channel_id, data)
-            if not channel:
-                continue
-            guild_list["goal_updates"]["total"] += 1
-            for team in data["team"]:
-                if team not in guild_list["goal_updates"]:
-                    guild_list["goal_updates"][team] = 0
-                guild_list["goal_updates"][team] += 1
-        async for guild_id, data in AsyncIter(all_pickems.items()):
-            guild = self.bot.get_guild(guild_id)
-            if leaderboard := data.get("leaderboard", {}):
-                guild_list["pickems"]["voters"] += list(leaderboard.keys())
-            if channels := data.get("pickems_channels"):
-                for channel_id in channels:
-                    if guild.get_channel(channel_id):
-                        guild_list["pickems"]["channels"] += 1
-            if pickems := data.get("pickems", {}):
-                guild_list["pickems"]["waiting_pickems"] += pickems.keys()
+        async with ctx.typing():
+            all_channels = await self.config.all_channels()
+            all_pickems = await self.pickems_config.all_guilds()
+            guild_list: dict = {
+                "guilds": [],
+                "goal_updates": {"total": 0},
+                "gdc": {"total": 0},
+                "standings": {"total": 0},
+                "pickems": {"voters": [], "channels": 0, "waiting_pickems": []},
+            }
+            for guild in self.bot.guilds:
+                hockey_data = await self.config.guild(guild).all()
+                if gdc := hockey_data.get("gdc"):
+                    if guild.id not in guild_list["guilds"]:
+                        guild_list["guilds"].append(guild.id)
+                    for channel_id in gdc:
+                        if guild.get_channel(channel_id):
+                            guild_list["gdc"]["total"] += 1
+                    if gdc_team := hockey_data.get("gdc_team"):
+                        if gdc_team not in guild_list["gdc"]:
+                            guild_list["gdc"][gdc_team] = 0
+                        guild_list["gdc"][gdc_team] += 1
+                if hockey_data.get("post_standings"):
+                    if guild.id not in guild_list["guilds"]:
+                        guild_list["guilds"].append(guild.id)
+                    guild_list["standings"]["total"] += 1
+                    if standings := hockey_data.get("standings_type"):
+                        if standings not in guild_list["standings"]:
+                            guild_list["standings"][standings] = 0
+                        guild_list["standings"][standings] += 1
+            async for channel_id, data in AsyncIter(all_channels.items()):
+                channel = await get_channel_obj(self.bot, channel_id, data)
+                if not channel:
+                    continue
+                if channel.guild.id not in guild_list["guilds"]:
+                    guild_list["guilds"].append(channel.guild.id)
+                guild_list["goal_updates"]["total"] += 1
+                for team in data["team"]:
+                    if team not in guild_list["goal_updates"]:
+                        guild_list["goal_updates"][team] = 0
+                    guild_list["goal_updates"][team] += 1
+            async for guild_id, data in AsyncIter(all_pickems.items()):
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    continue
+                if guild.id not in guild_list["guilds"]:
+                    guild_list["guilds"].append(guild.id)
+                if leaderboard := data.get("leaderboard", {}):
+                    guild_list["pickems"]["voters"] += list(leaderboard.keys())
+                if channels := data.get("pickems_channels"):
+                    for channel_id in channels:
+                        if guild.get_channel(channel_id):
+                            guild_list["pickems"]["channels"] += 1
+                if pickems := data.get("pickems", {}):
+                    guild_list["pickems"]["waiting_pickems"] += pickems.keys()
 
-        msg = ""
-        for key, value in guild_list.items():
-            if key == "guilds":
-                msg += f"__Total Guilds:__ **{value}**\n"
-            if key == "pickems":
-                msg += "**Pickems**\n"
-                for name, count in value.items():
-                    if name == "voters":
-                        msg += f"__Total Pickems Voters:__ **{len(count)}**\n"
-                        msg += f"__Total Unique Pickems Voters:__ **{len(set(count))}**\n"
-                    if name == "waiting_pickems":
-                        msg += f"__Total Waiting Pickems:__ **{len(set(count))}**\n"
-                    if name == "channels":
-                        msg += f"__Total Pickems Channels:__ **{count}**\n"
-                msg += "\n"
-            if key == "goal_updates":
-                for name, count in value.items():
-                    msg += f"__{name.title()} Goal Update Channels:__ **{count}**\n"
-                msg += "\n"
-            if key == "gdc":
-                for name, count in value.items():
-                    msg += f"__{name.title()} GDC:__ **{count}**\n"
-                msg += "\n"
-            if key == "standings":
-                for name, count in value.items():
-                    msg += f"__{name.title()} Standings Updates:__ **{count}**\n"
-                msg += "\n"
-        for page in pagify(msg):
-            await ctx.maybe_send_embed(page)
+            msg = ""
+            for key, value in guild_list.items():
+                if key == "guilds":
+                    msg += f"__Total Guilds:__ **{len(value)}**\n"
+                if key == "pickems":
+                    msg += "**Pickems**\n"
+                    for name, count in value.items():
+                        if name == "voters":
+                            msg += f"__Total Pickems Voters:__ **{len(count)}**\n"
+                            msg += f"__Total Unique Pickems Voters:__ **{len(set(count))}**\n"
+                        if name == "waiting_pickems":
+                            msg += f"__Total Waiting Pickems:__ **{len(set(count))}**\n"
+                        if name == "channels":
+                            msg += f"__Total Pickems Channels:__ **{count}**\n"
+                    msg += "\n"
+                if key == "goal_updates":
+                    for name, count in value.items():
+                        msg += f"__{str(name).title()} Goal Update Channels:__ **{count}**\n"
+                    msg += "\n"
+                if key == "gdc":
+                    for name, count in value.items():
+                        msg += f"__{str(name).title()} GDC:__ **{count}**\n"
+                    msg += "\n"
+                if key == "standings":
+                    for name, count in value.items():
+                        msg += f"__{str(name).title()} Standings Updates:__ **{count}**\n"
+                    msg += "\n"
+            embed_list = []
+            for pages in pagify(msg, page_length=6000):
+                embed = discord.Embed(title=_("Hockey Statistics"))
+                count = 0
+                for page in pagify(pages, page_length=1024):
+                    if count <= 1:
+                        if embed.description:
+                            embed.description += page
+                        else:
+                            embed.description = page
+                        count += 1
+                        continue
+                    embed.add_field(name=_("Stats Continued"), value=page)
+                embed_list.append(embed)
+        await BaseMenu(
+            source=SimplePages(pages=embed_list),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+        ).start(ctx=ctx)
 
     @hockeydev.command()
     async def customemoji(self, ctx: commands.Context) -> None:
