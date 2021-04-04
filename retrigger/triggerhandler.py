@@ -985,6 +985,9 @@ class TriggerHandler:
             "guild": message.guild,
             "server": message.guild,
         }
+        if message.attachments:
+            objects["attachment"] = message.attachments[0]
+            # we can only reasonably support one attachment at a time
         if result in objects:
             return str(objects[result])
         try:
