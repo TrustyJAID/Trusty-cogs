@@ -22,7 +22,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -308,7 +308,7 @@ class Reddit(commands.Cog):
         """reddit"""
 
     @reddit.command(name="hot")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reddit_hot(self, ctx: commands.Context, subreddit: SubredditConverter):
         """
         Show 25 hotest posts on the desired subreddit
@@ -323,7 +323,7 @@ class Reddit(commands.Cog):
         ).start(ctx=ctx)
 
     @reddit.command(name="new")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reddit_new(self, ctx: commands.Context, subreddit: SubredditConverter):
         """
         Show 25 newest posts on the desired subreddit
@@ -337,7 +337,7 @@ class Reddit(commands.Cog):
         ).start(ctx=ctx)
 
     @reddit.command(name="top")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reddit_top(self, ctx: commands.Context, subreddit: SubredditConverter):
         """
         Show 25 newest posts on the desired subreddit
@@ -352,7 +352,7 @@ class Reddit(commands.Cog):
         ).start(ctx=ctx)
 
     @reddit.command(name="rising")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reddit_rising(self, ctx: commands.Context, subreddit: SubredditConverter):
         """
         Show 25 newest posts on the desired subreddit
@@ -366,7 +366,7 @@ class Reddit(commands.Cog):
         ).start(ctx=ctx)
 
     @reddit.command(name="random")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reddit_random(self, ctx: commands.Context, subreddit: SubredditConverter):
         """
         Show 25 newest posts on the desired subreddit
