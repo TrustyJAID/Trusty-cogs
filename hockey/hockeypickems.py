@@ -133,7 +133,7 @@ class HockeyPickems(MixinMeta):
 
             # log.debug("Saving pickems data")
             all_pickems = copy(self.all_pickems)
-            for guild_id, pickems in all_pickems.items():
+            async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=50):
                 data = {}
                 for name, pickem in pickems.items():
                     data[name] = pickem.to_json()

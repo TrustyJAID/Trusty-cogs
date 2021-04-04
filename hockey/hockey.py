@@ -169,33 +169,48 @@ class Hockey(
     async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()
         if schema_version == 0:
-            log.info("Migrating old pickems to new file")
-            all_guilds = await self.config.all_guilds()
-            async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
-                if data.get("leaderboard"):
-                    await self.pickems_config.guild_from_id(guild_id).leaderboard.set(
-                        data["leaderboard"]
-                    )
-                    await self.config.guild_from_id(guild_id).leaderboard.clear()
-                    log.info(f"Migrating leaderboard for {guild_id}")
-                if data.get("pickems"):
-                    await self.config.guild_from_id(guild_id).pickems.clear()
-                    log.info(f"Migrating pickems for {guild_id}")
-                if data.get("pickems_channels"):
-                    await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
-                        data["pickems_channels"]
-                    )
-                    await self.config.guild_from_id(guild_id).pickems_channels.clear()
-                    log.info(f"Migrating pickems channels for {guild_id}")
-                if data.get("pickems_category"):
-                    await self.pickems_config.guild_from_id(guild_id).pickems_category.set(
-                        data["pickems_category"]
-                    )
-                    await self.config.guild_from_id(guild_id).pickems_category.clear()
-                    log.info(f"Migrating pickems categories for {guild_id}")
+            await self._schema_0_to_1()
             schema_version += 1
             await self.config.schema_version.set(schema_version)
         self._ready.set()
+
+    async def _schema_0_to_1(self):
+        log.info("Migrating old pickems to new file")
+        all_guilds = await self.config.all_guilds()
+        async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
+            if data.get("leaderboard"):
+                await self.pickems_config.guild_from_id(guild_id).leaderboard.set(
+                    data["leaderboard"]
+                )
+                try:
+                    await self.config.guild_from_id(guild_id).leaderboard.clear()
+                except Exception:
+                    pass
+                log.info(f"Migrating leaderboard for {guild_id}")
+            if data.get("pickems"):
+                try:
+                    await self.config.guild_from_id(guild_id).pickems.clear()
+                except Exception:
+                    pass
+                log.info(f"Migrating pickems for {guild_id}")
+            if data.get("pickems_channels"):
+                await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
+                    data["pickems_channels"]
+                )
+                try:
+                    await self.config.guild_from_id(guild_id).pickems_channels.clear()
+                except Exception:
+                    pass
+                log.info(f"Migrating pickems channels for {guild_id}")
+            if data.get("pickems_category"):
+                await self.pickems_config.guild_from_id(guild_id).pickems_category.set(
+                    data["pickems_category"]
+                )
+                try:
+                    await self.config.guild_from_id(guild_id).pickems_category.clear()
+                except Exception:
+                    pass
+                log.info(f"Migrating pickems categories for {guild_id}")
 
     ##############################################################################
     # Here is all the logic for gathering game data and updating information     #
