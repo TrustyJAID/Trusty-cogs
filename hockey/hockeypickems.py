@@ -1,7 +1,6 @@
 import logging
-from copy import copy
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 import discord
 from discord.ext import tasks
@@ -9,6 +8,7 @@ from redbot import VersionInfo, version_info
 from redbot.core import commands, bank
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
+from redbot.core.utils.antispam import AntiSpam
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 
@@ -41,12 +41,33 @@ class HockeyPickems(MixinMeta):
     Hockey Pickems Logic
     """
 
+    default_intervals = [
+        (timedelta(seconds=5), 3),  # 3 per 5 seconds
+        (timedelta(minutes=1), 5),  # 5 per 60 seconds
+        (timedelta(hours=1), 16),   # at most we'll see 16 games in one day
+        (timedelta(days=1), 64),    # 24 per 24 hours
+    ]
+    # This default interval should be good for pickems
+    # This is only to prevent trying to dm spammers
+    # an obscen number of times where it's not required
+    # and is set per channel
+    # At most we'll have 16 games in one day so this lets
+    # the user receive the message indicating so for up
+    # to an hour.
+    # Since this only affects the display and not the actual
+    # results this should be fine although I should communicate
+    # in some way the changes but there's no good way
+    # to do this outside what has already been done.
+    # I need to guard my api responses with this
+    # to prevent users having access to rate limit the bot.
+
     def __init__(self, *args):
         self.pickems_games: Dict[str, Game] = {}
         # This is a temporary class attr used for
         # storing only 1 copy of the game object so
         # we're not spamming the API with the same game over and over
         # this gets cleared and is only used with leaderboard tallying
+        self.antispam = {}
 
     @commands.Cog.listener()
     async def on_hockey_preview_message(
@@ -104,24 +125,47 @@ class HockeyPickems(MixinMeta):
                     reply_message = _("Don't clutter the voting message with emojis!")
                 except Exception:
                     log.exception(f"Error adding vote to {repr(pickem)}")
-                if remove_emoji and channel.permissions_for(guild.me).manage_messages:
+                await self.handle_pickems_response(
+                    user, channel, remove_emoji, payload.message_id, reply_message
+                )
 
-                    try:
-                        if version_info >= VersionInfo.from_str("3.4.6"):
-                            msg = channel.get_partial_message(payload.message_id)
-                        else:
-                            msg = await channel.fetch_message(id=payload.message_id)
-                        await msg.remove_reaction(remove_emoji, user)
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        pass
-                if reply_message is not None:
-                    try:
-                        await user.send(reply_message)
-                    except discord.HTTPException:
-                        log.error(f"Could not send message to {repr(user)}.")
-                    except Exception:
-                        log.exception(f"Error trying to send message to {repr(user)}")
-                        pass
+    async def handle_pickems_response(
+        self,
+        user: discord.Member,
+        channel: discord.TextChannel,
+        emoji: Optional[Union[discord.Emoji, str]],
+        message_id: int,
+        reply_message: Optional[str],
+    ):
+        guild = channel.guild
+        if channel.guild.id not in self.antispam:
+            self.antispam[guild.id] = {}
+        if channel.id not in self.antispam[guild.id]:
+            self.antispam[guild.id][channel.id] = {}
+        if user.id not in self.antispam[guild.id][channel.id]:
+            self.antispam[guild.id][channel.id][user.id] = AntiSpam(
+                self.default_intervals
+            )
+        if self.antispam[guild.id][channel.id][user.id].spammy:
+            return
+
+        if channel.permissions_for(guild.me).manage_messages:
+            try:
+                if version_info >= VersionInfo.from_str("3.4.6"):
+                    msg = channel.get_partial_message(message_id)
+                else:
+                    msg = await channel.fetch_message(id=message_id)
+                await msg.remove_reaction(emoji, user)
+            except (discord.errors.NotFound, discord.errors.Forbidden):
+                pass
+        try:
+            await user.send(reply_message)
+        except discord.HTTPException:
+            log.error(f"Could not send message to {repr(user)}.")
+        except Exception:
+            log.exception(f"Error trying to send message to {repr(user)}")
+            pass
+        self.antispam[guild.id][channel.id][user.id].stamp()
 
     @tasks.loop(seconds=300)
     async def pickems_loop(self) -> None:
@@ -132,12 +176,15 @@ class HockeyPickems(MixinMeta):
         try:
 
             # log.debug("Saving pickems data")
-            all_pickems = copy(self.all_pickems)
-            async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=50):
+            all_pickems = self.all_pickems.copy()
+            async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=10):
                 data = {}
-                for name, pickem in pickems.items():
-                    data[name] = pickem.to_json()
-                await self.pickems_config.guild_from_id(guild_id).pickems.set(data)
+                async with self.pickems_config.guild_from_id(guild_id).pickems() as data:
+                    for name, pickem in pickems.items():
+                        if pickem._should_save:
+                            log.debug(f"Saving pickem {repr(pickem)}")
+                            data[name] = pickem.to_json()
+                        self.all_pickems[guild_id][name]._should_save = False
         except Exception:
             log.exception("Error saving pickems Data")
             # catch all errors cause we don't want this loop to fail for something dumb
@@ -188,33 +235,36 @@ class HockeyPickems(MixinMeta):
         return return_pickems
 
     async def set_guild_pickem_winner(self, game: Game) -> None:
-        for guild_id, pickems in self.all_pickems.items():
+        all_pickems = self.all_pickems.copy()
+        for guild_id, pickems in all_pickems.items():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue
             pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
-            if str(game.game_id) in pickems:
-                pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
-                if pickem.winner is not None:
-                    log.debug(f"Pickems winner is not None {repr(pickem)}")
+            if str(game.game_id) not in pickems:
+                continue
+            pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
+            if pickem.winner is not None:
+                log.debug(f"Pickems winner is not None {repr(pickem)}")
+                continue
+            await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
+            if game.game_state == pickem.game_state:
+                continue
+            self.all_pickems[str(guild_id)][str(game.game_id)].game_state = game.game_state
+            self.all_pickems[str(guild_id)][str(game.game_id)]._should_save = True
+            for message in pickem.messages:
+                try:
+                    channel_id, message_id = message.split("-")
+                except ValueError:
                     continue
-                await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
-                if game.game_state == pickem.game_state:
+                if int(channel_id) not in pickems_channels:
                     continue
-                self.all_pickems[str(guild_id)][str(game.game_id)].game_state = game.game_state
-                for message in pickem.messages:
-                    try:
-                        channel_id, message_id = message.split("-")
-                    except ValueError:
-                        continue
-                    if int(channel_id) not in pickems_channels:
-                        continue
-                    channel = guild.get_channel(int(channel_id))
-                    if not channel:
-                        continue
-                    self.bot.loop.create_task(
-                        self.edit_pickems_message(channel, int(message_id), game)
-                    )
+                channel = guild.get_channel(int(channel_id))
+                if not channel:
+                    continue
+                self.bot.loop.create_task(
+                    self.edit_pickems_message(channel, int(message_id), game)
+                )
 
     async def edit_pickems_message(
         self, channel: discord.TextChannel, message_id: int, game: Game
@@ -279,27 +329,24 @@ class HockeyPickems(MixinMeta):
                 self.all_pickems[str(guild.id)][str(game.game_id)].game_start = game.game_start
             if old_pickem.game_state != game.game_state:
                 self.all_pickems[str(guild.id)][str(game.game_id)].game_state = game.game_state
+            self.all_pickems[str(guild.id)][str(game.game_id)]._should_save = True
             log.debug("using old pickems")
             return False
 
     async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers
-        pickems_channels_to_delete = []
         async for guild_id, data in AsyncIter(
-            (await self.pickems_config.all_guilds()).items(), steps=100
+            (await self.pickems_config.all_guilds()).items(), steps=10
         ):
             guild = self.bot.get_guild(id=guild_id)
             if guild is None:
                 continue
-            try:
-                current_guild_pickem_channels = await self.pickems_config.guild(
-                    guild
-                ).pickems_channels()
-                if current_guild_pickem_channels:
-                    pickems_channels_to_delete += current_guild_pickem_channels
-            except Exception:
-                log.error("Error adding channels to delete", exc_info=True)
-
+            current_guild_pickem_channels = await self.pickems_config.guild(
+                guild
+            ).pickems_channels()
+            self.bot.loop.create_task(
+                self.delete_pickems_channels(guild, current_guild_pickem_channels)
+            )
             top_members: List[int] = []
             global_bank = await bank.is_global()
             if global_bank:
@@ -318,10 +365,6 @@ class HockeyPickems(MixinMeta):
                 for user, data in leaderboard.items():
                     data["weekly"] = 0
             self.bot.loop.create_task(self.add_weekly_pickems_credits(guild, top_members))
-        try:
-            await self.delete_pickems_channels(pickems_channels_to_delete)
-        except Exception:
-            log.exception("Error deleting pickems Channels")
 
     async def add_weekly_pickems_credits(
         self, guild: discord.Guild, top_members: List[int]
@@ -485,18 +528,25 @@ class HockeyPickems(MixinMeta):
                 continue
             await self.pickems_config.guild(guild).pickems_channels.set(channels)
 
-    async def delete_pickems_channels(self, channels: List[int]) -> None:
+    async def delete_pickems_channels(self, guild: discord.Guild, channels: List[int]) -> None:
         log.debug("Deleting pickems channels")
         for channel_id in channels:
-            channel = self.bot.get_channel(channel_id)
+            channel = guild.get_channel(channel_id)
             if not channel:
                 continue
             try:
                 await channel.delete()
+                if guild.id in self.antispam:
+                    if channel_id in self.antispam[guild.id]:
+                        del self.antispam[guild.id][channel_id]
+                        # this is just so we don't constantly
+                        # keep adding more of these to memory
+                        # requiring us to reload over time
             except discord.errors.Forbidden:
+                log.error(f"Missing permissions to delete old pickems channel in {repr(guild)}")
                 pass
             except Exception:
-                log.error("Error deleting old pickems channels", exc_info=True)
+                log.exception(f"Error deleting old pickems channels in {repr(guild)}")
 
     async def tally_guild_leaderboard(self, guild: discord.Guild) -> None:
         """
@@ -507,7 +557,7 @@ class HockeyPickems(MixinMeta):
             base_credits = await self.pickems_config.base_credits()
         else:
             base_credits = await self.pickems_config.guild(guild).base_credits()
-        pickems_list = copy(self.all_pickems.get(str(guild.id)))
+        pickems_list = self.all_pickems.get(str(guild.id)).copy()
         to_remove = []
         async for name, pickems in AsyncIter(pickems_list.items(), steps=10):
             # check for definitive winner here just incase
@@ -545,6 +595,9 @@ class HockeyPickems(MixinMeta):
             try:
                 log.debug(f"Removing pickem {name}")
                 del self.all_pickems[str(guild.id)][name]
+                async with self.pickems_config.guild(guild).pickems() as data:
+                    if name in data:
+                        del data[name]
             except Exception:
                 log.error("Error removing pickems from memory", exc_info=True)
 
@@ -553,7 +606,7 @@ class HockeyPickems(MixinMeta):
         This should be where the pickems is removed and tallies are added
         to the leaderboard
         """
-        async for guild_id in AsyncIter(self.all_pickems.keys(), steps=100):
+        async for guild_id in AsyncIter(self.all_pickems.keys(), steps=10):
             guild = self.bot.get_guild(id=int(guild_id))
             if guild is None:
                 continue

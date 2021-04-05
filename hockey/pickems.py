@@ -30,6 +30,7 @@ class Pickems:
     name: str
     winner: str
     link: str
+    _should_save: bool
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -54,6 +55,8 @@ class Pickems:
         self.winner = kwargs.get("winner")
         self.name = kwargs.get("name")
         self.link = kwargs.get("link")
+        self._should_save: bool = True
+        # Start true so we save instantiated pickems
 
     def __repr__(self):
         return (
@@ -89,11 +92,13 @@ class Pickems:
             else:
                 if choice != team_choice:
                     self.votes[str(user_id)] = team_choice
+                    self._should_save = True
                     raise UserHasVotedError("{} {}".format(team, team_choice))
         if time_now > self.game_start:
             raise VotingHasEndedError(_("You did not vote on this game!"))
         if str(user_id) not in self.votes:
             self.votes[str(user_id)] = team_choice
+            self._should_save = True
 
     def to_json(self) -> dict:
         return {
@@ -142,12 +147,15 @@ class Pickems:
         if game.game_state == "Postponed":
             if game.game_start != self.game_start:
                 self.game_start = game.game_start
+                self._should_save = True
             return False
         if game.home_score > game.away_score:
             self.winner = self.home_team
+            self._should_save = True
             return True
         elif game.away_score > game.home_score:
             self.winner = self.away_team
+            self._should_save = True
             return True
         return False
 

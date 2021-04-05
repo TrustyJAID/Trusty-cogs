@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Literal, Optional, Dict
+from typing import List, Literal, Optional, Dict, Union
 
 import aiohttp
 import discord
@@ -321,6 +321,17 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def handle_pickems_response(
+        self,
+        user: discord.Member,
+        channel: discord.TextChannel,
+        emoji: Optional[Union[discord.Emoji, str]],
+        message_id: int,
+        reply_message: Optional[str],
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def pickems_loop(self) -> None:
         raise NotImplementedError()
 
@@ -399,7 +410,7 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_pickems_channels(self, channels: List[int]) -> None:
+    async def delete_pickems_channels(self, guild: discord.Guild, channels: List[int]) -> None:
         raise NotImplementedError()
 
     @abstractmethod

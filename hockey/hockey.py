@@ -52,7 +52,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.0.1"
+    __version__ = "3.0.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -126,7 +126,6 @@ class Hockey(
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
 
-
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
         Thanks Sinbad!
@@ -155,7 +154,7 @@ class Hockey(
         for g_id, data in all_guilds.items():
             if str(user_id) in data["leaderboard"]:
                 del data["leaderboard"][str(user_id)]
-                await self.config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
+                await self.pickems_config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
 
     async def initialize(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
