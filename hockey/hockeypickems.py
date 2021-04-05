@@ -149,7 +149,7 @@ class HockeyPickems(MixinMeta):
         if self.antispam[guild.id][channel.id][user.id].spammy:
             return
 
-        if channel.permissions_for(guild.me).manage_messages:
+        if emoji is not None and channel.permissions_for(guild.me).manage_messages:
             try:
                 if version_info >= VersionInfo.from_str("3.4.6"):
                     msg = channel.get_partial_message(message_id)
