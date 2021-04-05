@@ -65,8 +65,8 @@ class Goal:
         self.event = kwargs.get("event")
         self.link = kwargs.get("link", None)
         self.tasks: List[asyncio.Task] = []
-        self.home_shots: int = 0
-        self.away_shots: int = 0
+        self.home_shots: int = kwargs.get("home_shots", 0)
+        self.away_shots: int = kwargs.get("away_shots", 0)
 
     def __repr__(self):
         return "<Hockey Goal team={0.team_name} id={0.goal_id} >".format(self)
