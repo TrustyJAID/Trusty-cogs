@@ -9,6 +9,7 @@ from discord.ext.commands.errors import BadArgument
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.i18n import Translator
 
 from .errors import APIError, InvalidCredentials, NoCredentials, OutOfRequests
 
@@ -21,6 +22,8 @@ API_URL = "https://www.cleverbot.com/getreply"
 IO_API_URL = "https://cleverbot.io/1.0"
 
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
+
+_ = Translator("cleverbot", __file__)
 
 
 class ChannelUserRole(IDConverter):
@@ -93,9 +96,46 @@ class CleverbotAPI:
     config: Config
     instances: dict
 
-    def __init__(self, bot):
-        self.bot = bot
-        self.instances = {}
+    async def send_cleverbot_response(
+        self, message: str, author: Union[discord.Member, discord.User], ctx: commands.Context
+    ) -> None:
+        """
+        This is called when we actually want to send a reply
+        """
+        await ctx.trigger_typing()
+        try:
+            response = await self.get_response(author, message)
+        except NoCredentials:
+            msg = _(
+                "The owner needs to set the credentials first.\n" "See: [p]cleverbotset apikey"
+            )
+            await ctx.send(msg)
+        except APIError as e:
+            await ctx.send("Error contacting the API. Error code: {}".format(e))
+        except InvalidCredentials:
+            msg = _("The token that has been set is not valid.\n" "See: [p]cleverbotset")
+            await ctx.send(msg)
+        except OutOfRequests:
+            msg = _(
+                "You have ran out of requests for this month. "
+                "The free tier has a 5000 requests a month limit."
+            )
+            await ctx.send(msg)
+        else:
+            replies = (
+                version_info >= VersionInfo.from_str("3.4.6")
+                and await self.config.guild(ctx.guild).reply()
+            )
+            if ctx.guild and await self.config.guild(ctx.guild).mention():
+                if replies:
+                    await ctx.send(response, reference=ctx.message, mention_author=True)
+                else:
+                    await ctx.send(f"{author.mention} {response}")
+            else:
+                if replies:
+                    await ctx.send(response, reference=ctx.message, mention_author=False)
+                else:
+                    await ctx.send(response)
 
     async def local_perms(self, message: discord.Message) -> bool:
         """Check the user is/isn't locally whitelisted/blacklisted.
@@ -118,7 +158,7 @@ class CleverbotAPI:
             guild_settings = self.bot.db.guild(message.guild)
             local_blacklist = await guild_settings.blacklist()
             local_whitelist = await guild_settings.whitelist()
-            author: discord.Member = cast(discord.Member, message.author)
+            author: discord.Member = message.author
             _ids = [r.id for r in author.roles if not r.is_default()]
             _ids.append(message.author.id)
             if local_whitelist:
@@ -221,6 +261,8 @@ class CleverbotAPI:
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         guild = message.guild
+        if message.author.bot:
+            return
         if not await self.check_bw_list(message):
             return
         if version_info >= VersionInfo.from_str("3.4.0"):
@@ -231,6 +273,12 @@ class CleverbotAPI:
         text = message.clean_content
         to_strip = f"(?m)^(<@!?{self.bot.user.id}>)"
         is_mention = re.search(to_strip, message.content)
+        is_reply = False
+        reply = getattr(message, "reference", None)
+        if reply and (reference := getattr(reply, "resolved")) is not None:
+            author = getattr(reference, "author")
+            if author is not None:
+                is_reply = reference.author.id == self.bot.user.id
         if is_mention:
             text = text[len(ctx.me.display_name) + 2 :]
             log.debug(text)
@@ -245,14 +293,15 @@ class CleverbotAPI:
             return
 
         if message.author.id != self.bot.user.id:
-
-            if not is_mention and message.channel.id != await self.config.guild(guild).channel():
+            auto_channel = await self.config.guild(guild).channel()
+            if (not is_mention and not is_reply) and message.channel.id != auto_channel:
+                log.debug("Not a mention or reply and not auto channel")
                 return
             if not await self.config.guild(guild).toggle():
                 return
             await self.send_cleverbot_response(text, author, ctx)
 
-    async def get_response(self, author: discord.User, text: str) -> str:
+    async def get_response(self, author: Union[discord.Member, discord.User], text: str) -> str:
         payload = {}
         try:
             payload["key"] = await self.get_credentials()
@@ -319,7 +368,9 @@ class CleverbotAPI:
                     raise APIError(error_msg)
         return data["response"]
 
-    async def get_cleverbotcom_response(self, payload: dict, author: discord.User) -> str:
+    async def get_cleverbotcom_response(
+        self, payload: dict, author: Union[discord.Member, discord.User]
+    ) -> str:
         async with aiohttp.ClientSession() as session:
             async with session.get(API_URL, params=payload) as r:
                 # print(r.status)

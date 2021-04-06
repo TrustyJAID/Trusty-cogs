@@ -1,15 +1,13 @@
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 
-from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .api import ChannelUserRole, CleverbotAPI, IntRange
-from .errors import APIError, InvalidCredentials, NoCredentials, OutOfRequests
 
 log = logging.getLogger("red.trusty-cogs.Cleverbot")
 
@@ -25,7 +23,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     """
 
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.4.0"
+    __version__ = "2.4.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -395,44 +393,3 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         await ctx.send(_("Credentials set."))
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
-
-    async def send_cleverbot_response(
-        self, message: str, author: Union[discord.Member, discord.User], ctx: commands.Context
-    ) -> None:
-        """
-        This is called when we actually want to send a reply
-        """
-        await ctx.trigger_typing()
-        try:
-            response = await self.get_response(author, message)
-        except NoCredentials:
-            msg = _(
-                "The owner needs to set the credentials first.\n" "See: [p]cleverbotset apikey"
-            )
-            await ctx.send(msg)
-        except APIError as e:
-            await ctx.send("Error contacting the API. Error code: {}".format(e))
-        except InvalidCredentials:
-            msg = _("The token that has been set is not valid.\n" "See: [p]cleverbotset")
-            await ctx.send(msg)
-        except OutOfRequests:
-            msg = _(
-                "You have ran out of requests for this month. "
-                "The free tier has a 5000 requests a month limit."
-            )
-            await ctx.send(msg)
-        else:
-            replies = (
-                version_info >= VersionInfo.from_str("3.4.6")
-                and await self.config.guild(ctx.guild).reply()
-            )
-            if ctx.guild and await self.config.guild(ctx.guild).mention():
-                if replies:
-                    await ctx.send(response, reference=ctx.message, mention_author=True)
-                else:
-                    await ctx.send(f"{author.mention} {response}")
-            else:
-                if replies:
-                    await ctx.send(response, reference=ctx.message, mention_author=False)
-                else:
-                    await ctx.send(response)
