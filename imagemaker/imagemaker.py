@@ -1,12 +1,13 @@
 import asyncio
 import functools
 import json
+import logging
 import os
 import sys
 import textwrap
 from copy import copy
 from io import BytesIO
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast, Tuple
 
 import aiohttp
 import discord
@@ -16,6 +17,8 @@ from redbot.core import commands
 from redbot.core.data_manager import bundled_data_path
 
 from .converter import ImageFinder
+
+log = logging.getLogger("red.trusty-cogs.imagemaker")
 
 try:
     import cv2
@@ -43,7 +46,7 @@ class ImageMaker(commands.Cog):
         "Bruno Lemos (isnowillegal.com)",
         "Jo\u00e3o Pedro (isnowillegal.com)",
     ]
-    __version__ = "1.5.1"
+    __version__ = "1.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -61,7 +64,35 @@ class ImageMaker(commands.Cog):
         """
         return
 
-    async def dl_image(self, url: str) -> Optional[BytesIO]:
+    async def safe_send(
+        self, ctx: commands.Context, text: Optional[str], file: discord.File, file_size: int
+    ):
+        if not ctx.channel.permissions_for(ctx.me).send_messages:
+            file.close()
+            return
+        if not ctx.channel.permissions_for(ctx.me).attach_files:
+            await ctx.send("I don't have permission to attach files.")
+            file.close()
+            return
+        BASE_FILESIZE_LIMIT = 8 * 1024 * 1024
+        if ctx.guild and file_size < ctx.guild.filesize_limit:
+            await ctx.send(content=text, file=file)
+        elif not ctx.guild and file_size < BASE_FILESIZE_LIMIT:
+            await ctx.send(content=text, file=file)
+        else:
+            await ctx.send("The contents of this command is too large to upload!")
+        file.close()
+
+    async def dl_image(
+        self, url: Union[discord.Asset, discord.Attachment, str]
+    ) -> Optional[BytesIO]:
+        if isinstance(url, discord.Asset) or isinstance(url, discord.Attachment):
+            try:
+                b = BytesIO()
+                await url.save(b)
+                return b
+            except discord.HTTPException:
+                return None
         async with aiohttp.ClientSession() as session:
             async with session.get(str(url)) as resp:
                 if resp.status == 200:
@@ -83,13 +114,12 @@ class ImageMaker(commands.Cog):
         if text is None:
             text = ctx.message.author
         async with ctx.channel.typing():
-            wheeze_img = await self.make_wheeze(text)
-            if wheeze_img is None:
+            file, file_size = await self.make_wheeze(text)
+            if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-            file = discord.File(wheeze_img)
             # ext = await self.make_beautiful(user)
-            await ctx.send(file=file)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -102,13 +132,11 @@ class ImageMaker(commands.Cog):
             if len(urls) < 2:
                 return await ctx.send("You must supply at least 2 image links.")
         async with ctx.channel.typing():
-            face_img = await self.face_merge(urls)
-            if face_img is None:
+            file, file_size = await self.face_merge(urls)
+            if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-            file = discord.File(face_img)
-            # ext = await self.make_beautiful(user)
-            await ctx.send(file=file)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -125,11 +153,10 @@ class ImageMaker(commands.Cog):
             task = functools.partial(self.make_banner, text=text, colour=colour)
             task = ctx.bot.loop.run_in_executor(None, task)
             try:
-                image = await asyncio.wait_for(task, timeout=60)
+                file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
-                return
-            file = discord.File(image)
-            await ctx.send(files=[file])
+                return await ctx.send("I could not create the banner you requested.")
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -169,7 +196,9 @@ class ImageMaker(commands.Cog):
                 data.name = "obama.mp4"
                 data.seek(0)
                 file = discord.File(data)
-                await ctx.send(files=[file])
+                file_size = data.tell()
+                data.close()
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -183,13 +212,11 @@ class ImageMaker(commands.Cog):
         if member is None:
             member = ctx.message.author
         async with ctx.channel.typing():
-            wheeze_img = await self.make_wheeze(member, True)
-            if wheeze_img is None:
+            file, file_size = await self.make_wheeze(member, True)
+            if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-            file = discord.File(wheeze_img)
-            # ext = await self.make_beautiful(user)
-            await ctx.send(file=file)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -205,13 +232,11 @@ class ImageMaker(commands.Cog):
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            beautiful_img = await self.make_beautiful(user, is_gif)
-            if beautiful_img is None:
+            file, file_size = await self.make_beautiful(user, is_gif)
+            if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-            file = discord.File(beautiful_img)
-            # ext = await self.make_beautiful(user)
-            await ctx.send(file=file)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -227,13 +252,11 @@ class ImageMaker(commands.Cog):
         if user is None:
             user = ctx.message.author
         async with ctx.channel.typing():
-            feels_img = await self.make_feels(user, is_gif)
-            if feels_img is None:
+            file, file_size = await self.make_feels(user, is_gif)
+            if file is None:
                 await ctx.send("sorry something went wrong!")
                 return
-            file = discord.File(feels_img)
-            # ext = await self.make_feels(user)
-            await ctx.send(file=file)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command(aliases=["isnowillegal"])
     @commands.check(lambda ctx: TRUMP)
@@ -254,59 +277,46 @@ class ImageMaker(commands.Cog):
             task = functools.partial(self.make_trump_gif, text=message)
             task = self.bot.loop.run_in_executor(None, task)
             try:
-                temp = await asyncio.wait_for(task, timeout=60)
+                file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return
-            image = discord.File(temp)
-            await ctx.send(file=image)
+        await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def redpill(self, ctx: commands.Context) -> None:
         """Generate a Red Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #FF0000"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#FF0000")
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def bluepill(self, ctx: commands.Context) -> None:
         """Generate a Blue Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #0000FF"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#0000FF")
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def blackpill(self, ctx: commands.Context) -> None:
         """Generate a Black Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #000000"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#000000")
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def purplepill(self, ctx: commands.Context) -> None:
         """Generate a Purple Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #800080"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#800080")
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def yellowpill(self, ctx: commands.Context) -> None:
         """Generate a Yellow Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #FFFF00"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#FFFF00")
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
     async def greenpill(self, ctx: commands.Context) -> None:
         """Generate a Green Pill"""
-        msg = copy(ctx.message)
-        msg.content = ctx.prefix + "pill #008000"
-        ctx.bot.dispatch("message", msg)
+        await ctx.invoke(self.pill, "#008000")
 
     async def make_colour(self, colour):
         template_str = "https://i.imgur.com/n6r04O8.png"
@@ -319,7 +329,9 @@ class ImageMaker(commands.Cog):
             return
         image.seek(0)
         template.close()
-        return image
+        file = discord.File(image, filename="pill.png")
+        file_size = image.tell()
+        return file, file_size
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -330,16 +342,17 @@ class ImageMaker(commands.Cog):
         `colour` is a hexcode colour
         """
         async with ctx.channel.typing():
-            pill_image = await self.make_colour(colour)
-            if pill_image is None:
+            file, file_size = await self.make_colour(colour)
+            if file is None:
                 await ctx.send("Something went wrong sorry!")
                 return
-            image = discord.File(pill_image)
-            await ctx.send(file=image)
+        await self.safe_send(ctx, None, file, file_size)
 
     # Below are all the task handlers so the code is not blocking
 
-    async def make_beautiful(self, user: discord.User, is_gif: bool) -> Optional[BytesIO]:
+    async def make_beautiful(
+        self, user: discord.User, is_gif: bool
+    ) -> Tuple[Optional[discord.File], int]:
         template_str = "https://i.imgur.com/kzE9XBE.png"
         template = Image.open(await self.dl_image(template_str))
         if user.is_avatar_animated() and is_gif:
@@ -359,13 +372,19 @@ class ImageMaker(commands.Cog):
         except asyncio.TimeoutError:
             avatar.close()
             template.close()
-            return None
+            return None, 0
         avatar.close()
         template.close()
         temp.seek(0)
-        return temp
+        filename = "beautiful.gif" if is_gif else "beautiful.png"
+        file = discord.File(temp, filename=filename)
+        file_size = temp.tell()
+        temp.close()
+        return file, file_size
 
-    async def make_feels(self, user: discord.User, is_gif: bool) -> Optional[BytesIO]:
+    async def make_feels(
+        self, user: discord.User, is_gif: bool
+    ) -> Tuple[Optional[discord.File], int]:
         template_str = "https://i.imgur.com/4xr6cdw.png"
         template = Image.open(await self.dl_image(template_str))
         colour = user.colour.to_rgb()
@@ -389,15 +408,19 @@ class ImageMaker(commands.Cog):
         except asyncio.TimeoutError:
             avatar.close()
             template.close()
-            return None
+            return None, 0
         avatar.close()
         template.close()
         temp.seek(0)
-        return temp
+        filename = "feels.gif" if is_gif else "feels.png"
+        file = discord.File(temp, filename=filename)
+        file_size = temp.tell()
+        temp.close()
+        return file, file_size
 
     async def make_wheeze(
         self, text: Union[discord.Member, str], is_gif=False
-    ) -> Optional[BytesIO]:
+    ) -> Tuple[Optional[discord.File], int]:
         template_path = "https://i.imgur.com/c5uoDcd.jpg"
         template = Image.open(await self.dl_image(template_path))
         avatar = None
@@ -421,7 +444,7 @@ class ImageMaker(commands.Cog):
             except asyncio.TimeoutError:
                 avatar.close()
                 template.close()
-                return None
+                return None, 0
         else:
             task = functools.partial(self.make_wheeze_img, template=template, avatar=text)
             task = self.bot.loop.run_in_executor(None, task)
@@ -429,23 +452,30 @@ class ImageMaker(commands.Cog):
                 temp = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 template.close()
-                return None
+                return None, 0
         if avatar:
             avatar.close()
         template.close()
+        file_size = temp.tell()
         temp.seek(0)
-        return temp
+        filename = "wheeze.gif" if is_gif else "wheeze.gif"
+        file = discord.File(temp, filename=filename)
+        temp.close()
+        return file, file_size
 
-    async def face_merge(self, urls: list) -> Optional[BytesIO]:
+    async def face_merge(self, urls: list) -> Tuple[Optional[discord.File], int]:
         images = [await self.dl_image(u) for u in urls]
         task = functools.partial(self.face_transition, images=images)
         task = self.bot.loop.run_in_executor(None, task)
         try:
-            temp = await asyncio.wait_for(task, timeout=60)
+            temp: BytesIO = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
-            return None
+            return None, 0
         temp.seek(0)
-        return temp
+        file = discord.File(temp, filename="facemerge.gif")
+        file_size = temp.tell()
+        temp.close()
+        return file, file_size
 
     # Below are all the blocking code
 
@@ -507,7 +537,7 @@ class ImageMaker(commands.Cog):
         base_img.close()
         return temp
 
-    def make_banner(self, text: str, colour: str) -> BytesIO:
+    def make_banner(self, text: str, colour: str) -> Tuple[discord.File, int]:
         im = Image.new("RGBA", (300, 100), (0, 0, 0, 0))
         font = ImageFont.truetype(str(bundled_data_path(self) / "impact.ttf"), 18)
         draw = ImageDraw.Draw(im)
@@ -527,7 +557,9 @@ class ImageMaker(commands.Cog):
         imageio.mimwrite(temp, images, "gif", duration=0.02)
         temp.seek(0)
         im.close()
-        return temp
+        file = discord.File(temp)
+        file_size = temp.tell()
+        return file, file_size
 
     def make_beautiful_img(self, template: Image, avatar: Image) -> BytesIO:
         # print(template.info)
@@ -659,7 +691,7 @@ class ImageMaker(commands.Cog):
 
     """Code is from http://isnowillegal.com/ and made to work on redbot"""
 
-    def make_trump_gif(self, text: str) -> BytesIO:
+    def make_trump_gif(self, text: str) -> Tuple[Optional[discord.File], int]:
         folder = str(bundled_data_path(self)) + "/trump_template"
         jsonPath = os.path.join(folder, "frames.json")
 
@@ -703,7 +735,10 @@ class ImageMaker(commands.Cog):
         temp.name = "Trump.gif"
         temp.seek(0)
         finalFrame.close()
-        return temp
+        file = discord.File(temp)
+        file_size = temp.tell()
+        temp.close()
+        return file, file_size
 
     def rotoscope(self, dst, warp, properties: dict):
         if not properties["show"]:
