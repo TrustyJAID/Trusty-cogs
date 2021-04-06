@@ -21,7 +21,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.9.1"
+    __version__ = "2.10.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -38,6 +38,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    def cog_unload(self):
+        self.loop.cancel()
 
     async def red_delete_data_for_user(self, **kwargs):
         """
@@ -86,14 +89,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
             "role_create": _("Role created"),
             "role_delete": _("Role deleted"),
             "voice_change": _("Voice changes"),
-            "user_join": _("User join"),
-            "user_left": _("User left"),
+            "user_join": _("Member join"),
+            "user_left": _("Member left"),
             "channel_change": _("Channel changes"),
             "channel_create": _("Channel created"),
             "channel_delete": _("Channel deleted"),
             "guild_change": _("Guild changes"),
             "emoji_change": _("Emoji changes"),
-            "commands_used": _("Mod/Admin Commands"),
+            "commands_used": _("Commands"),
             "invite_created": _("Invite created"),
             "invite_deleted": _("Invite deleted"),
         }
@@ -117,6 +120,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
         disabled = ""
         for settings, name in cur_settings.items():
             msg += f"{name}: **{data[settings]['enabled']}**"
+            if settings == "commands_used":
+                msg += "\n" + humanize_list(data[settings]["privs"])
             if data[settings]["channel"]:
                 chn = guild.get_channel(data[settings]["channel"])
                 if chn is None:
@@ -148,12 +153,18 @@ class ExtendedModLog(EventMixin, commands.Cog):
         Requires the channel to be setup with `[p]modlogset modlog #channel`
         Or can be sent to separate channels with `[p]modlog channel #channel event_name`
         """
+        pass
+
+    @_modlog.command(name="settings")
+    async def _show_modlog_settings(self, ctx: commands.Context):
+        """
+        Show the servers current ExtendedModlog settings
+        """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         if await self.config.guild(ctx.message.guild).all() == {}:
             await self.config.guild(ctx.message.guild).set(inv_settings)
-        if ctx.invoked_subcommand is None:
-            await self.modlog_settings(ctx)
+        await self.modlog_settings(ctx)
 
     @_modlog.command(name="colour", aliases=["color"])
     async def _set_event_colours(
@@ -164,24 +175,24 @@ class ExtendedModLog(EventMixin, commands.Cog):
 
         `colour` must be a hex code or a [built colour.](https://discordpy.readthedocs.io/en/latest/api.html#colour)
 
-        `event` must be one of the following options (more than one event can be provided at once.):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+        `[events...]` must be any of the following options (more than one event can be provided at once):
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -200,35 +211,38 @@ class ExtendedModLog(EventMixin, commands.Cog):
             )
         await ctx.send(
             _("{event} has been set to {colour}").format(
-                event=humanize_list(events), colour=str(colour)
+                event=humanize_list([e.replace("user_", "member_") for e in events]),
+                colour=str(colour),
             )
         )
 
     @_modlog.command(name="embeds", aliases=["embed"])
-    async def _set_embds(self, ctx: commands.Context, set_to: bool, *events: EventChooser) -> None:
+    async def _set_embds(
+        self, ctx: commands.Context, true_or_false: bool, *events: EventChooser
+    ) -> None:
         """
         Set modlog events to use embeds or text
 
-        `set_to` The desired embed setting either on or off.
+        `<true_or_false>` The desired embed setting either on or off.
 
         `[events...]` must be any of the following options (more than one event can be provided at once):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -237,13 +251,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
-            self.settings[ctx.guild.id][event]["embed"] = set_to
+            self.settings[ctx.guild.id][event]["embed"] = true_or_false
             await self.config.guild(ctx.guild).set_raw(
                 event, value=self.settings[ctx.guild.id][event]
             )
         await ctx.send(
-            _("{event} embed logs have been set to {set_to}").format(
-                event=humanize_list(events), set_to=str(set_to)
+            _("{event} embed logs have been set to {true_or_false}").format(
+                event=humanize_list([e.replace("user_", "member_") for e in events]),
+                true_or_false=str(true_or_false),
             )
         )
 
@@ -258,26 +273,26 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Set the emoji used in text modlogs.
 
-        `new_emoji` can be any discord emoji or unicode emoji the bot has access to use.
+        `<new_emoji>` can be any discord emoji or unicode emoji the bot has access to use.
 
-        `[events...]` must be one of the following options (more than one event can be provided at once):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+        `[events...]` must be any of the following options (more than one event can be provided at once):
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -298,7 +313,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
             )
         await ctx.send(
             _("{event} emoji has been set to {new_emoji}").format(
-                event=humanize_list(events), new_emoji=str(new_emoji)
+                event=humanize_list([e.replace("user_", "member_") for e in events]),
+                new_emoji=str(new_emoji),
             )
         )
 
@@ -306,32 +322,32 @@ class ExtendedModLog(EventMixin, commands.Cog):
     async def _set_event_on_or_off(
         self,
         ctx: commands.Context,
-        set_to: bool,
+        true_or_false: bool,
         *events: EventChooser,
     ) -> None:
         """
         Turn on and off specific modlog actions
 
-        `set_to` Either on or off.
+        `<true_or_false>` Either on or off.
 
-        `[events...]` must be one of the following options (more than one event can be provided at once):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+        `[events...]` must be any of the following options (more than one event can be provided at once):
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            ** requires manage_channel permissions**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -340,13 +356,14 @@ class ExtendedModLog(EventMixin, commands.Cog):
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for event in events:
-            self.settings[ctx.guild.id][event]["enabled"] = set_to
+            self.settings[ctx.guild.id][event]["enabled"] = true_or_false
             await self.config.guild(ctx.guild).set_raw(
                 event, value=self.settings[ctx.guild.id][event]
             )
         await ctx.send(
-            _("{event} logs have been set to {set_to}").format(
-                event=humanize_list(events), set_to=str(set_to)
+            _("{event} logs have been set to {true_or_false}").format(
+                event=humanize_list([e.replace("user_", "member_") for e in events]),
+                true_or_false=str(true_or_false),
             )
         )
 
@@ -360,26 +377,26 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Set the channel for modlogs.
 
-        `channel` The text channel to send the events to.
+        `<channel>` The text channel to send the events to.
 
-        `[events...]` must be one of the following options (more than one event can be provided at once):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+        `[events...]` must be any of the following options (more than one event can be provided at once):
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -394,7 +411,8 @@ class ExtendedModLog(EventMixin, commands.Cog):
             )
         await ctx.send(
             _("{event} logs have been set to {channel}").format(
-                event=humanize_list(events), channel=channel.mention
+                event=humanize_list([e.replace("user_", "member_") for e in events]),
+                channel=channel.mention,
             )
         )
 
@@ -407,24 +425,24 @@ class ExtendedModLog(EventMixin, commands.Cog):
         """
         Reset the modlog event to the default modlog channel.
 
-        `[events...]` must be one of the following options (more than one event can be provided at once):
-            `message_edit`
-            `message_delete`
-            `user_change`
-            `role_change`
-            `role_create`
-            `role_delete`
-            `voice_change`
-            `user_join`
-            `user_left`
-            `channel_change`
+        `[events...]` must be any of the following options (more than one event can be provided at once):
+            `channel_change` - Updates to channel name, etc.
             `channel_create`
             `channel_delete`
-            `guild_change`
-            `emoji_change`
-            `commands_used`
+            `commands_used`  - Bot command usage
+            `emoji_change`   - Emojis added or deleted
+            `guild_change`   - Server settings changed
+            `message_edit`
+            `message_delete`
+            `member_change`  - Member changes like roles added/removed and nicknames
+            `role_change`    - Role updates like permissions
+            `role_create`
+            `role_delete`
+            `voice_change`   - Voice channel join/leave
+            `member_join`
+            `member_left`
 
-            **Requires Red 3.3 and discord.py 1.3**
+            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
         """
@@ -442,17 +460,17 @@ class ExtendedModLog(EventMixin, commands.Cog):
         )
 
     @_modlog.command(name="all", aliaes=["all_settings", "toggle_all"])
-    async def _toggle_all_logs(self, ctx: commands.Context, set_to: bool) -> None:
+    async def _toggle_all_logs(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Turn all logging options on or off
 
-        `<set_to>` what to set all logging settings to must be `true`, `false`, `yes`, `no`.
+        `<true_or_false>` what to set all logging settings to must be `true`, `false`, `yes`, `no`.
         """
         if ctx.guild.id not in self.settings:
             self.settings[ctx.guild.id] = inv_settings
         for setting in inv_settings.keys():
             if "enabled" in self.settings[ctx.guild.id][setting]:
-                self.settings[ctx.guild.id][setting]["enabled"] = set_to
+                self.settings[ctx.guild.id][setting]["enabled"] = true_or_false
         await self.config.guild(ctx.guild).set(self.settings[ctx.guild.id])
         await self.modlog_settings(ctx)
 
@@ -666,6 +684,3 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await ctx.send(_(" Now tracking events in ") + channel.mention)
         else:
             await ctx.send(channel.mention + _(" is not being ignored."))
-
-    def __unload(self):
-        self.loop.cancel()

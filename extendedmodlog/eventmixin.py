@@ -66,6 +66,8 @@ class EventChooser(Converter):
             "invite_deleted",
         ]
         result = None
+        if argument.startswith("member_"):
+            argument = argument.replace("member_", "user_")
         if argument.lower() in options:
             result = argument.lower()
         if not result:
@@ -125,7 +127,7 @@ class EventMixin:
             colour = discord.Colour(self.settings[guild.id][event_type]["colour"])
         return colour
 
-    async def is_ignored_channel(self, guild: discord.Guild, channel: discord.abc.GuildChannel):
+    async def is_ignored_channel(self, guild: discord.Guild, channel: discord.GuildChannel):
         ignored_channels = self.settings[guild.id]["ignored_channels"]
         if channel.id in ignored_channels:
             return True
@@ -152,7 +154,7 @@ class EventMixin:
                     can = await cmd.can_run(testcontext)
                     if can is False:
                         break
-            except commands.CheckFailure:
+            except (commands.CheckFailure, commands.DisabledCommand):
                 can = False
         return can
 
@@ -451,11 +453,8 @@ class EventMixin:
 
     async def invite_links_loop(self) -> None:
         """Check every 5 minutes for updates to the invite links"""
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
-        while self is self.bot.get_cog("ExtendedModLog"):
+        await self.bot.wait_until_red_ready()
+        while True:
             for guild_id in self.settings:
                 guild = self.bot.get_guild(guild_id)
                 if guild is None:
@@ -528,20 +527,17 @@ class EventMixin:
                 for code, data in invites.items():
                     try:
                         invite = await self.bot.fetch_invite(code)
-                    except (
-                        discord.errors.NotFound,
-                        discord.errors.HTTPException,
-                        Exception,
-                    ):
+                    except Exception:
                         logger.error("Error getting invite {code}".format(code=code))
                         invite = None
                         pass
-                    if not invite:
+                    if invite is None:
                         if (data["max_uses"] - data["uses"]) == 1:
                             # The invite link was on its last uses and subsequently
                             # deleted so we're fairly sure this was the one used
                             try:
-                                inviter = await self.bot.fetch_user(data["inviter"])
+                                if (inviter := guild.get_member(data["inviter"])) is None:
+                                    inviter = await self.bot.fetch_user(data["inviter"])
                             except (discord.errors.NotFound, discord.errors.Forbidden):
                                 inviter = _("Unknown or deleted user ({inviter})").format(
                                     inviter=data["inviter"]
@@ -655,10 +651,7 @@ class EventMixin:
             and self.settings[guild.id]["user_left"]["embed"]
         )
         time = datetime.datetime.utcnow()
-        check_after = time + datetime.timedelta(minutes=-30)
-        perp, reason = await self.get_audit_log_reason(
-            guild, member, discord.AuditLogAction.kick
-        )
+        perp, reason = await self.get_audit_log_reason(guild, member, discord.AuditLogAction.kick)
         if embed_links:
             embed = discord.Embed(
                 description=member.mention,
@@ -1025,42 +1018,12 @@ class EventMixin:
             await channel.send(escape(msg, mass_mentions=True))
 
     async def get_role_permission_change(self, before: discord.Role, after: discord.Role) -> str:
-        permission_list = [
-            "create_instant_invite",
-            "kick_members",
-            "ban_members",
-            "administrator",
-            "manage_channels",
-            "manage_guild",
-            "add_reactions",
-            "view_audit_log",
-            "priority_speaker",
-            "read_messages",
-            "send_messages",
-            "send_tts_messages",
-            "manage_messages",
-            "embed_links",
-            "attach_files",
-            "read_message_history",
-            "mention_everyone",
-            "external_emojis",
-            "connect",
-            "speak",
-            "mute_members",
-            "deafen_members",
-            "move_members",
-            "use_voice_activation",
-            "change_nickname",
-            "manage_nicknames",
-            "manage_roles",
-            "manage_webhooks",
-            "manage_emojis",
-        ]
+
         p_msg = ""
-        for p in permission_list:
-            if getattr(before.permissions, p) != getattr(after.permissions, p):
-                change = getattr(after.permissions, p)
-                p_msg += f"{p} Set to {change}\n"
+        changed_perms = dict(after.permissions).items() - dict(before.permissions).items()
+
+        for p, change in changed_perms:
+            p_msg += _("{permission} Set to **{change}**\n").format(permission=p, change=change)
         return p_msg
 
     @commands.Cog.listener()
@@ -1398,15 +1361,17 @@ class EventMixin:
         worth_updating = False
         b = set(before)
         a = set(after)
+        added_emoji: Optional[discord.Emoji] = None
+        removed_emoji: Optional[discord.Emoji] = None
         # discord.Emoji uses id for hashing so we use set difference to get added/removed emoji
         try:
             added_emoji = (a - b).pop()
         except KeyError:
-            added_emoji = None
+            pass
         try:
             removed_emoji = (b - a).pop()
         except KeyError:
-            removed_emoji = None
+            pass
         # changed emojis have their name and/or allowed roles changed while keeping id unchanged
         if added_emoji is not None:
             to_iter = before + (added_emoji,)
