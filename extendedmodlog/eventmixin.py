@@ -127,7 +127,7 @@ class EventMixin:
             colour = discord.Colour(self.settings[guild.id][event_type]["colour"])
         return colour
 
-    async def is_ignored_channel(self, guild: discord.Guild, channel: discord.GuildChannel):
+    async def is_ignored_channel(self, guild: discord.Guild, channel: discord.abc.GuildChannel):
         ignored_channels = self.settings[guild.id]["ignored_channels"]
         if channel.id in ignored_channels:
             return True
