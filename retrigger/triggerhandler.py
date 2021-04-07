@@ -342,7 +342,7 @@ class TriggerHandler:
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         if not any(t.check_edits for t in self.triggers[guild.id]):
-            log.debug(f"No triggers in {guild=} have check_edits enabled")
+            # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
         if "bot" in payload.data["author"]:
             return

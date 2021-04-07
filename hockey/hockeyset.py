@@ -47,13 +47,15 @@ class HockeySetCommands(MixinMeta):
                     standings_chn = standings_channel.mention
                 else:
                     standings_chn = standings_channel.name
-                try:
-                    standings_msg = await standings_channel.fetch_message(
-                        await self.config.guild(guild).standings_msg()
-                    )
-                except (discord.errors.NotFound, discord.errors.Forbidden):
+                standings_message = await self.config.guild(guild).standings_msg()
+                if standings_message:
+                    try:
+                        standings_msg = await standings_channel.fetch_message()
+                    except (discord.errors.NotFound, discord.errors.Forbidden):
+                        standings_msg = None
+                        pass
+                else:
                     standings_msg = None
-                    pass
                 if standings_msg is not None:
                     if ctx.channel.permissions_for(guild.me).embed_links:
                         standings_msg = (
@@ -458,7 +460,18 @@ class HockeySetCommands(MixinMeta):
         guild = ctx.message.guild
         if channel is None:
             channel = ctx.message.channel
-
+        channel_perms = channel.permissions_for(ctx.me)
+        if not (
+            channel_perms.send_messages
+            and channel_perms.embed_links
+            and channel_perms.read_message_history
+        ):
+            return await ctx.send(
+                _(
+                    "I require permission to send messages, embed "
+                    "links, and read message history in {channel}."
+                ).format(channel=channel.mention)
+            )
         if standings_type.lower() not in DIVISIONS + CONFERENCES + ["all"]:
             await ctx.send(
                 _("You must choose from: {standings_types}.").format(
