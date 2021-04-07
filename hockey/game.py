@@ -336,7 +336,7 @@ class Game:
                         name=_("{team} Shootout").format(team=self.home_team), value=home_msg
                     )
                     em.add_field(
-                        name=+_("{team} Shootout").format(team=self.away_team), value=away_msg
+                        name=_("{team} Shootout").format(team=self.away_team), value=away_msg
                     )
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
