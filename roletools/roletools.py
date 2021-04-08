@@ -27,7 +27,7 @@ class RoleTools(RoleEvents, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.3"
+    __version__ = "1.3.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -704,7 +704,10 @@ class RoleTools(RoleEvents, commands.Cog):
                             to_remove.append((key, role_id))
                     for key, role_id in to_remove:
                         del cur_settings[key]
-                        del self.settings[guild.id]["reaction_roles"][key]
+                        try:
+                            del self.settings[guild.id]["reaction_roles"][key]
+                        except KeyError:
+                            pass
                         async with self.config.role_from_id(role_id).reactions() as reactions:
                             reactions.remove(key)
         await ctx.send(_("I am finished deleting old settings."))
