@@ -992,7 +992,7 @@ class NotSoBot(commands.Cog):
         final.seek(0)
         file = discord.File(final, filename="vapewave.png")
         final.close()
-        return final, file_size
+        return file, file_size
 
     @commands.command(aliases=["vaporwave", "vape", "vapewave"])
     @commands.cooldown(2, 5)
