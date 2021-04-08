@@ -50,7 +50,7 @@ class HockeySetCommands(MixinMeta):
                 standings_message = await self.config.guild(guild).standings_msg()
                 if standings_message:
                     try:
-                        standings_msg = await standings_channel.fetch_message()
+                        standings_msg = await standings_channel.fetch_message(standings_message)
                     except (discord.errors.NotFound, discord.errors.Forbidden):
                         standings_msg = None
                         pass
