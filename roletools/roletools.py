@@ -822,7 +822,7 @@ class RoleTools(RoleEvents, commands.Cog):
                     found = True
                     role_id = role_ids
         else:
-            final_key = str(getattr(role_or_emoji, "id")).strip("\N{VARIATION SELECTOR-16}")
+            final_key = str(getattr(role_or_emoji, "id", role_or_emoji)).strip("\N{VARIATION SELECTOR-16}")
             key = f"{message.channel.id}-{message.id}-{final_key}"
             if key in self.settings[ctx.guild.id]["reaction_roles"]:
                 found = True
