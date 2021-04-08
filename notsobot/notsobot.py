@@ -404,9 +404,7 @@ class NotSoBot(commands.Cog):
                 await ctx.send(":warning: **Command download function failed...**")
                 return
             try:
-                task = self.bot.loop.run_in_executor(
-                    None, self.do_gmagik, b, frame_delay
-                )
+                task = self.bot.loop.run_in_executor(None, self.do_gmagik, b, frame_delay)
                 file, file_size = await asyncio.wait_for(task, timeout=120)
             except asyncio.TimeoutError:
                 return await ctx.send("That image is too large.")
@@ -650,7 +648,6 @@ class NotSoBot(commands.Cog):
             draw.text((0, y), lines, (0, 0, 0), font=font)
             y += 15
         imagefit = ImageOps.fit(img, (image_width, image_height), Image.ANTIALIAS)
-
 
         final = BytesIO()
         img.save(final, "png")
@@ -1028,6 +1025,7 @@ class NotSoBot(commands.Cog):
             return
         if len(txt) > 20:
             txt = txt[:20] + " ..."
+
         def make_mc(b, txt):
             image = Image.open(b).convert("RGBA")
             draw = ImageDraw.Draw(image)
@@ -1041,6 +1039,7 @@ class NotSoBot(commands.Cog):
             file = discord.File(final, filename="achievement.png")
             final.close()
             return file, file_size
+
         try:
             task = self.bot.loop.run_in_executor(None, make_mc, b, txt)
             file, file_size = await asyncio.wait_for(task, timeout=60)
@@ -1089,7 +1088,9 @@ class NotSoBot(commands.Cog):
             if transparency > 100:
                 transparency = 1
             b, mime = await self.bytes_download(url)
-            if mime not in self.image_mimes + self.gif_mimes and not isinstance(url, discord.Asset):
+            if mime not in self.image_mimes + self.gif_mimes and not isinstance(
+                url, discord.Asset
+            ):
                 return await ctx.send("That is not a valid image.")
             if mark == "brazzers" or mark is None:
                 wmm, mime = await self.bytes_download("https://i.imgur.com/YAb1RMZ.png")
@@ -1249,9 +1250,7 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(
-                None, self.do_glitch, b, amount, seed, iterations
-            )
+            task = self.bot.loop.run_in_executor(None, self.do_glitch, b, amount, seed, iterations)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -1261,7 +1260,6 @@ class NotSoBot(commands.Cog):
 
             msg = f"Iterations: `{iterations}` | Amount: `{amount}` | Seed: `{seed}`"
             await self.safe_send(ctx, msg, file, file_size)
-
 
     @commands.command(aliases=["pixel"])
     @commands.bot_has_permissions(attach_files=True)
@@ -1365,6 +1363,7 @@ class NotSoBot(commands.Cog):
         imgs_comb.save(final, "png")
         file_size = final.tell()
         final.seek(0)
+        file = discord.File(final, filename="waaw.png")
         f.close()
         f2.close()
         final.close()
