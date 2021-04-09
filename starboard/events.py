@@ -22,11 +22,13 @@ class StarboardEvents:
     bot: Red
     config: Config
     starboards: Dict[int, StarboardEntry]
+    ready: asyncio.Event()
 
     def __init__(self, bot):
         self.bot: Red
         self.config: Config
         self.starboards: Dict[int, Dict[str, StarboardEntry]]
+        self.ready: asyncio.Event()
 
     async def _build_starboard_info(self, ctx: commands.Context, starboard: StarboardEntry):
         channel_perms = ctx.channel.permissions_for(ctx.guild.me)
@@ -243,14 +245,17 @@ class StarboardEvents:
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.ready.wait()
         await self._update_stars(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.ready.wait()
         await self._update_stars(payload, remove=payload.user_id)
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.ready.wait()
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
