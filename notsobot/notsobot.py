@@ -457,7 +457,12 @@ class NotSoBot(commands.Cog):
                 return
             is_gif = mime in self.gif_mimes
             font_path = str(bundled_data_path(self)) + "/arial.ttf"
-            color = wand.color.Color(color)
+            try:
+                color = wand.color.Color(color)
+            except ValueError:
+                await ctx.send(":warning: **That is not a valid color!**")
+                await xx.delete()
+                return
             font = wand.font.Font(path=font_path, size=size, color=color)
             if x > 100:
                 x = 100
@@ -1094,17 +1099,20 @@ class NotSoBot(commands.Cog):
                 return await ctx.send("That is not a valid image.")
             if mark == "brazzers" or mark is None:
                 wmm, mime = await self.bytes_download("https://i.imgur.com/YAb1RMZ.png")
+                if wmm is False or b is False:
+                    await ctx.send(":warning: **Command download function failed...**")
+                    return
                 wmm.name = "watermark.png"
                 wm_gif = False
             else:
                 wmm, mime = await self.bytes_download(mark)
                 wm_gif = mime in self.gif_mimes
+                if wmm is False or b is False:
+                    await ctx.send(":warning: **Command download function failed...**")
+                    return
                 wmm.name = "watermark.png"
                 if wm_gif:
                     wmm.name = "watermark.gif"
-            if wmm is False or b is False:
-                await ctx.send(":warning: **Command download function failed...**")
-                return
 
             def add_watermark(b, wmm, x, y, transparency, wm_gif=False):
                 final = BytesIO()
