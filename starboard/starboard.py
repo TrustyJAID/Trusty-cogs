@@ -27,7 +27,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.4.4"
+    __version__ = "2.4.5"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -36,20 +36,31 @@ class Starboard(StarboardEvents, commands.Cog):
         self.config.register_global(purge_time=None)
         self.config.register_guild(starboards={})
         self.starboards: Dict[int, Dict[str, StarboardEntry]] = {}
+        self.init_task: asyncio.Task = self.bot.loop.create_task(self.initialize())
+        self.ready = asyncio.Event()
         self.cleanup_loop: Optional[asyncio.Task] = None
 
     async def initialize(self) -> None:
+        log.debug("Started building starboards cache from config.")
         for guild_id in await self.config.all_guilds():
             self.starboards[guild_id] = {}
             all_data = await self.config.guild(discord.Object(id=guild_id)).starboards()
             for name, data in all_data.items():
                 starboard = StarboardEntry.from_json(data)
                 self.starboards[guild_id][name] = starboard
+
         self.cleanup_loop = asyncio.create_task(self.cleanup_old_messages())
+        self.ready.set()
+        log.debug("Done building starboards cache from config.")
 
     def cog_unload(self):
+        self.ready.clear()
+        self.init_task.cancel()
         if self.cleanup_loop:
             self.cleanup_loop.cancel()
+
+    async def cog_check(self, ctx: commands.Context):
+        return self.ready.is_set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
