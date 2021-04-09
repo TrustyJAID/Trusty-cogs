@@ -7,6 +7,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
 import aiohttp
 import discord
+from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -44,7 +45,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.6"
+    __version__ = "1.6.7"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1037,8 +1038,21 @@ class ServerStats(commands.Cog):
                         embed = discord.Embed()
                         since_created = (ctx.message.created_at - member.created_at).days
                         user_created = member.created_at.strftime("%d %b %Y %H:%M")
-                        created_on = _("Joined Discord on {}\n({} days ago)").format(
-                            user_created, since_created
+                        public_flags = ""
+                        if version_info >= VersionInfo.from_str("3.4.0"):
+                            public_flags = "\n".join(
+                                bold(i.replace("_", " ").title())
+                                for i, v in member.public_flags
+                                if v
+                            )
+                        created_on = _(
+                            "Joined Discord on {user_created}\n"
+                            "({since_created} days ago)\n"
+                            "{public_flags}"
+                        ).format(
+                            user_created=user_created,
+                            since_created=since_created,
+                            public_flags=public_flags,
                         )
                         embed.description = created_on
                         embed.set_thumbnail(url=member.avatar_url)
@@ -1057,8 +1071,21 @@ class ServerStats(commands.Cog):
                     embed = discord.Embed()
                     since_created = (ctx.message.created_at - member.created_at).days
                     user_created = member.created_at.strftime("%d %b %Y %H:%M")
-                    created_on = _("Joined Discord on {}\n({} days ago)").format(
-                        user_created, since_created
+                    public_flags = ""
+                    if version_info >= VersionInfo.from_str("3.4.0"):
+                        public_flags = "\n".join(
+                            bold(i.replace("_", " ").title())
+                            for i, v in member.public_flags
+                            if v
+                        )
+                    created_on = _(
+                        "Joined Discord on {user_created}\n"
+                        "({since_created} days ago)\n"
+                        "{public_flags}"
+                    ).format(
+                        user_created=user_created,
+                        since_created=since_created,
+                        public_flags=public_flags,
                     )
                     embed.description = created_on
                     embed.set_thumbnail(url=member.avatar_url)
