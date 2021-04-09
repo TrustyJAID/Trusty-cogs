@@ -457,7 +457,12 @@ class NotSoBot(commands.Cog):
                 return
             is_gif = mime in self.gif_mimes
             font_path = str(bundled_data_path(self)) + "/arial.ttf"
-            color = wand.color.Color(color)
+            try:
+                color = wand.color.Color(color)
+            except ValueError:
+                await ctx.send(":warning: **That is not a valid color!**")
+                await xx.delete()
+                return
             font = wand.font.Font(path=font_path, size=size, color=color)
             if x > 100:
                 x = 100
