@@ -8,7 +8,7 @@
     "hidden" : false,
     "install_msg" : "Create a starboard!",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.3.12",
     "min_python_version" : [
         3,
         7,
