@@ -199,7 +199,9 @@ class EventMixin:
         can_run = await self.member_can_run(ctx)
         command = ctx.message.content.replace(ctx.prefix, "")
         try:
-            privs = self.bot.get_command(command).requires.privilege_level.name
+            privs = ctx.command.requires.privilege_level.name
+            user_perms = ctx.command.requires.user_perms
+            my_perms = ctx.command.requires.bot_perms
         except Exception:
             return
         if privs not in self.settings[guild.id]["commands_used"]["privs"]:
@@ -207,35 +209,36 @@ class EventMixin:
             return
 
         if privs == "MOD":
-            try:
-                mod_role_list = await ctx.bot.db.guild(guild).mod_role()
-            except AttributeError:
-                mod_role_list = await ctx.bot.get_mod_roles(guild)
+            mod_role_list = await ctx.bot.get_mod_roles(guild)
             if mod_role_list != []:
                 good_mod_roles = [guild.get_role(mr) for mr in mod_role_list]
                 role = ", ".join(r.mention for r in good_mod_roles if r is not None) + f"\n{privs}"
             else:
-                role = _("Not Set\nMOD")
+                role = _("Not Set\nMOD\n")
         elif privs == "ADMIN":
-            try:
-                admin_role_list = await ctx.bot.db.guild(guild).admin_role()
-            except AttributeError:
-                admin_role_list = await ctx.bot.get_admin_roles(guild)
+            admin_role_list = await ctx.bot.get_admin_roles(guild)
             if admin_role_list != []:
                 good_admin_roles = [guild.get_role(ar) for ar in admin_role_list]
                 role = (
                     ", ".join(r.mention for r in good_admin_roles if r is not None) + f"\n{privs}"
                 )
             else:
-                role = _("Not Set\nADMIN")
+                role = _("Not Set\nADMIN\n")
         elif privs == "BOT_OWNER":
             role = humanize_list([f"<@!{_id}>" for _id in ctx.bot.owner_ids])
             role += f"\n{privs}"
         elif privs == "GUILD_OWNER":
-            role = guild.owner.mention + f"\n{privs}"
+            role = guild.owner.mention + f"\n{privs}\n"
         else:
-            role = f"everyone\n{privs}"
-
+            role = f"everyone\n{privs}\n"
+        if user_perms:
+            role += humanize_list(
+                [perm.replace("_", " ").title() for perm, value in user_perms if value]
+            )
+        if my_perms:
+            i_require = humanize_list(
+                [perm.replace("_", " ").title() for perm, value in my_perms if value]
+            )
         infomessage = _(
             "{emoji} `{time}` {author}(`{a_id}`) used the following command in {channel}\n> {com}"
         ).format(
@@ -255,6 +258,8 @@ class EventMixin:
             embed.add_field(name=_("Channel"), value=message.channel.mention)
             embed.add_field(name=_("Can Run"), value=str(can_run))
             embed.add_field(name=_("Requires"), value=role)
+            if i_require:
+                embed.add_field(name=_("Bot Requires"), value=i_require)
             author_title = _("{member} ({m_id})- Used a Command").format(
                 member=message.author, m_id=message.author.id
             )
