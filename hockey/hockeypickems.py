@@ -158,14 +158,16 @@ class HockeyPickems(MixinMeta):
                 await msg.remove_reaction(emoji, user)
             except (discord.errors.NotFound, discord.errors.Forbidden):
                 pass
-        try:
-            await user.send(reply_message)
-        except discord.HTTPException:
-            log.error(f"Could not send message to {repr(user)}.")
-        except Exception:
-            log.exception(f"Error trying to send message to {repr(user)}")
-            pass
-        self.antispam[guild.id][channel.id][user.id].stamp()
+        if reply_message is not None:
+            try:
+                await user.send(reply_message)
+            except discord.HTTPException:
+                log.error(f"Could not send message to {repr(user)}.")
+            except Exception:
+                log.exception(f"Error trying to send message to {repr(user)}")
+                pass
+        if emoji is not None or reply_message is not None:
+            self.antispam[guild.id][channel.id][user.id].stamp()
 
     @tasks.loop(seconds=300)
     async def pickems_loop(self) -> None:
