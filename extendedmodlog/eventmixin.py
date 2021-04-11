@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import logging
-from typing import Sequence, Union, cast, Optional, Tuple
+from typing import Sequence, Union, cast, Optional, Tuple, Dict, List, Any
 
 import discord
 from discord.ext.commands.converter import Converter
@@ -81,26 +81,16 @@ class EventMixin:
     Handles all the on_event data
     """
 
-    def __init__(self, *args):
-        self.config: Config
-        self.bot: Red
-        self.settings: dict
-        self._ban_cache: dict
-
-    async def get_colour(self, channel: discord.TextChannel) -> discord.Colour:
-        try:
-            if await self.bot.db.guild(channel.guild).use_bot_color():
-                return channel.guild.me.colour
-            else:
-                return await self.bot.db.color()
-        except AttributeError:
-            return await self.bot.get_embed_colour(channel)
+    config: Config
+    bot: Red
+    settings: Dict[int, Any]
+    _ban_cache: Dict[int, List[int]]
 
     async def get_event_colour(
-        self, guild: discord.Guild, event_type: str, changed_object: Union[discord.Role] = None
+        self, guild: discord.Guild, event_type: str, changed_object: Optional[discord.Role] = None
     ) -> discord.Colour:
         if guild.text_channels:
-            cmd_colour = await self.get_colour(guild.text_channels[0])
+            cmd_colour = await self.bot.get_embed_colour(guild.text_channels[0])
         else:
             cmd_colour = discord.Colour.red()
         defaults = {
@@ -127,7 +117,9 @@ class EventMixin:
             colour = discord.Colour(self.settings[guild.id][event_type]["colour"])
         return colour
 
-    async def is_ignored_channel(self, guild: discord.Guild, channel: discord.abc.GuildChannel):
+    async def is_ignored_channel(
+        self, guild: discord.Guild, channel: discord.abc.GuildChannel
+    ) -> bool:
         ignored_channels = self.settings[guild.id]["ignored_channels"]
         if channel.id in ignored_channels:
             return True
@@ -930,7 +922,7 @@ class EventMixin:
         embed = discord.Embed(
             description=after.mention,
             timestamp=time,
-            colour=await self.get_event_colour(guild, "channel_create"),
+            colour=await self.get_event_colour(guild, "channel_change"),
         )
         embed.set_author(
             name=_("{chan_type} Channel Updated {chan_name} ({chan_id})").format(
