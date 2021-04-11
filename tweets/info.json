@@ -21,7 +21,7 @@
     ],
     "required_cogs" : {},
     "requirements" : [
-        "tweepy"
+        "tweepy<=3.10.0"
     ],
     "short" : "Cog for getting info from Twitter",
     "tags" : [
