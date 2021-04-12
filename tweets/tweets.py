@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .tweet_entry import TweetEntry, ChannelData
 from .tweets_api import TweetsAPI
-from .menus import TweetPages, BaseMenu
+from .menus import TweetPages, BaseMenu, TweetListPages, TweetsMenu
 
 _ = Translator("Tweets", __file__)
 
@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.7.0"
+    __version__ = "2.7.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -257,7 +257,7 @@ class Tweets(TweetsAPI, commands.Cog):
         """
         async with ctx.typing():
             api = await self.authenticate()
-        await BaseMenu(
+        await TweetsMenu(
             source=TweetPages(api=api, username=username, loop=ctx.bot.loop), cog=self
         ).start(ctx=ctx)
 
@@ -529,30 +529,33 @@ class Tweets(TweetsAPI, commands.Cog):
     async def _list(self, ctx: commands.context) -> None:
         """Lists the autotweet accounts on the guild"""
         guild = ctx.message.guild
+        async with ctx.typing():
+            account_list = {}
+            async for user_id, account in AsyncIter(self.accounts.items(), steps=50):
+                for channel_id, channel_data in account.channels.items():
+                    if chan := guild.get_channel(int(channel_id)):
+                        chan_info = f"{account.twitter_name} - {channel_data}\n"
+                        if chan not in account_list:
+                            account_list[chan] = [chan_info]
+                        else:
+                            account_list[chan].append(chan_info)
+            account_str = ""
+            for chan, accounts in account_list.items():
+                account_str += f"{chan.mention} - {humanize_list(accounts)}"
+            embed_list = []
+            for page in pagify(account_str):
+                embed = discord.Embed(
+                    title="Twitter accounts posting in {}".format(guild.name),
+                    colour=await self.bot.get_embed_colour(ctx.channel),
+                    description=page,
 
-        embed = discord.Embed(
-            title="Twitter accounts posting in {}".format(guild.name),
-            colour=await self.bot.get_embed_colour(ctx.channel),
-            timestamp=ctx.message.created_at,
-        )
-        embed.set_author(name=guild.name, icon_url=guild.icon_url)
-        account_list = {}
-        async for user_id, account in AsyncIter(self.accounts.items(), steps=50):
-            for channel_id, channel_data in account.channels.items():
-                if chan := guild.get_channel(int(channel_id)):
-                    chan_info = f"{account.twitter_name} - {channel_data}"
-                    if chan not in account_list:
-                        account_list[chan] = [chan_info]
-                    else:
-                        account_list[chan].append(chan_info)
-        account_str = ""
-        for chan, accounts in account_list.items():
-            account_str += f"{chan.mention} - {humanize_list(accounts)}"
-        pages = list(pagify(account_str, page_length=1024))
-        embed.description = "".join(pages[:2])
-        for page in pages[2:]:
-            embed.add_field(name=_("Autotweet list continued"), value=page)
-        await ctx.send(embed=embed)
+                )
+                embed.set_author(name=guild.name, icon_url=guild.icon_url)
+                embed_list.append(embed)
+        if not embed_list:
+            await ctx.send(_("There are no Twitter accounts posting in this server."))
+            return
+        await BaseMenu(source=TweetListPages(embed_list)).start(ctx=ctx)
 
     async def save_accounts(self) -> None:
         data = {str(k): v.to_json() for k, v in self.accounts.items()}
