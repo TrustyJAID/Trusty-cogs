@@ -6,11 +6,13 @@ from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 import pytz
-from discord.ext.commands.converter import Converter
+from discord.ext.commands.converter import Converter, EmojiConverter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate, MessagePredicate
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
@@ -143,6 +145,7 @@ class HockeyTeams(Converter):
     ) -> Optional[Union[List[Dict[str, dict]], str]]:
         result: Optional[Union[List[Dict[str, dict]], str]] = []
         team_list = await check_valid_team(argument)
+        my_perms = ctx.channel.permissions_for(ctx.guild.me)
         if team_list == []:
             raise BadArgument('Team "{}" not found'.format(argument))
         if len(team_list) == 1:
@@ -150,30 +153,24 @@ class HockeyTeams(Converter):
         else:
             # This is just some extra stuff to correct the team picker
             msg = _("There's multiple teams with that name, pick one of these:\n")
-            if ctx.channel.permissions_for(ctx.guild.me).add_reactions:
+            if my_perms.add_reactions and my_perms.use_external_emojis:
                 new_msg = await ctx.send(msg)
-                team_emojis = [TEAMS[team]["emoji"] for team in team_list]
-
-                def reaction_check(r, u):
-                    return (
-                        u == ctx.message.author
-                        and str(r.emoji).replace("<:", "").replace(">", "") in team_emojis
-                    )
-
-                for emoji in team_emojis:
-                    await new_msg.add_reaction(emoji)
+                team_emojis = [
+                    await EmojiConverter().convert(ctx, "<:" + TEAMS[team]["emoji"] + ">")
+                    for team in team_list
+                ]
+                log.debug(team_emojis)
+                log.debug(team_list)
+                pred = ReactionPredicate.with_emojis(team_emojis, message=new_msg)
+                start_adding_reactions(new_msg, team_emojis)
                 try:
-                    reaction, user = await ctx.bot.wait_for(
-                        "reaction_add", check=reaction_check, timeout=60
-                    )
+                    reaction, user = await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
                 except asyncio.TimeoutError:
                     await new_msg.edit(content=_("I guess not."))
                     return None
                 else:
-                    result = team_list[
-                        team_emojis.index(str(reaction.emoji).replace("<:", "").replace(">", ""))
-                    ]
-
+                    result = team_list[pred.result]
+                    log.debug(result)
             else:
                 for i, team_name in enumerate(team_list):
                     msg += "{}: {}\n".format(i + 1, team_name)
