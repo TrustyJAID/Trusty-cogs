@@ -355,17 +355,20 @@ class EventPoster(commands.Cog):
             if not await self.check_clear_event(ctx):
                 return
             else:
+                to_del = []
                 for message_id, event in self.event_cache[ctx.guild.id].items():
                     if event.hoster == ctx.author.id:
                         await event.edit(ctx, content=_("This event has ended."))
-                        to_del = event.message
+                        to_del.append(event.message)
                     async with self.config.guild(ctx.guild).events() as cur_events:
+
                         try:
                             del cur_events[str(event.hoster)]
                         except KeyError:
                             pass
+                for e in to_del:
                     try:
-                        del self.event_cache[ctx.guild.id][to_del]
+                        del self.event_cache[ctx.guild.id][e]
                     except KeyError:
                         pass
         if ctx.author not in members:
@@ -895,15 +898,16 @@ class EventPoster(commands.Cog):
                 return await ctx.send(_("You cannot remove a member from someone elses event"))
             if str(hoster_or_message.id) not in await self.config.guild(ctx.guild).events():
                 return await ctx.send(_("You are not currently hosting any events."))
-            to_del = 0
+            to_del = []
             for message_id, event in self.event_cache[ctx.guild.id].items():
                 if event.hoster == hoster_or_message.id:
                     await event.edit(ctx, content=_("This event has ended."))
-                    to_del = event.message
+                    to_del.append(event.message)
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     del cur_events[str(event.hoster)]
+            for e in to_del:
                 try:
-                    del self.event_cache[ctx.guild.id][to_del]
+                    del self.event_cache[ctx.guild.id][e]
                 except KeyError:
                     pass
         else:
