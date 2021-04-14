@@ -10,10 +10,11 @@ from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
+from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
+from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder, utc_to_local
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
@@ -21,6 +22,7 @@ from .menu import (
     GamesMenu,
     LeaderboardPages,
     PlayerPages,
+    SimplePages,
     StandingsPages,
     TeamStandingsPages,
 )
@@ -493,6 +495,36 @@ class HockeyCommands(MixinMeta):
             await self.post_leaderboard(ctx, "weekly")
         if leaderboard_type in ["worst"]:
             await self.post_leaderboard(ctx, "worst")
+
+    @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])
+    @commands.guild_only()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
+    async def pickemsvotes(self, ctx: commands.Context):
+        """
+        View your current pickems votes for the server.
+        """
+        if str(ctx.guild.id) not in self.all_pickems:
+            await ctx.send(_("This server does not have any pickems setup."))
+            return
+        msg = _("You have voted on the following games:\n")
+        timezone = await self.pickems_config.guild(ctx.guild).pickems_timezone()
+        for game_id, pickem in self.all_pickems[str(ctx.guild.id)].items():
+            if str(ctx.author.id) in pickem.votes:
+                vote = pickem.votes[str(ctx.author.id)]
+                game_start = utc_to_local(pickem.game_start, timezone)
+                time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+                msg += f"{pickem.away_team} @ {pickem.home_team} {time_str} - {vote}\n"
+        msgs = []
+        for page in pagify(msg):
+            if ctx.channel.permissions_for(ctx.me).embed_links:
+                em = discord.Embed(
+                    title=_("Pickems votes in {guild}").format(guild=ctx.guild.name),
+                    description=page,
+                )
+                msgs.append(em)
+            else:
+                msgs.append(page)
+        await BaseMenu(source=SimplePages(msgs)).start(ctx=ctx)
 
     @hockey_commands.command(hidden=True)
     @commands.mod_or_permissions(manage_messages=True)
