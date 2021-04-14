@@ -6,6 +6,7 @@ from typing import Any, List, Optional
 import discord
 
 # from discord.ext.commands.errors import BadArgument
+from redbot.core import bank
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 
@@ -13,7 +14,7 @@ from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.vendored.discord.ext import menus
 
 
-log = logging.getLogger("red.Trusty-cogs.roletools")
+log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
@@ -52,18 +53,24 @@ class RolePages(menus.ListPageSource):
         required_roles = [menu.ctx.guild.get_role(i) for i in role_settings["required"]]
         exclusive_roles = [menu.ctx.guild.get_role(i) for i in role_settings["exclusive_to"]]
         inclusive_roles = [menu.ctx.guild.get_role(i) for i in role_settings["inclusive_with"]]
-
+        permissions = humanize_list(
+            [perm.replace("_", " ").title() for perm, value in role.permissions if value]
+        )
         settings = _(
-            "__ID:__ {role_id}\n"
-            "__Sticky:__ **{sticky}**\n__Auto:__ **{auto}**\n"
-            "__Self Assignable:__ **{selfassign}**\n"
-            "__Self Removable:__ **{selfrem}**\n"
-            "__Colour: __ **{colour}**\n"
-            "__Is Mod:__ **{mod}**\n"
-            "__Is Admin:__ **{admin}**\n"
-            "__Hoisted:__ **{hoisted}**\n"
-            "__Mentionable:__ **{mentionable}**\n"
+            "{role}\n```md\n"
+            "# ID:           {role_id}\n"
+            "Colour          {colour}\n"
+            "# RoleTools settings\n"
+            "Sticky          {sticky}\n"
+            "Auto            {auto}\n"
+            "Selfassignable  {selfassign}\n"
+            "Selfremovable   {selfrem}\n"
+            "# Core Bot settings\n"
+            "Mod             {mod}\n"
+            "Admin           {admin}\n\n"
+            "```"
         ).format(
+            role=role.mention,
             role_id=role.id,
             sticky=role_settings["sticky"],
             auto=role_settings["auto"],
@@ -72,24 +79,36 @@ class RolePages(menus.ListPageSource):
             colour=str(role.colour),
             mod=role in mod_roles,
             admin=role in admin_roles,
-            hoisted=role.hoist,
-            mentionable=role.mentionable,
         )
+        if cost := role_settings.get("cost"):
+            currency_name = await bank.get_currency_name(menu.ctx.guild)
+            settings += _("**Cost:** {cost} {currency_name}\n").format(
+                cost=cost, currency_name=currency_name
+            )
+        if permissions:
+            settings += _("**Permissions:** {permissions}\n").format(permissions=permissions)
         if role.managed:
             if getattr(role, "is_bot_managed", lambda: False)():
                 bot = role.guild.get_member(role.tags.bot_id)
-                settings += _("__Bot Role:__ {bot}").format(bot=bot.mention)
+                settings += _("Bot Role: {bot}").format(bot=bot.mention)
             elif getattr(role, "is_premium_subscriber", lambda: False)():
-                settings += _("__Premium Role:__ **True**")
+                settings += _("**Premium Role:** True\n")
             else:
-                settings += _("__Managed Role:__ **True**")
+                settings += _("**Managed Role:** True\n")
         if inclusive_roles:
-            settings += _("__Inclusive with:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in inclusive_roles if r]))
+            settings += _("**Inclusive with:** {inclusive}\n").format(
+                inclusive=humanize_list([r.mention for r in inclusive_roles if r])
+            )
         if exclusive_roles:
-            settings += _("__Exclusive to:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in exclusive_roles if r]))
+            settings += _("**Exclusive to:** {inclusive}\n").format(
+                inclusive=humanize_list([r.mention for r in exclusive_roles if r])
+            )
         if required_roles:
-            settings += _("__Requires:__ {inclusive}\n").format(inclusive=humanize_list([r.mention for r in required_roles if r]))
-        reaction_roles = ""
+            settings += _("**Requires:** {inclusive}\n").format(
+                inclusive=humanize_list([r.mention for r in required_roles if r])
+            )
+        if role_settings["reactions"]:
+            settings += _("**Reaction Roles**\n")
         for reaction in role_settings["reactions"]:
             channel, message, emoji = reaction.split("-")
             if emoji.isdigit():
@@ -97,11 +116,24 @@ class RolePages(menus.ListPageSource):
             if not emoji:
                 emoji = _("Emoji from another server")
             link = jump_url.format(guild=menu.ctx.guild.id, channel=channel, message=message)
-            reaction_roles += _("{emoji} on [message]({link})\n").format(emoji=emoji, link=link)
-        for page in pagify(reaction_roles, page_length=1024):
-            em.add_field(name=_("Reaction Roles"), value=page)
-
-        em.description = f"{role.mention}\n{settings}"
+            settings += _("{emoji} on [message]({link})\n").format(emoji=emoji, link=link)
+        embeds = [e for e in pagify(settings, page_length=5500)]
+        if len(embeds) > 1:
+            command = f"`{menu.ctx.clean_prefix}roletools reactionroles`"
+            settings = _("{settings}\nPlease see {command} to see full details").format(
+                settings=embeds[0], command=command
+            )
+        pages = pagify(settings, page_length=1024)
+        em.description = ""
+        for index, page in enumerate(pages):
+            if index < 2:
+                # em.add_field(name=_("Role settings for {role}".format(role=role.name)), value=page)
+                em.description += page
+            else:
+                em.add_field(
+                    name=_("Role settings for {role} (continued)").format(role=role.name),
+                    value=page,
+                )
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
