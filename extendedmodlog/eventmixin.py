@@ -189,7 +189,6 @@ class EventMixin:
         time = ctx.message.created_at
         message = ctx.message
         can_run = await self.member_can_run(ctx)
-        command = ctx.message.content.replace(ctx.prefix, "")
         try:
             privs = ctx.command.requires.privilege_level.name
             user_perms = ctx.command.requires.user_perms
@@ -203,22 +202,18 @@ class EventMixin:
         if privs == "MOD":
             mod_role_list = await ctx.bot.get_mod_roles(guild)
             if mod_role_list != []:
-                good_mod_roles = [guild.get_role(mr) for mr in mod_role_list]
-                role = ", ".join(r.mention for r in good_mod_roles if r is not None) + f"\n{privs}"
+                role = humanize_list(r.mention for r in mod_role_list) + f"\n{privs}\n"
             else:
                 role = _("Not Set\nMOD\n")
         elif privs == "ADMIN":
             admin_role_list = await ctx.bot.get_admin_roles(guild)
             if admin_role_list != []:
-                good_admin_roles = [guild.get_role(ar) for ar in admin_role_list]
-                role = (
-                    ", ".join(r.mention for r in good_admin_roles if r is not None) + f"\n{privs}"
-                )
+                role = humanize_list(r.mention for r in admin_role_list) + f"\n{privs}\n"
             else:
                 role = _("Not Set\nADMIN\n")
         elif privs == "BOT_OWNER":
             role = humanize_list([f"<@!{_id}>" for _id in ctx.bot.owner_ids])
-            role += f"\n{privs}"
+            role += f"\n{privs}\n"
         elif privs == "GUILD_OWNER":
             role = guild.owner.mention + f"\n{privs}\n"
         else:
