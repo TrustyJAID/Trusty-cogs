@@ -22,7 +22,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -42,7 +42,7 @@ class Reddit(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def red_delete_data_for_user(self, **kwargs):
+    async def red_delete_data_for_user(self, **kwargs) -> None:
         """
         Nothing to delete
         """
@@ -65,7 +65,7 @@ class Reddit(commands.Cog):
                     log.debug(f"Error closing stream in {name}")
             await self.initialize()
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         keys = await self.bot.get_shared_api_tokens("reddit")
         if not keys:
@@ -90,7 +90,7 @@ class Reddit(commands.Cog):
                         self._run_subreddit_stream(subreddit)
                     )
 
-    async def _run_subreddit_stream(self, subreddit: Subreddit):
+    async def _run_subreddit_stream(self, subreddit: Subreddit) -> None:
         """
         A function to run the infinite loop of the subreddit stream and dispatch
         new posts as an event.
@@ -110,7 +110,7 @@ class Reddit(commands.Cog):
             return None
 
     @commands.Cog.listener()
-    async def on_reddit_post(self, subreddit: Subreddit, submission: Submission):
+    async def on_reddit_post(self, subreddit: Subreddit, submission: Submission) -> None:
         if subreddit.id not in self.subreddits:
             try:
                 self._streams[subreddit.id].cancel()
@@ -137,7 +137,7 @@ class Reddit(commands.Cog):
 
     async def post_new_submissions(
         self, channel: discord.TextChannel, contents: dict, use_embed: bool
-    ):
+    ) -> None:
         """
         A coroutine to handle multiple tasks at once
         """
@@ -175,7 +175,7 @@ class Reddit(commands.Cog):
             msg = "{0} from <#{1}>({1})".format(post_url, channel.id)
             log.exception(msg)
 
-    def cog_unload(self):
+    def cog_unload(self) -> None:
         if self.login:
             try:
                 self.bot.loop.create_task(self.login.close())
@@ -189,7 +189,7 @@ class Reddit(commands.Cog):
                 log.debug(f"Error closing stream in {name}")
 
     @commands.group()
-    async def redditset(self, ctx: commands.Context):
+    async def redditset(self, ctx: commands.Context) -> None:
         """
         Commands for setting up the reddit cog
         """
@@ -201,7 +201,7 @@ class Reddit(commands.Cog):
         ctx: commands.Context,
         subreddit: SubredditConverter,
         channel: Optional[discord.TextChannel] = None,
-    ):
+    ) -> None:
         """
         Setup a channel for automatically posting new subreddit submissions
 
@@ -245,7 +245,7 @@ class Reddit(commands.Cog):
         ctx: commands.Context,
         subreddit: SubredditConverter,
         channel: Optional[discord.TextChannel] = None,
-    ):
+    ) -> None:
         """
         Remove a channel from automatically posting new subreddit submissions
 
@@ -286,7 +286,7 @@ class Reddit(commands.Cog):
 
     @redditset.command()
     @commands.is_owner()
-    async def creds(self, ctx: commands.Context):
+    async def creds(self, ctx: commands.Context) -> None:
         """
         How to setup login information for reddit.
         """
@@ -304,12 +304,12 @@ class Reddit(commands.Cog):
         await ctx.maybe_send_embed(msg)
 
     @commands.group()
-    async def reddit(self, ctx: commands.Context):
+    async def reddit(self, ctx: commands.Context) -> None:
         """reddit"""
 
     @reddit.command(name="hot")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reddit_hot(self, ctx: commands.Context, subreddit: SubredditConverter):
+    async def reddit_hot(self, ctx: commands.Context, subreddit: SubredditConverter) -> None:
         """
         Show 25 hotest posts on the desired subreddit
         """
@@ -324,10 +324,11 @@ class Reddit(commands.Cog):
 
     @reddit.command(name="new")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reddit_new(self, ctx: commands.Context, subreddit: SubredditConverter):
+    async def reddit_new(self, ctx: commands.Context, subreddit: SubredditConverter) -> None:
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         submissions = subreddit.new()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -338,11 +339,11 @@ class Reddit(commands.Cog):
 
     @reddit.command(name="top")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reddit_top(self, ctx: commands.Context, subreddit: SubredditConverter):
+    async def reddit_top(self, ctx: commands.Context, subreddit: SubredditConverter) -> None:
         """
         Show 25 newest posts on the desired subreddit
         """
-
+        await ctx.trigger_typing()
         submissions = subreddit.top()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -353,10 +354,11 @@ class Reddit(commands.Cog):
 
     @reddit.command(name="rising")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reddit_rising(self, ctx: commands.Context, subreddit: SubredditConverter):
+    async def reddit_rising(self, ctx: commands.Context, subreddit: SubredditConverter) -> None:
         """
         Show 25 newest posts on the desired subreddit
         """
+        await ctx.trigger_typing()
         submissions = subreddit.rising()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -366,17 +368,25 @@ class Reddit(commands.Cog):
         ).start(ctx=ctx)
 
     @reddit.command(name="random")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reddit_random(self, ctx: commands.Context, subreddit: SubredditConverter):
+    async def reddit_random(self, ctx: commands.Context, subreddit: SubredditConverter) -> None:
         """
-        Show 25 newest posts on the desired subreddit
+        Pull a radom submission from the desired subreddit
         """
+        await ctx.trigger_typing()
         submission = await subreddit.random()
         if submission.over_18 and not ctx.channel.is_nsfw():
             for i in range(0, 10):
                 submission = await subreddit.random()
-                if not submission.over18:
+                if not submission.over_18:
                     break
+        if submission.over_18 and not ctx.channel.is_nsfw():
+            await ctx.send(
+                _(
+                    "I tried to pull a random submission but couldn't find "
+                    "one not designated NSFW I can display in this channel."
+                )
+            )
+            return
         data = await make_embed_from_submission(ctx.channel, subreddit, submission)
         if data:
             if ctx.channel.permissions_for(ctx.me).embed_links:

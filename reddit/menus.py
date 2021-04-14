@@ -78,7 +78,10 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        page = await self._source.get_page(0)
+        try:
+            page = await self._source.get_page(0)
+        except IndexError:
+            return await channel.send(_("I could not find any posts from that subreddit."))
         if page.over_18 and not channel.is_nsfw():
             for i in range(1, 10):
                 page = await self._source.get_page(i)
