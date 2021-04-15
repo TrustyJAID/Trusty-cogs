@@ -101,7 +101,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 _("This command is locked to bot owner only while the bank is set to global.")
             )
             return
-        if cost >= await bank.get_max_balance(ctx.guild):
+        if cost is not None and cost >= await bank.get_max_balance(ctx.guild):
             await ctx.send(_("You cannot set a cost higher than the maximum credits balance."))
             return
 
