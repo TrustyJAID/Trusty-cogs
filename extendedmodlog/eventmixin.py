@@ -202,13 +202,13 @@ class EventMixin:
         if privs == "MOD":
             mod_role_list = await ctx.bot.get_mod_roles(guild)
             if mod_role_list != []:
-                role = humanize_list(r.mention for r in mod_role_list) + f"\n{privs}\n"
+                role = humanize_list([r.mention for r in mod_role_list]) + f"\n{privs}\n"
             else:
                 role = _("Not Set\nMOD\n")
         elif privs == "ADMIN":
             admin_role_list = await ctx.bot.get_admin_roles(guild)
             if admin_role_list != []:
-                role = humanize_list(r.mention for r in admin_role_list) + f"\n{privs}\n"
+                role = humanize_list([r.mention for r in admin_role_list]) + f"\n{privs}\n"
             else:
                 role = _("Not Set\nADMIN\n")
         elif privs == "BOT_OWNER":
@@ -1603,6 +1603,7 @@ class EventMixin:
             member=before,
             m_id=before.id,
         )
+        embed.description = ""
         emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
         embed.set_author(name=emb_msg, icon_url=before.avatar_url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
@@ -1620,12 +1621,13 @@ class EventMixin:
                     a = set(after.roles)
                     before_roles = list(b - a)
                     after_roles = list(a - b)
+                    logger.debug(after_roles)
                     if before_roles:
                         for role in before_roles:
                             msg += _("{author} had the {role} role removed.").format(
                                 author=after.name, role=role.name
                             )
-                            embed.description = _("{author} had the {role} role removed.").format(
+                            embed.description += _("{author} had the {role} role removed.\n").format(
                                 author=after.mention, role=role.mention
                             )
                             worth_sending = True
@@ -1634,7 +1636,7 @@ class EventMixin:
                             msg += _("{author} had the {role} role applied.").format(
                                 author=after.name, role=role.name
                             )
-                            embed.description = _("{author} had the {role} role applied.").format(
+                            embed.description += _("{author} had the {role} role applied.\n").format(
                                 author=after.mention, role=role.mention
                             )
                             worth_sending = True
