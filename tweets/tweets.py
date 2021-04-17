@@ -767,8 +767,8 @@ class Tweets(TweetsAPI, commands.Cog):
                         if len(self.accounts[str(user_id)].channels) < 1:
                             # del self.accounts[str(user_id)]
                             to_rem_ids.append(str(user_id))
-        for user_ids in to_rem_ids:
-            del self.accounts[user_ids]
+            for user_ids in to_rem_ids:
+                del self.accounts[user_ids]
         await self.save_accounts()
         return removed
 

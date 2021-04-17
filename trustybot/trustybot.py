@@ -72,7 +72,7 @@ class TrustyBot(commands.Cog):
     @commands.command(hidden=True, aliases=["ss"])
     async def silentsay(self, ctx: commands.Context, *, msg: str):
         """Say things as the bot and deletes the command if it can"""
-        if ctx.channel.permissions_for(ctx.guild).manage_messages:
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
         await ctx.send(msg)
 
@@ -88,8 +88,7 @@ class TrustyBot(commands.Cog):
         """
         if member is None:
             member = ctx.me
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.message.delete()
+
         guild = ctx.guild
         webhook = None
         for hook in await ctx.channel.webhooks():
@@ -102,6 +101,8 @@ class TrustyBot(commands.Cog):
         for mention in ctx.message.mentions:
             msg = msg.replace(mention.mention, mention.display_name)
         # Apparently webhooks have @everyone permissions
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            await ctx.message.delete()
         await webhook.send(msg, username=member.display_name, avatar_url=avatar)
 
     @commands.command()

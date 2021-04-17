@@ -123,7 +123,7 @@ class TweetsAPI:
         """Posts tweet stream errors to a specified channel"""
         help_msg = _(
             "\n See here for more information "
-            "<https://developer.twitter.com/en/docs/basics/response-codes.html>"
+            "<https://developer.twitter.com/en/support/twitter-api/error-troubleshooting>"
         )
         if "420" in error:
             help_msg += _(
