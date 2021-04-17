@@ -1,26 +1,33 @@
 import datetime
 import logging
-import re
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 
 import aiohttp
 import discord
 from redbot.core import commands
+from redbot.core.bot import Red
 
-log = logging.getLogger("red.trusty-cogs.conversions")
+from .coin import Coin
+from .errors import CoinMarketCapError
+
+log = logging.getLogger("red.Trusty-cogs.Conversions")
 
 
 class Conversions(commands.Cog):
     """
     Gather information about various crypto currencies,
-    rare metals, stocks, and converts to different currencies
+    stocks, and converts to different currencies
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.0"
+    __version__ = "1.3.0"
 
-    def __init__(self, bot):
+    def __init__(self, bot: Red) -> None:
         self.bot = bot
+        self.session = aiohttp.ClientSession()
+
+    def cog_unload(self) -> None:
+        self.bot.loop.create_task(self.session.close())
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -29,7 +36,7 @@ class Conversions(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def red_delete_data_for_user(self, **kwargs):
+    async def red_delete_data_for_user(self, **kwargs) -> None:
         """
         Nothing to delete
         """
@@ -39,109 +46,109 @@ class Conversions(commands.Cog):
     async def btc(
         self,
         ctx: commands.Context,
-        ammount: float = 1.0,
+        amount: float = 1.0,
         currency: str = "USD",
-        full: bool = True,
+        full: Optional[bool] = None,
     ) -> None:
         """
         converts from BTC to a given currency.
 
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
         or the full display for the currency
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, "BTC", ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, "BTC", ammount, currency, False)
-        if not embed:
-            return
-        if type(embed) is str:
-            await ctx.send(embed)
-        else:
-            await ctx.send(embed=embed)
+        await ctx.invoke(self.crypto, "BTC", amount, currency, full)
 
     @commands.command(aliases=["ethereum", "ETH"])
     async def eth(
         self,
         ctx: commands.Context,
-        ammount: float = 1.0,
+        amount: float = 1.0,
         currency: str = "USD",
-        full: bool = True,
+        full: Optional[bool] = None,
     ) -> None:
         """
         converts from ETH to a given currency.
 
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
         or the full display for the currency
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, "ETH", ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, "ETH", ammount, currency, False)
-        if not embed:
-            return
-        if type(embed) is str:
-            await ctx.send(embed)
-        else:
-            await ctx.send(embed=embed)
+        await ctx.invoke(self.crypto, "ETH", amount, currency, full)
 
     @commands.command(aliases=["litecoin", "LTC"])
     async def ltc(
         self,
         ctx: commands.Context,
-        ammount: float = 1.0,
+        amount: float = 1.0,
         currency: str = "USD",
-        full: bool = True,
+        full: Optional[bool] = None,
     ) -> None:
         """
         converts from LTC to a given currency.
 
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
         or the full display for the currency
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, "LTC", ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, "LTC", ammount, currency, False)
-        if not embed:
-            return
-        if type(embed) is str:
-            await ctx.send(embed)
-        else:
-            await ctx.send(embed=embed)
+        await ctx.invoke(self.crypto, "LTC", amount, currency, full)
 
     @commands.command(aliases=["monero", "XMR"])
     async def xmr(
         self,
         ctx: commands.Context,
-        ammount: float = 1.0,
+        amount: float = 1.0,
         currency: str = "USD",
-        full: bool = True,
+        full: Optional[bool] = None,
     ) -> None:
         """
         converts from XMR to a given currency.
 
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
         or the full display for the currency
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, "XMR", ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, "XMR", ammount, currency, False)
-        if not embed:
-            return
-        if type(embed) is str:
-            await ctx.send(embed)
-        else:
-            await ctx.send(embed=embed)
+        await ctx.invoke(self.crypto, "XMR", amount, currency, full)
+
+    @commands.command(aliases=["bitcoin-cash", "BCH"])
+    async def bch(
+        self,
+        ctx: commands.Context,
+        amount: float = 1.0,
+        currency: str = "USD",
+        full: Optional[bool] = None,
+    ) -> None:
+        """
+        converts from BCH to a given currency.
+
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
+        """
+        await ctx.invoke(self.crypto, "BCH", amount, currency, full)
+
+    @commands.command(aliases=["dogecoin", "XDG"])
+    async def doge(
+        self,
+        ctx: commands.Context,
+        amount: float = 1.0,
+        currency: str = "USD",
+        full: Optional[bool] = None,
+    ) -> None:
+        """
+        converts from XDG to a given currency.
+
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
+        or the full display for the currency
+        """
+        await ctx.invoke(self.crypto, "DOGE", amount, currency, full)
 
     async def get_header(self) -> Optional[Dict[str, str]]:
         api_key = (await self.bot.get_shared_api_tokens("coinmarketcap")).get("api_key")
@@ -150,47 +157,39 @@ class Conversions(commands.Cog):
         else:
             return None
 
-    @commands.command(aliases=["bitcoin-cash", "BCH"])
-    async def bch(
-        self,
-        ctx: commands.Context,
-        ammount: float = 1.0,
-        currency: str = "USD",
-        full: bool = True,
-    ) -> None:
+    async def get_coins(self) -> List[Coin]:
         """
-        converts from BCH to a given currency.
-
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
-        or the full display for the currency
+        This converts all latest coins into Coin objects for us to use
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, "BCH", ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, "BCH", ammount, currency, False)
-        if not embed:
-            return
-        if type(embed) is str:
-            await ctx.send(embed)
-        else:
-            await ctx.send(embed=embed)
-
-    async def checkcoins(self, base: str) -> dict:
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=await self.get_header()) as resp:
-                data = await resp.json()
-                if resp.status in [400, 401, 403, 429, 500]:
-                    return data
-        for coin in data["data"]:
-            if base.upper() == coin["symbol"].upper() or base.lower() == coin["name"].lower():
+        async with self.session.get(url, headers=await self.get_header()) as resp:
+            data = await resp.json()
+            if resp.status == 200:
+                return [Coin.from_json(c) for c in data["data"]]
+            elif resp.status == 401:
+                raise CoinMarketCapError(
+                    "The bot owner has not set an API key. "
+                    "Please use `{prefix}cryptoapi` to see "
+                    "how to create and setup an API key."
+                )
+            else:
+                raise CoinMarketCapError(
+                    "Something went wrong, the error code is "
+                    "{code}\n`{error_message}`".format(
+                        code=resp.status, error_message=data["error_message"]
+                    )
+                )
+
+    async def checkcoins(self, base: str, coins: Optional[List[Coin]] = None) -> Optional[Coin]:
+        if coins is None:
+            coins = await self.get_coins()
+        for coin in coins:
+            if base.upper() == coin.symbol or base.lower() == coin.name.lower():
                 return coin
-        return {}
+        return None
 
     @commands.command()
-    async def multicoin(self, ctx: commands.Context, *, coins: Optional[str] = None) -> None:
+    async def multicoin(self, ctx: commands.Context, *coins: str) -> None:
         """
         Gets the current USD value for a list of coins
 
@@ -198,48 +197,36 @@ class Conversions(commands.Cog):
         e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`
         """
         coin_list = []
-        if coins is None:
-            async with aiohttp.ClientSession() as session:
-                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
-                async with session.get(url, headers=await self.get_header()) as resp:
-                    data = await resp.json()
-                    if resp.status in [400, 403, 429, 500]:
-                        await ctx.send(
-                            "Something went wrong, the error code is "
-                            "{code}\n`{error_message}`".format(
-                                code=resp.status, error_message=data["error_message"]
-                            )
-                        )
-                        return
-                    if resp.status == 401:
-                        await ctx.send(
-                            "The bot owner has not set an API key. "
-                            "Please use `{prefix}cryptoapi` to see "
-                            "how to create and setup an API key.".format(prefix=ctx.clean_prefix)
-                        )
-                        return
-            for coin in data["data"]:
-                coin_list.append(coin)
+        try:
+            all_coins = await self.get_coins()
+        except CoinMarketCapError as e:
+            await ctx.send(str(e).replace("{prefix}", ctx.clean_prefix))
+            return
+        if len(coins) == 0:
+            coin_list = all_coins
         else:
-            coins = re.split(r"\W+", coins)
-            for coin in coins:
-                coin_list.append(await self.checkcoins(coin))
-        embed = discord.Embed(title="Crypto coin comparison")
-        if ctx.channel.permissions_for(ctx.me).embed_links:
+            # coins = re.split(r"\W+", coins)
+            for c in coins:
+                get_coin = await self.checkcoins(c, all_coins)
+                if get_coin is None:
+                    continue
+                coin_list.append(get_coin)
+        if not coin_list:
+            await ctx.send("The provided list of coins aren't acceptable.")
+
+        if await ctx.embed_requested():
+            embed = discord.Embed(title="Crypto coin comparison")
             for coin in coin_list[:25]:
-                if coin is not None:
-                    msg = "1 {0} is {1:,.2f} USD".format(
-                        coin["symbol"], float(coin["quote"]["USD"]["price"])
-                    )
-                    embed.add_field(name=coin["name"], value=msg)
+                price = coin.quote["USD"].price
+                msg = f"1 {coin.symbol} is {price:,.2f} USD"
+                embed.add_field(name=coin.name, value=msg)
             await ctx.send(embed=embed)
         else:
             msg = ""
             for coin in coin_list[:25]:
-                if coin is not None:
-                    msg += "1 {0} is {1:,.2f} USD\n".format(
-                        coin["symbol"], float(coin["quotes"]["USD"]["price"])
-                    )
+                price = coin.quote["USD"].price
+                msg = f"1 {coin.symbol} is {price:,.2f} USD"
+                embed.add_field(name=coin.name, value=msg)
             await ctx.send(msg)
 
     @commands.command()
@@ -247,60 +234,76 @@ class Conversions(commands.Cog):
         self,
         ctx: commands.Context,
         coin: str,
-        ammount: float = 1.0,
+        amount: float = 1.0,
         currency: str = "USD",
-        full: bool = True,
+        full: Optional[bool] = None,
     ) -> None:
         """
         Displays the latest information about a specified crypto currency
 
-        `coin` must be the name or symbol of a crypto coin
-        `[ammount]` is any number to convert the value of defaults to 1 coin
-        `[currency]` is the desired currency you want to convert defaults to USD
-        `[full]` is a True/False value whether to display just the converted amount
+        `<coin>` must be the name or symbol of a crypto coin
+        `[ammount=1.0]` The number of coins you want to know the price for.
+        `[currency=USD]` The optional desired currency price. Defaults to USD.
+        `[full=True]` is a True/False value whether to display just the converted amount
         or the full display for the currency
         """
-        if ammount == 1.0:
-            embed = await self.crypto_embed(ctx, coin, ammount, currency, full)
-        else:
-            embed = await self.crypto_embed(ctx, coin, ammount, currency, False)
-        if not embed:
+        async with ctx.typing():
+            if full is None and amount == 1.0:
+                embed = await self.crypto_embed(ctx, coin, amount, currency, True)
+            elif full is None and amount != 1.0:
+                embed = await self.crypto_embed(ctx, coin, amount, currency, False)
+            else:
+                embed = await self.crypto_embed(ctx, coin, amount, currency, full)
+        if embed is None:
             return
-        if type(embed) is str:
-            await ctx.send(embed)
+        if await ctx.embed_requested():
+            await ctx.send(embed=embed["embed"])
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(embed["content"])
 
     async def crypto_embed(
         self,
         ctx: commands.Context,
-        coin: str,
-        ammount: float = 1.0,
-        currency: str = "USD",
-        full: bool = True,
-    ) -> Optional[Union[str, discord.Embed]]:
-        """Creates the embed for the crypto currency"""
-        coin_data = await self.checkcoins(coin)
-        if "status" in coin_data:
-            status = coin_data["status"]
-            if status["error_code"] in [1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011]:
-                await ctx.send(
-                    "Something went wrong, the error code is "
-                    "{code}\n`{error_message}`".format(
-                        code=coin["error_code"], error_message=coin["error_message"]
-                    )
-                )
-                return None
-            if status["error_code"] in [1001, 1002]:
-                await ctx.send(
-                    "The bot owner has not set an API key. "
-                    "Please use `{prefix}cryptoapi` to see "
-                    "how to create and setup an API key.".format(prefix=ctx.clean_prefix)
-                )
-                return None
-        if coin_data == {}:
-            await ctx.send("{} is not in my list of currencies!".format(coin))
+        coin_name: str,
+        amount: float,
+        currency: str,
+        full: Optional[bool],
+    ) -> Optional[Dict[str, Union[discord.Embed, str]]]:
+        """
+        Creates the embed for the crypto currency
+
+        Parameters
+        ----------
+            ctx: commands.Context
+                Used to return an error message should one happen.
+            coin_name: str
+                The name of the coin you want to pull information for.
+            amount: float
+                The amount of coins you want to see the price for.
+            currency: str
+                The ISO 4217 Currency Code you want the coin converted into.
+            full: Optional[bool]
+                Whether or not to display full information or just the conversions.
+
+        Returns
+        -------
+            Optional[Dict[str, Union[discord.Embed, str]]]
+                A dictionary containing both the plaintext and discord Embed object
+                used for later determining if we can post the embed and if not
+                we still have the plaintext available.
+        """
+        currency = currency.upper()
+        if len(currency) > 3 or len(currency) < 3:
+            currency = "USD"
+        try:
+            coin = await self.checkcoins(coin_name)
+        except CoinMarketCapError as e:
+            await ctx.send(str(e).replace("{prefix}", ctx.clean_prefix))
             return None
+        if coin is None:
+            await ctx.send(f"{coin_name} does not appear to be in my list of coins.")
+            return None
+
         coin_colour = {
             "Bitcoin": discord.Colour.gold(),
             "Bitcoin Cash": discord.Colour.orange(),
@@ -308,71 +311,59 @@ class Conversions(commands.Cog):
             "Litecoin": discord.Colour.dark_grey(),
             "Monero": discord.Colour.orange(),
         }
-        price = float(coin_data["quote"]["USD"]["price"]) * ammount
-        market_cap = float(coin_data["quote"]["USD"]["market_cap"])
-        volume_24h = float(coin_data["quote"]["USD"]["volume_24h"])
-        coin_image = "https://s2.coinmarketcap.com/static/img/coins/128x128/{}.png".format(
-            coin_data["id"]
-        )
-        coin_url = "https://coinmarketcap.com/currencies/{}".format(coin_data["id"])
+        price = float(coin.quote["USD"].price) * amount
+        market_cap = float(coin.quote["USD"].market_cap)
+        volume_24h = float(coin.quote["USD"].volume_24h)
+        coin_image = f"https://s2.coinmarketcap.com/static/img/coins/128x128/{coin.id}.png"
+        coin_url = f"https://coinmarketcap.com/currencies/{coin.id}"
         if currency.upper() != "USD":
-            conversionrate = await self.conversionrate("USD", currency.upper())
+            conversionrate = await self.conversionrate("USD", currency)
             if conversionrate:
                 price = conversionrate * price
                 market_cap = conversionrate * market_cap
                 volume_24h = conversionrate * volume_24h
-        msg = "{0} {3} is **{1:,.2f} {2}**".format(
-            ammount, price, currency.upper(), coin_data["symbol"]
+
+        msg = f"{amount} {coin.symbol} is **{price:,.2f} {currency}**\n"
+        embed = discord.Embed(
+            description=msg, colour=coin_colour.get(coin.name, discord.Colour.dark_grey())
         )
-        embed = discord.Embed(description=msg, colour=discord.Colour.dark_grey())
-        if coin_data["name"] in coin_colour:
-            embed.colour = coin_colour[coin_data["name"]]
         embed.set_footer(text="As of")
-        embed.set_author(name=coin_data["name"], url=coin_url, icon_url=coin_image)
-        embed.timestamp = datetime.datetime.strptime(
-            coin_data["last_updated"], "%Y-%m-%dT%H:%M:%S.000Z"
-        )
+        embed.set_author(name=coin.name, url=coin_url, icon_url=coin_image)
+        embed.timestamp = coin.last_updated
         if full:
-            hour_1 = coin_data["quote"]["USD"]["percent_change_1h"]
-            hour_24 = coin_data["quote"]["USD"]["percent_change_24h"]
-            days_7 = coin_data["quote"]["USD"]["percent_change_7d"]
+            hour_1 = coin.quote["USD"].percent_change_1h
+            hour_24 = coin.quote["USD"].percent_change_24h
+            days_7 = coin.quote["USD"].percent_change_7d
             hour_1_emoji = "🔼" if hour_1 >= 0 else "🔽"
             hour_24_emoji = "🔼" if hour_24 >= 0 else "🔽"
             days_7_emoji = "🔼" if days_7 >= 0 else "🔽"
-            available_supply = "{0:,.2f}".format(coin_data["circulating_supply"])
+
+            available_supply = f"{coin.circulating_supply:,.2f}"
             try:
-                max_supply = "{0:,.2f}".format(coin_data["max_supply"])
+                max_supply = f"{coin.max_supply:,.2f}"
             except (KeyError, TypeError):
                 max_supply = "\N{INFINITY}"
-            total_supply = "{0:,.2f}".format(coin_data["total_supply"])
+            total_supply = f"{coin.total_supply:,.2f}"
             embed.set_thumbnail(url=coin_image)
-            embed.add_field(
-                name="Market Cap", value="{0:,.2f} {1}".format(market_cap, currency.upper())
-            )
-            embed.add_field(
-                name="24 Hour Volume", value="{0:,.2f} {1}".format(volume_24h, currency.upper())
-            )
+            embed.add_field(name="Market Cap", value=f"{market_cap:,.2f} {currency}")
+            embed.add_field(name="24 Hour Volume", value=f"{volume_24h:,.2f} {currency}")
             embed.add_field(name="Available Supply", value=available_supply)
             if max_supply is not None:
                 embed.add_field(name="Max Supply", value=max_supply)
             embed.add_field(name="Total Supply ", value=total_supply)
-            embed.add_field(name="Change 1 hour " + hour_1_emoji, value="{}%".format(hour_1))
-            embed.add_field(name="Change 24 hours " + hour_24_emoji, value="{}%".format(hour_24))
-            embed.add_field(name="Change 7 days " + days_7_emoji, value="{}%".format(days_7))
-        if not ctx.channel.permissions_for(ctx.me).embed_links:
-            if full:
-                return (
-                    f"{msg}\nMarket Cap: **{market_cap}**\n"
-                    f"24 Hour Volume: **{volume_24h}**\nAvailable Supply: **{available_supply}**\n"
-                    f"Max Supply: **{max_supply}**\nTotal Supply: **{total_supply}**\n"
-                    f"Change 1 hour{hour_1_emoji}: **{hour_1}%**\n"
-                    f"Change 24 hours{hour_24_emoji}: **{hour_24}%**\n"
-                    f"Change 7 days{days_7_emoji}: **{days_7}%**\n"
-                )
-            else:
-                return msg
-        else:
-            return embed
+            embed.add_field(name="Change 1 hour " + hour_1_emoji, value=f"{hour_1}%")
+            embed.add_field(name="Change 24 hours " + hour_24_emoji, value=f"{hour_24}%")
+            embed.add_field(name="Change 7 days " + days_7_emoji, value=f"{days_7}%")
+            msg += (
+                f"Market Cap: **{market_cap}**\n"
+                f"24 Hour Volume: **{volume_24h}**\nAvailable Supply: **{available_supply}**\n"
+                f"Max Supply: **{max_supply}**\nTotal Supply: **{total_supply}**\n"
+                f"Change 1 hour{hour_1_emoji}: **{hour_1}%**\n"
+                f"Change 24 hours{hour_24_emoji}: **{hour_24}%**\n"
+                f"Change 7 days{days_7_emoji}: **{days_7}%**\n"
+            )
+
+        return {"embed": embed, "content": msg}
 
     @commands.command(aliases=["ticker"])
     async def stock(self, ctx: commands.Context, ticker: str, currency: str = "USD") -> None:
@@ -383,18 +374,19 @@ class Conversions(commands.Cog):
         `[currency]` is the currency you want to convert to defaults to USD
         """
         stock = "https://query1.finance.yahoo.com/v8/finance/chart/{}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(stock.format(ticker.upper())) as resp:
-                data = await resp.json()
+        async with self.session.get(stock.format(ticker.upper())) as resp:
+            data = await resp.json()
         if not data["chart"]["result"]:
-            return await ctx.send(
+            await ctx.send(
                 "`{ticker}` does not appear to be a valid ticker symbol.".format(ticker=ticker)
             )
+            return
         ticker_data = data["chart"]["result"][0]["meta"]
         if not ticker_data["currency"]:
-            return await ctx.send(
+            await ctx.send(
                 "`{ticker}` does not have a valid currency to view.".format(ticker=ticker)
             )
+            return
         convertrate: float = 1.0
         if ticker_data["currency"] != currency:
             maybe_convert = await self.conversionrate(ticker_data["currency"], currency.upper())
@@ -431,35 +423,51 @@ class Conversions(commands.Cog):
     async def convertcurrency(
         self,
         ctx: commands.Context,
-        ammount: float = 1.0,
-        currency1: str = "USD",
-        currency2: str = "GBP",
+        currency1: str,
+        currency2: str,
+        amount: float = 1.0,
     ) -> None:
         """
         Converts a value between 2 different currencies
 
-        `[ammount]` is the ammount you want to convert default is 1
-        `[currency1]` is the currency you have default is USD
-        `[currency2]` is the currency you want to convert to default is GBP
+        `<currency1>` The first currency in [ISO 4217 format.](https://en.wikipedia.org/wiki/ISO_4217)
+        `<currency2>` The second currency in [ISO 4217 format.](https://en.wikipedia.org/wiki/ISO_4217)
+        `[amount=1.0]` is the ammount you want to convert default is 1.0
         """
         currency1 = currency1.upper()
         currency2 = currency2.upper()
+        if len(currency1) < 3 or len(currency1) > 3:
+            await ctx.maybe_send_embed(
+                (
+                    f"{currency1} does not look like a [3 character ISO "
+                    "4217 code](https://en.wikipedia.org/wiki/ISO_4217)"
+                )
+            )
+            return
+        if len(currency2) < 3 or len(currency2) > 3:
+            await ctx.maybe_send_embed(
+                (
+                    f"{currency2} does not look like a [3 character ISO "
+                    "4217 code](https://en.wikipedia.org/wiki/ISO_4217)"
+                )
+            )
+            return
         conversion = await self.conversionrate(currency1, currency2)
-        if not conversion:
-            return await ctx.send("The currencies provided are not valid!")
-        conversion = conversion * ammount
-        await ctx.send("{0} {1} is {2:,.2f} {3}".format(ammount, currency1, conversion, currency2))
+        if conversion is None:
+            await ctx.maybe_send_embed("The currencies provided are not valid!")
+            return
+        cost = conversion * amount
+        await ctx.maybe_send_embed(f"{amount} {currency1} is {cost:,.2f} {currency2}")
 
     async def conversionrate(self, currency1: str, currency2: str) -> Optional[float]:
         """Function to convert different currencies"""
-        params = {"base": currency1, "symbols": currency2}
-        CONVERSIONRATES = "https://api.exchangeratesapi.io/latest"
+        conversion = None
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(CONVERSIONRATES, params=params) as resp:
-                    data = await resp.json()
-            conversion = data["rates"][currency2]
-            return conversion
-        except Exception as e:
-            print(e)
-            return None
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{currency1}{currency2}=x"
+            async with self.session.get(url) as resp:
+                data = await resp.json()
+            results = data.get("chart", {}).get("result", [])
+            conversion = results[0].get("meta", {}).get("regularMarketPrice")
+        except Exception:
+            log.exception(f"Error grabbing conversion rates for {currency1} {currency2}")
+        return conversion
