@@ -1563,22 +1563,34 @@ class EventMixin:
             worth_updating = True
             change_type = "channel"
             if before.channel is None:
-                chan_msg = _("{member} has joined {channel}").format(
-                    member=member.mention, channel=after.channel.mention
+                channel_name = (
+                    f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"
+                )
+                chan_msg = _("{member} has joined {after_channel}").format(
+                    member=member.mention, after_channel=channel_name
                 )
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             elif after.channel is None:
-                chan_msg = _("{member} has left {channel}").format(
-                    member=member.mention, channel=before.channel.mention
+                channel_name = (
+                    f"`{before.channel.name}` ({before.channel.id}) {before.channel.mention}"
+                )
+                chan_msg = _("{member} has left {before_channel}").format(
+                    member=member.mention, before_channel=channel_name
                 )
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             else:
+                after_chan = (
+                    f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"
+                )
+                before_chan = (
+                    f"`{before.channel.name}` ({before.channel.id}) {before.channel.mention}"
+                )
                 chan_msg = _("{member} has moved from {before_channel} to {after_channel}").format(
                     member=member.mention,
-                    before_channel=before.channel.mention,
-                    after_channel=after.channel.mention,
+                    before_channel=before_chan,
+                    after_channel=after_chan,
                 )
                 msg += chan_msg
                 embed.description = chan_msg

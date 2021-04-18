@@ -1,0 +1,1494 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2021-04-18 09:43+0200\n"
+"PO-Revision-Date: 2021-04-18 09:46+0200\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.3\n"
+"X-Generator: Poedit 2.4.2\n"
+"Last-Translator: \n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Language: fr_FR\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:38
+msgid "`{arg}` is not an available command permission."
+msgstr "`{arg}` n'est pas une permission de commande disponible."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:74
+msgid "`{arg}` is not an available event option."
+msgstr "`{arg}` n'est pas une option d'événement disponible."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:80
+msgid ""
+"\n"
+"    Handles all the on_event data\n"
+"    "
+msgstr ""
+"\n"
+"    Gère toutes les données relatives aux événements\n"
+"    "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:210
+msgid ""
+"Not Set\n"
+"MOD\n"
+msgstr ""
+"Non défini\n"
+"MOD\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:216
+msgid ""
+"Not Set\n"
+"ADMIN\n"
+msgstr ""
+"Non défini\n"
+"ADMIN\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:232
+msgid ""
+"{emoji} `{time}` {author}(`{a_id}`) used the following command in {channel}\n"
+"> {com}"
+msgstr ""
+"{emoji} `{time}` {author}(a utilisé la commande suivante dans {}\n"
+"> {com}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:248
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:302
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:375
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:429
+msgid "Channel"
+msgstr "Salon concerné"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:249
+msgid "Can Run"
+msgstr "Utilisable"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:250
+msgid "Requires"
+msgstr "Nécessite"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:252
+msgid "Bot Requires"
+msgstr "Le bot nécessite"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:253
+msgid "{member} ({m_id})- Used a Command"
+msgstr "Commande de modération | {member}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:299
+msgid "*Message's content unknown.*"
+msgstr "*Contenu du message inconnu.*"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:303
+msgid "Deleted Message"
+msgstr "Message supprimé"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:306
+msgid "{emoji} `{time}` A message was deleted in {channel}"
+msgstr "{emoji} `{time}` Un message a été supprimé dans {}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:347
+msgid ""
+"{emoji} `{time}` A message from **{author}** (`{a_id}`) was deleted in "
+"{channel}"
+msgstr "{emoji} `{time}` Un message de **{author}** a été supprimé dans {}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:357
+msgid ""
+"{emoji} `{time}` {perp} deleted a message from **{author}** (`{a_id}`) in "
+"{channel}"
+msgstr "{emoji} `{time}` {perp} a supprimé un message de **{author}** dans {}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:377
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1198
+msgid "Deleted by"
+msgstr "Supprimé par"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:382
+msgid "Attachments"
+msgstr "Pièces jointes"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:384
+msgid "{member} ({m_id})- Deleted Message"
+msgstr "{member} - Message supprimé"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:428
+msgid "Bulk message delete"
+msgstr "Serveur | Messages supprimés via clear"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:430
+msgid "Messages deleted"
+msgstr "Messages supprimés"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:433
+msgid ""
+"{emoji} `{time}` Bulk message delete in {channel}, {amount} messages deleted."
+msgstr ""
+"{emoji} `{time}` Suppression des messages en masse dans {}, {amount} "
+"messages supprimés."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:502
+msgid "Added by: {inviter}"
+msgstr "Ajouté par : {inviter}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:518
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:544
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:552
+msgid ""
+"https://discord.gg/{code}\n"
+"Invited by: {inviter}"
+msgstr ""
+"https://discord.gg/{code}\n"
+"Invité par : {inviter}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:522
+msgid "Widget Integration"
+msgstr "Intégration du widget"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:541
+msgid "Unknown or deleted user ({inviter})"
+msgstr "Utilisateur inconnu ou supprimé ({inviter})"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:595
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:664
+msgid "Total Users:"
+msgstr "Nombre total de membres :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:596
+msgid "Account created on:"
+msgstr "Compte créé le :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:598
+msgid "{member} ({m_id}) has joined the guild"
+msgstr "{member} a rejoint le serveur"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:605
+msgid "Invite Link"
+msgstr "Lien d'invitation"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:610
+msgid ""
+"{emoji} `{time}` **{member}**(`{m_id}`) joined the guild. Total members: "
+"{users}"
+msgstr ""
+"{emoji} `{time}` **{member}** a rejoint le serveur. Nombre total de membres: "
+"{users}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:666
+msgid "Kicked"
+msgstr "Kick"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:668
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1699
+msgid "Reason"
+msgstr "Raison"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:670
+msgid "{member} ({m_id}) has left the guild"
+msgstr "{member} a quitté le serveur"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:680
+msgid ""
+"{emoji} `{time}` **{member}**(`{m_id}`) left the guild. Total members: "
+"{users}"
+msgstr ""
+"{emoji} `{time}` **{member}** a quitté le serveur. Nombre restants de "
+"membres :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:690
+msgid ""
+"{emoji} `{time}` **{member}**(`{m_id}`) was kicked by {perp}. Total members: "
+"{users}"
+msgstr ""
+"{emoji} `{time}` **{member}** a été kick par {perp}. Nombre total de "
+"membres: {users}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:724
+msgid "{name} Removed overwrites.\n"
+msgstr "{name} Suppression des précédents changements de permissions.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:727
+msgid "{name} Overwrites removed.\n"
+msgstr "{name} Suppression des précédents changements de permissions.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:733
+msgid "{name} {perm} Reset.\n"
+msgstr "{name} {perm} Reset.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:740
+msgid "{name} Updated overwrites.\n"
+msgstr "{name} Permissions mises à jour.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:747
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:768
+msgid "{name} {perm} Set to {value}.\n"
+msgstr "{name} {perm} Défini sur {value}.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:760
+msgid "{name} Added overwrites.\n"
+msgstr "{name} Ajout de changement de permissions.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:763
+msgid "{name} Overwrites added.\n"
+msgstr "{name} Changement de permissions effectué.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:804
+msgid "{chan_type} Channel Created {chan_name} ({chan_id})"
+msgstr "Nouveau salon créé | {chan_name}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:814
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:872
+msgid "Type"
+msgstr "Type"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:816
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:874
+msgid "by {perp} (`{perp_id}`)"
+msgstr "par {perp}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:817
+msgid "Created by "
+msgstr "Créé par "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:819
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:877
+msgid " Reason: {reason}"
+msgstr " Motif : {reason}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:820
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:878
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1020
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1021
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1078
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1079
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1153
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1154
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1201
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1202
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1487
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1488
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1601
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1602
+msgid "Reason "
+msgstr "Raison "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:821
+msgid "{emoji} `{time}` {chan_type} channel created {perp_msg} {channel}"
+msgstr "{emoji} `{time}` {chan_type} Salon créé {perp_msg} {channel}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:863
+msgid "{chan_type} Channel Deleted {chan_name} ({chan_id})"
+msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:875
+msgid "Deleted by "
+msgstr "Supprimé par "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:879
+msgid "{emoji} `{time}` {chan_type} channel deleted {perp_msg} {channel}"
+msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:940
+msgid "{chan_type} Channel Updated {chan_name} ({chan_id})"
+msgstr "Salon mis à jour | {chan_name}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:944
+msgid "{emoji} `{time}` Updated channel {channel}\n"
+msgstr "{emoji} `{time}` Salon mis à jour {}\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:954
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:994
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1081
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1301
+msgid "Name:"
+msgstr "Nom :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:955
+msgid "Topic:"
+msgstr "Description :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:956
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:996
+msgid "Category:"
+msgstr "Catégorie :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:957
+msgid "Slowmode delay:"
+msgstr "Délai du mode lent :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:969
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:971
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:978
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:980
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1005
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1007
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1096
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1098
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1321
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1323
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1685
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1690
+msgid "Before "
+msgstr "Précédent "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:970
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:972
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:979
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:981
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1006
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1008
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1097
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1099
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1322
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1324
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1686
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1691
+msgid "After "
+msgstr "Nouveau "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:988
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1012
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1103
+msgid "Permissions Changed: "
+msgstr "Permissions modifiées : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:990
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1014
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1104
+msgid "Permissions"
+msgstr "Permissions"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:995
+msgid "Position:"
+msgstr "Position :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:997
+msgid "Bitrate:"
+msgstr "Bitrate :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:998
+msgid "User limit:"
+msgstr "Limite de membres :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1017
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1018
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1075
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1076
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1484
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1485
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1695
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1696
+msgid "Updated by "
+msgstr "Mis à jour par : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1035
+msgid "{permission} Set to **{change}**\n"
+msgstr "{permission} Définie sur {change}.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1063
+msgid "{emoji} `{time}` Updated role **{role}**\n"
+msgstr "{emoji} `{time}` Role mis à jour **{role}**\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1069
+msgid "Updated @everyone role "
+msgstr "Rôle @everyone mis à jour  "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1072
+msgid "Updated {role} ({r_id}) role "
+msgstr "Role {role} mis à jour "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1082
+msgid "Colour:"
+msgstr "Couleur :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1083
+msgid "Mentionable:"
+msgstr "Mentionnable :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1084
+msgid "Is Hoisted:"
+msgstr "Est levé :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1142
+msgid "Role created {role} ({r_id})"
+msgstr "Role créé {role}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1144
+msgid "{emoji} `{time}` Role created {role}\n"
+msgstr "{emoji} `{time}` Role créé {role}\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1150
+msgid "Created by"
+msgstr "Créé par"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1151
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1199
+msgid "By "
+msgstr "Par "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1190
+msgid "Role deleted {role} ({r_id})"
+msgstr "Role supprimé {role}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1192
+msgid "{emoji} `{time}` Role deleted **{role}**\n"
+msgstr "{emoji} `{time}` Role supprimé **{role}**\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1246
+msgid "After Message:"
+msgstr "Message édité :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1247
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1747
+msgid "Channel:"
+msgstr "Salon :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1249
+msgid "{member} ({m_id}) - Edited Message"
+msgstr "Message édité | {member}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1256
+msgid ""
+"{emoji} `{time}` **{author}** (`{a_id}`) edited a message in {channel}.\n"
+"Before:\n"
+"> {before}\n"
+"After:\n"
+"> {after}"
+msgstr ""
+"{emoji} `{time}` **{author}** a édité un message dans {}.\n"
+"Avant :\n"
+"> {before}\n"
+"Après :\n"
+"> {after}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1294
+msgid "Updated Guild"
+msgstr "Mise à jour du serveur"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1296
+msgid "{emoji} `{time}` Guild updated\n"
+msgstr "{emoji} `{time}` Serveur mis à jour\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1302
+msgid "Region:"
+msgstr "Région :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1303
+msgid "AFK Timeout:"
+msgstr "AFK Timeout :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1304
+msgid "AFK Channel:"
+msgstr "Salon AFK :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1305
+msgid "Server Icon:"
+msgstr "Logo du serveur :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1306
+msgid "Server Owner:"
+msgstr "Propriétaire du serveur :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1307
+msgid "Splash Image:"
+msgstr "Image de bienvenue :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1308
+msgid "Welcome message channel:"
+msgstr "Salon des messages de bienvenue :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1309
+msgid "Verification Level:"
+msgstr "Niveau de vérification :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1318
+msgid "Server Icon Updated"
+msgstr "Logo du serveur mis à jour"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1337
+msgid "Update by "
+msgstr "Mise à jour par "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1339
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1599
+msgid "Updated by"
+msgstr "Mis à jour par"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1342
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1343
+msgid "Reasons "
+msgstr "Raisons "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1378
+msgid "Updated Server Emojis"
+msgstr "Serveur | Modification des emotes"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1379
+msgid "{emoji} `{time}` Updated Server Emojis"
+msgstr "{emoji} `{time}` Mise à jour des emotes"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1417
+msgid "`{emoji_name}` (ID: {emoji_id}) Removed from the guild\n"
+msgstr "`{emoji_name}` Retirée du serveur\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1426
+msgid "{emoji} Added to the guild\n"
+msgstr "{emoji} Ajoutée au serveur\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1434
+msgid "{emoji} Renamed from {old_emoji_name} to {new_emoji_name}\n"
+msgstr "{emoji} Renommé de {old_emoji_name} à {new_emoji_name}\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1446
+msgid "{emoji} Changed to unrestricted.\n"
+msgstr "{emoji} Changée en sans restriction.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1450
+msgid "{emoji} Restricted to roles: {roles}\n"
+msgstr "{emoji} Restreint aux rôles : {roles}\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1459
+msgid ""
+"{emoji} Role restriction changed from\n"
+" {old_roles}\n"
+" To\n"
+" {new_roles}"
+msgstr ""
+"{emoji} La restriction de rôle est passée de\n"
+" {old_roles}\n"
+" À\n"
+" {new_roles}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1529
+msgid "{emoji} `{time}` Updated Voice State for **{member}** (`{m_id}`)"
+msgstr "{emoji} `{time}` Mise à jour de l'état vocal de **{member}**"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1536
+msgid "{member} ({m_id}) Voice State Update"
+msgstr "Vocal | {member}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1544
+msgid "{member} was deafened. "
+msgstr "{member} est désormais mute son. "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1548
+msgid "{member} was undeafened. "
+msgstr "{member} n'est plus mute son. "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1555
+msgid "{member} was muted."
+msgstr "{member} est désormais mute."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1559
+msgid "{member} was unmuted. "
+msgstr "{member} n'est plus mute. "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1566
+msgid "{member} has joined {after_channel}"
+msgstr "{member} a rejoint le salon vocal {after_channel}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1572
+msgid "{member} has left {before_channel}"
+msgstr "{member} s'est déconnecté du salon vocal {before_channel}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1578
+msgid "{member} has moved from {before_channel} to {after_channel}"
+msgstr "{member} s'est déplacé de {before_channel} vers {after_channel}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1634
+msgid "{emoji} `{time}` Member updated **{member}** (`{m_id}`)\n"
+msgstr "{emoji} `{time}` Membre mis à jour **{member}** \n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1641
+msgid "{member} ({m_id}) updated"
+msgstr "Profil mis à jour | {member}"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1643
+msgid "Nickname:"
+msgstr "Surnom :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1643
+msgid "Roles:"
+msgstr "Roles :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1661
+msgid "{author} had the {role} role removed."
+msgstr "Rôle {role} retiré de son profil."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1664
+msgid "{author} had the {role} role removed.\n"
+msgstr "{author} vient de se faire retirer le rôle {role}.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1670
+msgid "{author} had the {role} role applied."
+msgstr "Rôle {role} ajouté à son profil."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1673
+msgid "{author} had the {role} role applied.\n"
+msgstr "{author} vient de se faire ajouter le rôle {role}.\n"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1687
+msgid "{author} changed their nickname."
+msgstr "Nouveau surnom."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1698
+msgid "Reason: "
+msgstr "Raison : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1745
+msgid "Code:"
+msgstr "Code d'invitation :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1746
+msgid "Inviter:"
+msgstr "Créateur :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1748
+msgid "Max Uses:"
+msgstr "Utilisations Max :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1749
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1812
+msgid "Max Age:"
+msgstr "Temps restant :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1750
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1813
+msgid "Temporary:"
+msgstr "Temporaire :"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1756
+msgid "{emoji} `{time}` Invite created "
+msgstr "{emoji} `{time}` Invitation créée "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1761
+msgid "Invite Created"
+msgstr "Invitation Discord Créée"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1765
+msgid "{author} created an invite for {channel}."
+msgstr "{author} a créé une invitation pour {}."
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1807
+msgid "Code: "
+msgstr "Code d'invitation : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1808
+msgid "Inviter: "
+msgstr "Créateur : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1809
+msgid "Channel: "
+msgstr "Salon : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1810
+msgid "Max Uses: "
+msgstr "Utilisations Max : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1811
+msgid "Used: "
+msgstr "Utilisée : "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1819
+msgid "{emoji} `{time}` Invite deleted "
+msgstr "{emoji} `{time}` Invitation supprimée "
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1824
+msgid "Invite Deleted"
+msgstr "Serveur | Invitation Supprimée"
+
+#: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1827
+msgid "{author} deleted or used up an invite for {channel}."
+msgstr "{author} a supprimé ou épuisé une invitation à {}."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:18
+msgid ""
+"\n"
+"    Extended modlogs\n"
+"    Works with core modlogset channel\n"
+"    "
+msgstr ""
+"\n"
+"    Modlogs étendus\n"
+"    Fonctionne avec le canal principal de modlogset\n"
+"    "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:83
+msgid "Not Set"
+msgstr "Non défini"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:85
+msgid "Message edits"
+msgstr "Modifications des messages"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:86
+msgid "Message delete"
+msgstr "Suppression de message"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:87
+msgid "Member changes"
+msgstr "Changements parmi les membres"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:88
+msgid "Role changes"
+msgstr "Changement dans les rôles"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:89
+msgid "Role created"
+msgstr "Rôle créé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:90
+msgid "Role deleted"
+msgstr "Rôle supprimé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:91
+msgid "Voice changes"
+msgstr "Changements dans les vocaux"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:92
+msgid "Member join"
+msgstr "Nouveau Membre"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:93
+msgid "Member left"
+msgstr "Le membre a quitté"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:94
+msgid "Channel changes"
+msgstr "Modification d'un salon"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:95
+msgid "Channel created"
+msgstr "Salon créé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:96
+msgid "Channel deleted"
+msgstr "Salon supprimé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:97
+msgid "Guild changes"
+msgstr "Changement sur le serveur"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:98
+msgid "Emoji changes"
+msgstr "Changement sur les emotes"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:99
+msgid "Commands"
+msgstr "Commandes"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:100
+msgid "Invite created"
+msgstr "Invitation créée"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:101
+msgid "Invite deleted"
+msgstr "Inviter supprimée"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:103
+msgid ""
+"Setting for {guild}\n"
+" Modlog Channel {channel}\n"
+"\n"
+msgstr ""
+"Paramètres de {guild}\n"
+" Salon modlog utilisé : {channel}\n"
+"\n"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:136
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:138
+msgid "None  "
+msgstr "Aucune  "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:141
+msgid "Ignored Channels"
+msgstr "Salons ignorés"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:150
+msgid ""
+"\n"
+"        Toggle various extended modlog notifications\n"
+"\n"
+"        Requires the channel to be setup with `[p]modlogset modlog "
+"#channel`\n"
+"        Or can be sent to separate channels with `[p]modlog channel #channel "
+"event_name`\n"
+"        "
+msgstr ""
+"\n"
+"        Activer/Désactiver les différentes notifications modlog\n"
+"\n"
+"        Nécessite que le salon soit configuré avec `[p]modlogset modlog #`\n"
+"        Ou peuvent être envoyés sur des salons séparés avec `[p]modlog  # "
+"event_name`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:160
+msgid ""
+"\n"
+"        Show the servers current ExtendedModlog settings\n"
+"        "
+msgstr ""
+"\n"
+"        Afficher les paramètres actuels d'ExtendedModlog\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:173
+msgid ""
+"\n"
+"        Set custom colours for modlog events\n"
+"\n"
+"        `colour` must be a hex code or a [built colour.](https://discordpy."
+"readthedocs.io/en/latest/api.html#colour)\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Définir des couleurs personnalisées pour les événements du modlog\n"
+"\n"
+"        `colour` doit être un code hex ou une [couleur de base.](https://"
+"discordpy.readthedocs.io/en/latest/api.html#colour)\n"
+"\n"
+"        `[events...]` doit être l'une des options suivantes (plus d'un "
+"événement peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:200
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:250
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:300
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:355
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:404
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:450
+msgid "You must provide which events should be included."
+msgstr "Vous devez indiquer les événements qui doivent être inclus."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:213
+msgid "{event} has been set to {colour}"
+msgstr "{event} a été fixé à {colour}"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:223
+msgid ""
+"\n"
+"        Set modlog events to use embeds or text\n"
+"\n"
+"        `<true_or_false>` The desired embed setting either on or off.\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Configurer les événements modlog pour qu'ils utilisent des embeds ou "
+"du texte\n"
+"\n"
+"        `<true_or_false>` Le réglage de l'embed souhaité, soit activé ou "
+"désactivé.\n"
+"\n"
+"        `[events...]` doit être l'une des options suivantes (plus d'un "
+"événement peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:259
+msgid "{event} embed logs have been set to {true_or_false}"
+msgstr ""
+"Les évènements {event} en format embed ont été réglés sur {true_or_false}."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:273
+msgid ""
+"\n"
+"        Set the emoji used in text modlogs.\n"
+"\n"
+"        `<new_emoji>` can be any discord emoji or unicode emoji the bot has "
+"access to use.\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Définir l'emote utilisée dans les modlogs en format textuel.\n"
+"\n"
+"        `<new_emoji>` peut être n'importe quel emote discord ou emote en "
+"format unicode que le bot a accès à utiliser.\n"
+"\n"
+"        `[events...]` doit être l'une des options suivantes (plus d'un "
+"événement peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:307
+msgid "{emoji} is not a valid emoji."
+msgstr "{emoji} n'est pas un emoji valide."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:315
+msgid "{event} emoji has been set to {new_emoji}"
+msgstr "{event} emoji a été réglé sur {new_emoji}"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:328
+msgid ""
+"\n"
+"        Turn on and off specific modlog actions\n"
+"\n"
+"        `<true_or_false>` Either on or off.\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Activer et désactiver des actions spécifiques du modlog\n"
+"\n"
+"        `<true_or_false>` Soit activé, soit désactivé.\n"
+"\n"
+"        `[events...]` doit être l'une des options suivantes (plus d'un "
+"événement peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:364
+msgid "{event} logs have been set to {true_or_false}"
+msgstr "Les logs de {event} ont été réglées sur {true_or_false}"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:377
+msgid ""
+"\n"
+"        Set the channel for modlogs.\n"
+"\n"
+"        `<channel>` The text channel to send the events to.\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Définir le salon textuel pour les modlogs.\n"
+"\n"
+"        `<channel>` Le salon textuel vers lequel envoyer les événements.\n"
+"\n"
+"`[events...]` doit être l'une des options suivantes (plus d'un événement "
+"peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:413
+msgid "{event} logs have been set to {channel}"
+msgstr "{event} Les logs ont été réglées sur {}"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:425
+msgid ""
+"\n"
+"        Reset the modlog event to the default modlog channel.\n"
+"\n"
+"        `[events...]` must be any of the following options (more than one "
+"event can be provided at once):\n"
+"            `channel_change` - Updates to channel name, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Bot command usage\n"
+"            `emoji_change`   - Emojis added or deleted\n"
+"            `guild_change`   - Server settings changed\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Member changes like roles added/removed and "
+"nicknames\n"
+"            `role_change`    - Role updates like permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Voice channel join/leave\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Requires Red 3.3+ and discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+msgstr ""
+"\n"
+"        Réinitialiser un ou plusieurs événement(s) modlog pour le salon "
+"modlog défini de base.\n"
+"\n"
+"        `[events...]` doit être l'une des options suivantes (plus d'un "
+"événement peut être fourni à la fois) :\n"
+"            `channel_change` - Mise à jour du nom du salon, etc.\n"
+"            `channel_create`\n"
+"            `channel_delete`\n"
+"            `commands_used`  - Utilisation des commandes du Bot\n"
+"            `emoji_change`   - Ajout ou suppression d'emotes\n"
+"            `guild_change`   - Modification des paramètres du serveur\n"
+"            `message_edit`\n"
+"            `message_delete`\n"
+"            `member_change`  - Les changements de membres, tels que les "
+"rôles ajoutés/supprimés et les surnoms.\n"
+"            `role_change`    - Mise à jour des rôles comme des permissions\n"
+"            `role_create`\n"
+"            `role_delete`\n"
+"            `voice_change`   - Entrée/sortie d'un salon vocal\n"
+"            `member_join`\n"
+"            `member_left`\n"
+"\n"
+"            **Nécessite Red 3.3+ et discord.py 1.3+**\n"
+"            `invite_created`\n"
+"            `invite_deleted`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:459
+msgid "{event} logs channel have been reset."
+msgstr "{event} Le salon des logs a été réinitialisé."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:464
+msgid ""
+"\n"
+"        Turn all logging options on or off\n"
+"\n"
+"        `<true_or_false>` what to set all logging settings to must be "
+"`true`, `false`, `yes`, `no`.\n"
+"        "
+msgstr ""
+"\n"
+"        Activer ou désactiver toutes les options de logs\n"
+"\n"
+"        `<true_or_false>` ce à quoi doivent correspondre tous les paramètres "
+"de journalisation doit être `true`, `false`, `yes`, `no`.\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:479
+msgid ""
+"\n"
+"        Toggle message edit notifications for bot users\n"
+"        "
+msgstr ""
+"\n"
+"        Activer ou désactiver les notifications d'édition de message pour "
+"les utilisateurs de bot\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:485
+msgid "Bots edited messages "
+msgstr "Messages édités par les bots "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:489
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:510
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:536
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:555
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:581
+msgid "enabled"
+msgstr "activé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:493
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:514
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:540
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:559
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:577
+msgid "disabled"
+msgstr "désactivé"
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:498
+msgid ""
+"\n"
+"        Toggle message delete notifications for bot users\n"
+"\n"
+"        This will not affect delete notifications for messages that aren't "
+"in bot's cache.\n"
+"        "
+msgstr ""
+"\n"
+"        Activer/Désactiver les notifications de suppression de messages pour "
+"les utilisateurs de bot\n"
+"\n"
+"        This will not affect delete notifications for messages that aren't "
+"in bot's cache.\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:506
+msgid "Bot delete logs "
+msgstr "Bot supprimer les logs "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:519
+msgid ""
+"\n"
+"        Delete logging settings\n"
+"        "
+msgstr ""
+"\n"
+"        Supprimer les paramètres de logs\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:526
+msgid ""
+"\n"
+"        Toggle bulk message delete notifications\n"
+"        "
+msgstr ""
+"\n"
+"        Basculer les notifications de suppression de messages en masse\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:532
+msgid "Bulk message delete logs "
+msgstr "Logs de suppression de messages en masse "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:545
+msgid ""
+"\n"
+"        Toggle individual message delete notifications for bulk message "
+"delete\n"
+"        "
+msgstr ""
+"\n"
+"        Activer/Désactiver les notifications de suppression de messages "
+"individuels pour la suppression de messages groupés\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:551
+msgid "Individual message delete logs for bulk message delete "
+msgstr ""
+"Logs de suppression des messages individuels pour la suppression des "
+"messages groupés "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:564
+msgid ""
+"\n"
+"        Toggle message delete notifications for non-cached messages\n"
+"\n"
+"        Delete notifications for non-cached messages\n"
+"        will only show channel info without content of deleted message or "
+"its author.\n"
+"        "
+msgstr ""
+"\n"
+"        Activer/Désactiver les notifications de suppression de message pour "
+"les messages non mis en cache\n"
+"\n"
+"        Supprimer les notifications pour les messages non mis en cache\n"
+"        ne montrera que les informations du salon sans le contenu du message "
+"supprimé ou son auteur.\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:573
+msgid "Delete logs for non-cached messages "
+msgstr "Supprimer les logs des messages non mis en cache "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:586
+msgid ""
+"\n"
+"        Toggle bots from being logged in user updates\n"
+"\n"
+"        This includes roles and nickname.\n"
+"        "
+msgstr ""
+"\n"
+"        Activer/Désactiver les bots pour éviter les mises à jour des "
+"utilisateurs\n"
+"\n"
+"        Cela comprend les rôles et les surnoms.\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:597
+msgid "Bots will no longer be tracked in user change logs."
+msgstr ""
+"Les bots ne seront plus suivis dans les logs de changement d'utilisateur."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:599
+msgid "Bots will be tracked in user change logs."
+msgstr "Les bots seront suivis dans les logs de changement d'utilisateur."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:603
+msgid ""
+"\n"
+"        Toggle nickname updates for user changes\n"
+"        "
+msgstr ""
+"\n"
+"        Changer de surnom en cas de changement d'utilisateur\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:612
+msgid "Nicknames will no longer be tracked in user change logs."
+msgstr ""
+"Les surnoms ne seront plus suivis dans les logs des changements "
+"d'utilisateurs."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:614
+msgid "Nicknames will be tracked in user change logs."
+msgstr ""
+"Les pseudonymes seront suivis dans les logs des changements d'utilisateurs."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:618
+msgid ""
+"\n"
+"        Set the level of commands to be logged\n"
+"\n"
+"        `[level...]` must include all levels you want from:\n"
+"        MOD, ADMIN, BOT_OWNER, GUILD_OWNER, and NONE\n"
+"\n"
+"        These are the basic levels commands check for in permissions.\n"
+"        `NONE` is a command anyone has permission to use, where as `MOD`\n"
+"        can be `mod or permissions`\n"
+"        "
+msgstr ""
+"\n"
+"        Définir le niveau des commandes à enregistrer\n"
+"\n"
+"        `[level...]` doit comprendre tous les niveaux que vous souhaitez :\n"
+"        MOD, ADMIN, BOT_OWNER, GUILD_OWNER, et NONE\n"
+"\n"
+"        Voici les niveaux de base que les commandes vérifient dans les "
+"autorisations.\n"
+"        `NONE` est une commande que toute personne a la permission "
+"d'utiliser, où comme `MOD`\n"
+"        peut être `mod ou permissions`\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:633
+msgid "Command logs set to: "
+msgstr "Logs de commande réglés sur : "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:644
+msgid ""
+"\n"
+"        Ignore a channel from message delete/edit events and bot commands\n"
+"\n"
+"        `channel` the channel or category to ignore events in\n"
+"        "
+msgstr ""
+"\n"
+"        Ignorer un salon à partir des événements de suppression/modification "
+"de messages et des commandes de bots\n"
+"\n"
+"        `` le salon ou la catégorie pour ignorer les événements dans\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:659
+msgid " Now ignoring events in "
+msgstr " En ignorant maintenant les événements de "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:661
+msgid " is already being ignored."
+msgstr " est déjà ignorée."
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:669
+msgid ""
+"\n"
+"        Unignore a channel from message delete/edit events and bot commands\n"
+"\n"
+"        `channel` the channel to unignore message delete/edit events\n"
+"        "
+msgstr ""
+"\n"
+"        Ne plus ignorer un salon à partir des événements de suppression/"
+"modification de messages et des commandes de bots\n"
+"\n"
+"        `` le salon ou la catégorie pour ne plus ignorer les événements "
+"dans\n"
+"        "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:684
+msgid " Now tracking events in "
+msgstr " Suivre maintenant les événements dans "
+
+#: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:686
+msgid " is not being ignored."
+msgstr " n'est plus ignoré."
