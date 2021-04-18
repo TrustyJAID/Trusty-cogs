@@ -21,7 +21,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.10.4"
+    __version__ = "2.10.5"
 
     def __init__(self, bot):
         self.bot = bot
@@ -80,7 +80,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
             _modlog_channel = await modlog.get_modlog_channel(guild)
             modlog_channel = _modlog_channel.mention
         except Exception:
-            modlog_channel = "Not Set"
+            modlog_channel = _("Not Set")
         cur_settings = {
             "message_edit": _("Message edits"),
             "message_delete": _("Message delete"),
