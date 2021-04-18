@@ -26,7 +26,7 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 hockeyset_commands = MixinMeta.hockeyset_commands
 # defined in abc.py allowing this to be inherited by multiple files
 
-PICKEMS_MESSAGE = (
+PICKEMS_MESSAGE = _(
     "**Welcome to our daily Pick'ems challenge!  Below you will see today's games!"
     "  Vote for who you think will win!  You get one point for each correct prediction. "
     "Votes are weighted based on total number of votes you have made. So the more "
@@ -44,8 +44,8 @@ class HockeyPickems(MixinMeta):
     default_intervals = [
         (timedelta(seconds=5), 3),  # 3 per 5 seconds
         (timedelta(minutes=1), 5),  # 5 per 60 seconds
-        (timedelta(hours=1), 16),   # at most we'll see 16 games in one day
-        (timedelta(days=1), 64),    # 24 per 24 hours
+        (timedelta(hours=1), 16),  # at most we'll see 16 games in one day
+        (timedelta(days=1), 64),  # 24 per 24 hours
     ]
     # This default interval should be good for pickems
     # This is only to prevent trying to dm spammers
@@ -143,9 +143,7 @@ class HockeyPickems(MixinMeta):
         if channel.id not in self.antispam[guild.id]:
             self.antispam[guild.id][channel.id] = {}
         if user.id not in self.antispam[guild.id][channel.id]:
-            self.antispam[guild.id][channel.id][user.id] = AntiSpam(
-                self.default_intervals
-            )
+            self.antispam[guild.id][channel.id][user.id] = AntiSpam(self.default_intervals)
         if self.antispam[guild.id][channel.id][user.id].spammy:
             return
 
@@ -476,11 +474,11 @@ class HockeyPickems(MixinMeta):
     ) -> Dict[int, List[int]]:
         chn_name = _("pickems-{month}-{day}").format(month=day.month, day=day.day)
         data = []
-        channel_tasks = []
+        # channel_tasks = []
         save_data = {}
         for guild in guilds:
-            channel_tasks.append(self.create_pickems_channel(chn_name, guild))
-        data = await bounded_gather(*channel_tasks)
+            data.append(await self.create_pickems_channel(chn_name, guild))
+        # data = await bounded_gather(*channel_tasks)
 
         for new_channel in data:
             if new_channel is None:
@@ -492,18 +490,19 @@ class HockeyPickems(MixinMeta):
 
         games_list = await Game.get_games(None, day, day, self.session)
 
-        msg_tasks = []
+        # msg_tasks = []
         for game in games_list:
             for channel in data:
                 if channel:
-                    msg_tasks.append(self.create_pickems_game_message(channel, game))
-        await bounded_gather(*msg_tasks)
+                    self.bot.loop.create_task(self.create_pickems_game_message(channel, game))
+        # await bounded_gather(*msg_tasks)
         return save_data
 
     async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> None:
         save_data = {}
         today = datetime.now()
         tasks = []
+        guild_data = []
         for days in range(7):
             if (today + timedelta(days=days)).weekday() == 6 and days != 0:
                 # This was originally to prevent an infinite loop
@@ -511,11 +510,14 @@ class HockeyPickems(MixinMeta):
                 # Sunday so that we're not creating more channels than necessary
                 # unless it's sunday
                 break
-            tasks.append(
-                self.create_pickems_channels_and_message(guilds, today + timedelta(days=days))
+
+            guild_data.append(
+                await self.create_pickems_channels_and_message(
+                    guilds, today + timedelta(days=days)
+                )
             )
 
-        guild_data = await bounded_gather(*tasks)
+        # guild_data = await bounded_gather(*tasks)
         for channel_data in guild_data:
             for guild_id, channels in channel_data.items():
                 if guild_id not in save_data:
