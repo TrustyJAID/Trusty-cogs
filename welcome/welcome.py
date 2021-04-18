@@ -422,7 +422,7 @@ class Welcome(Events, commands.Cog):
         guild_settings = channel.id
         await self.config.guild(guild).CHANNEL.set(guild_settings)
         msg = _("I will now send welcome messages to {channel}").format(channel=channel.mention)
-        await channel.send(msg)
+        await ctx.send(msg)
 
     @welcomeset_greeting.command()
     async def test(self, ctx: commands.Context) -> None:
