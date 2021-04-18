@@ -1564,13 +1564,13 @@ class EventMixin:
             change_type = "channel"
             if before.channel is None:
                 chan_msg = _("{member} has joined {channel}").format(
-                    member=member.mention, channel=channel.mention
+                    member=member.mention, channel=after.channel.mention
                 )
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             elif after.channel is None:
                 chan_msg = _("{member} has left {channel}").format(
-                    member=member.mention, channel=channel.mention
+                    member=member.mention, channel=before.channel.mention
                 )
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
