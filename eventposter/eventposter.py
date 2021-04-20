@@ -391,7 +391,7 @@ class EventPoster(commands.Cog):
             return await self.post_event(ctx, event)
 
         em = await event.make_event_embed(ctx)
-        await ctx.send(_("Please wait for an someone to approve your event request."))
+        await ctx.send(_("Please wait for someone to approve your event request."))
         admin_msg = await approval_channel.send(embed=em)
         start_adding_reactions(admin_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
         pred = ReactionPredicate.yes_or_no(admin_msg)
