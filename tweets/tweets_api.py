@@ -221,7 +221,8 @@ class TweetsAPI:
         em = await self.build_tweet_embed(status)
         # channel_list = account.channel
         tasks = []
-        for channel_id, data in self.accounts[str(user_id)].channels.items():
+        channels = self.accounts[str(user_id)].channels.copy()
+        for channel_id, data in channels.items():
             if data.guild is None:
                 channel_send = self.bot.get_channel(int(channel_id))
                 if channel_send is None:
