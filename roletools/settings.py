@@ -139,7 +139,7 @@ class RoleToolsSettings(RoleToolsMixin):
         `[true_or_false]` optional boolean of what to set the setting to.
         If not provided the current setting will be shown instead.
         """
-        cur_setting = await self.config.guild(ctx.guild).atomic()
+        cur_setting = await self.config.atomic()
         if true_or_false is None:
             if cur_setting:
                 await ctx.send(_("I am currently using atomic role assignment"))
@@ -153,10 +153,10 @@ class RoleToolsSettings(RoleToolsMixin):
                 )
             return
         if true_or_false is True:
-            await self.config.guild(ctx.guild).atomic.clear()
+            await self.config.atomic.clear()
             await ctx.send(_("RoleTools will now atomically assign roles."))
         if true_or_false is False:
-            await self.config.guild(ctx.guild).atomic.set(False)
+            await self.config.atomic.set(False)
             await ctx.send(_("RoleTools will no longer atomically assign roles."))
 
     @roletools.command()
