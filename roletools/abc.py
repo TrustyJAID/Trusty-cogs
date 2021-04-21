@@ -184,6 +184,14 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def atomic(self, ctx: Context, true_or_false: Optional[Union[bool, str]] = None) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def globalatomic(self, ctx: Context, true_or_false: Optional[bool] = None) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def sticky(
         self, ctx: Context, true_or_false: Optional[bool] = None, *, role: RoleHierarchyConverter
     ) -> None:
@@ -262,6 +270,10 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def wait_for_verification(self, member: discord.Member, guild: discord.Guild) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def check_atomicity(self, guild: discord.Guild) -> bool:
         raise NotImplementedError()
 
     @abstractmethod

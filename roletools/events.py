@@ -147,6 +147,42 @@ class RoleToolsEvents(RoleToolsMixin):
             log.debug(f"Waiting {wait} seconds before allowing the user to have a role")
             await asyncio.sleep(int(wait))
 
+    async def check_atomicity(self, guild: discord.Guild) -> bool:
+        """
+        Determine the type of atomicity to use when applying/removing roles
+
+        This takes into account the global cog setting for atomic role assignment.
+        Essentially letting me still have my fewer API calls while allowing
+        regular users to use the old method.
+
+        Server settings will override the global setting and prefer using atomic
+        role assignment in general. This is only used for things like
+        reaction roles, and other automatic methods. Commands like
+        `[p]giverole` will pass the atomic bool kwarg specifically to avoid
+        rate limiting the bot when assinging a massive number of roles to users.
+        That in turn is not atomic potentially causing issues but should proceed a lot
+        faster than if the atomic setting was `False`.
+
+        Parameters
+        ----------
+            guild: discord.Guild
+                The guild which the role atomicity is required
+
+        Returns
+        -------
+            bool
+                Whether or not to atomically assign roles.
+                `True` will assign each role independant of the state
+                of the bots cache.
+                `False` will assign the roles as a group.
+        """
+        global_atomic = await self.config.atomic()
+        server_atomic = await self.config.guild(guild).atomic()
+        if server_atomic is None:
+            return global_atomic
+        else:
+            return server_atomic
+
     async def give_roles(
         self,
         member: discord.Member,
@@ -157,6 +193,7 @@ class RoleToolsEvents(RoleToolsMixin):
         check_exclusive: bool = True,
         check_inclusive: bool = True,
         check_cost: bool = True,
+        atomic: Optional[bool] = None,
     ) -> None:
         """
         Handles all the logic for applying roles to a user
@@ -184,17 +221,31 @@ class RoleToolsEvents(RoleToolsMixin):
             check_cost: bool
                 Wheter we actually want to check the cost for the role when giving the roles.
                 Defaults to True.
+            atomic: bool
+                Whether to apply each role individually to prevent race conditions
+                when assigning bulk roles together at once.
+                Default for guilds is False to reduce API calls and the giverole/removerole commands
+                will force use of this to reduce API calls on potentially
+                large numbers of members getting roles
         """
         if not member.guild.get_member(member.id):
             return
         guild = member.guild
         if not guild.me.guild_permissions.manage_roles:
             return
-        to_add = set(member.roles)
+        if atomic is None:
+            atomic = await self.check_atomicity(guild)
+        if atomic:
+            to_add = set()
+        else:
+            to_add = set(member.roles)
+
+        log.debug("Atomic role assignment %s", atomic)
+
         for role in roles:
             if role is None or role >= guild.me.top_role:
                 continue
-            if role in to_add:
+            if role in to_add and not atomic:
                 continue
             if (required := await self.config.role(role).required()) and check_required:
                 has_required = True
@@ -223,6 +274,7 @@ class RoleToolsEvents(RoleToolsMixin):
                     )
                     continue
             if (inclusive := await self.config.role(role).inclusive_with()) and check_inclusive:
+                inclusive_roles = []
                 for role_id in inclusive:
                     log.debug(role_id)
                     r = guild.get_role(role_id)
@@ -232,8 +284,12 @@ class RoleToolsEvents(RoleToolsMixin):
                         continue
                     if r and await self.config.role(r).selfassignable():
                         to_add.add(r)
+                        inclusive_roles.append(r)
+                if atomic:
+                    await member.add_roles(*inclusive_roles, reason=_("Inclusive Roles"))
             if (exclusive := await self.config.role(role).exclusive_to()) and check_exclusive:
                 skip_role_assign = False
+                exclusive_roles = []
                 for role_id in exclusive:
                     r = guild.get_role(role_id)
                     if r is None:
@@ -243,9 +299,12 @@ class RoleToolsEvents(RoleToolsMixin):
                         async with self.config.role(role).exclusive_to() as exclusive_to:
                             exclusive_to.remove(role_id)
                             continue
-                    if r in to_add:
+                    if r in member.roles:
                         if await self.config.role(r).selfremovable():
-                            to_add.remove(r)
+                            if atomic:
+                                exclusive_roles.append(r)
+                            else:
+                                to_add.remove(r)
                         else:
                             # we want to only remove the role (and assign the new one)
                             # if the current role is self-removable
@@ -258,8 +317,13 @@ class RoleToolsEvents(RoleToolsMixin):
                     # I don't think we should be removing roles at all if this
                     # is the case but if required this can be adjusted in the future
                     continue
+                if atomic:
+                    await member.remove_roles(*exclusive_roles, reason=_("Exclusive Roles"))
             to_add.add(role)
-        await member.edit(roles=list(to_add), reason=reason)
+        if atomic:
+            await member.add_roles(*list(to_add), reason=reason)
+        else:
+            await member.edit(roles=list(to_add), reason=reason)
 
     async def remove_roles(
         self,
@@ -268,6 +332,7 @@ class RoleToolsEvents(RoleToolsMixin):
         reason: Optional[str] = None,
         *,
         check_inclusive: bool = True,
+        atomic: Optional[bool] = None
     ) -> None:
         """
         Handles all the logic for removing roles from a user
@@ -286,17 +351,30 @@ class RoleToolsEvents(RoleToolsMixin):
             check_inclusive: bool
                 Wheter we actually want to check inclusivity when giving the roles.
                 Defaults to True.
+            atomic: bool
+                Whether to apply each role individually to prevent race conditions
+                when assigning bulk roles together at once.
+                Default for guilds is False to reduce API calls and the giverole/removerole commands
+                will force use of this to reduce API calls on potentially
+                large numbers of members getting roles
         """
         if not member.guild.get_member(member.id):
             return
         guild = member.guild
         if not guild.me.guild_permissions.manage_roles:
             return
-        to_rem = set(member.roles)
+        if atomic is None:
+            atomic = await self.check_atomicity(guild)
+        # log.debug(f"{atomic}")
+        if atomic:
+            to_rem = set()
+        else:
+            to_rem = set(member.roles)
+
         for role in roles:
             if role is None or role.position >= guild.me.top_role.position:
                 continue
-            if role not in to_rem:
+            if role not in to_rem and not atomic:
                 continue
             if (inclusive := await self.config.role(role).inclusive_with()) and check_inclusive:
                 for role_id in inclusive:
@@ -304,9 +382,19 @@ class RoleToolsEvents(RoleToolsMixin):
                     if not r:
                         continue
                     if r in to_rem and await self.config.role(r).selfremovable():
-                        to_rem.remove(r)
-            to_rem.remove(role)
-        await member.edit(roles=list(to_rem), reason=reason)
+                        if atomic:
+                            to_rem.add(r)
+                        else:
+                            to_rem.remove(r)
+            if atomic:
+                to_rem.add(role)
+            else:
+                to_rem.remove(role)
+        log.debug(f"{to_rem}")
+        if atomic:
+            await member.remove_roles(*list(to_rem), reason=reason)
+        else:
+            await member.edit(roles=list(to_rem), reason=reason)
 
     async def _auto_give(self, member: discord.Member) -> None:
         guild = member.guild
@@ -331,6 +419,8 @@ class RoleToolsEvents(RoleToolsMixin):
     async def _sticky_join(self, member: discord.Member) -> None:
         guild = member.guild
         if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if not guild.me.guild_permissions.manage_roles:
             return
         to_reapply = await self.config.member(member).sticky_roles()
         if not to_reapply:

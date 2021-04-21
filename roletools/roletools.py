@@ -53,13 +53,13 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
-        self.config.register_global(version="0.0.0")
-        self.config.register_guild(reaction_roles={}, auto_roles=[])
+        self.config.register_global(version="0.0.0", atomic=True)
+        self.config.register_guild(reaction_roles={}, auto_roles=[], atomic=None)
         self.config.register_role(
             sticky=False,
             auto=False,
@@ -290,7 +290,9 @@ class RoleTools(
                     continue
                 # tasks.append(m.add_roles(role, reason=_("Roletools Giverole command")))
                 tasks.append(
-                    self.give_roles(m, [role], _("Roletools Giverole command"), check_cost=False)
+                    self.give_roles(
+                        m, [role], _("Roletools Giverole command"), check_cost=False, atomic=False
+                    )
                 )
             await bounded_gather(*tasks)
         self.update_cooldown(ctx, 1, min(len(tasks) * 10, 3600), commands.BucketType.guild)
@@ -369,7 +371,9 @@ class RoleTools(
                 if m.top_role >= ctx.me.top_role or role not in m.roles:
                     continue
                 # tasks.append(m.add_roles(role, reason=_("Roletools Giverole command")))
-                tasks.append(self.remove_roles(m, [role], _("Roletools Removerole command")))
+                tasks.append(
+                    self.remove_roles(m, [role], _("Roletools Removerole command"), atomic=False)
+                )
             await bounded_gather(*tasks)
         self.update_cooldown(ctx, 1, min(len(tasks) * 10, 3600), commands.BucketType.guild)
         removed_from = humanize_list([getattr(en, "name", en) for en in who])
