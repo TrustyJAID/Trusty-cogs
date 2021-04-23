@@ -7,7 +7,7 @@ import discord
 from redbot.core import commands
 from redbot.core.bot import Red
 
-from .coin import Coin
+from .coin import Coin, CoinBase
 from .errors import CoinMarketCapError
 
 log = logging.getLogger("red.Trusty-cogs.Conversions")
@@ -20,11 +20,12 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot
         self.session = aiohttp.ClientSession()
+        self.coin_index: Dict[int, CoinBase] = {}
 
     def cog_unload(self) -> None:
         self.bot.loop.create_task(self.session.close())
@@ -157,7 +158,26 @@ class Conversions(commands.Cog):
         else:
             return None
 
-    async def get_coins(self) -> List[Coin]:
+    async def get_coins(self, coins: List[str]) -> List[Coin]:
+        if not self.coin_index:
+            await self.checkcoins()
+        to_ret = []
+        coin_ids = []
+        for search_coin in coins:
+            for _id, coin in self.coin_index.items():
+                if search_coin.upper() == coin.symbol or search_coin.lower() == coin.name.lower():
+                    coin_ids.append(str(_id))
+
+        params = {"id": ",".join(coin_ids)}
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+        async with self.session.get(url, headers=await self.get_header(), params=params) as resp:
+            data = await resp.json()
+            coins_data = data.get("data",  {})
+            for coin_id, coin_data in coins_data.items():
+                to_ret.append(Coin.from_json(coin_data))
+        return to_ret
+
+    async def get_latest_coins(self) -> List[Coin]:
         """
         This converts all latest coins into Coin objects for us to use
         """
@@ -180,13 +200,26 @@ class Conversions(commands.Cog):
                     )
                 )
 
-    async def checkcoins(self, base: str, coins: Optional[List[Coin]] = None) -> Optional[Coin]:
-        if coins is None:
-            coins = await self.get_coins()
-        for coin in coins:
-            if base.upper() == coin.symbol or base.lower() == coin.name.lower():
-                return coin
-        return None
+    async def checkcoins(self) -> None:
+        if not self.coin_index:
+            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"
+            async with self.session.get(url, headers=await self.get_header()) as resp:
+                data = await resp.json()
+            if resp.status == 200:
+                self.coin_index = {c["id"]: CoinBase(**c) for c in data.get("data", [])}
+            elif resp.status == 401:
+                raise CoinMarketCapError(
+                    "The bot owner has not set an API key. "
+                    "Please use `{prefix}cryptoapi` to see "
+                    "how to create and setup an API key."
+                )
+            else:
+                raise CoinMarketCapError(
+                    "Something went wrong, the error code is "
+                    "{code}\n`{error_message}`".format(
+                        code=resp.status, error_message=data["error_message"]
+                    )
+                )
 
     @commands.command()
     async def multicoin(self, ctx: commands.Context, *coins: str) -> None:
@@ -196,21 +229,14 @@ class Conversions(commands.Cog):
         `coins` must be a list of white space separated crypto coins
         e.g. `[p]multicoin BTC BCH LTC ETH DASH XRP`
         """
-        coin_list = []
-        try:
-            all_coins = await self.get_coins()
-        except CoinMarketCapError as e:
-            await ctx.send(str(e).replace("{prefix}", ctx.clean_prefix))
-            return
         if len(coins) == 0:
-            coin_list = all_coins
+            try:
+                coin_list = await self.get_latest_coins()
+            except CoinMarketCapError as e:
+                await ctx.send(str(e).replace("{prefix}", ctx.clean_prefix))
+                return
         else:
-            # coins = re.split(r"\W+", coins)
-            for c in coins:
-                get_coin = await self.checkcoins(c, all_coins)
-                if get_coin is None:
-                    continue
-                coin_list.append(get_coin)
+            coin_list = await self.get_coins(coins)
         if not coin_list:
             await ctx.send("The provided list of coins aren't acceptable.")
 
@@ -296,7 +322,8 @@ class Conversions(commands.Cog):
         if len(currency) > 3 or len(currency) < 3:
             currency = "USD"
         try:
-            coin = await self.checkcoins(coin_name)
+            coins = await self.get_coins([coin_name])
+            coin = next(iter(coins), None)
         except CoinMarketCapError as e:
             await ctx.send(str(e).replace("{prefix}", ctx.clean_prefix))
             return None

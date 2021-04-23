@@ -35,6 +35,19 @@ class Quote:
 
 
 @dataclass
+class CoinBase:
+    id: int
+    name: str
+    symbol: str
+    slug: str
+    rank: int
+    is_active: int
+    first_historical_data: datetime
+    last_historical_data: datetime
+    platform: Optional[Dict[Any, Any]]
+
+
+@dataclass
 class Coin:
     id: int
     name: str
