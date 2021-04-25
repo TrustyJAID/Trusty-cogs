@@ -53,7 +53,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.1"
+    __version__ = "1.4.2"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -168,12 +168,12 @@ class RoleTools(
                     _("The {role} role is not currently selfassignable.").format(role=role.mention)
                 )
                 return
-            if required := await self.config.role(role).requires():
+            if required := await self.config.role(role).required():
                 has_required = True
                 for role_id in required:
                     r = ctx.guild.get_role(role_id)
                     if r is None:
-                        async with self.config.role(role).requires() as required_roles:
+                        async with self.config.role(role).required() as required_roles:
                             required_roles.remove(role_id)
                         continue
                     if r not in ctx.author.roles:
