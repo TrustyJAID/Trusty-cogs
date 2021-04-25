@@ -1006,20 +1006,20 @@ class HockeyPickems(MixinMeta):
         if existing_channels:
             cant_delete = []
             for chan_id in existing_channels:
-                channel = ctx.guild.get_channel(chan_id)
+                channel = ctx.guild.get_channel(int(chan_id))
                 if channel:
                     try:
                         await channel.delete()
                     except discord.errors.Forbidden:
                         cant_delete.append(chan_id)
-                await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
-                if cant_delete:
-                    chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
-                    await ctx.send(
-                        _(
-                            "I tried to delete the following channels without success:\n{chans}"
-                        ).format(chans=chans)
+            await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
+            if cant_delete:
+                chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
+                await ctx.send(
+                    _("I tried to delete the following channels without success:\n{chans}").format(
+                        chans=chans
                     )
+                )
         await self.create_weekly_pickems_pages([ctx.guild])
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
@@ -1032,7 +1032,7 @@ class HockeyPickems(MixinMeta):
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
             cant_delete = []
-            for chan_id, date in existing_channels.items():
+            for chan_id in existing_channels:
                 channel = ctx.guild.get_channel(int(chan_id))
                 if channel:
                     try:
