@@ -553,8 +553,7 @@ class Game:
             should_post &= "Periodrecap" in await config.channel(channel).game_states()
             publish = "Periodrecap" in await config.channel(channel).publish_states()
             if should_post:
-                tasks.append(self.post_period_recap(channel, em, publish))
-        await bounded_gather(*tasks)
+                bot.loop.create_task(self.post_period_recap(channel, em, publish))
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
@@ -590,13 +589,8 @@ class Game:
 
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             if should_post:
-                tasks.append(self.actually_post_state(bot, channel, state_embed, state_text))
-        previews = await bounded_gather(*tasks)
-        for preview in previews:
-            if preview is None:
-                continue
-            else:
-                bot.dispatch("hockey_preview_message", preview[0], preview[1], self)
+                bot.loop.create_task(self.actually_post_state(bot, channel, state_embed, state_text))
+        # previews = await bounded_gather(*tasks)
 
     async def actually_post_state(
         self, bot: Red, channel: discord.TextChannel, state_embed: discord.Embed, state_text: str
@@ -692,6 +686,7 @@ class Game:
 
                 # Create new pickems object for the game
                 if self.game_state == "Preview":
+                    bot.dispatch("hockey_preview_message", channel, preview_msg, self)
                     if channel.permissions_for(guild.me).add_reactions:
                         try:
                             await preview_msg.add_reaction(self.away_emoji[2:-1])
@@ -824,8 +819,8 @@ class Game:
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             team_to_post = await bot.get_cog("Hockey").config.channel(channel).team()
             if should_post and "all" not in team_to_post:
-                tasks.append(self.post_game_start(channel, msg))
-        await bounded_gather(*tasks)
+                bot.loop.create_task(self.post_game_start(channel, msg))
+        # await bounded_gather(*tasks)
 
     async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:
         if not channel.permissions_for(channel.guild.me).send_messages:

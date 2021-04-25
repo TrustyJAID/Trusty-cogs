@@ -52,7 +52,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.0.5"
+    __version__ = "3.1.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -105,7 +105,7 @@ class Hockey(
         self.pickems_config.register_guild(
             leaderboard={},
             pickems={},
-            pickems_channels=[],
+            pickems_channels={},
             pickems_category=None,
             pickems_message="",
             pickems_timezone="US/Pacific",
@@ -341,20 +341,22 @@ class Hockey(
                     await self.reset_weekly()
                 except Exception:
                     log.error("Error reseting the weekly leaderboard: ", exc_info=True)
-                try:
-                    guilds_to_make_new_pickems = []
-                    for guild_id in await self.pickems_config.all_guilds():
-                        guild = self.bot.get_guild(guild_id)
-                        if guild is None:
-                            continue
-                        if await self.pickems_config.guild(guild).pickems_category():
-                            guilds_to_make_new_pickems.append(guild)
-                    await self.create_weekly_pickems_pages(guilds_to_make_new_pickems)
-
-                except Exception:
-                    log.error("Error creating new weekly pickems pages", exc_info=True)
             try:
-                await Standings.post_automatic_standings(self.bot)
+                guilds_to_make_new_pickems = []
+                for guild_id in await self.pickems_config.all_guilds():
+                    guild = self.bot.get_guild(guild_id)
+                    if guild is None:
+                        continue
+                    if await self.pickems_config.guild(guild).pickems_category():
+                        guilds_to_make_new_pickems.append(guild)
+                self.bot.loop.create_task(
+                    self.create_next_pickems_day(guilds_to_make_new_pickems)
+                )
+
+            except Exception:
+                log.error("Error creating new weekly pickems pages", exc_info=True)
+            try:
+                self.bot.loop.create_task(Standings.post_automatic_standings(self.bot))
             except Exception:
                 log.error("Error updating standings", exc_info=True)
 

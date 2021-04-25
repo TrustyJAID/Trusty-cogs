@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Union
 
 import discord
@@ -172,7 +172,7 @@ class HockeyPickems(MixinMeta):
         await self.save_pickems_data()
         # log.debug("Saved pickems data.")
 
-    async def save_pickems_data(self):
+    async def save_pickems_data(self) -> None:
         try:
 
             # log.debug("Saving pickems data")
@@ -341,12 +341,12 @@ class HockeyPickems(MixinMeta):
             guild = self.bot.get_guild(id=guild_id)
             if guild is None:
                 continue
-            current_guild_pickem_channels = await self.pickems_config.guild(
-                guild
-            ).pickems_channels()
-            self.bot.loop.create_task(
-                self.delete_pickems_channels(guild, current_guild_pickem_channels)
-            )
+            # current_guild_pickem_channels = await self.pickems_config.guild(
+            # guild
+            # ).pickems_channels()
+            # self.bot.loop.create_task(
+            # self.delete_pickems_channels(guild, current_guild_pickem_channels)
+            # )
             top_members: List[int] = []
             global_bank = await bank.is_global()
             if global_bank:
@@ -494,9 +494,109 @@ class HockeyPickems(MixinMeta):
         for game in games_list:
             for channel in data:
                 if channel:
-                    self.bot.loop.create_task(self.create_pickems_game_message(channel, game))
+                    await self.create_pickems_game_message(channel, game)
         # await bounded_gather(*msg_tasks)
         return save_data
+
+    async def create_next_pickems_day(self, guilds: List[discord.Guild]) -> None:
+        """
+        This will attempt to find the last day of which pickems channels were created
+        for in each guild and create the following days channel on a daily basis.
+
+        This also handles the conversion from the old method to the new method incase
+        This is updated in between.
+        """
+        for guild in guilds:
+            cur_channels = await self.pickems_config.guild(guild).pickems_channels()
+
+            if isinstance(cur_channels, list):
+                new_schema = {}
+                for c in cur_channels:
+                    channel = guild.get_channel(c)
+
+                    if channel is None:
+                        continue
+                    if len(channel.name.split("-")) < 3 or len(channel.name.split("-")) > 3:
+                        continue
+                    _pickems, month, day = channel.name.split("-")
+                    new_schema[str(channel.id)] = int(
+                        datetime(datetime.now().year, int(month), int(day))
+                        .replace(tzinfo=timezone.utc)
+                        .timestamp()
+                    )
+                cur_channels = new_schema
+                await self.pickems_config.guild(guild).pickems_channels.set(new_schema)
+            latest_date, latest_chan = None, None
+            earliest_date, earliest_chan = None, None
+            to_rem_chans = []
+            # This is only here if for whatever reason
+            # we have additional channels we don't care about
+            # and never were removed from config
+            now = datetime.now(tz=timezone.utc) - timedelta(days=1)
+            # compare it to 1 day prior just so we don't accidentally
+            # delete todays games channel
+
+            for channel_id, date in cur_channels.items():
+                dt = datetime.utcfromtimestamp(date).replace(tzinfo=timezone.utc)
+                if dt < now:
+                    to_rem_chans.append(channel_id)
+                if earliest_date is None:
+                    earliest_date, earliest_chan = dt, channel_id
+
+                if latest_date is None:
+                    latest_date, latest_chan = dt, channel_id
+
+                if dt < earliest_date:
+                    earliest_date, earliest_chan = dt, channel_id
+
+                if dt > latest_date:
+                    latest_date, latest_chan = dt, channel_id
+                log.debug(
+                    "earliest_date %s earliest_chan %s latest_date %s latest_chan %s",
+                    earliest_date,
+                    earliest_chan,
+                    latest_date,
+                    latest_chan,
+                )
+            if earliest_chan is not None:
+                old_chan = guild.get_channel(int(earliest_chan))
+                if old_chan is not None:
+                    try:
+                        await old_chan.delete()
+                    except Exception:
+                        log.exception("Error deleting channel %s", repr(old_chan))
+                        pass
+                async with self.pickems_config.guild(guild).pickems_channels() as chans:
+                    try:
+                        del chans[str(earliest_chan)]
+                    except KeyError:
+                        pass
+            if to_rem_chans:
+                for channel_id in to_rem_chans:
+                    c = guild.get_channel(int(channel_id))
+                    if c is not None:
+                        try:
+                            await c.delete()
+                        except Exception:
+                            log.exception("Error deleting channel %s", repr(old_chan))
+                            pass
+                async with self.pickems_config.guild(guild).pickems_channels() as chans:
+                    try:
+                        del chans[str(channel_id)]
+                    except KeyError:
+                        pass
+            if latest_date:
+                channel_data = await self.create_pickems_channels_and_message(
+                    [guild], latest_date + timedelta(days=1)
+                )
+                for guild_id, channels in channel_data.items():
+                    async with self.pickems_config.guild_from_id(
+                        guild_id
+                    ).pickems_channels() as save_channels:
+                        for channel_id in channels:
+                            save_channels[str(channel_id)] = (
+                                latest_date + timedelta(days=1)
+                            ).timestamp()
 
     async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> None:
         save_data = {}
@@ -530,9 +630,24 @@ class HockeyPickems(MixinMeta):
             guild = self.bot.get_guild(guild_id)
             if not guild:
                 continue
-            await self.pickems_config.guild(guild).pickems_channels.set(channels)
+            async with self.pickems_config.guild(guild).pickems_channels() as save_channels:
+                for channel_id in channels:
+                    chan = guild.get_channel(channel_id)
+                    if chan is None:
+                        continue
+                    _pickems, month, day = chan.name.split("-")
+                    save_channels[str(chan.id)] = int(
+                        datetime(datetime.now().year, int(month), int(day))
+                        .replace(tzinfo=timezone.utc)
+                        .timestamp()
+                    )
+            # await self.pickems_config.guild(guild).pickems_channels.set(channels)
 
     async def delete_pickems_channels(self, guild: discord.Guild, channels: List[int]) -> None:
+        """
+        This was used to delete all pickems channels during the weekly
+        This is no longer necessary with the daily page creation/deletion
+        """
         log.debug("Deleting pickems channels")
         for channel_id in channels:
             channel = guild.get_channel(channel_id)
@@ -891,20 +1006,20 @@ class HockeyPickems(MixinMeta):
         if existing_channels:
             cant_delete = []
             for chan_id in existing_channels:
-                channel = ctx.guild.get_channel(chan_id)
+                channel = ctx.guild.get_channel(int(chan_id))
                 if channel:
                     try:
                         await channel.delete()
                     except discord.errors.Forbidden:
                         cant_delete.append(chan_id)
-                await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
-                if cant_delete:
-                    chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
-                    await ctx.send(
-                        _(
-                            "I tried to delete the following channels without success:\n{chans}"
-                        ).format(chans=chans)
+            await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
+            if cant_delete:
+                chans = humanize_list([f"<#{_id}>" for _id in cant_delete])
+                await ctx.send(
+                    _("I tried to delete the following channels without success:\n{chans}").format(
+                        chans=chans
                     )
+                )
         await self.create_weekly_pickems_pages([ctx.guild])
         await ctx.send(_("I will now automatically create pickems pages every Sunday."))
 
@@ -918,7 +1033,7 @@ class HockeyPickems(MixinMeta):
         if existing_channels:
             cant_delete = []
             for chan_id in existing_channels:
-                channel = ctx.guild.get_channel(chan_id)
+                channel = ctx.guild.get_channel(int(chan_id))
                 if channel:
                     try:
                         await channel.delete()

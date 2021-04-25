@@ -167,6 +167,7 @@ class Goal:
         goal_text = await self.goal_post_text(game_data)
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
+        post_data = []
         async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
@@ -174,9 +175,9 @@ class Goal:
 
             should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
-                tasks.append(self.actually_post_goal(bot, channel, goal_embed, goal_text))
-        data = await bounded_gather(*tasks)
-        for channel in data:
+                post_data.append(await self.actually_post_goal(bot, channel, goal_embed, goal_text))
+        # data = await bounded_gather(*tasks)
+        for channel in post_data:
             if channel is None:
                 continue
             else:
