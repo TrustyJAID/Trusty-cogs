@@ -406,6 +406,10 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def create_next_pickems_day(self, guilds: List[discord.Guild]) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def create_weekly_pickems_pages(self, guilds: List[discord.Guild]) -> None:
         raise NotImplementedError()
 
