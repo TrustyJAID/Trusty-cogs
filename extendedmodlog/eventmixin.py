@@ -186,7 +186,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["commands_used"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
 
         time = ctx.message.created_at
@@ -287,7 +288,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_delete"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         message = payload.cached_message
         if message is None:
@@ -417,7 +419,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_delete"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         message_amount = len(payload.message_ids)
         if embed_links:
@@ -575,7 +578,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["user_join"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         users = len(guild.members)
@@ -651,7 +655,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["user_left"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         perp, reason = await self.get_audit_log_reason(guild, member, discord.AuditLogAction.kick)
@@ -791,7 +796,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["channel_create"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         channel_type = str(new_channel.type).title()
@@ -850,7 +856,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["channel_delete"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         channel_type = str(old_channel.type).title()
         time = datetime.datetime.utcnow()
@@ -927,7 +934,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["channel_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         channel_type = str(after.type).title()
         time = datetime.datetime.utcnow()
@@ -1056,7 +1064,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(description=after.mention, colour=after.colour, timestamp=time)
@@ -1130,7 +1139,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_create"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
@@ -1178,7 +1188,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["role_delete"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
@@ -1232,7 +1243,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_edit"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
@@ -1285,7 +1297,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["guild_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
@@ -1365,7 +1378,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["emoji_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         perp = None
 
@@ -1519,7 +1533,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["voice_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
@@ -1637,7 +1652,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["user_change"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         time = datetime.datetime.utcnow()
         embed = discord.Embed(
@@ -1751,7 +1767,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["invite_created"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         invite_attrs = {
             "code": _("Code:"),
@@ -1813,7 +1830,8 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["invite_deleted"]["embed"]
         )
-        await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         invite_attrs = {
             "code": _("Code: "),

@@ -603,7 +603,7 @@ class HockeyPickems(MixinMeta):
         today = datetime.now()
         tasks = []
         guild_data = []
-        for days in range(6):
+        for days in range(7):
 
             guild_data.append(
                 await self.create_pickems_channels_and_message(
