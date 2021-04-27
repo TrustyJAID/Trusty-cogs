@@ -39,20 +39,20 @@ class RoleHierarchyConverter(commands.RoleConverter):
         except commands.BadArgument:
             raise
         else:
-            if role.is_bot_managed():
+            if getattr(role, "is_bot_managed", None) and role.is_bot_managed():
                 raise BadArgument(
                     _(
                         "The {role} role is a bot integration role "
                         "and cannot be assigned or removed."
                     ).format(role=role.mention)
                 )
-            if role.is_integration():
+            if getattr(role, "is_integration", None) and role.is_integration():
                 raise BadArgument(
                     _(
                         "The {role} role is an integration role and cannot be assigned or removed."
                     ).fromat(role=role.mention)
                 )
-            if role.is_premium_subscriber():
+            if getattr(role, "is_premium_subscriber", None) and role.is_premium_subscriber():
                 raise BadArgument(
                     _(
                         "The {role} role is a premium subscriber role and can only "
