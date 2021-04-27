@@ -603,13 +603,7 @@ class HockeyPickems(MixinMeta):
         today = datetime.now()
         tasks = []
         guild_data = []
-        for days in range(7):
-            if (today + timedelta(days=days)).weekday() == 6 and days != 0:
-                # This was originally to prevent an infinite loop
-                # now this is required to only make pages until the following
-                # Sunday so that we're not creating more channels than necessary
-                # unless it's sunday
-                break
+        for days in range(6):
 
             guild_data.append(
                 await self.create_pickems_channels_and_message(
