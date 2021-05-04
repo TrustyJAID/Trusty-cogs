@@ -486,7 +486,7 @@ TEAMS = {
         "emoji": "WashingtonCapitals:664664062180851722",
         "home": "#041E41",
         "id": 15,
-        "invite": "https://discord.gg/CbjPuTM",
+        "invite": "https://discord.gg/2HXAJm23Ph",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281726654/256x256/cut.png",
         "team_url": "https://www.nhl.com/capitals",
         "timezone": "US/Eastern",

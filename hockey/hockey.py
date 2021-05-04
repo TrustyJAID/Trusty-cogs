@@ -52,7 +52,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.1.0"
+    __version__ = "3.1.1"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -193,9 +193,11 @@ class Hockey(
                     pass
                 log.info(f"Migrating pickems for {guild_id}")
             if data.get("pickems_channels"):
-                await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
-                    data["pickems_channels"]
-                )
+                if not isinstance(data["pickems_channels"], list):
+                    # this is just because I don't care but should get it working
+                    await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
+                        data["pickems_channels"]
+                    )
                 try:
                     await self.config.guild_from_id(guild_id).pickems_channels.clear()
                 except Exception:
