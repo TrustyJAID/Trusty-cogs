@@ -93,7 +93,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1271,17 +1271,13 @@ class NotSoBot(commands.Cog):
 
     @commands.command(aliases=["pixel"])
     @commands.bot_has_permissions(attach_files=True)
-    async def pixelate(self, ctx, urls: ImageFinder = None, pixels=None, scale_msg=None):
+    async def pixelate(self, ctx, urls: ImageFinder = None, pixels: int = 9):
         """Pixelate an image"""
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
         async with ctx.typing():
             img_urls = urls[0]
-            if pixels is None:
-                pixels = 9
-            if scale_msg is None:
-                scale_msg = ""
             b, mime = await self.bytes_download(url)
             if b is False:
                 if len(img_urls) > 1:
@@ -1289,17 +1285,17 @@ class NotSoBot(commands.Cog):
                     return
             if mime in self.gif_mimes:
                 task = ctx.bot.loop.run_in_executor(
-                    None, self.make_pixel_gif, b, pixels, scale_msg
+                    None, self.make_pixel_gif, b, pixels
                 )
             else:
-                task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels, scale_msg)
+                task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return await ctx.send("The image is too large.")
-            await self.safe_send(ctx, scale_msg, file, file_size)
+            await self.safe_send(ctx, None, file, file_size)
 
-    def make_pixel(self, b, pixels, scale_msg):
+    def make_pixel(self, b: BytesIO, pixels: int) -> Tuple[discord.File, int]:
         bg = (0, 0, 0)
         img = Image.open(b)
         img = img.resize((int(img.size[0] / pixels), int(img.size[1] / pixels)), Image.NEAREST)
