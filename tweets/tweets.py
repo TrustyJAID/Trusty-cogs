@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.7.1"
+    __version__ = "2.7.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -286,12 +286,15 @@ class Tweets(TweetsAPI, commands.Cog):
         """Searches for unavailable channels and removes posting in those channels"""
         to_delete = []
         for user_id, account in self.accounts.items():
-            for channel in account["channel"]:
-                chn = self.bot.get_channel(channel)
+            to_rem = []
+            for channel_id in account.channel:
+                chn = self.bot.get_channel(int(channel_id))
                 if chn is None or not chn.permissions_for(ctx.me).send_messages:
-                    log.debug("Removing channel {}".format(channel))
-                    self.accounts[user_id]["channel"].remove(channel)
-            if len(self.accounts[user_id]["channel"]) == 0:
+                    log.debug("Removing channel {}".format(channel_id))
+                    to_rem.append(channel_id)
+            for channel in to_rem:
+                del self.accounts[user_id].channel[channel]
+            if len(self.accounts[user_id].channel) == 0:
                 log.debug("Removing account {}".format(account["twitter_name"]))
                 to_delete.append(user_id)
         for u_id in to_delete:
