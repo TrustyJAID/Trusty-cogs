@@ -209,6 +209,9 @@ class CleverbotAPI:
         """Check the user is/isn't globally whitelisted/blacklisted.
         https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
         """
+        if version_info >= VersionInfo.from_str("3.3.6"):
+            if not await self.bot.ignored_channel_or_guild(message):
+                return False
         if await self.bot.is_owner(message.author):
             return True
         try:
@@ -278,7 +281,9 @@ class CleverbotAPI:
         if reply and (reference := getattr(reply, "resolved")) is not None:
             author = getattr(reference, "author")
             if author is not None:
-                is_reply = reference.author.id == self.bot.user.id
+                is_reply = (
+                    reference.author.id == self.bot.user.id and ctx.me in message.mentions
+                )
         if is_mention:
             text = text[len(ctx.me.display_name) + 2 :]
             log.debug(text)
