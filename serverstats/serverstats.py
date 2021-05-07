@@ -45,7 +45,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.7"
+    __version__ = "1.6.8"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -1442,7 +1442,8 @@ class ServerStats(commands.Cog):
             guilds = [ctx.guild]
             page = 0
             if await ctx.bot.is_owner(ctx.author):
-                page = ctx.bot.guilds.index(ctx.guild)
+                if ctx.guild:
+                    page = ctx.bot.guilds.index(ctx.guild)
                 guilds = ctx.bot.guilds
                 if guild:
                     page = ctx.bot.guilds.index(guild)
