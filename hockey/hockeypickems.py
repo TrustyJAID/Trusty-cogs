@@ -257,7 +257,7 @@ class HockeyPickems(MixinMeta):
                     channel_id, message_id = message.split("-")
                 except ValueError:
                     continue
-                if int(channel_id) not in pickems_channels:
+                if channel_id not in pickems_channels:
                     continue
                 channel = guild.get_channel(int(channel_id))
                 if not channel:
