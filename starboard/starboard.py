@@ -27,7 +27,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -157,7 +157,7 @@ class Starboard(StarboardEvents, commands.Cog):
         if name in starboards:
             await ctx.send(_("{name} starboard name is already being used").format(name=name))
             return
-        starboard = StarboardEntry(name=name, channel=channel.id, emoji=str(emoji))
+        starboard = StarboardEntry(name=name, channel=channel.id, emoji=str(emoji), guild=guild.id)
         self.starboards[guild.id][name] = starboard
         await self._save_starboards(guild)
         msg = _("Starboard set to {channel} with emoji {emoji}").format(

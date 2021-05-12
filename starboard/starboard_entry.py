@@ -147,6 +147,8 @@ class StarboardEntry:
     async def from_json(cls, data: dict, guild_id: Optional[int]):
         messages = data.get("messages", {})
         guild = data.get("guild", guild_id)
+        if guild is None and guild_id is not None:
+            guild = guild_id
         starboarded_messages = data.get("starboarded_messages", {})
         if isinstance(messages, list):
             new_messages = {}
