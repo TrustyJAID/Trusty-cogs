@@ -488,8 +488,12 @@ class Game:
             # Checks what the period is and posts the game is starting in the appropriate channel
 
             if home["period"] != self.period:
-                msg = "**{} Period starting {} at {}**"
-                log.debug(msg.format(self.period_ord, self.away_team, self.home_team))
+                log.debug(
+                    "**%s Period starting %s at %s**",
+                    self.period_ord,
+                    self.away_team,
+                    self.home_team,
+                )
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
                 bot.dispatch("hockey_period_start", self)
@@ -527,7 +531,7 @@ class Game:
             if home["game_state"] != self.game_state and home["game_state"] != "Null":
 
                 # Post game final data and check for next game
-                log.debug(f"Game Final {self.home_team} @ {self.away_team}")
+                log.debug("Game Final %s @ %s", self.away_team, self.home_team)
                 await self.post_game_state(bot)
                 await self.save_game_state(bot)
                 bot.dispatch("hockey_final", self)
@@ -562,7 +566,7 @@ class Game:
         Posts the period recap in designated channels
         """
         if not channel.permissions_for(channel.guild.me).send_messages:
-            log.debug(f"No permission to send messages in {repr(channel)}")
+            log.debug("No permission to send messages in %s", repr(channel))
             return
         try:
             msg = await channel.send(embed=embed)
@@ -570,7 +574,7 @@ class Game:
                 pass
                 # await msg.publish()
         except Exception:
-            log.exception(f"Could not post goal in {repr(channel)}")
+            log.exception("Could not post goal in %s", repr(channel))
 
     async def post_game_state(self, bot: Red) -> None:
         """
@@ -589,7 +593,9 @@ class Game:
 
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             if should_post:
-                bot.loop.create_task(self.actually_post_state(bot, channel, state_embed, state_text))
+                bot.loop.create_task(
+                    self.actually_post_state(bot, channel, state_embed, state_text)
+                )
         # previews = await bounded_gather(*tasks)
 
     async def actually_post_state(
@@ -597,7 +603,7 @@ class Game:
     ) -> Optional[Tuple[discord.TextChannel, discord.Message]]:
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:
-            log.debug(f"No permission to send messages in {repr(channel)}")
+            log.debug("No permission to send messages in %s", repr(channel))
             return None
         config = bot.get_cog("Hockey").config
         guild_settings = await config.guild(guild).all()
@@ -661,7 +667,7 @@ class Game:
                     except Exception:
                         pass
             except Exception:
-                log.exception(f"Could not post goal in {repr(channel)}")
+                log.exception("Could not post goal in %s", repr(channel))
 
         else:
             if self.game_state == "Preview":
@@ -695,7 +701,7 @@ class Game:
                             log.debug("Could not add reactions")
                         return channel, preview_msg
             except Exception:
-                log.exception(f"Could not post goal in {repr(channel)}")
+                log.exception("Could not post goal in %s", repr(channel))
         return None
 
     async def check_team_goals(self, bot: Red) -> None:
@@ -824,15 +830,17 @@ class Game:
 
     async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:
         if not channel.permissions_for(channel.guild.me).send_messages:
-            log.debug(f"No permission to send messages in {channel} ({channel.id})")
+            log.debug("No permission to send messages in %s", repr(channel))
             return
         try:
             await channel.send(msg)
         except Exception:
-            log.exception(f"Could not post goal in {channel} ({channel.id})")
+            log.exception("Could not post goal in %s", repr(channel))
 
     @staticmethod
-    async def from_url(url: str, session: Optional[aiohttp.ClientSession] = None) -> Optional[Game]:
+    async def from_url(
+        url: str, session: Optional[aiohttp.ClientSession] = None
+    ) -> Optional[Game]:
         url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
         try:
             if session is None:
@@ -847,7 +855,7 @@ class Game:
                     data = await resp.json()
             return await Game.from_json(data)
         except Exception:
-            log.error("Error grabbing game data: ", exc_info=True)
+            log.exception("Error grabbing game data: ")
             return None
 
     @classmethod

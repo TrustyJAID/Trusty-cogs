@@ -190,11 +190,7 @@ class Goal:
         try:
             guild = channel.guild
             if not channel.permissions_for(guild.me).send_messages:
-                log.debug(
-                    _("No permission to send messages in {channel} ({id})").format(
-                        channel=channel, id=channel.id
-                    )
-                )
+                log.debug("No permission to send messages in %s", repr(channel))
                 return None
             config = bot.get_cog("Hockey").config
             game_day_channels = await config.guild(guild).gdc()
@@ -261,7 +257,7 @@ class Goal:
                 # msg_list[str(channel.id)] = msg.id
             return channel.guild.id, channel.id, msg.id
         except Exception:
-            log.error("Could not post goal in ", exc_info=True)
+            log.exception("Could not post goal in %s", repr(channel))
             return None
 
     @staticmethod
@@ -374,7 +370,7 @@ class Goal:
         except (discord.errors.NotFound, discord.errors.Forbidden):
             return
         except Exception:
-            log.exception(f"Could not edit goal in {channel=}")
+            log.exception("Could not edit goal in %s", repr(channel))
 
     async def get_shootout_display(self, game: Game) -> Tuple[str, str]:
         """

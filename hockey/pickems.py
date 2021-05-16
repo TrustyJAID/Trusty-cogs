@@ -141,7 +141,7 @@ class Pickems:
         `True` if the winner has been set or the game is postponed
         `False` if the winner has not set and it's not time to clear it yet.
         """
-        log.debug(f"Setting winner for {repr(self)}")
+        log.debug("Setting winner for %s", repr(self))
         if not game:
             return False
         if game.game_state == "Postponed":
@@ -177,7 +177,7 @@ class Pickems:
         if game is not None:
             return await self.set_pickem_winner(game)
         if self.link and after_game:
-            log.debug(f"Checking winner for {repr(self)}")
+            log.debug("Checking winner for %s", repr(self))
             game = await Game.from_url(self.link)
             return await self.set_pickem_winner(game)
         return False

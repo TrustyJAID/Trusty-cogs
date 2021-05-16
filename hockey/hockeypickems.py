@@ -160,9 +160,9 @@ class HockeyPickems(MixinMeta):
             try:
                 await user.send(reply_message)
             except discord.HTTPException:
-                log.error(f"Could not send message to {repr(user)}.")
+                log.error("Could not send message to %s.", repr(user))
             except Exception:
-                log.exception(f"Error trying to send message to {repr(user)}")
+                log.exception("Error trying to send message to %s", repr(user))
                 pass
         if emoji is not None or reply_message is not None:
             self.antispam[guild.id][channel.id][user.id].stamp()
@@ -182,7 +182,7 @@ class HockeyPickems(MixinMeta):
                 async with self.pickems_config.guild_from_id(guild_id).pickems() as data:
                     for name, pickem in pickems.items():
                         if pickem._should_save:
-                            log.debug(f"Saving pickem {repr(pickem)}")
+                            log.debug("Saving pickem %s", repr(pickem))
                             data[name] = pickem.to_json()
                         self.all_pickems[guild_id][name]._should_save = False
         except Exception:
@@ -245,7 +245,7 @@ class HockeyPickems(MixinMeta):
                 continue
             pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
             if pickem.winner is not None:
-                log.debug(f"Pickems winner is not None {repr(pickem)}")
+                log.debug("Pickems winner is not None %s", repr(pickem))
                 continue
             await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
             if game.game_state == pickem.game_state:
@@ -279,10 +279,10 @@ class HockeyPickems(MixinMeta):
                 message = await channel.fetch_message(message_id)
             await message.edit(content=content)
         except (discord.errors.NotFound, discord.errors.Forbidden):
-            log.error(f"Error editing pickems message in {repr(channel)}")
+            log.error("Error editing pickems message in %s", repr(channel))
             return
         except Exception:
-            log.exception(f"Error editing pickems message in {repr(channel)}")
+            log.exception("Error editing pickems message in %s", repr(channel))
 
     async def create_pickem_object(
         self,
@@ -317,7 +317,7 @@ class HockeyPickems(MixinMeta):
             )
 
             self.all_pickems[str(guild.id)][str(game.game_id)] = pickem
-            log.debug(f"creating new pickems {pickems[str(game.game_id)]}")
+            log.debug("creating new pickems %s", pickems[str(game.game_id)])
             return True
         else:
             self.all_pickems[str(guild.id)][str(game.game_id)].messages.append(
@@ -379,7 +379,7 @@ class HockeyPickems(MixinMeta):
                 try:
                     await bank.deposit_credits(member, top_credits)
                 except Exception:
-                    log.error(f"Could not add credits to {repr(member)}")
+                    log.error("Could not add credits to %s", repr(member))
 
     async def create_pickems_channel(
         self, name: str, guild: discord.Guild
@@ -456,10 +456,10 @@ class HockeyPickems(MixinMeta):
         try:
             new_msg = await channel.send(msg)
         except discord.Forbidden:
-            log.error(f"Could not send pickems message in {repr(channel)}")
+            log.error("Could not send pickems message in %s", repr(channel))
             return
         except Exception:
-            log.exception("Error sending messages in pickems channel.")
+            log.exception("Error sending messages in pickems channel %s.", repr(channel))
             return
         # Create new pickems object for the game
         try:
@@ -684,7 +684,7 @@ class HockeyPickems(MixinMeta):
                 # the main loop still get checked
             if not await pickems.check_winner(self.pickems_games[name]):
                 continue
-            log.debug(f"Tallying results for {repr(pickems)}")
+            log.debug("Tallying results for %s", repr(pickems))
             to_remove.append(name)
             async with self.pickems_config.guild(guild).leaderboard() as leaderboard:
                 for user, choice in pickems.votes.items():
@@ -695,7 +695,7 @@ class HockeyPickems(MixinMeta):
                             try:
                                 await bank.deposit_credits(member, int(base_credits))
                             except Exception:
-                                log.debug(f"Could not deposit pickems credits for {repr(member)}")
+                                log.debug("Could not deposit pickems credits for %s", repr(member))
                         if str(user) not in leaderboard:
                             leaderboard[str(user)] = {"season": 1, "weekly": 1, "total": 0}
                         else:
