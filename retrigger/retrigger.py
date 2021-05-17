@@ -1226,7 +1226,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     @retrigger.command()
     async def explain(self, ctx: commands.Context, page_num: Optional[int] = 1) -> None:
         """
-        Explain how to use rertigger
+        Explain how to use retrigger
 
         See https://regex101.com/ for help building a regex pattern.
         See `[p]retrigger explain` or click the link below for more details.
