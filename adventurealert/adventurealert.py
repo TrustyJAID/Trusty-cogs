@@ -44,7 +44,7 @@ class AdventureAlert(
 ):
     """Alert when a dragon appears in adventure"""
 
-    __version__ = "1.4.3"
+    __version__ = "1.4.4"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -102,25 +102,39 @@ class AdventureAlert(
         await self.config.user_from_id(user_id).clear()
         all_guilds = await self.config.all_guilds()
         for g_id, settings in all_guilds.items():
-            guild = self.bot.get_guild(g_id)
-            if not guild:
-                continue
             if user_id in settings["users"]:
-                all_guilds[g_id]["users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).users() as users:
+                    users.remove(user_id)
+
             if user_id in settings["adventure_users"]:
-                all_guilds[g_id]["adventure_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).adventure_users() as adventure_users:
+                    adventure_users.remove(user_id)
+
             if user_id in settings["miniboss_users"]:
-                all_guilds[g_id]["miniboss_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).miniboss_users() as miniboss_users:
+                    miniboss_users.remove(user_id)
+
             if user_id in settings["cart_users"]:
-                all_guilds[g_id]["cart_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).cart_users() as cart_users:
+                    cart_users.remove(user_id)
+
             if user_id in settings["ascended_users"]:
-                all_guilds[g_id]["ascended_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).ascended_users() as ascended_users:
+                    ascended_users.remove(user_id)
+
             if user_id in settings["transcended_users"]:
-                all_guilds[g_id]["transcended_users"].remove(user_id)
+                async with self.config.guild_from_id(
+                    g_id
+                ).transcended_users() as transcended_users:
+                    transcended_users.remove(user_id)
+
             if user_id in settings["immortal_users"]:
-                all_guilds[g_id]["immortal_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).immortal_users() as immortal_users:
+                    immortal_users.remove(user_id)
+
             if user_id in settings["possessed_users"]:
-                all_guilds[g_id]["possessed_users"].remove(user_id)
+                async with self.config.guild_from_id(g_id).possessed_users() as possessed_users:
+                    possessed_users.remove(user_id)
 
     @commands.group()
     async def adventurealert(self, ctx: commands.Context) -> None:
