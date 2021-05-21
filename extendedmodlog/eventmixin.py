@@ -1129,7 +1129,7 @@ class EventMixin:
         if not self.settings[guild.id]["role_create"]["enabled"]:
             return
         try:
-            channel = await self.modlog_channel(guild, "role_change")
+            channel = await self.modlog_channel(guild, "role_create")
         except RuntimeError:
             return
         perp, reason = await self.get_audit_log_reason(
@@ -1178,7 +1178,7 @@ class EventMixin:
         if not self.settings[guild.id]["role_delete"]["enabled"]:
             return
         try:
-            channel = await self.modlog_channel(guild, "role_change")
+            channel = await self.modlog_channel(guild, "role_delete")
         except RuntimeError:
             return
         perp, reason = await self.get_audit_log_reason(
@@ -1201,7 +1201,7 @@ class EventMixin:
             name=_("Role deleted {role} ({r_id})").format(role=role.name, r_id=role.id)
         )
         msg = _("{emoji} `{time}` Role deleted **{role}**\n").format(
-            emoji=self.settings[guild.id]["role_create"]["emoji"],
+            emoji=self.settings[guild.id]["role_delete"]["emoji"],
             time=time.strftime("%H:%M:%S"),
             role=role.name,
         )
