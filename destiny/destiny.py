@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.5.7"
+    __version__ = "1.6.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -1196,6 +1196,89 @@ class Destiny(DestinyAPI, commands.Cog):
                     log.error(
                         "I can't seem to see the Banshee-44's wares at the moment", exc_info=True
                     )
+                    await ctx.send(_("I can't access the Banshee-44 at the moment."))
+                    return
+                break
+            # await self.save(spider, "spider.json")
+            embed = discord.Embed(description=banshee_def["displayProperties"]["description"])
+            embed.set_thumbnail(
+                url=IMAGE_URL + banshee_def["displayProperties"]["largeTransparentIcon"]
+            )
+            embed.set_author(
+                name=banshee_def["displayProperties"]["name"]
+                + ", "
+                + banshee_def["displayProperties"]["subtitle"]
+            )
+            item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
+            item_defs = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition", item_hashes
+            )
+            item_costs = [
+                c["itemHash"] for k, i in banshee["sales"]["data"].items() for c in i["costs"]
+            ]
+            item_cost_defs = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition", item_costs
+            )
+            for key, data in banshee["sales"]["data"].items():
+                item_hash = data["itemHash"]
+
+                item = item_defs[str(item_hash)]
+                if item["itemType"] in [0]:
+                    continue
+                perk_str = ""
+                if str(key) in banshee["itemComponents"]["sockets"]["data"]:
+                    perk_hashes = []
+                    for perk_hash in banshee["itemComponents"]["sockets"]["data"][str(key)][
+                        "sockets"
+                    ]:
+                        if "plugHash" in perk_hash:
+                            perk_hashes.append(str(perk_hash["plugHash"]))
+                    perks = await self.get_definition(
+                        "DestinyInventoryItemLiteDefinition", perk_hashes
+                    )
+                    perk_str = "\n".join(p["displayProperties"]["name"] for k, p in perks.items())
+                try:
+                    costs = data["costs"][0]
+                    cost = item_cost_defs[str(costs["itemHash"])]
+                    cost_str = str(costs["quantity"]) + " " + cost["displayProperties"]["name"]
+                    cost_str += f"\n{perk_str}"
+                except IndexError:
+                    cost_str = "None"
+
+                embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
+
+                await asyncio.sleep(0)
+        await ctx.send(embed=embed)
+
+    @destiny.command(name="ada", aliases=["ada-1"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def ada_1_inventory(self, ctx: commands.Context) -> None:
+        """
+        Display Banshee-44's wares
+        """
+        async with ctx.typing():
+            if not await self.has_oauth(ctx):
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
+            try:
+                chars = await self.get_characters(ctx.author)
+            except Destiny2APIError:
+                # log.debug(e)
+                msg = _("I can't seem to find your Destiny profile.")
+                await ctx.send(msg)
+                return
+
+            for char_id, char in chars["characters"]["data"].items():
+                try:
+                    banshee = await self.get_vendor(ctx.author, char_id, "350061650")
+                    banshee_def = (
+                        await self.get_definition("DestinyVendorDefinition", ["350061650"])
+                    )["350061650"]
+                    await self.save(banshee, "ada-1.json")
+                except Destiny2APIError:
+                    log.error("I can't seem to see the Ada-1's wares at the moment", exc_info=True)
                     await ctx.send(_("I can't access the Banshee-44 at the moment."))
                     return
                 break

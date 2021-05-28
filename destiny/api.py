@@ -381,7 +381,7 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"components": "304,400,401,402"}
+        params = {"components": "304,305,400,401,402"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
@@ -655,8 +655,9 @@ class DestinyAPI:
                 if d1:
                     await self.download_d1_manifest(resp)
                 else:
-                    response_data = await resp.text()
-                    data = json.loads(response_data)
+                    # response_data = await resp.text()
+                    # data = json.loads(response_data)
+                    data = await resp.json()
                     for key, value in data.items():
                         path = cog_data_path(self) / f"{key}.json"
                         with path.open(encoding="utf-8", mode="w") as f:
