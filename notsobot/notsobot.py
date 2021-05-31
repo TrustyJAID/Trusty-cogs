@@ -723,10 +723,10 @@ class NotSoBot(commands.Cog):
                 img = Image.open(new_im)
                 img_list.append(img)
                 count += 1
-                temp = BytesIO()
-                img.save(
-                    temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
-                )
+            temp = BytesIO()
+            img.save(
+                temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
+            )
             file_size = temp.tell()
             temp.seek(0)
             file = discord.File(temp, filename="gascii.gif")
