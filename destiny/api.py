@@ -449,6 +449,28 @@ class DestinyAPI:
         url = f"{BASE_URL}/GroupV2/{clan_id}/"
         return await self.request_url(url, headers=headers)
 
+    async def get_milestones(self, user: discord.User) -> dict:
+        """
+        Gets public information about currently available Milestones.
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Destiny2/Milestones/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_milestone_content(self, user: discord.User, milestone_hash: str) -> dict:
+        """
+        Gets custom localized content for the milestone of the given hash, if it exists.
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Destiny2/Milestones/{milestone_hash}/Content/"
+        return await self.request_url(url, headers=headers)
+
     async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
         """
         This retrieves the activity history for a user's character
@@ -463,6 +485,34 @@ class DestinyAPI:
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"
         return await self.request_url(url, params=params, headers=headers)
+
+    async def get_aggregate_activity_history(self, user: discord.User, character: str) -> dict:
+        """
+        This retrieves the activity history for a user's character
+
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/AggregateActivityStats/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_weapon_history(self, user: discord.User, character: str) -> dict:
+        """
+        This retrieves the activity history for a user's character
+
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/UniqueWeapons/"
+        return await self.request_url(url, headers=headers)
 
     async def get_historical_stats(
         self,
@@ -585,6 +635,7 @@ class DestinyAPI:
             "available, which one would you like to use?\n"
         )
         count = 1
+        membership = None
         for memberships in profile["destinyMemberships"]:
             platform = BUNGIE_MEMBERSHIP_TYPES[memberships["membershipType"]]
             account_name = memberships["displayName"]
@@ -607,7 +658,7 @@ class DestinyAPI:
             return None, None
 
         membership = profile["destinyMemberships"][int(pred.result) - 1]
-        membership_name = BUNGIE_MEMBERSHIP_TYPES[profile["destinyMemberships"]["membershipType"]]
+        membership_name = BUNGIE_MEMBERSHIP_TYPES[profile["destinyMemberships"][int(pred.result) - 1]["membershipType"]]
         return (membership, membership_name)
 
     async def save(self, data: dict, loc: str = "sample.json"):
