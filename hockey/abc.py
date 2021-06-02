@@ -509,6 +509,28 @@ class MixinMeta(ABC):
     async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    async def clear_weekly_playoffs_leaderboard(
+        self, ctx: commands.Context, true_or_false: bool
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_playoffs_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_weekly_preseason_leaderboard(
+        self, ctx: commands.Context, true_or_false: bool
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def clear_preseason_leaderboard(
+        self, ctx: commands.Context, true_or_false: bool
+    ) -> None:
+        raise NotImplementedError()
+
     #######################################################################
     # dev.py                                                              #
     #######################################################################

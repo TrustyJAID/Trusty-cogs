@@ -56,12 +56,13 @@ class Pickems:
         self.name = kwargs.get("name")
         self.link = kwargs.get("link")
         self._should_save: bool = True
+        self.game_type: str = kwargs.get("game_type")
         # Start true so we save instantiated pickems
 
     def __repr__(self):
         return (
             "<Pickems game_id={0.game_id} game_state={0.game_state} "
-            "name={0.name} guild={0.guild} winner={0.winner}>"
+            "game_type={0.game_type} name={0.name} guild={0.guild} winner={0.winner}>"
         ).format(self)
 
     def compare_game(self, game: Game) -> bool:
@@ -113,6 +114,7 @@ class Pickems:
             "name": self.name,
             "winner": self.winner,
             "link": self.link,
+            "game_type": self.game_type,
         }
 
     @classmethod
@@ -130,6 +132,7 @@ class Pickems:
             name=data.get("name", ""),
             winner=data.get("winner", None),
             link=data.get("link", None),
+            game_type=data.get("game_type", "R")
         )
 
     async def set_pickem_winner(self, game: Game) -> bool:

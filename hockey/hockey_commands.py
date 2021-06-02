@@ -397,11 +397,22 @@ class HockeyCommands(MixinMeta):
         return em
 
     async def post_leaderboard(
-        self, ctx: commands.Context, leaderboard_type: Literal["season", "weekly", "worst"]
+        self,
+        ctx: commands.Context,
+        leaderboard_type: Literal[
+            "season",
+            "weekly",
+            "worst",
+            "playoffs",
+            "playoffs_weekly",
+            "pre-season",
+            "pre-season_weekly",
+        ],
     ) -> None:
         """
         Posts the leaderboard based on specific style
         """
+        leaderboard_type_str = leaderboard_type.replace("_", " ").title()
         leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))
@@ -417,6 +428,12 @@ class HockeyCommands(MixinMeta):
         msg_list = []
         count = 1
         user_position = None
+        total_str = {
+            "season": "total",
+            "playoffs": "playoffs_total",
+            "pre-season": "pre-season_total",
+        }.get(leaderboard_type, "total")
+
         for member_id in leaderboard:
             if str(member_id[0]) == str(ctx.author.id):
                 user_position = leaderboard.index(member_id)
@@ -425,20 +442,26 @@ class HockeyCommands(MixinMeta):
                 member_mention = _("User has left the server ") + member_id[0]
             else:
                 member_mention = member.mention
-            if leaderboard_type == "weekly":
-                points = member_id[1]["weekly"]
+            if leaderboard_type in ["weekly", "playoffs_weekly", "pre-season_weekly"]:
+                points = member_id[1].get(leaderboard_type, 0)
                 msg_list.append("#{}. {}: {}\n".format(count, member_mention, points))
-            elif leaderboard_type == "season":
-                total = member_id[1]["total"]
-                wins = member_id[1]["season"]
-                percent = (wins / total) * 100
+            elif leaderboard_type in ["season", "playoffs", "pre-season"]:
+                total = member_id[1].get(total_str, 0)
+                wins = member_id[1].get(leaderboard_type, 0)
+                try:
+                    percent = (wins / total) * 100
+                except ZeroDivisionError:
+                    percent = 0.0
                 msg_list.append(
                     f"#{count}. {member_mention}: {wins}/{total} correct ({percent:.4}%)\n"
                 )
             else:
-                total = member_id[1]["total"]
-                losses = member_id[1]["total"] - member_id[1]["season"]
-                percent = (losses / total) * 100
+                total = member_id[1].get(total_str, 0)
+                losses = member_id[1].get(total_str, 0) - member_id[1].get(leaderboard_type)
+                try:
+                    percent = (losses / total) * 100
+                except ZeroDivisionError:
+                    percent = 0.0
                 msg_list.append(
                     f"#{count}. {member_mention}: {losses}/{total} incorrect ({percent:.4}%)\n"
                 )
@@ -447,29 +470,28 @@ class HockeyCommands(MixinMeta):
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
-            total = user["total"]
-            losses = user["total"] - user["season"]
-            position = (
-                ctx.author.display_name
-                + _(", you're #")
-                + str(user_position + 1)
-                + " on the "
-                + leaderboard_type
-                + _(" leaderboard!")
+            total = user[total_str]
+            losses = user[total_str] - user["season"]
+            position = _(
+                "{member}, you're #{number} on the {leaderboard_type} leaderboard!\n"
+            ).format(
+                member=ctx.author.display_name,
+                number=user_position + 1,
+                leaderboard_type=leaderboard_type_str,
             )
             if leaderboard_type == "season":
                 percent = (wins / total) * 100
-                position += (
-                    _(" You have ") + f"{wins}/{total} " + _("correct ") + f"({percent:.4}%)."
+                position += _("You have {wins}/{total} correct ({percent:.4}%).").format(
+                    wins=wins, total=total, percent=percent
                 )
             elif leaderboard_type == "worst":
                 percent = (losses / total) * 100
-                position += (
-                    _(" You have ") + f"{losses}/{total} " + _("incorrect ") + f"({percent:.4}%)."
+                position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
+                    wins=wins, total=total, percent=percent
                 )
             await ctx.send(position)
         await BaseMenu(
-            source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type),
+            source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
@@ -478,7 +500,7 @@ class HockeyCommands(MixinMeta):
     @hockey_commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def leaderboard(self, ctx: commands.Context, leaderboard_type: str = "seasonal") -> None:
+    async def leaderboard(self, ctx: commands.Context, *, leaderboard_type: str = "seasonal") -> None:
         """
         Shows the current server leaderboard
 
@@ -489,10 +511,19 @@ class HockeyCommands(MixinMeta):
         than people who consistently vote. The only way to win is to keep playing
         and picking correctly.
         """
+        leaderboard_type = leaderboard_type.replace(" ", "_").lower()
         if leaderboard_type in ["seasonal", "season"]:
             await self.post_leaderboard(ctx, "season")
         if leaderboard_type in ["weekly", "week"]:
             await self.post_leaderboard(ctx, "weekly")
+        if leaderboard_type in ["playoffs", "playoff"]:
+            await self.post_leaderboard(ctx, "playoffs")
+        if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
+            await self.post_leaderboard(ctx, "playoffs_weekly")
+        if leaderboard_type in ["pre-season", "preseason"]:
+            await self.post_leaderboard(ctx, "pre-season")
+        if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
+            await self.post_leaderboard(ctx, "pre-season_weekly")
         if leaderboard_type in ["worst"]:
             await self.post_leaderboard(ctx, "worst")
 
