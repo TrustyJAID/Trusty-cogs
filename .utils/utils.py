@@ -359,6 +359,7 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
     print(tabulate.tabulate(totals, headers=["Cog", "# ofLines"], tablefmt="pretty"))
     return totals
 
+
 @cli.command()
 @click.option("--include-hidden", default=False)
 @click.option("--include-disabled", default=False)
@@ -437,6 +438,34 @@ def makereadme():
     )
     with open(f"{ROOT}/README.md", "w") as outfile:
         outfile.write(HEADER.format(body=body))
+
+
+@cli.command()
+def makerequirements():
+    """Generate a requirements.txt for all cogs.
+    Useful when setting up the bot in a new venv and requirements are missing.
+    """
+    requirements = set()
+    for folder in os.listdir(ROOT):
+        if folder.startswith(".") or folder.startswith("_"):
+            continue
+        info = None
+        for file in glob.glob(f"{ROOT}/{folder}/*"):
+            if not file.endswith(".py") and not file.endswith("json"):
+                continue
+            if file.endswith("info.json"):
+                try:
+                    with open(file) as infile:
+                        data = json.loads(infile.read())
+                    info = InfoJson.from_json(data)
+                    if info.disabled:
+                        continue
+                    for req in info.requirements:
+                        requirements.add(req)
+                except Exception:
+                    log.exception(f"Error reading info.json {file}")
+    with open(ROOT / "requirements.txt", "w") as outfile:
+        outfile.write("\n".join(r for r in requirements))
 
 
 def run_cli():
