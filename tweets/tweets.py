@@ -10,7 +10,7 @@ import tweepy
 from redbot.core import Config, checks, commands
 from redbot.core.utils import AsyncIter
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pagify
 
 from .tweet_entry import TweetEntry, ChannelData
 from .tweets_api import TweetsAPI
@@ -238,8 +238,8 @@ class Tweets(TweetsAPI, commands.Cog):
         )
         emb.set_author(name=user.name, url=profile_url, icon_url=user.profile_image_url)
         emb.set_thumbnail(url=user.profile_image_url)
-        emb.add_field(name="Followers", value=user.followers_count)
-        emb.add_field(name="Friends", value=user.friends_count)
+        emb.add_field(name="Followers", value=humanize_number(user.followers_count))
+        emb.add_field(name="Friends", value=humanize_number(user.friends_count))
         if user.verified:
             emb.add_field(name="Verified", value="Yes")
         footer = "Created at "
