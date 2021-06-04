@@ -196,16 +196,22 @@ class RoleToolsReactions(RoleToolsMixin):
                         pass
                     await message.add_reaction(emoji)
         else:
+            try:
+                await message.clear_reactions()
+            except discord.HTTPException:
+                await ctx.send(_("There was an error clearing reactions on that message."))
+                return
             for key in self.settings[ctx.guild.id]["reaction_roles"].keys():
                 if f"{message.channel.id}-{message.id}" in key:
                     __, __, emoji = key.split("-")
                     if emoji.isdigit():
                         emoji = self.bot.get_emoji(int(emoji))
+                    if emoji is None:
+                        continue
                     try:
-                        await message.clear_reaction(emoji)
-                    except discord.Forbidden:
+                        await message.add_reaction(emoji)
+                    except discord.HTTPException:
                         pass
-                    await message.add_reaction(emoji)
         await ctx.send(_("Finished clearing reactions on that message."))
 
     @roletools.command(aliases=["reacts"])

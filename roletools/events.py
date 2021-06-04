@@ -381,7 +381,7 @@ class RoleToolsEvents(RoleToolsMixin):
                     r = guild.get_role(role_id)
                     if not r:
                         continue
-                    if r in to_rem and await self.config.role(r).selfremovable():
+                    if await self.config.role(r).selfremovable():
                         if atomic:
                             to_rem.add(r)
                         else:
