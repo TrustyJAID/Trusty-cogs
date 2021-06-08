@@ -62,7 +62,7 @@ class Spotify(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "NeuroAssassin"]
-    __version__ = "1.6.1"
+    __version__ = "1.7.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -960,7 +960,7 @@ class Spotify(commands.Cog):
                 )
             else:
                 page_source = SpotifyTrackPages(items=[track], detailed=detailed)
-            await SpotifyUserMenu(
+            x = SpotifyUserMenu(
                 source=page_source,
                 delete_message_after=delete_after,
                 clear_reactions_after=clear_after,
@@ -968,7 +968,9 @@ class Spotify(commands.Cog):
                 cog=self,
                 user_token=user_token,
                 use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-            ).start(ctx=ctx)
+                ctx=ctx,
+            )
+            await x.send_initial_message(ctx, ctx.channel)
         except NotPlaying:
             await ctx.send(_("It appears you're not currently listening to Spotify."))
         except tekore.Unauthorised:
@@ -1067,7 +1069,7 @@ class Spotify(commands.Cog):
                 timeout = await self.config.guild(ctx.guild).menu_timeout()
             else:
                 delete_after, clear_after, timeout = False, True, 120
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=search_types[search_type](items=items, detailed=detailed),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1075,7 +1077,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="genres", aliases=["genre"])
     @commands.bot_has_permissions(embed_links=True)
@@ -1156,7 +1159,7 @@ class Spotify(commands.Cog):
                 timeout = await self.config.guild(ctx.guild).menu_timeout()
             else:
                 delete_after, clear_after, timeout = False, True, 120
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyTrackPages(items=items, detailed=detailed),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1164,7 +1167,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="recent")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1191,7 +1195,7 @@ class Spotify(commands.Cog):
                 timeout = await self.config.guild(ctx.guild).menu_timeout()
             else:
                 delete_after, clear_after, timeout = False, True, 120
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1199,7 +1203,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="toptracks")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1224,7 +1229,7 @@ class Spotify(commands.Cog):
             else:
                 delete_after, clear_after, timeout = False, True, 120
             tracks = cur.items
-        await SpotifyBaseMenu(
+        x = SpotifyBaseMenu(
             source=SpotifyTopTracksPages(tracks),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1232,7 +1237,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="topartists")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1257,7 +1263,7 @@ class Spotify(commands.Cog):
             else:
                 delete_after, clear_after, timeout = False, True, 120
             artists = cur.items
-        await SpotifyBaseMenu(
+        x = SpotifyBaseMenu(
             source=SpotifyTopArtistsPages(artists),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1265,7 +1271,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="new")
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
@@ -1287,7 +1294,7 @@ class Spotify(commands.Cog):
             else:
                 delete_after, clear_after, timeout = False, True, 120
             playlist_list = playlists.items
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1295,7 +1302,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="pause")
     @commands.bot_has_permissions(add_reactions=True)
@@ -1938,7 +1946,7 @@ class Spotify(commands.Cog):
             else:
                 delete_after, clear_after, timeout = False, True, 120
             playlist_list = playlists[1].items
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1946,7 +1954,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="list", aliases=["ls"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1986,7 +1995,7 @@ class Spotify(commands.Cog):
                 playlist_list = playlists
             else:
                 playlist_list = [p for p in playlists if p.public is not False]
-        await SpotifyBaseMenu(
+        x = SpotifyBaseMenu(
             source=SpotifyPlaylistsPages(playlist_list),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -1994,7 +2003,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="view")
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -2037,7 +2047,7 @@ class Spotify(commands.Cog):
                 playlist_list = playlists
             else:
                 playlist_list = [p for p in playlists if p.public is not False]
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyPlaylistPages(playlist_list, False),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -2045,7 +2055,8 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="create")
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
@@ -2323,7 +2334,7 @@ class Spotify(commands.Cog):
                 timeout = await self.config.guild(ctx.guild).menu_timeout()
             else:
                 delete_after, clear_after, timeout = False, True, 120
-        await SpotifySearchMenu(
+        x = SpotifySearchMenu(
             source=SpotifyAlbumPages(tracks, False),
             delete_message_after=delete_after,
             clear_reactions_after=clear_after,
@@ -2331,4 +2342,5 @@ class Spotify(commands.Cog):
             cog=self,
             user_token=user_token,
             use_external=ctx.channel.permissions_for(ctx.me).use_external_emojis,
-        ).start(ctx=ctx)
+        )
+        await x.send_initial_message(ctx, ctx.channel)
