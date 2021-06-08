@@ -435,6 +435,10 @@ class SpotifyPages(menus.PageSource):
         self.sender = sender
         self.detailed = detailed
         self.current_track = None
+        self.is_liked = False
+        self.is_playing = True
+        self.is_shuffle = False
+        self.repeat_state = "off"
 
     async def format_page(
         self,
@@ -444,6 +448,10 @@ class SpotifyPages(menus.PageSource):
 
         state = cur_state[0]
         is_liked = cur_state[1]
+        self.is_liked = is_liked
+        self.is_playing = state.is_playing
+        self.is_shuffle = state.shuffle_state
+        self.repeat_state = state.repeat_state
         em = discord.Embed(color=discord.Colour(0x1DB954))
         self.current_track = state.item
         if getattr(state.item, "is_local", False):
@@ -621,6 +629,32 @@ class SpotifyUserMenu(discord.ui.View):
             self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
+        for button in self.children:
+            if button.custom_id == "liked_song":
+                if self.source.is_liked:
+                    button.disabled = True
+                else:
+                    button.disabled = False
+            if button.custom_id == "play_pause":
+                if self.source.is_playing:
+                    button.emoji = emoji_handler.get_emoji("pause")
+                else:
+                    button.emoji = emoji_handler.get_emoji("play")
+            if button.custom_id == "repeat":
+                if self.source.repeat_state == "track":
+                    button.emoji = REPEAT_STATES[self.source.repeat_state]
+                    button.style = discord.ButtonStyle.primary
+                elif self.source.repeat_state == "context":
+                    button.emoji = REPEAT_STATES[self.source.repeat_state]
+                    button.style = discord.ButtonStyle.primary
+                else:
+                    button.emoji = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
+                    button.style = discord.ButtonStyle.grey
+            if button.custom_id == "shuffle":
+                if self.source.is_shuffle:
+                    button.style = discord.ButtonStyle.primary
+                else:
+                    button.style = discord.ButtonStyle.grey
         self.message = await channel.send(**kwargs, view=self)
         self.cog.current_menus[self.message.id] = ctx.author.id
         self.cog.user_menus[ctx.author.id] = self.message.jump_url
@@ -630,7 +664,34 @@ class SpotifyUserMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        for button in self.children:
+            if button.custom_id == "liked_song":
+                if self.source.is_liked:
+                    button.disabled = True
+                else:
+                    button.disabled = False
+            if button.custom_id == "play_pause":
+                if self.source.is_playing:
+                    button.emoji = emoji_handler.get_emoji("pause")
+                else:
+                    button.emoji = emoji_handler.get_emoji("play")
+            if button.custom_id == "repeat":
+                if self.source.repeat_state == "track":
+                    button.emoji = REPEAT_STATES[self.source.repeat_state]
+                    button.style = discord.ButtonStyle.primary
+                elif self.source.repeat_state == "context":
+                    button.emoji = REPEAT_STATES[self.source.repeat_state]
+                    button.style = discord.ButtonStyle.primary
+                else:
+                    button.emoji = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
+                    button.style = discord.ButtonStyle.grey
+            if button.custom_id == "shuffle":
+                if self.source.is_shuffle:
+                    button.style = discord.ButtonStyle.primary
+                else:
+                    button.style = discord.ButtonStyle.grey
+
+        await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -670,6 +731,7 @@ class SpotifyUserMenu(discord.ui.View):
         style=discord.ButtonStyle.green,
         emoji=emoji_handler.get_emoji("playpause"),
         row=0,
+        custom_id="play_pause",
     )
     async def play_pause(self, button: discord.ui.Button, interaction: discord.Interaction):
         """go to the previous page"""
@@ -726,6 +788,7 @@ class SpotifyUserMenu(discord.ui.View):
         style=discord.ButtonStyle.grey,
         emoji=emoji_handler.get_emoji("repeat"),
         row=1,
+        custom_id="repeat",
     )
     async def repeat(self, button: discord.ui.Button, interaction: discord.Interaction):
         """go to the next page"""
@@ -774,6 +837,7 @@ class SpotifyUserMenu(discord.ui.View):
         style=discord.ButtonStyle.grey,
         emoji=emoji_handler.get_emoji("shuffle"),
         row=1,
+        custom_id="shuffle",
     )
     async def shuffle(self, button: discord.ui.Button, interaction: discord.Interaction):
         """go to the next page"""
@@ -821,6 +885,7 @@ class SpotifyUserMenu(discord.ui.View):
         style=discord.ButtonStyle.grey,
         emoji=emoji_handler.get_emoji("like"),
         row=1,
+        custom_id="liked_song",
     )
     async def like_song(self, button: discord.ui.Button, interaction: discord.Interaction):
         """go to the next page"""
