@@ -368,12 +368,14 @@ class EventMixin:
                 channel=message_channel.mention,
             )
         if embed_links:
+            content = list(pagify(f"{message.author.mention}: {message.content}"))
             embed = discord.Embed(
-                description=f"{message.author.mention}: {message.content}",
+                description=content.pop(0),
                 colour=await self.get_event_colour(guild, "message_delete"),
                 timestamp=time,
             )
-
+            for more_content in content:
+                embed.add_field(name=_("Message Continued"), value=more_content)
             embed.add_field(name=_("Channel"), value=message_channel.mention)
             if perp:
                 embed.add_field(name=_("Deleted by"), value=perp)
@@ -1249,11 +1251,14 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
         if embed_links:
+            content = list(pagify(f"{before.author.mention}: {before.content}"))
             embed = discord.Embed(
-                description=f"{before.author.mention}: {before.content}",
+                description=content.pop(0),
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
+            for more_content in content:
+                embed.add_field(name=_("Message Continued"), value=more_content)
             jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)

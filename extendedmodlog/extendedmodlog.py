@@ -21,7 +21,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.10.7"
+    __version__ = "2.10.8"
 
     def __init__(self, bot):
         self.bot = bot
