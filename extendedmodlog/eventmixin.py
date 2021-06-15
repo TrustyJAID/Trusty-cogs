@@ -368,7 +368,7 @@ class EventMixin:
                 channel=message_channel.mention,
             )
         if embed_links:
-            content = list(pagify(f"{message.author.mention}: {message.content}"))
+            content = list(pagify(f"{message.author.mention}: {message.content}", page_length=1000))
             embed = discord.Embed(
                 description=content.pop(0),
                 colour=await self.get_event_colour(guild, "message_delete"),
@@ -1251,7 +1251,7 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
         if embed_links:
-            content = list(pagify(f"{before.author.mention}: {before.content}"))
+            content = list(pagify(f"{before.author.mention}: {before.content}", page_length=1000))
             embed = discord.Embed(
                 description=content.pop(0),
                 colour=await self.get_event_colour(guild, "message_edit"),
