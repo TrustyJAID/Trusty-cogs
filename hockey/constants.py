@@ -248,7 +248,7 @@ TEAMS = {
         "emoji": "NewJerseyDevils:664662891370119189",
         "home": "#E03A3E",
         "id": 1,
-        "invite": "https://discord.gg/4TtS8m4",
+        "invite": "https://discord.gg/njdevils",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281726626/256x256/cut.png",
         "team_url": "https://www.nhl.com/devils",
         "timezone": "US/Eastern",
