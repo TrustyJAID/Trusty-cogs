@@ -1192,7 +1192,7 @@ class SpotifyUserMenu(discord.ui.View):
             user_spotify = tekore.Spotify(sender=self.source.sender)
             with user_spotify.token_as(self.source.user_token):
                 cur_state = await user_spotify.playback()
-                if not cur_state and not cur_state.item:
+                if not cur_state or not cur_state.item:
                     continue
                 if cur_state.item.id != self.source.current_track.id:
                     await self.show_checked_page(0)

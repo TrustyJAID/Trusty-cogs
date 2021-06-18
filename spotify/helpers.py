@@ -185,7 +185,11 @@ def _draw_play(song: tekore.model.CurrentlyPlayingContext) -> str:
 
     bar_char = "\N{BOX DRAWINGS HEAVY HORIZONTAL}"
     seek_char = "\N{RADIO BUTTON}"
-    play_char = "\N{BLACK RIGHT-POINTING TRIANGLE}"
+    play_char = (
+        "\N{BLACK RIGHT-POINTING TRIANGLE}"
+        if song.is_playing
+        else "\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+    )
     msg = "\n" + play_char + " "
 
     for i in range(sections):
