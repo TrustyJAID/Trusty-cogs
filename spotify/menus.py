@@ -1054,21 +1054,18 @@ class StopButton(discord.ui.Button):
         self,
         style: discord.ButtonStyle,
         row: Optional[int],
-        cog: commands.Cog,
-        ctx: commands.Context,
     ):
         super().__init__(style=style, row=row)
-        self.cog = cog
         self.style = style
         self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
         self.view.stop()
-        if self.message.id in self.cog.current_menus:
-            del self.cog.current_menus[self.message.id]
-        if self.ctx.author.id in self.cog.user_menus:
-            del self.cog.user_menus[self.ctx.author.id]
-        await self.message.delete()
+        if self.view.message.id in self.view.cog.current_menus:
+            del self.view.cog.current_menus[self.view.message.id]
+        if self.view.ctx.author.id in self.view.cog.user_menus:
+            del self.view.cog.user_menus[self.view.ctx.author.id]
+        await self.view.message.delete()
 
 
 class ForwardButton(discord.ui.Button):
@@ -1161,7 +1158,7 @@ class SpotifyUserMenu(discord.ui.View):
         self.shuffle_button = ShuffleButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.repeat_button = RepeatButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1, cog, self.ctx)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
         self.add_item(self.previous_button)
         self.add_item(self.play_pause_button)
         self.add_item(self.next_button)
@@ -1322,7 +1319,7 @@ class SpotifySearchMenu(discord.ui.View):
         self.play_all = PlayAllButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.queue_track = QueueTrackButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1, cog, self.ctx)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
