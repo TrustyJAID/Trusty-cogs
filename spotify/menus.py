@@ -5,7 +5,7 @@ import json
 import logging
 from copy import copy
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional
 
 import discord
 import tekore
@@ -550,9 +550,581 @@ class SpotifyPages(menus.PageSource):
                     song = cur_state.item.id
                     liked = await user_spotify.saved_tracks_contains([song])
                     is_liked = liked[0]
+                    self.is_liked = liked[0]
         except tekore.Unauthorised:
             raise
         return cur_state, is_liked
+
+
+class PlayPauseButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("playpause")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the previous page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                    return
+                if cur.item.id == self.source.current_track.id:
+                    if cur.is_playing:
+                        await user_spotify.playback_pause()
+                        self.emoji = emoji_handler.get_emoji("play")
+                    else:
+                        await user_spotify.playback_resume()
+                        self.emoji = emoji_handler.get_emoji("pause")
+                else:
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_start_tracks([self.source.current_track.id])
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await asyncio.sleep(1)
+        await self.view.show_checked_page(0)
+
+
+class PreviousTrackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("previous")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """Skip to previous track"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                await user_spotify.playback_previous()
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await asyncio.sleep(1)
+        await self.view.show_checked_page(0)
+
+
+class NextTrackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("next")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """Skip to previous track"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                await user_spotify.playback_next()
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await asyncio.sleep(1)
+        await self.view.show_checked_page(0)
+
+
+class ShuffleButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("shuffle")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the next page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                state = not cur.shuffle_state
+                if state:
+                    self.style = discord.ButtonStyle.primary
+                else:
+                    self.style = discord.ButtonStyle.grey
+                await user_spotify.playback_shuffle(state)
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await asyncio.sleep(1)
+        await self.view.show_checked_page(0)
+
+
+class RepeatButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("repeat")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the next page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if cur.repeat_state == "off":
+                    self.style = discord.ButtonStyle.primary
+                    self.emoji = emoji_handler.get_emoji("repeat")
+                    state = "context"
+                if cur.repeat_state == "context":
+                    self.style = discord.ButtonStyle.primary
+                    self.emoji = emoji_handler.get_emoji("repeatone")
+                    state = "track"
+                if cur.repeat_state == "track":
+                    self.style = discord.ButtonStyle.grey
+                    self.emoji = emoji_handler.get_emoji("repeat")
+                    state = "off"
+                await user_spotify.playback_repeat(state)
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await asyncio.sleep(1)
+        await self.view.show_checked_page(0)
+
+
+class LikeButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("like")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+        self.disabled = False
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the next page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                await user_spotify.saved_tracks_add([self.source.current_track.id])
+                self.disabled = True
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        if isinstance(self.source, SpotifyTrackPages):
+            self.source = SpotifyPages(
+                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+            )
+        await self.view.show_checked_page(0)
+
+
+class PlayAllButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row, label=_("Play All"))
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("playall")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the previous page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    # await interaction.response.send_message(_("I could not find an active device to play songs on."), ephemeral=True)
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                    return
+                else:
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_start_tracks(
+                            [i.id for i in self.source.entries]
+                        )
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
+                    await interaction.response.send_message(
+                        _("Now playing all songs."), ephemeral=True
+                    )
+        except tekore.Unauthorised:
+            await interaction.response.send_message.send(
+                _("I am not authorized to perform this action for you."), ephemeral=True
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+
+
+class QueueTrackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row, label=_("Queue"))
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("queue")
+        self.cog = cog
+        self.source = source
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        """go to the previous page"""
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                    return
+                else:
+                    if self.source.current_track.type == "track":
+                        await user_spotify.playback_queue_add(self.source.current_track.uri)
+                        await interaction.response.send_message(
+                            _("{track} by {artist} has been added to your queue.").format(
+                                track=self.source.current_track.name,
+                                artist=humanize_list(
+                                    [i.name for i in self.source.current_track.artists]
+                                ),
+                            ),
+                            ephemeral=True,
+                        )
+                    else:
+                        await user_spotify.playback_start_context(self.source.current_track.uri)
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+
+
+class StopButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        ctx: commands.Context,
+    ):
+        super().__init__(style=style, row=row)
+        self.cog = cog
+        self.style = style
+        self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.stop()
+        if self.message.id in self.cog.current_menus:
+            del self.cog.current_menus[self.message.id]
+        if self.ctx.author.id in self.cog.user_menus:
+            del self.cog.user_menus[self.ctx.author.id]
+        await self.message.delete()
+
+
+class ForwardButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("play")
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page + 1)
+
+
+class BackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("back_left")
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page - 1)
+
+
+class LastItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("next")
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view._source.get_max_pages() - 1)
+
+
+class FirstItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = emoji_handler.get_emoji("previous")
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(0)
 
 
 class SpotifyUserMenu(discord.ui.View):
@@ -579,6 +1151,24 @@ class SpotifyUserMenu(discord.ui.View):
         self.ctx = kwargs.get("ctx", None)
         self._running = True
         self.loop = self.ctx.bot.loop.create_task(self.edit_menu_page_auto())
+        self.previous_button = PreviousTrackButton(
+            discord.ButtonStyle.grey, 0, cog, source, user_token
+        )
+        self.next_button = NextTrackButton(discord.ButtonStyle.grey, 0, cog, source, user_token)
+        self.play_pause_button = PlayPauseButton(
+            discord.ButtonStyle.primary, 0, cog, source, user_token
+        )
+        self.shuffle_button = ShuffleButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.repeat_button = RepeatButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1, cog, self.ctx)
+        self.add_item(self.previous_button)
+        self.add_item(self.play_pause_button)
+        self.add_item(self.next_button)
+        self.add_item(self.repeat_button)
+        self.add_item(self.shuffle_button)
+        self.add_item(self.like_button)
+        self.add_item(self.stop_button)
 
     @property
     def source(self):
@@ -629,32 +1219,23 @@ class SpotifyUserMenu(discord.ui.View):
             self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        for button in self.children:
-            if button.custom_id == "liked_song":
-                if self.source.is_liked:
-                    button.disabled = True
-                else:
-                    button.disabled = False
-            if button.custom_id == "play_pause":
-                if self.source.is_playing:
-                    button.emoji = emoji_handler.get_emoji("pause")
-                else:
-                    button.emoji = emoji_handler.get_emoji("play")
-            if button.custom_id == "repeat":
-                if self.source.repeat_state == "track":
-                    button.emoji = REPEAT_STATES[self.source.repeat_state]
-                    button.style = discord.ButtonStyle.primary
-                elif self.source.repeat_state == "context":
-                    button.emoji = REPEAT_STATES[self.source.repeat_state]
-                    button.style = discord.ButtonStyle.primary
-                else:
-                    button.emoji = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
-                    button.style = discord.ButtonStyle.grey
-            if button.custom_id == "shuffle":
-                if self.source.is_shuffle:
-                    button.style = discord.ButtonStyle.primary
-                else:
-                    button.style = discord.ButtonStyle.grey
+        if self.source.repeat_state == "track":
+            self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+            self.repeat_button.style = discord.ButtonStyle.primary
+        if self.source.repeat_state == "context":
+            self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+            self.repeat_button.style = discord.ButtonStyle.primary
+        log.debug(f"initial message before {self.like_button.disabled}")
+        if self.source.is_liked:
+            self.like_button.disabled = True
+        if not self.source.is_liked:
+            self.like_button.disabled = False
+        log.debug(f"initial message after {self.like_button.disabled}")
+        if self.source.is_playing:
+            self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
+        if not self.source.is_playing:
+            self.play_pause_button.emoji = emoji_handler.get_emoji("play")
+
         self.message = await channel.send(**kwargs, view=self)
         self.cog.current_menus[self.message.id] = ctx.author.id
         self.cog.user_menus[ctx.author.id] = self.message.jump_url
@@ -663,34 +1244,13 @@ class SpotifyUserMenu(discord.ui.View):
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
+        log.debug(f"edited message before {self.like_button.disabled}")
+        if self._source.is_liked:
+            self.like_button.disabled = True
+        if not self._source.is_liked:
+            self.like_button.disabled = False
+        log.debug(f"edited message after {self.like_button.disabled}")
         kwargs = await self._get_kwargs_from_page(page)
-        for button in self.children:
-            if button.custom_id == "liked_song":
-                if self.source.is_liked:
-                    button.disabled = True
-                else:
-                    button.disabled = False
-            if button.custom_id == "play_pause":
-                if self.source.is_playing:
-                    button.emoji = emoji_handler.get_emoji("pause")
-                else:
-                    button.emoji = emoji_handler.get_emoji("play")
-            if button.custom_id == "repeat":
-                if self.source.repeat_state == "track":
-                    button.emoji = REPEAT_STATES[self.source.repeat_state]
-                    button.style = discord.ButtonStyle.primary
-                elif self.source.repeat_state == "context":
-                    button.emoji = REPEAT_STATES[self.source.repeat_state]
-                    button.style = discord.ButtonStyle.primary
-                else:
-                    button.emoji = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
-                    button.style = discord.ButtonStyle.grey
-            if button.custom_id == "shuffle":
-                if self.source.is_shuffle:
-                    button.style = discord.ButtonStyle.primary
-                else:
-                    button.style = discord.ButtonStyle.grey
-
         await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
@@ -727,300 +1287,6 @@ class SpotifyUserMenu(discord.ui.View):
             return False
         return True
 
-    @discord.ui.button(
-        style=discord.ButtonStyle.green,
-        emoji=emoji_handler.get_emoji("playpause"),
-        row=0,
-        custom_id="play_pause",
-    )
-    async def play_pause(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the previous page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
-                if cur.item.id == self.source.current_track.id:
-                    if cur.is_playing:
-                        await user_spotify.playback_pause()
-                    else:
-                        await user_spotify.playback_resume()
-                else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_start_tracks([self.source.current_track.id])
-                    else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await asyncio.sleep(1)
-        await self.show_checked_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("repeat"),
-        row=1,
-        custom_id="repeat",
-    )
-    async def repeat(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if cur.repeat_state == "off":
-                    state = "context"
-                if cur.repeat_state == "context":
-                    state = "track"
-                if cur.repeat_state == "track":
-                    state = "off"
-                await user_spotify.playback_repeat(state)
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await asyncio.sleep(1)
-        await self.show_checked_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("shuffle"),
-        row=1,
-        custom_id="shuffle",
-    )
-    async def shuffle(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                state = not cur.shuffle_state
-                await user_spotify.playback_shuffle(state)
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await asyncio.sleep(1)
-        await self.show_checked_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("like"),
-        row=1,
-        custom_id="liked_song",
-    )
-    async def like_song(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                await user_spotify.saved_tracks_add([self.source.current_track.id])
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await self.show_checked_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("previous"),
-        row=0,
-    )
-    async def skip_previous(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the first page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                await user_spotify.playback_previous()
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await asyncio.sleep(1)
-        await self.show_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("next"),
-        row=0,
-    )
-    async def skip_next(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the last page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                await user_spotify.playback_next()
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        if isinstance(self.source, SpotifyTrackPages):
-            self._source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
-            )
-        await asyncio.sleep(1)
-        await self.show_page(0)
-
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{CROSS MARK}", row=1)
-    async def stop_pages(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ) -> None:
-        """stops the pagination session."""
-        self.stop()
-        if self.message.id in self.cog.current_menus:
-            del self.cog.current_menus[self.message.id]
-        if self.ctx.author.id in self.cog.user_menus:
-            del self.cog.user_menus[self.ctx.author.id]
-        await self.message.delete()
-
 
 class SpotifySearchMenu(discord.ui.View):
     def __init__(
@@ -1045,6 +1311,28 @@ class SpotifySearchMenu(discord.ui.View):
         self.cog = cog
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+
+        self.play_pause_button = PlayPauseButton(
+            discord.ButtonStyle.primary, 1, cog, source, user_token
+        )
+        self.play_all = PlayAllButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.queue_track = QueueTrackButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1, cog, self.ctx)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.play_pause_button)
+        self.add_item(self.play_all)
+        self.add_item(self.queue_track)
+
+        self.add_item(self.like_button)
+        self.add_item(self.stop_button)
 
     @property
     def source(self):
@@ -1107,247 +1395,6 @@ class SpotifySearchMenu(discord.ui.View):
             )
             return False
         return True
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("back_left"),
-        row=0,
-    )
-    async def go_to_previous_page(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ):
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("play"),
-        row=0,
-    )
-    async def go_to_next_page(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        await self.show_checked_page(self.current_page + 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.green,
-        emoji=emoji_handler.get_emoji("playpause"),
-        row=1,
-    )
-    async def play_pause(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the previous page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
-                if cur.item.id == self.source.current_track.id:
-                    if cur.is_playing:
-                        await user_spotify.playback_pause()
-                    else:
-                        await user_spotify.playback_resume()
-                else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_start_tracks([self.source.current_track.id])
-                    else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-
-    @discord.ui.button(
-        label="Play all",
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("playall"),
-        row=1,
-    )
-    async def play_pause_all(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the previous page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    # await interaction.response.send_message(_("I could not find an active device to play songs on."), ephemeral=True)
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
-                else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_start_tracks(
-                            [i.id for i in self.source.entries]
-                        )
-                    else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
-                    await interaction.response.send_message(
-                        _("Now playing all songs."), ephemeral=True
-                    )
-        except tekore.Unauthorised:
-            await interaction.response.send_message.send(
-                _("I am not authorized to perform this action for you."), ephemeral=True
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-
-    @discord.ui.button(
-        label="Queue song",
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("queue"),
-        row=1,
-    )
-    async def queue_song_next(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the previous page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                cur = await user_spotify.playback()
-                if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
-                else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_queue_add(self.source.current_track.uri)
-                        await interaction.response.send_message(
-                            _("{track} by {artist} has been added to your queue.").format(
-                                track=self.source.current_track.name,
-                                artist=humanize_list(
-                                    [i.name for i in self.source.current_track.artists]
-                                ),
-                            ),
-                            ephemeral=True,
-                        )
-                    else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("like"),
-        row=1,
-    )
-    async def like_song(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        try:
-            user_spotify = tekore.Spotify(sender=self.cog._sender)
-            with user_spotify.token_as(self.user_token):
-                await user_spotify.saved_tracks_add([self.source.current_track.id])
-        except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
-        except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
-        except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
-        await self.show_checked_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("previous"),
-        row=0,
-    )
-    async def skip_previous(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the first page"""
-        await self.show_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji=emoji_handler.get_emoji("next"),
-        row=0,
-    )
-    async def skip_next(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{CROSS MARK}", row=1)
-    async def stop_pages(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ) -> None:
-        """stops the pagination session."""
-        self.stop()
-        del self.cog.current_menus[self.message.id]
-        await self.message.delete()
 
 
 class SpotifyBaseMenu(discord.ui.View):
