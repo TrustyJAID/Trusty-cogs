@@ -30,7 +30,7 @@ EVENT_EMOJIS = [
 class EventPoster(commands.Cog):
     """Create admin approved events/announcements"""
 
-    __version__ = "2.0.4"
+    __version__ = "2.1.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -55,6 +55,7 @@ class EventPoster(commands.Cog):
         self._ready: asyncio.Event = asyncio.Event()
         self.bot.loop.create_task(self.initialize())
         self.cleanup_old_events.start()
+        self.waiting_approval = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -141,73 +142,6 @@ class EventPoster(commands.Cog):
             log.exception("Error loading events")
         self._ready.set()
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
-        """
-        Checks for reactions to the event
-        """
-        if str(payload.emoji) not in EVENT_EMOJIS:
-            # log.debug("Not a valid yes or no emoji")
-            return
-        if payload.guild_id not in self.event_cache:
-            return
-        if payload.message_id not in self.event_cache[payload.guild_id]:
-            return
-
-        guild = self.bot.get_guild(payload.guild_id)
-        user = guild.get_member(payload.user_id)
-        if user.bot:
-            return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
-        event = self.event_cache[payload.guild_id][payload.message_id]
-        if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-            await self.add_user_to_event(user, event)
-        if str(payload.emoji) == "\N{WHITE QUESTION MARK ORNAMENT}":
-            await self.add_user_to_maybe(user, event)
-        if str(payload.emoji) == "\N{NEGATIVE SQUARED CROSS MARK}":
-            if user.id == event.hoster:
-
-                async with self.config.guild(guild).events() as events:
-                    event = Event.from_json(self.bot, events[str(user.id)])
-                    ctx = await event.get_ctx(self.bot)
-                    if ctx:
-                        await event.edit(ctx, content=_("This event has ended."))
-                    del events[str(user.id)]
-                    del self.event_cache[guild.id][event.message]
-                return
-            await self.remove_user_from_event(user, event)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
-        """
-        Checks for reactions to the event
-        """
-        if str(payload.emoji) not in EVENT_EMOJIS:
-            # log.debug("Not a valid yes or no emoji")
-            return
-        if payload.guild_id not in self.event_cache:
-            return
-        if payload.message_id not in self.event_cache[payload.guild_id]:
-            return
-
-        guild = self.bot.get_guild(payload.guild_id)
-        user = guild.get_member(payload.user_id)
-        if user.bot:
-            return
-        event = self.event_cache[payload.guild_id][payload.message_id]
-        if str(payload.emoji) == "\N{WHITE HEAVY CHECK MARK}":
-            if user.id == event.hoster:
-                return
-            if user.id not in event.maybe:
-                await self.remove_user_from_event(user, event)
-        if str(payload.emoji) == "\N{WHITE QUESTION MARK ORNAMENT}":
-            if user.id == event.hoster:
-                return
-            if user.id not in event.members:
-                await self.remove_user_from_event(user, event)
-
     async def add_user_to_event(self, user: discord.Member, event: Event) -> None:
         if user.id in event.members:
             return
@@ -216,14 +150,8 @@ class EventPoster(commands.Cog):
         event.members.append(user.id)
         if user.id in event.maybe:
             event.maybe.remove(user.id)
-        ctx = await event.get_ctx(self.bot)
-        if not ctx:
-            return
-        em = await event.make_event_embed(ctx)
-        await event.edit(ctx, embed=em)
-        async with self.config.guild(ctx.guild).events() as cur_events:
-            cur_events[str(event.hoster)] = event.to_json()
-        self.event_cache[ctx.guild.id][event.message] = event
+        event.check_join_enabled()
+        await event.update_event()
         return
 
     async def add_user_to_maybe(self, user: discord.Member, event: Event) -> None:
@@ -232,14 +160,8 @@ class EventPoster(commands.Cog):
         event.maybe.append(user.id)
         if user.id in event.members:
             event.members.remove(user.id)
-        ctx = await event.get_ctx(self.bot)
-        if not ctx:
-            return
-        em = await event.make_event_embed(ctx)
-        await event.edit(ctx, embed=em)
-        async with self.config.guild(ctx.guild).events() as cur_events:
-            cur_events[str(event.hoster)] = event.to_json()
-        self.event_cache[ctx.guild.id][event.message] = event
+        event.check_join_enabled()
+        await event.update_event()
         return
 
     async def remove_user_from_event(self, user: discord.Member, event: Event) -> None:
@@ -249,18 +171,10 @@ class EventPoster(commands.Cog):
             return
         if user.id in event.members:
             event.members.remove(user.id)
-            em = await event.make_event_embed(ctx)
-            await event.edit(ctx, embed=em)
-            async with self.config.guild(ctx.guild).events() as cur_events:
-                cur_events[str(event.hoster)] = event.to_json()
-            self.event_cache[ctx.guild.id][event.message] = event
         if user.id in event.maybe:
             event.maybe.remove(user.id)
-            em = await event.make_event_embed(ctx)
-            await event.edit(ctx, embed=em)
-            async with self.config.guild(ctx.guild).events() as cur_events:
-                cur_events[str(event.hoster)] = event.to_json()
-            self.event_cache[ctx.guild.id][event.message] = event
+        event.check_join_enabled()
+        await event.update_event()
 
     @commands.command(name="eventping", aliases=["eventmention"])
     @commands.guild_only()
@@ -302,7 +216,9 @@ class EventPoster(commands.Cog):
             )
             return False
         required_roles = [
-            ctx.guild.get_role(r) for r in await self.config.guild(ctx.guild).required_roles()
+            ctx.guild.get_role(r)
+            for r in await self.config.guild(ctx.guild).required_roles()
+            if ctx.guild.get_role(r) is not None
         ]
         allowed = True
         if required_roles:
@@ -379,6 +295,7 @@ class EventPoster(commands.Cog):
             max_slots = await self.config.guild(ctx.guild).default_max()
             # log.debug(f"using default {max_slots}")
         event = Event(
+            bot=self.bot,
             hoster=ctx.author.id,
             members=list(member_list),
             event=description,
@@ -390,24 +307,35 @@ class EventPoster(commands.Cog):
         if await self.config.guild(ctx.guild).bypass_admin():
             return await self.post_event(ctx, event)
 
+        new_view = discord.ui.View()
+        approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label="Approve")
+        approve_button.callback = self.approve_event
+        deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label="Deny")
+        deny_button.callback = self.deny_event
+        new_view.add_item(approve_button)
+        new_view.add_item(deny_button)
+
         em = await event.make_event_embed(ctx)
         await ctx.send(_("Please wait for someone to approve your event request."))
-        admin_msg = await approval_channel.send(embed=em)
-        start_adding_reactions(admin_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(admin_msg)
-        reaction, user = await ctx.bot.wait_for("reaction_add", check=pred)
-        if pred.result:
-            event.approver = user.id
-            await self.post_event(ctx, event)
-        else:
-            msg = _("{author}, your event request was denied by an admin.").format(
-                author=ctx.author.mention
-            )
-            if version_info >= VersionInfo.from_str("3.4.6"):
-                await ctx.reply(msg)
-            else:
-                await ctx.send(msg)
+        admin_msg = await approval_channel.send(embed=em, view=new_view)
+        self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
+
+    async def approve_event(self, interaction: discord.Interaction):
+        if interaction.message.id not in self.waiting_approval:
             return
+        event = self.waiting_approval[interaction.message.id]["event"]
+        ctx = self.waiting_approval[interaction.message.id]["ctx"]
+        event.approver = interaction.user.id
+        await self.post_event(ctx, event)
+
+    async def deny_event(self, interaction: discord.Interaction):
+        if interaction.message.id not in self.waiting_approval:
+            return
+        ctx = self.waiting_approval[interaction.message.id]["ctx"]
+        msg = _("{author}, your event request was denied by an admin.").format(
+            author=ctx.author.mention
+        )
+        await ctx.reply(msg)
 
     async def post_event(self, ctx: commands.Context, event: Event):
         em = await event.make_event_embed(ctx)
@@ -416,17 +344,17 @@ class EventPoster(commands.Cog):
         if version_info >= VersionInfo.from_str("3.4.0"):
             sanitize = {"allowed_mentions": discord.AllowedMentions(everyone=True, roles=True)}
         announcement_channel = ctx.guild.get_channel(event.channel)
-        posted_message = await announcement_channel.send(ping, embed=em, **sanitize)
+        posted_message = await announcement_channel.send(ping, embed=em, view=event, **sanitize)
         event.message = posted_message.id
         async with self.config.guild(ctx.guild).events() as cur_events:
             cur_events[str(event.hoster)] = event.to_json()
         if ctx.guild.id not in self.event_cache:
             self.event_cache[ctx.guild.id] = {}
         self.event_cache[ctx.guild.id][posted_message.id] = event
-        try:
-            start_adding_reactions(posted_message, EVENT_EMOJIS)
-        except discord.errors.Forbidden:
-            pass
+        # try:
+        # start_adding_reactions(posted_message, EVENT_EMOJIS)
+        # except discord.errors.Forbidden:
+        # pass
 
     @commands.command(name="clearevent", aliases=["endevent"])
     @commands.guild_only()
@@ -666,7 +594,6 @@ class EventPoster(commands.Cog):
                 self.event_cache[ctx.guild.id][event.message] = event
         await ctx.tick()
 
-
     @event_edit.command()
     @commands.guild_only()
     async def remaining(self, ctx: commands.Context):
@@ -820,11 +747,35 @@ class EventPoster(commands.Cog):
         return False
 
     async def check_clear_event(self, ctx: commands.Context) -> bool:
-        msg = await ctx.send(_("You already have an event running, would you like to cancel it?"))
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        await ctx.bot.wait_for("reaction_add", check=pred)
-        return pred.result
+        new_view = discord.ui.View()
+        approve_button = discord.ui.Button(
+            style=discord.ButtonStyle.green, label=_("Yes"), custom_id=f"yes-{ctx.message.id}"
+        )
+        # approve_button.callback = self.end_event
+        deny_button = discord.ui.Button(
+            style=discord.ButtonStyle.red, label=_("No"), custom_id=f"no-{ctx.message.id}"
+        )
+        # deny_button.callback = self.keep_event
+        new_view.add_item(approve_button)
+        new_view.add_item(deny_button)
+        msg = await ctx.send(
+            _("You already have an event running, would you like to cancel it?"), view=new_view
+        )
+        # start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        # pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+        def check_same_user(interaction):
+            return interaction.user.id == ctx.author.id
+
+        try:
+            x = await ctx.bot.wait_for("interaction", check=check_same_user, timeout=60)
+        except asyncio.TimeoutError:
+            return False
+        custom_id = x.data.get("custom_id")
+        if custom_id == f"yes-{ctx.message.id}":
+            return True
+        return False
+
+        # return pred.result
 
     @commands.group(name="eventset")
     @commands.guild_only()
@@ -868,11 +819,13 @@ class EventPoster(commands.Cog):
                 bypass_admin=data["bypass_admin"]
             )
         if data["max_events"]:
-            msg += _("__Maximum Events:__ **{max_events}**\n").format(max_events=data["max_events"])
+            msg += _("__Maximum Events:__ **{max_events}**\n").format(
+                max_events=data["max_events"]
+            )
         if data["required_roles"]:
             roles = [ctx.guild.get_role(r) for r in data["required_roles"]]
             msg += _("__Event Creator Roles:__ {roles}\n").format(
-                roles=humanize_list([r.mention for r in roles])
+                roles=humanize_list([r.mention for r in roles if r is not None])
             )
         embed.description = msg
         await ctx.send(embed=embed)
@@ -1088,8 +1041,6 @@ class EventPoster(commands.Cog):
         """
         if channel and not channel.permissions_for(ctx.me).embed_links:
             return await ctx.send(_("I require `Embed Links` permission to use that channel."))
-        if channel and not channel.permissions_for(ctx.me).add_reactions:
-            return await ctx.send(_("I require `Add Reactions` permission to use that channel."))
         save_channel = None
         reply = _("Admin approval channel ")
         if channel:
@@ -1107,7 +1058,7 @@ class EventPoster(commands.Cog):
     @commands.guild_only()
     async def set_required_roles(self, ctx: commands.Context, *roles: discord.Role) -> None:
         """
-        Set the roles that are allowed to create roles
+        Set the roles that are allowed to create events
 
         `[roles...]` the role(s) that are allowed to create events. If not provided,
         there will be no restriction on who can create an event.

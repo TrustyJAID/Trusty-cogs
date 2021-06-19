@@ -77,7 +77,103 @@ class TimeZones:
 TIMEZONES = TimeZones()
 
 
-class Event:
+class JoinEventButton(discord.ui.Button):
+    def __init__(self, custom_id: str):
+        super().__init__(
+            style=discord.ButtonStyle.green, label=_("Join Event"), custom_id=custom_id
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Join this event"""
+        if interaction.user.id in self.view.members:
+            await interaction.response.send_message(
+                _("You have already registered for this event."), ephemeral=True
+            )
+            return
+        if self.view.max_slots and len(self.view.members) >= self.view.max_slots:
+            await interaction.response.send_message(
+                _("This event is at the maximum number of members."), ephemeral=True
+            )
+            return
+        if interaction.user.id in self.view.maybe:
+            self.view.maybe.remove(interaction.user.id)
+        self.view.members.append(interaction.user.id)
+        self.view.check_join_enabled()
+        await self.view.update_event()
+
+
+class LeaveEventButton(discord.ui.Button):
+    def __init__(self, custom_id: str):
+        super().__init__(
+            style=discord.ButtonStyle.red, label=_("Leave Event"), custom_id=custom_id
+        )
+
+    async def end_event(self, interaction: discord.Interaction):
+        try:
+            await self.view.end_event()
+        except Exception:
+            pass
+        await interaction.response.edit_message(content=_("Your event has now ended."), view=None)
+
+    async def keep_event(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(content=_("I will not end this event."), view=None)
+
+    async def callback(self, interaction: discord.Interaction):
+        """Leave this event"""
+        if interaction.user.id == self.view.hoster:
+            new_view = discord.ui.View()
+            approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Yes"))
+            approve_button.callback = self.end_event
+            deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label=_("No"))
+            deny_button.callback = self.keep_event
+            new_view.add_item(approve_button)
+            new_view.add_item(deny_button)
+            await interaction.response.send_message(
+                content=_("Are you sure you want to end your event?"),
+                ephemeral=True,
+                view=new_view,
+            )
+            return
+        if interaction.user.id not in self.view.members:
+            await interaction.response.send_message(
+                _("You are not registered for this event."), ephemeral=True
+            )
+            return
+        if interaction.user.id in self.view.members:
+            self.view.members.remove(interaction.user.id)
+        if interaction.user.id in self.view.maybe:
+            self.view.maybe.remove(interaction.user.id)
+        self.view.check_join_enabled()
+
+        await self.view.update_event()
+
+
+class MaybeJoinEventButton(discord.ui.Button):
+    def __init__(self, custom_id: str):
+        super().__init__(
+            style=discord.ButtonStyle.grey, label=_("Maybe Join Event"), custom_id=custom_id
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Maybe Join this event"""
+        if interaction.user.id == self.view.hoster:
+            await interaction.response.send_message(
+                _("You are hosting this event, you cannot join the maybe queue!"), ephemeral=True
+            )
+            return
+        if interaction.user.id in self.view.members:
+            self.view.members.remove(interaction.user.id)
+            self.view.check_join_enabled()
+        if interaction.user.id in self.view.maybe:
+            self.view.maybe.remove(interaction.user.id)
+        else:
+            self.view.maybe.append(interaction.user.id)
+
+        await self.view.update_event()
+
+
+class Event(discord.ui.View):
+    bot: Red
     hoster: int
     members: List[int]
     event: str
@@ -90,6 +186,7 @@ class Event:
     start: Optional[datetime]
 
     def __init__(self, **kwargs):
+        self.bot = kwargs.get("bot")
         self.hoster = kwargs.get("hoster")
         self.members = kwargs.get("members")
         self.event = kwargs.get("event")
@@ -100,9 +197,32 @@ class Event:
         self.guild = kwargs.get("guild")
         self.maybe = kwargs.get("maybe", [])
         self.start = kwargs.get("start", None)
+        super().__init__(timeout=None)
+        self.join_button = JoinEventButton(custom_id=f"join-{self.hoster}")
+        self.leave_button = LeaveEventButton(custom_id=f"leave-{self.hoster}")
+        self.maybe_button = MaybeJoinEventButton(custom_id=f"maybejoin-{self.hoster}")
+        self.add_item(self.join_button)
+        self.add_item(self.maybe_button)
+        self.add_item(self.leave_button)
 
     def __repr__(self):
         return "<Event description={0.event} hoster={0.hoster} start={0.start}>".format(self)
+
+    def check_join_enabled(self):
+        if self.max_slots and len(self.members) >= self.max_slots:
+            self.join_button.disabled = True
+            log.debug(f"Setting Join Button to {self.join_button.disabled}")
+        if self.max_slots and len(self.members) < self.max_slots:
+            self.join_button.disabled = False
+            log.debug(f"Setting Join Button to {self.join_button.disabled}")
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        """
+        The interaction pre-check incase I ever need it
+
+        Right now there are no restrictions on joining events
+        """
+        return True
 
     async def start_time(self) -> Optional[datetime]:
         date = None
@@ -146,9 +266,7 @@ class Event:
             # although in practice this should never happen
             return True
         if self.start:
-            future = (
-                self.start + timedelta(seconds=seconds)
-            ).timestamp()
+            future = (self.start + timedelta(seconds=seconds)).timestamp()
             log.debug(f"{humanize_timedelta(seconds = future-now)}")
             return now > future
         else:
@@ -169,10 +287,8 @@ class Event:
             # although in practice this should never happen
             return _("0 seconds")
         if self.start:
-            future = (
-                self.start + timedelta(seconds=seconds)
-            ).timestamp()
-            diff = future-now
+            future = (self.start + timedelta(seconds=seconds)).timestamp()
+            diff = future - now
             log.debug(f"Set time {future=} {now=} {diff=}")
             return humanize_timedelta(seconds=future - now)
         else:
@@ -180,9 +296,28 @@ class Event:
                 snowflake_time(self.message).replace(tzinfo=timezone.utc)
                 + timedelta(seconds=seconds)
             ).timestamp()
-            diff = future-now
+            diff = future - now
             log.debug(f"Message Time {future=} {now=} {diff=}")
             return humanize_timedelta(seconds=future - now)
+
+    async def update_event(self):
+        ctx = await self.get_ctx(self.bot)
+        em = await self.make_event_embed(ctx)
+        await self.edit(ctx, embed=em)
+        config = self.bot.get_cog("EventPoster").config
+        async with config.guild_from_id(self.guild).events() as cur_events:
+            cur_events[str(self.hoster)] = self.to_json()
+        self.bot.get_cog("EventPoster").event_cache[self.guild][self.message] = self
+
+    async def end_event(self):
+        config = self.bot.get_cog("EventPoster").config
+        async with config.guild_from_id(self.guild).events() as events:
+            # event = Event.from_json(self.bot, events[str(user.id)])
+            ctx = await self.get_ctx(self.bot)
+            if ctx:
+                await self.edit(ctx, content=_("This event has ended."))
+            del events[str(self.hoster)]
+            del self.bot.get_cog("EventPoster").event_cache[self.guild][self.message]
 
     async def get_ctx(self, bot: Red) -> Optional[commands.Context]:
         """
@@ -207,7 +342,7 @@ class Event:
         ctx = await self.get_ctx(context.bot)
         if not ctx:
             return
-        await ctx.message.edit(**kwargs)
+        await ctx.message.edit(**kwargs, view=self)
 
     def mention(self, include_maybe: bool):
         members = self.members
@@ -215,11 +350,13 @@ class Event:
             members += self.maybe
         return humanize_list([f"<@!{m}>" for m in members])
 
-    async def make_event_embed(self, ctx: commands.Context) -> discord.Embed:
+    async def make_event_embed(self, ctx: Optional[commands.Context] = None) -> discord.Embed:
+        if ctx is None:
+            ctx = await self.get_ctx(self.bot)
         hoster = ctx.guild.get_member(self.hoster)
         em = discord.Embed()
         em.set_author(
-            name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.avatar_url
+            name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.avatar.url
         )
         try:
             prefixes = await ctx.bot.get_valid_prefixes(ctx.guild)
@@ -245,7 +382,7 @@ class Event:
             max_slots_msg=max_slots_msg,
         )
         player_list = ""
-        config = ctx.bot.get_cog("EventPoster").config
+        config = Config.get_conf(None, identifier=144014746356678656, cog_name="EventPoster")
         for i, member in enumerate(self.members):
             player_class = ""
             has_player_class = await config.member_from_ids(ctx.guild.id, member).player_class()
@@ -264,12 +401,12 @@ class Event:
             approver = ctx.guild.get_member(self.approver)
             em.set_footer(
                 text=_("Approved by {approver}").format(approver=approver),
-                icon_url=approver.avatar_url,
+                icon_url=approver.avatar.url,
             )
         start = await self.start_time()
         if start is not None:
             em.timestamp = start
-        config = Config.get_conf(None, identifier=144014746356678656, cog_name="EventPoster")
+
         thumbnails = await config.guild(ctx.guild).custom_links()
         for name, link in thumbnails.items():
             if name.lower() in self.event.lower():
@@ -294,6 +431,7 @@ class Event:
             chan = bot.get_channel(data.get("channel"))
             guild = chan.guild.id
         return cls(
+            bot=bot,
             hoster=data.get("hoster"),
             members=new_members,
             event=data.get("event"),
