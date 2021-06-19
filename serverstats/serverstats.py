@@ -1,8 +1,8 @@
 import asyncio
-import datetime
 import logging
 from copy import copy
 from io import BytesIO
+from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
 import aiohttp
@@ -31,7 +31,7 @@ from .converters import (
     MultiGuildConverter,
     PermissionConverter,
 )
-from .menus import BaseMenu, AvatarPages, GuildPages, ListPages
+from .menus import BaseView, AvatarPages, GuildPages, ListPages, BaseView
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
@@ -45,7 +45,7 @@ class ServerStats(commands.Cog):
     """
 
     __author__ = ["TrustyJAID", "Preda"]
-    __version__ = "1.6.9"
+    __version__ = "1.7.0"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -93,7 +93,7 @@ class ServerStats(commands.Cog):
         if members is None:
             members = [ctx.author]
 
-        await BaseMenu(
+        await BaseView(
             source=AvatarPages(members=members),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -108,7 +108,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        passed = (datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has joined a server!\n "
             "That's **{num}** servers now!\n"
@@ -148,7 +148,7 @@ class ServerStats(commands.Cog):
                 num /= 1000.0
             return "{0:.1f}{1}".format(num, "YB")
 
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        passed = (datetime.now(tz=timezone.utc) - guild.created_at).days
         created_at = _("Created on {date}. That's over {num} days ago!").format(
             date=bold(guild.created_at.strftime("%d %b %Y %H:%M")),
             num=bold(humanize_number(passed)),
@@ -157,9 +157,9 @@ class ServerStats(commands.Cog):
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
-            joined_at = datetime.datetime.utcnow()
+            joined_at = datetime.utcnow()
         bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
-        since_joined = (datetime.datetime.utcnow() - joined_at).days
+        since_joined = (datetime.now(tz=timezone.utc) - joined_at).days
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}** days ago!"
@@ -271,13 +271,13 @@ class ServerStats(commands.Cog):
             else "https://cdn.discordapp.com/emojis/508929941610430464.png"
             if "PARTNERED" in guild.features
             else discord.Embed.Empty,
-            url=guild.icon_url
-            if guild.icon_url
+            url=guild.icon.url
+            if guild.icon
             else "https://cdn.discordapp.com/embed/avatars/1.png",
         )
         em.set_thumbnail(
-            url=guild.icon_url
-            if guild.icon_url
+            url=guild.icon.url
+            if guild.icon
             else "https://cdn.discordapp.com/embed/avatars/1.png"
         )
         em.add_field(name=_("Members:"), value=member_msg)
@@ -340,7 +340,7 @@ class ServerStats(commands.Cog):
             )
             em.add_field(name=_("Nitro Boost:"), value=nitro_boost)
         if guild.splash:
-            em.set_image(url=guild.splash_url_as(format="png"))
+            em.set_image(url=guild.splash.url)
         return em
 
     @commands.Cog.listener()
@@ -350,7 +350,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        passed = (datetime.utcnow() - guild.created_at).days
         created_at = _(
             "{bot} has left a server!\n "
             "That's **{num}** servers now!\n"
@@ -409,7 +409,7 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = (datetime.datetime.utcnow() - ctx.me.created_at).days
+            passed = (datetime.utcnow() - ctx.me.created_at).days
             since = ctx.me.created_at.strftime("%d %b %Y %H:%M")
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
@@ -428,14 +428,14 @@ class ServerStats(commands.Cog):
             if ctx.guild:
                 em.set_author(
                     name=f"{ctx.me} {f'~ {ctx.me.nick}' if ctx.me.nick else ''}",
-                    icon_url=ctx.me.avatar_url,
+                    icon_url=ctx.me.avatar.url,
                 )
             else:
                 em.set_author(
                     name=f"{ctx.me}",
-                    icon_url=ctx.me.avatar_url,
+                    icon_url=ctx.me.avatar.url,
                 )
-            em.set_thumbnail(url=ctx.me.avatar_url)
+            em.set_thumbnail(url=ctx.me.avatar.url)
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 await ctx.send(embed=em)
             else:
@@ -719,7 +719,7 @@ class ServerStats(commands.Cog):
         days: int,
         role: Union[discord.Role, Tuple[discord.Role], None],
     ) -> List[discord.Member]:
-        now = datetime.datetime.utcnow()
+        now = datetime.utcnow()
         after = now - datetime.timedelta(days=days)
         member_list = []
         if role:
@@ -775,7 +775,7 @@ class ServerStats(commands.Cog):
                     )
                     em.add_field(name=_("Discord Estimate"), value=str(estimate))
                 em.description = "\n".join(m.mention for m in page)
-                em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon_url)
+                em.set_author(name=f"{ctx.guild.name}", icon_url=ctx.guild.icon.url)
                 em.title = _("Estimated members to be pruned ") + str(len(member_list))
                 em.set_footer(text="Page {} of {}".format(count, len(x)))
                 count += 1
@@ -796,7 +796,7 @@ class ServerStats(commands.Cog):
                 count += 1
                 msg_list.append(msg)
         if msg_list != []:
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=msg_list),
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -1056,10 +1056,10 @@ class ServerStats(commands.Cog):
                             public_flags=public_flags,
                         )
                         embed.description = created_on
-                        embed.set_thumbnail(url=member.avatar_url)
+                        embed.set_thumbnail(url=member.avatar.url)
                         embed.colour = await ctx.embed_colour()
                         embed.set_author(
-                            name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                            name=f"{member} ({member.id}) {robot}", icon_url=member.avatar.url
                         )
                         for page in pagify(em, ["\n"], page_length=1024):
                             embed.add_field(name=_("Shared Servers"), value=page)
@@ -1089,16 +1089,16 @@ class ServerStats(commands.Cog):
                         public_flags=public_flags,
                     )
                     embed.description = created_on
-                    embed.set_thumbnail(url=member.avatar_url)
+                    embed.set_thumbnail(url=member.avatar.url)
                     embed.colour = await ctx.embed_colour()
                     embed.set_author(
-                        name=f"{member} ({member.id}) {robot}", icon_url=member.avatar_url
+                        name=f"{member} ({member.id}) {robot}", icon_url=member.avatar.url
                     )
                     embed_list.append(embed)
                 else:
                     msg = f"**{member}** ({member.id}) " + _("is not in any shared servers!")
                     embed_list.append(msg)
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=embed_list),
                 delete_message_after=False,
                 clear_reactions_after=True,
@@ -1129,7 +1129,7 @@ class ServerStats(commands.Cog):
             )
             count += 1
             msg_list.append(msg)
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1160,7 +1160,7 @@ class ServerStats(commands.Cog):
             )
             count += 1
             msg_list.append(msg)
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1298,7 +1298,7 @@ class ServerStats(commands.Cog):
             number = 10
 
         def joined(member: discord.Member):
-            return getattr(member, "joined_at", datetime.datetime.utcnow())
+            return getattr(member, "joined_at", datetime.utcnow())
 
         member_list = sorted(guild.members, key=joined)
         is_embed = ctx.channel.permissions_for(ctx.me).embed_links
@@ -1321,13 +1321,13 @@ class ServerStats(commands.Cog):
                     msg += f"{member_list.index(member)+1}. {member.name}\n"
             if is_embed:
                 embed = discord.Embed(description=msg)
-                embed.set_author(name=guild.name + _(" first members"), icon_url=guild.icon_url)
+                embed.set_author(name=guild.name + _(" first members"), icon_url=guild.icon.url)
                 msg_list.append(embed)
 
             else:
                 msg_list.append(header_msg + msg)
             await asyncio.sleep(0.1)
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1449,13 +1449,14 @@ class ServerStats(commands.Cog):
                 if guild:
                     page = ctx.bot.guilds.index(guild)
 
-        await BaseMenu(
+        await BaseView(
             source=GuildPages(guilds=guilds),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
             cog=self,
             page_start=page,
+            ctx=ctx,
         ).start(ctx=ctx)
 
     @commands.command()
@@ -1473,7 +1474,7 @@ class ServerStats(commands.Cog):
             if not guilds:
                 guilds = ctx.bot.guilds
                 page = ctx.bot.guilds.index(ctx.guild)
-        await BaseMenu(
+        await BaseView(
             source=GuildPages(guilds=guilds),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1521,11 +1522,11 @@ class ServerStats(commands.Cog):
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 embed = discord.Embed()
                 embed.description = page
-                embed.set_author(name=guild.name + _("Roles"), icon_url=guild.icon_url)
+                embed.set_author(name=guild.name + _("Roles"), icon_url=guild.icon.url)
                 msg_list.append(embed)
             else:
                 msg_list.append(page)
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1572,7 +1573,7 @@ class ServerStats(commands.Cog):
             for page in temp_pages:
                 pages.append(f"`Page {i}/{max_i}`\n" + page)
                 i += 1
-        await BaseMenu(
+        await BaseView(
             source=ListPages(pages=pages),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -1760,7 +1761,7 @@ class ServerStats(commands.Cog):
                     + _("\nMost posts by {}\n".format(maybe_guild))
                 )
             em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             em.description = f"{new_msg}{''.join(i for i in channel_messages)}"
 
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
@@ -1824,7 +1825,7 @@ class ServerStats(commands.Cog):
             )
 
             em = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
-            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+            em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
             em.description = f"{new_msg}"
 
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
@@ -1851,7 +1852,7 @@ class ServerStats(commands.Cog):
             guild = ctx.guild
         msg = ""
         embed = discord.Embed(timestamp=ctx.message.created_at)
-        embed.set_author(name=guild.name, icon_url=guild.icon_url)
+        embed.set_author(name=guild.name, icon_url=guild.icon.url)
         regular = []
         for emoji in guild.emojis:
             if id_emojis:
@@ -1870,7 +1871,7 @@ class ServerStats(commands.Cog):
         count = 1
         for page in x:
             em = discord.Embed(timestamp=ctx.message.created_at)
-            em.set_author(name=guild.name + _(" Emojis"), icon_url=guild.icon_url)
+            em.set_author(name=guild.name + _(" Emojis"), icon_url=guild.icon.url)
             regular = []
             msg = ""
             for emoji in page:
@@ -1882,7 +1883,7 @@ class ServerStats(commands.Cog):
         if len(emoji_embeds) == 0:
             await ctx.send(_("There are no emojis on {guild}.").format(guild=guild.name))
         else:
-            await BaseMenu(
+            await BaseView(
                 source=ListPages(pages=emoji_embeds),
                 delete_message_after=False,
                 clear_reactions_after=True,

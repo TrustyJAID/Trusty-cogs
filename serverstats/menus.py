@@ -24,9 +24,7 @@ class AvatarPages(menus.ListPageSource):
 
     async def format_page(self, menu: menus.MenuPages, member: discord.Member) -> discord.Embed:
         em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
-        url = str(member.avatar_url_as(static_format="png"))
-        if member.is_avatar_animated():
-            url = str(member.avatar_url_as(format="gif"))
+        url = str(member.avatar.url)
         em.set_image(url=url)
         try:
             em.set_author(
@@ -66,7 +64,106 @@ class ListPages(menus.ListPageSource):
         return page
 
 
-class BaseMenu(menus.MenuPages, inherit_buttons=False):
+class StopButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.stop()
+        await self.view.message.delete()
+
+
+class ForwardButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page + 1)
+
+
+class BackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page - 1)
+
+
+class LastItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view._source.get_max_pages() - 1)
+
+
+class FirstItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(0)
+
+
+class LeaveGuildButton(discord.ui.Button):
+    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
+        super().__init__(style=style, row=row, label=_("Leave Guild"))
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.cog.confirm_leave_guild(self.view.ctx, self.view.source.guild)
+
+
+class JoinGuildButton(discord.ui.Button):
+    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
+        super().__init__(style=style, row=row, label=_("Join Guild"))
+
+    async def callback(self, interaction: discord.Interaction):
+        invite = await self.view.cog.get_guild_invite(self.source.guild)
+        if invite:
+            await interaction.send_message(str(invite))
+        else:
+            await interaction.send_message(
+                _("I cannot find or create an invite for `{guild}`").format(
+                    guild=self.source.guild.name
+                )
+            )
+
+
+class BaseView(discord.ui.View):
     def __init__(
         self,
         source: menus.PageSource,
@@ -79,15 +176,33 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         **kwargs: Any,
     ) -> None:
         super().__init__(
-            source,
-            clear_reactions_after=clear_reactions_after,
-            delete_message_after=delete_message_after,
             timeout=timeout,
-            message=message,
-            **kwargs,
         )
+        self._source = source
         self.cog = cog
         self.page_start = page_start
+        self.current_page = page_start
+        self.message = message
+        self.ctx = kwargs.get("ctx", None)
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.stop_button)
+        if isinstance(source, GuildPages) and self.ctx and self.ctx.author.id in self.ctx.bot.owner_ids:
+            self.leave_guild_button = LeaveGuildButton(discord.ButtonStyle.red, 1)
+            self.join_guild_button = JoinGuildButton(discord.ButtonStyle.green, 1)
+            self.add_item(self.leave_guild_button)
+            self.add_item(self.join_guild_button)
+
+    async def start(self, ctx: commands.Context):
+        await self.send_initial_message(ctx, ctx.channel)
+
 
     async def send_initial_message(self, ctx, channel):
         """|coro|
@@ -95,9 +210,27 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        if self.ctx is None:
+            self.ctx = ctx
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        self.message = await channel.send(**kwargs, view=self)
+        return self.message
+
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def show_page(self, page_number):
+        page = await self._source.get_page(page_number)
+        self.current_page = page_number
+        kwargs = await self._get_kwargs_from_page(page)
+        await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -115,88 +248,16 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload):
+    async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if payload.message_id != self.message.id:
+        if interaction.message.id != self.message.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
-            return False
-        return payload.emoji in self.buttons
-
-    def _skip_single_arrows(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_triangle_buttons(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
-
-    def _skip_non_guild_buttons(self) -> bool:
-        if self.ctx.author.id not in self.bot.owner_ids:
-            return True
-        if isinstance(self.source, GuildPages):
+        if interaction.user.id not in (*self.cog.bot.owner_ids, self.ctx.author.id):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
         return True
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_previous_page(self, payload):
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_next_page(self, payload):
-        """go to the next page"""
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_first_page(self, payload):
-        """go to the first page"""
-        await self.show_page(0)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_last_page(self, payload):
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @menus.button("\N{CROSS MARK}")
-    async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()
-
-    @menus.button("\N{OUTBOX TRAY}", skip_if=_skip_non_guild_buttons)
-    async def leave_guild_button(self, payload):
-        await self.cog.confirm_leave_guild(self.ctx, self.source.guild)
-
-    @menus.button("\N{INBOX TRAY}", skip_if=_skip_non_guild_buttons)
-    async def make_guild_invite_button(self, payload):
-        invite = await self.cog.get_guild_invite(self.source.guild)
-        if invite:
-            await self.ctx.send(str(invite))
-        else:
-            await self.ctx.send(
-                _("I cannot find or create an invite for `{guild}`").format(
-                    guild=self.source.guild.name
-                )
-            )
