@@ -138,6 +138,7 @@ class EventPoster(commands.Cog):
                     if seconds is not None and event.should_remove(seconds):
                         continue
                     self.event_cache[guild_id][event.message] = event
+                    self.bot.add_view(event)
         except Exception:
             log.exception("Error loading events")
         self._ready.set()
