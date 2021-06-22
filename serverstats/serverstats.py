@@ -1080,7 +1080,7 @@ class ServerStats(commands.Cog):
                         )
                     created_on = _(
                         "Joined Discord on {user_created}\n"
-                        "({since_created} days ago)\n"
+                        "({since_created})\n"
                         "{public_flags}"
                     ).format(
                         user_created=user_created,
