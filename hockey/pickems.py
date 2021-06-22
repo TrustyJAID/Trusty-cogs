@@ -122,13 +122,13 @@ class Pickems(discord.ui.View):
             label=self.home_team,
             emoji=self.home_emoji,
             disabled=disabled_buttons,
-            custom_id=f"home-{self.game_id}-{self.name}",
+            custom_id=f"home-{self.game_id}-{self.name}-{self.guild}",
         )
         self.away_button = PickemsButton(
             label=self.away_team,
             emoji=self.away_emoji,
             disabled=disabled_buttons,
-            custom_id=f"away-{self.game_id}-{self.name}",
+            custom_id=f"away-{self.game_id}-{self.name}-{self.guild}",
         )
         self.add_item(self.home_button)
         self.add_item(self.away_button)
