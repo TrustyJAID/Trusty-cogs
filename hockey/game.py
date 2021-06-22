@@ -241,7 +241,7 @@ class Game:
             else None
         )
 
-        em = discord.Embed(timestamp=self.game_start)
+        em = discord.Embed(timestamp=utc_to_local(self.game_start, "UTC"))
         if colour is not None:
             em.colour = colour
         em.set_author(name=title, url=team_url, icon_url=self.home_logo)
@@ -363,7 +363,7 @@ class Game:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = f"{self.away_team} @ {self.home_team} {self.game_state}"
-        em = discord.Embed(timestamp=self.game_start)
+        em = discord.Embed(timestamp=utc_to_local(self.game_start, "UTC"))
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
         if self.game_state != "Preview":
@@ -808,8 +808,10 @@ class Game:
         Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
-        msg = _("{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!").format(
-            time=time_left,
+        timestamp = int(utc_to_local(self.game_start, "UTC").timestamp())
+        time_str = f"<t:{timestamp}:R>"
+        msg = _("{away_emoji} {away} @ {home_emoji} {home} game starts {time}!").format(
+            time=time_str,
             away_emoji=self.away_emoji,
             away=self.away_team,
             home_emoji=self.home_emoji,

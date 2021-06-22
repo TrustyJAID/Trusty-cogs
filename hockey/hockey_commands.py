@@ -543,7 +543,9 @@ class HockeyCommands(MixinMeta):
             if str(ctx.author.id) in pickem.votes:
                 vote = pickem.votes[str(ctx.author.id)]
                 game_start = utc_to_local(pickem.game_start, timezone)
-                time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+                # time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+                timestamp = int(utc_to_local(game_start, "UTC").timestamp())
+                time_str = f"<t:{timestamp}:F>"
                 msg += f"{pickem.away_team} @ {pickem.home_team} {time_str} - {vote}\n"
         msgs = []
         for page in pagify(msg):

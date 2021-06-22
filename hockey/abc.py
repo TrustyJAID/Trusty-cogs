@@ -311,27 +311,6 @@ class MixinMeta(ABC):
     #######################################################################
 
     @abstractmethod
-    async def on_hockey_preview_message(
-        self, channel: discord.TextChannel, message: discord.Message, game: Game
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def handle_pickems_response(
-        self,
-        user: discord.Member,
-        channel: discord.TextChannel,
-        emoji: Optional[Union[discord.Emoji, str]],
-        message_id: int,
-        reply_message: Optional[str],
-    ):
-        raise NotImplementedError()
-
-    @abstractmethod
     async def pickems_loop(self) -> None:
         raise NotImplementedError()
 
@@ -356,6 +335,10 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def disable_pickems_buttons(self, game: Game) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def set_guild_pickem_winner(self, game: Game) -> None:
         raise NotImplementedError()
 
@@ -366,11 +349,9 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def create_pickem_object(
+    async def get_pickem_object(
         self,
         guild: discord.Guild,
-        message: discord.Message,
-        channel: discord.TextChannel,
         game: Game,
     ) -> bool:
         raise NotImplementedError()

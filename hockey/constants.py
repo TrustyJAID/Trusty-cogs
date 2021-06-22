@@ -291,7 +291,7 @@ TEAMS = {
         "home": "#E31837",
         "id": 9,
         "invite": "https://discord.gg/VQzYRKP",
-        "logo": "https://cms.nhl.bamgrid.com/images/photos/281723314/256x256/cut.png",
+        "logo": "https://cms.nhl.bamgrid.com/images/photos/319396126/256x256/cut.png",
         "team_url": "https://www.nhl.com/senators",
         "timezone": "US/Eastern",
         "nickname": ["sens"],

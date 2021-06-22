@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import HEADSHOT_URL, TEAMS
-from .helper import check_to_post, get_channel_obj, get_team
+from .helper import check_to_post, get_channel_obj, get_team, utc_to_local
 
 if TYPE_CHECKING:
     from .game import Game
@@ -444,7 +444,7 @@ class Goal:
                 ),
                 icon_url=logo,
             )
-            em.timestamp = self.time
+            em.timestamp = utc_to_local(self.time, "UTC")
         else:
             if "missed" in self.event.lower():
                 em = discord.Embed(description=self.description, colour=colour)
@@ -462,7 +462,7 @@ class Goal:
                 + _(" period"),
                 icon_url=logo,
             )
-            em.timestamp = self.time
+            em.timestamp = utc_to_local(self.time, "UTC")
         return em
 
     async def goal_post_text(self, game: Game) -> str:

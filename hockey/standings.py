@@ -10,6 +10,7 @@ from redbot.core import Config
 from redbot.core.utils import AsyncIter
 
 from .constants import BASE_URL, TEAMS
+from .helper import utc_to_local
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
@@ -298,7 +299,7 @@ class Standings:
             icon_url="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
         )
         em.set_thumbnail(url=nhl_icon)
-        em.timestamp = latest_timestamp
+        em.timestamp = utc_to_local(latest_timestamp, "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
         return em
 
@@ -307,7 +308,7 @@ class Standings:
         em = discord.Embed()
         msg = ""
         # timestamp = datetime.strptime(team_stats[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
-        em.timestamp = team_stats[0].last_updated
+        em.timestamp = utc_to_local(team_stats[0].last_updated, "UTC")
 
         for team in team_stats:
             emoji = TEAMS[team.name]["emoji"]
@@ -387,7 +388,7 @@ class Standings:
             value="{} {}".format(team_stats.streak, team_stats.streak_type),
         )
         # timestamp = datetime.strptime(team_stats.last_updated, "%Y-%m-%dT%H:%M:%SZ")
-        em.timestamp = team_stats.last_updated
+        em.timestamp = utc_to_local(team_stats.last_updated, "UTC")
         em.set_footer(text="Stats last Updated", icon_url=TEAMS[team_stats.name]["logo"])
         return em
 

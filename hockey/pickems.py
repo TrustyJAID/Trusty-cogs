@@ -14,7 +14,65 @@ _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
-class Pickems:
+class PickemsButton(discord.ui.Button):
+    def __init__(self, label: str, emoji: str, disabled: bool, custom_id: str):
+        super().__init__(
+            style=discord.ButtonStyle.primary,
+            label=label,
+            emoji=emoji,
+            disabled=disabled,
+            custom_id=custom_id,
+        )
+        self.disabled = disabled
+
+    async def callback(self, interaction: discord.Interaction):
+        time_now = datetime.utcnow()
+
+        if str(interaction.user.id) in self.view.votes:
+            if time_now > self.view.game_start:
+                await interaction.response.send_message(
+                    _("Voting has ended! You have voted for {emoji} {team}").format(
+                        emoji=self.emoji, team=self.view.votes[str(interaction.user.id)]
+                    ),
+                    ephemeral=True,
+                )
+                self.view.disable_buttons()
+                await interaction.message.edit(view=self.view)
+                return
+            if self.view.votes[str(interaction.user.id)] != self.label:
+                self.view.votes[str(interaction.user.id)] = self.label
+                await interaction.response.send_message(
+                    _("You have already voted! Changing vote to: {emoji} {team}").format(
+                        emoji=self.emoji, team=self.label
+                    ),
+                    ephemeral=True,
+                )
+                self.view._should_save = True
+            else:
+                await interaction.response.send_message(
+                    _("You have already voted for {emoji} {team}!").format(
+                        emoji=self.emoji, team=self.label
+                    ),
+                    ephemeral=True,
+                )
+        else:
+            if time_now > self.view.game_start:
+                await interaction.response.send_message(
+                    _("Voting has ended! You did not vote on this game!"),
+                    ephemeral=True,
+                )
+                return
+            self.view.votes[str(interaction.user.id)] = self.label
+            await interaction.response.send_message(
+                _("Setting your vote to: {emoji} {team}").format(
+                    emoji=self.emoji, team=self.label
+                ),
+                ephemeral=True,
+            )
+            self.view._should_save = True
+
+
+class Pickems(discord.ui.View):
     """
     Pickems object for handling votes on games for the day
     """
@@ -43,12 +101,12 @@ class Pickems:
         self.away_team = kwargs.get("away_team")
         self.votes = kwargs.get("votes")
         self.home_emoji = (
-            TEAMS[self.home_team]["emoji"]
+            discord.PartialEmoji.from_str(TEAMS[self.home_team]["emoji"])
             if self.home_team in TEAMS
             else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
         )
         self.away_emoji = (
-            TEAMS[self.away_team]["emoji"]
+            discord.PartialEmoji.from_str(TEAMS[self.away_team]["emoji"])
             if self.away_team in TEAMS
             else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
         )
@@ -56,14 +114,34 @@ class Pickems:
         self.name = kwargs.get("name")
         self.link = kwargs.get("link")
         self._should_save: bool = True
-        self.game_type: str = kwargs.get("game_type")
         # Start true so we save instantiated pickems
+        self.game_type: str = kwargs.get("game_type")
+        super().__init__(timeout=None)
+        disabled_buttons = datetime.utcnow() > self.game_start
+        self.home_button = PickemsButton(
+            label=self.home_team,
+            emoji=self.home_emoji,
+            disabled=disabled_buttons,
+            custom_id=f"home-{self.game_id}-{self.name}",
+        )
+        self.away_button = PickemsButton(
+            label=self.away_team,
+            emoji=self.away_emoji,
+            disabled=disabled_buttons,
+            custom_id=f"away-{self.game_id}-{self.name}",
+        )
+        self.add_item(self.home_button)
+        self.add_item(self.away_button)
 
     def __repr__(self):
         return (
             "<Pickems game_id={0.game_id} game_state={0.game_state} "
             "game_type={0.game_type} name={0.name} guild={0.guild} winner={0.winner}>"
         ).format(self)
+
+    def disable_buttons(self):
+        self.home_button.disabled = True
+        self.away_button.disabled = True
 
     def compare_game(self, game: Game) -> bool:
         return (
@@ -132,7 +210,7 @@ class Pickems:
             name=data.get("name", ""),
             winner=data.get("winner", None),
             link=data.get("link", None),
-            game_type=data.get("game_type", "R")
+            game_type=data.get("game_type", "R"),
         )
 
     async def set_pickem_winner(self, game: Game) -> bool:

@@ -352,15 +352,9 @@ class GameDayChannels(MixinMeta):
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()
-        channel_team = team if team != "all" else next_game.home_team
-        timezone = (
-            await self.config.guild(guild).timezone() or TEAMS[channel_team]["timezone"]
-            if channel_team in TEAMS
-            else TEAMS[next_game.away_team]["timezone"]
-        )
-        time_string = utc_to_local(next_game.game_start, timezone).strftime(
-            "%A %B %d, %Y at %I:%M %p %Z"
-        )
+        timestamp = utc_to_local(next_game.game_start, "UTC").timestamp()
+
+        time_string = f"<t:{int(timestamp)}:F>"
 
         game_msg = (
             f"{next_game.away_team} {next_game.away_emoji} @ "
@@ -383,18 +377,8 @@ class GameDayChannels(MixinMeta):
                 log.error("Error posting game preview in GDC channel.")
                 return
 
-        # Create new pickems object for the game
-        try:
-            await self.create_pickem_object(guild, preview_msg, new_chn, next_game)
-        except Exception:
-            log.error("Error creating pickems object in GDC channel.")
-
         if new_chn.permissions_for(guild.me).manage_messages:
             await preview_msg.pin()
-        if new_chn.permissions_for(guild.me).add_reactions:
-            start_adding_reactions(
-                preview_msg, [next_game.away_emoji[2:-1], next_game.home_emoji[2:-1]]
-            )
 
     async def delete_gdc(self, guild: discord.Guild) -> None:
         """
