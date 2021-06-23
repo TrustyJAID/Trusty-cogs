@@ -310,7 +310,7 @@ class Hockey(
                         and not self.current_games[link]["disabled_buttons"]
                     ):
                         log.debug("Disabling buttons for %r", game)
-                        await self.disabled_pickems_buttons(game)
+                        await self.disable_pickems_buttons(game)
                         self.current_games[link]["disabled_buttons"] = True
 
                     log.debug(
