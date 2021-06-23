@@ -46,7 +46,7 @@ class ReTrigger(TriggerHandler, commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "2.20.4"
+    __version__ = "2.21.0"
 
     def __init__(self, bot):
         self.bot = bot

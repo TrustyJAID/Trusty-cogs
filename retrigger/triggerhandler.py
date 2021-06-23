@@ -5,7 +5,7 @@ import os
 import random
 import string
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 import multiprocessing as mp
 from multiprocessing.pool import Pool
@@ -1030,7 +1030,7 @@ class TriggerHandler:
             embed = discord.Embed(
                 description=message.content,
                 colour=discord.Colour.dark_red(),
-                timestamp=datetime.now(),
+                timestamp=datetime.now(tz=timezone.utc),
             )
             found_regex = humanize_list(find)
             embed.add_field(name=_("Channel"), value=channel.mention)
@@ -1042,7 +1042,7 @@ class TriggerHandler:
                 files = ", ".join(a.filename for a in message.attachments)
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_footer(text=_("User ID: ") + str(message.author.id))
-            embed.set_author(name=infomessage, icon_url=author.avatar_url)
+            embed.set_author(name=infomessage, icon_url=author.avatar.url)
             try:
                 if modlog_channel.permissions_for(guild.me).embed_links:
                     await modlog_channel.send(embed=embed)

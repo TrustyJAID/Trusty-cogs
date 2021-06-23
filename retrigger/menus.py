@@ -43,6 +43,7 @@ class ReTriggerPages(menus.ListPageSource):
         self.active_triggers = triggers
         self.selection = None
         self.guild = guild
+        self.enabled = False
 
     def is_paginating(self):
         return True
@@ -54,6 +55,7 @@ class ReTriggerPages(menus.ListPageSource):
         good = "\N{WHITE HEAVY CHECK MARK}"
         bad = "\N{NEGATIVE SQUARED CROSS MARK}"
         # trigger = await Trigger.from_json(triggers)
+        self.enabled = trigger.enabled
         author = self.guild.get_member(trigger.author)
         if not author:
             try:
@@ -198,7 +200,9 @@ class ReTriggerPages(menus.ListPageSource):
         if trigger.check_edits:
             info += _("__Checking edits__: **Enabled**\n")
         if trigger.delete_after:
-            info += _("__Message deleted after__: {time} seconds.\n").format(time=trigger.delete_after)
+            info += _("__Message deleted after__: {time} seconds.\n").format(
+                time=trigger.delete_after
+            )
         if trigger.read_filenames:
             info += _("__Read filenames__: **Enabled**\n")
         if trigger.user_mention:
@@ -218,7 +222,7 @@ class ReTriggerPages(menus.ListPageSource):
                 colour=await menu.ctx.embed_colour(),
                 title=_("Triggers for {guild}").format(guild=self.guild.name),
             )
-            em.set_author(name=author, icon_url=author.avatar_url)
+            em.set_author(name=author, icon_url=author.avatar.url)
             if trigger.created_at == 0:
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
@@ -255,197 +259,164 @@ class ReTriggerPages(menus.ListPageSource):
         # return await make_embed_from_submission(menu.ctx.channel, self._subreddit, submission)
 
 
-class ReTriggerMenu(menus.MenuPages, inherit_buttons=False):
+class StopButton(discord.ui.Button):
     def __init__(
         self,
-        source: menus.PageSource,
-        cog: Optional[commands.Cog] = None,
-        page_start: Optional[int] = 0,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
-        timeout: int = 60,
-        message: discord.Message = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            source,
-            clear_reactions_after=clear_reactions_after,
-            delete_message_after=delete_message_after,
-            timeout=timeout,
-            message=message,
-            **kwargs,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.stop()
+        await self.view.message.delete()
+
+
+class ForwardButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view.current_page + 1)
+
+
+class BackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view.current_page - 1)
+
+
+class LastItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
         )
-        self.cog = cog
-        self.page_start = page_start
 
-    async def send_initial_message(self, ctx, channel):
-        """|coro|
-        The default implementation of :meth:`Menu.send_initial_message`
-        for the interactive pagination session.
-        This implementation shows the first page of the source.
-        """
-        page = await self._source.get_page(self.page_start)
-        kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view._source.get_max_pages() - 1)
 
-    async def update(self, payload):
-        """|coro|
 
-        Updates the menu after an event has been received.
+class FirstItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+        )
 
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(0)
 
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
 
-    async def show_checked_page(self, page_number: int) -> None:
-        max_pages = self._source.get_max_pages()
-        try:
-            if max_pages is None:
-                # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
-            elif page_number >= max_pages:
-                await self.show_page(0)
-            elif page_number < 0:
-                await self.show_page(max_pages - 1)
-            elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
-        except IndexError:
-            # An error happened that can be handled, so ignore it.
-            pass
+class ToggleTriggerButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = discord.ButtonStyle.red
+        self.emoji = "\N{NEGATIVE SQUARED CROSS MARK}"
+        self.label = _("Disable Trigger")
 
-    def reaction_check(self, payload):
-        """Just extends the default reaction_check to use owner_ids"""
-        if payload.message_id != self.message.id:
-            return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
-            return False
-        return payload.emoji in self.buttons
+    def modify(self):
+        self.style = (
+            discord.ButtonStyle.red if self.view.source.enabled else discord.ButtonStyle.green
+        )
+        self.emoji = (
+            "\N{NEGATIVE SQUARED CROSS MARK}"
+            if self.view.source.enabled
+            else "\N{WHITE HEAVY CHECK MARK}"
+        )
+        self.label = _("Disable Trigger") if self.view.source.enabled else _("Enable Trigger")
 
-    def _skip_single_arrows(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_triangle_buttons(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_previous_page(self, payload):
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_next_page(self, payload):
-        """go to the next page"""
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_first_page(self, payload):
-        """go to the first page"""
-        await self.show_page(0)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_last_page(self, payload):
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @menus.button("\N{CROSS MARK}")
-    async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-    )
-    async def toggle_trigger(self, payload: discord.RawReactionActionEvent) -> None:
+    async def callback(self, interaction: discord.Interaction):
         """Enables and disables triggers"""
-        member = self.ctx.guild.get_member(payload.user_id)
-        if await self.cog.can_edit(member, self.source.selection):
-            self.source.selection.toggle()
-            await self.show_checked_page(self.current_page)
+        member = interaction.user
+        trigger = self.view.source.selection
+        guild = self.view.source.guild
+        if await self.view.cog.can_edit(member, self.view.source.selection):
+            trigger.toggle()
+            async with self.view.cog.config.guild(guild).trigger_list() as trigger_list:
+                trigger_list[trigger.name] = await trigger.to_json()
+            await self.view.show_checked_page(self.view.current_page)
 
-    @menus.button("\N{NEGATIVE SQUARED CROSS MARK}")
-    async def stop_trigger(self, payload: discord.RawReactionActionEvent) -> None:
-        """Enables and disables triggers"""
-        member = self.ctx.guild.get_member(payload.user_id)
-        if await self.cog.can_edit(member, self.source.selection):
-            self.source.selection.disable()
-            await self.show_checked_page(self.current_page)
 
-    @menus.button("\N{WHITE HEAVY CHECK MARK}")
-    async def enable_trigger(self, payload: discord.RawReactionActionEvent) -> None:
-        """Enables and disables triggers"""
-        member = self.ctx.guild.get_member(payload.user_id)
-        if await self.cog.can_edit(member, self.source.selection):
-            self.source.selection.enable()
-            await self.show_checked_page(self.current_page)
+class DeleteTriggerButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row, label=_("Delete Trigger"))
+        self.style = style
+        self.emoji = "\N{PUT LITTER IN ITS PLACE SYMBOL}"
 
-    @menus.button("\N{PUT LITTER IN ITS PLACE SYMBOL}")
-    async def delete_trigger(self, payload: discord.RawReactionActionEvent) -> None:
-        """Enables and disables triggers"""
-        member = self.ctx.guild.get_member(payload.user_id)
-        if await self.cog.can_edit(member, self.source.selection):
-            msg = await self.ctx.send(
-                _("Are you sure you want to delete trigger {name}?").format(
-                    name=self.source.selection.name
-                )
+    async def keep_trigger(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(
+            content=_("Okay this trigger will not be deleted."), view=None
+        )
+
+    async def delete_trigger(self, interaction: discord.Interaction):
+        self.view.source.selection.disable()
+        done = await self.view.cog.remove_trigger(interaction.guild_id, self.view.source.selection.name)
+        if done:
+            # page = await self.view._source.get_page(self.current_page)
+            # kwargs = await self.view._get_kwargs_from_page(page)
+            await interaction.response.edit_message(
+                content=_("This trigger has been deleted."), view=None
             )
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, self.ctx.author)
-            await self.ctx.bot.wait_for("reaction_add", check=pred)
-            if pred.result:
-                await msg.delete()
-                self.source.selection.disable()
-                done = await self.cog.remove_trigger(payload.guild_id, self.source.selection.name)
-                if done:
-                    page = await self._source.get_page(self.current_page)
-                    kwargs = await self._get_kwargs_from_page(page)
-                    await self.message.edit(
-                        content=_("This trigger has been deleted."), embed=kwargs["embed"]
-                    )
-                    for t in self.cog.triggers[self.ctx.guild.id]:
-                        if t.name == self.source.selection.name:
-                            self.cog.triggers[self.ctx.guild.id].remove(t)
+            for t in self.view.cog.triggers[self.view.ctx.guild.id]:
+                if t.name == self.view.source.selection.name:
+                    self.view.cog.triggers[self.view.ctx.guild.id].remove(t)
+
+    async def callback(self, interaction: discord.Interaction):
+        """Enables and disables triggers"""
+        member = interaction.user
+        if await self.view.cog.can_edit(member, self.view.source.selection):
+            new_view = discord.ui.View()
+            approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Yes"))
+            approve_button.callback = self.delete_trigger
+            deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label=_("No"))
+            deny_button.callback = self.keep_trigger
+            new_view.add_item(approve_button)
+            new_view.add_item(deny_button)
+            await interaction.response.send_message(
+                _("Are you sure you want to delete trigger {name}?").format(
+                    name=self.view.source.selection.name
+                ),
+                ephemeral=True,
+                view=new_view,
+            )
 
 
-class BaseMenu(menus.MenuPages, inherit_buttons=False):
+class ReTriggerMenu(discord.ui.View):
     def __init__(
         self,
         source: menus.PageSource,
@@ -453,20 +424,41 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         page_start: Optional[int] = 0,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
-        timeout: int = 60,
+        timeout: int = 180,
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
-            source,
-            clear_reactions_after=clear_reactions_after,
-            delete_message_after=delete_message_after,
             timeout=timeout,
-            message=message,
-            **kwargs,
         )
         self.cog = cog
         self.page_start = page_start
+        self.ctx = None
+        self.message = None
+        self._source = source
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.delete_button = DeleteTriggerButton(discord.ButtonStyle.red, 1)
+        self.toggle_button = ToggleTriggerButton(discord.ButtonStyle.grey, 1)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.toggle_button)
+        self.add_item(self.delete_button)
+        self.add_item(self.stop_button)
+        self.current_page = page_start
+
+    @property
+    def source(self):
+        return self._source
+
+    async def start(self, ctx: commands.Context):
+        self.ctx = ctx
+        self.message = await self.send_initial_message(ctx, ctx.channel)
 
     async def send_initial_message(self, ctx, channel):
         """|coro|
@@ -474,10 +466,37 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        self.current_page = self.page_start
+
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs)
+        self.toggle_button.modify()
+        if len(self.source.active_triggers) < 2:
+            self.forward_button.disabled = True
+            self.back_button.disabled = True
+            self.first_item.disabled = True
+            self.last_item.disabled = True
+        return await channel.send(**kwargs, view=self)
+
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def show_page(self, page_number):
+        page = await self._source.get_page(page_number)
+        self.current_page = page_number
+        kwargs = await self._get_kwargs_from_page(page)
+        self.toggle_button.modify()
+        if len(self.source.active_triggers) < 2:
+            self.forward_button.disabled = True
+            self.back_button.disabled = True
+            self.first_item.disabled = True
+            self.last_item.disabled = True
+        await self.message.edit(**kwargs, view=self)
 
     async def update(self, payload):
         """|coro|
@@ -527,57 +546,101 @@ class BaseMenu(menus.MenuPages, inherit_buttons=False):
             return False
         return payload.emoji in self.buttons
 
-    def _skip_single_arrows(self):
+
+class BaseMenu(discord.ui.View):
+    def __init__(
+        self,
+        source: menus.PageSource,
+        cog: commands.Cog,
+        clear_reactions_after: bool = True,
+        delete_message_after: bool = False,
+        timeout: int = 180,
+        message: discord.Message = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            timeout=timeout,
+        )
+        self.cog = cog
+        self.bot = None
+        self.message = message
+        self._source = source
+        self.ctx = None
+        self.current_page = kwargs.get("page_start", 0)
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.stop_button)
+
+    @property
+    def source(self):
+        return self._source
+
+    async def start(self, ctx: commands.Context):
+        self.ctx = ctx
+        self.bot = ctx.bot
+        # await self.source._prepare_once()
+        self.message = await self.send_initial_message(ctx, ctx.channel)
+
+    async def _get_kwargs_from_page(self, page):
+        value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def send_initial_message(self, ctx, channel):
+        """|coro|
+        The default implementation of :meth:`Menu.send_initial_message`
+        for the interactive pagination session.
+        This implementation shows the first page of the source.
+        """
+        self.ctx = ctx
+        page = await self._source.get_page(self.current_page)
+        kwargs = await self._get_kwargs_from_page(page)
+        self.message = await channel.send(**kwargs, view=self)
+        return self.message
+
+    async def show_page(self, page_number):
+        page = await self._source.get_page(page_number)
+        self.current_page = self.source.pages.index(page)
+        kwargs = await self._get_kwargs_from_page(page)
+        await self.message.edit(**kwargs)
+
+    async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
+        try:
+            if max_pages is None:
+                # If it doesn't give maximum pages, it cannot be checked
+                await self.show_page(page_number)
+            elif page_number >= max_pages:
+                await self.show_page(0)
+            elif page_number < 0:
+                await self.show_page(max_pages - 1)
+            elif max_pages > page_number >= 0:
+                await self.show_page(page_number)
+        except IndexError:
+            # An error happened that can be handled, so ignore it.
+            pass
 
-    def _skip_double_triangle_buttons(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.First(1),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_previous_page(self, payload):
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(0),
-        skip_if=_skip_single_arrows,
-    )
-    async def go_to_next_page(self, payload):
-        """go to the next page"""
-        await self.show_checked_page(self.current_page + 1)
-
-    @menus.button(
-        "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.First(0),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_first_page(self, payload):
-        """go to the first page"""
-        await self.show_page(0)
-
-    @menus.button(
-        "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-        position=menus.Last(1),
-        skip_if=_skip_double_triangle_buttons,
-    )
-    async def go_to_last_page(self, payload):
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @menus.button("\N{CROSS MARK}")
-    async def stop_pages(self, payload: discord.RawReactionActionEvent) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()
+    async def interaction_check(self, interaction: discord.Interaction):
+        """Just extends the default reaction_check to use owner_ids"""
+        if interaction.message.id != self.message.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        if interaction.user.id not in (*self.bot.owner_ids, self.ctx.author.id):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
