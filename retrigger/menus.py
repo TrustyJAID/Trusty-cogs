@@ -285,7 +285,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view.current_page + 1)
+        await self.view.show_checked_page(self.view.current_page + 1)
 
 
 class BackButton(discord.ui.Button):
@@ -299,7 +299,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view.current_page - 1)
+        await self.view.show_checked_page(self.view.current_page - 1)
 
 
 class LastItemButton(discord.ui.Button):
