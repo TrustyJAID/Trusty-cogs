@@ -29,10 +29,13 @@ class PickemsButton(discord.ui.Button):
         time_now = datetime.utcnow()
 
         if str(interaction.user.id) in self.view.votes:
+            vote = self.view.votes[str(interaction.user.id)]
+            emoji = discord.PartialEmoji.from_str(TEAMS[vote]["emoji"])
             if time_now > self.view.game_start:
+
                 await interaction.response.send_message(
                     _("Voting has ended! You have voted for {emoji} {team}").format(
-                        emoji=self.emoji, team=self.view.votes[str(interaction.user.id)]
+                        emoji=emoji, team=vote
                     ),
                     ephemeral=True,
                 )
@@ -58,7 +61,7 @@ class PickemsButton(discord.ui.Button):
         else:
             if time_now > self.view.game_start:
                 await interaction.response.send_message(
-                    _("Voting has ended! You did not vote on this game!"),
+                    _("Voting has ended, You did not vote on this game!"),
                     ephemeral=True,
                 )
                 return
