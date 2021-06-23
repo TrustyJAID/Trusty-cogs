@@ -257,18 +257,6 @@ class BaseMenu(discord.ui.View):
             return False
         return True
 
-    def _skip_single_arrows(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_triangle_buttons(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
-
     @discord.ui.button(
         style=discord.ButtonStyle.grey,
         emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
@@ -305,7 +293,11 @@ class BaseMenu(discord.ui.View):
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{CROSS MARK}", row=1)
+    @discord.ui.button(
+        style=discord.ButtonStyle.red,
+        emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+        row=1,
+    )
     async def stop_pages(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ) -> None:
