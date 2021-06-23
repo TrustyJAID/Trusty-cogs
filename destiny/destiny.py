@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.6.1"
+    __version__ = "1.7.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -826,7 +826,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     except KeyError:
                         pass
 
-                embed.set_author(name=user.display_name, icon_url=user.avatar_url)
+                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
                 # if "emblemPath" in char:
                 # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
                 if "emblemBackgroundPath" in char:
@@ -834,7 +834,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if titles:
                     # embed.add_field(name=_("Titles"), value=titles)
                     embed.set_author(
-                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url
+                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
                     )
                 # log.debug(data)
                 stats_str = ""
@@ -1451,13 +1451,13 @@ class Destiny(DestinyAPI, commands.Cog):
                     except KeyError:
                         pass
                 embed = discord.Embed(title=info)
-                embed.set_author(name=user.display_name, icon_url=user.avatar_url)
+                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
                 if "emblemPath" in char:
                     embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
                 if titles:
                     # embed.add_field(name=_("Titles"), value=titles)
                     embed.set_author(
-                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar_url
+                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
                     )
                 char_items = chars["characterEquipment"]["data"][char_id]["items"]
                 item_list = [i["itemHash"] for i in char_items]
@@ -1664,7 +1664,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         and "emblemPath" in char
                     ):
                         embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-                    embed.set_author(name=char_info, icon_url=user.avatar_url)
+                    embed.set_author(name=char_info, icon_url=user.avatar.url)
                     for attr, name in RAID.items():
                         if activities["values"][attr]["basic"]["value"] < 0:
                             continue
@@ -1780,7 +1780,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "weaponBestType": _("Best Weapon Type"),
         }
         embed = discord.Embed(title=stat_type.title())
-        embed.set_author(name=char_info, icon_url=user.avatar_url)
+        embed.set_author(name=char_info, icon_url=user.avatar.url)
         kills = data[stat_type]["allTime"]["kills"]["basic"]["displayValue"]
         deaths = data[stat_type]["allTime"]["deaths"]["basic"]["displayValue"]
         assists = data[stat_type]["allTime"]["assists"]["basic"]["displayValue"]
@@ -1841,7 +1841,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "winLossRatio": _("Win Loss Ratio"),
         }
         embed = discord.Embed(title="Gambit")
-        embed.set_author(name=char_info, icon_url=user.avatar_url)
+        embed.set_author(name=char_info, icon_url=user.avatar.url)
         kills = data["kills"]["basic"]["displayValue"]
         deaths = data["deaths"]["basic"]["displayValue"]
         assists = data["assists"]["basic"]["displayValue"]
