@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.7.2"
+    __version__ = "2.8.0"
 
     def __init__(self, bot):
         self.bot = bot
