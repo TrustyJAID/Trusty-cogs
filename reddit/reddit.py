@@ -22,7 +22,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.3"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
