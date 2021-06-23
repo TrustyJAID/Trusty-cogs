@@ -3,6 +3,7 @@ import discord
 from typing import Tuple
 from discord.ext.commands import BadArgument, Converter
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list
 
 from redbot.core import commands
 
@@ -148,3 +149,18 @@ class RoleEmojiConverter(Converter):
         except commands.BadArgument:
             raise
         return role, custom_emoji
+
+
+class ButtonStyleConverter(Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.ButtonStyle:
+        available_styles = [
+            i for i in dir(discord.ButtonStyle) if not i.startswith("_") and i != "try_value"
+        ]
+        if argument.lower() in available_styles:
+            return getattr(discord.ButtonStyle, argument.lower())
+        else:
+            raise BadArgument(
+                _("`{argument}` is not an available Style. Choose one from {styles}").format(
+                    argument=argument, styles=humanize_list(available_styles)
+                )
+            )

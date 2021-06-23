@@ -13,6 +13,7 @@ from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import roletools
+from .buttons import RoleToolsButtons
 from .converter import RoleHierarchyConverter, RawUserIds, SelfRoleConverter
 from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
@@ -40,6 +41,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 @cog_i18n(_)
 class RoleTools(
     RoleToolsEvents,
+    RoleToolsButtons,
     RoleToolsExclusive,
     RoleToolsInclusive,
     RoleToolsReactions,
@@ -53,17 +55,18 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.4"
+    __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
         self.config.register_global(version="0.0.0", atomic=True)
-        self.config.register_guild(reaction_roles={}, auto_roles=[], atomic=None)
+        self.config.register_guild(reaction_roles={}, auto_roles=[], atomic=None, buttons={})
         self.config.register_role(
             sticky=False,
             auto=False,
             reactions=[],
+            buttons=[],
             selfassignable=False,
             selfremovable=False,
             exclusive_to=[],
@@ -121,6 +124,7 @@ class RoleTools(
             await self.config.version.set("1.0.1")
 
         self.settings = await self.config.all_guilds()
+        await self.initialize_buttons()
         self._ready.set()
 
     def update_cooldown(

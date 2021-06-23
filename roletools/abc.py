@@ -1,14 +1,24 @@
+from __future__ import annotations
 import asyncio
 import discord
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Union, Any
+from typing import List, Optional, Dict, Union, Any, TYPE_CHECKING
 
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 
-from .converter import RoleHierarchyConverter, RawUserIds, SelfRoleConverter, RoleEmojiConverter
+from .converter import (
+    RoleHierarchyConverter,
+    RawUserIds,
+    SelfRoleConverter,
+    RoleEmojiConverter,
+    ButtonStyleConverter,
+)
+
+if TYPE_CHECKING:
+    from .buttons import ButtonRoleConverter
 
 
 @commands.group()
@@ -311,4 +321,52 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def _sticky_join(self, member: discord.Member) -> None:
+        raise NotImplementedError()
+
+    #######################################################################
+    # buttons.py                                                          #
+    #######################################################################
+
+    @abstractmethod
+    async def initialize_buttons(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def send_buttons(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel,
+        buttons: commands.Greedy[ButtonRoleConverter],
+        *,
+        message: str,
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def edit_with_buttons(
+        self,
+        ctx: commands.Context,
+        message: discord.Message,
+        buttons: commands.Greedy[ButtonRoleConverter],
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def create_button(
+        self,
+        ctx: Context,
+        name: str,
+        role: RoleHierarchyConverter,
+        label: Optional[str] = None,
+        emoji: Optional[Union[discord.PartialEmoji, str]] = None,
+        style: Optional[ButtonStyleConverter] = discord.ButtonStyle.primary,
+    ):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def delete_button(self, ctx: Context, *, name: str):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def button_roles_view(self, ctx: Context) -> None:
         raise NotImplementedError()
