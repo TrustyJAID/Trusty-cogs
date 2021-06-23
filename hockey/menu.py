@@ -96,7 +96,7 @@ class FirstItemButton(discord.ui.Button):
         await self.view.show_page(0)
 
 
-class SkipWeekButton(discord.ui.Button):
+class SkipForwardkButton(discord.ui.Button):
     def __init__(
         self,
         style: discord.ButtonStyle,
@@ -223,7 +223,7 @@ class GamesMenu(discord.ui.View):
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
-        self.last_item = SkipWeekButton(discord.ButtonStyle.grey, 0)
+        self.last_item = SkipForwardkButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.pick_team_button = PickTeamButton(discord.ButtonStyle.primary, 1)
         self.change_date_button = PickDateButton(discord.ButtonStyle.primary, 1)
