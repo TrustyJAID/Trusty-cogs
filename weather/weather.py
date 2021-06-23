@@ -224,8 +224,8 @@ class Weather(commands.Cog):
             maxtemp = abs(maxtemp - 273.15)
         sunrise_timestamp = int(data["sys"]["sunrise"])
         sunset_timestamp = int(data["sys"]["sunset"])
-        sunrise = f"<t:{sunrise_timestamp}:T>"
-        sunset = f"<t:{sunset_timestamp}:T>"
+        sunrise = f"<t:{sunrise_timestamp}:t>"
+        sunset = f"<t:{sunset_timestamp}:t>"
 
         embed = discord.Embed(colour=discord.Colour.blue())
         if len(city) and len(country):
