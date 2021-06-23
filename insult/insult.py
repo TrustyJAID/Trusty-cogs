@@ -144,7 +144,6 @@ insults: List[str] = [
     _("You're so fat, you have to use a mattress as a maxi-pad."),
     _("I may be fat, but you're ugly, and I can lose weight."),
     _("I was pro life before I met you."),
-    _("What's the difference between you and Hitler? Hitler knew when to kill himself."),
     _("You're so fat, your double chin has a double chin."),
     _("If ignorance is bliss, you must be the happiest person on earth."),
     _("You're so stupid, it takes you an hour to cook minute rice."),
@@ -232,7 +231,6 @@ insults: List[str] = [
     _(
         "Your psychiatrist told you you were crazy and when you wanted a second opinion. He said okay, you're ugly too."
     ),
-    _("If I wanted to kill myself I'd climb your ego and jump to your IQ."),
     _("Behind every fat person there is a beautiful person. No seriously, your in the way."),
     _("Calling you an idiot would be an insult to all the stupid people."),
     _("Some babies were dropped on their heads but you were clearly thrown at a wall."),

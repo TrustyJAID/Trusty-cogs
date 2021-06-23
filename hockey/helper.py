@@ -320,26 +320,25 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     for team in TEAMS:
         if team_name.lower() in team.lower():
             is_team.append(team)
-    if is_team == []:
-        if team_name.lower() in ["montreal canadiens", "habs", "montreal"]:
-            is_team.append("Montréal Canadiens")
-        if team_name.lower() == "avs":
-            is_team.append("Colorado Avalanche")
-        if team_name.lower() == "preds":
-            is_team.append("Nashville Predators")
-        if team_name.lower() == "bolts":
-            is_team.append("Tampa Bay Lightning")
-        if team_name.lower() in ["jackets", "bjs"]:
-            is_team.append("Columbus Blue Jackets")
-        if team_name.lower() == "isles":
-            is_team.append("New York Islanders")
-        if team_name.lower() == "sens":
-            is_team.append("Ottawa Senators")
-        if team_name.lower() == "pens":
-            is_team.append("Pittsburgh Penguins")
-        if team_name.lower() == "caps":
-            is_team.append("Washington Capitals")
-    return is_team
+    if team_name.lower() in ["montreal canadiens", "habs", "montreal"]:
+        is_team.append("Montréal Canadiens")
+    if team_name.lower() == "avs":
+        is_team.append("Colorado Avalanche")
+    if team_name.lower() == "preds":
+        is_team.append("Nashville Predators")
+    if team_name.lower() == "bolts":
+        is_team.append("Tampa Bay Lightning")
+    if team_name.lower() in ["jackets", "bjs"]:
+        is_team.append("Columbus Blue Jackets")
+    if team_name.lower() == "isles":
+        is_team.append("New York Islanders")
+    if team_name.lower() == "sens":
+        is_team.append("Ottawa Senators")
+    if team_name.lower() == "pens":
+        is_team.append("Pittsburgh Penguins")
+    if team_name.lower() == "caps":
+        is_team.append("Washington Capitals")
+    return list(set(is_team))
 
 
 async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:

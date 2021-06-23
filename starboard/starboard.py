@@ -8,7 +8,7 @@ from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
-from .converters import StarboardExists
+from .converters import StarboardExists, RealEmoji
 from .events import StarboardEvents
 from .starboard_entry import StarboardEntry, FakePayload
 from .menus import BaseMenu, StarboardPages
@@ -124,7 +124,7 @@ class Starboard(StarboardEvents, commands.Cog):
         ctx: commands.Context,
         name: str,
         channel: Optional[discord.TextChannel] = None,
-        emoji: Union[discord.Emoji, str] = "⭐",
+        emoji: RealEmoji = "⭐",
     ) -> None:
         """
         Create a starboard on this server
@@ -730,7 +730,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self,
         ctx: commands.Context,
         starboard: Optional[StarboardExists],
-        emoji: Union[discord.Emoji, str],
+        emoji: RealEmoji,
     ) -> None:
         """
         Set the emoji for the starboard
