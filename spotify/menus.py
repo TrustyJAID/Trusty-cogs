@@ -1472,7 +1472,7 @@ class SpotifyBaseMenu(discord.ui.View):
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id not in (*self.bot.owner_ids, self._author_id):
+        if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

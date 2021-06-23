@@ -542,7 +542,7 @@ class ReTriggerMenu(discord.ui.View):
         """Just extends the default reaction_check to use owner_ids"""
         if payload.message_id != self.message.id:
             return False
-        if payload.user_id not in (*self.bot.owner_ids, self._author_id):
+        if payload.user_id not in (*self.ctx.bot.owner_ids, self._author_id):
             return False
         return payload.emoji in self.buttons
 
@@ -638,7 +638,7 @@ class BaseMenu(discord.ui.View):
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id not in (*self.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

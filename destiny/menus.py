@@ -29,6 +29,7 @@ class BasePages(menus.ListPageSource):
         page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return page
 
+
 class StopButton(discord.ui.Button):
     def __init__(
         self,
@@ -195,10 +196,9 @@ class BaseMenu(discord.ui.View):
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id not in (*self.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
         return True
-
