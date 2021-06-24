@@ -693,13 +693,7 @@ class Game:
                 # Create new pickems object for the game
                 if self.game_state == "Preview":
                     bot.dispatch("hockey_preview_message", channel, preview_msg, self)
-                    if channel.permissions_for(guild.me).add_reactions:
-                        try:
-                            await preview_msg.add_reaction(self.away_emoji[2:-1])
-                            await preview_msg.add_reaction(self.home_emoji[2:-1])
-                        except Exception:
-                            log.debug("Could not add reactions")
-                        return channel, preview_msg
+                    return channel, preview_msg
             except Exception:
                 log.exception("Could not post goal in %s", repr(channel))
         return None
