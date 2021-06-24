@@ -57,8 +57,14 @@ class StarboardEvents:
             em.set_author(
                 name=author.display_name, url=message.jump_url, icon_url=str(author.avatar_url)
             )
-            if message.attachments != []:
-                em.set_image(url=message.attachments[0].url)
+            if message.attachments:
+                attachment = message.attachments[0]
+                if attachment.height is None:
+                    em.add_field(
+                        name="Attachment", value=f"[{attachment.filename}]({attachment.url})"
+                    )
+                else:
+                    em.set_image(url=attachment.url)
             if msg_ref := getattr(message, "reference", None):
                 ref_msg = getattr(msg_ref, "resolved", None)
                 try:
