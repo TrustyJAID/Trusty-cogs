@@ -538,13 +538,19 @@ class ReTriggerMenu(discord.ui.View):
             # An error happened that can be handled, so ignore it.
             pass
 
-    def reaction_check(self, payload):
+    async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if payload.message_id != self.message.id:
+        if interaction.message.id != self.message.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
-        if payload.user_id not in (*self.ctx.bot.owner_ids, self._author_id):
+        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
             return False
-        return payload.emoji in self.buttons
+        return True
 
 
 class BaseMenu(discord.ui.View):
