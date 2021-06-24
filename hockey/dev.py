@@ -118,6 +118,53 @@ class HockeyDev(MixinMeta):
         await self.config.teams.set(all_teams)
         await ctx.send("Done testing.")
 
+    @hockeydev.group(name="pickems")
+    async def pickems_dev_commands(self, ctx: commands.Context) -> None:
+        """
+        Dev commands for testing and building pickems
+        """
+        pass
+
+    @pickems_dev_commands.command(name="make")
+    async def make_fake_pickems(self, ctx: commands.Context) -> None:
+        """
+        Testing function with testgame.json
+        """
+        # to_remove = []
+        # games_playing = True
+        # log.debug(link)
+        with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
+            data = json.loads(infile.read())
+        # log.debug(data)
+        game = await Game.from_json(data)
+        fake_pickem = await self.get_pickem_object(ctx.guild, game)
+        msg = await self.make_pickems_msg(ctx.guild, game)
+        msg = await ctx.send(msg, view=fake_pickem)
+        fake_pickem.messages.append(f"{ctx.channel.id}-{msg.id}")
+        fake_pickem._should_save = True
+
+    @pickems_dev_commands.command(name="disable")
+    async def disable_fake_pickems(self, ctx: commands.Context) -> None:
+        """
+        Test final functions for pickems
+        """
+        with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
+            data = json.loads(infile.read())
+        # log.debug(data)
+        game = await Game.from_json(data)
+        await self.disable_pickems_buttons(game)
+
+    @pickems_dev_commands.command(name="final")
+    async def finalize_fake_pickems(self, ctx: commands.Context) -> None:
+        """
+        Test a game final for pickems
+        """
+        with open("/mnt/e/github/Trusty-cogs/hockey/testgame.json", "r") as infile:
+            data = json.loads(infile.read())
+        # log.debug(data)
+        game = await Game.from_json(data)
+        await self.set_guild_pickem_winner(game)
+
     @hockeydev.command(name="pickemstally")
     async def pickems_tally(self, ctx: commands.Context) -> None:
         """

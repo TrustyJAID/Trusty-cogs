@@ -225,7 +225,7 @@ class Pickems(discord.ui.View):
         `True` if the winner has been set or the game is postponed
         `False` if the winner has not set and it's not time to clear it yet.
         """
-        log.debug("Setting winner for %s", repr(self))
+        log.debug("Setting winner for %r", self)
         if not game:
             return False
         if game.game_state == "Postponed":

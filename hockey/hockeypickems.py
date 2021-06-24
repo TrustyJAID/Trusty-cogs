@@ -116,12 +116,14 @@ class HockeyPickems(MixinMeta):
 
     async def disable_pickems_buttons(self, game: Game) -> None:
         all_pickems = self.all_pickems.copy()
+        # log.debug("Disabling pickems Buttons for game %r", game)
         for guild_id, pickems in all_pickems.items():
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
+                # log.debug("Guild ID %s Not available", guild_id)
                 continue
-            pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
             if str(game.game_id) not in pickems:
+                # log.debug("Game %r not in pickems", game)
                 continue
             pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
             pickem.disable_buttons()
@@ -129,11 +131,11 @@ class HockeyPickems(MixinMeta):
                 try:
                     channel_id, message_id = message.split("-")
                 except ValueError:
-                    continue
-                if channel_id not in pickems_channels:
+                    log.debug("Game %r missing message %s", game, message)
                     continue
                 channel = guild.get_channel(int(channel_id))
                 if not channel:
+                    # log.debug("Game %r missing channel", game)
                     continue
                 self.bot.loop.create_task(
                     self.edit_pickems_message(channel, int(message_id), game, pickem)
@@ -141,25 +143,27 @@ class HockeyPickems(MixinMeta):
 
     async def set_guild_pickem_winner(self, game: Game) -> None:
         all_pickems = self.all_pickems.copy()
+        # log.debug("Setting winner for game %r", game)
         for guild_id, pickems in all_pickems.items():
+            if str(game.game_id) not in pickems:
+                # log.debug("Game %r not in pickems list.", game)
+                continue
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
-                continue
-            pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
-            if str(game.game_id) not in pickems:
+                # log.debug("Guild %s not available", guild_id)
                 continue
             pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
-            if pickem.winner is not None:
-                log.debug("Pickems winner is not None %s", repr(pickem))
+            if not await pickem.check_winner(game):
+                # log.debug("Game %r does not have a winner yet.", game)
                 continue
-            await self.all_pickems[str(guild_id)][str(game.game_id)].check_winner(game)
             if game.game_state == pickem.game_state:
+                # log.debug("Game state %s not equal to pickem game state %s", game.game_state, pickem.game_state)
                 continue
-            self.all_pickems[str(guild_id)][str(game.game_id)].game_state = game.game_state
-            self.all_pickems[str(guild_id)][str(game.game_id)]._should_save = True
+            pickem.game_state = game.game_state
+            pickem._should_save = True
             if pickem.winner == pickem.home_team:
                 pickem.home_button.style = discord.ButtonStyle.green
-                pickem.away_emoji.style = discord.ButtonStyle.red
+                pickem.away_button.style = discord.ButtonStyle.red
             if pickem.winner == pickem.away_team:
                 pickem.home_button.style = discord.ButtonStyle.red
                 pickem.away_button.style = discord.ButtonStyle.green
@@ -167,11 +171,11 @@ class HockeyPickems(MixinMeta):
                 try:
                     channel_id, message_id = message.split("-")
                 except ValueError:
-                    continue
-                if channel_id not in pickems_channels:
+                    # log.debug("Game %r missing message %s", game, message)
                     continue
                 channel = guild.get_channel(int(channel_id))
                 if not channel:
+                    # log.debug("Game %r missing channel", game)
                     continue
                 self.bot.loop.create_task(
                     self.edit_pickems_message(channel, int(message_id), game, pickem)
@@ -196,7 +200,7 @@ class HockeyPickems(MixinMeta):
         self,
         guild: discord.Guild,
         game: Game,
-    ) -> bool:
+    ) -> Pickems:
         """
         Checks to see if a pickem object is already created for the game
         if not it creates one or adds the message, channel to the current ones
@@ -227,7 +231,10 @@ class HockeyPickems(MixinMeta):
             log.debug("creating new pickems %s", pickems[str(game.game_id)])
             return pickem
         else:
-            return old_pickem
+            if old_pickem.game_start != game.game_start:
+                self.all_pickems[str(guild.id)][str(game.game_id)].game_start = game.game_start
+                self.all_pickems[str(guild.id)][str(game.game_id)]._should_save = True
+            return self.all_pickems[str(guild.id)][str(game.game_id)]
 
     async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers
@@ -359,7 +366,8 @@ class HockeyPickems(MixinMeta):
         except discord.Forbidden:
             log.error("Could not send pickems message in %s", repr(channel))
             return
-        self.all_pickems[str(channel.guild.id)][str(game.game_id)].messages.append(f"{channel.id}-{new_msg.id}")
+        pickem.messages.append(f"{channel.id}-{new_msg.id}")
+        pickem._should_save = True
         # Create new pickems object for the game
 
     async def create_pickems_channels_and_message(

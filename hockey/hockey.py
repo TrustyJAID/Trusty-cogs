@@ -275,6 +275,7 @@ class Hockey(
                     "https://statsapi.web.nhl.com/api/v1/game/2020020474/feed/live": {
                         "count": 0,
                         "game": None,
+                        "disabled_buttons": False
                     }
                 }
             while self.current_games != {}:
