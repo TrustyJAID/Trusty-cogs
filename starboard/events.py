@@ -59,7 +59,7 @@ class StarboardEvents:
             )
             if message.attachments:
                 attachment = message.attachments[0]
-                if attachment.height is None:
+                if not attachment.url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
                     em.add_field(
                         name="Attachment", value=f"[{attachment.filename}]({attachment.url})"
                     )
