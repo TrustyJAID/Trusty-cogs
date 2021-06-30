@@ -27,7 +27,7 @@ class Starboard(StarboardEvents, commands.Cog):
     Create a starboard to *pin* those special comments indefinitely
     """
 
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
