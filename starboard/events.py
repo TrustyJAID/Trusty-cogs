@@ -43,7 +43,7 @@ class StarboardEvents:
                     em.set_author(
                         name=author.display_name,
                         url=message.jump_url,
-                        icon_url=str(author.avatar.url),
+                        icon_url=str(author.avatar_url),
                     )
         else:
             em = discord.Embed(timestamp=message.created_at)
@@ -55,7 +55,7 @@ class StarboardEvents:
                 em.color = discord.Colour(starboard.colour)
             em.description = message.system_content
             em.set_author(
-                name=author.display_name, url=message.jump_url, icon_url=str(author.avatar.url)
+                name=author.display_name, url=message.jump_url, icon_url=str(author.avatar_url)
             )
             if message.attachments:
                 attachment = message.attachments[0]
