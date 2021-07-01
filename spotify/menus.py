@@ -61,6 +61,16 @@ class SpotifyTrackPages(menus.ListPageSource):
         super().__init__(items, per_page=1)
         self.current_track = None
         self.detailed = detailed
+        self.select_options = []
+        self.items = items
+        for count, item in enumerate(items[:25]):
+            artists = getattr(item, "artists", [])
+            artist = humanize_list([a.name for a in artists])[:25]
+            label = item.name[:25]
+            description = artist
+            self.select_options.append(
+                discord.SelectOption(label=label, value=count, description=description)
+            )
 
     def is_paginating(self):
         return True
@@ -172,6 +182,18 @@ class SpotifyPlaylistPages(menus.ListPageSource):
     def __init__(self, items: List[tekore.model.SimplePlaylist], detailed: bool):
         super().__init__(items, per_page=1)
         self.current_track = None
+        self.select_options = []
+        self.items = items
+        for count, item in enumerate(items[:25]):
+            artists = getattr(item, "artists", [])
+            artist = humanize_list([a.name for a in artists])[:25]
+            label = artist or item.name[:25]
+            description = item.name[:50]
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"Page {count + 1}", value=count, description=description
+                )
+            )
 
     def is_paginating(self):
         return True
@@ -583,18 +605,52 @@ class PlayPauseButton(discord.ui.Button):
                         _("I could not find an active device to play songs on."), ephemeral=True
                     )
                     return
-                if cur.item.id == self.source.current_track.id:
+                if cur.item.id == self.view.source.current_track.id:
                     if cur.is_playing:
+                        await interaction.response.send_message(
+                            _("Pausing Spotify on {device}.").format(device=cur.device.name),
+                            ephemeral=True,
+                        )
                         await user_spotify.playback_pause()
                         self.emoji = emoji_handler.get_emoji("play")
                     else:
+                        await interaction.response.send_message(
+                            _("Resuming Spotify playback on {device}.").format(
+                                device=cur.device.name
+                            ),
+                            ephemeral=True,
+                        )
                         await user_spotify.playback_resume()
                         self.emoji = emoji_handler.get_emoji("pause")
                 else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_start_tracks([self.source.current_track.id])
+                    if self.view.source.current_track.type == "track":
+                        track_name = self.view.source.current_track.name
+                        artists = humanize_list(
+                            [i.name for i in self.view.source.current_track.artists]
+                        )
+                        await interaction.response.send_message(
+                            _("Playing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=artists, device=cur.device.name
+                            ),
+                            ephemeral=True,
+                        )
+                        await user_spotify.playback_start_tracks(
+                            [self.view.source.current_track.id]
+                        )
                     else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
+                        track_name = self.view.source.current_track.name
+                        artists = humanize_list(
+                            [i.name for i in self.view.source.current_track.artists]
+                        )
+                        await interaction.response.send_message(
+                            _("Playing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=artists, device=cur.device.name
+                            ),
+                            ephemeral=True,
+                        )
+                        await user_spotify.playback_start_context(
+                            self.view.source.current_track.uri
+                        )
         except tekore.Unauthorised:
             await interaction.response.send_message(
                 _("I am not authorized to perform this action for you.")
@@ -620,10 +676,13 @@ class PlayPauseButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
         await asyncio.sleep(1)
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class PreviousTrackButton(discord.ui.Button):
@@ -673,10 +732,13 @@ class PreviousTrackButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
         await asyncio.sleep(1)
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class NextTrackButton(discord.ui.Button):
@@ -726,10 +788,13 @@ class NextTrackButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
         await asyncio.sleep(1)
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class ShuffleButton(discord.ui.Button):
@@ -789,10 +854,13 @@ class ShuffleButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
         await asyncio.sleep(1)
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class RepeatButton(discord.ui.Button):
@@ -855,10 +923,13 @@ class RepeatButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
         await asyncio.sleep(1)
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class LikeButton(discord.ui.Button):
@@ -888,7 +959,7 @@ class LikeButton(discord.ui.Button):
                     await interaction.response.send_message(
                         _("I could not find an active device to play songs on."), ephemeral=True
                     )
-                await user_spotify.saved_tracks_add([self.source.current_track.id])
+                await user_spotify.saved_tracks_add([self.view.source.current_track.id])
                 self.disabled = True
         except tekore.Unauthorised:
             await interaction.response.send_message(
@@ -915,9 +986,12 @@ class LikeButton(discord.ui.Button):
             )
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
-                user_token=self.user_token, sender=self.cog._sender, detailed=self.source.detailed
+                user_token=self.user_token,
+                sender=self.cog._sender,
+                detailed=self.view.source.detailed,
             )
-        await self.view.show_checked_page(0)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class PlayAllButton(discord.ui.Button):
@@ -949,12 +1023,14 @@ class PlayAllButton(discord.ui.Button):
                     )
                     return
                 else:
-                    if self.source.current_track.type == "track":
+                    if self.view.source.current_track.type == "track":
                         await user_spotify.playback_start_tracks(
-                            [i.id for i in self.source.entries]
+                            [i.id for i in self.view.source.entries]
                         )
                     else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
+                        await user_spotify.playback_start_context(
+                            self.view.source.current_track.uri
+                        )
                     await interaction.response.send_message(
                         _("Now playing all songs."), ephemeral=True
                     )
@@ -1011,19 +1087,21 @@ class QueueTrackButton(discord.ui.Button):
                     )
                     return
                 else:
-                    if self.source.current_track.type == "track":
-                        await user_spotify.playback_queue_add(self.source.current_track.uri)
+                    if self.view.source.current_track.type == "track":
+                        await user_spotify.playback_queue_add(self.view.source.current_track.uri)
                         await interaction.response.send_message(
                             _("{track} by {artist} has been added to your queue.").format(
-                                track=self.source.current_track.name,
+                                track=self.view.source.current_track.name,
                                 artist=humanize_list(
-                                    [i.name for i in self.source.current_track.artists]
+                                    [i.name for i in self.view.source.current_track.artists]
                                 ),
                             ),
                             ephemeral=True,
                         )
                     else:
-                        await user_spotify.playback_start_context(self.source.current_track.uri)
+                        await user_spotify.playback_start_context(
+                            self.view.source.current_track.uri
+                        )
         except tekore.Unauthorised:
             await interaction.response.send_message(
                 _("I am not authorized to perform this action for you.")
@@ -1285,6 +1363,15 @@ class SpotifyUserMenu(discord.ui.View):
         return True
 
 
+class SpotifySelectOption(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(interaction.data["values"][0])
+        await self.view.show_checked_page(index)
+
+
 class SpotifySearchMenu(discord.ui.View):
     def __init__(
         self,
@@ -1330,6 +1417,9 @@ class SpotifySearchMenu(discord.ui.View):
 
         self.add_item(self.like_button)
         self.add_item(self.stop_button)
+        if hasattr(self.source, "select_options"):
+            self.select_view = SpotifySelectOption(self.source.select_options)
+            self.add_item(self.select_view)
 
     @property
     def source(self):
@@ -1416,6 +1506,9 @@ class SpotifyBaseMenu(discord.ui.View):
         self._source = source
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
+        if hasattr(self.source, "select_options"):
+            self.select_view = SpotifySelectOption(self.source.select_options)
+            self.add_item(self.select_view)
 
     @property
     def source(self):

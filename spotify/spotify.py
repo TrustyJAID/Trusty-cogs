@@ -878,7 +878,7 @@ class Spotify(commands.Cog):
         """
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=ctx.author.display_name + _(" Spotify Profile"), icon_url=ctx.author.avatar_url
+            name=ctx.author.display_name + _(" Spotify Profile"), icon_url=ctx.author.avatar.url
         )
         msg = ""
         cog_settings = await self.config.user(ctx.author).all()
