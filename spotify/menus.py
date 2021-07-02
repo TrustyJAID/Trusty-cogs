@@ -63,13 +63,13 @@ class SpotifyTrackPages(menus.ListPageSource):
         self.detailed = detailed
         self.select_options = []
         self.items = items
-        for count, item in enumerate(items[:25]):
+        for count, item in enumerate(items):
             artists = getattr(item, "artists", [])
-            artist = humanize_list([a.name for a in artists])[:25]
-            label = item.name[:25]
+            artist = humanize_list([a.name for a in artists])[:50]
+            label = item.name[:19]
             description = artist
             self.select_options.append(
-                discord.SelectOption(label=label, value=count, description=description)
+                discord.SelectOption(label=f"{count+1}. {label}", value=count, description=description)
             )
 
     def is_paginating(self):
@@ -184,7 +184,7 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         self.current_track = None
         self.select_options = []
         self.items = items
-        for count, item in enumerate(items[:25]):
+        for count, item in enumerate(items):
             artists = getattr(item, "artists", [])
             artist = humanize_list([a.name for a in artists])[:25]
             label = artist or item.name[:25]
@@ -1368,7 +1368,7 @@ class SpotifySelectOption(discord.ui.Select):
         super().__init__(min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        index = int(interaction.data["values"][0])
+        index = int(self.values[0])
         await self.view.show_checked_page(index)
 
 
@@ -1418,7 +1418,7 @@ class SpotifySearchMenu(discord.ui.View):
         self.add_item(self.like_button)
         self.add_item(self.stop_button)
         if hasattr(self.source, "select_options"):
-            self.select_view = SpotifySelectOption(self.source.select_options)
+            self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
 
     @property
@@ -1449,9 +1449,16 @@ class SpotifySearchMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
+        if page_number >= 12:
+            self.remove_item(self.select_view)
+            self.select_view = SpotifySelectOption(
+                self.source.select_options[page_number - 12 : page_number + 13]
+            )
+            self.add_item(self.select_view)
+            log.debug(f"changing select {len(self.select_view.options)}")
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -1507,7 +1514,7 @@ class SpotifyBaseMenu(discord.ui.View):
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
         if hasattr(self.source, "select_options"):
-            self.select_view = SpotifySelectOption(self.source.select_options)
+            self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
 
     @property
@@ -1538,6 +1545,12 @@ class SpotifyBaseMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
+        if page_number >= 12:
+            self.remove_item(self.select_view)
+            self.select_view = SpotifySelectOption(
+                self.source.select_options[page_number - 12 : page_number + 12]
+            )
+            self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs)
