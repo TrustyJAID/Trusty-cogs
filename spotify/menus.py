@@ -1407,6 +1407,37 @@ class SpotifySelectOption(discord.ui.Select):
         await self.view.show_checked_page(index)
 
 
+class SpotifyDeviceView(discord.ui.View):
+    def __init__(self, ctx: commands.Context):
+        super().__init__(timeout=180)
+        self.ctx = ctx
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(
+                _("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
+
+
+class SpotifySelectDevice(discord.ui.Select):
+    def __init__(
+        self, options: List[discord.SelectOption], user_token: str, sender: tekore.AsyncSender
+    ):
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Pick a device")
+        )
+        self._sender = sender
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        user_spotify = tekore.Spotify(sender=self._sender)
+        with user_spotify.token_as(self.user_token):
+            now = await user_spotify.playback()
+            await user_spotify.playback_transfer(self.values[0], now.is_playing)
+
+
 class SpotifySearchMenu(discord.ui.View):
     def __init__(
         self,

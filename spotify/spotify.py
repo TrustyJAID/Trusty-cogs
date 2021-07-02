@@ -27,6 +27,7 @@ from .menus import (
     SpotifyAlbumPages,
     SpotifyArtistPages,
     SpotifyBaseMenu,
+    SpotifyDeviceView,
     SpotifyEpisodePages,
     SpotifyNewPages,
     SpotifyPages,
@@ -34,6 +35,7 @@ from .menus import (
     SpotifyPlaylistsPages,
     SpotifyRecentSongPages,
     SpotifySearchMenu,
+    SpotifySelectDevice,
     SpotifyShowPages,
     SpotifyTopArtistsPages,
     SpotifyTopTracksPages,
@@ -246,19 +248,13 @@ class Spotify(commands.Cog):
         except asyncio.TimeoutError:
             # Let's check if they authenticated throug Dashboard
             if author.id in self.dashboard_authed:
-                await author.send(
-                    _("Detected authentication via dashboard for {user}.").format(user=author.name)
-                )
+                await author.send(_("Detected authentication via dashboard for."))
                 return await self.get_user_auth(ctx, author)
             try:
                 del self.temp_cache[author.id]
             except KeyError:
                 pass
-            await author.send(
-                _("Alright I won't interact with spotify for you {author}.").format(
-                    author=author.mention
-                )
-            )
+            await author.send(_("Alright I won't interact with spotify for you."))
             return
 
         if author.id in self.dashboard_authed:
@@ -942,7 +938,7 @@ class Spotify(commands.Cog):
                 return
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             if member:
                 if not [c for c in member.activities if c.type == discord.ActivityType.listening]:
                     return await ctx.send(
@@ -993,7 +989,7 @@ class Spotify(commands.Cog):
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1060,7 +1056,7 @@ class Spotify(commands.Cog):
             }
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 search = await user_spotify.search(query, (search_type,), "from_token", limit=50)
@@ -1148,7 +1144,7 @@ class Spotify(commands.Cog):
             log.debug(recommendations)
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 try:
@@ -1189,7 +1185,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -1223,7 +1219,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -1257,7 +1253,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -1291,7 +1287,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 playlists = await user_spotify.new_releases(limit=50)
@@ -1321,7 +1317,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1354,7 +1350,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1391,7 +1387,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1424,7 +1420,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1477,7 +1473,7 @@ class Spotify(commands.Cog):
             log.debug(new_uri)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1572,7 +1568,7 @@ class Spotify(commands.Cog):
             return await ctx.send(_("I can only add tracks to your spotify queue."))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1610,7 +1606,7 @@ class Spotify(commands.Cog):
             return await ctx.send(_("Repeat must accept either `off`, `track`, or `context`."))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1672,7 +1668,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1719,7 +1715,7 @@ class Spotify(commands.Cog):
             seconds = time_convert(seconds)
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1770,7 +1766,7 @@ class Spotify(commands.Cog):
         volume = max(min(100, volume), 0)  # constrains volume to be within 100
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -1828,7 +1824,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             is_playing = False
             user_spotify = tekore.Spotify(sender=self._sender)
@@ -1844,7 +1840,17 @@ class Spotify(commands.Cog):
                         log.debug(f"Transferring playback to {d.name}")
                         new_device = d
             else:
-                new_device = await self.spotify_pick_device(ctx, devices)
+                new_view = SpotifyDeviceView(ctx)
+                options = []
+                for device in devices[:25]:
+                    options.append(discord.SelectOption(label=device.name[:25], value=device.id))
+                select_view = SpotifySelectDevice(options, user_token, self._sender)
+                new_view.add_item(select_view)
+                await ctx.send(
+                    _("Pick the device you want to transfer playback to"), view=new_view
+                )
+                # new_device = await self.spotify_pick_device(ctx, devices)
+                return
             if not new_device:
                 return await ctx.send(_("I will not transfer spotify playback for you."))
             with user_spotify.token_as(user_token):
@@ -1866,32 +1872,6 @@ class Spotify(commands.Cog):
                 _("An exception has occured, please contact the bot owner for more assistance.")
             )
 
-    async def spotify_pick_device(
-        self, ctx: commands.Context, devices: tekore.model.ModelList[tekore.model.Device]
-    ) -> Optional[tekore.model.Device]:
-        """
-        Allows a user to pick the device via reactions or message to simply transfer devices
-        """
-        devices = devices[:9]
-        devices_msg = _("React with the device you want to transfer playback to:\n")
-        for c, d in enumerate(devices):
-            devices_msg += f"{c+1}. `{d.name}` - {d.type} - {d.volume_percent}% "
-            if d.is_active:
-                devices_msg += emoji_handler.get_emoji(
-                    "playpause", ctx.channel.permissions_for(ctx.me).use_external_emojis
-                )
-            devices_msg += "\n"
-        msg = await ctx.maybe_send_embed(devices_msg)
-        emojis = ReactionPredicate.NUMBER_EMOJIS[1 : len(devices) + 1]
-        start_adding_reactions(msg, emojis)
-        pred = ReactionPredicate.with_emojis(emojis, msg)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred)
-        except asyncio.TimeoutError:
-            return None
-        else:
-            return devices[pred.result]
-
     @spotify_device.command(name="list")
     @commands.bot_has_permissions(add_reactions=True)
     async def spotify_device_list(self, ctx: commands.Context):
@@ -1900,7 +1880,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             is_playing = False
             user_spotify = tekore.Spotify(sender=self._sender)
@@ -1942,7 +1922,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -1980,7 +1960,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -2034,7 +2014,7 @@ class Spotify(commands.Cog):
         async with ctx.typing():
             user_token = await self.get_user_auth(ctx)
             if not user_token:
-                return await ctx.send(_("You need to authorize me to interact with spotify."))
+                return await ctx.reply(_("You need to authorize me to interact with spotify."))
             try:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
@@ -2097,7 +2077,7 @@ class Spotify(commands.Cog):
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -2145,7 +2125,7 @@ class Spotify(commands.Cog):
             )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -2202,7 +2182,7 @@ class Spotify(commands.Cog):
             )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -2257,7 +2237,7 @@ class Spotify(commands.Cog):
             )
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -2297,7 +2277,7 @@ class Spotify(commands.Cog):
                 tracks.append(match.group(3))
         user_token = await self.get_user_auth(ctx)
         if not user_token:
-            return await ctx.send(_("You need to authorize me to interact with spotify."))
+            return await ctx.reply(_("You need to authorize me to interact with spotify."))
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
@@ -2341,7 +2321,7 @@ class Spotify(commands.Cog):
             try:
                 user_token = await self.get_user_auth(ctx)
                 if not user_token:
-                    return await ctx.send(_("You need to authorize me to interact with spotify."))
+                    return await ctx.reply(_("You need to authorize me to interact with spotify."))
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     search = await user_spotify.artist_albums(tracks[0], limit=50)
