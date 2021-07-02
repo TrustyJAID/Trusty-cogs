@@ -69,7 +69,9 @@ class SpotifyTrackPages(menus.ListPageSource):
             label = item.name[:19]
             description = artist
             self.select_options.append(
-                discord.SelectOption(label=f"{count+1}. {label}", value=count, description=description)
+                discord.SelectOption(
+                    label=f"{count+1}. {label}", value=count, description=description
+                )
             )
 
     def is_paginating(self):
@@ -145,6 +147,18 @@ class SpotifyAlbumPages(menus.ListPageSource):
     def __init__(self, items: List[tekore.model.FullAlbum], detailed: bool):
         super().__init__(items, per_page=1)
         self.current_track = None
+        self.select_options = []
+        self.items = items
+        for count, item in enumerate(items):
+            artists = getattr(item, "artists", [])
+            artist = humanize_list([a.name for a in artists])[:50]
+            label = item.name[:19]
+            description = artist
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"{count+1}. {label}", value=count, description=description
+                )
+            )
 
     def is_paginating(self):
         return True
@@ -185,9 +199,6 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         self.select_options = []
         self.items = items
         for count, item in enumerate(items):
-            artists = getattr(item, "artists", [])
-            artist = humanize_list([a.name for a in artists])[:25]
-            label = artist or item.name[:25]
             description = item.name[:50]
             self.select_options.append(
                 discord.SelectOption(
@@ -234,6 +245,18 @@ class SpotifyNewPages(menus.ListPageSource):
     def __init__(self, items: List[tekore.model.SimplePlaylist]):
         super().__init__(items, per_page=1)
         self.current_track = None
+        self.select_options = []
+        self.items = items
+        for count, item in enumerate(items):
+            artists = getattr(item, "artists", [])
+            artist = humanize_list([a.name for a in artists])[:50]
+            label = item.name[:19]
+            description = artist
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"{count+1}. {label}", value=count, description=description
+                )
+            )
 
     def is_paginating(self):
         return True
@@ -340,6 +363,18 @@ class SpotifyRecentSongPages(menus.ListPageSource):
         super().__init__(tracks, per_page=1)
         self.current_track = None
         self.detailed = detailed
+        self.select_options = []
+        self.items = tracks
+        for count, item in enumerate(tracks):
+            artists = getattr(item.track, "artists", [])
+            artist = humanize_list([a.name for a in artists])[:50]
+            label = item.track.name[:19]
+            description = artist
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"{count+1}. {label}", value=count, description=description
+                )
+            )
 
     def is_paginating(self):
         return True
@@ -1449,7 +1484,7 @@ class SpotifySearchMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
-        if page_number >= 12:
+        if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
             self.select_view = SpotifySelectOption(
                 self.source.select_options[page_number - 12 : page_number + 13]
@@ -1545,7 +1580,7 @@ class SpotifyBaseMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
-        if page_number >= 12:
+        if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
             self.select_view = SpotifySelectOption(
                 self.source.select_options[page_number - 12 : page_number + 12]

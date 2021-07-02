@@ -2007,6 +2007,9 @@ class Spotify(commands.Cog):
                 playlist_list = playlists
             else:
                 playlist_list = [p for p in playlists if p.public is not False]
+        if len(playlist_list) == 0:
+            await ctx.send(_("You don't have any saved playlists I can show here."))
+            return
         x = SpotifyBaseMenu(
             source=SpotifyPlaylistsPages(playlist_list),
             delete_message_after=delete_after,
@@ -2061,6 +2064,9 @@ class Spotify(commands.Cog):
                 playlist_list = playlists
             else:
                 playlist_list = [p for p in playlists if p.public is not False]
+        if len(playlist_list) == 0:
+            await ctx.send(_("You don't have any saved playlists I can show here."))
+            return
         x = SpotifySearchMenu(
             source=SpotifyPlaylistPages(playlist_list, False),
             delete_message_after=delete_after,
