@@ -96,7 +96,7 @@ class FirstItemButton(discord.ui.Button):
         await self.view.show_page(0)
 
 
-class SkipForwardkButton(discord.ui.Button):
+class SkipForwardButton(discord.ui.Button):
     def __init__(
         self,
         style: discord.ButtonStyle,
@@ -203,6 +203,15 @@ class PickDateButton(discord.ui.Button):
             await self.view.show_page(0)
 
 
+class SelectOption(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        await self.view.show_checked_page(index)
+
+
 class GamesMenu(discord.ui.View):
     def __init__(
         self,
@@ -223,7 +232,7 @@ class GamesMenu(discord.ui.View):
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
-        self.last_item = SkipForwardkButton(discord.ButtonStyle.grey, 0)
+        self.last_item = SkipForwardButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.pick_team_button = PickTeamButton(discord.ButtonStyle.primary, 1)
         self.change_date_button = PickDateButton(discord.ButtonStyle.primary, 1)
@@ -237,6 +246,9 @@ class GamesMenu(discord.ui.View):
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
+        if hasattr(self.source, "select_options"):
+            self.select_view = SelectOption(self.source.select_options[:25])
+            self.add_item(self.select_view)
         self.ctx = ctx
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
@@ -250,6 +262,15 @@ class GamesMenu(discord.ui.View):
         except NoSchedule:
             await self.message.edit(content=self.format_error(), embed=None)
             return
+        if hasattr(self.source, "select_options"):
+            self.remove_item(self.select_view)
+            if page_number >= 12:
+                self.select_view = SelectOption(
+                    self.source.select_options[page_number - 12 : page_number + 13]
+                )
+            else:
+                self.select_view = SelectOption(self.source.select_options[:25])
+            self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs, view=self)
@@ -422,9 +443,7 @@ class BaseMenu(discord.ui.View):
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(
-            timeout=timeout
-        )
+        super().__init__(timeout=timeout)
         self.cog = cog
         self._source = source
         self.ctx: commands.Context = None
@@ -441,11 +460,13 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
+        if hasattr(self.source, "select_options"):
+            self.select_view = SelectOption(self.source.select_options)
+            self.add_item(self.select_view)
 
     @property
     def source(self):
         return self._source
-
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
@@ -532,4 +553,3 @@ class BaseMenu(discord.ui.View):
             )
             return False
         return True
-

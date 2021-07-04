@@ -29,6 +29,8 @@ class Schedule(menus.PageSource):
         self.team: str = kwargs.get("team", None)
         self._last_searched: str = ""
         self._session: aiohttp.CLientSession = kwargs.get("session")
+        self.select_options = []
+        self.search_range = 30
 
     @property
     def index(self) -> int:
@@ -41,17 +43,22 @@ class Schedule(menus.PageSource):
     async def get_page(
         self, page_number, *, skip_next: bool = False, skip_prev: bool = False
     ) -> dict:
-        log.debug(f"Cache size is {len(self._cache)}")
+        log.debug(f"Cache size is {len(self._cache)} {page_number=}")
         if page_number < self.last_page:
-            page = await self.prev()
+            log.debug("Getting Older pages")
+            page = await self.prev(choice=page_number)
         if page_number > self.last_page:
-            page = await self.next()
+            log.debug("Getting Next pages")
+            page = await self.next(choice=page_number)
         if page_number == self.last_page and self._cache:
+            log.debug("Page is within the cache")
             page = self._cache[page_number]
         if skip_next:
-            page = await self.next(True)
+            log.debug("Skipping to next pages")
+            page = await self.next(skip=True)
         if skip_prev:
-            page = await self.prev(True)
+            log.debug("Skipping to previous pages")
+            page = await self.prev(skip=True)
         if not self._cache:
             raise NoSchedule
         # log.info(page)
@@ -67,7 +74,7 @@ class Schedule(menus.PageSource):
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
         return await game_obj.make_game_embed(True)
 
-    async def next(self, skip: bool = False) -> dict:
+    async def next(self, choice: Optional[int] = None, skip: bool = False) -> dict:
         """
         Returns the next element from the list
 
@@ -75,11 +82,14 @@ class Schedule(menus.PageSource):
 
         If no new data can be found within a reasonable number of calls stop
         """
+
         self._index += 1
+        if choice is not None:
+            self._index = choice
         if self._index > (len(self._cache) - 1) or skip:
             # Grab new list from next day
             # log.debug("Getting new games")
-            new_date = self.date + timedelta(days=30)
+            new_date = self.date + timedelta(days=self.search_range)
             self.date = new_date
             try:
                 await self._next_batch(date=new_date, _next=True)
@@ -90,7 +100,7 @@ class Schedule(menus.PageSource):
         # log.info(f"getting next data {len(self._cache)}")
         return self._cache[self.index]
 
-    async def prev(self, skip: bool = False) -> dict:
+    async def prev(self, choice: Optional[int] = None, skip: bool = False) -> dict:
         """
         Returns the previous element from the list
 
@@ -101,9 +111,11 @@ class Schedule(menus.PageSource):
         I wonder if I should traverse weekly instead of daily :blobthink:
         """
         self._index -= 1
+        if choice is not None:
+            self._index = choice
         if self._index < 0 or skip:
             # Grab new list from previous day
-            new_date = self.date + timedelta(days=-30)
+            new_date = self.date + timedelta(days=-self.search_range)
             self.date = new_date
             try:
                 new_data = await self._next_batch(date=new_date, _prev=True)
@@ -140,14 +152,16 @@ class Schedule(menus.PageSource):
         if date:
             date_str = date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (date + timedelta(days=30)).strftime("%Y-%m-%d")
-            end_date_timestamp = int(utc_to_local((date + timedelta(days=30)), "UTC").timestamp())
+            end_date_str = (date + timedelta(days=self.search_range)).strftime("%Y-%m-%d")
+            end_date_timestamp = int(
+                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
+            )
         else:
             date_str = self.date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (self.date + timedelta(days=30)).strftime("%Y-%m-%d")
+            end_date_str = (self.date + timedelta(days=self.search_range)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
-                utc_to_local((self.date + timedelta(days=30)), "UTC").timestamp()
+                utc_to_local((self.date + timedelta(days=self.search_range)), "UTC").timestamp()
             )
 
         url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
@@ -159,6 +173,21 @@ class Schedule(menus.PageSource):
         async with self._session.get(url) as resp:
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
+        self.select_options = []
+        for count, game in enumerate(games):
+            home_team = game["teams"]["home"]["team"]["name"]
+            home_abr = TEAMS[home_team]["tri_code"]
+            away_team = game["teams"]["away"]["team"]["name"]
+            away_abr = TEAMS[away_team]["tri_code"]
+            date = utc_to_local(datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ"))
+            label = f"{away_abr}@{home_abr}-{date.year}-{date.month}-{date.day}"
+            description = f"{away_team} @ {home_team}"
+            emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
+            self.select_options.append(
+                discord.SelectOption(
+                    label=label, value=str(count), description=description, emoji=emoji
+                )
+            )
         if not games:
             # log.debug("No schedule, looking for more days")
             if self._checks < self.limit:
@@ -409,7 +438,7 @@ class ScheduleList(menus.PageSource):
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         if not games:
-            # log.debug("No schedule, looking for more days")
+            #      log.debug("No schedule, looking for more days")
             if self._checks < self.limit:
                 self._checks += 1
                 games = await self._next_batch(date=self.date, _next=_next, _prev=_prev)

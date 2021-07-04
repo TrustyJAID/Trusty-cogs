@@ -71,6 +71,10 @@ class HockeyPickems(MixinMeta):
     async def after_pickems_loop(self) -> None:
         if self.pickems_loop.is_being_cancelled():
             await self.save_pickems_data()
+            for guild_id, pickems in self.all_pickems.items():
+                for game, pickem in pickems.items():
+                    # Don't forget to remove persistent views when the cog is unloaded.
+                    pickem.stop()
 
     @pickems_loop.before_loop
     async def before_pickems_loop(self) -> None:
