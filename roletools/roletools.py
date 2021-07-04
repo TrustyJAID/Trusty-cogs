@@ -13,13 +13,14 @@ from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import roletools
-from .buttons import RoleToolsButtons
+from .buttons import RoleToolsButtons, ButtonRoleView
 from .converter import RoleHierarchyConverter, RawUserIds, SelfRoleConverter
 from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
 from .inclusive import RoleToolsInclusive
 from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
+from .select import RoleToolsSelect, SelectRoleView
 from .settings import RoleToolsSettings
 
 from .menus import BaseMenu, RolePages
@@ -47,6 +48,7 @@ class RoleTools(
     RoleToolsReactions,
     RoleToolsRequires,
     RoleToolsSettings,
+    RoleToolsSelect,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -61,12 +63,20 @@ class RoleTools(
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
         self.config.register_global(version="0.0.0", atomic=True)
-        self.config.register_guild(reaction_roles={}, auto_roles=[], atomic=None, buttons={})
+        self.config.register_guild(
+            reaction_roles={},
+            auto_roles=[],
+            atomic=None,
+            buttons={},
+            select_options={},
+            select_roles={},
+        )
         self.config.register_role(
             sticky=False,
             auto=False,
             reactions=[],
             buttons=[],
+            select_options=[],
             selfassignable=False,
             selfremovable=False,
             exclusive_to=[],
@@ -77,6 +87,7 @@ class RoleTools(
         self.config.register_member(sticky_roles=[])
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
+        self.views = []
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -124,8 +135,22 @@ class RoleTools(
             await self.config.version.set("1.0.1")
 
         self.settings = await self.config.all_guilds()
-        await self.initialize_buttons()
+        try:
+            await self.initialize_buttons()
+        except Exception:
+            log.exception("Error initializing Buttons")
+
+        try:
+            await self.initialize_select()
+        except Exception:
+            log.exception("Error initializing Select")
         self._ready.set()
+
+    def cog_unload(self):
+        for view in self.views:
+            # Don't forget to remove persistent views when the cog is unloaded.
+            log.debug(f"Stopping view {view}")
+            view.stop()
 
     def update_cooldown(
         self, ctx: commands.Context, rate: int, per: float, _type: commands.BucketType

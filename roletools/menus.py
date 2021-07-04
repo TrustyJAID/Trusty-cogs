@@ -18,6 +18,81 @@ log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
 
 
+class StopButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.stop()
+        await self.view.message.delete()
+
+
+class ForwardButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page + 1)
+
+
+class BackButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_checked_page(self.view.current_page - 1)
+
+
+class LastItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(self.view._source.get_max_pages() - 1)
+
+
+class FirstItemButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = (
+            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.show_page(0)
+
+
 class ReactRolePages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
@@ -64,9 +139,26 @@ class ButtonRolePages(menus.ListPageSource):
             return page
 
 
+class RoleToolsSelectOption(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption], placeholder: str = _("Select a role")):
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        await self.view.show_checked_page(index)
+
+
 class RolePages(menus.ListPageSource):
     def __init__(self, roles: List[discord.Role]):
         super().__init__(roles, per_page=1)
+        self.select_options = []
+        for count, role in enumerate(roles):
+            name = f"@{role.name}"
+            if len(name) > 24:
+                name = f"@{role.name[:23]}\N{HORIZONTAL ELLIPSIS}"
+            self.select_options.append(
+                discord.SelectOption(label=name, value=count)
+            )
 
     def is_paginating(self):
         return True
@@ -189,6 +281,24 @@ class BaseMenu(discord.ui.View):
         self._source = source
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
+        self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.first_item)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+        self.add_item(self.last_item)
+        self.add_item(self.stop_button)
+        if hasattr(self.source, "select_options"):
+            options = self.source.select_options
+            if len(options) > 25 and self.current_page != 0:
+                options = options[self.current_page - 12 : self.current_page + 13]
+            else:
+                options = options[:25]
+            self.select_view = RoleToolsSelectOption(options=options)
+            self.add_item(self.select_view)
 
     @property
     def source(self):
@@ -223,9 +333,18 @@ class BaseMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 25:
+            self.remove_item(self.select_view)
+            options = self.source.select_options
+            if page_number >= 12:
+                options = options[page_number - 12 : page_number + 13]
+            else:
+                options = options[:25]
+            self.select_view = RoleToolsSelectOption(options=options)
+            self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -256,51 +375,3 @@ class BaseMenu(discord.ui.View):
             )
             return False
         return True
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    )
-    async def go_to_first_page(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the first page"""
-        await self.show_page(0)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji="\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-    )
-    async def go_to_previous_page(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ):
-        """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji="\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
-    )
-    async def go_to_next_page(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the next page"""
-        log.debug(f"Changing to page {self.current_page + 1}")
-        await self.show_checked_page(self.current_page + 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.grey,
-        emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
-    )
-    async def go_to_last_page(self, button: discord.ui.Button, interaction: discord.Interaction):
-        """go to the last page"""
-        # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.red,
-        emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
-        row=1,
-    )
-    async def stop_pages(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await self.message.delete()

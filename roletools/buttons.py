@@ -78,10 +78,9 @@ class ButtonRoleConverter(Converter):
             if argument.lower() in buttons:
                 button_data = buttons[argument.lower()]
                 role_id = button_data["role_id"]
-                if isinstance(button_data["emoji"], int):
-                    emoji = discord.PartialEmoji(button_data["emoji"])
-                else:
-                    emoji = button_data["emoji"]
+                emoji = button_data["emoji"]
+                if len(emoji) > 4:
+                    emoji = discord.PartialEmoji.from_str(emoji)
                 button = ButtonRole(
                     style=button_data["style"],
                     label=button_data["label"],
@@ -119,6 +118,7 @@ class RoleToolsButtons(RoleToolsMixin):
     async def initialize_buttons(self):
         for guild_id, settings in self.settings.items():
             for button_name, button_data in settings["buttons"].items():
+                log.debug(f"Adding Button {button_name}")
                 view = ButtonRoleView(self)
                 role_id = button_data["role_id"]
                 emoji = discord.PartialEmoji.from_str(button_data["emoji"])
@@ -130,7 +130,9 @@ class RoleToolsButtons(RoleToolsMixin):
                     role_id=role_id,
                     name=button_name,
                 )
+                view.add_item(button)
                 self.bot.add_view(view)
+                self.views.append(view)
 
     @buttons.command(name="send")
     async def send_buttons(
@@ -154,6 +156,7 @@ class RoleToolsButtons(RoleToolsMixin):
         for button in buttons:
             new_view.add_item(button)
         msg = await channel.send(content=message, view=new_view)
+        self.views.append(new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
         async with self.config.guild(ctx.guild).buttons() as saved_buttons:
             for button in buttons:
@@ -181,6 +184,7 @@ class RoleToolsButtons(RoleToolsMixin):
         view = ButtonRoleView(self)
         for button in buttons:
             view.add_item(button)
+        self.views.append(view)
         await message.edit(view=view)
         message_key = f"{message.channel.id}-{message.id}"
         async with self.config.guild(ctx.guild).buttons() as saved_buttons:
@@ -232,7 +236,9 @@ class RoleToolsButtons(RoleToolsMixin):
                 except Exception:
                     emoji_id = None
             else:
-                emoji_id = str(emoji)
+                emoji_id = f"{emoji.name}:{emoji.id}"
+                if emoji.animated:
+                    emoji_id = f"a:{emoji_id}"
         if not emoji_id and not label:
             label = f"@{role.name}"
 
@@ -243,7 +249,7 @@ class RoleToolsButtons(RoleToolsMixin):
             buttons[name.lower()] = {
                 "role_id": role.id,
                 "label": label,
-                "emoji": str(emoji_id),
+                "emoji": emoji_id,
                 "style": style.value,
                 "name": name.lower(),
                 "messages": messages,
@@ -253,7 +259,7 @@ class RoleToolsButtons(RoleToolsMixin):
             self.settings[ctx.guild.id]["buttons"][name.lower()] = {
                 "role_id": role.id,
                 "label": label,
-                "emoji": str(emoji_id),
+                "emoji": emoji_id,
                 "style": style.value,
                 "name": name.lower(),
                 "messages": messages,
@@ -271,6 +277,7 @@ class RoleToolsButtons(RoleToolsMixin):
         )
         view = ButtonRoleView(self)
         view.add_item(button)
+        self.views.append(view)
         msg = await ctx.send("Here is how your button will look.", view=view)
         async with self.config.guild(ctx.guild).buttons() as buttons:
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
