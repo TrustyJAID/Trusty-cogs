@@ -256,8 +256,6 @@ class RoleToolsSelect(RoleToolsMixin):
         (If not provided this will default to the number of options provided.)
         `[placeholder]` - This is the default text on the view when no option has been
         chosen yet.
-        Note: If no label and no emoji are provided the roles name will be used instead.
-        This name will not update if the role name is changed.
         """
         if len(await self.config.guild(ctx.guild).select_options()) < 1:
             await ctx.send(
