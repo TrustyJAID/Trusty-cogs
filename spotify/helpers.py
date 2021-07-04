@@ -175,14 +175,10 @@ def _draw_play(song: tekore.model.CurrentlyPlayingContext) -> str:
     Courtesy of aikaterna from Audio in red and away cog
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/audio/core/utilities/formatting.py#L358-L376
     """
-    song_start_time = datetime.datetime.utcfromtimestamp(song.timestamp / 1000)
-    end_time = datetime.datetime.utcfromtimestamp((song.timestamp + song.item.duration_ms) / 1000)
-    total_time = end_time - song_start_time
-    current_time = datetime.datetime.utcnow()
-    elapsed_time = current_time - song_start_time
+    total_time = datetime.timedelta(seconds=song.item.duration_ms/1000)
+    elapsed_time = datetime.timedelta(seconds=song.progress_ms/1000)
     sections = 12
     loc_time = round((elapsed_time / total_time) * sections)  # 10 sections
-
     bar_char = "\N{BOX DRAWINGS HEAVY HORIZONTAL}"
     seek_char = "\N{RADIO BUTTON}"
     play_char = (

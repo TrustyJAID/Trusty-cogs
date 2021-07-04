@@ -496,6 +496,8 @@ class SpotifyPages(menus.PageSource):
         self.is_playing = True
         self.is_shuffle = False
         self.repeat_state = "off"
+        self.context = None
+        self.select_options = []
 
     async def format_page(
         self,
@@ -505,6 +507,7 @@ class SpotifyPages(menus.PageSource):
 
         state = cur_state[0]
         is_liked = cur_state[1]
+        self.context = state.context
         self.is_liked = is_liked
         self.is_playing = state.is_playing
         self.is_shuffle = state.shuffle_state
@@ -608,9 +611,91 @@ class SpotifyPages(menus.PageSource):
                     liked = await user_spotify.saved_tracks_contains([song])
                     is_liked = liked[0]
                     self.is_liked = liked[0]
+                if cur_state.context is not None:
+                    playlist_id = cur_state.context.uri.split(":")[-1]
+                    cur_tracks = await user_spotify.playlist(playlist_id)
+                    for track in cur_tracks.tracks.items:
+                        self.select_options.append(SpotifyTrackOption(track.track))
+                if self.select_options and cur_state.context is None:
+                    self.select_options = []
         except tekore.Unauthorised:
             raise
         return cur_state, is_liked
+
+
+class SpotifyTrackOption(discord.SelectOption):
+    def __init__(self, track: tekore.FullTrack):
+        super().__init__(
+            label=track.name[:25],
+            description=humanize_list([i.name for i in track.artists])[:50],
+            value=track.id,
+        )
+        self.track = track
+
+
+class SpotifySelectTrack(discord.ui.Select):
+    def __init__(
+        self, options: List[discord.SelectOption], cog: commands.Cog, user_token: tekore.Token
+    ):
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Pick a track to skip to")
+        )
+        self.cog = cog
+        self.user_token = user_token
+
+    async def callback(self, interaction: discord.Interaction):
+        track_id = self.values[0]
+        track = None
+        for track_ in self.options:
+            if track_id == track_.track.id:
+                track = track_.track
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    await interaction.response.send_message(
+                        _("I could not find an active device to play songs on."), ephemeral=True
+                    )
+                    return
+                else:
+                    await user_spotify.playback_start_context(
+                        self.view.source.context.uri, offset=track_id
+                    )
+                    track_name = track.name
+                    artists = humanize_list([i.name for i in track.artists])
+                    await interaction.response.send_message(
+                        _("Playing {track} by {artist} on {device}.").format(
+                            track=track_name, artist=artists, device=cur.device.name
+                        ),
+                        ephemeral=True,
+                    )
+        except tekore.Unauthorised:
+            await interaction.response.send_message(
+                _("I am not authorized to perform this action for you.")
+            )
+        except tekore.NotFound:
+            await interaction.response.send_message(
+                _("I could not find an active device to play songs on."), ephemeral=True
+            )
+        except tekore.Forbidden as e:
+            if "non-premium" in str(e):
+                await interaction.response.send_message(
+                    _("This action is prohibited for non-premium users."), ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("I couldn't perform that action for you."), ephemeral=True
+                )
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await interaction.response.send_message(
+                _("An exception has occured, please contact the bot owner for more assistance."),
+                ephemeral=True,
+            )
+        await asyncio.sleep(1)
+        page = getattr(self.view, "current_page", 0)
+        await self.view.show_checked_page(page)
 
 
 class PlayPauseButton(discord.ui.Button):
@@ -1246,7 +1331,7 @@ class SpotifyUserMenu(discord.ui.View):
         use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
-        timeout: int = 60,
+        timeout: int = 180,
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
@@ -1279,6 +1364,7 @@ class SpotifyUserMenu(discord.ui.View):
         self.add_item(self.shuffle_button)
         self.add_item(self.like_button)
         self.add_item(self.stop_button)
+        self.select_view: Optional[SpotifySelectTrack] = None
 
     @property
     def source(self):
@@ -1288,6 +1374,7 @@ class SpotifyUserMenu(discord.ui.View):
         self._running = False
         self.loop.cancel()
         del self.cog.user_menus[self.ctx.author.id]
+        await self.message.edit(view=None)
 
     async def edit_menu_page_auto(self):
         """
@@ -1301,14 +1388,13 @@ class SpotifyUserMenu(discord.ui.View):
         show an old song when you're already listening to a new song
         """
         while self._running:
-            await asyncio.sleep(15)
+            await asyncio.sleep(30)
             user_spotify = tekore.Spotify(sender=self.source.sender)
             with user_spotify.token_as(self.source.user_token):
                 cur_state = await user_spotify.playback()
                 if not cur_state or not cur_state.item:
                     continue
-                if cur_state.item.id != self.source.current_track.id:
-                    await self.show_checked_page(0)
+                await self.show_checked_page(0)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1345,6 +1431,14 @@ class SpotifyUserMenu(discord.ui.View):
             self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
         if not self.source.is_playing:
             self.play_pause_button.emoji = emoji_handler.get_emoji("play")
+        if self.source.is_shuffle:
+            self.shuffle_button.style = discord.ButtonStyle.primary
+
+        if self.source.select_options:
+            self.select_view = SpotifySelectTrack(
+                self.source.select_options[:25], self.cog, self.user_token
+            )
+            self.add_item(self.select_view)
 
         self.message = await channel.send(**kwargs, view=self)
         self.cog.current_menus[self.message.id] = ctx.author.id
@@ -1354,12 +1448,22 @@ class SpotifyUserMenu(discord.ui.View):
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
-        log.debug(f"edited message before {self.like_button.disabled}")
         if self._source.is_liked:
             self.like_button.disabled = True
         if not self._source.is_liked:
             self.like_button.disabled = False
-        log.debug(f"edited message after {self.like_button.disabled}")
+        if self.source.select_options:
+            options = self.source.select_options[:25]
+            self.remove_item(self.select_view)
+            if len(self.source.select_options) > 25 and page_number > 12:
+                options = self.source.select_options[page_number-12: page_number+13]
+            self.select_view = SpotifySelectTrack(
+                options, self.cog, self.user_token
+            )
+            self.add_item(self.select_view)
+        if self.select_view and not self.source.select_options:
+            self.remove_item(self.select_view)
+            self.select_view = None
         kwargs = await self._get_kwargs_from_page(page)
         await self.message.edit(**kwargs, view=self)
 
@@ -1491,6 +1595,9 @@ class SpotifySearchMenu(discord.ui.View):
     def source(self):
         return self._source
 
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
         if isinstance(value, dict):
@@ -1586,6 +1693,9 @@ class SpotifyBaseMenu(discord.ui.View):
     @property
     def source(self):
         return self._source
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
