@@ -244,6 +244,9 @@ class GamesMenu(discord.ui.View):
         self.add_item(self.pick_team_button)
         self.add_item(self.change_date_button)
 
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
         if hasattr(self.source, "select_options"):
@@ -467,6 +470,9 @@ class BaseMenu(discord.ui.View):
     @property
     def source(self):
         return self._source
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
