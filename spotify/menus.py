@@ -1345,7 +1345,7 @@ class SpotifyUserMenu(discord.ui.View):
         self.use_external = use_external
         self.ctx = kwargs.get("ctx", None)
         self._running = True
-        self.loop = self.ctx.bot.loop.create_task(self.edit_menu_page_auto())
+        # self.loop = self.ctx.bot.loop.create_task(self.edit_menu_page_auto())
         self.previous_button = PreviousTrackButton(
             discord.ButtonStyle.grey, 0, cog, source, user_token
         )
@@ -1372,7 +1372,7 @@ class SpotifyUserMenu(discord.ui.View):
 
     async def on_timeout(self):
         self._running = False
-        self.loop.cancel()
+        # self.loop.cancel()
         del self.cog.user_menus[self.ctx.author.id]
         await self.message.edit(view=None)
 
@@ -1387,6 +1387,9 @@ class SpotifyUserMenu(discord.ui.View):
         if the track changes while you do the command it doesn't
         show an old song when you're already listening to a new song
         """
+        # This cannot work with the current method of refreshing components
+        # in d.py since this triggers a refresh of the timer
+        # thus this is being removed for the time being
         while self._running:
             await asyncio.sleep(30)
             user_spotify = tekore.Spotify(sender=self.source.sender)
