@@ -5,7 +5,7 @@ import pytz
 from dateutil import parser
 from dateutil.tz import gettz
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast, Dict
 
 from redbot.core import commands, Config
 from redbot.core.bot import Red
@@ -148,6 +148,34 @@ class LeaveEventButton(discord.ui.Button):
         await self.view.update_event()
 
 
+class PlayerClassSelect(discord.ui.Select):
+    def __init__(
+        self, custom_id: str, options: Dict[str, str], placeholder: Optional[str]
+    ):
+        super().__init__(
+            custom_id=custom_id,
+            min_values=1,
+            max_values=1,
+            placeholder=placeholder,
+        )
+        for option, emoji in options.items():
+            self.add_option(label=option, emoji=emoji)
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.view.max_slots and len(self.view.members) >= self.view.max_slots:
+            await interaction.response.send_message(
+                _("This event is at the maximum number of members."), ephemeral=True
+            )
+            return
+        if interaction.user.id in self.view.maybe:
+            self.view.maybe.remove(interaction.user.id)
+        if interaction.user.id not in self.view.members:
+            self.view.members.append(interaction.user.id)
+        await self.view.cog.config.member(interaction.user).player_class.set(self.values[0])
+        self.view.check_join_enabled()
+        await self.view.update_event()
+
+
 class MaybeJoinEventButton(discord.ui.Button):
     def __init__(self, custom_id: str):
         super().__init__(
@@ -197,6 +225,8 @@ class Event(discord.ui.View):
         self.guild = kwargs.get("guild")
         self.maybe = kwargs.get("maybe", [])
         self.start = kwargs.get("start", None)
+        self.select_options = kwargs.get("select_options", {})
+        self.cog = kwargs.get("cog")
         super().__init__(timeout=None)
         self.join_button = JoinEventButton(custom_id=f"join-{self.hoster}")
         self.leave_button = LeaveEventButton(custom_id=f"leave-{self.hoster}")
@@ -204,6 +234,14 @@ class Event(discord.ui.View):
         self.add_item(self.join_button)
         self.add_item(self.maybe_button)
         self.add_item(self.leave_button)
+        self.select_view = None
+        if self.select_options:
+            self.select_view = PlayerClassSelect(
+                custom_id=f"playerclass-{self.hoster}",
+                options=self.select_options,
+                placeholder=_("Pick a class to join this event"),
+            )
+            self.add_item(self.select_view)
 
     def __repr__(self):
         return "<Event description={0.event} hoster={0.hoster} start={0.start}>".format(self)
@@ -442,6 +480,7 @@ class Event(discord.ui.View):
             channel=data.get("channel"),
             maybe=data.get("maybe"),
             start=start,
+            select_options=data.get("select_options"),
         )
 
     def to_json(self):
@@ -456,6 +495,7 @@ class Event(discord.ui.View):
             "guild": self.guild,
             "maybe": self.maybe,
             "start": int(self.start.timestamp()) if self.start is not None else None,
+            "select_options": self.select_options,
         }
 
 

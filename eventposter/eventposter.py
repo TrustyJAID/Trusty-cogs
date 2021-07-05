@@ -47,6 +47,7 @@ class EventPoster(commands.Cog):
             "bypass_admin": False,
             "max_events": None,
             "required_roles": [],
+            "playerclass_options": {},
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
@@ -66,6 +67,9 @@ class EventPoster(commands.Cog):
 
     def cog_unload(self):
         self.cleanup_old_events.cancel()
+        for guild_id, events in self.event_cache.items():
+            for user_id, event in events.items():
+                event.stop()
 
     async def red_delete_data_for_user(
         self,
@@ -137,6 +141,7 @@ class EventPoster(commands.Cog):
                         continue
                     if seconds is not None and event.should_remove(seconds):
                         continue
+                    event.cog = self
                     self.event_cache[guild_id][event.message] = event
                     self.bot.add_view(event)
         except Exception:
@@ -295,6 +300,7 @@ class EventPoster(commands.Cog):
 
             max_slots = await self.config.guild(ctx.guild).default_max()
             # log.debug(f"using default {max_slots}")
+        select_options = await self.config.guild(ctx.guild).playerclass_options()
         event = Event(
             bot=self.bot,
             hoster=ctx.author.id,
@@ -303,6 +309,8 @@ class EventPoster(commands.Cog):
             max_slots=max_slots,
             guild=ctx.guild.id,
             channel=announcement_channel.id,
+            select_options=select_options,
+            cog=self,
         )
 
         if await self.config.guild(ctx.guild).bypass_admin():
@@ -831,6 +839,65 @@ class EventPoster(commands.Cog):
         embed.description = msg
         await ctx.send(embed=embed)
 
+    @event_settings.group(name="playerclass", aliases=["playerclasses"])
+    @commands.guild_only()
+    @commands.mod_or_permissions(manage_messages=True)
+    async def playerclasses(self, ctx: commands.Context):
+        """Commands for setting up playerclass choices"""
+        pass
+
+    @playerclasses.command(name="add")
+    async def add_guild_playerclass(
+        self,
+        ctx: commands.Context,
+        emoji: Optional[discord.PartialEmoji] = None,
+        *,
+        player_class: str,
+    ):
+        """
+        Add a playerclass choice for users to pick from for this server.
+
+        `[emoji]` Can be any emoji and is used on the drop down selector to
+        help distinguish the classes.
+        `<player_class>` The name of the player class you want to have
+        as a server option.
+        """
+        async with self.config.guild(ctx.guild).playerclass_options() as options:
+            if player_class not in options:
+                if emoji is not None:
+                    if emoji.is_custom_emoji() and emoji.animated:
+                        emoji = f"a:{emoji.name}:{emoji.id}"
+                    elif emoji.is_custom_emoji() and not emoji.animated:
+                        emoji = f"{emoji.name}:{emoji.id}"
+                    else:
+                        emoji = str(emoji)
+                options[player_class] = emoji
+        await ctx.send(
+            _("{player_class} has been added as an available option.").format(
+                player_class=player_class
+            )
+        )
+
+    @playerclasses.command(name="remove")
+    async def remove_guild_playerclass(self, ctx: commands.Context, *, player_class: str):
+        """
+        Add a playerclass choice for users to pick from for this server.
+
+        `<player_class>` The name of the playerclass you want to remove.
+        """
+        success_msg = _("{player_class} has been removed as an available option.").format(
+                player_class=player_class
+            )
+        fail_msg = _("{player_class} is not currently available as an option.").format(
+                player_class=player_class
+            )
+        async with self.config.guild(ctx.guild).playerclass_options() as options:
+            if player_class in options:
+                del options[player_class]
+                await ctx.send(success_msg)
+            else:
+                await ctx.send(fail_msg)
+
     @event_settings.command(name="remove", aliases=["rem"])
     @commands.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
@@ -878,7 +945,7 @@ class EventPoster(commands.Cog):
             del self.event_cache[ctx.guild.id][event.message]
         await ctx.tick()
 
-    @event_settings.command(name="playerclass")
+    @event_settings.command(name="class")
     @commands.guild_only()
     async def set_default_player_class(
         self, ctx: commands.Context, *, player_class: str = ""
