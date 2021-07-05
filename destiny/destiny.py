@@ -218,7 +218,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if not (item["equippable"]):
                     continue
                 embed = discord.Embed()
-                description = item["flavorText"] + "\n\n"
+
                 damage_type = ""
                 try:
                     damage_data = (
@@ -229,6 +229,14 @@ class Destiny(DestinyAPI, commands.Cog):
                     damage_type = damage_data["displayProperties"]["name"]
                 except KeyError:
                     pass
+                description = (
+                    damage_type
+                    + " "
+                    + item["itemTypeAndTierDisplayName"]
+                    + "\n"
+                    + item["flavorText"]
+                    + "\n\n"
+                )
                 if item["itemType"] in [3] and not show_lore:
 
                     stats_str = ""
@@ -280,8 +288,9 @@ class Destiny(DestinyAPI, commands.Cog):
                         count += 1
                 else:
                     embed.description = description
-                embed.title = damage_type + " " + item["itemTypeAndTierDisplayName"]
+
                 name = item["displayProperties"]["name"]
+                embed.title = name
                 icon_url = IMAGE_URL + item["displayProperties"]["icon"]
                 embed.set_author(name=name, icon_url=icon_url)
                 embed.set_thumbnail(url=icon_url)
@@ -673,19 +682,31 @@ class Destiny(DestinyAPI, commands.Cog):
             msg = ""
             for milestone_hash, content in milestones.items():
                 try:
-                    milestone_def = await self.get_definition("DestinyMilestoneDefinition", [milestone_hash])
+                    milestone_def = await self.get_definition(
+                        "DestinyMilestoneDefinition", [milestone_hash]
+                    )
                 except Exception:
                     log.exception("Error pulling definition")
                     continue
-                name = milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
-                description = milestone_def[str(milestone_hash)].get("displayProperties", {}).get("description", "")
+                name = (
+                    milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
+                )
+                description = (
+                    milestone_def[str(milestone_hash)]
+                    .get("displayProperties", {})
+                    .get("description", "")
+                )
                 extras = ""
                 if "activities" in content:
                     activities = [a["activityHash"] for a in content["activities"]]
-                    activity_data = await self.get_definition("DestinyActivityDefinition", activities)
+                    activity_data = await self.get_definition(
+                        "DestinyActivityDefinition", activities
+                    )
                     for activity_key, activity_info in activity_data.items():
                         activity_name = activity_info.get("displayProperties", {}).get("name", "")
-                        activity_description = activity_info.get("displayProperties", {}).get("description", "")
+                        activity_description = activity_info.get("displayProperties", {}).get(
+                            "description", ""
+                        )
                         extras += f"**{activity_name}:** {activity_description}\n"
 
                 msg += f"**{name}:** {description}\n{extras}\n"
@@ -822,7 +843,9 @@ class Destiny(DestinyAPI, commands.Cog):
                         )
                         title_desc = char_title["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                        embed.set_thumbnail(url=IMAGE_URL + char_title["displayProperties"]["icon"])
+                        embed.set_thumbnail(
+                            url=IMAGE_URL + char_title["displayProperties"]["icon"]
+                        )
                     except KeyError:
                         pass
 
@@ -848,7 +871,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     empty = "░" * int((100 - value) / 10)
                     bar = f"{prog}{empty}"
                     if stat_hash == "1935470627":
-                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"]["powerBonus"]
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
                         bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
                     stats_str += f"{stat_name}: **{value}** \n{bar}\n"
                 stats_str += _("Time Played Total: **{time}**").format(time=time_played)
@@ -907,7 +932,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     lore.insert(0, lore.pop(lore.index(t)))
         await BaseMenu(
             source=BasePages(
-                pages=embeds,
+                pages=lore,
             ),
             delete_message_after=False,
             clear_reactions_after=True,
@@ -969,13 +994,14 @@ class Destiny(DestinyAPI, commands.Cog):
             embeds: List[discord.Embed] = []
             # data = await self.get_definition("DestinyInventoryItemDefinition", items)
             embed = discord.Embed(
+                title=_("Xûr's current wares"),
                 colour=discord.Colour.red(),
                 description=xur_def["displayProperties"]["description"],
             )
             embed.set_thumbnail(
                 url=IMAGE_URL + xur_def["displayProperties"]["largeTransparentIcon"]
             )
-            embed.set_author(name="Xûr's current wares")
+            # embed.set_author(name=_("Xûr's current wares"))
             # location = xur_def["locations"][0]["destinationHash"]
             # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
             for index, item_base in xur["sales"]["data"].items():
@@ -1121,9 +1147,14 @@ class Destiny(DestinyAPI, commands.Cog):
                     # log.debug("ignoring item from sub type %s" % item["itemSubType"])
                     continue
                 embed = discord.Embed()
-                embed.description = item["displayProperties"]["description"]
-                embed.title = item["itemTypeAndTierDisplayName"]
+                embed.description = (
+                    item["itemTypeAndTierDisplayName"]
+                    + "\n\n"
+                    + item["displayProperties"]["description"]
+                )
+
                 name = item["displayProperties"]["name"]
+                embed.title = name
                 icon_url = IMAGE_URL + item["displayProperties"]["icon"]
                 embed.set_author(name=name, icon_url=icon_url)
                 embed.set_thumbnail(url=icon_url)
@@ -1512,7 +1543,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     empty = "░" * int((100 - value) / 10)
                     bar = f"{prog}{empty}"
                     if stat_hash == "1935470627":
-                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"]["powerBonus"]
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
                         bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
                     stats_str += f"{stat_name}: **{value}** \n{bar}\n"
                 embed.description = stats_str
@@ -1649,7 +1682,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         await self.get_definition("DestinyActivityDefinition", [activity_hash])
                     )[str(activity_hash)]
                     embed = discord.Embed(
-                        title=activity_data["displayProperties"]["name"],
+                        title=activity_data["displayProperties"]["name"] + f"- {char_info}",
                         description=activity_data["displayProperties"]["description"],
                     )
 
@@ -1761,8 +1794,7 @@ class Destiny(DestinyAPI, commands.Cog):
         char_class = (await self.get_definition("DestinyClassDefinition", [char["classHash"]]))[
             str(char["classHash"])
         ]
-        char_info += "{user} - {race} {gender} {char_class} ".format(
-            user=user.display_name,
+        char_info += "{race} {gender} {char_class} ".format(
             race=race["displayProperties"]["name"],
             gender=gender["displayProperties"]["name"],
             char_class=char_class["displayProperties"]["name"],
@@ -1779,8 +1811,8 @@ class Destiny(DestinyAPI, commands.Cog):
             "averageLifespan": _("Average Life Span"),
             "weaponBestType": _("Best Weapon Type"),
         }
-        embed = discord.Embed(title=stat_type.title())
-        embed.set_author(name=char_info, icon_url=user.avatar.url)
+        embed = discord.Embed(title=stat_type.title() + f" - {char_info}")
+        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.avatar.url)
         kills = data[stat_type]["allTime"]["kills"]["basic"]["displayValue"]
         deaths = data[stat_type]["allTime"]["deaths"]["basic"]["displayValue"]
         assists = data[stat_type]["allTime"]["assists"]["basic"]["displayValue"]
@@ -1821,8 +1853,7 @@ class Destiny(DestinyAPI, commands.Cog):
         char_class = (await self.get_definition("DestinyClassDefinition", [char["classHash"]]))[
             str(char["classHash"])
         ]
-        char_info += "{user} - {race} {gender} {char_class} ".format(
-            user=user.display_name,
+        char_info += "{race} {gender} {char_class} ".format(
             race=race["displayProperties"]["name"],
             gender=gender["displayProperties"]["name"],
             char_class=char_class["displayProperties"]["name"],
@@ -1840,8 +1871,8 @@ class Destiny(DestinyAPI, commands.Cog):
             "weaponBestType": _("Best Weapon Type"),
             "winLossRatio": _("Win Loss Ratio"),
         }
-        embed = discord.Embed(title="Gambit")
-        embed.set_author(name=char_info, icon_url=user.avatar.url)
+        embed = discord.Embed(title=_("Gambit") + f" - {char_info}")
+        embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.avatar.url)
         kills = data["kills"]["basic"]["displayValue"]
         deaths = data["deaths"]["basic"]["displayValue"]
         assists = data["assists"]["basic"]["displayValue"]

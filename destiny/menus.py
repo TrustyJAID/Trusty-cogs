@@ -21,6 +21,15 @@ class BasePages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
         self.pages = pages
+        self.select_options = []
+        for count, page in enumerate(pages):
+            self.select_options.append(
+                discord.SelectOption(
+                    label=_("Page {number}").format(number=count + 1),
+                    value=count,
+                    description=page.title[:50],
+                )
+            )
 
     def is_paginating(self):
         return True
@@ -105,6 +114,15 @@ class FirstItemButton(discord.ui.Button):
         await self.view.show_page(0)
 
 
+class DestinySelect(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        await self.view.show_checked_page(index)
+
+
 class BaseMenu(discord.ui.View):
     def __init__(
         self,
@@ -129,12 +147,15 @@ class BaseMenu(discord.ui.View):
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
+        if hasattr(self.source, "select_options"):
+            self.select_view = DestinySelect(self.source.select_options[:25])
+            self.add_item(self.select_view)
 
     @property
     def source(self):
@@ -169,9 +190,15 @@ class BaseMenu(discord.ui.View):
 
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
+        if hasattr(self.source, "select_options") and page_number >= 12:
+            self.remove_item(self.select_view)
+            self.select_view = DestinySelect(
+                self.source.select_options[page_number - 12 : page_number + 13]
+            )
+            self.add_item(self.select_view)
         self.current_page = self.source.pages.index(page)
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
