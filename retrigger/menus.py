@@ -22,6 +22,9 @@ class ExplainReTriggerPages(menus.ListPageSource):
     def __init__(self, pages: list):
         super().__init__(pages, per_page=1)
         self.pages = pages
+        self.select_options = []
+        for count, page in enumerate(pages):
+            self.select_options.append(discord.SelectOption(label=f"Page {count+1}", value=count))
 
     def is_paginating(self):
         return True
@@ -44,6 +47,9 @@ class ReTriggerPages(menus.ListPageSource):
         self.selection = None
         self.guild = guild
         self.enabled = False
+        self.select_options = []
+        for count, trigger in enumerate(triggers):
+            self.select_options.append(discord.SelectOption(label=trigger.name[:25], value=count))
 
     def is_paginating(self):
         return True
@@ -259,6 +265,15 @@ class ReTriggerPages(menus.ListPageSource):
         # return await make_embed_from_submission(menu.ctx.channel, self._subreddit, submission)
 
 
+class ReTriggerSelectOption(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption], placeholder: str):
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        await self.view.show_checked_page(index)
+
+
 class StopButton(discord.ui.Button):
     def __init__(
         self,
@@ -385,7 +400,9 @@ class DeleteTriggerButton(discord.ui.Button):
 
     async def delete_trigger(self, interaction: discord.Interaction):
         self.view.source.selection.disable()
-        done = await self.view.cog.remove_trigger(interaction.guild_id, self.view.source.selection.name)
+        done = await self.view.cog.remove_trigger(
+            interaction.guild_id, self.view.source.selection.name
+        )
         if done:
             # page = await self.view._source.get_page(self.current_page)
             # kwargs = await self.view._get_kwargs_from_page(page)
@@ -421,7 +438,7 @@ class ReTriggerMenu(discord.ui.View):
         self,
         source: menus.PageSource,
         cog: Optional[commands.Cog] = None,
-        page_start: Optional[int] = 0,
+        page_start: int = 0,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 180,
@@ -451,6 +468,7 @@ class ReTriggerMenu(discord.ui.View):
         self.add_item(self.delete_button)
         self.add_item(self.stop_button)
         self.current_page = page_start
+        self.select_view: Optional[ReTriggerSelectOption] = None
 
     @property
     def source(self):
@@ -475,6 +493,16 @@ class ReTriggerMenu(discord.ui.View):
             self.back_button.disabled = True
             self.first_item.disabled = True
             self.last_item.disabled = True
+        else:
+            options = self.source.select_options[:25]
+            if len(self.source.select_options) > 25 and self.current_page > 12:
+                options = self.source.select_options[
+                    self.current_page - 12 : self.current_page + 13
+                ]
+            self.select_view = ReTriggerSelectOption(
+                options=options, placeholder=_("Pick a Trigger")
+            )
+            self.add_item(self.select_view)
         return await channel.send(**kwargs, view=self)
 
     async def _get_kwargs_from_page(self, page):
@@ -496,31 +524,16 @@ class ReTriggerMenu(discord.ui.View):
             self.back_button.disabled = True
             self.first_item.disabled = True
             self.last_item.disabled = True
+        else:
+            self.remove_item(self.select_view)
+            options = self.source.select_options[:25]
+            if len(self.source.select_options) > 25 and page_number > 12:
+                options = self.source.select_options[page_number - 12 : page_number + 13]
+            self.select_view = ReTriggerSelectOption(
+                options=options, placeholder=_("Pick a Trigger")
+            )
+            self.add_item(self.select_view)
         await self.message.edit(**kwargs, view=self)
-
-    async def update(self, payload):
-        """|coro|
-
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -577,12 +590,16 @@ class BaseMenu(discord.ui.View):
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
+        self.select_view = ReTriggerSelectOption(
+            options=self.source.select_options, placeholder=_("Pick a page")
+        )
+        self.add_item(self.select_view)
 
     @property
     def source(self):
