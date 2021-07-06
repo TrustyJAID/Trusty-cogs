@@ -175,8 +175,8 @@ def _draw_play(song: tekore.model.CurrentlyPlayingContext) -> str:
     Courtesy of aikaterna from Audio in red and away cog
     https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/audio/core/utilities/formatting.py#L358-L376
     """
-    total_time = datetime.timedelta(seconds=song.item.duration_ms/1000)
-    elapsed_time = datetime.timedelta(seconds=song.progress_ms/1000)
+    total_time = datetime.timedelta(seconds=song.item.duration_ms / 1000)
+    elapsed_time = datetime.timedelta(seconds=song.progress_ms / 1000)
     sections = 12
     loc_time = round((elapsed_time / total_time) * sections)  # 10 sections
     bar_char = "\N{BOX DRAWINGS HEAVY HORIZONTAL}"
@@ -193,7 +193,6 @@ def _draw_play(song: tekore.model.CurrentlyPlayingContext) -> str:
             msg += seek_char
         else:
             msg += bar_char
-
     msg += " `{:.7}`/`{:.7}`".format(str(elapsed_time), str(total_time))
     return msg
 

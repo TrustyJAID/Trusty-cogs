@@ -305,6 +305,9 @@ class Spotify(commands.Cog):
         listen_for = await self.config.user_from_id(payload.user_id).listen_for()
         if not listen_for:
             return
+        if str(payload.emoji) not in listen_for:
+            log.debug(f"{payload.emoji} not in listen_for")
+            return
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -315,6 +318,13 @@ class Spotify(commands.Cog):
         try:
             message = await channel.fetch_message(payload.message_id)
         except Exception:
+            return
+        user = guild.get_member(payload.user_id)
+        if not user:
+            return
+        ctx = await self.bot.get_context(message)
+        user_token = await self.get_user_auth(ctx, user)
+        if not user_token:
             return
 
         content = message.content
@@ -344,16 +354,8 @@ class Spotify(commands.Cog):
                     albums.append(match.group(3))
                 if match.group(2) == "playlist":
                     playlists.append(match.group(3))
-        ctx = await self.bot.get_context(message)
-        user = self.bot.get_user(payload.user_id)
-        if not user:
-            return
-        user_token = await self.get_user_auth(ctx, user)
-        if not user_token:
-            return
+
         user_spotify = tekore.Spotify(sender=self._sender)
-        if str(payload.emoji) not in listen_for:
-            return
         action = listen_for[str(payload.emoji)]
         if action == "play" or action == "playpause":
             # play the song if it exists
@@ -577,17 +579,15 @@ class Spotify(commands.Cog):
         """
         added = {}
         async with self.config.user(ctx.author).listen_for() as current:
-            for action, emoji in listen_for.items():
+            for action, raw_emoji in listen_for.items():
                 if action not in emoji_handler.emojis.keys():
                     continue
-                custom_emoji = None
-                try:
-                    custom_emoji = await commands.PartialEmojiConverter().convert(ctx, emoji)
-                except commands.BadArgument:
-                    pass
-                if custom_emoji:
-                    current[str(custom_emoji)] = action
-                    added[str(custom_emoji)] = action
+                emoji = discord.PartialEmoji.from_str(raw_emoji)
+                if emoji.is_custom_emoji():
+                    animated = "a" if emoji.animated else ""
+                    emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
+                    current[emoji_str] = action
+                    added[emoji_str] = action
                 else:
                     try:
                         await ctx.message.add_reaction(str(emoji))
@@ -764,14 +764,23 @@ class Spotify(commands.Cog):
         """
         emojis_changed = {}
         async with self.config.emojis() as emojis:
-            for name, emoji in new_emojis.items():
-                try:
-                    await ctx.message.add_reaction(str(emoji))
-                    emoji_handler.replace_emoji(name, str(emoji))
-                    emojis[name] = str(emoji)
+            for name, raw_emoji in new_emojis.items():
+                emoji = discord.PartialEmoji.from_str(raw_emoji)
+                if emoji.is_unicode_emoji():
+                    try:
+                        await ctx.message.add_reaction(str(emoji))
+                        emoji_handler.replace_emoji(name, str(emoji))
+                        emojis[name] = str(emoji)
+                        emojis_changed[name] = str(emoji)
+                    except (InvalidEmoji, discord.errors.HTTPException):
+                        pass
+                else:
+                    animated = "a" if emoji.animated else ""
+                    emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
+                    emoji_handler.replace_emoji(name, emoji_str)
+                    emojis[name] = emoji_str
                     emojis_changed[name] = str(emoji)
-                except (InvalidEmoji, discord.errors.HTTPException):
-                    pass
+
         if not emojis_changed:
             return await ctx.send(_("No emojis have been changed."))
         msg = _("The following emojis have been replaced:\n")

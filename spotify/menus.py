@@ -35,17 +35,16 @@ class EmojiHandler:
         self.emojis = emojis
         self.default = copy(self.emojis)
 
-    def get_emoji(self, name: str, use_external: bool = True) -> str:
+    def get_emoji(self, name: str, use_external: bool = True) -> discord.PartialEmoji:
         if use_external and name in self.emojis:
-            return self.emojis[name]
-        return self.default[name]
+            return discord.PartialEmoji.from_str(self.emojis[name])
+        return discord.PartialEmoji.from_str(self.default[name])
         # we shouldn't have anyone deleting emoji keys
 
     def reload_emojis(self):
         # we could just copy default but we can also just
         # reload the emojis from disk
-        with open(Path(__file__).parent / "emojis.json", "r", encoding="utf8") as infile:
-            self.emojis = json.loads(infile.read())
+        self.emojis = copy(self.default)
 
     def replace_emoji(self, name: str, to: str):
         if name not in self.emojis:
@@ -498,6 +497,7 @@ class SpotifyPages(menus.PageSource):
         self.repeat_state = "off"
         self.context = None
         self.select_options = []
+        self.context_name = None
 
     async def format_page(
         self,
@@ -614,6 +614,7 @@ class SpotifyPages(menus.PageSource):
                 if cur_state.context is not None:
                     playlist_id = cur_state.context.uri.split(":")[-1]
                     cur_tracks = await user_spotify.playlist(playlist_id)
+                    self.context_name = cur_tracks.name
                     for track in cur_tracks.tracks.items:
                         self.select_options.append(SpotifyTrackOption(track.track))
                 if self.select_options and cur_state.context is None:
@@ -635,11 +636,13 @@ class SpotifyTrackOption(discord.SelectOption):
 
 class SpotifySelectTrack(discord.ui.Select):
     def __init__(
-        self, options: List[discord.SelectOption], cog: commands.Cog, user_token: tekore.Token
+        self,
+        options: List[discord.SelectOption],
+        cog: commands.Cog,
+        user_token: tekore.Token,
+        placeholder: str,
     ):
-        super().__init__(
-            min_values=1, max_values=1, options=options, placeholder=_("Pick a track to skip to")
-        )
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
         self.cog = cog
         self.user_token = user_token
 
@@ -1439,7 +1442,10 @@ class SpotifyUserMenu(discord.ui.View):
 
         if self.source.select_options:
             self.select_view = SpotifySelectTrack(
-                self.source.select_options[:25], self.cog, self.user_token
+                self.source.select_options[:25],
+                self.cog,
+                self.user_token,
+                self.source.context_name,
             )
             self.add_item(self.select_view)
 
@@ -1459,9 +1465,9 @@ class SpotifyUserMenu(discord.ui.View):
             options = self.source.select_options[:25]
             self.remove_item(self.select_view)
             if len(self.source.select_options) > 25 and page_number > 12:
-                options = self.source.select_options[page_number-12: page_number+13]
+                options = self.source.select_options[page_number - 12 : page_number + 13]
             self.select_view = SpotifySelectTrack(
-                options, self.cog, self.user_token
+                options, self.cog, self.user_token, self.source.context_name
             )
             self.add_item(self.select_view)
         if self.select_view and not self.source.select_options:
