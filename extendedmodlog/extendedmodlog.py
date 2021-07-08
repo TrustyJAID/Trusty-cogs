@@ -21,7 +21,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
     """
 
     __author__ = ["RePulsar", "TrustyJAID"]
-    __version__ = "2.10.8"
+    __version__ = "2.11.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -597,6 +597,21 @@ class ExtendedModLog(EventMixin, commands.Cog):
             await ctx.send(_("Bots will no longer be tracked in user change logs."))
         else:
             await ctx.send(_("Bots will be tracked in user change logs."))
+
+    @_modlog.command(name="botvoice")
+    async def _user_bot_voice_logging(self, ctx: commands.Context) -> None:
+        """
+        Toggle bots from being logged in voice state updates
+        """
+        if ctx.guild.id not in self.settings:
+            self.settings[ctx.guild.id] = inv_settings
+        setting = self.settings[ctx.guild.id]["voice_change"]["bots"]
+        self.settings[ctx.guild.id]["voice_change"]["bots"] = not setting
+        await self.config.guild(ctx.guild).voice_change.bots.set(not setting)
+        if setting:
+            await ctx.send(_("Bots will no longer be tracked in voice update logs."))
+        else:
+            await ctx.send(_("Bots will be tracked in voice update logs."))
 
     @_modlog.command(name="nickname", aliases=["nicknames"])
     async def _user_nickname_logging(self, ctx: commands.Context) -> None:

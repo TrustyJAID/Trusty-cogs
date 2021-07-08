@@ -1251,14 +1251,11 @@ class EventMixin:
         time = datetime.datetime.utcnow()
         fmt = "%H:%M:%S"
         if embed_links:
-            content = list(pagify(f"{before.author.mention}: {before.content}", page_length=1000))
             embed = discord.Embed(
-                description=content.pop(0),
+                description=f"{before.author.mention}: {before.content}",
                 colour=await self.get_event_colour(guild, "message_edit"),
                 timestamp=before.created_at,
             )
-            for more_content in content:
-                embed.add_field(name=_("Message Continued"), value=more_content)
             jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)
@@ -1522,7 +1519,7 @@ class EventMixin:
                 return
         if not self.settings[guild.id]["voice_change"]["enabled"]:
             return
-        if member.bot:
+        if member.bot and not self.settings[guild.id]["voice_change"]["bots"]:
             return
         try:
             channel = await self.modlog_channel(guild, "voice_change")
