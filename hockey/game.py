@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Optional, List, Dict, Union, Tuple
 
 import aiohttp
@@ -9,6 +9,7 @@ from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
+from redbot.core.utils.chat_formatting import pagify
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
@@ -43,6 +44,7 @@ class Game:
     away_abr: str
     period_ord: str
     period_time_left: str
+    period_starts: Dict[str, datetime]
     plays: List[dict]
     first_star: Optional[str]
     second_star: Optional[str]
@@ -69,8 +71,11 @@ class Game:
         self.period = kwargs.get("period")
         self.period_ord = kwargs.get("period_ord")
         self.period_time_left = kwargs.get("period_time_left")
+        self.period_starts = kwargs.get("period_starts", {})
         self.plays = kwargs.get("plays")
-        self.game_start = datetime.strptime(kwargs.get("game_start"), "%Y-%m-%dT%H:%M:%SZ")
+        game_start_str = kwargs.get("game_start", "")
+        game_start = datetime.strptime(game_start_str, "%Y-%m-%dT%H:%M:%SZ")
+        self.game_start = game_start.replace(tzinfo=timezone.utc)
         home_team = kwargs.get("home_team")
         away_team = kwargs.get("away_team")
         self.home_logo = (
@@ -105,6 +110,14 @@ class Game:
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
             self
         )
+
+    @property
+    def timestamp(self) -> int:
+        """
+        This is just a helper property to access the game_start as
+        a timestamp for formation of discord timestamps
+        """
+        return int(self.game_start.timestamp())
 
     def game_type_str(self):
         game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
@@ -241,7 +254,7 @@ class Game:
             else None
         )
 
-        em = discord.Embed(timestamp=utc_to_local(self.game_start, "UTC"))
+        em = discord.Embed(timestamp=self.game_start)
         if colour is not None:
             em.colour = colour
         em.set_author(name=title, url=team_url, icon_url=self.home_logo)
@@ -291,45 +304,48 @@ class Game:
                 for goals in list_goals:
                     ordinal = goals
                     goal_msg = ""
-                    count = 0
+
+                    period_start_str = ""
+                    period_start = self.period_starts.get(ordinal)
+                    if period_start:
+                        period_start_ts = int(period_start.timestamp())
+                        period_start_str = f"(<t:{period_start_ts}:t>)"
+
                     for goal in list_goals[ordinal]:
-                        if count == 4:
-                            em.add_field(
-                                name=_("{ordinal} Period Goals").format(ordinal=ordinal),
-                                value=goal_msg[:1024],
-                                inline=False,
-                            )
-                            count = 0
-                            goal_msg = ""
                         try:
                             emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
                         except KeyError:
                             emoji = ""
-                        if not goal.link:
-                            goal_msg += _("{emoji} {team} Goal By {description}\n\n").format(
-                                emoji=emoji, team=goal.team_name, description=goal.description
+                        left = ""
+                        if goal.time_remaining:
+                            left = _("\n{time} left in the {ord} period").format(
+                                time=goal.time_remaining, ord=goal.period_ord
                             )
-                        else:
-                            goal_msg += _(
-                                "{emoji} [{team} Goal By {description}]({link})\n\n"
-                            ).format(
-                                emoji=emoji,
-                                team=goal.team_name,
-                                description=goal.description,
-                                link=goal.link,
-                            )
-                        count += 1
-                    if len(list_goals[ordinal]) > 4 and goal_msg != "":
-                        em.add_field(
-                            name=_("{ordinal} Period Goals (Continued)").format(ordinal=ordinal),
-                            value=goal_msg[:1024],
+                        goal_msg += _(
+                            "{emoji} [{team} Goal By {description} {left}]({link})\n\n"
+                        ).format(
+                            emoji=emoji,
+                            team=goal.team_name,
+                            description=goal.description,
+                            link=goal.link,
+                            left=left,
                         )
-                    if len(list_goals[ordinal]) <= 4 and goal_msg != "":
+
+                    count = 0
+                    continued = _("(Continued)")
+                    for page in pagify(
+                        goal_msg, delims=["\n\n", "\n"], page_length=1024, priority=True
+                    ):
                         em.add_field(
-                            name=_("{ordinal} Period Goals").format(ordinal=ordinal),
-                            value=goal_msg[:1024],
+                            name=_("{ordinal} Period {time} Goals {continued}").format(
+                                ordinal=ordinal,
+                                time=period_start_str,
+                                continued="" if count == 0 else continued,
+                            ),
+                            value=page,
                             inline=False,
                         )
+                        count += 1
                 if len(so_goals) != 0:
                     home_msg, away_msg = await self.goals[0].get_shootout_display(self)
                     em.add_field(
@@ -352,7 +368,9 @@ class Game:
                         time=self.period_time_left, ordinal=period
                     )
                 if include_plays:
-                    em.description = self.plays[-1]["result"]["description"]
+                    em.description = _("Last Play: {play}").format(
+                        play=self.plays[-1]["result"]["description"]
+                    )
                 em.add_field(name="Period", value=msg)
         return em
 
@@ -363,7 +381,7 @@ class Game:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp = datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
         title = f"{self.away_team} @ {self.home_team} {self.game_state}"
-        em = discord.Embed(timestamp=utc_to_local(self.game_start, "UTC"))
+        em = discord.Embed(timestamp=self.game_start)
         home_field = "{0} {1} {0}".format(self.home_emoji, self.home_team)
         away_field = "{0} {1} {0}".format(self.away_emoji, self.away_team)
         if self.game_state != "Preview":
@@ -398,7 +416,7 @@ class Game:
     async def game_state_text(self) -> str:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        time_string = utc_to_local(self.game_start).strftime("%I:%M %p %Z")
+        time_string = f"<t:{int(self.game_start.timestamp())}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
             f"{self.game_state}\n({time_string})"
@@ -802,8 +820,7 @@ class Game:
         Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
-        timestamp = int(utc_to_local(self.game_start, "UTC").timestamp())
-        time_str = f"<t:{timestamp}:R>"
+        time_str = f"<t:{self.timestamp}:R>"
         msg = _("{away_emoji} {away} @ {home_emoji} {home} game starts {time}!").format(
             time=time_str,
             away_emoji=self.away_emoji,
@@ -865,6 +882,12 @@ class Game:
         players.update(away_roster)
         players.update(home_roster)
         game_id = data["gameData"]["game"]["pk"]
+        period_starts = {}
+        for play in data["liveData"]["plays"]["allPlays"]:
+            if play["result"]["eventTypeId"] == "PERIOD_START":
+                dt = datetime.strptime(play["about"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
+                dt = dt.replace(tzinfo=timezone.utc)
+                period_starts[play["about"]["ordinalNum"]] = dt
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(CONTENT_URL.format(game_id)) as resp:
@@ -919,6 +942,7 @@ class Game:
             away_abr=data["gameData"]["teams"]["away"]["abbreviation"],
             period_ord=period_ord,
             period_time_left=period_time_left,
+            period_starts=period_starts,
             plays=events,
             first_star=first_star,
             second_star=second_star,

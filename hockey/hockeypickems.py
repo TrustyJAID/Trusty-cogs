@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 from .abc import MixinMeta
 from .constants import TEAMS
 from .game import Game
-from .helper import utc_to_local, TimezoneFinder
+from .helper import TimezoneFinder
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -337,13 +337,8 @@ class HockeyPickems(MixinMeta):
             team = game.home_team if game.home_score > game.away_score else game.away_team
             team_emoji = game.home_emoji if game.home_score > game.away_score else game.away_emoji
             winner = _("**WINNER:** {team_emoji} {team}").format(team_emoji=team_emoji, team=team)
-        timezone = await self.pickems_config.guild(guild).pickems_timezone()
-        if timezone is None:
-            game_start = utc_to_local(game.game_start, TEAMS[game.home_team]["timezone"])
-        else:
-            game_start = utc_to_local(game.game_start, timezone)
         # time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
-        timestamp = int(utc_to_local(game.game_start, "UTC").timestamp())
+        timestamp = int(game.game_start.timestamp())
         time_str = f"<t:{timestamp}:F>"
         if game.game_state == "Postponed":
             time_str = _("Postponed")
@@ -885,7 +880,7 @@ class HockeyPickems(MixinMeta):
         for page in pagify(msg):
             await ctx.send(page)
 
-    @pickems_commands.command(name="timezone", aliases=["timezones", "tz"])
+    @pickems_commands.command(name="timezone", aliases=["timezones", "tz"], hidden=True)
     async def set_pickems_timezone(
         self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
     ) -> None:

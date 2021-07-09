@@ -41,23 +41,27 @@ class Schedule(menus.PageSource):
         return self._last_page
 
     async def get_page(
-        self, page_number, *, skip_next: bool = False, skip_prev: bool = False
+        self, page_number, *, skip_next: bool = False, skip_prev: bool = False, game_id: Optional[int] = None
     ) -> dict:
-        log.debug(f"Cache size is {len(self._cache)} {page_number=}")
+        log.debug(f"Cache size is {len(self._cache)} {page_number=} {game_id=}")
+        if game_id is not None:
+            for game in self._cache:
+                if game["gamePk"] == game_id:
+                    log.debug("getting game")
+                    page_number = self._cache.index(game)
+                    log.debug(f"{page_number=} {self.last_page=}")
+                    self._last_page = page_number
+                    self._index = page_number
+                    return self._cache[page_number]
         if page_number < self.last_page:
-            log.debug("Getting Older pages")
-            page = await self.prev(choice=page_number)
+            page = await self.prev()
         if page_number > self.last_page:
-            log.debug("Getting Next pages")
-            page = await self.next(choice=page_number)
+            page = await self.next()
         if page_number == self.last_page and self._cache:
-            log.debug("Page is within the cache")
             page = self._cache[page_number]
         if skip_next:
-            log.debug("Skipping to next pages")
             page = await self.next(skip=True)
         if skip_prev:
-            log.debug("Skipping to previous pages")
             page = await self.prev(skip=True)
         if not self._cache:
             raise NoSchedule
@@ -174,6 +178,7 @@ class Schedule(menus.PageSource):
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         self.select_options = []
+        log.debug(games)
         for count, game in enumerate(games):
             home_team = game["teams"]["home"]["team"]["name"]
             home_abr = TEAMS[home_team]["tri_code"]
@@ -185,7 +190,7 @@ class Schedule(menus.PageSource):
             emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
             self.select_options.append(
                 discord.SelectOption(
-                    label=label, value=str(count), description=description, emoji=emoji
+                    label=label, value=str(game["gamePk"]), description=description, emoji=emoji
                 )
             )
         if not games:

@@ -203,13 +203,13 @@ class PickDateButton(discord.ui.Button):
             await self.view.show_page(0)
 
 
-class SelectOption(discord.ui.Select):
+class HockeySelectGame(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption]):
         super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
 
     async def callback(self, interaction: discord.Interaction):
-        index = int(self.values[0])
-        await self.view.show_checked_page(index)
+        game_id = int(self.values[0])
+        await self.view.show_page(0, game_id=game_id)
 
 
 class GamesMenu(discord.ui.View):
@@ -243,36 +243,42 @@ class GamesMenu(discord.ui.View):
         self.add_item(self.stop_button)
         self.add_item(self.pick_team_button)
         self.add_item(self.change_date_button)
+        self.select_view = None
 
     async def on_timeout(self):
         await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
-        if hasattr(self.source, "select_options"):
-            self.select_view = SelectOption(self.source.select_options[:25])
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
+            self.select_view = HockeySelectGame(self.source.select_options[:25])
             self.add_item(self.select_view)
         self.ctx = ctx
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
     async def show_page(
-        self, page_number: int, *, skip_next: bool = False, skip_prev: bool = False
+        self,
+        page_number: int,
+        *,
+        skip_next: bool = False,
+        skip_prev: bool = False,
+        game_id: Optional[int] = None,
     ) -> None:
         try:
             page = await self.source.get_page(
-                page_number, skip_next=skip_next, skip_prev=skip_prev
+                page_number, skip_next=skip_next, skip_prev=skip_prev, game_id=game_id
             )
         except NoSchedule:
             await self.message.edit(content=self.format_error(), embed=None)
             return
-        if hasattr(self.source, "select_options"):
+        if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
             self.remove_item(self.select_view)
             if page_number >= 12:
-                self.select_view = SelectOption(
+                self.select_view = HockeySelectGame(
                     self.source.select_options[page_number - 12 : page_number + 13]
                 )
             else:
-                self.select_view = SelectOption(self.source.select_options[:25])
+                self.select_view = HockeySelectGame(self.source.select_options[:25])
             self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
@@ -314,7 +320,6 @@ class GamesMenu(discord.ui.View):
 
     async def show_checked_page(self, page_number: int) -> None:
         try:
-            self.current_page = page_number
             await self.show_page(page_number)
         except IndexError:
             # An error happened that can be handled, so ignore it.
@@ -404,10 +409,21 @@ class LeaderboardPages(menus.ListPageSource):
 
 
 class PlayerPages(menus.ListPageSource):
-    def __init__(self, pages: list, season: str):
+    def __init__(self, pages: list, season: str, players: dict):
         super().__init__(pages, per_page=1)
         self.pages: List[int] = pages
+        self.players = players
         self.season: str = season
+        self.select_options = []
+        for count, player_id in enumerate(self.pages):
+            player_name = self.players[player_id]["fullName"]
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"Page {count + 1}",
+                    description=player_name[:50],
+                    value=player_id,
+                )
+            )
 
     def is_paginating(self) -> bool:
         return True
@@ -419,6 +435,16 @@ class PlayerPages(menus.ListPageSource):
         em = player.get_embed()
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
+
+
+class HockeySelectPlayer(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
+
+    async def callback(self, interaction: discord.Interaction):
+        player_id = int(self.values[0])
+        index = self.view.source.pages.index(player_id)
+        await self.view.show_page(index)
 
 
 class SimplePages(menus.ListPageSource):
@@ -463,8 +489,9 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
+        self.select_view = None
         if hasattr(self.source, "select_options"):
-            self.select_view = SelectOption(self.source.select_options)
+            self.select_view = HockeySelectPlayer(self.source.select_options[:25])
             self.add_item(self.select_view)
 
     @property
@@ -488,10 +515,24 @@ class BaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
+    async def update_select_view(self, page_number: int):
+        if self.select_view is not None:
+            self.remove_item(self.select_view)
+        if not hasattr(self.source, "select_options"):
+            return
+        if len(self.source.select_options) < 25:
+            return
+        options = self.source.select_options[:25]
+        if page_number >= 12:
+            options = self.source.select_options[page_number - 12 : page_number + 13]
+        self.select_view = HockeySelectPlayer(options)
+        self.add_item(self.select_view)
+
     async def show_page(self, page_number):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
+        await self.update_select_view(page_number)
         await self.message.edit(**kwargs, view=self)
 
     async def send_initial_message(

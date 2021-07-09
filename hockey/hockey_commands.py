@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Literal, Optional, List
+from typing import Literal, Optional, List, Dict, Tuple
 from urllib.parse import quote
 
 import discord
@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder, utc_to_local
+from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
@@ -84,7 +84,8 @@ class HockeyCommands(MixinMeta):
         """Set your role to a team role"""
         guild = ctx.message.guild
         if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+            await ctx.send(_("You must provide a valid current team."))
+            return
         try:
             role = [
                 role
@@ -163,7 +164,7 @@ class HockeyCommands(MixinMeta):
             "west": DivisionStandingsPages,
         }
         if search is None:
-            search = "division"
+            search = "all"
         standings, page = await Standings.get_team_standings(search.lower(), session=self.session)
         for team in TEAMS:
             if "Team" in team:
@@ -175,7 +176,7 @@ class HockeyCommands(MixinMeta):
             page_start=page,
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
@@ -198,7 +199,7 @@ class HockeyCommands(MixinMeta):
             source=Schedule(**teams_and_date, session=self.session),
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
     @hockey_commands.command()
@@ -217,16 +218,14 @@ class HockeyCommands(MixinMeta):
         only that teams games may appear in that date range if they exist.
         """
         log.debug(teams_and_date)
-        timezone = await self.config.guild(ctx.guild).timezone()
-        log.debug(timezone)
         await GamesMenu(
-            source=ScheduleList(**teams_and_date, session=self.session, timezone=timezone),
+            source=ScheduleList(**teams_and_date, session=self.session),
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
-    async def player_id_lookup(self, name: str) -> List[int]:
+    async def player_id_lookup(self, name: str) -> Tuple[List[int], Dict[int, dict]]:
         now = datetime.utcnow()
         saved = datetime.fromtimestamp(await self.config.player_db())
         path = cog_data_path(self) / "players.json"
@@ -239,15 +238,18 @@ class HockeyCommands(MixinMeta):
             await self.config.player_db.set(int(now.timestamp()))
         with path.open(encoding="utf-8", mode="r") as f:
 
-            players = []
+            players = {}
+            player_ids = []
             async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
                 if name.lower() in player["fullName"].lower():
                     if player["onRoster"] == "N":
-                        players.append(player["id"])
+                        players[player["id"]] = player
+                        player_ids.append(player["id"])
                     else:
-                        players.insert(0, player["id"])
+                        players[player["id"]] = player
+                        player_ids.insert(0, player["id"])
         log.debug(players)
-        return players
+        return player_ids, players
 
     @hockey_commands.command(aliases=["players"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -270,27 +272,31 @@ class HockeyCommands(MixinMeta):
                 search = YEAR_RE.sub("", search)
                 if season.group(3):
                     if (int(season.group(3)) - int(season.group(1))) > 1:
-                        return await ctx.send(_("Dates must be only 1 year apart."))
+                        await ctx.send(_("Dates must be only 1 year apart."))
+                        return
                     if (int(season.group(3)) - int(season.group(1))) <= 0:
-                        return await ctx.send(_("Dates must be only 1 year apart."))
+                        await ctx.send(_("Dates must be only 1 year apart."))
+                        return
                     if int(season.group(1)) > datetime.now().year:
-                        return await ctx.send(_("Please select a year prior to now."))
+                        await ctx.send(_("Please select a year prior to now."))
+                        return
                     season_str = f"{season.group(1)}{season.group(3)}"
                 else:
                     if int(season.group(1)) > datetime.now().year:
-                        return await ctx.send(_("Please select a year prior to now."))
+                        await ctx.send(_("Please select a year prior to now."))
+                        return
                     year = int(season.group(1)) + 1
                     season_str = f"{season.group(1)}{year}"
             log.debug(season)
             log.debug(search)
-            players = await self.player_id_lookup(search.strip())
-        if players != []:
+            player_ids, players = await self.player_id_lookup(search.strip())
+        if players != {}:
             await BaseMenu(
-                source=PlayerPages(pages=players, season=season_str),
+                source=PlayerPages(pages=player_ids, season=season_str, players=players),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
-                timeout=60,
+                timeout=180,
             ).start(ctx=ctx)
         else:
             await ctx.send(
@@ -313,23 +319,28 @@ class HockeyCommands(MixinMeta):
         if season:
             if season.group(3):
                 if (int(season.group(3)) - int(season.group(1))) > 1:
-                    return await ctx.send(_("Dates must be only 1 year apart."))
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
                 if (int(season.group(3)) - int(season.group(1))) <= 0:
-                    return await ctx.send(_("Dates must be only 1 year apart."))
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
                 if int(season.group(1)) > datetime.now().year:
-                    return await ctx.send(_("Please select a year prior to now."))
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
                 season_str = f"{season.group(1)}{season.group(3)}"
             else:
                 if int(season.group(1)) > datetime.now().year:
-                    return await ctx.send(_("Please select a year prior to now."))
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
         if season:
             season_url = f"?season={season_str}"
         if search is None:
-            return await ctx.send(_("You must provide a valid current team."))
-        rosters = {}
-        players = []
+            await ctx.send(_("You must provide a valid current team."))
+            return
+        players = {}
+        player_ids = []
         teams = [team for team in TEAMS if search.lower() in team.lower()]
         if teams != []:
             for team in teams:
@@ -338,17 +349,19 @@ class HockeyCommands(MixinMeta):
                     data = await resp.json()
                 if "roster" in data:
                     for player in data["roster"]:
-                        players.append(player["person"]["id"])
+                        player_ids.append(player["person"]["id"])
+                        players[player["person"]["id"]] = player["person"]
         else:
-            return await ctx.send(_("No team name was provided."))
+            await ctx.send(_("No team name was provided."))
+            return
 
         if players:
             await BaseMenu(
-                source=PlayerPages(pages=players, season=season_str),
+                source=PlayerPages(pages=player_ids, season=season_str, players=players),
                 cog=self,
                 delete_message_after=False,
                 clear_reactions_after=True,
-                timeout=60,
+                timeout=180,
             ).start(ctx=ctx)
         else:
             if season:
@@ -494,7 +507,7 @@ class HockeyCommands(MixinMeta):
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
             delete_message_after=False,
             clear_reactions_after=True,
-            timeout=60,
+            timeout=180,
         ).start(ctx=ctx)
 
     @hockey_commands.command()
@@ -538,13 +551,10 @@ class HockeyCommands(MixinMeta):
             await ctx.send(_("This server does not have any pickems setup."))
             return
         msg = _("You have voted on the following games:\n")
-        timezone = await self.pickems_config.guild(ctx.guild).pickems_timezone()
         for game_id, pickem in self.all_pickems[str(ctx.guild.id)].items():
             if str(ctx.author.id) in pickem.votes:
                 vote = pickem.votes[str(ctx.author.id)]
-                game_start = utc_to_local(pickem.game_start, timezone)
-                # time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
-                timestamp = int(utc_to_local(game_start, "UTC").timestamp())
+                timestamp = int(pickem.game_start.timestamp())
                 time_str = f"<t:{timestamp}:F>"
                 msg += f"{pickem.away_team} @ {pickem.home_team} {time_str} - {vote}\n"
         msgs = []

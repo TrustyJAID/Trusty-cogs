@@ -32,7 +32,7 @@ class MixinMeta(ABC):
         self.bot: Red
         self.loop: Optional[asyncio.Task]
         self.TEST_LOOP: bool
-        self.all_pickems: dict
+        self.all_pickems: Dict[str, Dict[str, Pickems]]
         self.session: aiohttp.ClientSession
         self.pickems_config: Config
         self._ready: asyncio.Event

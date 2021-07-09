@@ -3,7 +3,7 @@ import discord
 import json
 import logging
 from abc import ABC
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Optional, Dict, List
 
@@ -18,9 +18,11 @@ from .dev import HockeyDev
 from .errors import InvalidFileError
 from .game import Game
 from .gamedaychannels import GameDayChannels
+from .helper import utc_to_local
 from .hockey_commands import HockeyCommands
 from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
+from .pickems import Pickems
 from .standings import Standings
 from .teamentry import TeamEntry
 
@@ -58,7 +60,7 @@ class Hockey(
     def __init__(self, bot):
         super().__init__(self)
         self.bot = bot
-        default_global = {"teams": [], "created_gdc": False, "print": False}
+        default_global = {"teams": [], "created_gdc": False, "print": False, "last_day": 0}
         for team in TEAMS:
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
             default_global["teams"].append(team_entry.to_json())
@@ -117,7 +119,7 @@ class Hockey(
         self.loop: Optional[asyncio.Task] = None
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data
-        self.all_pickems = {}
+        self.all_pickems: Dict[str, Dict[str, Pickems]] = {}
         self.pickems_loop.start()
         self.current_games = {}
         self.games_playing = False
@@ -342,7 +344,6 @@ class Hockey(
             log.debug("Games Done Playing")
 
             if self.games_playing:
-                await self.config.created_gdc.set(False)
                 try:
                     await self.tally_leaderboard()
                     # Only tally the leaderboard once per day
@@ -370,7 +371,8 @@ class Hockey(
             await asyncio.sleep(300)
 
     async def check_new_day(self) -> None:
-        if not await self.config.created_gdc():
+        now = utc_to_local(datetime.now(timezone.utc))
+        if now.day != await self.config.last_day():
             if datetime.now().weekday() == 6:
                 try:
                     await self.reset_weekly()
@@ -396,7 +398,8 @@ class Hockey(
             log.debug("Checking GDC")
 
             await self.check_new_gdc()
-            await self.config.created_gdc.set(True)
+            # await self.config.created_gdc.set(True)
+            await self.config.last_day.set(now.day)
 
     async def change_custom_emojis(self, attachments: List[discord.Attachment]) -> None:
         """

@@ -352,7 +352,7 @@ class GameDayChannels(MixinMeta):
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()
-        timestamp = utc_to_local(next_game.game_start, "UTC").timestamp()
+        timestamp = next_game.game_start.timestamp()
 
         time_string = f"<t:{int(timestamp)}:F>"
 

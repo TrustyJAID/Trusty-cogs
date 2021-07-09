@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import discord
@@ -56,8 +56,9 @@ class Goal:
         self.period = kwargs.get("period")
         self.period_ord = kwargs.get("period_ord")
         self.time_remaining = kwargs.get("time_remaining")
-        time = kwargs.get("time")
-        self.time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+        time = kwargs.get("time", "")
+        time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+        self.time = time.replace(tzinfo=timezone.utc)
         self.home_score = kwargs.get("home_score")
         self.away_score = kwargs.get("away_score")
         self.strength = kwargs.get("strength")
@@ -149,6 +150,15 @@ class Goal:
             home_shots=data.get("home_shots", 0),
             away_shots=data.get("away_shots", 0),
         )
+
+    @property
+    def timestamp(self) -> int:
+        """
+        This is just a helper property to return
+        the timestamp in which this goal was scored for simply
+        using inside discords new timestamps.
+        """
+        return int(self.time.timestamp())
 
     async def post_team_goal(self, bot: Red, game_data: Game) -> List[Tuple[int, int, int]]:
         """
@@ -422,9 +432,9 @@ class Goal:
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
 
-            em = discord.Embed(description=self.description)
+            em = discord.Embed(description=f"{self.description}\n<t:{self.timestamp}:T>")
             if self.link:
-                em.description = f"[{self.description}]({self.link})"
+                em.description = f"[{self.description}\n<t:{self.timestamp}:T>]({self.link})"
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)
@@ -444,7 +454,7 @@ class Goal:
                 ),
                 icon_url=logo,
             )
-            em.timestamp = utc_to_local(self.time, "UTC")
+            em.timestamp = self.time
         else:
             if "missed" in self.event.lower():
                 em = discord.Embed(description=self.description, colour=colour)
@@ -462,7 +472,7 @@ class Goal:
                 + _(" period"),
                 icon_url=logo,
             )
-            em.timestamp = utc_to_local(self.time, "UTC")
+            em.timestamp = self.time
         return em
 
     async def goal_post_text(self, game: Game) -> str:

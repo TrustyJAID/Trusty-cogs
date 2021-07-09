@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import discord
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 from redbot.core.i18n import Translator
 
@@ -154,7 +154,7 @@ class Pickems(discord.ui.View):
         )
 
     def add_vote(self, user_id: int, team: discord.Emoji) -> None:
-        time_now = datetime.utcnow()
+        time_now = datetime.now(timezone.utc)
 
         team_choice = None
         if str(team.id) in self.home_emoji:
@@ -182,7 +182,7 @@ class Pickems(discord.ui.View):
             self.votes[str(user_id)] = team_choice
             self._should_save = True
 
-    def to_json(self) -> dict:
+    def to_json(self) -> Dict[str, Optional[Union[str, Dict[str, str]]]]:
         return {
             "game_id": self.game_id,
             "game_state": self.game_state,
@@ -199,7 +199,7 @@ class Pickems(discord.ui.View):
         }
 
     @classmethod
-    def from_json(cls, data: dict) -> Pickems:
+    def from_json(cls, data: Dict[str, Optional[Union[str, Dict[str, str]]]]) -> Pickems:
         # log.debug(data)
         return cls(
             game_id=data.get("game_id"),

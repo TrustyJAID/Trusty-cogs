@@ -39,7 +39,6 @@ class HockeySetCommands(MixinMeta):
                 _("On") if await self.config.guild(guild).post_standings() else _("Off")
             )
             gdc_channels = await self.config.guild(guild).gdc()
-            timezone = await self.config.guild(guild).timezone() or _("Home Teams Timezone")
             if gdc_channels is None:
                 gdc_channels = []
             if standings_channel is not None:
@@ -93,20 +92,17 @@ class HockeySetCommands(MixinMeta):
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
                 em.add_field(name=_("Notifications"), value=notification_settings)
-                em.add_field(name=_("Timezone"), value=timezone)
                 await ctx.send(embed=em)
             else:
                 msg = _(
                     "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
                     "\nStandings Settings\n{standings_chn}: {standings}\n"
-                    "Timezone: {timezone}"
                 ).format(
                     guild=guild.name,
                     channels=channels,
                     notifications=notification_settings,
                     standings_chn=standings_chn,
                     standings=standings_msg,
-                    timezone=timezone,
                 )
                 await ctx.send(msg)
 
@@ -115,7 +111,7 @@ class HockeySetCommands(MixinMeta):
     #######################################################################
 
     @hockeyset_commands.group(
-        name="timezone", aliases=["timezones", "tz"], invoke_without_command=True
+        name="timezone", aliases=["timezones", "tz"], invoke_without_command=True, hidden=True
     )
     async def set_hockey_timezone(
         self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
