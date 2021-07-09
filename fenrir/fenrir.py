@@ -106,7 +106,6 @@ class Fenrir(commands.Cog):
     @commands.guild_only()
     async def fenrirblock(self, ctx: commands.Context, *members: discord.Member) -> None:
         """Replaces all commands for specific members with insults
-
         """
         if not members:
             await ctx.send_help()
