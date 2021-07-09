@@ -1,12 +1,12 @@
 import logging
-
 from typing import Optional, Union
-from redbot.core import commands, bank
-from redbot.core.i18n import Translator
-from redbot.core.commands import Context
 
-from .converter import RoleHierarchyConverter
+from redbot.core import bank, commands
+from redbot.core.commands import Context
+from redbot.core.i18n import Translator
+
 from .abc import RoleToolsMixin, roletools
+from .converter import RoleHierarchyConverter
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)

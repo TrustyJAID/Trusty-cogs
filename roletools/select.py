@@ -1,19 +1,18 @@
 from __future__ import annotations
-import discord
+
 import logging
+from typing import List, Optional, Union
 
-from typing import Union, Optional, List
-
+import discord
 from discord.ext.commands import BadArgument, Converter
-
 from redbot.core import commands
-from redbot.core.i18n import Translator
 from redbot.core.commands import Context
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import RoleToolsMixin, roletools
-from .converter import RoleHierarchyConverter, ButtonStyleConverter
-from .menus import ButtonRolePages, BaseMenu
+from .converter import RoleHierarchyConverter
+from .menus import BaseMenu, SelectMenuPages, SelectOptionPages
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -68,10 +67,10 @@ class SelectRole(discord.ui.Select):
             if role is None:
                 continue
             if interaction.user.bot:
-                    # how? This is what happens when you copy/paste code lol
-                    ## even if it's your own code
-                    ### Especially if it's your own code
-                    continue
+                # how? This is what happens when you copy/paste code lol
+                # # even if it's your own code
+                # ## Especially if it's your own code
+                continue
             config = self.view.cog.config
             if role not in interaction.user.roles:
                 if not await config.role(role).selfassignable():
@@ -143,10 +142,10 @@ class SelectOptionRoleConverter(Converter):
 
 class SelectRoleConverter(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> SelectRole:
-        async with ctx.cog.config.guild(ctx.guild).select_roles() as select_roles:
+        async with ctx.cog.config.guild(ctx.guild).select_menus() as select_menus:
             log.debug(argument)
-            if argument.lower() in select_roles:
-                select_data = select_roles[argument.lower()]
+            if argument.lower() in select_menus:
+                select_data = select_menus[argument.lower()]
                 options = []
                 all_option_data = await ctx.cog.config.guild(ctx.guild).select_options()
                 for option_name in select_data["options"]:
@@ -187,11 +186,11 @@ class SelectRoleConverter(Converter):
 
 
 class RoleToolsSelect(RoleToolsMixin):
-    """This class handles setting up Select view roles"""
+    """This class handles setting up Select menu roles"""
 
-    async def initialize_select(self):
+    async def initialize_select(self) -> None:
         for guild_id, settings in self.settings.items():
-            for select_name, select_data in settings["select_roles"].items():
+            for select_name, select_data in settings["select_menus"].items():
                 log.debug(f"Adding Option {select_name}")
                 view = SelectRoleView(self)
                 options = []
@@ -229,14 +228,15 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.views.append(view)
 
     @roletools.group(name="select")
+    @commands.admin_or_permissions(manage_roles=True)
     async def select(self, ctx: Context) -> None:
         """
-        Setup role buttons
+        Setup role select menus
         """
         pass
 
     @select.command(name="create")
-    async def create_select_view(
+    async def create_select_menu(
         self,
         ctx: Context,
         name: str,
@@ -245,27 +245,28 @@ class RoleToolsSelect(RoleToolsMixin):
         max_values: Optional[int] = None,
         *,
         placeholder: Optional[str] = None,
-    ):
+    ) -> None:
         """
-        Create a select view
+        Create a select menu
 
-        `<name>` - The name for you to use when you send a message with this view.
-        `[options]...` - The select view options you designated previously.
-        `[min_values]` - The minimum number of items from this view to be selected.
-        `[max_values]` - The maximum number of items from this view that can be selected.
+        `<name>` - The name for you to use when you send a message with this menu.
+        `[options]...` - The select menu options you designated previously.
+        `[min_values]` - The minimum number of items from this menu to be selected.
+        `[max_values]` - The maximum number of items from this menu that can be selected.
         (If not provided this will default to the number of options provided.)
-        `[placeholder]` - This is the default text on the view when no option has been
+        `[placeholder]` - This is the default text on the menu when no option has been
         chosen yet.
         """
         if len(await self.config.guild(ctx.guild).select_options()) < 1:
             await ctx.send(
                 _(
-                    "You must setup some options first with `{prefix}roletools select options create`."
+                    "You must setup some options first with "
+                    "`{prefix}roletools select options create`."
                 ).format(prefix=ctx.clean_prefix)
             )
             return
         if len(options) < 1:
-            await ctx.send(_("You have not provided any valid select views to use."))
+            await ctx.send(_("You have not provided any valid select options to use."))
             return
         if len(name) > 70:
             await ctx.send(_("The name should be less than 70 characters long."))
@@ -275,11 +276,11 @@ class RoleToolsSelect(RoleToolsMixin):
         if max_values is None:
             max_values = len(options)
 
-        async with self.config.guild(ctx.guild).select_roles() as select_roles:
+        async with self.config.guild(ctx.guild).select_menus() as select_menus:
             messages = []
-            if name.lower() in select_roles:
-                messages = select_roles[name.lower()]["messages"]
-            select_roles[name.lower()] = {
+            if name.lower() in select_menus:
+                messages = select_menus[name.lower()]["messages"]
+            select_menus[name.lower()] = {
                 "options": [o.name for o in options],
                 "min_values": max(min(25, min_values), 0),
                 "max_values": max(min(25, max_values), 0),
@@ -289,7 +290,7 @@ class RoleToolsSelect(RoleToolsMixin):
             }
             if ctx.guild.id not in self.settings:
                 self.settings[ctx.guild.id] = await self.config.guild(ctx.guild).all()
-            self.settings[ctx.guild.id]["select_roles"][name.lower()] = {
+            self.settings[ctx.guild.id]["select_menus"][name.lower()] = {
                 "options": [o.name for o in options],
                 "min_values": max(min(25, min_values), 0),
                 "max_values": max(min(25, max_values), 0),
@@ -297,7 +298,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 "name": name.lower(),
                 "messages": messages,
             }
-        select_roles = SelectRole(
+        select_menus = SelectRole(
             name=name,
             custom_id=f"RTSelect-{name.lower()}-{ctx.guild.id}",
             min_values=min_values,
@@ -306,25 +307,25 @@ class RoleToolsSelect(RoleToolsMixin):
             placeholder=placeholder,
         )
         view = SelectRoleView(self)
-        view.add_item(select_roles)
+        view.add_item(select_menus)
         self.views.append(view)
-        msg = await ctx.send(_("Here is how your select view will look."), view=view)
-        async with self.config.guild(ctx.guild).select_roles() as select_roles:
-            select_roles[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
+        msg = await ctx.send(_("Here is how your select menu will look."), view=view)
+        async with self.config.guild(ctx.guild).select_menus() as select_menus:
+            select_menus[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
     @select.command(name="delete", aliases=["del", "remove"])
-    async def delete_select_view(self, ctx: Context, *, name: str):
+    async def delete_select_menu(self, ctx: Context, *, name: str) -> None:
         """
-        Delete a saved select view.
+        Delete a saved select menu.
 
-        `<name>` - the name of the select view you want to delete.
+        `<name>` - the name of the select menu you want to delete.
         """
-        async with self.config.guild(ctx.guild).select_roles() as select_roles:
-            if name.lower() in select_roles:
-                del select_roles[name.lower()]
+        async with self.config.guild(ctx.guild).select_menus() as select_menus:
+            if name.lower() in select_menus:
+                del select_menus[name.lower()]
                 await ctx.send(_("Select Option `{name}` has been deleted.").format(name=name))
                 try:
-                    del self.settings[ctx.guild.id]["select_roles"][name.lower()]
+                    del self.settings[ctx.guild.id]["select_menus"][name.lower()]
                 except KeyError:
                     pass
             else:
@@ -335,7 +336,7 @@ class RoleToolsSelect(RoleToolsMixin):
     @select.group(name="options", aliases=["option"])
     async def options(self, ctx: Context) -> None:
         """
-        Commands for managing RoleTools select view options
+        Commands for managing RoleTools select menu options
         """
         pass
 
@@ -348,9 +349,9 @@ class RoleToolsSelect(RoleToolsMixin):
         label: Optional[str] = None,
         description: Optional[str] = None,
         emoji: Optional[Union[discord.PartialEmoji, str]] = None,
-    ):
+    ) -> None:
         """
-        Create a select view option
+        Create a select menu option
 
         `<name>` - The name of the button for use later in setup.
         `<role>` - The role this button will assign or remove.
@@ -413,17 +414,17 @@ class RoleToolsSelect(RoleToolsMixin):
             description=description[:50] if description else None,
             emoji=emoji_id,
         )
-        select_roles = discord.ui.Select(
+        select_menus = discord.ui.Select(
             min_values=1,
             max_values=1,
             options=[option],
         )
         view = SelectRoleView(self)
-        view.add_item(select_roles)
+        view.add_item(select_menus)
         await ctx.send(_("Here is how your select option will look."), view=view)
 
     @options.command(name="delete", aliases=["del", "remove"])
-    async def delete_select_option(self, ctx: Context, *, name: str):
+    async def delete_select_option(self, ctx: Context, *, name: str) -> None:
         """
         Delete a saved button.
 
@@ -447,33 +448,169 @@ class RoleToolsSelect(RoleToolsMixin):
         self,
         ctx: Context,
         channel: discord.TextChannel,
-        views: commands.Greedy[SelectRoleConverter],
+        menus: commands.Greedy[SelectRoleConverter],
         *,
         message: str,
-    ):
+    ) -> None:
         """
-        Send a select view to a specified channel for role assignment
+        Send a select menu to a specified channel for role assignment
 
         `<channel>` - the channel to send the button role buttons to.
-        `[views]...` - The names of the select views you want included in the
+        `[menus]...` - The names of the select menus you want included in the
         message up to a maximum of 5.
-        `<message>` - The message to be included with the select view.
+        `<message>` - The message to be included with the select menu.
         """
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
         # log.debug(options)
-        if not views:
-            await ctx.send(_("You need to specify at least one view setup previously."))
+        if not menus:
+            await ctx.send(_("You need to specify at least one menu setup previously."))
             return
-        for select in views:
+        for select in menus:
             new_view.add_item(select)
         self.views.append(new_view)
         msg = await channel.send(content=message, view=new_view)
         message_key = f"{msg.channel.id}-{msg.id}"
-        async with self.config.guild(ctx.guild).select_roles() as select_roles:
-            for select in views:
-                select_roles[select.name.lower()]["messages"].append(message_key)
-                self.settings[ctx.guild.id]["select_roles"][select.name.lower()][
+        async with self.config.guild(ctx.guild).select_menus() as select_menus:
+            for select in menus:
+                select_menus[select.name.lower()]["messages"].append(message_key)
+                self.settings[ctx.guild.id]["select_menus"][select.name.lower()][
                     "messages"
                 ].append(message_key)
+
+    @select.command(name="edit")
+    async def edit_with_select(
+        self,
+        ctx: commands.Context,
+        message: discord.Message,
+        menus: commands.Greedy[SelectRoleConverter],
+    ) -> None:
+        """
+        Edit a bots message to include Role Buttons
+
+        `<message>` - The existing message to add role buttons to. Must be a bots message.
+        `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
+        """
+        if message.author.id != ctx.me.id:
+            await ctx.send(_("I cannot edit someone elses message to include buttons."))
+            return
+        if not menus:
+            await ctx.send(_("You need to specify at least one menu setup previously."))
+            return
+        view = SelectRoleView(self)
+        for select_menu in menus:
+            view.add_item(select_menu)
+        self.views.append(view)
+        await message.edit(view=view)
+        message_key = f"{message.channel.id}-{message.id}"
+        async with self.config.guild(ctx.guild).select_menus() as select_menus:
+            for select in menus:
+                if message_key not in select_menus[select.name.lower()]["messages"]:
+                    select_menus[select.name.lower()]["messages"].append(message_key)
+                    self.settings[ctx.guild.id]["select_menus"][select.name.lower()][
+                        "messages"
+                    ].append(message_key)
+
+    @select.command(name="view", aliases=["list"])
+    @commands.admin_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(read_message_history=True)
+    async def select_menus_view(self, ctx: Context) -> None:
+        """
+        View current select menus setup for role assign in this server.
+        """
+        if ctx.guild.id not in self.settings:
+            await ctx.send(_("There are no select menus in this server."))
+            return
+        pages = []
+        async with ctx.typing():
+
+            for name, select_data in self.settings[ctx.guild.id]["select_menus"].items():
+                msg = _("Select Menus in {guild}\n").format(guild=ctx.guild.name)
+                options = select_data["options"]
+                min_values = select_data["min_values"]
+                max_values = select_data["max_values"]
+                placeholder = select_data["placeholder"]
+
+                msg += _(
+                    "**Name:** {name}\n**Options:** {options}\n**Placeholder:** {placeholder}\n"
+                    "**Min Values:** {min_values}\n**Max Values:** {max_values}\n"
+                ).format(
+                    name=name,
+                    options=humanize_list(options),
+                    placeholder=placeholder,
+                    min_values=min_values,
+                    max_values=max_values,
+                )
+                for messages in select_data["messages"]:
+                    channel_id, msg_id = messages.split("-")
+
+                    channel = ctx.guild.get_channel(int(channel_id))
+                    if channel:
+                        # This can be potentially a very expensive operation
+                        # so instead we fake the message link unless the channel is missing
+                        # this way they can check themselves without rate limitng
+                        # the bot trying to fetch something constantly that is broken.
+                        message = (
+                            f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
+                        )
+                    else:
+                        message = "None"
+                    msg += _("[Menu Message]({message})\n").format(
+                        message=message,
+                    )
+                pages.append(msg)
+        await BaseMenu(
+            source=SelectMenuPages(
+                pages=pages,
+            ),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=0,
+        ).start(ctx=ctx)
+
+    @options.command(name="view", aliases=["list"])
+    @commands.admin_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(read_message_history=True)
+    async def select_options_view(self, ctx: Context) -> None:
+        """
+        View current select menus setup for role assign in this server.
+        """
+        if ctx.guild.id not in self.settings:
+            await ctx.send(_("There are no select menus in this server."))
+            return
+        pages = []
+        async with ctx.typing():
+
+            for name, select_data in self.settings[ctx.guild.id]["select_options"].items():
+                msg = _("Select Options in {guild}\n").format(guild=ctx.guild.name)
+                role = ctx.guild.get_role(select_data["role_id"])
+                label = select_data["label"]
+                emoji = select_data["emoji"]
+                if emoji is not None:
+                    emoji = discord.PartialEmoji.from_str(emoji)
+                description = select_data["description"]
+
+                msg += _(
+                    "**Name:** {name}\n**Role:** {role}\n**Emoji:** {emoji}\n"
+                    "**Label:** {label}\n**description:** {description}\n"
+                ).format(
+                    name=name,
+                    role=role.mention if role else _("Missing Role"),
+                    emoji=emoji,
+                    label=label,
+                    description=description,
+                )
+                pages.append(msg)
+        await BaseMenu(
+            source=SelectOptionPages(
+                pages=pages,
+            ),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=0,
+        ).start(ctx=ctx)

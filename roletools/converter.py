@@ -1,11 +1,11 @@
 import re
-import discord
 from typing import Tuple
+
+import discord
 from discord.ext.commands import BadArgument, Converter
+from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
-
-from redbot.core import commands
 
 _ = Translator("RoleTools", __file__)
 

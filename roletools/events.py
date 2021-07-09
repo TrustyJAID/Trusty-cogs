@@ -1,12 +1,11 @@
 import asyncio
 import logging
-from typing import List, Optional, Union
 from datetime import datetime, timedelta
+from typing import List, Optional, Union
 
 import discord
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.i18n import Translator
-
 
 from .abc import RoleToolsMixin
 
@@ -332,7 +331,7 @@ class RoleToolsEvents(RoleToolsMixin):
         reason: Optional[str] = None,
         *,
         check_inclusive: bool = True,
-        atomic: Optional[bool] = None
+        atomic: Optional[bool] = None,
     ) -> None:
         """
         Handles all the logic for removing roles from a user

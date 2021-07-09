@@ -1,15 +1,14 @@
 import asyncio
 import logging
-
 from typing import Optional, Union
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator
 from redbot.core.commands import Context
-from redbot.core.utils.chat_formatting import pagify, humanize_list
-from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .abc import RoleToolsMixin, roletools
 from .converter import RoleEmojiConverter, RoleHierarchyConverter

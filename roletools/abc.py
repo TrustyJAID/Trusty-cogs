@@ -1,29 +1,30 @@
 from __future__ import annotations
+
 import asyncio
-import discord
-
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Union, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+import discord
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 
 from .converter import (
-    RoleHierarchyConverter,
-    RawUserIds,
-    SelfRoleConverter,
-    RoleEmojiConverter,
     ButtonStyleConverter,
+    RawUserIds,
+    RoleEmojiConverter,
+    RoleHierarchyConverter,
+    SelfRoleConverter,
 )
 
 if TYPE_CHECKING:
     from .buttons import ButtonRoleConverter
+    from .select import SelectOptionRoleConverter, SelectRoleConverter
 
 
 @commands.group()
 @commands.guild_only()
-async def roletools(self: commands.Cog, ctx: commands.Context) -> None:
+async def roletools(self: commands.Cog, ctx: Context) -> None:
     """
     Role tools commands
     """
@@ -51,7 +52,7 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     def update_cooldown(
-        self, ctx: commands.Context, rate: int, per: float, _type: commands.BucketType
+        self, ctx: Context, rate: int, per: float, _type: commands.BucketType
     ) -> None:
         raise NotImplementedError()
 
@@ -345,7 +346,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def edit_with_buttons(
         self,
-        ctx: commands.Context,
+        ctx: Context,
         message: discord.Message,
         buttons: commands.Greedy[ButtonRoleConverter],
     ):
@@ -369,4 +370,73 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def button_roles_view(self, ctx: Context) -> None:
+        raise NotImplementedError()
+
+    #######################################################################
+    # select.py                                                           #
+    #######################################################################
+
+    @abstractmethod
+    async def initialize_select(self) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def select(self, ctx: Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def create_select_menu(
+        self,
+        ctx: Context,
+        name: str,
+        options: commands.Greedy[SelectOptionRoleConverter],
+        min_values: Optional[int] = None,
+        max_values: Optional[int] = None,
+        *,
+        placeholder: Optional[str] = None,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def delete_select_menu(self, ctx: Context, *, name: str) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def options(self, ctx: Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def create_select_option(
+        self,
+        ctx: Context,
+        name: str,
+        role: RoleHierarchyConverter,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        emoji: Optional[Union[discord.PartialEmoji, str]] = None,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def delete_select_option(self, ctx: Context, *, name: str) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def send_select(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel,
+        views: commands.Greedy[SelectRoleConverter],
+        *,
+        message: str,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def edit_with_select(
+        self,
+        ctx: Context,
+        message: discord.Message,
+        views: commands.Greedy[SelectRoleConverter],
+    ) -> None:
         raise NotImplementedError()

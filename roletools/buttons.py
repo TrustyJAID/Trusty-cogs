@@ -1,19 +1,17 @@
 from __future__ import annotations
-import discord
+
 import logging
+from typing import Optional, Union
 
-from typing import Union, Optional
-
+import discord
 from discord.ext.commands import BadArgument, Converter
-
 from redbot.core import commands
-from redbot.core.i18n import Translator
 from redbot.core.commands import Context
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin, roletools
-from .converter import RoleHierarchyConverter, ButtonStyleConverter
-from .menus import ButtonRolePages, BaseMenu
+from .converter import ButtonStyleConverter, RoleHierarchyConverter
+from .menus import BaseMenu, ButtonRolePages
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -108,13 +106,6 @@ class ButtonRoleView(discord.ui.View):
 class RoleToolsButtons(RoleToolsMixin):
     """This class handles setting up button roles"""
 
-    @roletools.group(name="buttons", aliases=["button"])
-    async def buttons(self, ctx: Context) -> None:
-        """
-        Setup role buttons
-        """
-        pass
-
     async def initialize_buttons(self):
         for guild_id, settings in self.settings.items():
             for button_name, button_data in settings["buttons"].items():
@@ -134,6 +125,14 @@ class RoleToolsButtons(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
+    @roletools.group(name="buttons", aliases=["button"])
+    @commands.admin_or_permissions(manage_roles=True)
+    async def buttons(self, ctx: Context) -> None:
+        """
+        Setup role buttons
+        """
+        pass
+
     @buttons.command(name="send")
     async def send_buttons(
         self,
@@ -142,7 +141,7 @@ class RoleToolsButtons(RoleToolsMixin):
         buttons: commands.Greedy[ButtonRoleConverter],
         *,
         message: str,
-    ):
+    ) -> None:
         """
         Send buttons to a specified channel with optional message.
 
@@ -171,7 +170,7 @@ class RoleToolsButtons(RoleToolsMixin):
         ctx: commands.Context,
         message: discord.Message,
         buttons: commands.Greedy[ButtonRoleConverter],
-    ):
+    ) -> None:
         """
         Edit a bots message to include Role Buttons
 
@@ -203,7 +202,7 @@ class RoleToolsButtons(RoleToolsMixin):
         label: Optional[str] = None,
         emoji: Optional[Union[discord.PartialEmoji, str]] = None,
         style: Optional[ButtonStyleConverter] = discord.ButtonStyle.primary,
-    ):
+    ) -> None:
         """
         Create a role button
 
@@ -283,7 +282,7 @@ class RoleToolsButtons(RoleToolsMixin):
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
     @buttons.command(name="delete", aliases=["del", "remove"])
-    async def delete_button(self, ctx: Context, *, name: str):
+    async def delete_button(self, ctx: Context, *, name: str) -> None:
         """
         Delete a saved button.
 
@@ -322,11 +321,19 @@ class RoleToolsButtons(RoleToolsMixin):
             for name, button_data in self.settings[ctx.guild.id]["buttons"].items():
                 msg = _("Button Roles in {guild}\n").format(guild=ctx.guild.name)
                 role = ctx.guild.get_role(button_data["role_id"])
-                emoji = discord.PartialEmoji.from_str(button_data["emoji"])
+                emoji = button_data["emoji"]
+                if emoji is not None:
+                    emoji = discord.PartialEmoji.from_str(emoji)
                 style = colour_index[button_data["style"]]
                 msg += _(
-                    "**Role:** {role}\n**Label:** {label}\n**Style:** {style}\n**Emoji:** {emoji}\n"
-                ).format(role=role.mention, label=button_data["label"], style=style, emoji=emoji)
+                    "**Role:** {role}\n**Label:** {label}\n"
+                    "**Style:** {style}\n**Emoji:** {emoji}\n"
+                ).format(
+                    role=role.mention if role else _("Missing Role"),
+                    label=button_data["label"],
+                    style=style,
+                    emoji=emoji,
+                )
                 for messages in button_data["messages"]:
                     channel_id, msg_id = messages.split("-")
 
@@ -340,11 +347,9 @@ class RoleToolsButtons(RoleToolsMixin):
                             f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
                         )
                     else:
-                        message = None
+                        message = "None"
                     msg += _("[Button Message]({message})\n").format(
-                        role=role.mention if role else _("None"),
-                        emoji=emoji,
-                        message=message if message else _("None"),
+                        message=message,
                     )
                 pages.append(msg)
         await BaseMenu(

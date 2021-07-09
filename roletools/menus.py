@@ -9,10 +9,8 @@ import discord
 from redbot.core import bank
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
-
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -120,14 +118,70 @@ class ButtonRolePages(menus.ListPageSource):
 
     async def format_page(self, menu: menus.MenuPages, page):
         if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
-            if len(page) > 2000:
+            if len(page) > 4000:
                 em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
                 count = 0
                 for pages in pagify(page, page_length=1024):
-                    if count < 2:
+                    if count < 4:
                         em.description += pages
                     else:
                         em.add_field(name=_("Button Role Info Continued"), value=pages)
+                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            else:
+                em = discord.Embed(
+                    description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                )
+                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            return em
+        else:
+            return page
+
+
+class SelectOptionPages(menus.ListPageSource):
+    def __init__(self, pages: list):
+        super().__init__(pages, per_page=1)
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, page):
+        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+            if len(page) > 4000:
+                em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
+                count = 0
+                for pages in pagify(page, page_length=1024):
+                    if count < 4:
+                        em.description += pages
+                    else:
+                        em.add_field(name=_("Select Option Info Continued"), value=pages)
+                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            else:
+                em = discord.Embed(
+                    description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                )
+                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            return em
+        else:
+            return page
+
+
+class SelectMenuPages(menus.ListPageSource):
+    def __init__(self, pages: list):
+        super().__init__(pages, per_page=1)
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, page):
+        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+            if len(page) > 4000:
+                em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
+                count = 0
+                for pages in pagify(page, page_length=1024):
+                    if count < 4:
+                        em.description += pages
+                    else:
+                        em.add_field(name=_("Select Menu Info Continued"), value=pages)
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
                 em = discord.Embed(
@@ -156,9 +210,7 @@ class RolePages(menus.ListPageSource):
             name = f"@{role.name}"
             if len(name) > 24:
                 name = f"@{role.name[:23]}\N{HORIZONTAL ELLIPSIS}"
-            self.select_options.append(
-                discord.SelectOption(label=name, value=count)
-            )
+            self.select_options.append(discord.SelectOption(label=name, value=count))
 
     def is_paginating(self):
         return True
