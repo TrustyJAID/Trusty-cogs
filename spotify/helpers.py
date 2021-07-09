@@ -14,7 +14,8 @@ from tabulate import tabulate
 log = logging.getLogger("red.trusty-cogs.spotify")
 
 SPOTIFY_RE = re.compile(
-    r"(https?:\/\/open\.spotify\.com\/|spotify:?)(track|playlist|album|artist|episode|show)\/?:?([^?\(\)\s]+)"
+    r"(https?:\/\/open\.spotify\.com\/|spotify:?)"
+    r"(track|playlist|album|artist|episode|show)\/?:?([^?\(\)\s]+)"
 )
 
 SPOTIFY_LOGO = "https://imgur.com/Ig4VuuJ.png"

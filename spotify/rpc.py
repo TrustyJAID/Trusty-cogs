@@ -1,9 +1,8 @@
 import logging
 
+from dashboard.rpc.utils import rpccheck
 from redbot.core.bot import Red
 from redbot.core.commands import commands
-
-from dashboard.rpc.utils import rpccheck
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 
