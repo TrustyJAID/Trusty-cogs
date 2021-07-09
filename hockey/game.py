@@ -1,19 +1,20 @@
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
-from typing import Literal, Optional, List, Dict, Union, Tuple
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
 from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils import AsyncIter, bounded_gather
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
-from .helper import check_to_post, get_channel_obj, get_team, get_team_role, utc_to_local
+from .helper import check_to_post, get_channel_obj, get_team, get_team_role
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)
@@ -37,7 +38,7 @@ class Game:
     home_score: int
     away_score: int
     game_start: datetime
-    goals: list
+    goals: List[Goal]
     home_goals: list
     away_goals: list
     home_abr: str

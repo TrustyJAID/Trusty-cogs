@@ -1,17 +1,15 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Dict, Union
+from typing import Dict, List, Optional
 
 import discord
 from discord.ext import tasks
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 
-
 from .abc import MixinMeta
-from .constants import TEAMS
 from .game import Game
 from .helper import TimezoneFinder
 from .pickems import Pickems

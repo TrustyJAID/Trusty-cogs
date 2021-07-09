@@ -1,13 +1,13 @@
 import asyncio
-import discord
 import json
 import logging
 from abc import ABC
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal, Optional, Dict, List
+from typing import Dict, List, Literal, Optional
 
 import aiohttp
+import discord
 import yaml
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -277,7 +277,7 @@ class Hockey(
                     "https://statsapi.web.nhl.com/api/v1/game/2020020474/feed/live": {
                         "count": 0,
                         "game": None,
-                        "disabled_buttons": False
+                        "disabled_buttons": False,
                     }
                 }
             while self.current_games != {}:

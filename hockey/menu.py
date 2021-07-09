@@ -14,7 +14,6 @@ from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import DATE_RE
 from .player import Player
-from .schedule import ScheduleList
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)

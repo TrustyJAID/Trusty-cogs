@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate, MessagePredicate
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .constants import TEAMS
 from .teamentry import TeamEntry

@@ -1,9 +1,10 @@
 from __future__ import annotations
-import logging
-import discord
-from datetime import datetime, timedelta
-from typing import List, Tuple, Optional, Dict
 
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
+import discord
 from redbot.core.i18n import Translator
 
 from .constants import TEAMS

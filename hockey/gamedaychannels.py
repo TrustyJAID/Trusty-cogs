@@ -6,10 +6,8 @@ import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
-from redbot.core.utils.menus import start_adding_reactions
 
 from .abc import MixinMeta
-from .constants import TEAMS
 from .game import Game
 from .helper import HockeyStates, HockeyTeams, utc_to_local
 

@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Literal, Optional, List, Dict, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
 import discord
@@ -513,7 +513,9 @@ class HockeyCommands(MixinMeta):
     @hockey_commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def leaderboard(self, ctx: commands.Context, *, leaderboard_type: str = "seasonal") -> None:
+    async def leaderboard(
+        self, ctx: commands.Context, *, leaderboard_type: str = "seasonal"
+    ) -> None:
         """
         Shows the current server leaderboard
 

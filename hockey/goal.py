@@ -1,17 +1,18 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import discord
 from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils import AsyncIter, bounded_gather
+from redbot.core.utils import AsyncIter
 
 from .constants import HEADSHOT_URL, TEAMS
-from .helper import check_to_post, get_channel_obj, get_team, utc_to_local
+from .helper import check_to_post, get_channel_obj, get_team
 
 if TYPE_CHECKING:
     from .game import Game
@@ -185,7 +186,9 @@ class Goal:
 
             should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
-                post_data.append(await self.actually_post_goal(bot, channel, goal_embed, goal_text))
+                post_data.append(
+                    await self.actually_post_goal(bot, channel, goal_embed, goal_text)
+                )
         # data = await bounded_gather(*tasks)
         for channel in post_data:
             if channel is None:

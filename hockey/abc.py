@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Literal, Optional, Dict, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import aiohttp
 import discord
@@ -14,8 +14,8 @@ from .helper import (
     HockeyStates,
     HockeyTeams,
     TeamDateFinder,
-    YearFinder,
     TimezoneFinder,
+    YearFinder,
 )
 from .pickems import Pickems
 

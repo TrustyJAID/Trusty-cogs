@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import List, Optional
 
 import aiohttp
 import discord
@@ -41,7 +41,12 @@ class Schedule(menus.PageSource):
         return self._last_page
 
     async def get_page(
-        self, page_number, *, skip_next: bool = False, skip_prev: bool = False, game_id: Optional[int] = None
+        self,
+        page_number,
+        *,
+        skip_next: bool = False,
+        skip_prev: bool = False,
+        game_id: Optional[int] = None,
     ) -> dict:
         log.debug(f"Cache size is {len(self._cache)} {page_number=} {game_id=}")
         if game_id is not None:

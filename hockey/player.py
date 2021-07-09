@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 from tabulate import tabulate
 
-from .constants import BASE_URL, HEADSHOT_URL, TEAMS
+from .constants import HEADSHOT_URL, TEAMS
 
 _ = Translator("Hockey", __file__)
 
@@ -359,7 +359,9 @@ class Player:
         return f"https://www.capfriendly.com/players/{self.full_name_url()}"
 
     @classmethod
-    async def from_id(cls, player_id: int, session: Optional[aiohttp.ClientSession] = None) -> Player:
+    async def from_id(
+        cls, player_id: int, session: Optional[aiohttp.ClientSession] = None
+    ) -> Player:
         url = f"https://records.nhl.com/site/api/player/{player_id}"
         if session is None:
             async with aiohttp.ClientSession() as new_session:
