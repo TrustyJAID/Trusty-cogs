@@ -5,6 +5,7 @@ from typing import Set, Dict, Optional
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import humanize_list
 
 log = logging.getLogger("red.trusty-cogs.Fenrir")
 
@@ -14,7 +15,7 @@ class Fenrir(commands.Cog):
     Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -24,6 +25,7 @@ class Fenrir(commands.Cog):
         self.mutes: Set[int] = set()
         self.feedback: Dict[int, Set[int]] = {}
         self.lockdown: Set[int] = set()
+        self.block: Dict[int, Set[int]] = {}
         default_guild: Dict[str, Optional[int]] = {"mute_role": None}
 
         self.config: Config = Config.get_conf(self, 228492507124596736)
@@ -42,26 +44,26 @@ class Fenrir(commands.Cog):
         """
         return
 
+    async def insult_user(self, ctx: commands.Context):
+        insult = self.bot.get_command("insult")
+        if insult:
+            await ctx.invoke(insult, user=ctx.author)
+
     async def bot_check_once(self, ctx: commands.Context):
         if await self.bot.is_owner(ctx.author):
             return True
         if not ctx.guild:
             return True
+        if ctx.guild.id in self.block and ctx.author.id in self.block[ctx.guild.id]:
+            await self.insult_user(ctx)
+            return False
         if ctx.guild.owner_id == ctx.author.id:
             return True
+
         if await self.bot.is_admin(ctx.author) or ctx.author.guild_permissions.administrator:
             return True
         if ctx.guild and ctx.guild.id in self.lockdown:
-            try:
-                compliment = self.bot.get_command("compliment")
-            except AttributeError:
-                compliment = self.bot.get_command("insult")
-            if compliment:
-                await ctx.invoke(compliment, user=ctx.author)
-            else:
-                insult = self.bot.get_command("insult")
-                if insult:
-                    await ctx.invoke(insult, user=ctx.author)
+            await self.insult_user(ctx)
             return False
         return True
 
@@ -98,6 +100,40 @@ class Fenrir(commands.Cog):
         else:
             await ctx.send(f"{ctx.guild.name} is no longer in lockdown.")
             self.lockdown.remove(ctx.guild.id)
+
+    @fenrir.command(name="block")
+    @checks.admin_or_permissions(administrator=True)
+    @commands.guild_only()
+    async def fenrirblock(self, ctx: commands.Context, *members: discord.Member) -> None:
+        """Replaces all commands for specific members with insults
+
+        """
+        if not members:
+            await ctx.send_help()
+        added = []
+        removed = []
+        if ctx.guild.id not in self.block:
+            self.block[ctx.guild.id] = set()
+        for member in members:
+            if member.id not in self.block[ctx.guild.id]:
+                self.block[ctx.guild.id].add(member.id)
+                added.append(member)
+            else:
+                self.block[ctx.guild.id].remove(member.id)
+                removed.append(member)
+        msg = ""
+        if added:
+            msg += (
+                f"The following members have had their bot command "
+                f"privleges revoked: {humanize_list([m.mention for m in added])}"
+            )
+        if removed:
+            msg += (
+                f"The following members have had their bot command "
+                f"privleges re-instated: {humanize_list([m.mention for m in removed])}"
+            )
+        if msg:
+            await ctx.send(msg, allowed_mentions=discord.AllowedMentions(users=False))
 
     @fenrir.command(name="set")
     @checks.admin_or_permissions(manage_roles=True)
