@@ -1,7 +1,13 @@
 import discord
+import logging
+
+from typing import Set, Dict, Optional
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import humanize_list
+
+log = logging.getLogger("red.trusty-cogs.Fenrir")
 
 
 class Fenrir(commands.Cog):
@@ -9,16 +15,18 @@ class Fenrir(commands.Cog):
     Various unreasonable commands inspired by Fenrir
     """
 
-    __version__ = "1.0.3"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
         self.bot: Red = bot
-        self.kicks: list = []
-        self.bans: list = []
-        self.mutes: list = []
-        self.feedback: dict = {}
-        default_guild: dict = {"mute_role": None}
+        self.kicks: Set[int] = set()
+        self.bans: Set[int] = set()
+        self.mutes: Set[int] = set()
+        self.feedback: Dict[int, Set[int]] = {}
+        self.lockdown: Set[int] = set()
+        self.block: Dict[int, Set[int]] = {}
+        default_guild: Dict[str, Optional[int]] = {"mute_role": None}
 
         self.config: Config = Config.get_conf(self, 228492507124596736)
         self.config.register_guild(**default_guild)
@@ -36,7 +44,39 @@ class Fenrir(commands.Cog):
         """
         return
 
-    @commands.command()
+    async def insult_user(self, ctx: commands.Context):
+        insult = self.bot.get_command("insult")
+        if insult:
+            await ctx.invoke(insult, user=ctx.author)
+
+    async def bot_check_once(self, ctx: commands.Context):
+        if await self.bot.is_owner(ctx.author):
+            return True
+        if not ctx.guild:
+            return True
+        if ctx.guild.id in self.block and ctx.author.id in self.block[ctx.guild.id]:
+            await self.insult_user(ctx)
+            return False
+        if ctx.guild.owner_id == ctx.author.id:
+            return True
+
+        if await self.bot.is_admin(ctx.author) or ctx.author.guild_permissions.administrator:
+            return True
+        if ctx.guild and ctx.guild.id in self.lockdown:
+            await self.insult_user(ctx)
+            return False
+        return True
+
+    @commands.group(invoke_without_command=True)
+    async def fenrir(self, ctx: commands.Context):
+        """
+        We're Moving on.
+        """
+        await ctx.send(
+            "https://cdn.discordapp.com/attachments/290329951184355328/862891414690201601/HMQA3-XvnbN5V.png"
+        )
+
+    @fenrir.command(name="kick")
     @checks.admin_or_permissions(kick_members=True)
     @commands.guild_only()
     async def fenrirkick(self, ctx: commands.Context) -> None:
@@ -44,9 +84,57 @@ class Fenrir(commands.Cog):
         msg = await ctx.send("React to this message to be kicked!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
-        self.kicks.append(msg.id)
+        self.kicks.add(msg.id)
 
-    @commands.command()
+    @fenrir.command(name="lockdown", aliases=["lockdonw"])
+    @checks.admin_or_permissions(administrator=True)
+    @commands.guild_only()
+    async def fenrirlockdown(self, ctx: commands.Context) -> None:
+        """Replace all commands in the server with insults
+
+        Run this command again to disable it.
+        """
+        if ctx.guild.id not in self.lockdown:
+            await ctx.send(f"{ctx.guild.name} is now in lockdown.")
+            self.lockdown.add(ctx.guild.id)
+        else:
+            await ctx.send(f"{ctx.guild.name} is no longer in lockdown.")
+            self.lockdown.remove(ctx.guild.id)
+
+    @fenrir.command(name="block")
+    @checks.admin_or_permissions(administrator=True)
+    @commands.guild_only()
+    async def fenrirblock(self, ctx: commands.Context, *members: discord.Member) -> None:
+        """Replaces all commands for specific members with insults
+        """
+        if not members:
+            await ctx.send_help()
+        added = []
+        removed = []
+        if ctx.guild.id not in self.block:
+            self.block[ctx.guild.id] = set()
+        for member in members:
+            if member.id not in self.block[ctx.guild.id]:
+                self.block[ctx.guild.id].add(member.id)
+                added.append(member)
+            else:
+                self.block[ctx.guild.id].remove(member.id)
+                removed.append(member)
+        msg = ""
+        if added:
+            msg += (
+                f"The following members have had their bot command "
+                f"privleges revoked: {humanize_list([m.mention for m in added])}"
+            )
+        if removed:
+            msg += (
+                f"The following members have had their bot command "
+                f"privleges re-instated: {humanize_list([m.mention for m in removed])}"
+            )
+        if msg:
+            await ctx.send(msg, allowed_mentions=discord.AllowedMentions(users=False))
+
+    @fenrir.command(name="set")
     @checks.admin_or_permissions(manage_roles=True)
     @commands.guild_only()
     async def fenrirset(self, ctx: commands.Context, *, role: discord.Role = None) -> None:
@@ -61,7 +149,7 @@ class Fenrir(commands.Cog):
             await self.config.guild(ctx.guild).mute_role.set(role)
         await ctx.tick()
 
-    @commands.command()
+    @fenrir.command(name="ban")
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
     async def fenrirban(self, ctx: commands.Context) -> None:
@@ -69,9 +157,9 @@ class Fenrir(commands.Cog):
         msg = await ctx.send("React to this message to be banned!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
-        self.bans.append(msg.id)
+        self.bans.add(msg.id)
 
-    @commands.command()
+    @fenrir.command(name="mute")
     @checks.admin_or_permissions(ban_members=True)
     @commands.guild_only()
     async def fenrirmute(self, ctx: commands.Context) -> None:
@@ -81,9 +169,9 @@ class Fenrir(commands.Cog):
         msg = await ctx.send("React to this message to be muted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
-        self.mutes.append(msg.id)
+        self.mutes.add(msg.id)
 
-    @commands.command(aliases=["fenririnsult"])
+    @fenrir.command(name="feedback", aliases=["fenririnsult"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     @commands.check(lambda ctx: ctx.bot.get_cog("Insult"))
@@ -92,7 +180,7 @@ class Fenrir(commands.Cog):
         msg = await ctx.send("React to this message to be insulted!")
         await msg.add_reaction("✅")
         await msg.add_reaction("❌")
-        self.feedback[msg.id] = []
+        self.feedback[msg.id] = set()
 
     async def is_mod_or_admin(self, member: discord.Member) -> bool:
         guild = member.guild
@@ -178,4 +266,4 @@ class Fenrir(commands.Cog):
             else:
                 insult = self.bot.get_command("insult")
                 await ctx.invoke(insult, user=member)
-            self.feedback[payload.message_id].append(member.id)
+            self.feedback[payload.message_id].add(member.id)

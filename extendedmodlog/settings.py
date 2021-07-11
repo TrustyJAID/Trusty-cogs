@@ -54,6 +54,7 @@ inv_settings = {
         "colour": None,
         "emoji": "\N{MICROPHONE}",
         "embed": True,
+        "bots": False,
     },
     "user_join": {
         "enabled": False,
