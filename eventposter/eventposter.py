@@ -1,17 +1,15 @@
 import asyncio
 import logging
-from typing import Literal, Optional, Union, Dict, Tuple
+from typing import Dict, Literal, Optional, Tuple, Union
 
 import discord
 from discord.ext import tasks
-
 from redbot import VersionInfo, version_info
 from redbot.core import Config, VersionInfo, checks, commands, version_info
-from redbot.core.utils.chat_formatting import pagify, humanize_timedelta, humanize_list
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .event_obj import Event, ValidImage
 
@@ -103,18 +101,18 @@ class EventPoster(commands.Cog):
             for message_id, event in events.items():
                 if event.should_remove(cleanup_seconds):
                     to_remove.append(message_id)
-                    log.debug(f"Removing {event} due to age.")
+                    # log.debug(f"Removing {event} due to age.")
             for msg_id in to_remove:
                 ctx = await events[msg_id].get_ctx(self.bot)
                 if ctx:
-                    await events[msg_id].edit(ctx, content=_("This event has ended."))
+                    await events[msg_id].edit(ctx, content=_("This event has ended."), view=None)
 
                 async with self.config.guild_from_id(guild_id).events() as guild_events:
                     del guild_events[str(events[msg_id].hoster)]
-                    log.debug("deleted from config")
+                    # log.debug("deleted from config")
                 del events[msg_id]
-                log.debug("deleted from cache")
-        log.debug("Finished checking events to cleanup")
+                # log.debug("deleted from cache")
+        # log.debug("Finished checking events to cleanup")
 
     @cleanup_old_events.before_loop
     async def before_cleanup_old_events(self):
@@ -861,7 +859,13 @@ class EventPoster(commands.Cog):
         help distinguish the classes.
         `<player_class>` The name of the player class you want to have
         as a server option.
+
+        Note: There is a maximum of 25 classes you can add. The class name
+        can also only be a maximum of 25 characters.
         """
+        if len(player_class) > 25:
+            await ctx.send(_("Player classes can be a maximum of 25 characters."))
+            return
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if player_class not in options:
                 if emoji is not None:
@@ -886,11 +890,11 @@ class EventPoster(commands.Cog):
         `<player_class>` The name of the playerclass you want to remove.
         """
         success_msg = _("{player_class} has been removed as an available option.").format(
-                player_class=player_class
-            )
+            player_class=player_class
+        )
         fail_msg = _("{player_class} is not currently available as an option.").format(
-                player_class=player_class
-            )
+            player_class=player_class
+        )
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if player_class in options:
                 del options[player_class]

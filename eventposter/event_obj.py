@@ -1,21 +1,19 @@
-import re
 import logging
-import pytz
-
-from dateutil import parser
-from dateutil.tz import gettz
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Tuple, cast, Dict
-
-from redbot.core import commands, Config
-from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import humanize_list, pagify, humanize_timedelta
-from redbot.core.i18n import Translator, cog_i18n
+import re
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Tuple, cast
 
 import discord
-from discord.utils import snowflake_time
+import pytz
+from dateutil import parser
+from dateutil.tz import gettz
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from discord.utils import snowflake_time
+from redbot.core import Config, commands
+from redbot.core.bot import Red
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
@@ -112,6 +110,7 @@ class LeaveEventButton(discord.ui.Button):
         try:
             await self.view.end_event()
         except Exception:
+            log.exception("Error ending event")
             pass
         await interaction.response.edit_message(content=_("Your event has now ended."), view=None)
 
@@ -149,9 +148,7 @@ class LeaveEventButton(discord.ui.Button):
 
 
 class PlayerClassSelect(discord.ui.Select):
-    def __init__(
-        self, custom_id: str, options: Dict[str, str], placeholder: Optional[str]
-    ):
+    def __init__(self, custom_id: str, options: Dict[str, str], placeholder: Optional[str]):
         super().__init__(
             custom_id=custom_id,
             min_values=1,
@@ -162,6 +159,15 @@ class PlayerClassSelect(discord.ui.Select):
             self.add_option(label=option, emoji=emoji)
 
     async def callback(self, interaction: discord.Interaction):
+        await self.view.cog.config.member(interaction.user).player_class.set(self.values[0])
+        if interaction.user.id in self.view.members:
+            self.view.check_join_enabled()
+            await self.view.update_event()
+            await interaction.response.send_message(
+                _("Changing your class to {player_class}.").format(player_class=self.values[0]),
+                ephemeral=True,
+            )
+            return
         if self.view.max_slots and len(self.view.members) >= self.view.max_slots:
             await interaction.response.send_message(
                 _("This event is at the maximum number of members."), ephemeral=True
@@ -171,9 +177,6 @@ class PlayerClassSelect(discord.ui.Select):
             self.view.maybe.remove(interaction.user.id)
         if interaction.user.id not in self.view.members:
             self.view.members.append(interaction.user.id)
-        await self.view.cog.config.member(interaction.user).player_class.set(self.values[0])
-        self.view.check_join_enabled()
-        await self.view.update_event()
 
 
 class MaybeJoinEventButton(discord.ui.Button):
@@ -238,7 +241,7 @@ class Event(discord.ui.View):
         if self.select_options:
             self.select_view = PlayerClassSelect(
                 custom_id=f"playerclass-{self.hoster}",
-                options=self.select_options,
+                options=self.select_options[:25],
                 placeholder=_("Pick a class to join this event"),
             )
             self.add_item(self.select_view)
@@ -353,7 +356,7 @@ class Event(discord.ui.View):
             # event = Event.from_json(self.bot, events[str(user.id)])
             ctx = await self.get_ctx(self.bot)
             if ctx:
-                await self.edit(ctx, content=_("This event has ended."))
+                await self.edit(ctx, content=_("This event has ended."), view=None)
             del events[str(self.hoster)]
             del self.bot.get_cog("EventPoster").event_cache[self.guild][self.message]
 
@@ -378,9 +381,10 @@ class Event(discord.ui.View):
 
     async def edit(self, context: commands.Context, **kwargs) -> None:
         ctx = await self.get_ctx(context.bot)
+        view = kwargs.pop("view", self)
         if not ctx:
             return
-        await ctx.message.edit(**kwargs, view=self)
+        await ctx.message.edit(**kwargs, view=view)
 
     def mention(self, include_maybe: bool):
         members = self.members
