@@ -546,30 +546,6 @@ class BaseMenu(discord.ui.View):
         kwargs = await self._get_kwargs_from_page(page)
         return await channel.send(**kwargs, view=self)
 
-    async def update(self, payload: discord.RawReactionActionEvent) -> None:
-        """|coro|
-
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
-
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
         try:

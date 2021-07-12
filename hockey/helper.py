@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -6,13 +5,11 @@ from typing import Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 import pytz
-from discord.ext.commands.converter import Converter, EmojiConverter
+from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
@@ -131,13 +128,33 @@ class TeamDateFinder(Converter):
         return result
 
 
+class SelectTeamMenu(discord.ui.Select):
+    def __init__(self, max_values=1, min_values=1, placeholder=_("Pick a team")):
+        super().__init__(max_values=max_values, min_values=min_values, placeholder=placeholder)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.stop()
+        pass
+
+
+class SelectTeamView(discord.ui.View):
+    def __init__(self, ctx: Context):
+        super().__init__(timeout=180)
+        self.ctx = ctx
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        """Just extends the default reaction_check to use owner_ids"""
+        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
+
+
 class HockeyTeams(Converter):
     """
     Converter for valid Hockey Teams to choose from
-
-    Guidance code on how to do this from:
-    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
-    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
     """
 
     async def convert(
@@ -145,59 +162,28 @@ class HockeyTeams(Converter):
     ) -> Optional[Union[List[Dict[str, dict]], str]]:
         result: Optional[Union[List[Dict[str, dict]], str]] = []
         team_list = await check_valid_team(argument)
-        my_perms = ctx.channel.permissions_for(ctx.guild.me)
         if team_list == []:
-            raise BadArgument('Team "{}" not found'.format(argument))
+            raise BadArgument(_('Team "{team}" not found').format(team=argument))
         if len(team_list) == 1:
             result = team_list[0]
         else:
             # This is just some extra stuff to correct the team picker
             msg = _("There's multiple teams with that name, pick one of these:\n")
-            if my_perms.add_reactions and my_perms.use_external_emojis:
-                new_msg = await ctx.send(msg)
-                team_emojis = [
-                    await EmojiConverter().convert(ctx, "<:" + TEAMS[team]["emoji"] + ">")
-                    for team in team_list
-                ]
-                log.debug(team_emojis)
-                log.debug(team_list)
-                pred = ReactionPredicate.with_emojis(team_emojis, message=new_msg)
-                start_adding_reactions(new_msg, team_emojis)
-                try:
-                    reaction, user = await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-                except asyncio.TimeoutError:
-                    await new_msg.edit(content=_("I guess not."))
-                    return None
+            view = SelectTeamView(ctx)
+            menu = SelectTeamMenu(max_values=1, min_values=1, placeholder=_("Pick a team"))
+            for team in team_list[:25]:
+                emoji_str = TEAMS[team]["emoji"]
+                if emoji_str:
+                    emoji = discord.PartialEmoji.from_str(emoji_str)
                 else:
-                    result = team_list[pred.result]
-                    log.debug(result)
-            else:
-                for i, team_name in enumerate(team_list):
-                    msg += "{}: {}\n".format(i + 1, team_name)
-
-                def msg_check(m):
-                    return m.author == ctx.message.author
-
-                try:
-                    msg = await ctx.bot.wait_for("message", check=msg_check, timeout=60)
-                except asyncio.TimeoutError:
-                    await new_msg.edit(content=_("I guess not."))
-                    return None
-
-                if msg.content.isdigit():
-                    msg = int(msg.content) - 1
-                    try:
-                        result = team_list[msg]
-                    except (IndexError, ValueError, AttributeError):
-                        pass
-                else:
-                    return_team = None
-                    for team in team_list:
-                        if msg.content.lower() in team.lower():
-                            return_team = team
-                    result = return_team
-            if new_msg:
-                await new_msg.delete()
+                    emoji = None
+                menu.add_option(emoji=emoji, label=team)
+            view.add_item(menu)
+            await ctx.send(msg, view=view)
+            await view.wait()
+            if len(menu.values) == 0:
+                return None
+            return menu.values[0]
         return result
 
 
@@ -214,7 +200,7 @@ class HockeyStandings(Converter):
         result = None
         team_list = await check_valid_team(argument, True)
         if team_list == []:
-            raise BadArgument('Standing or Team "{}" not found'.format(argument))
+            raise BadArgument(_('Standing or Team "{team}" not found').format(team=argument))
         if len(team_list) >= 1:
             result = team_list[0]
         return result
@@ -297,8 +283,24 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     """
     Checks if this is a valid team name or all teams
     useful for game day channel creation should impliment elsewhere
+
+    Parameters
+    ----------
+        team_name: str
+            The team name you're searching for
+        standings: bool
+            Whether or not to include standings types
+
+    Returns
+    -------
+        List[str]
+            A list of the teams that resemble the search. Teams
+            will be returned sorted alphabetically and in preference of
+            active teams first.
     """
     is_team = []
+    active_team = set()
+    inactive_team = set()
     conference: List[str] = []  # ["eastern", "western", "conference"]
     division = [
         "central",
@@ -317,28 +319,32 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
         return [team_name]
     if team_name.lower() in division and standings:
         return [team_name]
-    for team in TEAMS:
+    for team, data in TEAMS.items():
         if team_name.lower() in team.lower():
-            is_team.append(team)
-    if team_name.lower() in ["montreal canadiens", "habs", "montreal"]:
-        is_team.append("Montréal Canadiens")
-    if team_name.lower() == "avs":
-        is_team.append("Colorado Avalanche")
-    if team_name.lower() == "preds":
-        is_team.append("Nashville Predators")
-    if team_name.lower() == "bolts":
-        is_team.append("Tampa Bay Lightning")
-    if team_name.lower() in ["jackets", "bjs"]:
-        is_team.append("Columbus Blue Jackets")
-    if team_name.lower() == "isles":
-        is_team.append("New York Islanders")
-    if team_name.lower() == "sens":
-        is_team.append("Ottawa Senators")
-    if team_name.lower() == "pens":
-        is_team.append("Pittsburgh Penguins")
-    if team_name.lower() == "caps":
-        is_team.append("Washington Capitals")
-    return list(set(is_team))
+            if data["active"]:
+                active_team.add(team)
+            else:
+                inactive_team.add(team)
+    if team_name.lower() in {"montreal canadiens", "habs", "montreal"}:
+        active_team.add("Montréal Canadiens")
+    if team_name.lower() in {"avs"}:
+        active_team.add("Colorado Avalanche")
+    if team_name.lower() in {"preds"}:
+        active_team.add("Nashville Predators")
+    if team_name.lower() in {"bolts"}:
+        active_team.add("Tampa Bay Lightning")
+    if team_name.lower() in {"jackets", "bjs"}:
+        active_team.add("Columbus Blue Jackets")
+    if team_name.lower() in {"isles"}:
+        active_team.add("New York Islanders")
+    if team_name.lower() in {"sens"}:
+        active_team.add("Ottawa Senators")
+    if team_name.lower() in {"pens"}:
+        active_team.add("Pittsburgh Penguins")
+    if team_name.lower() in {"caps"}:
+        active_team.add("Washington Capitals")
+    is_team = sorted(active_team) + sorted(inactive_team)
+    return is_team
 
 
 async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:
