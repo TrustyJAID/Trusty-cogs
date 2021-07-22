@@ -39,6 +39,40 @@ TIME_RE_STRING = r"|".join(
 TIME_RE = re.compile(TIME_RE_STRING, re.I)
 
 
+class ApproveButton(discord.ui.Button):
+    def __init__(self, label: str):
+        super().__init__(style=discord.ButtonStyle.green, label=label)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.approved = True
+        self.view.stop()
+
+
+class DenyButton(discord.ui.Button):
+    def __init__(self, label: str):
+        super().__init__(style=discord.ButtonStyle.red, label=label)
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.approved = False
+        self.view.stop()
+
+
+class ApproveView(discord.ui.View):
+    def __init__(self, ctx: commands.Context):
+        super().__init__()
+        self.approved = False
+        self.ctx = ctx
+        self.approve_button = ApproveButton(label=_("Yes"))
+        self.deny_button = DenyButton(label=_("No"))
+        self.add_item(self.approve_button)
+        self.add_item(self.deny_button)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            return False
+        return True
+
+
 class TimeZones:
     def __init__(self):
         self.zones = {}
@@ -238,10 +272,11 @@ class Event(discord.ui.View):
         self.add_item(self.maybe_button)
         self.add_item(self.leave_button)
         self.select_view = None
+        log.debug(self.select_options)
         if self.select_options:
             self.select_view = PlayerClassSelect(
                 custom_id=f"playerclass-{self.hoster}",
-                options=self.select_options[:25],
+                options=self.select_options,
                 placeholder=_("Pick a class to join this event"),
             )
             self.add_item(self.select_view)
@@ -252,9 +287,11 @@ class Event(discord.ui.View):
     def check_join_enabled(self):
         if self.max_slots and len(self.members) >= self.max_slots:
             self.join_button.disabled = True
+            self.select_view.disabled = True
             log.debug(f"Setting Join Button to {self.join_button.disabled}")
         if self.max_slots and len(self.members) < self.max_slots:
             self.join_button.disabled = False
+            self.select_view.disabled = False
             log.debug(f"Setting Join Button to {self.join_button.disabled}")
 
     async def interaction_check(self, interaction: discord.Interaction):

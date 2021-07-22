@@ -5,13 +5,12 @@ from typing import Dict, Literal, Optional, Tuple, Union
 import discord
 from discord.ext import tasks
 from redbot import VersionInfo, version_info
-from redbot.core import Config, VersionInfo, checks, commands, version_info
+from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
-from .event_obj import Event, ValidImage
+from .event_obj import ApproveView, Event, ValidImage
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
@@ -315,9 +314,9 @@ class EventPoster(commands.Cog):
             return await self.post_event(ctx, event)
 
         new_view = discord.ui.View()
-        approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label="Approve")
+        approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Approve"))
         approve_button.callback = self.approve_event
-        deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label="Deny")
+        deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label=_("Deny"))
         deny_button.callback = self.deny_event
         new_view.add_item(approve_button)
         new_view.add_item(deny_button)
@@ -754,35 +753,12 @@ class EventPoster(commands.Cog):
         return False
 
     async def check_clear_event(self, ctx: commands.Context) -> bool:
-        new_view = discord.ui.View()
-        approve_button = discord.ui.Button(
-            style=discord.ButtonStyle.green, label=_("Yes"), custom_id=f"yes-{ctx.message.id}"
-        )
-        # approve_button.callback = self.end_event
-        deny_button = discord.ui.Button(
-            style=discord.ButtonStyle.red, label=_("No"), custom_id=f"no-{ctx.message.id}"
-        )
-        # deny_button.callback = self.keep_event
-        new_view.add_item(approve_button)
-        new_view.add_item(deny_button)
-        msg = await ctx.send(
+        new_view = ApproveView(ctx)
+        await ctx.send(
             _("You already have an event running, would you like to cancel it?"), view=new_view
         )
-        # start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        # pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-        def check_same_user(interaction):
-            return interaction.user.id == ctx.author.id
-
-        try:
-            x = await ctx.bot.wait_for("interaction", check=check_same_user, timeout=60)
-        except asyncio.TimeoutError:
-            return False
-        custom_id = x.data.get("custom_id")
-        if custom_id == f"yes-{ctx.message.id}":
-            return True
-        return False
-
-        # return pred.result
+        await new_view.wait()
+        return new_view.approved
 
     @commands.group(name="eventset")
     @commands.guild_only()
@@ -867,6 +843,14 @@ class EventPoster(commands.Cog):
             await ctx.send(_("Player classes can be a maximum of 25 characters."))
             return
         async with self.config.guild(ctx.guild).playerclass_options() as options:
+            if len(options) >= 25:
+                await ctx.send(
+                    _(
+                        "You can have a maximum of 25 player classes to select from."
+                        "Delete some first before trying to add more."
+                    )
+                )
+                return
             if player_class not in options:
                 if emoji is not None:
                     if emoji.is_custom_emoji() and emoji.animated:
@@ -901,6 +885,19 @@ class EventPoster(commands.Cog):
                 await ctx.send(success_msg)
             else:
                 await ctx.send(fail_msg)
+
+    @playerclasses.command(name="list")
+    async def list_guild_playerclass(self, ctx: commands.Context):
+        """
+        List the playerclass choices in this server.
+        """
+        player_classes = await self.config.guild(ctx.guild).playerclass_options()
+        player_classes = humanize_list(list(player_classes.keys()))
+        await ctx.send(
+            _("{guild} Available Playerclasses: **{player_classes}**").format(
+                guild=ctx.guild.name, player_classes=player_classes
+            )
+        )
 
     @event_settings.command(name="remove", aliases=["rem"])
     @commands.mod_or_permissions(manage_messages=True)
