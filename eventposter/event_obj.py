@@ -129,6 +129,12 @@ class JoinEventButton(discord.ui.Button):
             return
         if interaction.user.id in self.view.maybe:
             self.view.maybe.remove(interaction.user.id)
+        if self.view.thread:
+            try:
+                thread = interaction.guild.get_thread(self.view.thread)
+                await thread.add_user(interaction.user)
+            except Exception:
+                log.exception("Error adding user to event thread")
         self.view.members.append(interaction.user.id)
         self.view.check_join_enabled()
         await self.view.update_event()
@@ -172,6 +178,12 @@ class LeaveEventButton(discord.ui.Button):
                 _("You are not registered for this event."), ephemeral=True
             )
             return
+        if self.view.thread:
+            try:
+                thread = interaction.guild.get_thread(self.view.thread)
+                await thread.remove_user(interaction.user)
+            except Exception:
+                log.exception("Error removing user from event thread")
         if interaction.user.id in self.view.members:
             self.view.members.remove(interaction.user.id)
         if interaction.user.id in self.view.maybe:
@@ -211,6 +223,12 @@ class PlayerClassSelect(discord.ui.Select):
             self.view.maybe.remove(interaction.user.id)
         if interaction.user.id not in self.view.members:
             self.view.members.append(interaction.user.id)
+            if self.view.thread:
+                try:
+                    thread = interaction.guild.get_thread(self.view.thread)
+                    await thread.add_user(interaction.user)
+                except Exception:
+                    log.exception("Error adding user to event thread")
 
 
 class MaybeJoinEventButton(discord.ui.Button):
@@ -231,8 +249,20 @@ class MaybeJoinEventButton(discord.ui.Button):
             self.view.check_join_enabled()
         if interaction.user.id in self.view.maybe:
             self.view.maybe.remove(interaction.user.id)
+            if self.view.thread:
+                try:
+                    thread = interaction.guild.get_thread(self.view.thread)
+                    await thread.remove_user(interaction.user)
+                except Exception:
+                    log.exception("Error remove user to event thread")
         else:
             self.view.maybe.append(interaction.user.id)
+            if self.view.thread:
+                try:
+                    thread = interaction.guild.get_thread(self.view.thread)
+                    await thread.add_user(interaction.user)
+                except Exception:
+                    log.exception("Error adding user to event thread")
 
         await self.view.update_event()
 
@@ -249,6 +279,7 @@ class Event(discord.ui.View):
     guild: int
     maybe: List[int]
     start: Optional[datetime]
+    thread: Optional[int]
 
     def __init__(self, **kwargs):
         self.bot = kwargs.get("bot")
@@ -263,6 +294,7 @@ class Event(discord.ui.View):
         self.maybe = kwargs.get("maybe", [])
         self.start = kwargs.get("start", None)
         self.select_options = kwargs.get("select_options", {})
+        self.thread = kwargs.get("thread")
         self.cog = kwargs.get("cog")
         super().__init__(timeout=None)
         self.join_button = JoinEventButton(custom_id=f"join-{self.hoster}")
@@ -522,6 +554,7 @@ class Event(discord.ui.View):
             maybe=data.get("maybe"),
             start=start,
             select_options=data.get("select_options"),
+            thread=data.get("thread", None),
         )
 
     def to_json(self):
@@ -537,6 +570,7 @@ class Event(discord.ui.View):
             "maybe": self.maybe,
             "start": int(self.start.timestamp()) if self.start is not None else None,
             "select_options": self.select_options,
+            "thread": self.thread,
         }
 
 

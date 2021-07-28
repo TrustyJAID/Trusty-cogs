@@ -45,6 +45,7 @@ class EventPoster(commands.Cog):
             "max_events": None,
             "required_roles": [],
             "playerclass_options": {},
+            "make_thread": False,
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
@@ -351,6 +352,14 @@ class EventPoster(commands.Cog):
             sanitize = {"allowed_mentions": discord.AllowedMentions(everyone=True, roles=True)}
         announcement_channel = ctx.guild.get_channel(event.channel)
         posted_message = await announcement_channel.send(ping, embed=em, view=event, **sanitize)
+        if await self.config.guild(ctx.guild).make_thread():
+            thread = await posted_message.start_thread(name=event.event[:100])
+            event.thread = thread.id
+            for m in event.members:
+                try:
+                    await thread.add_user(ctx.guild.get_member(m))
+                except Exception:
+                    log.exception("Error adding members to new thread.")
         event.message = posted_message.id
         async with self.config.guild(ctx.guild).events() as cur_events:
             cur_events[str(event.hoster)] = event.to_json()
@@ -1092,6 +1101,25 @@ class EventPoster(commands.Cog):
         else:
             reply = _("I will not post events without admin apprval first.")
             await self.config.guild(ctx.guild).bypass_admin.clear()
+        await ctx.send(reply)
+
+    @event_settings.command(name="thread")
+    @checks.mod_or_permissions(manage_messages=True, manage_threads=True)
+    @commands.guild_only()
+    async def make_thread(self, ctx: commands.Context, true_or_false: bool) -> None:
+        """
+        Set whether or not to turn the announcement message into a thread
+        for people to join and discuss in.
+
+        `<true_or_false>` `True` or `False` whether or not to allow events
+        to bypass admin approval.
+        """
+        if true_or_false:
+            await self.config.guild(ctx.guild).make_thread.set(true_or_false)
+            reply = _("I will create events with a thread for discussion.")
+        else:
+            reply = _("I will not create events with a thread for discussion.")
+            await self.config.guild(ctx.guild).make_thread.clear()
         await ctx.send(reply)
 
     @event_settings.command(name="approvalchannel", aliases=["adminchannel"])
