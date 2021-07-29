@@ -326,9 +326,10 @@ class RoleToolsButtons(RoleToolsMixin):
                     emoji = discord.PartialEmoji.from_str(emoji)
                 style = colour_index[button_data["style"]]
                 msg += _(
-                    "**Role:** {role}\n**Label:** {label}\n"
+                    "**Name:**{name}\n**Role:** {role}\n**Label:** {label}\n"
                     "**Style:** {style}\n**Emoji:** {emoji}\n"
                 ).format(
+                    name=name,
                     role=role.mention if role else _("Missing Role"),
                     label=button_data["label"],
                     style=style,
