@@ -74,10 +74,11 @@ class ButtonRoleConverter(Converter):
         async with ctx.cog.config.guild(ctx.guild).buttons() as buttons:
             log.debug(argument)
             if argument.lower() in buttons:
+                log.debug("Button exists")
                 button_data = buttons[argument.lower()]
                 role_id = button_data["role_id"]
                 emoji = button_data["emoji"]
-                if len(emoji) > 4:
+                if emoji is not None:
                     emoji = discord.PartialEmoji.from_str(emoji)
                 button = ButtonRole(
                     style=button_data["style"],
@@ -112,7 +113,9 @@ class RoleToolsButtons(RoleToolsMixin):
                 log.debug(f"Adding Button {button_name}")
                 view = ButtonRoleView(self)
                 role_id = button_data["role_id"]
-                emoji = discord.PartialEmoji.from_str(button_data["emoji"])
+                emoji = button_data["emoji"]
+                if emoji is not None:
+                    emoji = discord.PartialEmoji.from_str(emoji)
                 button = ButtonRole(
                     style=button_data["style"],
                     label=button_data["label"],
@@ -326,7 +329,7 @@ class RoleToolsButtons(RoleToolsMixin):
                     emoji = discord.PartialEmoji.from_str(emoji)
                 style = colour_index[button_data["style"]]
                 msg += _(
-                    "**Name:**{name}\n**Role:** {role}\n**Label:** {label}\n"
+                    "**Name:** {name}\n**Role:** {role}\n**Label:** {label}\n"
                     "**Style:** {style}\n**Emoji:** {emoji}\n"
                 ).format(
                     name=name,
