@@ -59,7 +59,12 @@ class StarboardEvents:
             )
             if message.attachments:
                 attachment = message.attachments[0]
-                if not attachment.url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
+                spoiler = attachment.is_spoiler()
+                if spoiler:
+                    em.add_field(
+                        name="Attachment", value=f"||[{attachment.filename}]({attachment.url})||"
+                    )
+                elif not attachment.url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp")):
                     em.add_field(
                         name="Attachment", value=f"[{attachment.filename}]({attachment.url})"
                     )
