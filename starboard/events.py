@@ -1,7 +1,7 @@
-import logging
 import asyncio
-from typing import Dict, Literal, Union, cast, Optional, Tuple
+import logging
 from datetime import datetime, timedelta
+from typing import Dict, Literal, Optional, Tuple, Union, cast
 
 import discord
 from discord.utils import snowflake_time
@@ -12,7 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import humanize_timedelta
 
-from .starboard_entry import StarboardEntry, StarboardMessage, FakePayload
+from .starboard_entry import FakePayload, StarboardEntry, StarboardMessage
 
 _ = Translator("Starboard", __file__)
 log = logging.getLogger("red.trusty-cogs.Starboard")
@@ -76,7 +76,7 @@ class StarboardEvents:
                     ref_text = ref_msg.system_content
                     ref_link = f"\n[message]({ref_msg.jump_url})"
                     if len(ref_text + ref_link) > 1024:
-                        ref_text = ref_text[:len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
+                        ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
                     ref_text += ref_link
                     em.add_field(
                         name=_("Replying to {author}").format(author=ref_msg.author.display_name),
@@ -141,8 +141,7 @@ class StarboardEvents:
         return await self.bot.is_owner(member)
 
     async def _update_stars(
-        self,
-        payload: Union[discord.RawReactionActionEvent, FakePayload],
+        self, payload: Union[discord.RawReactionActionEvent, FakePayload]
     ) -> None:
         """
         This handles updating the starboard with a new message
@@ -171,9 +170,10 @@ class StarboardEvents:
             return
         if not starboard.enabled:
             return
-        if not starboard.check_roles(member):
-            return
-        if not starboard.check_channel(self.bot, channel):
+        allowed = starboard.check_roles(member)
+        allowed |= starboard.check_channel(self.bot, channel)
+        if not allowed:
+            log.debug("User or channel not in allowlist")
             return
 
         star_channel = guild.get_channel(starboard.channel)
@@ -191,8 +191,13 @@ class StarboardEvents:
                 return
 
             if star_message is False:
+                if getattr(payload, "event_type", None) == "REACTION_REMOVE":
+                    # Return early so we don't create a new starboard message
+                    # when the first time we're seeing the message is on a
+                    # reaction remove event
+                    return
                 try:
-                    msg = await channel.fetch_message(id=payload.message_id)
+                    msg = await channel.fetch_message(payload.message_id)
                 except (discord.errors.NotFound, discord.Forbidden):
                     return
                 star_message = StarboardMessage(
@@ -215,7 +220,7 @@ class StarboardEvents:
                 await self._save_starboards(guild)
                 return
             try:
-                msg = await channel.fetch_message(id=payload.message_id)
+                msg = await channel.fetch_message(payload.message_id)
             except (discord.errors.NotFound, discord.Forbidden):
                 return
             em = await self._build_embed(guild, msg, starboard)
