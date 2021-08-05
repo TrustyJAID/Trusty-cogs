@@ -74,7 +74,9 @@ class StarboardEvents:
                 ref_msg = getattr(msg_ref, "resolved", None)
                 try:
                     ref_text = ref_msg.system_content
-                    ref_link = f"\n[message]({ref_msg.jump_url})"
+                    ref_link = _("\n[Click Here to view reply context]({link})").format(
+                        link=ref_msg.jump_url
+                    )
                     if len(ref_text + ref_link) > 1024:
                         ref_text = ref_text[: len(ref_link) - 1] + "\N{HORIZONTAL ELLIPSIS}"
                     ref_text += ref_link
