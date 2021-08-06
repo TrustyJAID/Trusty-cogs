@@ -846,10 +846,10 @@ class EventPoster(commands.Cog):
         as a server option.
 
         Note: There is a maximum of 25 classes you can add. The class name
-        can also only be a maximum of 25 characters.
+        can also only be a maximum of 100 characters.
         """
-        if len(player_class) > 25:
-            await ctx.send(_("Player classes can be a maximum of 25 characters."))
+        if len(player_class) > 100:
+            await ctx.send(_("Player classes can be a maximum of 100 characters."))
             return
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if len(options) >= 25:

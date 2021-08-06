@@ -625,8 +625,8 @@ class SpotifyPages(menus.PageSource):
 class SpotifyTrackOption(discord.SelectOption):
     def __init__(self, track: tekore.FullTrack):
         super().__init__(
-            label=track.name[:25],
-            description=humanize_list([i.name for i in track.artists])[:50],
+            label=track.name[:100],
+            description=humanize_list([i.name for i in track.artists])[:100],
             value=track.id,
         )
         self.track = track

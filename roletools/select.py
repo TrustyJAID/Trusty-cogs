@@ -384,14 +384,14 @@ class RoleToolsSelect(RoleToolsMixin):
             label = f"@{role.name}"
 
         if label:
-            label = label[:25]
+            label = label[:100]
 
         async with self.config.guild(ctx.guild).select_options() as select_options:
             select_options[name.lower()] = {
                 "role_id": role.id,
                 "label": label,
                 "emoji": emoji_id,
-                "description": description[:50] if description else None,
+                "description": description[:100] if description else None,
                 "name": name.lower(),
             }
             if ctx.guild.id not in self.settings:
@@ -400,7 +400,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 "role_id": role.id,
                 "label": label,
                 "emoji": emoji_id,
-                "description": description[:50] if description else None,
+                "description": description[:100] if description else None,
                 "name": name.lower(),
             }
         async with self.config.role(role).select_options() as role_select:
@@ -411,7 +411,7 @@ class RoleToolsSelect(RoleToolsMixin):
             label=label,
             value=f"RTSelect-{name.lower()}-{role.id}",
             role_id=role.id,
-            description=description[:50] if description else None,
+            description=description[:100] if description else None,
             emoji=emoji_id,
         )
         select_menus = discord.ui.Select(
