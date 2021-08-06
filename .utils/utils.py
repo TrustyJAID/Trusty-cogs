@@ -3,11 +3,12 @@ import json
 import logging
 import os
 import re
-import click
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional
 
+import click
 import tabulate
 from babel.lists import format_list as babel_list
 
@@ -25,8 +26,14 @@ DEFAULT_INFO = {
 
 logging.basicConfig(filename="scripts.log", level=logging.INFO)
 log = logging.getLogger(__file__)
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    "[{asctime}] [{levelname}] {name}: {message}", datefmt="%Y-%m-%d %H:%M:%S", style="{"
+)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parent.resolve().parents[0]
 
 VER_REG = re.compile(r"\_\_version\_\_ = \"(\d+\.\d+\.\d+)", flags=re.I)
 
@@ -297,7 +304,7 @@ def make(
         min_python_version,
         end_user_data_statement,
     )
-    print(data_obj)
+    log.debug(data_obj)
     save_json(f"{ROOT}/{name}/info.json", data_obj.__dict__)
 
 
@@ -328,35 +335,48 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
     """Count the number of lines of .py files in all folders"""
     total = 0
     totals = []
-    log.info(f"{ROOT}")
-    for folder in os.listdir(f"{ROOT}/"):
+    log.debug(ROOT)
+    for folder in os.listdir(ROOT):
+        cog_path = ROOT / folder
         cog = 0
         if folder.startswith("."):
             continue
+        if not cog_path.is_dir():
+            log.debug(f"{cog_path} is not a directory")
+            continue
         try:
-            with open(f"{ROOT}/{folder}/info.json", "r") as infile:
+            with open(cog_path / "info.json", "r") as infile:
                 info = InfoJson.from_json(json.load(infile))
         except Exception:
-            continue
+            info = InfoJson(DEFAULT_AUTHOR, hidden=True, disabled=True)
+            log.debug(f"Error opening {cog_path} info.json")
         if info.hidden and not include_hidden:
             continue
         if info.disabled and not include_disabled:
             continue
         try:
-            for file in glob.glob(f"{ROOT}/{folder}/*.py"):
+            for file in os.listdir(cog_path):
+                file_path = cog_path / file
+                if not file_path.is_file():
+                    continue
+                if not file.endswith(".py"):
+                    continue
                 try:
-                    with open(file, "r") as infile:
+                    with open(file_path, "r") as infile:
                         lines = len(infile.readlines())
+                        log.debug(f"{file_path} has {lines} lines of code")
                     cog += lines
                     total += lines
                 except Exception:
+                    log.exception(f"Error opening {file_path}")
                     pass
             totals.append((folder, cog))
         except Exception:
+            log.exception(f"Error reading {folder}")
             pass
     totals = sorted(totals, key=lambda x: x[1], reverse=True)
     totals.insert(0, ("Total", total))
-    print(tabulate.tabulate(totals, headers=["Cog", "# ofLines"], tablefmt="pretty"))
+    print(tabulate.tabulate(totals, headers=["Cog", "# of Lines"], tablefmt="pretty"))
     return totals
 
 
@@ -472,9 +492,9 @@ def run_cli():
     try:
         cli()
     except KeyboardInterrupt:
-        print("Exiting.")
+        log.debug("Exiting.")
     else:
-        print("Exiting.")
+        log.debug("Exiting.")
 
 
 if __name__ == "__main__":
