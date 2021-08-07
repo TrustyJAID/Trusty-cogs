@@ -2,8 +2,8 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Set
 
+import pytz
 from redbot.core.utils.chat_formatting import humanize_number
 from tabulate import tabulate
 
@@ -68,7 +68,9 @@ class Activity:
 
     @classmethod
     def from_json(cls, data: dict):
-        date = datetime.strptime(data.get("date"), "%d-%b-%Y %H:%M").replace(tzinfo=timezone.utc)
+        tz = pytz.timezone("Europe/London")
+        date = datetime.strptime(data.get("date"), "%d-%b-%Y %H:%M")
+        date = tz.localize(date, is_dst=None).astimezone(timezone.utc)
         text = data.get("text")
         activity_id = f"{int(date.timestamp())}-{text}"
         return cls(

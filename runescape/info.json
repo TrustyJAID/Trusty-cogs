@@ -20,7 +20,8 @@
     ],
     "required_cogs" : {},
     "requirements" : [
-        "tabulate"
+        "tabulate",
+        "pytz"
     ],
     "short" : "Show your Runescape stats in discord!",
     "tags" : [
