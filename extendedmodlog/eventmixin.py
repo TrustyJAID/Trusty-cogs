@@ -254,7 +254,7 @@ class EventMixin:
             author_title = _("{member} ({m_id})- Used a Command").format(
                 member=message.author, m_id=message.author.id
             )
-            embed.set_author(name=author_title, icon_url=message.author.avatar_url)
+            embed.set_author(name=author_title, icon_url=message.author.avatar.url)
             await channel.send(embed=embed)
         else:
             await channel.send(infomessage[:2000])
@@ -307,7 +307,7 @@ class EventMixin:
             else:
                 infomessage = _("{emoji} `{time}` A message was deleted in {channel}").format(
                     emoji=settings["emoji"],
-                    time=datetime.datetime.utcnow().strftime("%H:%M:%S"),
+                    time=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S"),
                     channel=message_channel.mention,
                 )
                 await channel.send(f"{infomessage}\n> *Message's content unknown.*")
@@ -386,7 +386,7 @@ class EventMixin:
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_author(
                 name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
-                icon_url=str(message.author.avatar_url),
+                icon_url=str(message.author.avatar.url),
             )
             await channel.send(embed=embed)
         else:
@@ -430,7 +430,7 @@ class EventMixin:
                 description=message_channel.mention,
                 colour=await self.get_event_colour(guild, "message_delete"),
             )
-            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon_url)
+            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon.url)
             embed.add_field(name=_("Channel"), value=message_channel.mention)
             embed.add_field(name=_("Messages deleted"), value=str(message_amount))
             await channel.send(embed=embed)
@@ -439,7 +439,7 @@ class EventMixin:
                 "{emoji} `{time}` Bulk message delete in {channel}, {amount} messages deleted."
             ).format(
                 emoji=settings["emoji"],
-                time=datetime.datetime.utcnow().strftime("%H:%M:%S"),
+                time=datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S"),
                 amount=message_amount,
                 channel=message_channel.mention,
             )
@@ -474,7 +474,7 @@ class EventMixin:
         for invite in await guild.invites():
             try:
 
-                created_at = getattr(invite, "created_at", datetime.datetime.utcnow())
+                created_at = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
                 channel = getattr(invite, "channel", discord.Object(id=0))
                 inviter = getattr(invite, "inviter", discord.Object(id=0))
                 invites[invite.code] = {
@@ -583,7 +583,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         users = len(guild.members)
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/develop/cogs/general.py
         since_created = (time - member.created_at).days
@@ -596,7 +596,7 @@ class EventMixin:
             embed = discord.Embed(
                 description=member.mention,
                 colour=await self.get_event_colour(guild, "user_join"),
-                timestamp=member.joined_at if member.joined_at else datetime.datetime.utcnow(),
+                timestamp=member.joined_at if member.joined_at else datetime.datetime.now(datetime.timezone.utc),
             )
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
@@ -604,15 +604,15 @@ class EventMixin:
                 name=_("{member} ({m_id}) has joined the guild").format(
                     member=member, m_id=member.id
                 ),
-                url=member.avatar_url,
-                icon_url=member.avatar_url,
+                url=member.avatar.url,
+                icon_url=member.avatar.url,
             )
             if possible_link:
                 embed.add_field(name=_("Invite Link"), value=possible_link)
-            embed.set_thumbnail(url=member.avatar_url)
+            embed.set_thumbnail(url=member.avatar.url)
             await channel.send(embed=embed)
         else:
-            time = datetime.datetime.utcnow()
+            time = datetime.datetime.now(datetime.timezone.utc)
             msg = _(
                 "{emoji} `{time}` **{member}**(`{m_id}`) "
                 "joined the guild. Total members: {users}"
@@ -660,7 +660,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         perp, reason = await self.get_audit_log_reason(guild, member, discord.AuditLogAction.kick)
         if embed_links:
             embed = discord.Embed(
@@ -677,13 +677,13 @@ class EventMixin:
                 name=_("{member} ({m_id}) has left the guild").format(
                     member=member, m_id=member.id
                 ),
-                url=member.avatar_url,
-                icon_url=member.avatar_url,
+                url=member.avatar.url,
+                icon_url=member.avatar.url,
             )
-            embed.set_thumbnail(url=member.avatar_url)
+            embed.set_thumbnail(url=member.avatar.url)
             await channel.send(embed=embed)
         else:
-            time = datetime.datetime.utcnow()
+            time = datetime.datetime.now(datetime.timezone.utc)
             msg = _(
                 "{emoji} `{time}` **{member}**(`{m_id}`) left the guild. Total members: {users}"
             ).format(
@@ -801,7 +801,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         channel_type = str(new_channel.type).title()
         embed = discord.Embed(
             description=f"{new_channel.mention} {new_channel.name}",
@@ -862,7 +862,7 @@ class EventMixin:
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         channel_type = str(old_channel.type).title()
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             description=old_channel.name,
             timestamp=time,
@@ -940,7 +940,7 @@ class EventMixin:
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
         channel_type = str(after.type).title()
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             description=after.mention,
             timestamp=time,
@@ -1069,7 +1069,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(description=after.mention, colour=after.colour, timestamp=time)
         msg = _("{emoji} `{time}` Updated role **{role}**\n").format(
             emoji=self.settings[guild.id]["role_change"]["emoji"],
@@ -1144,7 +1144,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             description=role.mention,
             colour=await self.get_event_colour(guild, "role_create"),
@@ -1193,7 +1193,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             description=role.name,
             timestamp=time,
@@ -1248,7 +1248,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         fmt = "%H:%M:%S"
         if embed_links:
             embed = discord.Embed(
@@ -1263,7 +1263,7 @@ class EventMixin:
                 name=_("{member} ({m_id}) - Edited Message").format(
                     member=before.author, m_id=before.author.id
                 ),
-                icon_url=str(before.author.avatar_url),
+                icon_url=str(before.author.avatar.url),
             )
             await channel.send(embed=embed)
         else:
@@ -1302,12 +1302,12 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "guild_change")
         )
-        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon_url))
-        embed.set_thumbnail(url=str(guild.icon_url))
+        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon.url))
+        embed.set_thumbnail(url=str(guild.icon.url))
         msg = _("{emoji} `{time}` Guild updated\n").format(
             emoji=self.settings[guild.id]["guild_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
@@ -1385,7 +1385,7 @@ class EventMixin:
         # set guild level i18n
         perp = None
 
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             description="",
             timestamp=time,
@@ -1538,7 +1538,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             timestamp=time,
             colour=await self.get_event_colour(guild, "voice_change"),
@@ -1657,7 +1657,7 @@ class EventMixin:
         if version_info >= VersionInfo.from_str("3.4.1"):
             await i18n.set_contextual_locales_from_guild(self.bot, guild)
         # set guild level i18n
-        time = datetime.datetime.utcnow()
+        time = datetime.datetime.now(datetime.timezone.utc)
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "user_change")
         )
@@ -1669,7 +1669,7 @@ class EventMixin:
         )
         embed.description = ""
         emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
-        embed.set_author(name=emb_msg, icon_url=before.avatar_url)
+        embed.set_author(name=emb_msg, icon_url=before.avatar.url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
         reason = None
@@ -1744,7 +1744,7 @@ class EventMixin:
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         if invite.code not in self.settings[guild.id]["invite_links"]:
-            created_at = getattr(invite, "created_at", datetime.datetime.utcnow())
+            created_at = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
             inviter = getattr(invite, "inviter", discord.Object(id=0))
             channel = getattr(invite, "channel", discord.Object(id=0))
             self.settings[guild.id]["invite_links"][invite.code] = {
@@ -1783,7 +1783,7 @@ class EventMixin:
         try:
             invite_time = invite.created_at.strftime("%H:%M:%S")
         except AttributeError:
-            invite_time = datetime.datetime.utcnow().strftime("%H:%M:%S")
+            invite_time = datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S")
         msg = _("{emoji} `{time}` Invite created ").format(
             emoji=self.settings[guild.id]["invite_created"]["emoji"],
             time=invite_time,
@@ -1847,7 +1847,7 @@ class EventMixin:
         try:
             invite_time = invite.created_at.strftime("%H:%M:%S")
         except AttributeError:
-            invite_time = datetime.datetime.utcnow().strftime("%H:%M:%S")
+            invite_time = datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S")
         msg = _("{emoji} `{time}` Invite deleted ").format(
             emoji=self.settings[guild.id]["invite_deleted"]["emoji"],
             time=invite_time,
