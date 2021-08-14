@@ -176,8 +176,8 @@ class Profile:
             xp = skill.xp
             rank = "Unranked"
             if skill.rank:
-                rank = skill.rank
-            skills_list.append([skill.name, level, humanize_number(xp), humanize_number(rank)])
+                rank = humanize_number(skill.rank)
+            skills_list.append([skill.name, level, humanize_number(xp), rank])
         return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
 
     def to_json(self) -> dict:
