@@ -287,14 +287,14 @@ class Tweets(TweetsAPI, commands.Cog):
         to_delete = []
         for user_id, account in self.accounts.items():
             to_rem = []
-            for channel_id in account.channel:
+            for channel_id in account.channels:
                 chn = self.bot.get_channel(int(channel_id))
                 if chn is None or not chn.permissions_for(ctx.me).send_messages:
                     log.debug("Removing channel {}".format(channel_id))
                     to_rem.append(channel_id)
             for channel in to_rem:
-                del self.accounts[user_id].channel[channel]
-            if len(self.accounts[user_id].channel) == 0:
+                del self.accounts[user_id].channels[channel]
+            if len(self.accounts[user_id].channels) == 0:
                 log.debug("Removing account {}".format(account["twitter_name"]))
                 to_delete.append(user_id)
         for u_id in to_delete:
