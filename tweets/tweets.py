@@ -3,18 +3,18 @@ import functools
 import logging
 from datetime import datetime
 from io import BytesIO
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import discord
 import tweepy
 from redbot.core import Config, checks, commands
-from redbot.core.utils import AsyncIter
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pagify
 
-from .tweet_entry import TweetEntry, ChannelData
+from .menus import BaseMenu, TweetListPages, TweetPages, TweetsMenu
+from .tweet_entry import ChannelData, TweetEntry
 from .tweets_api import TweetsAPI
-from .menus import TweetPages, BaseMenu, TweetListPages, TweetsMenu
 
 _ = Translator("Tweets", __file__)
 
@@ -290,12 +290,12 @@ class Tweets(TweetsAPI, commands.Cog):
             for channel_id in account.channels:
                 chn = self.bot.get_channel(int(channel_id))
                 if chn is None or not chn.permissions_for(ctx.me).send_messages:
-                    log.debug("Removing channel {}".format(channel_id))
+                    # log.debug("Removing channel {}".format(channel_id))
                     to_rem.append(channel_id)
             for channel in to_rem:
                 del self.accounts[user_id].channels[channel]
             if len(self.accounts[user_id].channels) == 0:
-                log.debug("Removing account {}".format(account["twitter_name"]))
+                log.info("Removing account %s from being followed", account.twitter_name)
                 to_delete.append(user_id)
         for u_id in to_delete:
             del self.accounts[u_id]
@@ -551,7 +551,6 @@ class Tweets(TweetsAPI, commands.Cog):
                     title="Twitter accounts posting in {}".format(guild.name),
                     colour=await self.bot.get_embed_colour(ctx.channel),
                     description=page,
-
                 )
                 embed.set_author(name=guild.name, icon_url=guild.icon_url)
                 embed_list.append(embed)
