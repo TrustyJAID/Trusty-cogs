@@ -1,11 +1,11 @@
 import asyncio
+import functools
 import json
 import logging
-import functools
 from base64 import b64encode
 from datetime import datetime
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 import aiohttp
 import discord
@@ -406,6 +406,17 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/User/GetBungieNetUserById/{membership_id}/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_bnet_user_credentials(self, user: discord.User, membership_id: str) -> dict:
+        """
+        Get a Destiny users linked profiles
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
         url = f"{BASE_URL}/User/GetCredentialTypesForTargetAccount/{membership_id}/"
         return await self.request_url(url, headers=headers)
 
@@ -658,7 +669,9 @@ class DestinyAPI:
             return None, None
 
         membership = profile["destinyMemberships"][int(pred.result) - 1]
-        membership_name = BUNGIE_MEMBERSHIP_TYPES[profile["destinyMemberships"][int(pred.result) - 1]["membershipType"]]
+        membership_name = BUNGIE_MEMBERSHIP_TYPES[
+            profile["destinyMemberships"][int(pred.result) - 1]["membershipType"]
+        ]
         return (membership, membership_name)
 
     async def save(self, data: dict, loc: str = "sample.json"):
@@ -734,9 +747,9 @@ class DestinyAPI:
         path = directory / "d1_manifest.zip"
         with path.open(mode="wb") as f:
             f.write(data)
-        import zipfile
-        import sqlite3
         import ctypes
+        import sqlite3
+        import zipfile
 
         db_name = None
         with zipfile.ZipFile(str(path), "r") as zip_ref:

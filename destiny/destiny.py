@@ -1,24 +1,29 @@
 import asyncio
-import datetime
-import logging
-import json
-import functools
-import re
 import csv
-from io import StringIO, BytesIO
+import datetime
+import functools
+import json
+import logging
+import re
+from io import BytesIO, StringIO
 from pathlib import Path
-from tabulate import tabulate
 from typing import List, Literal, Optional, Union
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify, humanize_timedelta, humanize_list, box
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_timedelta,
+    pagify,
+)
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
+from tabulate import tabulate
 
 from .api import DestinyAPI
-from .converter import DestinyActivity, StatsPage, SearchInfo, DestinyEververseItemType
+from .converter import DestinyActivity, DestinyEververseItemType, SearchInfo, StatsPage
 from .errors import Destiny2APIError, Destiny2MissingManifest
 from .menus import BaseMenu, BasePages
 
@@ -334,15 +339,12 @@ class Destiny(DestinyAPI, commands.Cog):
                 return await ctx.send(msg)
             bungie_id = await self.config.user(ctx.author).oauth.membership_id()
             creds = await self.get_bnet_user(ctx.author, bungie_id)
-            steam_id = ""
-            for cred in creds:
-                if "credentialAsString" in cred:
-                    steam_id = cred["credentialAsString"]
-            join_code = f"\n```py\n/join {steam_id}\n```"
+            bungie_name = creds.get("uniqueName", "")
+            join_code = f"\n```css\n/join {bungie_name}\n```"
             msg = _(
                 "Use the following code in game to join {author}'s Fireteam:{join_code}"
             ).format(author=ctx.author.display_name, join_code=join_code)
-            join_code = f"\n```py\n/join {steam_id}\n```"
+            join_code = f"\n```css\n/join {bungie_name}\n```"
         await ctx.send(msg)
 
     @destiny.group()
@@ -585,7 +587,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 "Discord ID",
                 "Destiny Name",
                 "Destiny ID",
-                "Bungie.net Name",
+                "Bungie Name",
                 "Bungie.net ID",
                 "Last Seen Destiny",
                 "Steam ID",
@@ -605,12 +607,16 @@ class Destiny(DestinyAPI, commands.Cog):
                 discord_id = None
                 discord_name = None
                 bungie_id = None
-                bungie_name = None
+                # bungie_name = None
                 steam_id = None
+                destiny = member.get("destinyUserInfo", {})
+                new_bungie_name = destiny.get("bungieGlobalDisplayName", "")
+                new_bungie_name_code = destiny.get("bungieGlobalDisplayNameCode", "")
+                new_bungie_name = f"{new_bungie_name}#{new_bungie_name_code}"
                 try:
                     bungie_id = member["bungieNetUserInfo"]["membershipId"]
-                    bungie_name = member["bungieNetUserInfo"]["displayName"]
-                    creds = await self.get_bnet_user(ctx.author, bungie_id)
+                    # bungie_name = member["bungieNetUserInfo"]["displayName"]
+                    creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
                     steam_id = ""
                     for cred in creds:
                         if "credentialAsString" in cred:
@@ -629,7 +635,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     f"'{discord_id}" if discord_id else None,
                     destiny_name,
                     f"'{destiny_id}" if destiny_id else None,
-                    bungie_name,
+                    new_bungie_name,
                     f"'{bungie_id}" if bungie_id else None,
                     last_online,
                     f"'{steam_id}" if steam_id else None,
@@ -1044,7 +1050,8 @@ class Destiny(DestinyAPI, commands.Cog):
                         else:
                             perks += "- **{0}**\n".format(properties["name"])
                 stats_str = ""
-                if "armor" in item["equippingBlock"]["uniqueLabel"]:
+                slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
+                if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
                     total = 0
                     for stat_hash, stat_data in xur["itemComponents"]["stats"]["data"][index][
                         "stats"

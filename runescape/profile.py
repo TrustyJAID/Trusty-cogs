@@ -2,8 +2,8 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Set
 
+import pytz
 from redbot.core.utils.chat_formatting import humanize_number
 from tabulate import tabulate
 
@@ -68,7 +68,9 @@ class Activity:
 
     @classmethod
     def from_json(cls, data: dict):
-        date = datetime.strptime(data.get("date"), "%d-%b-%Y %H:%M").replace(tzinfo=timezone.utc)
+        tz = pytz.timezone("Europe/London")
+        date = datetime.strptime(data.get("date"), "%d-%b-%Y %H:%M")
+        date = tz.localize(date, is_dst=None).astimezone(timezone.utc)
         text = data.get("text")
         activity_id = f"{int(date.timestamp())}-{text}"
         return cls(
@@ -174,8 +176,8 @@ class Profile:
             xp = skill.xp
             rank = "Unranked"
             if skill.rank:
-                rank = skill.rank
-            skills_list.append([skill.name, level, humanize_number(xp), humanize_number(rank)])
+                rank = humanize_number(skill.rank)
+            skills_list.append([skill.name, level, humanize_number(xp), rank])
         return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
 
     def to_json(self) -> dict:

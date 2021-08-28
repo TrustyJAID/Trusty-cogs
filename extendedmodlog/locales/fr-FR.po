@@ -53,7 +53,7 @@ msgid ""
 "{emoji} `{time}` {author}(`{a_id}`) used the following command in {channel}\n"
 "> {com}"
 msgstr ""
-"{emoji} `{time}` {author}(a utilisé la commande suivante dans {}\n"
+"{emoji} `{time}` {author}(a utilisé la commande suivante dans {channel}\n"
 "> {com}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:248
@@ -89,19 +89,19 @@ msgstr "Message supprimé"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:306
 msgid "{emoji} `{time}` A message was deleted in {channel}"
-msgstr "{emoji} `{time}` Un message a été supprimé dans {}"
+msgstr "{emoji} `{time}` Un message a été supprimé dans {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:347
 msgid ""
 "{emoji} `{time}` A message from **{author}** (`{a_id}`) was deleted in "
 "{channel}"
-msgstr "{emoji} `{time}` Un message de **{author}** a été supprimé dans {}"
+msgstr "{emoji} `{time}` Un message de **{author}** a été supprimé dans {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:357
 msgid ""
 "{emoji} `{time}` {perp} deleted a message from **{author}** (`{a_id}`) in "
 "{channel}"
-msgstr "{emoji} `{time}` {perp} a supprimé un message de **{author}** dans {}"
+msgstr "{emoji} `{time}` {perp} a supprimé un message de **{author}** dans {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:377
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1198
@@ -128,7 +128,7 @@ msgstr "Messages supprimés"
 msgid ""
 "{emoji} `{time}` Bulk message delete in {channel}, {amount} messages deleted."
 msgstr ""
-"{emoji} `{time}` Suppression des messages en masse dans {}, {amount} "
+"{emoji} `{time}` Suppression des messages en masse dans {channel}, {amount} "
 "messages supprimés."
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:502
@@ -282,7 +282,7 @@ msgstr "{emoji} `{time}` {chan_type} Salon créé {perp_msg} {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:863
 msgid "{chan_type} Channel Deleted {chan_name} ({chan_id})"
-msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {}"
+msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {chan_id}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:875
 msgid "Deleted by "
@@ -290,7 +290,7 @@ msgstr "Supprimé par "
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:879
 msgid "{emoji} `{time}` {chan_type} channel deleted {perp_msg} {channel}"
-msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {}"
+msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:940
 msgid "{chan_type} Channel Updated {chan_name} ({chan_id})"
@@ -298,7 +298,7 @@ msgstr "Salon mis à jour | {chan_name}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:944
 msgid "{emoji} `{time}` Updated channel {channel}\n"
-msgstr "{emoji} `{time}` Salon mis à jour {}\n"
+msgstr "{emoji} `{time}` Salon mis à jour {channel}\n"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:954
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:994
@@ -459,7 +459,7 @@ msgid ""
 "After:\n"
 "> {after}"
 msgstr ""
-"{emoji} `{time}` **{author}** a édité un message dans {}.\n"
+"{emoji} `{time}` **{author}** a édité un message dans {channel}.\n"
 "Avant :\n"
 "> {before}\n"
 "Après :\n"
@@ -671,7 +671,7 @@ msgstr "Invitation Discord Créée"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1765
 msgid "{author} created an invite for {channel}."
-msgstr "{author} a créé une invitation pour {}."
+msgstr "{author} a créé une invitation pour {channel}."
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1807
 msgid "Code: "
@@ -703,7 +703,7 @@ msgstr "Serveur | Invitation Supprimée"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:1827
 msgid "{author} deleted or used up an invite for {channel}."
-msgstr "{author} a supprimé ou épuisé une invitation à {}."
+msgstr "{author} a supprimé ou épuisé une invitation à {channel}."
 
 #: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:18
 msgid ""
@@ -1175,7 +1175,7 @@ msgstr ""
 
 #: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:413
 msgid "{event} logs have been set to {channel}"
-msgstr "{event} Les logs ont été réglées sur {}"
+msgstr "{event} Les logs ont été réglées sur {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/extendedmodlog.py:425
 msgid ""
