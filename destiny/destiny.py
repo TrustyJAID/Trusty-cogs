@@ -1,24 +1,29 @@
 import asyncio
-import datetime
-import logging
-import json
-import functools
-import re
 import csv
-from io import StringIO, BytesIO
+import datetime
+import functools
+import json
+import logging
+import re
+from io import BytesIO, StringIO
 from pathlib import Path
-from tabulate import tabulate
 from typing import List, Literal, Optional, Union
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify, humanize_timedelta, humanize_list, box
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_timedelta,
+    pagify,
+)
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
+from tabulate import tabulate
 
 from .api import DestinyAPI
-from .converter import DestinyActivity, StatsPage, SearchInfo, DestinyEververseItemType
+from .converter import DestinyActivity, DestinyEververseItemType, SearchInfo, StatsPage
 from .errors import Destiny2APIError, Destiny2MissingManifest
 from .menus import BaseMenu, BasePages
 
@@ -41,7 +46,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.6.2"
+    __version__ = "1.6.3"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -573,7 +578,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 "Discord ID",
                 "Destiny Name",
                 "Destiny ID",
-                "Bungie.net Name",
+                "Bungie Name",
                 "Bungie.net ID",
                 "Last Seen Destiny",
                 "Steam ID",
@@ -593,11 +598,15 @@ class Destiny(DestinyAPI, commands.Cog):
                 discord_id = None
                 discord_name = None
                 bungie_id = None
-                bungie_name = None
+                # bungie_name = None
                 steam_id = None
+                destiny = member.get("destinyUserInfo", {})
+                new_bungie_name = destiny.get("bungieGlobalDisplayName", "")
+                new_bungie_name_code = destiny.get("bungieGlobalDisplayNameCode", "")
+                new_bungie_name = f"{new_bungie_name}#{new_bungie_name_code}"
                 try:
                     bungie_id = member["bungieNetUserInfo"]["membershipId"]
-                    bungie_name = member["bungieNetUserInfo"]["displayName"]
+                    # bungie_name = member["bungieNetUserInfo"]["displayName"]
                     creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
                     steam_id = ""
                     for cred in creds:
@@ -617,7 +626,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     f"'{discord_id}" if discord_id else None,
                     destiny_name,
                     f"'{destiny_id}" if destiny_id else None,
-                    bungie_name,
+                    new_bungie_name,
                     f"'{bungie_id}" if bungie_id else None,
                     last_online,
                     f"'{steam_id}" if steam_id else None,
@@ -670,19 +679,31 @@ class Destiny(DestinyAPI, commands.Cog):
             msg = ""
             for milestone_hash, content in milestones.items():
                 try:
-                    milestone_def = await self.get_definition("DestinyMilestoneDefinition", [milestone_hash])
+                    milestone_def = await self.get_definition(
+                        "DestinyMilestoneDefinition", [milestone_hash]
+                    )
                 except Exception:
                     log.exception("Error pulling definition")
                     continue
-                name = milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
-                description = milestone_def[str(milestone_hash)].get("displayProperties", {}).get("description", "")
+                name = (
+                    milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
+                )
+                description = (
+                    milestone_def[str(milestone_hash)]
+                    .get("displayProperties", {})
+                    .get("description", "")
+                )
                 extras = ""
                 if "activities" in content:
                     activities = [a["activityHash"] for a in content["activities"]]
-                    activity_data = await self.get_definition("DestinyActivityDefinition", activities)
+                    activity_data = await self.get_definition(
+                        "DestinyActivityDefinition", activities
+                    )
                     for activity_key, activity_info in activity_data.items():
                         activity_name = activity_info.get("displayProperties", {}).get("name", "")
-                        activity_description = activity_info.get("displayProperties", {}).get("description", "")
+                        activity_description = activity_info.get("displayProperties", {}).get(
+                            "description", ""
+                        )
                         extras += f"**{activity_name}:** {activity_description}\n"
 
                 msg += f"**{name}:** {description}\n{extras}\n"
@@ -819,7 +840,9 @@ class Destiny(DestinyAPI, commands.Cog):
                         )
                         title_desc = char_title["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                        embed.set_thumbnail(url=IMAGE_URL + char_title["displayProperties"]["icon"])
+                        embed.set_thumbnail(
+                            url=IMAGE_URL + char_title["displayProperties"]["icon"]
+                        )
                     except KeyError:
                         pass
 
@@ -845,7 +868,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     empty = "░" * int((100 - value) / 10)
                     bar = f"{prog}{empty}"
                     if stat_hash == "1935470627":
-                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"]["powerBonus"]
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
                         bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
                     stats_str += f"{stat_name}: **{value}** \n{bar}\n"
                 stats_str += _("Time Played Total: **{time}**").format(time=time_played)
@@ -1015,7 +1040,8 @@ class Destiny(DestinyAPI, commands.Cog):
                         else:
                             perks += "- **{0}**\n".format(properties["name"])
                 stats_str = ""
-                if "armor" in item["equippingBlock"]["uniqueLabel"]:
+                slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
+                if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
                     total = 0
                     for stat_hash, stat_data in xur["itemComponents"]["stats"]["data"][index][
                         "stats"
@@ -1509,7 +1535,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     empty = "░" * int((100 - value) / 10)
                     bar = f"{prog}{empty}"
                     if stat_hash == "1935470627":
-                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"]["powerBonus"]
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
                         bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
                     stats_str += f"{stat_name}: **{value}** \n{bar}\n"
                 embed.description = stats_str
