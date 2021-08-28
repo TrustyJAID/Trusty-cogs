@@ -41,7 +41,7 @@ class Destiny(DestinyAPI, commands.Cog):
     Get information from the Destiny 2 API
     """
 
-    __version__ = "1.6.1"
+    __version__ = "1.6.2"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -325,15 +325,12 @@ class Destiny(DestinyAPI, commands.Cog):
                 return await ctx.send(msg)
             bungie_id = await self.config.user(ctx.author).oauth.membership_id()
             creds = await self.get_bnet_user(ctx.author, bungie_id)
-            steam_id = ""
-            for cred in creds:
-                if "credentialAsString" in cred:
-                    steam_id = cred["credentialAsString"]
-            join_code = f"\n```py\n/join {steam_id}\n```"
+            bungie_name = creds.get("uniqueName", "")
+            join_code = f"\n```css\n/join {bungie_name}\n```"
             msg = _(
                 "Use the following code in game to join {author}'s Fireteam:{join_code}"
             ).format(author=ctx.author.display_name, join_code=join_code)
-            join_code = f"\n```py\n/join {steam_id}\n```"
+            join_code = f"\n```css\n/join {bungie_name}\n```"
         await ctx.send(msg)
 
     @destiny.group()
@@ -601,7 +598,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 try:
                     bungie_id = member["bungieNetUserInfo"]["membershipId"]
                     bungie_name = member["bungieNetUserInfo"]["displayName"]
-                    creds = await self.get_bnet_user(ctx.author, bungie_id)
+                    creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
                     steam_id = ""
                     for cred in creds:
                         if "credentialAsString" in cred:
