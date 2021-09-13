@@ -21,7 +21,7 @@ IMAGE_URL = "https://runescape.wiki/w/Special:FilePath/"
 
 LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.I)
 XP_RE = re.compile(r"\d+XP IN (.+)", flags=re.I)
-KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z -,]+)", flags=re.I)
+KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.I)
 FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.I)
 
 
