@@ -1,28 +1,25 @@
 import asyncio
 import logging
-
 from abc import ABC
-from typing import Optional, Union, Any, Dict
+from typing import Any, Dict, Optional, Union
 
 import discord
-from redbot.core import Config, commands, bank
+from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.commands import Context
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import roletools
-from .converter import RoleHierarchyConverter, RawUserIds, SelfRoleConverter
+from .converter import RawUserIds, RoleHierarchyConverter, SelfRoleConverter
 from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
 from .inclusive import RoleToolsInclusive
+from .menus import BaseMenu, RolePages
 from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
 from .settings import RoleToolsSettings
-
-from .menus import BaseMenu, RolePages
-
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)
@@ -53,7 +50,7 @@ class RoleTools(
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.4.4"
+    __version__ = "1.4.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
