@@ -254,7 +254,7 @@ class EventMixin:
             author_title = _("{member} ({m_id})- Used a Command").format(
                 member=message.author, m_id=message.author.id
             )
-            embed.set_author(name=author_title, icon_url=message.author.avatar.url)
+            embed.set_author(name=author_title, icon_url=message.author.display_avatar.url)
             await channel.send(embed=embed)
         else:
             await channel.send(infomessage[:2000])
@@ -386,7 +386,7 @@ class EventMixin:
                 embed.add_field(name=_("Attachments"), value=files)
             embed.set_author(
                 name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
-                icon_url=str(message.author.avatar.url),
+                icon_url=str(message.author.display_avatar.url),
             )
             await channel.send(embed=embed)
         else:
@@ -430,7 +430,10 @@ class EventMixin:
                 description=message_channel.mention,
                 colour=await self.get_event_colour(guild, "message_delete"),
             )
-            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon.url)
+            embed.set_author(
+                name=_("Bulk message delete"),
+                icon_url=guild.icon.url if guild.icon else "",
+            )
             embed.add_field(name=_("Channel"), value=message_channel.mention)
             embed.add_field(name=_("Messages deleted"), value=str(message_amount))
             await channel.send(embed=embed)
@@ -604,12 +607,12 @@ class EventMixin:
                 name=_("{member} ({m_id}) has joined the guild").format(
                     member=member, m_id=member.id
                 ),
-                url=member.avatar.url,
-                icon_url=member.avatar.url,
+                url=member.display_avatar.url,
+                icon_url=member.display_avatar.url,
             )
             if possible_link:
                 embed.add_field(name=_("Invite Link"), value=possible_link)
-            embed.set_thumbnail(url=member.avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
             await channel.send(embed=embed)
         else:
             time = datetime.datetime.now(datetime.timezone.utc)
@@ -677,10 +680,10 @@ class EventMixin:
                 name=_("{member} ({m_id}) has left the guild").format(
                     member=member, m_id=member.id
                 ),
-                url=member.avatar.url,
-                icon_url=member.avatar.url,
+                url=member.display_avatar.url,
+                icon_url=member.display_avatar.url,
             )
-            embed.set_thumbnail(url=member.avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
             await channel.send(embed=embed)
         else:
             time = datetime.datetime.now(datetime.timezone.utc)
@@ -1263,7 +1266,7 @@ class EventMixin:
                 name=_("{member} ({m_id}) - Edited Message").format(
                     member=before.author, m_id=before.author.id
                 ),
-                icon_url=str(before.author.avatar.url),
+                icon_url=str(before.author.display_avatar.url),
             )
             await channel.send(embed=embed)
         else:
@@ -1306,8 +1309,11 @@ class EventMixin:
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "guild_change")
         )
-        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon.url))
-        embed.set_thumbnail(url=str(guild.icon.url))
+        embed.set_author(
+            name=_("Updated Guild"),
+            icon_url=guild.icon.url if guild.icon else "",
+        )
+        embed.set_thumbnail(url=guild.icon.url if guild.icon else "")
         msg = _("{emoji} `{time}` Guild updated\n").format(
             emoji=self.settings[guild.id]["guild_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
@@ -1317,7 +1323,7 @@ class EventMixin:
             "region": _("Region:"),
             "afk_timeout": _("AFK Timeout:"),
             "afk_channel": _("AFK Channel:"),
-            "icon_url": _("Server Icon:"),
+            "icon": _("Server Icon:"),
             "owner": _("Server Owner:"),
             "splash": _("Splash Image:"),
             "system_channel": _("Welcome message channel:"),
@@ -1329,9 +1335,9 @@ class EventMixin:
             after_attr = getattr(after, attr)
             if before_attr != after_attr:
                 worth_updating = True
-                if attr == "icon_url":
+                if attr == "icon":
                     embed.description = _("Server Icon Updated")
-                    embed.set_image(url=after.icon_url)
+                    embed.set_image(url=after.icon.url if after.icon else "")
                     continue
                 msg += _("Before ") + f"{name} {before_attr}\n"
                 msg += _("After ") + f"{name} {after_attr}\n"
@@ -1343,7 +1349,7 @@ class EventMixin:
         reasons = []
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.guild_update
-            async for log in guild.audit_logs(limit=int(len(embed.fields) / 2), action=action):
+            async for log in guild.audit_logs(limit=1, action=action):
                 perps.append(log.user)
                 if log.reason:
                     reasons.append(log.reason)
@@ -1669,7 +1675,7 @@ class EventMixin:
         )
         embed.description = ""
         emb_msg = _("{member} ({m_id}) updated").format(member=before, m_id=before.id)
-        embed.set_author(name=emb_msg, icon_url=before.avatar.url)
+        embed.set_author(name=emb_msg, icon_url=before.display_avatar.url)
         member_updates = {"nick": _("Nickname:"), "roles": _("Roles:")}
         perp = None
         reason = None
