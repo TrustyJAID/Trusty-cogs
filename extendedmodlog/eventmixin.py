@@ -430,7 +430,10 @@ class EventMixin:
                 description=message_channel.mention,
                 colour=await self.get_event_colour(guild, "message_delete"),
             )
-            embed.set_author(name=_("Bulk message delete"), icon_url=guild.icon.url)
+            embed.set_author(
+                name=_("Bulk message delete"),
+                icon_url=guild.icon.url if guild.icon else "",
+            )
             embed.add_field(name=_("Channel"), value=message_channel.mention)
             embed.add_field(name=_("Messages deleted"), value=str(message_amount))
             await channel.send(embed=embed)
@@ -1306,8 +1309,11 @@ class EventMixin:
         embed = discord.Embed(
             timestamp=time, colour=await self.get_event_colour(guild, "guild_change")
         )
-        embed.set_author(name=_("Updated Guild"), icon_url=str(guild.icon.url))
-        embed.set_thumbnail(url=str(guild.icon.url))
+        embed.set_author(
+            name=_("Updated Guild"),
+            icon_url=guild.icon.url if guild.icon else "",
+        )
+        embed.set_thumbnail(url=guild.icon.url if guild.icon else "")
         msg = _("{emoji} `{time}` Guild updated\n").format(
             emoji=self.settings[guild.id]["guild_change"]["emoji"],
             time=time.strftime("%H:%M:%S"),
@@ -1317,7 +1323,7 @@ class EventMixin:
             "region": _("Region:"),
             "afk_timeout": _("AFK Timeout:"),
             "afk_channel": _("AFK Channel:"),
-            "icon_url": _("Server Icon:"),
+            "icon": _("Server Icon:"),
             "owner": _("Server Owner:"),
             "splash": _("Splash Image:"),
             "system_channel": _("Welcome message channel:"),
@@ -1329,9 +1335,9 @@ class EventMixin:
             after_attr = getattr(after, attr)
             if before_attr != after_attr:
                 worth_updating = True
-                if attr == "icon_url":
+                if attr == "icon":
                     embed.description = _("Server Icon Updated")
-                    embed.set_image(url=after.icon_url)
+                    embed.set_image(url=after.icon.url if after.icon else "")
                     continue
                 msg += _("Before ") + f"{name} {before_attr}\n"
                 msg += _("After ") + f"{name} {after_attr}\n"
