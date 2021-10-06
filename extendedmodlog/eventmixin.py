@@ -1349,7 +1349,7 @@ class EventMixin:
         reasons = []
         if channel.permissions_for(guild.me).view_audit_log:
             action = discord.AuditLogAction.guild_update
-            async for log in guild.audit_logs(limit=int(len(embed.fields) / 2), action=action):
+            async for log in guild.audit_logs(limit=1, action=action):
                 perps.append(log.user)
                 if log.reason:
                     reasons.append(log.reason)
