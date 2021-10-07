@@ -75,6 +75,7 @@ class StopButton(discord.ui.Button):
         self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         self.view.stop()
         await self.view.message.delete()
 
@@ -90,6 +91,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         await self.view.show_checked_page(self.view.current_page + 1)
 
 
@@ -104,6 +106,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         await self.view.show_checked_page(self.view.current_page - 1)
 
 
@@ -120,6 +123,7 @@ class LastItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         await self.view.show_page(self.view._source.get_max_pages() - 1)
 
 
@@ -136,6 +140,7 @@ class FirstItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         await self.view.show_page(0)
 
 
@@ -144,7 +149,8 @@ class LeaveGuildButton(discord.ui.Button):
         super().__init__(style=style, row=row, label=_("Leave Guild"))
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.cog.confirm_leave_guild(self.view.ctx, self.view.source.guild)
+        await interaction.response.defer()
+        await self.view.cog.confirm_leave_guild(self.view.ctx, self.view._source.guild)
 
 
 class JoinGuildButton(discord.ui.Button):
@@ -152,14 +158,16 @@ class JoinGuildButton(discord.ui.Button):
         super().__init__(style=style, row=row, label=_("Join Guild"))
 
     async def callback(self, interaction: discord.Interaction):
-        invite = await self.view.cog.get_guild_invite(self.source.guild)
+        await interaction.response.defer()
+        invite = await self.view.cog.get_guild_invite(self.view._source.guild)
         if invite:
-            await interaction.send_message(str(invite))
+            await interaction.followup.send(str(invite), ephemeral=True)
         else:
-            await interaction.send_message(
+            await interaction.followup.send(
                 _("I cannot find or create an invite for `{guild}`").format(
-                    guild=self.source.guild.name
-                )
+                    guild=self.view._source.guild.name
+                ),
+                ephemeral=True,
             )
 
 
@@ -175,9 +183,7 @@ class BaseView(discord.ui.View):
         page_start: int = 0,
         **kwargs: Any,
     ) -> None:
-        super().__init__(
-            timeout=timeout,
-        )
+        super().__init__(timeout=timeout)
         self._source = source
         self.cog = cog
         self.page_start = page_start
@@ -194,15 +200,27 @@ class BaseView(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
-        if isinstance(source, GuildPages) and self.ctx and self.ctx.author.id in self.ctx.bot.owner_ids:
+        if (
+            isinstance(source, GuildPages)
+            and self.ctx
+            and self.ctx.author.id in self.ctx.bot.owner_ids
+        ):
             self.leave_guild_button = LeaveGuildButton(discord.ButtonStyle.red, 1)
             self.join_guild_button = JoinGuildButton(discord.ButtonStyle.green, 1)
             self.add_item(self.leave_guild_button)
             self.add_item(self.join_guild_button)
 
+    # This function will clear/remove all buttons when `timeout` is hit/over.
+    # `self.clear_items()` should clear all items from view, i.e. buttons.
+    # Then we need to edit the message to update the view to reflect buttons being removed.
+    # `self.stop()` stops listening to interaction events from this view.
+    async def on_timeout(self):
+        self.clear_items()
+        await self.message.edit(view=self)
+        self.stop()
+
     async def start(self, ctx: commands.Context):
         await self.send_initial_message(ctx, ctx.channel)
-
 
     async def send_initial_message(self, ctx, channel):
         """|coro|
