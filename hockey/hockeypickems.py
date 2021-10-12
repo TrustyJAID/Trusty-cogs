@@ -1,23 +1,22 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Dict, Union
+from typing import Dict, List, Optional, Union
 
 import discord
 from discord.ext import tasks
 from redbot import VersionInfo, version_info
-from redbot.core import commands, bank
+from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.antispam import AntiSpam
 from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 
-
 from .abc import MixinMeta
 from .constants import TEAMS
 from .errors import NotAValidTeamError, UserHasVotedError, VotingHasEndedError
 from .game import Game
-from .helper import utc_to_local, TimezoneFinder
+from .helper import TimezoneFinder, utc_to_local
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -1286,7 +1285,7 @@ class HockeyPickems(MixinMeta):
         """
         Allows moderators to set a users points on the leaderboard
         """
-        leaderboard = await self.config.guild(ctx.guild).leaderboard()
+        leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
@@ -1315,7 +1314,7 @@ class HockeyPickems(MixinMeta):
                 "pre-season_weekly": 0,
                 "pre-season_total": 0,
             }
-        await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
+        await self.pickems_config.guild(ctx.guild).leaderboard.set(leaderboard)
         msg = _(
             "{user} now has {season} points on the season, "
             "{weekly} points for the week, and {total} votes overall."
