@@ -477,7 +477,7 @@ class HockeyCommands(MixinMeta):
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
-            total = user[total_str]
+            total = user[total_str] or 1
             losses = user[total_str] - user["season"]
             position = _(
                 "{member}, you're #{number} on the {leaderboard_type} leaderboard!\n"
@@ -487,15 +487,11 @@ class HockeyCommands(MixinMeta):
                 leaderboard_type=leaderboard_type_str,
             )
             if leaderboard_type == "season":
-                if total == 0:
-                    total = wins
                 percent = (wins / total) * 100
                 position += _("You have {wins}/{total} correct ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
             elif leaderboard_type == "worst":
-                if total == 0:
-                    total = losses
                 percent = (losses / total) * 100
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
