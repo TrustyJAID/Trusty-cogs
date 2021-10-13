@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import Literal, Optional, List
+from typing import List, Literal, Optional
 from urllib.parse import quote
 
 import discord
@@ -14,7 +14,14 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder, utc_to_local
+from .helper import (
+    YEAR_RE,
+    HockeyStandings,
+    HockeyTeams,
+    TeamDateFinder,
+    YearFinder,
+    utc_to_local,
+)
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
@@ -480,11 +487,15 @@ class HockeyCommands(MixinMeta):
                 leaderboard_type=leaderboard_type_str,
             )
             if leaderboard_type == "season":
+                if total == 0:
+                    total = wins
                 percent = (wins / total) * 100
                 position += _("You have {wins}/{total} correct ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
             elif leaderboard_type == "worst":
+                if total == 0:
+                    total = losses
                 percent = (losses / total) * 100
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
@@ -500,7 +511,9 @@ class HockeyCommands(MixinMeta):
     @hockey_commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def leaderboard(self, ctx: commands.Context, *, leaderboard_type: str = "seasonal") -> None:
+    async def leaderboard(
+        self, ctx: commands.Context, *, leaderboard_type: str = "seasonal"
+    ) -> None:
         """
         Shows the current server leaderboard
 
