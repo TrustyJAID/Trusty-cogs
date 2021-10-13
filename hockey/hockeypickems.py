@@ -722,12 +722,12 @@ class HockeyPickems(MixinMeta):
                             leaderboard[str(user)]["pre-season"] += 1
                             leaderboard[str(user)]["pre-season_weekly"] += 1
                             leaderboard[str(user)]["pre-season_total"] += 1
-                        # else:
-                        leaderboard[str(user)]["season"] += 1
-                        leaderboard[str(user)]["total"] += 1
-                        # The above needs to be adjusted when this current season
-                        # playoffs is finished
-                        leaderboard[str(user)]["weekly"] += 1
+                        else:
+                            leaderboard[str(user)]["season"] += 1
+                            leaderboard[str(user)]["total"] += 1
+                            # The above needs to be adjusted when this current season
+                            # playoffs is finished
+                            leaderboard[str(user)]["weekly"] += 1
                         # Weekly reset weekly but we want to track this
                         # regardless of playoffs and pre-season
                         # If this causes confusion I can change it later
