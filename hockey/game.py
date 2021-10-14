@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import Literal, Optional, List, Dict, Union, Tuple
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -12,7 +13,13 @@ from redbot.core.utils import AsyncIter, bounded_gather
 
 from .constants import BASE_URL, CONTENT_URL, TEAMS
 from .goal import Goal
-from .helper import check_to_post, get_channel_obj, get_team, get_team_role, utc_to_local
+from .helper import (
+    check_to_post,
+    get_channel_obj,
+    get_team,
+    get_team_role,
+    utc_to_local,
+)
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)
@@ -423,7 +430,10 @@ class Game:
             stats, home_i = await Standings.get_team_standings(self.home_team)
             for team in stats:
                 if team.name == self.away_team:
-                    streak = "{} {}".format(team.streak, streak_types[team.streak_type])
+                    try:
+                        streak = "{} {}".format(team.streak, streak_types[team.streak_type])
+                    except KeyError:
+                        streak = "**0**"
                     away_str = msg.format(
                         wins=team.wins,
                         losses=team.losses,
@@ -433,7 +443,10 @@ class Game:
                         streak=streak,
                     )
                 if team.name == self.home_team:
-                    streak = "{} {}".format(team.streak, streak_types[team.streak_type])
+                    try:
+                        streak = "{} {}".format(team.streak, streak_types[team.streak_type])
+                    except KeyError:
+                        streak = "**0**"
                     home_str = msg.format(
                         wins=team.wins,
                         losses=team.losses,
@@ -443,6 +456,7 @@ class Game:
                         streak=streak,
                     )
         except Exception:
+            log.exception("Error pulling stats")
             pass
         return home_str, away_str
 
