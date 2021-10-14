@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
+
 from typing import Dict, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
@@ -14,7 +15,9 @@ from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
+
 from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
+
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,

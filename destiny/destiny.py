@@ -45,7 +45,7 @@ class Destiny(DestinyAPI, commands.Cog):
     """
     Get information from the Destiny 2 API
     """
-
+    
     __version__ = "1.7.0"
     __author__ = "TrustyJAID"
 

@@ -56,6 +56,7 @@ class RoleTools(
     __author__ = ["TrustyJAID"]
     __version__ = "1.5.0"
 
+
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
