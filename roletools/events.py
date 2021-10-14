@@ -424,6 +424,7 @@ class RoleToolsEvents(RoleToolsMixin):
         to_reapply = await self.config.member(member).sticky_roles()
         if not to_reapply:
             return
+        await self.config.member(member).sticky_roles.clear()
 
         to_add = []
 

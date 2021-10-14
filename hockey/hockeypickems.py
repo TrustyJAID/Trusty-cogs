@@ -618,12 +618,19 @@ class HockeyPickems(MixinMeta):
                             leaderboard[str(user)]["pre-season"] += 1
                             leaderboard[str(user)]["pre-season_weekly"] += 1
                             leaderboard[str(user)]["pre-season_total"] += 1
-                        # else:
-                        leaderboard[str(user)]["season"] += 1
-                        leaderboard[str(user)]["total"] += 1
-                        # The above needs to be adjusted when this current season
-                        # playoffs is finished
-                        leaderboard[str(user)]["weekly"] += 1
+                        else:
+                            leaderboard[str(user)]["season"] += 1
+                            leaderboard[str(user)]["total"] += 1
+                            # The above needs to be adjusted when this current season
+                            # playoffs is finished
+                            leaderboard[str(user)]["weekly"] += 1
+                    else:
+                        if pickems.game_type == "P":
+                            leaderboard[str(user)]["playoffs_total"] += 1
+                        elif pickems.game_type == "PR":
+                            leaderboard[str(user)]["pre-season_total"] += 1
+                        else:
+                            leaderboard[str(user)]["total"] += 1
                         # Weekly reset weekly but we want to track this
                         # regardless of playoffs and pre-season
                         # If this causes confusion I can change it later
@@ -1181,7 +1188,7 @@ class HockeyPickems(MixinMeta):
         """
         Allows moderators to set a users points on the leaderboard
         """
-        leaderboard = await self.config.guild(ctx.guild).leaderboard()
+        leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
@@ -1210,7 +1217,7 @@ class HockeyPickems(MixinMeta):
                 "pre-season_weekly": 0,
                 "pre-season_total": 0,
             }
-        await self.config.guild(ctx.guild).leaderboard.set(leaderboard)
+        await self.pickems_config.guild(ctx.guild).leaderboard.set(leaderboard)
         msg = _(
             "{user} now has {season} points on the season, "
             "{weekly} points for the week, and {total} votes overall."

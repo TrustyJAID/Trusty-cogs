@@ -21,7 +21,7 @@ IMAGE_URL = "https://runescape.wiki/w/Special:FilePath/"
 
 LVL_RE = re.compile(r"Levelled Up (\w+)", flags=re.I)
 XP_RE = re.compile(r"\d+XP IN (.+)", flags=re.I)
-KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z ]+)", flags=re.I)
+KILLED_RE = re.compile(r"(?:I )?(?:killed|defeated) (?:\d+ |the )?([a-z \-,]+)", flags=re.I)
 FOUND_RE = re.compile(r"I found (?:a pair of|some|a|an) (.+)", flags=re.I)
 
 
@@ -31,7 +31,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.0"
+    __version__ = "1.3.1"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -89,7 +89,12 @@ class Runescape(commands.Cog):
             page = match.group(1).strip()
             if page.endswith("s"):
                 page = page[:-1]
-            image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"
+            page = page.replace(" ", "_")
+            if "-" in page:
+                page = page.title()
+            else:
+                page = page.capitalize()
+            image_url = IMAGE_URL + page + ".png"
         if match := XP_RE.search(activity.text):
             page = match.group(1).strip()
             image_url = IMAGE_URL + page.replace(" ", "_").capitalize() + ".png"

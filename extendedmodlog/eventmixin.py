@@ -493,6 +493,7 @@ class EventMixin:
                 logger.exception("Error saving invites.")
                 pass
         await self.config.guild(guild).invite_links.set(invites)
+        self.settings[guild.id]["invite_links"] = invites
         return True
 
     async def get_invite_link(self, member: discord.Member) -> str:

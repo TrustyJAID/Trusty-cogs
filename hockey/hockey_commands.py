@@ -483,7 +483,7 @@ class HockeyCommands(MixinMeta):
         if user_position is not None:
             user = leaderboard[user_position][1]
             wins = user["season"]
-            total = user[total_str]
+            total = user[total_str] or 1
             losses = user[total_str] - user["season"]
             position = _(
                 "{member}, you're #{number} on the {leaderboard_type} leaderboard!\n"

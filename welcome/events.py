@@ -353,10 +353,9 @@ class Events:
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
-        if not await self.config.guild(guild).LEAVE_ON():
-            return
         if guild is None:
             return
+
         if version_info >= VersionInfo.from_str("3.4.0"):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
@@ -365,6 +364,8 @@ class Events:
                 self.joined[guild.id] = []
             if member in self.joined[guild.id]:
                 self.joined[guild.id].remove(member)
+
+        if not await self.config.guild(guild).LEAVE_ON():
             return
 
         bot_welcome = member.bot and await self.config.guild(guild).BOTS_MSG()
