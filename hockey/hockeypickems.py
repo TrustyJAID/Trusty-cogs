@@ -430,12 +430,7 @@ class HockeyPickems(MixinMeta):
             team = game.home_team if game.home_score > game.away_score else game.away_team
             team_emoji = game.home_emoji if game.home_score > game.away_score else game.away_emoji
             winner = _("**WINNER:** {team_emoji} {team}").format(team_emoji=team_emoji, team=team)
-        timezone = await self.pickems_config.guild(guild).pickems_timezone()
-        if timezone is None:
-            game_start = utc_to_local(game.game_start, TEAMS[game.home_team]["timezone"])
-        else:
-            game_start = utc_to_local(game.game_start, timezone)
-        time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+        time_str = f"<t:{game.timestamp}:F>"
         if game.game_state == "Postponed":
             time_str = _("Postponed")
 

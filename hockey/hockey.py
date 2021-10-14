@@ -1,13 +1,13 @@
 import asyncio
-import discord
 import json
 import logging
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, Optional, Dict, List
+from typing import Dict, List, Literal, Optional
 
 import aiohttp
+import discord
 import yaml
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
@@ -52,7 +52,7 @@ class Hockey(
     Gather information and post goal updates for NHL hockey teams
     """
 
-    __version__ = "3.2.1"
+    __version__ = "3.2.2"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -180,16 +180,16 @@ class Hockey(
     async def _schema_1_to_2(self) -> None:
         log.info("Adding new leaderboard keys for pickems")
         DEFAULT_LEADERBOARD = {
-                "season": 0,
-                "weekly": 0,
-                "total": 0,
-                "playoffs": 0,
-                "playoffs_weekly": 0,
-                "playoffs_total": 0,
-                "pre-season": 0,
-                "pre-season_weekly": 0,
-                "pre-season_total": 0,
-            }
+            "season": 0,
+            "weekly": 0,
+            "total": 0,
+            "playoffs": 0,
+            "playoffs_weekly": 0,
+            "playoffs_total": 0,
+            "pre-season": 0,
+            "pre-season_weekly": 0,
+            "pre-season_total": 0,
+        }
         all_guilds = await self.pickems_config.all_guilds()
         for guild_id in all_guilds.keys():
             async with self.pickems_config.guild_from_id(guild_id).leaderboard() as leaderboard:
@@ -376,9 +376,7 @@ class Hockey(
                         continue
                     if await self.pickems_config.guild(guild).pickems_category():
                         guilds_to_make_new_pickems.append(guild)
-                self.bot.loop.create_task(
-                    self.create_next_pickems_day(guilds_to_make_new_pickems)
-                )
+                self.bot.loop.create_task(self.create_next_pickems_day(guilds_to_make_new_pickems))
 
             except Exception:
                 log.error("Error creating new weekly pickems pages", exc_info=True)

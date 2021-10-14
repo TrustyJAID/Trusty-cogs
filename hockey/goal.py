@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 import asyncio
 import logging
-from datetime import datetime
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import discord
 from redbot import VersionInfo, version_info
@@ -57,7 +58,9 @@ class Goal:
         self.period_ord = kwargs.get("period_ord")
         self.time_remaining = kwargs.get("time_remaining")
         time = kwargs.get("time")
-        self.time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+        time = kwargs.get("time", "")
+        time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+        self.time = time.replace(tzinfo=timezone.utc)
         self.home_score = kwargs.get("home_score")
         self.away_score = kwargs.get("away_score")
         self.strength = kwargs.get("strength")
@@ -150,6 +153,15 @@ class Goal:
             away_shots=data.get("away_shots", 0),
         )
 
+    @property
+    def timestamp(self) -> int:
+        """
+        This is just a helper property to return
+        the timestamp in which this goal was scored for simply
+        using inside discords new timestamps.
+        """
+        return int(self.time.timestamp())
+
     async def post_team_goal(self, bot: Red, game_data: Game) -> List[Tuple[int, int, int]]:
         """
         Creates embed and sends message if a team has scored a goal
@@ -175,7 +187,9 @@ class Goal:
 
             should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
-                post_data.append(await self.actually_post_goal(bot, channel, goal_embed, goal_text))
+                post_data.append(
+                    await self.actually_post_goal(bot, channel, goal_embed, goal_text)
+                )
         # data = await bounded_gather(*tasks)
         for channel in post_data:
             if channel is None:
@@ -422,9 +436,9 @@ class Goal:
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
 
-            em = discord.Embed(description=self.description)
+            em = discord.Embed(description=f"{self.description}\n<t:{self.timestamp}:T>")
             if self.link:
-                em.description = f"[{self.description}]({self.link})"
+                em.description = f"[{self.description}\n<t:{self.timestamp}:T>]({self.link})"
             if colour is not None:
                 em.colour = colour
             em.set_author(name=title, url=url, icon_url=logo)

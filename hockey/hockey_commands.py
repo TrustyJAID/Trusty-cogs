@@ -547,12 +547,11 @@ class HockeyCommands(MixinMeta):
             await ctx.send(_("This server does not have any pickems setup."))
             return
         msg = _("You have voted on the following games:\n")
-        timezone = await self.pickems_config.guild(ctx.guild).pickems_timezone()
         for game_id, pickem in self.all_pickems[str(ctx.guild.id)].items():
             if str(ctx.author.id) in pickem.votes:
                 vote = pickem.votes[str(ctx.author.id)]
-                game_start = utc_to_local(pickem.game_start, timezone)
-                time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
+                timestamp = int(pickem.game_start.timestamp())
+                time_str = f"<t:{timestamp}:F>"
                 msg += f"{pickem.away_team} @ {pickem.home_team} {time_str} - {vote}\n"
         msgs = []
         for page in pagify(msg):

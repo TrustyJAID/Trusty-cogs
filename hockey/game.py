@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
@@ -77,7 +77,9 @@ class Game:
         self.period_ord = kwargs.get("period_ord")
         self.period_time_left = kwargs.get("period_time_left")
         self.plays = kwargs.get("plays")
-        self.game_start = datetime.strptime(kwargs.get("game_start"), "%Y-%m-%dT%H:%M:%SZ")
+        game_start_str = kwargs.get("game_start", "")
+        game_start = datetime.strptime(game_start_str, "%Y-%m-%dT%H:%M:%SZ")
+        self.game_start = game_start.replace(tzinfo=timezone.utc)
         home_team = kwargs.get("home_team")
         away_team = kwargs.get("away_team")
         self.home_logo = (
@@ -112,6 +114,14 @@ class Game:
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
             self
         )
+
+    @property
+    def timestamp(self) -> int:
+        """
+        This is just a helper property to access the game_start as
+        a timestamp for formation of discord timestamps
+        """
+        return int(self.game_start.timestamp())
 
     def game_type_str(self):
         game_types = {"PR": _("Pre Season"), "R": _("Regular Season"), "P": _("Post Season")}
@@ -405,7 +415,7 @@ class Game:
     async def game_state_text(self) -> str:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        time_string = utc_to_local(self.game_start).strftime("%I:%M %p %Z")
+        time_string = f"<t:{self.timestamp}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
             f"{self.game_state}\n({time_string})"
@@ -473,7 +483,7 @@ class Game:
             """Checks if the the game state has changes from Final to Preview
             Could be unnecessary since after Game Final it will check for next game
             """
-            time_now = datetime.utcnow()
+            time_now = datetime.now(tz=timezone.utc)
             # game_time = datetime.strptime(data.game_start, "%Y-%m-%dT%H:%M:%SZ")
             game_start = (self.game_start - time_now).total_seconds() / 60
             if "Preview" not in home["game_state"]:
@@ -822,8 +832,9 @@ class Game:
         Post when there is 60, 30, and 10 minutes until the game starts in all channels
         """
         post_state = ["all", self.home_team, self.away_team]
+        time_str = f"<t:{self.timestamp}:R>"
         msg = _("{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!").format(
-            time=time_left,
+            time=time_str,
             away_emoji=self.away_emoji,
             away=self.away_team,
             home_emoji=self.home_emoji,

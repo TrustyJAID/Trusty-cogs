@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import List, Optional
 
 import aiohttp
 import discord
@@ -29,6 +29,7 @@ class Schedule(menus.PageSource):
         self.team: str = kwargs.get("team", None)
         self._last_searched: str = ""
         self._session: aiohttp.CLientSession = kwargs.get("session")
+        self.search_range = 30
 
     @property
     def index(self) -> int:
@@ -139,17 +140,25 @@ class Schedule(menus.PageSource):
         # compare_date = datetime.utcnow().strftime("%Y-%m-%d")
         if date:
             date_str = date.strftime("%Y-%m-%d")
+            date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (date + timedelta(days=30)).strftime("%Y-%m-%d")
+            end_date_timestamp = int(
+                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
+            )
         else:
             date_str = self.date.strftime("%Y-%m-%d")
+            date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (self.date + timedelta(days=30)).strftime("%Y-%m-%d")
+            end_date_timestamp = int(
+                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
+            )
 
         url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
-        self._last_searched = f"{date_str} to {end_date_str}"
+        self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
         async with self._session.get(url) as resp:
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
@@ -238,7 +247,7 @@ class ScheduleList(menus.PageSource):
                 day = utc_to_local(game_start).day
                 time = utc_to_local(game_start).strftime("%A %b %d")
                 game_str = _("Games") if self.team == [] else _("Game")
-                msg += f"**{game_str} {time}\n**"
+                msg += f"**{game_str} <t:{int(utc_to_local(game_start, 'UTC').timestamp())}:D>\n**"
             elif day and day != utc_to_local(game_start).day:
                 day = utc_to_local(game_start).day
                 time = utc_to_local(game_start).strftime("%A %b %d")
@@ -267,6 +276,7 @@ class ScheduleList(menus.PageSource):
                     timezone = self.timezone or TEAMS[self.team[0]]["timezone"]
                     game_time = utc_to_local(game_start, timezone)
                     time_str = game_time.strftime("%I:%M %p %Z")
+                time_str = f"<t:{int(utc_to_local(game_start, 'UTC').timestamp())}:t>"
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "
                     f"{home_emoji} {home_abr} - {time_str}\n"
@@ -378,17 +388,25 @@ class ScheduleList(menus.PageSource):
             days_to_check = 7
         if date:
             date_str = date.strftime("%Y-%m-%d")
+            date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
+            end_date_timestamp = int(
+                utc_to_local((date + timedelta(days=days_to_check)), "UTC").timestamp()
+            )
         else:
             date_str = self.date.strftime("%Y-%m-%d")
+            date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (self.date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
+            end_date_timestamp = int(
+                utc_to_local((self.date + timedelta(days=days_to_check)), "UTC").timestamp()
+            )
 
         url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
         # log.debug(url)
-        self._last_searched = f"{date_str} to {end_date_str}"
+        self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
         async with self._session.get(url) as resp:
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
