@@ -25,7 +25,7 @@ TEAMS = {
         "home": "#8C2633",
         "id": 53,
         "invite": "https://discord.gg/ebGC7rP",
-        "logo": "https://cms.nhl.bamgrid.com/images/photos/281720888/256x256/cut.png",
+        "logo": "https://i.imgur.com/E0Vtt2E.png",
         "team_url": "https://www.nhl.com/coyotes",
         "timezone": "US/Arizona",
         "nickname": ["yotes"],
