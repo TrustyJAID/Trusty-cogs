@@ -833,7 +833,7 @@ class Game:
         """
         post_state = ["all", self.home_team, self.away_team]
         time_str = f"<t:{self.timestamp}:R>"
-        msg = _("{time} minutes until {away_emoji} {away} @ {home_emoji} {home} starts!").format(
+        msg = _("{away_emoji} {away} @ {home_emoji} {home} game starts {time}!").format(
             time=time_str,
             away_emoji=self.away_emoji,
             away=self.away_team,
