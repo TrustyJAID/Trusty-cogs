@@ -975,15 +975,16 @@ class Destiny(DestinyAPI, commands.Cog):
                     xur_def = (
                         await self.get_definition("DestinyVendorDefinition", ["2190858386"])
                     )["2190858386"]
+
                 except Destiny2APIError:
                     log.error("I can't seem to see Xûr at the moment")
-                    today = datetime.datetime.utcnow()
+                    today = datetime.datetime.now(tz=datetime.timezone.utc)
                     friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
                         (4 - today.weekday()) % 7
                     )
-                    next_xur = self.humanize_timedelta(timedelta=(friday - today))
+                    next_xur = f"<t:{int(friday.timestamp())}:R>"
                     await ctx.send(
-                        _("Xûr's not around, come back in {next_xur}.").format(next_xur=next_xur)
+                        _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
                     )
                     return
                 break
