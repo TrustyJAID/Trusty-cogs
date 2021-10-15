@@ -345,7 +345,7 @@ TEAMS = {
         "division": "Pacific",
         "emoji": "SeattleKraken:735938319883698216",
         "home": "#0C1A28",
-        "id": -1,
+        "id": 39,
         "invite": "https://discord.gg/zhyW3rF",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/317591200/256x256/cut.png",
         "team_url": "https://www.nhl.com/kraken",
