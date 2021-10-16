@@ -268,14 +268,6 @@ class ScheduleList(menus.PageSource):
                     f"**{away_score}** {away_emoji} {away_abr} \n"
                 )
             else:
-                if self.team == []:
-                    timezone = self.timezone or TEAMS[home_team]["timezone"]
-                    game_time = utc_to_local(game_start, timezone)
-                    time_str = game_time.strftime("%I:%M %p %Z")
-                else:
-                    timezone = self.timezone or TEAMS[self.team[0]]["timezone"]
-                    game_time = utc_to_local(game_start, timezone)
-                    time_str = game_time.strftime("%I:%M %p %Z")
                 time_str = f"<t:{int(utc_to_local(game_start, 'UTC').timestamp())}:t>"
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "

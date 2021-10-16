@@ -223,11 +223,8 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        log.debug(teams_and_date)
-        timezone = await self.config.guild(ctx.guild).timezone()
-        log.debug(timezone)
         await GamesMenu(
-            source=ScheduleList(**teams_and_date, session=self.session, timezone=timezone),
+            source=ScheduleList(**teams_and_date, session=self.session),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=60,
