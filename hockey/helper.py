@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
 from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate, MessagePredicate
+from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
@@ -153,6 +153,7 @@ class HockeyTeams(Converter):
         else:
             # This is just some extra stuff to correct the team picker
             msg = _("There's multiple teams with that name, pick one of these:\n")
+            new_msg = None
             if my_perms.add_reactions and my_perms.use_external_emojis:
                 new_msg = await ctx.send(msg)
                 team_emojis = [
