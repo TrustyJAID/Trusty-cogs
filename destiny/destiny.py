@@ -45,8 +45,8 @@ class Destiny(DestinyAPI, commands.Cog):
     """
     Get information from the Destiny 2 API
     """
-    
-    __version__ = "1.7.0"
+
+    __version__ = "1.8.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
@@ -984,15 +984,16 @@ class Destiny(DestinyAPI, commands.Cog):
                     xur_def = (
                         await self.get_definition("DestinyVendorDefinition", ["2190858386"])
                     )["2190858386"]
+
                 except Destiny2APIError:
                     log.error("I can't seem to see Xûr at the moment")
-                    today = datetime.datetime.utcnow()
+                    today = datetime.datetime.now(tz=datetime.timezone.utc)
                     friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
                         (4 - today.weekday()) % 7
                     )
-                    next_xur = self.humanize_timedelta(timedelta=(friday - today))
+                    next_xur = f"<t:{int(friday.timestamp())}:R>"
                     await ctx.send(
-                        _("Xûr's not around, come back in {next_xur}.").format(next_xur=next_xur)
+                        _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
                     )
                     return
                 break
@@ -1210,6 +1211,7 @@ class Destiny(DestinyAPI, commands.Cog):
             for char_id, char in chars["characters"]["data"].items():
                 try:
                     spider = await self.get_vendor(ctx.author, char_id, "863940356")
+                    await self.save(spider, "spider.json")
                     spider_def = (
                         await self.get_definition("DestinyVendorDefinition", ["863940356"])
                     )["863940356"]
@@ -1224,7 +1226,15 @@ class Destiny(DestinyAPI, commands.Cog):
                 "DestinyInventoryItemLiteDefinition",
                 [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
             )
-            embed = discord.Embed(description=spider_def["displayProperties"]["description"])
+            date = datetime.datetime.strptime(
+                spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            date = date.replace(tzinfo=datetime.timezone.utc)
+            date_str = f"<t:{int(date.timestamp())}:R>"
+            # await self.save(spider, "spider.json")
+            description = spider_def["displayProperties"]["description"]
+            description += f"\n\n**Refreshes {date_str}**"
+            embed = discord.Embed(description=description)
             embed.set_thumbnail(
                 url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
             )
@@ -1245,6 +1255,13 @@ class Destiny(DestinyAPI, commands.Cog):
             )
             for key, data in spider["sales"]["data"].items():
                 item_hash = data["itemHash"]
+                refresh_str = ""
+                if "overrideNextRefreshDate" in data:
+                    date = datetime.datetime.strptime(
+                        data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    date = date.replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
 
                 item = item_defs[str(item_hash)]
                 if item["itemType"] in [0, 26]:
@@ -1252,9 +1269,113 @@ class Destiny(DestinyAPI, commands.Cog):
                 try:
                     costs = data["costs"][0]
                     cost = item_cost_defs[str(costs["itemHash"])]
-                    cost_str = str(costs["quantity"]) + " " + cost["displayProperties"]["name"]
+                    cost_str = (
+                        str(costs["quantity"])
+                        + " "
+                        + cost["displayProperties"]["name"]
+                        + refresh_str
+                    )
                 except IndexError:
-                    cost_str = "None"
+                    cost_str = "None" + refresh_str
+                embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
+
+                await asyncio.sleep(0)
+            player_currency = ""
+            for item in chars["profileCurrencies"]["data"]["items"]:
+                quantity = item["quantity"]
+                name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
+                player_currency += f"{name}: **{quantity}**\n"
+            embed.add_field(name=_("Current Currencies"), value=player_currency)
+        await ctx.send(embed=embed)
+
+    @destiny.command()
+    @commands.bot_has_permissions(embed_links=True)
+    async def rahool(self, ctx: commands.Context) -> None:
+        """
+        Display Spiders wares
+        """
+        async with ctx.typing():
+            if not await self.has_oauth(ctx):
+                msg = _(
+                    "You need to authenticate your Bungie.net account before this command will work."
+                )
+                return await ctx.send(msg)
+            try:
+                chars = await self.get_characters(ctx.author)
+            except Destiny2APIError:
+                # log.debug(e)
+                msg = _("I can't seem to find your Destiny profile.")
+                await ctx.send(msg)
+                return
+            for char_id, char in chars["characters"]["data"].items():
+                try:
+                    spider = await self.get_vendor(ctx.author, char_id, "2255782930")
+                    await self.save(spider, "rahool.json")
+                    spider_def = (
+                        await self.get_definition("DestinyVendorDefinition", ["2255782930"])
+                    )["2255782930"]
+                except Destiny2APIError:
+                    log.error("I can't seem to see the Master Rahool at the moment", exc_info=True)
+                    await ctx.send(_("I can't access the Master Rahool at the moment."))
+                    return
+                break
+
+            # await self.save(spider, "spider.json")
+            currency_datas = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition",
+                [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
+            )
+            date = datetime.datetime.strptime(
+                spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            date = date.replace(tzinfo=datetime.timezone.utc)
+            date_str = f"<t:{int(date.timestamp())}:R>"
+            # await self.save(spider, "spider.json")
+            description = spider_def["displayProperties"]["description"]
+            description += f"\n\n**Refreshes {date_str}**"
+            embed = discord.Embed(description=description)
+            embed.set_thumbnail(
+                url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
+            )
+            embed.set_author(
+                name=spider_def["displayProperties"]["name"]
+                + ", "
+                + spider_def["displayProperties"]["subtitle"]
+            )
+            item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
+            item_defs = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition", item_hashes
+            )
+            item_costs = [
+                c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
+            ]
+            item_cost_defs = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition", item_costs
+            )
+            for key, data in spider["sales"]["data"].items():
+                item_hash = data["itemHash"]
+                refresh_str = ""
+                if "overrideNextRefreshDate" in data:
+                    date = datetime.datetime.strptime(
+                        data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    date = date.replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
+
+                item = item_defs[str(item_hash)]
+                if item["itemType"] in [0, 26]:
+                    continue
+                try:
+                    costs = data["costs"][0]
+                    cost = item_cost_defs[str(costs["itemHash"])]
+                    cost_str = (
+                        str(costs["quantity"])
+                        + " "
+                        + cost["displayProperties"]["name"]
+                        + refresh_str
+                    )
+                except IndexError:
+                    cost_str = "None" + refresh_str
                 embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
 
                 await asyncio.sleep(0)
@@ -1300,8 +1421,15 @@ class Destiny(DestinyAPI, commands.Cog):
                     await ctx.send(_("I can't access the Banshee-44 at the moment."))
                     return
                 break
+            date = datetime.datetime.strptime(
+                banshee["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            date = date.replace(tzinfo=datetime.timezone.utc)
+            date_str = f"<t:{int(date.timestamp())}:R>"
             # await self.save(spider, "spider.json")
-            embed = discord.Embed(description=banshee_def["displayProperties"]["description"])
+            description = banshee_def["displayProperties"]["description"]
+            description += f"\n\n**Refreshes {date_str}**"
+            embed = discord.Embed(description=description)
             embed.set_thumbnail(
                 url=IMAGE_URL + banshee_def["displayProperties"]["largeTransparentIcon"]
             )
@@ -1322,6 +1450,13 @@ class Destiny(DestinyAPI, commands.Cog):
             )
             for key, data in banshee["sales"]["data"].items():
                 item_hash = data["itemHash"]
+                refresh_str = ""
+                if "overrideNextRefreshDate" in data:
+                    date = datetime.datetime.strptime(
+                        data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    date = date.replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
 
                 item = item_defs[str(item_hash)]
                 if item["itemType"] in [0]:
@@ -1342,9 +1477,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     costs = data["costs"][0]
                     cost = item_cost_defs[str(costs["itemHash"])]
                     cost_str = str(costs["quantity"]) + " " + cost["displayProperties"]["name"]
-                    cost_str += f"\n{perk_str}"
+                    cost_str += f"\n{perk_str}{refresh_str}"
                 except IndexError:
-                    cost_str = "None"
+                    cost_str = "None" + refresh_str
 
                 embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
 
@@ -1353,9 +1488,14 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command(name="ada", aliases=["ada-1"])
     @commands.bot_has_permissions(embed_links=True)
-    async def ada_1_inventory(self, ctx: commands.Context) -> None:
+    async def ada_1_inventory(
+        self, ctx: commands.Context, *, character: Optional[str] = None
+    ) -> None:
         """
         Display Banshee-44's wares
+
+        `[character]` Show inventory specific to a character class. Must be either
+        Hunter, Warlock, or Titan. Default is whichever is the first character found.
         """
         async with ctx.typing():
             if not await self.has_oauth(ctx):
@@ -1370,8 +1510,12 @@ class Destiny(DestinyAPI, commands.Cog):
                 msg = _("I can't seem to find your Destiny profile.")
                 await ctx.send(msg)
                 return
+            classes = {"hunter": 671679327, "titan": 3655393761, "warlock": 2271682572}
+            class_id = classes.get(str(character).lower(), None)
 
             for char_id, char in chars["characters"]["data"].items():
+                if class_id and char["classHash"] != class_id:
+                    continue
                 try:
                     banshee = await self.get_vendor(ctx.author, char_id, "350061650")
                     banshee_def = (
@@ -1382,9 +1526,28 @@ class Destiny(DestinyAPI, commands.Cog):
                     log.error("I can't seem to see the Ada-1's wares at the moment", exc_info=True)
                     await ctx.send(_("I can't access the Banshee-44 at the moment."))
                     return
+                char_class = (
+                    await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+                )[str(char["classHash"])]
+                char_class = char_class["displayProperties"]["name"]
                 break
+            if not banshee:
+                await ctx.send(
+                    _("I cannot find an inventory for character class {character}.").format(
+                        character=character
+                    )
+                )
+                return
             # await self.save(spider, "spider.json")
-            embed = discord.Embed(description=banshee_def["displayProperties"]["description"])
+            date = datetime.datetime.strptime(
+                banshee["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            date = date.replace(tzinfo=datetime.timezone.utc)
+            date_str = f"<t:{int(date.timestamp())}:R>"
+            # await self.save(spider, "spider.json")
+            description = banshee_def["displayProperties"]["description"]
+            description += f"\n\n**Refreshes {date_str}**"
+            embed = discord.Embed(description=description)
             embed.set_thumbnail(
                 url=IMAGE_URL + banshee_def["displayProperties"]["largeTransparentIcon"]
             )
@@ -1392,6 +1555,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 name=banshee_def["displayProperties"]["name"]
                 + ", "
                 + banshee_def["displayProperties"]["subtitle"]
+                + f" ({char_class})"
             )
             item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
             item_defs = await self.get_definition(
@@ -1405,16 +1569,52 @@ class Destiny(DestinyAPI, commands.Cog):
             )
             for key, data in banshee["sales"]["data"].items():
                 item_hash = data["itemHash"]
+                refresh_str = ""
+                if "overrideNextRefreshDate" in data:
+                    date = datetime.datetime.strptime(
+                        data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    date = date.replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
 
                 item = item_defs[str(item_hash)]
+
                 if item["itemType"] in [0]:
                     continue
+                item_data = (
+                    await self.get_definition("DestinyInventoryItemDefinition", [item_hash])
+                )[str(item_hash)]
+                stats_str = ""
+                slot_hash = item_data.get("equippingBlock", {}).get("equipmentSlotTypeHash", {})
+                if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
+                    total = 0
+                    for stat_hash, stat_data in banshee["itemComponents"]["stats"]["data"][key][
+                        "stats"
+                    ].items():
+                        stat_info = (
+                            await self.get_definition("DestinyStatDefinition", [stat_hash])
+                        )[str(stat_hash)]
+                        stat_name = stat_info["displayProperties"]["name"]
+                        stat_value = stat_data["value"]
+                        prog = "█" * int(stat_value / 6)
+                        empty = "░" * int((42 - stat_value) / 6)
+                        bar = f"{prog}{empty}"
+                        stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
+                        total += stat_value
+                    stats_str += _("Total: **{total}**\n").format(total=total)
                 try:
                     costs = data["costs"][0]
                     cost = item_cost_defs[str(costs["itemHash"])]
-                    cost_str = str(costs["quantity"]) + " " + cost["displayProperties"]["name"]
+                    cost_str = (
+                        str(costs["quantity"])
+                        + " "
+                        + cost["displayProperties"]["name"]
+                        + "\n"
+                        + stats_str
+                        + refresh_str
+                    )
                 except IndexError:
-                    cost_str = "None"
+                    cost_str = "None" + refresh_str
 
                 embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
 

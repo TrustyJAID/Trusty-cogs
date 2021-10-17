@@ -339,9 +339,8 @@ class HockeyPickems(MixinMeta):
             team = game.home_team if game.home_score > game.away_score else game.away_team
             team_emoji = game.home_emoji if game.home_score > game.away_score else game.away_emoji
             winner = _("**WINNER:** {team_emoji} {team}").format(team_emoji=team_emoji, team=team)
-        # time_str = game_start.strftime("%B %d, %Y at %I:%M %p %Z")
-        timestamp = int(game.game_start.timestamp())
-        time_str = f"<t:{timestamp}:F>"
+
+        time_str = f"<t:{game.timestamp}:F>"
         if game.game_state == "Postponed":
             time_str = _("Postponed")
 

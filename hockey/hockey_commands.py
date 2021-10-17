@@ -220,7 +220,6 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
-        log.debug(teams_and_date)
         await GamesMenu(
             source=ScheduleList(**teams_and_date, session=self.session),
             delete_message_after=False,

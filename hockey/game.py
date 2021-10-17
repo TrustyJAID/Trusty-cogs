@@ -425,7 +425,7 @@ class Game:
     async def game_state_text(self) -> str:
         # post_state = ["all", self.home_team, self.away_team]
         # timestamp =  datetime.strptime(self.game_start, "%Y-%m-%dT%H:%M:%SZ")
-        time_string = f"<t:{int(self.game_start.timestamp())}>"
+        time_string = f"<t:{self.timestamp}>"
         em = (
             f"{self.away_emoji}{self.away_team} @ {self.home_emoji}{self.home_team} "
             f"{self.game_state}\n({time_string})"
@@ -493,7 +493,7 @@ class Game:
             """Checks if the the game state has changes from Final to Preview
             Could be unnecessary since after Game Final it will check for next game
             """
-            time_now = datetime.utcnow()
+            time_now = datetime.now(tz=timezone.utc)
             # game_time = datetime.strptime(data.game_start, "%Y-%m-%dT%H:%M:%SZ")
             game_start = (self.game_start - time_now).total_seconds() / 60
             if "Preview" not in home["game_state"]:

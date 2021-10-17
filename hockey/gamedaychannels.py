@@ -350,9 +350,7 @@ class GameDayChannels(MixinMeta):
         # Gets the timezone to use for game day channel topic
         # timestamp = datetime.strptime(next_game.game_start, "%Y-%m-%dT%H:%M:%SZ")
         # guild_team = await config.guild(guild).gdc_team()
-        timestamp = next_game.game_start.timestamp()
-
-        time_string = f"<t:{int(timestamp)}:F>"
+        time_string = f"<t:{next_game.timestamp}:F>"
 
         game_msg = (
             f"{next_game.away_team} {next_game.away_emoji} @ "

@@ -169,12 +169,14 @@ class HockeyTeams(Converter):
         else:
             # This is just some extra stuff to correct the team picker
             msg = _("There's multiple teams with that name, pick one of these:\n")
+
             view = SelectTeamView(ctx)
             menu = SelectTeamMenu(max_values=1, min_values=1, placeholder=_("Pick a team"))
             for team in team_list[:25]:
                 emoji_str = TEAMS[team]["emoji"]
                 if emoji_str:
                     emoji = discord.PartialEmoji.from_str(emoji_str)
+
                 else:
                     emoji = None
                 menu.add_option(emoji=emoji, label=team)
