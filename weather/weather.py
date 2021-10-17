@@ -33,7 +33,7 @@ class Weather(commands.Cog):
     """Get weather data from https://openweathermap.org"""
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.2.1"
+    __version__ = "1.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -222,12 +222,10 @@ class Weather(commands.Cog):
             currenttemp = abs(currenttemp - 273.15)
             mintemp = abs(maxtemp - 273.15)
             maxtemp = abs(maxtemp - 273.15)
-        sunrise = datetime.datetime.utcfromtimestamp(
-            data["sys"]["sunrise"] + data["timezone"]
-        ).strftime("%H:%M")
-        sunset = datetime.datetime.utcfromtimestamp(
-            data["sys"]["sunset"] + data["timezone"]
-        ).strftime("%H:%M")
+        sunrise_timestamp = int(data["sys"]["sunrise"])
+        sunset_timestamp = int(data["sys"]["sunset"])
+        sunrise = f"<t:{sunrise_timestamp}:t>"
+        sunset = f"<t:{sunset_timestamp}:t>"
         embed = discord.Embed(colour=discord.Colour.blue())
         if len(city) and len(country):
             embed.add_field(name=_("🌍 **Location**"), value="{0}, {1}".format(city, country))
