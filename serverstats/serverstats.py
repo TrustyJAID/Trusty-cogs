@@ -114,7 +114,7 @@ class ServerStats(commands.Cog):
             "That's **{num}** servers now!\n"
             "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
-            "That's over **{passed}** days ago!"
+            "That's over **{passed}**!"
         ).format(
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
@@ -162,7 +162,7 @@ class ServerStats(commands.Cog):
         since_joined = f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
-            "That's over **{since_join}** days ago!"
+            "That's over **{since_join}**!"
         ).format(bot_name=self.bot.user.name, bot_join=bot_joined, since_join=since_joined)
         shard = (
             _("\nShard ID: **{shard_id}/{shard_count}**").format(
@@ -356,7 +356,7 @@ class ServerStats(commands.Cog):
             "That's **{num}** servers now!\n"
             "That's a total of **{users}** users !\n"
             "Server created on **{since}**. "
-            "That's over **{passed}** days ago!"
+            "That's over **{passed}**!"
         ).format(
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
@@ -414,7 +414,7 @@ class ServerStats(commands.Cog):
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
-                "That's over **{passed}** days ago!"
+                "That's over **{passed}**!"
             ).format(
                 bot=ctx.me.mention,
                 servers=servers,
@@ -1048,7 +1048,7 @@ class ServerStats(commands.Cog):
                             )
                         created_on = _(
                             "Joined Discord on {user_created}\n"
-                            "({since_created} days ago)\n"
+                            "({since_created})\n"
                             "{public_flags}"
                         ).format(
                             user_created=user_created,
@@ -1081,7 +1081,7 @@ class ServerStats(commands.Cog):
                         )
                     created_on = _(
                         "Joined Discord on {user_created}\n"
-                        "({since_created} days ago)\n"
+                        "({since_created})\n"
                         "{public_flags}"
                     ).format(
                         user_created=user_created,
