@@ -108,7 +108,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
         created_at = _(
             "{bot} has joined a server!\n "
             "That's **{num}** servers now!\n"
@@ -119,7 +119,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=guild.created_at.strftime("%d %b %Y %H:%M:%S"),
+            since=f"<t:{int(guild.created_at.timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -149,17 +149,17 @@ class ServerStats(commands.Cog):
             return "{0:.1f}{1}".format(num, "YB")
 
         passed = (datetime.datetime.utcnow() - guild.created_at).days
-        created_at = _("Created on {date}. That's over {num} days ago!").format(
-            date=bold(guild.created_at.strftime("%d %b %Y %H:%M")),
-            num=bold(humanize_number(passed)),
+        created_at = _("Created on {date}. That's over {num}!").format(
+            date=bold(f"<t:{int(guild.created_at.timestamp())}:D>"),
+            num=bold(f"<t:{int(guild.created_at.timestamp())}:R>"),
         )
         total_users = humanize_number(guild.member_count)
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
             joined_at = datetime.datetime.utcnow()
-        bot_joined = joined_at.strftime("%d %b %Y %H:%M:%S")
-        since_joined = (datetime.datetime.utcnow() - joined_at).days
+        bot_joined = f"<t:{int(joined_at.timestamp())}:D>"
+        since_joined = f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}** days ago!"
@@ -350,7 +350,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = (datetime.datetime.utcnow() - guild.created_at).days
+        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
         created_at = _(
             "{bot} has left a server!\n "
             "That's **{num}** servers now!\n"
@@ -361,7 +361,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=guild.created_at.strftime("%d %b %Y %H:%M"),
+            since=f"<t:{int(guild.created_at.timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -409,8 +409,8 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = (datetime.datetime.utcnow() - ctx.me.created_at).days
-            since = ctx.me.created_at.strftime("%d %b %Y %H:%M")
+            passed = f"<t:{int(ctx.me.created_at.timestamp())}:R>"
+            since = f"<t:{int(ctx.me.created_at.timestamp())}:D>"
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
@@ -1037,8 +1037,8 @@ class ServerStats(commands.Cog):
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     for em in pagify(embed_msg, ["\n"], page_length=6000):
                         embed = discord.Embed()
-                        since_created = (ctx.message.created_at - member.created_at).days
-                        user_created = member.created_at.strftime("%d %b %Y %H:%M")
+                        since_created = f"<t:{int(member.created_at.timestamp())}:R>"
+                        user_created = f"<t:{int(member.created_at.timestamp())}:D>"
                         public_flags = ""
                         if version_info >= VersionInfo.from_str("3.4.0"):
                             public_flags = "\n".join(
@@ -1070,8 +1070,8 @@ class ServerStats(commands.Cog):
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     embed = discord.Embed()
-                    since_created = (ctx.message.created_at - member.created_at).days
-                    user_created = member.created_at.strftime("%d %b %Y %H:%M")
+                    since_created = f"<t:{int(member.created_at.timestamp())}:R>"
+                    user_created = f"<t:{int(member.created_at.timestamp())}:D>"
                     public_flags = ""
                     if version_info >= VersionInfo.from_str("3.4.0"):
                         public_flags = "\n".join(
