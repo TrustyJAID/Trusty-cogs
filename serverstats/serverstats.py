@@ -16,9 +16,9 @@ from redbot.core.utils.chat_formatting import (
     bold,
     box,
     escape,
+    humanize_list,
     humanize_number,
     humanize_timedelta,
-    humanize_list,
     pagify,
 )
 from redbot.core.utils.menus import start_adding_reactions
@@ -31,7 +31,7 @@ from .converters import (
     MultiGuildConverter,
     PermissionConverter,
 )
-from .menus import BaseMenu, AvatarPages, GuildPages, ListPages
+from .menus import AvatarPages, BaseMenu, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
@@ -108,7 +108,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
+        passed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         created_at = _(
             "{bot} has joined a server!\n "
             "That's **{num}** servers now!\n"
@@ -119,7 +119,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=f"<t:{int(guild.created_at.timestamp())}:D>",
+            since=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -150,16 +150,16 @@ class ServerStats(commands.Cog):
 
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _("Created on {date}. That's over {num}!").format(
-            date=bold(f"<t:{int(guild.created_at.timestamp())}:D>"),
-            num=bold(f"<t:{int(guild.created_at.timestamp())}:R>"),
+            date=bold(f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"),
+            num=bold(f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"),
         )
         total_users = humanize_number(guild.member_count)
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
             joined_at = datetime.datetime.utcnow()
-        bot_joined = f"<t:{int(joined_at.timestamp())}:D>"
-        since_joined = f"<t:{int(joined_at.timestamp())}:R>"
+        bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+        since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         joined_on = _(
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}**!"
@@ -350,7 +350,7 @@ class ServerStats(commands.Cog):
         if channel_id is None:
             return
         channel = self.bot.get_channel(channel_id)
-        passed = f"<t:{int(guild.created_at.timestamp())}:R>"
+        passed = f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
         created_at = _(
             "{bot} has left a server!\n "
             "That's **{num}** servers now!\n"
@@ -361,7 +361,7 @@ class ServerStats(commands.Cog):
             bot=channel.guild.me.mention,
             num=humanize_number(len(self.bot.guilds)),
             users=humanize_number(len(self.bot.users)),
-            since=f"<t:{int(guild.created_at.timestamp())}:D>",
+            since=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>",
             passed=passed,
         )
         try:
@@ -409,8 +409,8 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = f"<t:{int(ctx.me.created_at.timestamp())}:R>"
-            since = f"<t:{int(ctx.me.created_at.timestamp())}:D>"
+            passed = f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            since = f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
@@ -1037,8 +1037,8 @@ class ServerStats(commands.Cog):
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     for em in pagify(embed_msg, ["\n"], page_length=6000):
                         embed = discord.Embed()
-                        since_created = f"<t:{int(member.created_at.timestamp())}:R>"
-                        user_created = f"<t:{int(member.created_at.timestamp())}:D>"
+                        since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+                        user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
                         public_flags = ""
                         if version_info >= VersionInfo.from_str("3.4.0"):
                             public_flags = "\n".join(
@@ -1070,19 +1070,17 @@ class ServerStats(commands.Cog):
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     embed = discord.Embed()
-                    since_created = f"<t:{int(member.created_at.timestamp())}:R>"
-                    user_created = f"<t:{int(member.created_at.timestamp())}:D>"
+                    since_created = (
+                        f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+                    )
+                    user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
                     public_flags = ""
                     if version_info >= VersionInfo.from_str("3.4.0"):
                         public_flags = "\n".join(
-                            bold(i.replace("_", " ").title())
-                            for i, v in member.public_flags
-                            if v
+                            bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
                         )
                     created_on = _(
-                        "Joined Discord on {user_created}\n"
-                        "({since_created})\n"
-                        "{public_flags}"
+                        "Joined Discord on {user_created}\n" "({since_created})\n" "{public_flags}"
                     ).format(
                         user_created=user_created,
                         since_created=since_created,
