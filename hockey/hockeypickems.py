@@ -1,11 +1,9 @@
 import logging
 from datetime import datetime, timedelta, timezone
-
 from typing import Dict, List, Optional
 
 import discord
 from discord.ext import tasks
-
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -13,9 +11,7 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .game import Game
-
 from .helper import TimezoneFinder
-
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -50,7 +46,7 @@ class HockeyPickems(MixinMeta):
     @tasks.loop(seconds=300)
     async def pickems_loop(self) -> None:
         await self.save_pickems_data()
-        # log.debug("Saved pickems data.")
+        log.debug("Saved pickems data.")
 
     async def save_pickems_data(self) -> None:
         try:
@@ -71,11 +67,13 @@ class HockeyPickems(MixinMeta):
 
     @pickems_loop.after_loop
     async def after_pickems_loop(self) -> None:
+        log.debug("Cancelling loop")
         if self.pickems_loop.is_being_cancelled():
             await self.save_pickems_data()
             for guild_id, pickems in self.all_pickems.items():
                 for game, pickem in pickems.items():
                     # Don't forget to remove persistent views when the cog is unloaded.
+                    log.debug(f"Stopping {pickem.name}")
                     pickem.stop()
 
     @pickems_loop.before_loop
@@ -234,7 +232,7 @@ class HockeyPickems(MixinMeta):
             )
 
             self.all_pickems[str(guild.id)][str(game.game_id)] = pickem
-            log.debug("creating new pickems %s", pickems[str(game.game_id)])
+            log.debug("creating new pickems %s", new_name)
             return pickem
         else:
             if old_pickem.game_start != game.game_start:

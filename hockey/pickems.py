@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 import discord
@@ -27,7 +27,9 @@ class PickemsButton(discord.ui.Button):
         self.disabled = disabled
 
     async def callback(self, interaction: discord.Interaction):
-        time_now = datetime.utcnow()
+        time_now = datetime.now(tz=timezone.utc)
+        log.debug(time_now)
+        log.debug(self.view.game_start)
 
         if str(interaction.user.id) in self.view.votes:
             vote = self.view.votes[str(interaction.user.id)]
@@ -121,7 +123,7 @@ class Pickems(discord.ui.View):
         # Start true so we save instantiated pickems
         self.game_type: str = kwargs.get("game_type")
         super().__init__(timeout=None)
-        disabled_buttons = datetime.utcnow() > self.game_start
+        disabled_buttons = datetime.now(tz=timezone.utc) > self.game_start
         self.home_button = PickemsButton(
             label=self.home_team,
             emoji=self.home_emoji,
@@ -202,12 +204,14 @@ class Pickems(discord.ui.View):
     @classmethod
     def from_json(cls, data: Dict[str, Optional[Union[str, Dict[str, str]]]]) -> Pickems:
         # log.debug(data)
+        game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
+        game_start.replace(tzinfo=timezone.utc)
         return cls(
             game_id=data.get("game_id"),
             game_state=data.get("game_state"),
             messages=data.get("messages", []),
             guild=data.get("guild"),
-            game_start=datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ"),
+            game_start=game_start,
             home_team=data["home_team"],
             away_team=data["away_team"],
             votes=data["votes"],
@@ -256,7 +260,7 @@ class Pickems(discord.ui.View):
 
         This realistically only gets called once all the games are done playing
         """
-        after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=2))
+        after_game = datetime.now(tz=timezone.utc) >= (self.game_start + timedelta(hours=2))
         if self.winner:
             return True
         if game is not None:
