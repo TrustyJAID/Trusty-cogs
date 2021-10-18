@@ -121,12 +121,14 @@ class Pickems:
     @classmethod
     def from_json(cls, data: dict) -> Pickems:
         # log.debug(data)
+        game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
+        game_start = game_start.replace(tzinfo=timezone.utc)
         return cls(
             game_id=data.get("game_id"),
             game_state=data.get("game_state"),
             messages=data.get("messages", []),
             guild=data.get("guild"),
-            game_start=datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ"),
+            game_start=game_start,
             home_team=data["home_team"],
             away_team=data["away_team"],
             votes=data["votes"],
@@ -175,7 +177,7 @@ class Pickems:
 
         This realistically only gets called once all the games are done playing
         """
-        after_game = datetime.utcnow() >= (self.game_start + timedelta(hours=2))
+        after_game = datetime.now(tz=timezone.utc) >= (self.game_start + timedelta(hours=2))
         if self.winner:
             return True
         if game is not None:
