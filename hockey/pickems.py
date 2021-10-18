@@ -1,9 +1,10 @@
 from __future__ import annotations
-import logging
-import discord
-from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
 
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Tuple
+
+import discord
 from redbot.core.i18n import Translator
 
 from .constants import TEAMS
@@ -73,7 +74,7 @@ class Pickems:
         )
 
     def add_vote(self, user_id: int, team: discord.Emoji) -> None:
-        time_now = datetime.utcnow()
+        time_now = datetime.now(tz=timezone.utc)
 
         team_choice = None
         if str(team.id) in self.home_emoji:
@@ -132,7 +133,7 @@ class Pickems:
             name=data.get("name", ""),
             winner=data.get("winner", None),
             link=data.get("link", None),
-            game_type=data.get("game_type", "R")
+            game_type=data.get("game_type", "R"),
         )
 
     async def set_pickem_winner(self, game: Game) -> bool:
