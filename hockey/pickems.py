@@ -205,7 +205,7 @@ class Pickems(discord.ui.View):
     def from_json(cls, data: Dict[str, Optional[Union[str, Dict[str, str]]]]) -> Pickems:
         # log.debug(data)
         game_start = datetime.strptime(data["game_start"], "%Y-%m-%dT%H:%M:%SZ")
-        game_start.replace(tzinfo=timezone.utc)
+        game_start = game_start.replace(tzinfo=timezone.utc)
         return cls(
             game_id=data.get("game_id"),
             game_state=data.get("game_state"),
