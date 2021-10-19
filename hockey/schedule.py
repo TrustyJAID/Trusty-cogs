@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import aiohttp
@@ -266,6 +266,7 @@ class ScheduleList(menus.PageSource):
         start_time = None
         for game in games:
             game_start = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
+            game_start = game_start.replace(tzinfo=timezone.utc)
             home_team = game["teams"]["home"]["team"]["name"]
             away_team = game["teams"]["away"]["team"]["name"]
             home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
@@ -280,13 +281,13 @@ class ScheduleList(menus.PageSource):
             if start_time is None:
                 start_time = game_start
             if day is None:
-                day = utc_to_local(game_start).day
-                time = utc_to_local(game_start).strftime("%A %b %d")
+                day = game_start.day
+                time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
-                msg += f"**{game_str} <t:{int(utc_to_local(game_start, 'UTC').timestamp())}:D>\n**"
-            elif day and day != utc_to_local(game_start).day:
+                msg += f"**{game_str} <t:{int(game_start.timestamp())}:D>\n**"
+            elif day and day != game_start.day:
                 day = utc_to_local(game_start).day
-                time = utc_to_local(game_start).strftime("%A %b %d")
+                time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}\n**"
 
@@ -296,7 +297,7 @@ class ScheduleList(menus.PageSource):
                     f"{game_state} - {away_emoji} {away_abr} @ "
                     f"{home_emoji} {home_abr} - {time_str}\n"
                 )
-            elif game_start < datetime.utcnow():
+            elif game_start < datetime.now(timezone.utc):
                 home_score = game["teams"]["home"]["score"]
                 away_score = game["teams"]["away"]["score"]
                 msg += (
@@ -304,15 +305,14 @@ class ScheduleList(menus.PageSource):
                     f"**{away_score}** {away_emoji} {away_abr} \n"
                 )
             else:
-                time_str = f"<t:{int(utc_to_local(game_start, 'UTC').timestamp())}:t>"
+                time_str = f"<t:{int(game_start.timestamp())}:t>"
                 msg += (
                     f"{game_state} - {away_emoji} {away_abr} @ "
                     f"{home_emoji} {home_abr} - {time_str}\n"
                 )
 
             count = 0
-            em = discord.Embed(timestamp=utc_to_local(game_start, "UTC"))
-            em.set_footer(text=_("Games Start"))
+            em = discord.Embed()
             if self.team != []:
                 # log.debug(self.team)
                 colour = (
