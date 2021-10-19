@@ -245,12 +245,12 @@ class ScheduleList(menus.PageSource):
             if start_time is None:
                 start_time = game_start
             if day is None:
-                day = game_start.day
+                day = utc_to_local(game_start).day
                 time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} <t:{int(game_start.timestamp())}:D>\n**"
-            elif day and day != game_start.day:
-                day = game_start.day
+            elif day and day != utc_to_local(game_start).day:
+                day = utc_to_local(game_start).day
                 time = f"<t:{int(game_start.timestamp())}:D>"
                 game_str = _("Games") if self.team == [] else _("Game")
                 msg += f"**{game_str} {time}\n**"
