@@ -196,13 +196,13 @@ class CleverbotAPI:
             msg += f"{tweak2}% shy and talkative, and "
 
         if tweak3 < 0:
-            msg += f"{100}% self-centered."
+            msg += f"{100}% self-centered "
         if tweak3 >= 0 and tweak3 < 50:
-            msg += f"{100-tweak3}% self-centered."
+            msg += f"{100-tweak3}% self-centered "
         if tweak3 > 50:
-            msg += f"{tweak3}% attentive."
+            msg += f"{tweak3}% attentive "
         if tweak3 == 50:
-            msg += f"{tweak3}% self-centered and attentive."
+            msg += f"{tweak3}% self-centered and attentive "
         return msg
 
     async def global_perms(self, message: discord.Message) -> bool:
