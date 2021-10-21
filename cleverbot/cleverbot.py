@@ -255,7 +255,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         await self.config.guild(ctx.guild).tweak2.set(tweak2)
         await self.config.guild(ctx.guild).tweak3.set(tweak3)
         msg = await self.build_tweak_msg(ctx.guild)
-        await ctx.send(msg + " In this guild.")
+        await ctx.send(msg + "in this guild.")
 
     @cleverbotset.command()
     @checks.mod_or_permissions(manage_messages=True)
@@ -264,7 +264,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         Show the current cleverbot tweaks in this server
         """
         msg = await self.build_tweak_msg(ctx.guild)
-        return await ctx.send(msg + " In this guild.")
+        return await ctx.send(msg + "in this guild.")
 
     @cleverbotset.command()
     @checks.is_owner()
@@ -282,7 +282,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
         await self.config.tweak2.set(tweak2)
         await self.config.tweak3.set(tweak3)
         msg = await self.build_tweak_msg()
-        await ctx.send(msg + " Globally.")
+        await ctx.send(msg + "globally.")
 
     @cleverbotset.command()
     @commands.guild_only()
