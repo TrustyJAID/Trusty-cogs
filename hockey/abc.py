@@ -169,10 +169,6 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_chn_name(self, game: Game) -> str:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def check_new_gdc(self) -> None:
         raise NotImplementedError()
 
@@ -182,6 +178,67 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def delete_gdc(self, guild: discord.Guild) -> None:
+        raise NotImplementedError()
+
+    #######################################################################
+    # gamedaythreads.py                                                   #
+    #######################################################################
+
+    @abstractmethod
+    async def gdt(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_settings(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_delete(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_default_game_state(self, ctx: commands.Context, *state: HockeyStates) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_create(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_toggle(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_channel(self, ctx: commands.Context, category: discord.CategoryChannel) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_autodelete(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def test_gdt(self, ctx: commands.Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gdt_setup(
+        self,
+        ctx: commands.Context,
+        team: HockeyTeams,
+        category: discord.CategoryChannel = None,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def check_new_gdt(self) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def create_gdt(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def delete_gdt(self, guild: discord.Guild) -> None:
         raise NotImplementedError()
 
     #######################################################################

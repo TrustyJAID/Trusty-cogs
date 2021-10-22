@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .game import Game
-from .helper import HockeyStates, HockeyTeams, utc_to_local
+from .helper import HockeyStates, HockeyTeams, utc_to_local, get_chn_name
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
@@ -148,6 +148,14 @@ class GameDayChannels(MixinMeta):
         Toggles the game day channel creation on this server
         """
         guild = ctx.message.guild
+        if await self.config.guild(guild).create_threads():
+            await ctx.send(
+                _(
+                    "You cannot have both game day channels and game day threads in the same server. "
+                    "Use `{prefix}gdt toggle` first to disable game day channels then try again."
+                ).format(prefix=ctx.clean_prefix)
+            )
+            return
         cur_setting = not await self.config.guild(guild).create_channels()
         verb = _("will") if cur_setting else _("won't")
         msg = _("Game day channels ") + verb + _(" be created on this server.")
@@ -215,6 +223,14 @@ class GameDayChannels(MixinMeta):
         must be either `True` or `False`. Defaults to `True` if not provided.
         """
         guild = ctx.message.guild
+        if await self.config.guild(guild).create_threads():
+            await ctx.send(
+                _(
+                    "You cannot have both game day channels and game day threads in the same server. "
+                    "Use `{prefix}gdt toggle` first to disable game day channels then try again."
+                ).format(prefix=ctx.clean_prefix)
+            )
+            return
         if team is None:
             return await ctx.send(_("You must provide a valid current team."))
         if category is None and ctx.channel.category is not None:
@@ -241,16 +257,6 @@ class GameDayChannels(MixinMeta):
     #######################################################################
     # GDC logic                                                           #
     #######################################################################
-
-    async def get_chn_name(self, game: Game) -> str:
-        """
-        Creates game day channel name
-        """
-        timestamp = utc_to_local(game.game_start)
-        chn_name = "{}-vs-{}-{}-{}-{}".format(
-            game.home_abr, game.away_abr, timestamp.year, timestamp.month, timestamp.day
-        )
-        return chn_name.lower()
 
     async def check_new_gdc(self) -> None:
         game_list = await Game.get_games(

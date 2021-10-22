@@ -18,6 +18,7 @@ from .dev import HockeyDev
 from .errors import InvalidFileError
 from .game import Game
 from .gamedaychannels import GameDayChannels
+from .gamedaythreads import GameDayThreads
 from .helper import utc_to_local
 from .hockey_commands import HockeyCommands
 from .hockeypickems import HockeyPickems
@@ -45,6 +46,7 @@ class Hockey(
     HockeyCommands,
     HockeySetCommands,
     GameDayChannels,
+    GameDayThreads,
     HockeyDev,
     HockeyPickems,
     commands.Cog,
@@ -72,9 +74,13 @@ class Hockey(
             "post_standings": False,
             "standings_msg": None,
             "create_channels": False,
+            "create_threads": False,
             "category": None,
             "gdc_team": None,
+            "gdt_team": None,
+            "gdt_channel": None,
             "gdc": [],
+            "gdt": [],
             "delete_gdc": True,
             "rules": "",
             "team_rules": "",
@@ -82,6 +88,7 @@ class Hockey(
             "goal_notifications": False,
             "start_notifications": False,
             "gdc_state_updates": ["Preview", "Live", "Final", "Goal"],
+            "gdt_state_updates": ["Preview", "Live", "Final", "Goal"],
             "ot_notifications": True,
             "so_notifications": True,
             "timezone": None,
@@ -398,6 +405,7 @@ class Hockey(
             log.debug("Checking GDC")
 
             await self.check_new_gdc()
+            await self.check_new_gdt()
             # await self.config.created_gdc.set(True)
             await self.config.last_day.set(now.day)
 

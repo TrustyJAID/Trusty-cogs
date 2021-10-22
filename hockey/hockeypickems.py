@@ -652,7 +652,7 @@ class HockeyPickems(MixinMeta):
         to the leaderboard
         """
         async for guild_id in AsyncIter(self.all_pickems.keys(), steps=10):
-            guild = self.bot.get_guild(id=int(guild_id))
+            guild = self.bot.get_guild(int(guild_id))
             if guild is None:
                 continue
             try:

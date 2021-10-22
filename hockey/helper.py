@@ -1,7 +1,8 @@
+from __future__ import annotations
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Pattern, Tuple, Union
+from typing import Dict, List, Optional, Pattern, Tuple, Union, TYPE_CHECKING
 
 import discord
 import pytz
@@ -13,6 +14,10 @@ from redbot.core.i18n import Translator
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
+
+if TYPE_CHECKING:
+    from .game import Game
+
 
 _ = Translator("Hockey", __file__)
 
@@ -32,6 +37,16 @@ TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timez
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
+
+def get_chn_name(game: Game) -> str:
+    """
+    Creates game day channel name
+    """
+    timestamp = utc_to_local(game.game_start)
+    chn_name = "{}-vs-{}-{}-{}-{}".format(
+        game.home_abr, game.away_abr, timestamp.year, timestamp.month, timestamp.day
+    )
+    return chn_name.lower()
 
 
 class YearFinder(Converter):
@@ -372,8 +387,9 @@ async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[dis
         log.info(f"{channel_id} channel was removed because it no longer exists")
         return None
     channel = guild.get_channel(channel_id)
-    if channel is None:
+    thread = guild.get_thread(channel_id)
+    if channel is None and thread is None:
         await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
         log.info(f"{channel_id} channel was removed because it no longer exists")
         return None
-    return channel
+    return channel or thread
