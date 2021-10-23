@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .game import Game
-from .helper import HockeyStates, HockeyTeams, utc_to_local, get_chn_name
+from .helper import HockeyStates, HockeyTeams, get_chn_name, utc_to_local
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
@@ -262,7 +262,7 @@ class GameDayThreads(MixinMeta):
                     next_game = await Game.from_url(next_games[0]["link"], session=self.session)
                 if next_game is None:
                     continue
-                chn_name = await self.get_chn_name(next_game)
+                chn_name = get_chn_name(next_game)
                 try:
                     cur_channels = await self.config.guild(guild).gdt()
                     if cur_channels:
@@ -348,7 +348,7 @@ class GameDayThreads(MixinMeta):
                 log.error("Error posting game preview in GDT channel.")
                 return
 
-        chn_name = await self.get_chn_name(next_game)
+        chn_name = get_chn_name(next_game)
         try:
             new_chn = await channel.create_thread(name=chn_name, message=preview_msg)
         except discord.Forbidden:
