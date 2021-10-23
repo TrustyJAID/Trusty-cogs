@@ -2,7 +2,6 @@ import logging
 from typing import Optional
 
 import discord
-
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -23,7 +22,7 @@ class Cleverbot(CleverbotAPI, commands.Cog):
     """
 
     __author__ = ["Twentysix", "TrustyJAID"]
-    __version__ = "2.4.3"
+    __version__ = "2.4.4"
 
     def __init__(self, bot):
         self.bot = bot
