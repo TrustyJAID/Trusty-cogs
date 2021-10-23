@@ -633,7 +633,11 @@ class Game:
         # previews = await bounded_gather(*tasks)
 
     async def actually_post_state(
-        self, bot: Red, channel: discord.TextChannel, state_embed: discord.Embed, state_text: str
+        self,
+        bot: Red,
+        channel: Union[discord.TextChannel, discord.Thread],
+        state_embed: discord.Embed,
+        state_text: str,
     ) -> Optional[Tuple[discord.TextChannel, discord.Message]]:
         guild = channel.guild
         if not channel.permissions_for(guild.me).send_messages:

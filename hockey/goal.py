@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import discord
 from redbot import VersionInfo, version_info
@@ -343,7 +343,7 @@ class Goal:
             guild = bot.get_guild(guild_id)
             if not guild:
                 continue
-            channel = guild.get_channel(int(channel_id))
+            channel = await get_channel_obj(bot, channel_id, {"guild_id": guild_id})
             if channel is None:
                 continue
             bot.loop.create_task(self.edit_goal(bot, channel, message_id, em))
@@ -357,7 +357,11 @@ class Goal:
         return
 
     async def edit_goal(
-        self, bot: Red, channel: discord.TextChannel, message_id: int, em: discord.Embed
+        self,
+        bot: Red,
+        channel: Union[discord.TextChannel, discord.Thread],
+        message_id: int,
+        em: discord.Embed,
     ) -> None:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:

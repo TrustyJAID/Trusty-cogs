@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Pattern, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Pattern, Tuple, Union
 
 import discord
 import pytz
@@ -37,6 +38,7 @@ TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timez
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=eastern)
+
 
 def get_chn_name(game: Game) -> str:
     """
@@ -364,7 +366,9 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     return is_team
 
 
-async def get_channel_obj(bot: Red, channel_id: int, data: dict) -> Optional[discord.TextChannel]:
+async def get_channel_obj(
+    bot: Red, channel_id: int, data: dict
+) -> Optional[Union[discord.TextChannel, discord.Thread]]:
     """
     Requires a bot object to access config, channel_id, and channel config data
     Returns the channel object and sets the guild ID if it's missing from config
