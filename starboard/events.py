@@ -172,9 +172,9 @@ class StarboardEvents:
             return
         if not starboard.enabled:
             return
-        allowed = starboard.check_roles(member)
-        allowed |= starboard.check_channel(self.bot, channel)
-        if not allowed:
+        allowed_roles = starboard.check_roles(member)
+        allowed_channel = starboard.check_channel(self.bot, channel)
+        if any((not allowed_roles, not allowed_channel)):
             log.debug("User or channel not in allowlist")
             return
 
