@@ -62,7 +62,7 @@ class HockeyDev(MixinMeta):
             guild = self.bot.get_guild(guild_id)
             if guild is None:
                 continue
-            if await self.pickems_config.guild(guild).pickems_category():
+            if await self.pickems_config.guild(guild).pickems_channel():
                 guilds_to_make_new_pickems.append(guild)
         await self.create_weekly_pickems_pages(guilds_to_make_new_pickems)
         await ctx.send("Finished resetting all pickems data.")

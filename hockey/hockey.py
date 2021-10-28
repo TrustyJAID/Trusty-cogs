@@ -115,6 +115,7 @@ class Hockey(
             leaderboard={},
             pickems={},
             pickems_channels={},
+            pickems_channel=None,
             pickems_category=None,
             pickems_message="",
             pickems_timezone="US/Pacific",
@@ -391,7 +392,7 @@ class Hockey(
                     guild = self.bot.get_guild(guild_id)
                     if guild is None:
                         continue
-                    if await self.pickems_config.guild(guild).pickems_category():
+                    if await self.pickems_config.guild(guild).pickems_channel():
                         guilds_to_make_new_pickems.append(guild)
                 self.bot.loop.create_task(self.create_next_pickems_day(guilds_to_make_new_pickems))
 

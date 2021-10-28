@@ -381,8 +381,6 @@ class GameDayThreads(MixinMeta):
             if chn is None:
                 await self.config.channel_from_id(channel).clear()
                 continue
-            if not await self.config.channel(chn).to_delete():
-                continue
             try:
                 await self.config.channel(chn).clear()
             except Exception:

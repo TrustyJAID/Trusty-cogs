@@ -2,15 +2,13 @@ import logging
 from typing import Optional
 
 import discord
-import pytz
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .constants import TEAMS
-from .helper import HockeyStates, HockeyTeams, TimezoneFinder
-from .menu import BaseMenu, SimplePages
+from .helper import HockeyStates, HockeyTeams
 from .standings import CONFERENCES, DIVISIONS, Standings
 
 _ = Translator("Hockey", __file__)
@@ -109,50 +107,6 @@ class HockeySetCommands(MixinMeta):
     #######################################################################
     # All Hockey setup commands                                           #
     #######################################################################
-
-    @hockeyset_commands.group(
-        name="timezone", aliases=["timezones", "tz"], invoke_without_command=True, hidden=True
-    )
-    async def set_hockey_timezone(
-        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
-    ) -> None:
-        """
-        Customize the servers timezone
-
-        This is utilized in `[p]hockey schedule` and game day channel creation
-
-        `[timezone]` The full name of the timezone you want to set. For a list of
-        available timezone names use `[p]hockeyset timezone list`
-        defaults to Home Teams Tmezone if not provided
-        """
-        if ctx.invoked_subcommand is None:
-            if timezone is not None:
-                await self.config.guild(ctx.guild).timezone.set(timezone)
-            else:
-                await self.config.guild(ctx.guild).timezone.clear()
-                timezone = _("Home Teams Timezone")
-            msg = _("Server Timezone set to {timezone}").format(timezone=timezone)
-            await ctx.send(msg)
-
-    @set_hockey_timezone.command(name="list")
-    async def list_hockey_timezones(self, ctx: commands.Context) -> None:
-        """
-        List the available timezones for pickems messages
-        """
-        msg = "\n".join(tz for tz in pytz.common_timezones)
-        msgs = []
-        embeds = ctx.channel.permissions_for(ctx.me).embed_links
-        for page in pagify(msg, page_length=512):
-            if embeds:
-                msgs.append(discord.Embed(title=_("Timezones Available"), description=page))
-            else:
-                msgs.append(page)
-        await BaseMenu(
-            source=SimplePages(pages=msgs),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
-        ).start(ctx=ctx)
 
     async def check_notification_settings(self, guild: discord.Guild) -> str:
         reply = ""

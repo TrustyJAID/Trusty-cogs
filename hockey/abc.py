@@ -259,16 +259,6 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_hockey_timezone(
-        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def list_hockey_timezones(self, ctx: commands.Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def leaderboardset(
         self,
         ctx: commands.Context,
@@ -496,12 +486,6 @@ class MixinMeta(ABC):
     @abstractmethod
     async def set_pickems_message(
         self, ctx: commands.Context, *, message: Optional[str] = ""
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def set_pickems_timezone(
-        self, ctx: commands.Context, timezone: Optional[TimezoneFinder] = None
     ) -> None:
         raise NotImplementedError()
 

@@ -183,7 +183,7 @@ class Schedule(menus.PageSource):
             data = await resp.json()
         games = [game for date in data["dates"] for game in date["games"]]
         self.select_options = []
-        log.debug(games)
+        # log.debug(games)
         for count, game in enumerate(games):
             home_team = game["teams"]["home"]["team"]["name"]
             home_abr = TEAMS[home_team]["tri_code"]
@@ -439,7 +439,7 @@ class ScheduleList(menus.PageSource):
         if self.team not in ["all", None]:
             # if a team is provided get just that TEAMS data
             url += "&teamId=" + ",".join(str(TEAMS[t]["id"]) for t in self.team)
-        # log.debug(url)
+        log.debug(url)
         self._last_searched = f"<t:{date_timestamp}> to <t:{end_date_timestamp}>"
         async with self._session.get(url) as resp:
             data = await resp.json()
