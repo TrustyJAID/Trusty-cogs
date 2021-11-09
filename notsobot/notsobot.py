@@ -93,7 +93,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -1163,7 +1163,7 @@ class NotSoBot(commands.Cog):
 
     def do_glitch(self, b, amount, seed, iterations):
         img = Image.open(b)
-        is_gif = img.is_animated
+        is_gif = ((hasattr(img, "is_animated")) and (img.is_animated))
         if not is_gif:
             img = img.convert("RGB")
             b = BytesIO()
