@@ -25,7 +25,8 @@
     "requirements" : [
         "pillow",
         "opencv-python",
-        "numpy"
+        "numpy",
+        "Unidecode"
     ],
     "short" : "Create your own feels!",
     "tags" : [
