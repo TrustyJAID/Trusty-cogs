@@ -280,7 +280,7 @@ class GameDayChannels(MixinMeta):
                 try:
                     cur_channels = await self.config.guild(guild).gdc()
                     if cur_channels:
-                        cur_channel = self.bot.get_channel(cur_channels[0])
+                        cur_channel = guild.get_channel(cur_channels[0])
                     else:
                         cur_channel = None
                         # this is dumb but eh

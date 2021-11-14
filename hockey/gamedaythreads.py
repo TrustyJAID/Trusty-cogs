@@ -266,7 +266,7 @@ class GameDayThreads(MixinMeta):
                 try:
                     cur_channels = await self.config.guild(guild).gdt()
                     if cur_channels:
-                        cur_channel = self.bot.get_channel(cur_channels[0])
+                        cur_channel = guild.get_thread(cur_channels[0])
                     else:
                         cur_channel = None
                         # this is dumb but eh

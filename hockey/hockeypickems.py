@@ -192,7 +192,7 @@ class HockeyPickems(MixinMeta):
                 except ValueError:
                     # log.debug("Game %r missing message %s", game, message)
                     continue
-                channel = guild.get_channel(int(channel_id))
+                channel = guild.get_thread(int(channel_id))
                 if not channel:
                     # log.debug("Game %r missing channel", game)
                     continue
