@@ -304,7 +304,6 @@ class ServerStats(commands.Cog):
             ).format(
                 owner_mention=bold(str(owner.mention)),
                 owner=bold(str(owner)),
-                region=f"**{vc_regions.get(str(guild.region)) or str(guild.region)}**",
                 verif=bold(verif[str(guild.verification_level)]),
                 id=bold(str(guild.id)),
                 shard=shard,
