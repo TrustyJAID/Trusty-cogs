@@ -300,7 +300,7 @@ class ServerStats(commands.Cog):
         em.add_field(
             name=_("Utility:"),
             value=_(
-                "Owner: {owner_mention}\n{owner}\nRegion: {region}\nVerif. level: {verif}\nServer ID: {id}{shard}"
+                "Owner: {owner_mention}\n{owner}\nVerif. level: {verif}\nServer ID: {id}{shard}"
             ).format(
                 owner_mention=bold(str(owner.mention)),
                 owner=bold(str(owner)),
