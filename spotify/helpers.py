@@ -3,6 +3,7 @@ import logging
 import re
 from typing import Final, List, Pattern, Union
 
+import discord
 import tekore
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -101,6 +102,24 @@ def time_convert(length: Union[int, str]) -> int:
             return int(length)
         except ValueError:
             return 0
+
+
+async def song_embed(track: tekore.model.FullTrack, detailed: bool) -> discord.Embed:
+    em = discord.Embed(color=discord.Colour(0x1DB954))
+    url = f"https://open.spotify.com/track/{track.id}"
+    artist_title = f"{track.name} by " + ", ".join(a.name for a in track.artists)
+    album = getattr(track, "album", "")
+    if album:
+        album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
+    em.set_author(
+        name=track.name[:256],
+        url=url,
+        icon_url=SPOTIFY_LOGO,
+    )
+    em.description = f"[{artist_title}]({url})\n\n{album}"
+    if track.album.images:
+        em.set_thumbnail(url=track.album.images[0].url)
+    return em
 
 
 async def make_details(track: tekore.model.FullTrack, details: tekore.model.AudioFeatures) -> str:
@@ -271,6 +290,61 @@ class RecommendationsConverter(Converter):
                     ).format(prefix=ctx.clean_prefix)
                 )
         genre_str = r"|".join(i for i in ctx.cog.GENRES)
+        find_genre = re.compile(fr"\b({genre_str})\b", flags=re.I)
+        find_extra = find_rec.finditer(argument)
+        genres = list(find_genre.findall(argument))
+        song_data = SPOTIFY_RE.finditer(argument)
+        tracks: List[str] = []
+        artists: List[str] = []
+        if song_data:
+            for match in song_data:
+                if match.group(2) == "track":
+                    tracks.append(match.group(3))
+                if match.group(2) == "artist":
+                    artists.append(match.group(3))
+        query = {
+            "artist_ids": artists if artists else None,
+            "genres": genres if genres else None,
+            "track_ids": tracks if tracks else None,
+            "limit": 100,
+            "market": "from_token",
+        }
+        for match in find_extra:
+            try:
+                num_or_str = match.group(2).isdigit()
+                if num_or_str:
+                    result = VALID_RECOMMENDATIONS[match.group(1)](int(match.group(2)))
+                else:
+                    result = VALID_RECOMMENDATIONS[match.group(1)](match.group(2))
+                query[f"target_{match.group(1)}"] = result
+            except Exception:
+                log.exception("cannot match")
+                continue
+        if not any([query[k] for k in ["artist_ids", "genres", "track_ids"]]):
+            raise BadArgument(
+                _("You must provide either an artist or track seed or a genre for this to work")
+            )
+        return query
+
+    @staticmethod
+    async def convert_slash(cog: commands.Cog, argument: str) -> dict:
+        query = {}
+        argument = argument.replace("🧑‍🎨", ":artist:")
+        # because discord will replace this in URI's automatically 🙄
+        rec_str = r"|".join(i for i in VALID_RECOMMENDATIONS.keys())
+        find_rec = re.compile(fr"({rec_str})\W(.+)", flags=re.I)
+        if not cog.GENRES:
+            try:
+                cog.GENRES = await cog._spotify_client.recommendation_genre_seeds()
+            except Exception:
+                raise BadArgument(
+                    _(
+                        "The bot owner needs to set their Spotify credentials "
+                        "before this command can be used."
+                        " See `{prefix}spotify set creds` for more details."
+                    ).format(prefix=ctx.clean_prefix)
+                )
+        genre_str = r"|".join(i for i in cog.GENRES)
         find_genre = re.compile(fr"\b({genre_str})\b", flags=re.I)
         find_extra = find_rec.finditer(argument)
         genres = list(find_genre.findall(argument))

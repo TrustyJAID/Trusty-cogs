@@ -416,8 +416,8 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Spotify Playlists").format(user=menu.ctx.author.display_name),
-            icon_url=menu.ctx.author.avatar.url,
+            name=_("{user}'s Spotify Playlists").format(user=menu.author.display_name),
+            icon_url=menu.author.avatar.url,
         )
         msg = ""
         for playlist in playlists:
@@ -443,8 +443,8 @@ class SpotifyTopTracksPages(menus.ListPageSource):
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Top Tracks").format(user=menu.ctx.author.display_name),
-            icon_url=menu.ctx.author.avatar.url,
+            name=_("{user}'s Top Tracks").format(user=menu.author.display_name),
+            icon_url=menu.author.avatar.url,
         )
         msg = ""
         for track in tracks:
@@ -468,8 +468,8 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Top Artists").format(user=menu.ctx.author.display_name),
-            icon_url=menu.ctx.author.avatar.url,
+            name=_("{user}'s Top Artists").format(user=menu.author.display_name),
+            icon_url=menu.author.avatar.url,
         )
         msg = ""
         for artist in artists:
@@ -532,8 +532,8 @@ class SpotifyPages(menus.PageSource):
         if album:
             album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
         em.set_author(
-            name=f"{menu.ctx.author.display_name}" + _(" is currently listening to"),
-            icon_url=menu.ctx.author.avatar.url,
+            name=f"{menu.author.display_name}" + _(" is currently listening to"),
+            icon_url=menu.author.avatar.url,
             url=url,
         )
         repeat = (
@@ -1329,7 +1329,6 @@ class SpotifyUserMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 180,
@@ -1339,11 +1338,11 @@ class SpotifyUserMenu(discord.ui.View):
         super().__init__(
             timeout=timeout,
         )
+        self.author = None
         self.message = message
         self._source = source
         self.user_token = user_token
         self.cog = cog
-        self.use_external = use_external
         self.ctx = kwargs.get("ctx", None)
         self._running = True
         # self.loop = self.ctx.bot.loop.create_task(self.edit_menu_page_auto())
@@ -1366,6 +1365,7 @@ class SpotifyUserMenu(discord.ui.View):
         self.add_item(self.like_button)
         self.add_item(self.stop_button)
         self.select_view: Optional[SpotifySelectTrack] = None
+        self.interaction = None
 
     @property
     def source(self):
@@ -1374,8 +1374,10 @@ class SpotifyUserMenu(discord.ui.View):
     async def on_timeout(self):
         self._running = False
         # self.loop.cancel()
-        del self.cog.user_menus[self.ctx.author.id]
-        await self.message.edit(view=None)
+        if self.message is not None:
+            await self.message.edit(view=None)
+        else:
+            await self.interaction.followup.edit(view=None)
 
     async def edit_menu_page_auto(self):
         """
@@ -1415,6 +1417,13 @@ class SpotifyUserMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
         if self.ctx is None:
             self.ctx = ctx
         page = await self._source.get_page(0)
@@ -1446,10 +1455,10 @@ class SpotifyUserMenu(discord.ui.View):
                 self.source.context_name,
             )
             self.add_item(self.select_view)
-
-        self.message = await channel.send(**kwargs, view=self)
-        self.cog.current_menus[self.message.id] = ctx.author.id
-        self.cog.user_menus[ctx.author.id] = self.message.jump_url
+        if is_slash:
+            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
+        else:
+            self.message = await channel.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number):
@@ -1472,7 +1481,10 @@ class SpotifyUserMenu(discord.ui.View):
             self.remove_item(self.select_view)
             self.select_view = None
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs, view=self)
+        if self.message is not None:
+            await self.message.edit(**kwargs, view=self)
+        else:
+            await self.interaction.response.edit_message(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -1496,16 +1508,12 @@ class SpotifyUserMenu(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
         log.debug("Checking interaction")
-        if interaction.message.id != self.message.id:
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
+        self.interaction = interaction
         return True
 
 
@@ -1524,7 +1532,7 @@ class SpotifyDeviceView(discord.ui.View):
         self.ctx = ctx
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.id != self.ctx.author.id:
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 _("You are not authorized to interact with this."), ephemeral=True
             )
@@ -1555,7 +1563,6 @@ class SpotifySearchMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
@@ -1566,9 +1573,9 @@ class SpotifySearchMenu(discord.ui.View):
             timeout=timeout,
         )
         self._source = source
+        self.author = None
         self.message = message
         self.user_token = user_token
-        self.use_external = use_external
         self.cog = cog
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
@@ -1597,13 +1604,17 @@ class SpotifySearchMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
+        self.interaction = None
 
     @property
     def source(self):
         return self._source
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        if self.message:
+            await self.message.edit(view=None)
+        else:
+            await self.interaction.followup.edit(view=None)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1620,11 +1631,20 @@ class SpotifySearchMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
-        self.cog.current_menus[self.message.id] = ctx.author.id
+        if is_slash:
+            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
+        else:
+            self.message = await channel.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number):
@@ -1638,7 +1658,10 @@ class SpotifySearchMenu(discord.ui.View):
             log.debug(f"changing select {len(self.select_view.options)}")
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs, view=self)
+        if self.message is not None:
+            await self.message.edit(**kwargs, view=self)
+        else:
+            await self.interaction.response.edit_message(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -1658,16 +1681,13 @@ class SpotifySearchMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
+
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
+        self.interaction = interaction
         return True
 
 
@@ -1677,7 +1697,6 @@ class SpotifyBaseMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        use_external: bool,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
@@ -1687,6 +1706,7 @@ class SpotifyBaseMenu(discord.ui.View):
         super().__init__(
             timeout=timeout,
         )
+        self.author = None
         self.user_token = user_token
         self.cog = cog
         self.message = message
@@ -1696,13 +1716,17 @@ class SpotifyBaseMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
+        self.interaction = None
 
     @property
     def source(self):
         return self._source
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        if self.message:
+            await self.message.edit(view=None)
+        else:
+            await self.interaction.edit_original_message(view=None)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1719,11 +1743,21 @@ class SpotifyBaseMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
-        self.cog.current_menus[self.message.id] = ctx.author.id
+        if is_slash:
+            await ctx.response.send_message(**kwargs, view=self)
+            self.message = await ctx.original_message()
+        else:
+            self.message = await channel.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number):
@@ -1736,7 +1770,10 @@ class SpotifyBaseMenu(discord.ui.View):
             self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        if self.message is not None:
+            await self.message.edit(**kwargs)
+        else:
+            await self.interaction.response.edit_message(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -1756,16 +1793,12 @@ class SpotifyBaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        if interaction.user.id != self.ctx.author.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
+        self.interaction = interaction
         return True
 
     def _skip_single_arrows(self):
