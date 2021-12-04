@@ -654,7 +654,7 @@ class Game:
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
                 else:
                     allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
-            if self.game_state == "R" and "OT" in self.period_ord:
+            if self.game_type == "R" and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
                     if version_info >= VersionInfo.from_str("3.4.0"):
                         allowed_mentions = {
