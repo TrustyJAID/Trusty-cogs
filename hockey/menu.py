@@ -243,6 +243,7 @@ class GamesMenu(discord.ui.View):
         self.add_item(self.pick_team_button)
         self.add_item(self.change_date_button)
         self.select_view = None
+        self.author = None
 
     async def on_timeout(self):
         await self.message.edit(view=None)
@@ -300,12 +301,22 @@ class GamesMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+
         try:
             page = await self.source.get_page(0)
         except (IndexError, NoSchedule):
             return await channel.send(self.format_error(), view=self)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
+        if is_slash:
+            self.message = await ctx.followup.send(**kwargs, view=self)
+        else:
+            self.message = await channel.send(**kwargs, view=self)
         return self.message
 
     def format_error(self):
@@ -326,12 +337,7 @@ class GamesMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -438,7 +444,7 @@ class PlayerPages(menus.ListPageSource):
 
 class HockeySelectPlayer(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption]):
-        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
+        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a Player"))
 
     async def callback(self, interaction: discord.Interaction):
         player_id = int(self.values[0])
@@ -492,6 +498,7 @@ class BaseMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = HockeySelectPlayer(self.source.select_options[:25])
             self.add_item(self.select_view)
+        self.author = None
 
     @property
     def source(self):
@@ -542,9 +549,18 @@ class BaseMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs, view=self)
+        if is_slash:
+            self.author = ctx.user
+            return await ctx.followup.send(**kwargs, view=self, wait=True)
+        else:
+            self.author = ctx.author
+            return await channel.send(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int) -> None:
         max_pages = self._source.get_max_pages()
@@ -564,12 +580,7 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

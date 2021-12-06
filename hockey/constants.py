@@ -21,7 +21,7 @@ TEAMS = {
     "Arizona Coyotes": {
         "away": "#E2D6B5",
         "conference": "Western",
-        "division": "Pacific",
+        "division": "Central",
         "emoji": "ArizonaCoyotes:897522654561583155",
         "home": "#8C2633",
         "id": 53,
@@ -297,7 +297,7 @@ TEAMS = {
         "id": 3,
         "invite": "https://discord.gg/rrjvywb",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281718864/256x256/cut.png",
-        "team_url": "https://www.nhl.com/rangers",
+        "team_url": "https://www.nhl.com/nyrangers",
         "timezone": "US/Eastern",
         "nickname": ["rangers"],
         "tri_code": "NYR",
@@ -475,7 +475,7 @@ TEAMS = {
         "emoji": "TorontoMapleLeafs:664662927739191326",
         "home": "#003E7E",
         "id": 10,
-        "invite": "https://discord.gg/VwDTAhk",
+        "invite": "https://discord.gg/leafs",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281723324/256x256/cut.png",
         "team_url": "http://www.mapleleafs.com",
         "timezone": "US/Eastern",
@@ -535,7 +535,7 @@ TEAMS = {
         "emoji": "WinnipegJets:664664065112539154",
         "home": "#041E41",
         "id": 52,
-        "invite": "https://discord.gg/mqeJkYn",
+        "invite": "https://discord.gg/wpgjets",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281723512/256x256/cut.png",
         "team_url": "https://www.nhl.com/jets",
         "timezone": "US/Central",
@@ -993,4 +993,369 @@ TEAMS = {
         "invite": "No Server Found",
         "active": False,
     },
+}
+SLASH_COMMANDS = {
+    "name": "hockey",
+    "description": "Hockey commnads",
+    "options": [
+        {
+            "name": "games",
+            "description": "Current and upcoming NHL games",
+            "type": 1,
+            "options": [
+                {
+                    "name": "teams_and_date",
+                    "type": 3,
+                    "description": "Specific teams or dates you want to see game information for",
+                    "required": False,
+                }
+            ],
+        },
+        {
+            "name": "schedule",
+            "description": "Show the current NHL Schedule",
+            "type": 1,
+            "options": [
+                {
+                    "name": "teams_and_date",
+                    "type": 3,
+                    "description": "Specific teams or dates you want to see game information for",
+                    "required": False,
+                }
+            ],
+        },
+        {
+            "name": "player",
+            "description": "Show stats and information about any NHL Player",
+            "type": 1,
+            "options": [
+                {
+                    "name": "search",
+                    "type": 3,
+                    "description": "The name of the player to search for",
+                    "required": True,
+                }
+            ],
+        },
+        {
+            "name": "roster",
+            "description": "Show a team Roster for a specific year",
+            "type": 1,
+            "options": [
+                {
+                    "name": "search",
+                    "type": 3,
+                    "description": "The name of the player to search for",
+                    "required": True,
+                },
+                {
+                    "name": "season",
+                    "type": 3,
+                    "description": "The season roster to search for must be YYYY or YYYYYYYY.",
+                    "required": False,
+                },
+            ],
+        },
+        {
+            "name": "leaderboard",
+            "description": "Show the server Pickems leaderboard",
+            "type": 1,
+            "options": [
+                {
+                    "name": "leaderboard_type",
+                    "type": 3,
+                    "description": "Must be either seasonal, weekly, or worst.",
+                    "required": False,
+                }
+            ],
+        },
+        {
+            "name": "otherdiscords",
+            "description": "Get a team specific discord invite",
+            "type": 1,
+            "options": [
+                {
+                    "name": "team",
+                    "type": 3,
+                    "description": "The team server invite you want.",
+                    "required": True,
+                }
+            ],
+        },
+        {
+            "name": "pickems",
+            "description": "Manage Hockey Pickems settings",
+            "type": 2,
+            "options": [
+                {
+                    "name": "settings",
+                    "type": 1,
+                    "description": "Show this servers current pickems settings.",
+                },
+                {
+                    "name": "votes",
+                    "description": "Show your current votes on pickems in this server.",
+                    "type": 1,
+                },
+                {
+                    "name": "basecredits",
+                    "type": 1,
+                    "description": "Set the base rewards credits for pickems.",
+                    "options": [
+                        {
+                            "name": "amount",
+                            "type": 4,
+                            "required": True,
+                            "description": "Number of base credits to award.",
+                        }
+                    ],
+                },
+                {
+                    "name": "topcredits",
+                    "type": 1,
+                    "description": "Set the amount of credits awarded to the top x winners of pickems.",
+                    "options": [
+                        {
+                            "name": "amount",
+                            "type": 4,
+                            "required": True,
+                            "description": "Number of top credits to award.",
+                        }
+                    ],
+                },
+                {
+                    "name": "winners",
+                    "type": 1,
+                    "description": "Set how many top winners to revieve the weekly reward.",
+                    "options": [
+                        {
+                            "name": "amount",
+                            "type": 4,
+                            "required": True,
+                            "description": "Number of top winners to receive weekly reward.",
+                        }
+                    ],
+                },
+                {
+                    "name": "message",
+                    "type": 1,
+                    "description": "Set a custom message for each pickems page.",
+                    "options": [
+                        {
+                            "name": "message",
+                            "type": 3,
+                            "required": False,
+                            "description": "The message that is posted at the start of all pickems threads.",
+                        }
+                    ],
+                },
+                {
+                    "name": "setup",
+                    "type": 1,
+                    "description": "Setup pickems on this server.",
+                    "options": [
+                        {
+                            "name": "channel",
+                            "type": 7,
+                            "required": True,
+                            "description": "The channel that pickems threads will be created in.",
+                        }
+                    ],
+                },
+                {
+                    "name": "clear",
+                    "type": 1,
+                    "description": "Stop posting new pickems threads and clear existing pickems threads.",
+                },
+                {
+                    "name": "page",
+                    "type": 1,
+                    "description": "Setup a single days pickems information in the current channel.",
+                    "options": [
+                        {
+                            "name": "date",
+                            "type": 3,
+                            "required": True,
+                            "description": "Must be formatted like YYYY-MM-DD",
+                        }
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "gdt",
+            "description": "Manage Hockey Game Day Threads",
+            "type": 2,
+            "options": [
+                {
+                    "name": "settings",
+                    "type": 1,
+                    "description": "Show this servers current GDT settings.",
+                },
+                {
+                    "name": "delete",
+                    "type": 1,
+                    "description": "Delete all current game day threads for this server",
+                },
+                {
+                    "name": "defaultstate",
+                    "type": 1,
+                    "description": "Set specific state updates to use for game day threads",
+                    "options": [
+                        {
+                            "name": "state",
+                            "type": 3,
+                            "required": True,
+                            "description": "The state you want to add/remove from game day threads.",
+                            "choices": [
+                                {"name": "Game Previews", "value": "Preview"},
+                                {"name": "Live", "value": "Live"},
+                                {"name": "Final", "value": "Final"},
+                                {"name": "Goals", "value": "Goal"},
+                                {"name": "Period Recaps", "value": "Periodrecap"},
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "name": "create",
+                    "type": 1,
+                    "description": "Creates the next GDT for the server.",
+                },
+                {
+                    "name": "toggle",
+                    "type": 1,
+                    "description": "Toggle creating new Game Day Threads.",
+                },
+                {
+                    "name": "channel",
+                    "type": 1,
+                    "description": "Change the channel used for Game Day Threads.",
+                    "options": [
+                        {
+                            "name": "channel",
+                            "type": 7,
+                            "required": True,
+                            "description": "The channel that Game Day Threads will be created in.",
+                        }
+                    ],
+                },
+                {
+                    "name": "setup",
+                    "type": 1,
+                    "description": "Setup game day threads for a single team or all teams.",
+                    "options": [
+                        {
+                            "name": "team",
+                            "type": 3,
+                            "required": True,
+                            "description": "The team you want to setup Game Day Threads for.",
+                        },
+                        {
+                            "name": "channel",
+                            "type": 7,
+                            "required": False,
+                            "description": "The channel that Game Day Threads will be created in.",
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "set",
+            "description": "Setup goal updates, standings, etc.",
+            "type": 2,
+            "options": [
+                {
+                    "name": "settings",
+                    "type": 1,
+                    "description": "Show the current server hockey settings.",
+                    "required": False,
+                },
+                {
+                    "name": "poststandings",
+                    "type": 1,
+                    "description": "Setup automatic standings.",
+                    "options": [
+                        {
+                            "name": "standings_type",
+                            "description": "The type of standings you want to show.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "channel",
+                            "description": "The channel you want to post the standings to.",
+                            "type": 7,
+                            "required": False,
+                        },
+                    ],
+                },
+                {
+                    "name": "add",
+                    "type": 1,
+                    "description": "Adds NHL updates to a channel",
+                    "options": [
+                        {
+                            "name": "team",
+                            "description": "The team you want updates for. Do all for all teams.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "channel",
+                            "description": "The channel you want to post the standings to.",
+                            "type": 7,
+                            "required": False,
+                        },
+                    ],
+                },
+                {
+                    "name": "remove",
+                    "type": 1,
+                    "description": "Removes NHL updates from a channel",
+                    "options": [
+                        {
+                            "name": "team",
+                            "description": "The team you want updates for. Do all for all teams.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "channel",
+                            "description": "The channel you want to post the standings to.",
+                            "type": 7,
+                            "required": False,
+                        },
+                    ],
+                },
+                {
+                    "name": "stateupdates",
+                    "type": 1,
+                    "description": "Add or remove specific game updates from update channels.",
+                    "options": [
+                        {
+                            "name": "channel",
+                            "description": "The channel with game updates you want to edit.",
+                            "type": 7,
+                            "required": True,
+                        },
+                        {
+                            "name": "state",
+                            "description": "Set what type of game updates to be posted.",
+                            "type": 3,
+                            "required": False,
+                            "choices": [
+                                {"name": "Game Previews", "value": "Preview"},
+                                {"name": "Live", "value": "Live"},
+                                {"name": "Final", "value": "Final"},
+                                {"name": "Goals", "value": "Goal"},
+                                {"name": "Period Recaps", "value": "Periodrecap"},
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
 }

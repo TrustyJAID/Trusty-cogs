@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Sequence, Union
 
 import aiohttp
 import discord
@@ -13,7 +13,14 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 
-from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
+from .constants import (
+    BASE_URL,
+    CONFIG_ID,
+    CONTENT_URL,
+    HEADSHOT_URL,
+    SLASH_COMMANDS,
+    TEAMS,
+)
 from .dev import HockeyDev
 from .errors import InvalidFileError
 from .game import Game
@@ -62,7 +69,13 @@ class Hockey(
     def __init__(self, bot):
         super().__init__(self)
         self.bot = bot
-        default_global = {"teams": [], "created_gdc": False, "print": False, "last_day": 0}
+        default_global = {
+            "teams": [],
+            "created_gdc": False,
+            "print": False,
+            "last_day": 0,
+            "commands": {},
+        }
         for team in TEAMS:
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
             default_global["teams"].append(team_entry.to_json())
@@ -92,6 +105,7 @@ class Hockey(
             "ot_notifications": True,
             "so_notifications": True,
             "timezone": None,
+            "commands": {},
         }
         default_channel = {
             "team": [],
@@ -133,6 +147,8 @@ class Hockey(
         self.games_playing = False
         self.session = aiohttp.ClientSession()
         self._ready: asyncio.Event = asyncio.Event()
+        self.slash_commands = {"guilds": {}}
+        self.SLASH_COMMANDS = SLASH_COMMANDS
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
 
@@ -142,6 +158,22 @@ class Hockey(
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def slash_check_permissions(
+        self, interaction: discord.Interaction, member: discord.Member, **perms
+    ) -> bool:
+        """
+        Checks if the member has the correct permissions
+
+        """
+        guild = interaction.guild
+        allowed = False
+        if guild:
+            allowed |= await self.bot.is_mod(member)
+            allowed |= await self.bot.is_admin(member)
+            allowed |= await self.bot.is_owner(member)
+            allowed |= member.guild_permissions >= discord.Permissions(**perms)
+        return allowed
 
     def cog_unload(self):
         try:
@@ -174,6 +206,15 @@ class Hockey(
                 pass
         self.loop = asyncio.create_task(self.game_check_loop())
         await self.migrate_settings()
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            if data["commands"]:
+                command_id = data["commands"]["hockey"]
+                self.slash_commands["guilds"][guild_id] = {}
+                self.slash_commands["guilds"][guild_id][command_id] = self.hockey_slash_commands
+        global_commands = await self.config.commands()
+        if global_commands.get("hockey"):
+            self.slash_commands[global_commands.get("hockey")] = self.hockey_slash_commands
 
     async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()
@@ -454,3 +495,136 @@ class Hockey(
                 await ctx.send(_("Emoji changing cancelled"))
             break
         return msg
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        # log.debug(f"Interaction received {interaction.data['name']}")
+        interaction_id = int(interaction.data.get("id", 0))
+        if interaction.guild.id in self.slash_commands["guilds"]:
+            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
+                log.debug("Interaction in guilds")
+                await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
+                    interaction
+                )
+        if interaction_id in self.slash_commands:
+            await self.slash_commands[interaction_id](interaction)
+
+    #######################################################################
+    # Where parsing of slash commands happens                             #
+    #######################################################################
+
+    async def hockey_slash_commands(self, interaction: discord.Interaction) -> None:
+        """
+        Get information from NHL.com
+        """
+        command_mapping = {
+            "standings": self.standings,
+            "games": self.games,
+            "schedule": self.schedule,
+            "player": self.player,
+            "roster": self.roster,
+            "leaderboard": self.leaderboard,
+            "otherdiscords": self.otherdiscords,
+            "set": self.slash_hockey_set,
+            "pickems": self.slash_pickems_commands,
+            "gdt": self.slash_gdt_commands,
+        }
+        option = interaction.data["options"][0]["name"]
+        func = command_mapping[option]
+        try:
+            kwargs = {
+                i["name"]: i["value"] for i in interaction.data["options"][0].get("options", [])
+            }
+        except KeyError:
+            kwargs = {}
+            pass
+        await func(interaction, **kwargs)
+        pass
+
+    async def slash_pickems_commands(self, interaction: discord.Interaction) -> None:
+        """
+        Get information from NHL.com
+        """
+        command_mapping = {
+            "settings": self.pickems_settings,
+            "basecredits": self.pickems_credits_base,
+            "topcredits": self.pickems_credits_top,
+            "winners": self.pickems_credits_amount,
+            "message": self.set_pickems_message,
+            "setup": self.setup_auto_pickems,
+            "clear": self.delete_auto_pickems,
+            "page": self.pickems_page,
+            "votes": self.pickemsvotes,
+        }
+        option = interaction.data["options"][0]["options"][0]["name"]
+        func = command_mapping[option]
+        try:
+            kwargs = {
+                i["name"]: i["value"]
+                for i in interaction.data["options"][0]["options"][0].get("options", [])
+            }
+        except KeyError:
+            kwargs = {}
+            pass
+        await func(interaction, **kwargs)
+        pass
+
+    async def slash_gdt_commands(self, interaction: discord.Interaction) -> None:
+        command_mapping = {
+            "settings": self.gdt_settings,
+            "delete": self.gdt_delete,
+            "defaultstate": self.gdt_default_game_state,
+            "create": self.gdt_create,
+            "toggle": self.gdt_toggle,
+            "channel": self.gdt_channel,
+            "setup": self.gdt_setup,
+        }
+        option = interaction.data["options"][0]["options"][0]["name"]
+        func = command_mapping[option]
+        try:
+            kwargs = {
+                i["name"]: i["value"]
+                for i in interaction.data["options"][0]["options"][0].get("options", [])
+            }
+        except KeyError:
+            kwargs = {}
+            pass
+        await func(interaction, **kwargs)
+        pass
+
+    async def slash_hockey_set(self, interaction: discord.Interaction) -> None:
+        """
+        Get information from NHL.com
+        """
+        if not interaction.guild:
+            await interaction.response.send_message(
+                _("These commands are only available in a guild.")
+            )
+            return
+        if not await self.slash_check_permissions(
+            interaction, interaction.user, manage_messages=True
+        ):
+            await interaction.response.send_message(
+                _("You are not authorized to use this command."), ephemeral=True
+            )
+            return
+        command_mapping = {
+            "settings": self.hockey_settings,
+            "poststandings": self.post_standings,
+            "add": self.add_goals,
+            "remove": self.remove_goals,
+            "stateupdates": self.set_game_state_updates,
+        }
+        option = interaction.data["options"][0]["options"][0]["name"]
+        func = command_mapping[option]
+        try:
+            kwargs = {
+                i["name"]: i["value"]
+                for i in interaction.data["options"][0]["options"][0].get("options", [])
+            }
+        except KeyError:
+            kwargs = {}
+            pass
+        log.debug(kwargs)
+        await func(interaction, **kwargs)
+        pass

@@ -1,7 +1,8 @@
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import discord
+from discord.http import Route
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -24,44 +25,46 @@ class HockeySetCommands(MixinMeta):
     """
 
     @hockeyset_commands.command(name="settings")
-    async def hockey_settings(self, ctx: commands.Context) -> None:
+    async def hockey_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Show hockey settings for this server
         """
-        async with ctx.typing():
-            guild = ctx.message.guild
-            standings_channel = guild.get_channel(
-                await self.config.guild(guild).standings_channel()
-            )
-            post_standings = (
-                _("On") if await self.config.guild(guild).post_standings() else _("Off")
-            )
-            gdc_channels = await self.config.guild(guild).gdc()
-            if gdc_channels is None:
-                gdc_channels = []
-            if standings_channel is not None:
-                if ctx.channel.permissions_for(guild.me).embed_links:
-                    standings_chn = standings_channel.mention
-                else:
-                    standings_chn = standings_channel.name
-                standings_message = await self.config.guild(guild).standings_msg()
-                if standings_message:
-                    try:
-                        standings_msg = await standings_channel.fetch_message(standings_message)
-                    except (discord.errors.NotFound, discord.errors.Forbidden):
-                        standings_msg = None
-                        pass
-                else:
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
+            is_slash = True
+        else:
+            await ctx.trigger_typing()
+
+        guild = ctx.guild
+        standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
+        post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
+        gdc_channels = await self.config.guild(guild).gdc()
+        if gdc_channels is None:
+            gdc_channels = []
+        if standings_channel is not None:
+            if ctx.channel.permissions_for(guild.me).embed_links:
+                standings_chn = standings_channel.mention
+            else:
+                standings_chn = standings_channel.name
+            standings_message = await self.config.guild(guild).standings_msg()
+            if standings_message:
+                try:
+                    standings_msg = await standings_channel.fetch_message(standings_message)
+                except (discord.errors.NotFound, discord.errors.Forbidden):
                     standings_msg = None
-                if standings_msg is not None:
-                    if ctx.channel.permissions_for(guild.me).embed_links:
-                        standings_msg = (
-                            _("[Standings") + f" {post_standings}]({standings_msg.jump_url})"
-                        )
-                    else:
-                        standings_msg = (
-                            _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
-                        )
+                    pass
+            else:
+                standings_msg = None
+            if standings_msg is not None:
+                if ctx.channel.permissions_for(guild.me).embed_links:
+                    standings_msg = (
+                        _("[Standings") + f" {post_standings}]({standings_msg.jump_url})"
+                    )
+                else:
+                    standings_msg = (
+                        _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
+                    )
             else:
                 standings_chn = "None"
                 standings_msg = "None"
@@ -84,13 +87,16 @@ class HockeySetCommands(MixinMeta):
             )
             if ctx.channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(title=guild.name + _(" Hockey Settings"))
-                em.colour = await ctx.embed_colour()
+                em.colour = await self.bot.get_embed_colour(ctx.channel)
                 em.description = channels
                 em.add_field(
                     name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
                 )
                 em.add_field(name=_("Notifications"), value=notification_settings)
-                await ctx.send(embed=em)
+                if is_slash:
+                    await ctx.followup.send(embed=em)
+                else:
+                    await ctx.send(embed=em)
             else:
                 msg = _(
                     "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
@@ -102,11 +108,87 @@ class HockeySetCommands(MixinMeta):
                     standings_chn=standings_chn,
                     standings=standings_msg,
                 )
-                await ctx.send(msg)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
 
     #######################################################################
     # All Hockey setup commands                                           #
     #######################################################################
+
+    @hockeyset_commands.group(name="slash")
+    async def hockey_slash(self, ctx: commands.Context):
+        """
+        commands for enabling/disabling slash commands
+        """
+        pass
+
+    @hockey_slash.command(name="global")
+    @commands.is_owner()
+    async def hockey_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Enable Spotify commands as slash commands globally
+        """
+        route = Route("POST", f"/applications/{ctx.guild.me.id}/commands")
+        data = await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        command_id = int(data.get("id"))
+        log.info(data)
+        self.slash_commands[command_id] = self.hockey_slash_commands
+        async with self.config.commands() as commands:
+            commands["hockey"] = command_id
+        await ctx.tick()
+
+    @hockey_slash.command(name="globaldel")
+    @commands.is_owner()
+    async def hockey_global_slash_disable(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Disable Spotify commands as slash commands globally
+        """
+        commands = await self.config.commands()
+        command_id = commands["hockey"]
+        route = Route("DELETE", f"/applications/{ctx.guild.me.id}/commands/{command_id}")
+        await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        async with self.config.commands() as commands:
+            del commands["hockey"]
+        await ctx.tick()
+
+    @hockey_slash.command(name="enable")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def hockey_guild_slash(self, ctx: commands.Context):
+        """
+        Enable Spotify commands as slash commands in this server
+        """
+        route = Route("POST", f"/applications/{ctx.me.id}/guilds/{ctx.guild.id}/commands")
+        data = await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        command_id = int(data.get("id"))
+        log.info(data)
+        if ctx.guild.id not in self.slash_commands["guilds"]:
+            self.slash_commands["guilds"][ctx.guild.id] = {}
+        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.hockey_slash_commands
+        async with self.config.guild(ctx.guild).commands() as commands:
+            commands["hockey"] = command_id
+        await ctx.tick()
+
+    @hockey_slash.command(name="disable")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def hockey_delete_guild_slash(self, ctx: commands.Context):
+        """
+        Delete servers slash commands
+        """
+        commands = await self.config.guild(ctx.guild).commands()
+        command_id = commands.get("hockey", None)
+        if not command_id:
+            await ctx.send(_("Slash commands are not enabled in this guild."))
+            return
+        route = Route(
+            "DELETE", f"/applications/{ctx.me.id}/guilds/{ctx.guild.id}/commands/{command_id}"
+        )
+        await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        del self.slash_commands["guilds"][ctx.guild.id][command_id]
+        await ctx.tick()
 
     async def check_notification_settings(self, guild: discord.Guild) -> str:
         reply = ""
@@ -138,7 +220,9 @@ class HockeySetCommands(MixinMeta):
         return reply
 
     @hockeyset_commands.group(name="notifications")
-    async def hockey_notifications(self, ctx: commands.Context) -> None:
+    async def hockey_notifications(
+        self, ctx: Union[commands.Context, discord.Interaction]
+    ) -> None:
         """
         Settings related to role notifications
         """
@@ -147,7 +231,7 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="goal")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_goal_notification_style(
-        self, ctx: commands.Context, on_off: Optional[bool] = None
+        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers goal notification style. Options are:
@@ -187,7 +271,7 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="otnotifications")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_ot_notification_style(
-        self, ctx: commands.Context, on_off: Optional[bool] = None
+        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers Regular Season OT notification style. Options are:
@@ -229,7 +313,7 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="sonotifications")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_so_notification_style(
-        self, ctx: commands.Context, on_off: Optional[bool] = None
+        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers Shootout notification style. Options are:
@@ -271,7 +355,7 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="game")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_game_start_notification_style(
-        self, ctx: commands.Context, on_off: Optional[bool] = None
+        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers game start notification style. Options are:
@@ -309,7 +393,10 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="goalchannel")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_goal_notification_style(
-        self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        channel: discord.TextChannel,
+        on_off: Optional[bool] = None,
     ) -> None:
         """
         Set the specified channels goal notification style. Options are:
@@ -352,7 +439,10 @@ class HockeySetCommands(MixinMeta):
     @hockey_notifications.command(name="gamechannel")
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_game_start_notification_style(
-        self, ctx: commands.Context, channel: discord.TextChannel, on_off: Optional[bool] = None
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        channel: discord.TextChannel,
+        on_off: Optional[bool] = None,
     ) -> None:
         """
         Set the specified channels game start notification style. Options are:
@@ -396,7 +486,7 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
     async def post_standings(
         self,
-        ctx: commands.Context,
+        ctx: Union[commands.Context, discord.Interaction],
         standings_type: str,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
@@ -407,27 +497,40 @@ class HockeySetCommands(MixinMeta):
         `[channel]` The channel you want standings to be posted into, if not provided
         this will use the current channel.
         """
-        guild = ctx.message.guild
+        is_slash = False
+        guild = ctx.guild
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
+            is_slash = True
+            if channel:
+                channel = guild.get_channel(int(channel))
+
         if channel is None:
-            channel = ctx.message.channel
-        channel_perms = channel.permissions_for(ctx.me)
+            channel = ctx.channel
+        channel_perms = channel.permissions_for(guild.me)
         if not (
             channel_perms.send_messages
             and channel_perms.embed_links
             and channel_perms.read_message_history
         ):
-            return await ctx.send(
-                _(
-                    "I require permission to send messages, embed "
-                    "links, and read message history in {channel}."
-                ).format(channel=channel.mention)
-            )
+            msg = _(
+                "I require permission to send messages, embed "
+                "links, and read message history in {channel}."
+            ).format(channel=channel.mention)
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
+
         if standings_type.lower() not in DIVISIONS + CONFERENCES + ["all"]:
-            await ctx.send(
-                _("You must choose from: {standings_types}.").format(
-                    standings_types=humanize_list(DIVISIONS + CONFERENCES + ["all"])
-                )
+            msg = _("You must choose from: {standings_types}.").format(
+                standings_types=humanize_list(DIVISIONS + CONFERENCES + ["all"])
             )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
 
         standings, page = await Standings.get_team_standings(
@@ -439,18 +542,24 @@ class HockeySetCommands(MixinMeta):
             em = await Standings.all_standing_embed(standings)
         await self.config.guild(guild).standings_type.set(standings_type)
         await self.config.guild(guild).standings_channel.set(channel.id)
-        await ctx.send(_("Sending standings to {channel}").format(channel=channel.mention))
+        msg = _("Sending standings to {channel}").format(channel=channel.mention)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
         message = await channel.send(embed=em)
         await self.config.guild(guild).standings_msg.set(message.id)
-        await ctx.send(
-            _("{standings_type} standings will now be automatically updated in {channel}.").format(
-                standings_type=standings_type, channel=channel.mention
-            )
-        )
+        msg = _(
+            "{standings_type} standings will now be automatically updated in {channel}."
+        ).format(standings_type=standings_type, channel=channel.mention)
+        if is_slash:
+            await ctx.channel.send(msg)
+        else:
+            await ctx.send(msg)
         await self.config.guild(guild).post_standings.set(True)
 
     @hockeyset_commands.command()
-    async def togglestandings(self, ctx: commands.Context) -> None:
+    async def togglestandings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Toggles automatic standings updates
 
@@ -465,13 +574,16 @@ class HockeySetCommands(MixinMeta):
 
     @hockeyset_commands.command(name="stateupdates")
     async def set_game_state_updates(
-        self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        channel: discord.TextChannel,
+        state: HockeyStates,
     ) -> None:
         """
-        Set what type of game updates to be posted in the designated channel.
+        Toggle specific updates from a designated channel
 
         `<channel>` is a text channel for the updates.
-        `<state>` must be any combination of `preview`, `live`, `final`, `goal` and `periodrecap`.
+        `<state>` must be one of `preview`, `live`, `final`, `goal` and `periodrecap`.
 
         `preview` updates are the pre-game notifications 60, 30, and 10 minutes
         before the game starts and the pre-game notification at the start of the day.
@@ -482,54 +594,27 @@ class HockeySetCommands(MixinMeta):
         `goal` is all goal updates.
         `periodrecap` is a recap of the period at the intermission.
         """
-        await self.config.channel(channel).game_states.set(list(set(state)))
-        await ctx.send(
-            _("{channel} game updates set to {states}").format(
-                channel=channel.mention, states=humanize_list(list(set(state)))
-            )
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+            channel = ctx.guild.get_channel(int(channel))
+        cur_states = []
+        async with self.config.channel(channel).game_states() as game_states:
+            if state in game_states:
+                game_states.remove(state)
+            else:
+                game_states.append(state)
+            cur_states = game_states
+        msg = _("{channel} game updates set to {states}").format(
+            channel=channel.mention, states=humanize_list(cur_states) if cur_states else _("None")
         )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
         if not await self.config.channel(channel).team():
-            await ctx.send(
-                _(
-                    "You have not setup any team updates in {channel}. "
-                    "You can do so with `{prefix}hockeyset add`."
-                ).format(channel=channel.mention, prefix=ctx.prefix)
-            )
-
-    @hockeyset_commands.command(name="publishupdates", hidden=True)
-    @commands.is_owner()
-    async def set_game_publish_updates(
-        self, ctx: commands.Context, channel: discord.TextChannel, *state: HockeyStates
-    ) -> None:
-        """
-        Set what type of game updates will be published in the designated news channel.
-
-        Note: Discord has a limit on the number of published messages per hour.
-        This does not error on the bot and can lead to waiting forever for it to update.
-
-        `<channel>` is a text channel for the updates.
-        `<state>` must be any combination of `preview`, `live`, `final`, and `periodrecap`.
-
-        `preview` updates are the pre-game notifications 60, 30, and 10 minutes
-        before the game starts and the pre-game notification at the start of the day.
-
-        Note: This may disable pickems if it is not selected.
-        `live` are the period start notifications.
-        `final` is the final game update including 3 stars.
-        `periodrecap` is a recap of the period at the intermission.
-        """
-        if not channel.is_news():
-            return await ctx.send(
-                _("The designated channel is not a news channel that I can publish in.")
-            )
-        await self.config.channel(channel).publish_states.set(list(set(state)))
-        await ctx.send(
-            _("{channel} game updates set to publish {states}").format(
-                channel=channel.mention, states=humanize_list(list(set(state)))
-            )
-        )
-        if not await self.config.channel(channel).team():
-            await ctx.send(
+            await ctx.channel.send(
                 _(
                     "You have not setup any team updates in {channel}. "
                     "You can do so with `{prefix}hockeyset add`."
@@ -538,7 +623,10 @@ class HockeySetCommands(MixinMeta):
 
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
     async def add_goals(
-        self, ctx: commands.Context, team: HockeyTeams, channel: Optional[discord.TextChannel]
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        team: HockeyTeams,
+        channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
         Adds a hockey team goal updates to a channel do 'all' for all teams
@@ -548,33 +636,54 @@ class HockeySetCommands(MixinMeta):
         `[channel]` The channel to post updates into. Defaults to the current channel
         if not provided.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
+                await ctx.response.send_message(
+                    _("You are not authorized to use this command."), ephemeral=True
+                )
+                return
+            await ctx.response.defer()
+            team = await HockeyTeams().convert(ctx, team)
+            if channel:
+                channel = ctx.guild.get_channel(int(channel))
         if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+            if not is_slash:
+                await ctx.send(_("You must provide a valid current team."))
+            else:
+                await ctx.followup.send(_("You must provide a valid current team."))
+            return
         # team_data = await self.get_team(team)
         if channel is None:
-            channel = ctx.message.channel
+            channel = ctx.channel
         cur_teams = await self.config.channel(channel).team()
         cur_teams = [] if cur_teams is None else cur_teams
         if team in cur_teams:
             # await self.config.channel(channel).team.set([team])
-            return await ctx.send(
-                _("{team} is already posting updates in {channel}").format(
-                    team=team, channel=channel.mention
-                )
+            msg = _("{team} is already posting updates in {channel}").format(
+                team=team, channel=channel.mention
             )
+            if not is_slash:
+                await ctx.send(msg)
+            else:
+                await ctx.followup.send(msg)
+            return
         else:
             cur_teams.append(team)
             await self.config.channel(channel).team.set(cur_teams)
-        await ctx.send(
-            _("{team} goals will be posted in {channel}").format(
-                team=team, channel=channel.mention
-            )
+        msg = _("{team} goals will be posted in {channel}").format(
+            team=team, channel=channel.mention
         )
+        if not is_slash:
+            await ctx.send(msg)
+        else:
+            await ctx.followup.send(msg)
 
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
     async def remove_goals(
         self,
-        ctx: commands.Context,
+        ctx: Union[commands.Context, discord.Interaction],
         team: Optional[HockeyTeams] = None,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
@@ -582,37 +691,64 @@ class HockeySetCommands(MixinMeta):
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
+                await ctx.response.send_message(
+                    _("You are not authorized to use this command."), ephemeral=True
+                )
+                return
+            await ctx.response.defer()
+            team = await HockeyTeams().convert(ctx, team)
+            if channel:
+                channel = ctx.guild.get_channel(int(channel))
+        if team is None:
+            if not is_slash:
+                await ctx.send(_("You must provide a valid current team."))
+            else:
+                await ctx.followup.send(_("You must provide a valid current team."))
+            return
         if channel is None:
-            channel = ctx.message.channel
+            channel = ctx.channel
         cur_teams = await self.config.channel(channel).team()
         if not cur_teams:
-            await ctx.send(
-                _("No teams are currently being posted in {channel}.").format(
-                    channel=channel.mention
-                )
+            msg = _("No teams are currently being posted in {channel}.").format(
+                channel=channel.mention
             )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if team is None:
             await self.config.channel(channel).clear()
-            await ctx.send(
-                _("No game updates will be posted in {channel}.").format(channel=channel.mention)
-            )
+            msg = _("No game updates will be posted in {channel}.").format(channel=channel.mention)
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
+
         if team is not None:
             # guild = ctx.message.guild
             if team in cur_teams:
                 cur_teams.remove(team)
                 if cur_teams == []:
                     await self.config.channel(channel).clear()
-                    await ctx.send(
-                        _("No game updates will be posted in {channel}.").format(
-                            channel=channel.mention
-                        )
+                    msg = _("No game updates will be posted in {channel}.").format(
+                        channel=channel.mention
                     )
+                    if is_slash:
+                        await ctx.followup.send(msg)
+                    else:
+                        await ctx.send(msg)
                 else:
                     await self.config.channel(channel).team.set(cur_teams)
-                    await ctx.send(
-                        _("{team} goal updates removed from {channel}.").format(
-                            team=team, channel=channel.mention
-                        )
+                    msg = _("{team} goal updates removed from {channel}.").format(
+                        team=team, channel=channel.mention
                     )
+                    if is_slash:
+                        await ctx.followup.send(msg)
+                    else:
+                        await ctx.send(msg)

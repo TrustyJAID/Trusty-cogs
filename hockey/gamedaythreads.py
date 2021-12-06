@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 import discord
 from redbot.core import commands
@@ -28,7 +28,7 @@ class GameDayThreads(MixinMeta):
     @commands.group()
     @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def gdt(self, ctx: commands.Context) -> None:
+    async def gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Game Day Thread setup for the server
 
@@ -38,71 +38,96 @@ class GameDayThreads(MixinMeta):
         """
 
     @gdt.command(name="settings")
-    async def gdt_settings(self, ctx: commands.Context) -> None:
+    async def gdt_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Show the current Game Day Thread Settings
         """
-        async with ctx.typing():
-            guild = ctx.message.guild
-            create_threads = await self.config.guild(guild).create_threads()
-            if create_threads is None:
-                await ctx.send(_("Game Day Threads are not setup on this server."))
-                return
-            team = await self.config.guild(guild).gdt_team()
-            if team is None:
-                team = "None"
-            threads = await self.config.guild(guild).gdt()
-            channel = guild.get_channel(await self.config.guild(guild).gdt_channel())
-            game_states = await self.config.guild(guild).gdt_state_updates()
-            if channel is not None:
-                channel = channel.name
-            if threads is not None:
-                created_threads = ""
-                for channel in threads:
-                    chn = guild.get_thread(channel)
-                    if chn is not None:
-                        created_threads += f"{chn.mention}\n"
-                    else:
-                        created_threads += "<#{}>\n".format(channel)
-                if len(threads) == 0:
-                    created_threads = "None"
-            else:
-                created_threads = "None"
-            if not ctx.channel.permissions_for(guild.me).embed_links:
-                msg = _(
-                    "```GDT settings for {guild}\nCreate Game Day Threads: {create_threads}"
-                    "\nTeam: {team}\n"
-                    "Current Threads: {created_threads}\nDefault Game State: {game_states}\n```"
-                ).format(
-                    guild=guild.name,
-                    create_threads=create_threads,
-                    team=team,
-                    created_threads=created_threads,
-                    game_states=humanize_list(game_states),
-                )
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
 
+        guild = ctx.guild
+        create_threads = await self.config.guild(guild).create_threads()
+        if create_threads is None:
+            msg = _("Game Day Threads are not setup on this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
                 await ctx.send(msg)
-            if ctx.channel.permissions_for(guild.me).embed_links:
-                em = discord.Embed(title=_("GDT settings for ") + guild.name)
-                em.colour = await ctx.embed_colour()
-                em.add_field(name=_("Create Game Day Threads"), value=str(create_threads))
-                em.add_field(name=_("Team"), value=str(team))
-                em.add_field(name=_("Current Threads"), value=created_threads[:1024])
-                if not game_states:
-                    game_states = ["None"]
-                em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
+            return
+        team = await self.config.guild(guild).gdt_team()
+        if team is None:
+            team = "None"
+        threads = await self.config.guild(guild).gdt()
+        channel = guild.get_channel(await self.config.guild(guild).gdt_channel())
+        game_states = await self.config.guild(guild).gdt_state_updates()
+        if channel is not None:
+            channel = channel.name
+        if threads is not None:
+            created_threads = ""
+            for channel in threads:
+                chn = guild.get_thread(channel)
+                if chn is not None:
+                    created_threads += f"{chn.mention}\n"
+                else:
+                    created_threads += "<#{}>\n".format(channel)
+            if len(threads) == 0:
+                created_threads = "None"
+        else:
+            created_threads = "None"
+        if not ctx.channel.permissions_for(guild.me).embed_links:
+            msg = _(
+                "```GDT settings for {guild}\nCreate Game Day Threads: {create_threads}"
+                "\nTeam: {team}\n"
+                "Current Threads: {created_threads}\nDefault Game State: {game_states}\n```"
+            ).format(
+                guild=guild.name,
+                create_threads=create_threads,
+                team=team,
+                created_threads=created_threads,
+                game_states=humanize_list(game_states),
+            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+        if ctx.channel.permissions_for(guild.me).embed_links:
+            em = discord.Embed(title=_("GDT settings for ") + guild.name)
+            em.colour = await self.bot.get_embed_colour(ctx.channel)
+            em.add_field(name=_("Create Game Day Threads"), value=str(create_threads))
+            em.add_field(name=_("Team"), value=str(team))
+            em.add_field(name=_("Current Threads"), value=created_threads[:1024])
+            if not game_states:
+                game_states = ["None"]
+            em.add_field(name=_("Default Game States"), value=humanize_list(game_states))
+            if is_slash:
+                await ctx.followup.send(embed=em)
+            else:
                 await ctx.send(embed=em)
 
     @gdt.command(name="delete")
-    async def gdt_delete(self, ctx: commands.Context) -> None:
+    async def gdt_delete(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
-        Delete all current game day channels for the server
+        Delete all current game day threads for the server
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
         await self.delete_gdt(ctx.guild)
-        await ctx.send(_("Game day channels deleted."))
+        msg = _("Game day channels deleted.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @gdt.command(name="defaultstate")
-    async def gdt_default_game_state(self, ctx: commands.Context, *state: HockeyStates) -> None:
+    async def gdt_default_game_state(
+        self, ctx: Union[commands.Context, discord.Interaction], state: HockeyStates
+    ) -> None:
         """
         Set the default game state updates for Game Day Channels.
 
@@ -113,78 +138,120 @@ class GameDayThreads(MixinMeta):
         `final` is the final game update including 3 stars.
         `goal` is all the goal updates.
         """
-        await self.config.guild(ctx.guild).gdt_state_updates.set(list(set(state)))
-        if state:
-            await ctx.send(
-                _("GDT game updates set to {states}").format(
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
+        cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
+        if state in cur_state:
+            cur_state.remove(state)
+        else:
+            cur_state.append(state)
+        await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
+        if cur_state:
+            msg = _("GDT game updates set to {states}").format(
                     states=humanize_list(list(set(state)))
                 )
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
         else:
-            await ctx.send(_("GDT game updates not set"))
+            msg = _("GDT game updates not set")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
 
     @gdt.command(name="create")
-    async def gdt_create(self, ctx: commands.Context) -> None:
+    async def gdt_create(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Creates the next gdt for the server
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
         if not await self.config.guild(ctx.guild).gdt_team():
-            return await ctx.send(_("No team was setup for game day channels in this server."))
+            msg = _("No team was setup for game day channels in this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
         if await self.config.guild(ctx.guild).create_threads():
             await self.create_gdt(ctx.guild)
         else:
-            return await ctx.send(
-                _("You need to first toggle channel creation with `{prefix}gdt toggle`.").format(
+            msg = _("You need to first toggle channel creation with `{prefix}gdt toggle`.").format(
                     prefix=ctx.clean_prefix
                 )
-            )
-        await ctx.send(_("Game day threads created."))
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
+        msg = _("Game day threads created.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @gdt.command(name="toggle")
-    async def gdt_toggle(self, ctx: commands.Context) -> None:
+    async def gdt_toggle(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Toggles the game day channel creation on this server
         """
-        guild = ctx.message.guild
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
+        guild = ctx.guild
         if await self.config.guild(guild).create_channels():
-            await ctx.send(
-                _(
+            msg = _(
                     "You cannot have both game day channels and game day threads in the same server. "
                     "Use `{prefix}gdc toggle` first to disable game day channels then try again."
                 ).format(prefix=ctx.clean_prefix)
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         cur_setting = not await self.config.guild(guild).create_threads()
         verb = _("will") if cur_setting else _("won't")
         msg = _("Game day channels ") + verb + _(" be created on this server.")
         await self.config.guild(guild).create_threads.set(cur_setting)
-        await ctx.send(msg)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @gdt.command(name="channel")
-    async def gdt_channel(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
+    async def gdt_channel(
+        self, ctx: Union[commands.Context, discord.Interaction], channel: discord.TextChannel
+    ) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.
         """
-        guild = ctx.message.guild
+        guild = ctx.guild
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
 
         # cur_setting = await self.config.guild(guild).category()
 
         msg = _("Game day threads will be created in {channel}.").format(channel=channel.mention)
         await self.config.guild(guild).gdt_channel.set(channel.id)
-        await ctx.send(msg)
-
-    @gdt.command(name="autodelete", hidden=True)
-    async def gdt_autodelete(self, ctx: commands.Context) -> None:
-        """
-        Toggle's auto deletion of game day channels.
-
-        autodelete is not necessary anymore
-        """
-        pass
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @gdt.command(name="test")
     @commands.is_owner()
-    async def test_gdt(self, ctx: commands.Context) -> None:
+    async def test_gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
         Test checking for new game day channels
         """
@@ -195,7 +262,7 @@ class GameDayThreads(MixinMeta):
     @commands.guild_only()
     async def gdt_setup(
         self,
-        ctx: commands.Context,
+        ctx: Union[commands.Context, discord.Interaction],
         team: HockeyTeams,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
@@ -209,21 +276,37 @@ class GameDayThreads(MixinMeta):
         `[channel]` The channel that game day threads will be created in. If not provided will default
         to the current text channel.
         """
-        guild = ctx.message.guild
+        guild = ctx.guild
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
         if await self.config.guild(guild).create_channels():
-            await ctx.send(
-                _(
+            msg = _(
                     "You cannot have both game day channels and game day threads in the same server. "
                     "Use `{prefix}gdc toggle` first to disable game day channels then try again."
                 ).format(prefix=ctx.clean_prefix)
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+            msg = _("You must provide a valid current team.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         if channel is None:
             channel = ctx.channel
         if not channel.permissions_for(guild.me).create_public_threads:
-            await ctx.send(_("I don't have permission to create public threads in this channel."))
+            msg = _("I don't have permission to create public threads in this channel.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         await self.config.guild(guild).gdt_channel.set(channel.id)
         await self.config.guild(guild).gdt_team.set(team)
@@ -234,11 +317,13 @@ class GameDayThreads(MixinMeta):
             game_list = await Game.get_games(session=self.session)
             for game in game_list:
                 await self.create_gdt(guild, game)
-        await ctx.send(
-            _("Game Day threads for {team} setup in {channel}").format(
+        msg = _("Game Day threads for {team} setup in {channel}").format(
                 team=team, channel=channel.mention
             )
-        )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     #######################################################################
     # GDT logic                                                           #
@@ -384,5 +469,5 @@ class GameDayThreads(MixinMeta):
             try:
                 await self.config.channel(chn).clear()
             except Exception:
-                log.exception(f"Cannot delete GDC channels in {guild.id}")
+                log.exception(f"Cannot delete GDT threads in {guild.id}")
         await self.config.guild(guild).gdt.clear()

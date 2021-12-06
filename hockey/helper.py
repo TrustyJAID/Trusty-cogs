@@ -155,13 +155,14 @@ class SelectTeamMenu(discord.ui.Select):
 
 
 class SelectTeamView(discord.ui.View):
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: Context, author: discord.Member):
         super().__init__(timeout=180)
         self.ctx = ctx
+        self.author = author
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -186,8 +187,13 @@ class HockeyTeams(Converter):
         else:
             # This is just some extra stuff to correct the team picker
             msg = _("There's multiple teams with that name, pick one of these:\n")
-
-            view = SelectTeamView(ctx)
+            is_slash = False
+            if isinstance(ctx, discord.Interaction):
+                is_slash = True
+                author = ctx.user
+            else:
+                author = ctx.author
+            view = SelectTeamView(ctx, author)
             menu = SelectTeamMenu(max_values=1, min_values=1, placeholder=_("Pick a team"))
             for team in team_list[:25]:
                 emoji_str = TEAMS[team]["emoji"]
@@ -198,7 +204,10 @@ class HockeyTeams(Converter):
                     emoji = None
                 menu.add_option(emoji=emoji, label=team)
             view.add_item(menu)
-            await ctx.send(msg, view=view)
+            if is_slash:
+                await ctx.followup.send(msg, view=view)
+            else:
+                await ctx.send(msg, view=view)
             await view.wait()
             if len(menu.values) == 0:
                 return None
@@ -377,7 +386,7 @@ async def get_channel_obj(
     between the two rather than duplicating the code
     """
     if not data["guild_id"]:
-        channel = bot.get_channel(id=channel_id)
+        channel = bot.get_channel(channel_id)
         if not channel:
             await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
             log.info(f"{channel_id} channel was removed because it no longer exists")
