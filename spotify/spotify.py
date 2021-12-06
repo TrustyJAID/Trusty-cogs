@@ -12,7 +12,6 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .command_structure import SLASH_COMMANDS
 from .helpers import SPOTIFY_RE, InvalidEmoji
-from .slash_commands import SpotifySlash
 from .spotify_commands import SpotifyCommands
 
 try:
@@ -27,7 +26,7 @@ _ = Translator("Spotify", __file__)
 
 
 @cog_i18n(_)
-class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
+class Spotify(SpotifyCommands, commands.Cog):
     """
     Display information from Spotify's API
     """
@@ -83,41 +82,8 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
         self.temp_cache = {}
         if DASHBOARD:
             self.rpc_extension = DashboardRPC_Spotify(self)
-        self.slash_commands = {}
+        self.slash_commands = {"guilds": {}}
         self.SLASH_COMMANDS = SLASH_COMMANDS
-
-    async def parse_slash(self, interaction: discord.Interaction):
-        command_mapping = {
-            "now": self.slash_now,
-            "recommendations": self.slash_recommendations,
-            "forgetme": self.slash_forgetme,
-            "me": self.slash_me,
-            "search": self.slash_search,
-            "genres": self.slash_genres,
-            "recent": self.slash_recently_played,
-            "pause": self.slash_pause,
-            "resume": self.slash_resume,
-            "next": self.slash_next,
-            "previous": self.slash_previous,
-            "play": self.slash_play,
-            "queue": self.slash_queue_add,
-            "repeat": self.slash_repeat,
-            "seek": self.slash_seek,
-            "volume": self.slash_volume,
-            "device": self.slash_device,
-            "playlist": self.slash_playlists,
-            "set": self.slash_set,
-        }
-        option = interaction.data["options"][0]["name"]
-        func = command_mapping[option]
-        try:
-            kwargs = {
-                i["name"]: i["value"] for i in interaction.data["options"][0].get("options", [])
-            }
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
 
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
@@ -126,9 +92,11 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
         interaction_id = int(interaction.data.get("id", 0))
         log.debug(interaction.id)
         log.debug(interaction_id)
-        if interaction.guild.id in self.slash_commands:
-            if interaction_id in self.slash_commands[interaction.guild.id]:
-                await self.slash_commands[interaction.guild.id][interaction_id](interaction)
+        if interaction.guild.id in self.slash_commands["guilds"]:
+            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
+                await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
+                    interaction
+                )
         if interaction_id in self.slash_commands:
             await self.slash_commands[interaction_id](interaction)
 
@@ -298,15 +266,17 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
         all_guilds = await self.config.all_guilds()
         for guild_id, data in all_guilds.items():
             if data["commands"]:
-                self.slash_commands[guild_id] = {}
+                self.slash_commands["guilds"][guild_id] = {}
                 for command, command_id in data["commands"].items():
                     if command == "play on spotify":
-                        self.slash_commands[guild_id][command_id] = self.play_from_message
+                        self.slash_commands["guilds"][guild_id][
+                            command_id
+                        ] = self.play_from_message
                     if command == "spotify":
-                        self.slash_commands[guild_id][command_id] = self.parse_slash
+                        self.slash_commands["guilds"][guild_id][command_id] = self.spotify_com
         commands = await self.config.commands()
         for command_name, command_id in commands.items():
-            self.slash_commands[command_id] = self.parse_slash
+            self.slash_commands[command_id] = self.spotify_com
         self._ready.set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:

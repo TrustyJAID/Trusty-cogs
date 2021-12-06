@@ -1259,12 +1259,9 @@ class StopButton(discord.ui.Button):
         self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
+        log.debug("deleting message")
+        await interaction.message.delete()
         self.view.stop()
-        if self.view.message.id in self.view.cog.current_menus:
-            del self.view.cog.current_menus[self.view.message.id]
-        if self.view.ctx.author.id in self.view.cog.user_menus:
-            del self.view.cog.user_menus[self.view.ctx.author.id]
-        await self.view.message.delete()
 
 
 class ForwardButton(discord.ui.Button):
@@ -1855,5 +1852,4 @@ class SpotifyBaseMenu(discord.ui.View):
     ) -> None:
         """stops the pagination session."""
         self.stop()
-        del self.cog.current_menus[self.message.id]
-        await self.message.delete()
+        await interaction.message.delete()

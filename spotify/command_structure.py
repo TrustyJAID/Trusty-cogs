@@ -12,7 +12,13 @@ SLASH_COMMANDS = {
                     "type": 5,
                     "description": "Show a detailed view of your current songs",
                     "required": False,
-                }
+                },
+                {
+                    "name": "member",
+                    "type": 6,
+                    "description": "A discord user with a current spotify status.",
+                    "required": False,
+                },
             ],
         },
         {
@@ -31,7 +37,7 @@ SLASH_COMMANDS = {
                             "type": 3,
                             "required": True,
                         }
-                    ]
+                    ],
                 },
                 {
                     "name": "albums",
@@ -44,22 +50,22 @@ SLASH_COMMANDS = {
                             "type": 3,
                             "required": True,
                         }
-                    ]
-                }
+                    ],
+                },
             ],
         },
         {
             "name": "play",
             "description": "Play a track, playlist, or album on Spotify",
             "type": 1,
-            "options":[
+            "options": [
                 {
                     "name": "url_or_playlist_name",
                     "type": 3,
                     "description": "The Spotify URL or playlist name you want to play.",
-                    "required": False
+                    "required": False,
                 }
-            ]
+            ],
         },
         {
             "name": "genres",
@@ -85,9 +91,9 @@ SLASH_COMMANDS = {
                     "name": "songs",
                     "type": 3,
                     "description": "The song URL you want to queue to play after the current song.",
-                    "required": True
+                    "required": True,
                 }
-            ]
+            ],
         },
         {
             "name": "recent",
@@ -143,38 +149,82 @@ SLASH_COMMANDS = {
                     "description": "Add a track to a Spotify playlist.",
                     "type": 1,
                     "Options": [
-                        {"name": "name", "description": "The name of the playlist you want to add a track to.", "type": 3, "required": True},
-                        {"name": "to_add", "description": "The link to the song you want to add to the playlist.", "type": 3, "required": True},
-                    ]
+                        {
+                            "name": "name",
+                            "description": "The name of the playlist you want to add a track to.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "to_add",
+                            "description": "The link to the song you want to add to the playlist.",
+                            "type": 3,
+                            "required": True,
+                        },
+                    ],
                 },
                 {
                     "name": "create",
                     "description": "Create a Spotify Playlist.",
                     "type": 1,
                     "options": [
-                        {"name": "name","description":"The name of the new playlist.", "type": 3, "required": True},
-                        {"name": "public","description":"Whether or not the playlist should be public.", "type": 5, "required": False},
-                        {"name": "description","description":"A short description of the new playlist", "type": 3, "required": False},
-                    ]
+                        {
+                            "name": "name",
+                            "description": "The name of the new playlist.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "public",
+                            "description": "Whether or not the playlist should be public.",
+                            "type": 5,
+                            "required": False,
+                        },
+                        {
+                            "name": "description",
+                            "description": "A short description of the new playlist",
+                            "type": 3,
+                            "required": False,
+                        },
+                    ],
                 },
                 {
                     "name": "follow",
                     "description": "List your available Spotify Devices.",
                     "type": 1,
                     "options": [
-
-                        {"name": "to_follow","description":"The playlist link you want to follow", "type": 3, "required": True},
-                        {"name": "public","description":"Whether or not the followed playlist should be public.", "type": 5, "required": False},
-                    ]
+                        {
+                            "name": "to_follow",
+                            "description": "The playlist link you want to follow",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "public",
+                            "description": "Whether or not the followed playlist should be public.",
+                            "type": 5,
+                            "required": False,
+                        },
+                    ],
                 },
                 {
                     "name": "remove",
                     "description": "List your available Spotify Devices.",
                     "type": 1,
                     "Options": [
-                        {"name": "name", "description": "The name of the playlist you want to remove a track from.", "type": 3, "required": True},
-                        {"name": "to_remove", "description": "The link to the song you want to remove from the playlist.", "type": 3, "required": True},
-                    ]
+                        {
+                            "name": "name",
+                            "description": "The name of the playlist you want to remove a track from.",
+                            "type": 3,
+                            "required": True,
+                        },
+                        {
+                            "name": "to_remove",
+                            "description": "The link to the song you want to remove from the playlist.",
+                            "type": 3,
+                            "required": True,
+                        },
+                    ],
                 },
                 {
                     "name": "view",
@@ -200,7 +250,7 @@ SLASH_COMMANDS = {
                             "type": 3,
                             "required": False,
                         }
-                    ]
+                    ],
                 },
                 {
                     "name": "list",
@@ -210,16 +260,9 @@ SLASH_COMMANDS = {
             ],
         },
         {
-            "name": "set",
-            "description": "Set Spotify Options",
-            "type": 2,
-            "options": [
-                {
-                    "name": "forgetme",
-                    "type": 1,
-                    "description": "Forget all your spotify settings and credentials on the bot.",
-                }
-            ],
+            "name": "forgetme",
+            "description": "Forget all your spotify settings and credentials on the bot.",
+            "type": 1,
         },
         {
             "name": "repeat",
@@ -237,7 +280,7 @@ SLASH_COMMANDS = {
                     ],
                     "required": False,
                 },
-            ]
+            ],
         },
         {
             "name": "shuffle",
@@ -250,7 +293,7 @@ SLASH_COMMANDS = {
                     "description": "Shuffle State",
                     "required": False,
                 },
-            ]
+            ],
         },
         {
             "name": "seek",
@@ -263,7 +306,7 @@ SLASH_COMMANDS = {
                     "description": "Seconds or a value formatted like 00:00:00 (hh:mm:ss)",
                     "required": True,
                 },
-            ]
+            ],
         },
         {
             "name": "volume",
@@ -276,7 +319,7 @@ SLASH_COMMANDS = {
                     "description": "A number between 0 and 100 for volume percentage.",
                     "required": True,
                 },
-            ]
+            ],
         },
         {
             "name": "search",
