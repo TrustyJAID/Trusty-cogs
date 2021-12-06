@@ -99,9 +99,12 @@ class SpotifyTrackPages(menus.ListPageSource):
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
-        em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
-        )
+        try:
+            em.set_footer(
+                text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            )
+        except AttributeError:
+            pass
         return em
 
 
@@ -1425,33 +1428,34 @@ class SpotifyUserMenu(discord.ui.View):
             self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        if self.source.repeat_state == "track":
-            self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
-            self.repeat_button.style = discord.ButtonStyle.primary
-        if self.source.repeat_state == "context":
-            self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
-            self.repeat_button.style = discord.ButtonStyle.primary
-        log.debug(f"initial message before {self.like_button.disabled}")
-        if self.source.is_liked:
-            self.like_button.disabled = True
-        if not self.source.is_liked:
-            self.like_button.disabled = False
-        log.debug(f"initial message after {self.like_button.disabled}")
-        if self.source.is_playing:
-            self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
-        if not self.source.is_playing:
-            self.play_pause_button.emoji = emoji_handler.get_emoji("play")
-        if self.source.is_shuffle:
-            self.shuffle_button.style = discord.ButtonStyle.primary
+        if isinstance(self.source, SpotifyPages):
+            if self.source.repeat_state == "track":
+                self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+                self.repeat_button.style = discord.ButtonStyle.primary
+            if self.source.repeat_state == "context":
+                self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+                self.repeat_button.style = discord.ButtonStyle.primary
+            log.debug(f"initial message before {self.like_button.disabled}")
+            if self.source.is_liked:
+                self.like_button.disabled = True
+            if not self.source.is_liked:
+                self.like_button.disabled = False
+            log.debug(f"initial message after {self.like_button.disabled}")
+            if self.source.is_playing:
+                self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
+            if not self.source.is_playing:
+                self.play_pause_button.emoji = emoji_handler.get_emoji("play")
+            if self.source.is_shuffle:
+                self.shuffle_button.style = discord.ButtonStyle.primary
 
-        if self.source.select_options:
-            self.select_view = SpotifySelectTrack(
-                self.source.select_options[:25],
-                self.cog,
-                self.user_token,
-                self.source.context_name,
-            )
-            self.add_item(self.select_view)
+            if self.source.select_options:
+                self.select_view = SpotifySelectTrack(
+                    self.source.select_options[:25],
+                    self.cog,
+                    self.user_token,
+                    self.source.context_name,
+                )
+                self.add_item(self.select_view)
         if is_slash:
             self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
         else:
