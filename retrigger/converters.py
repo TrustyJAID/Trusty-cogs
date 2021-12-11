@@ -164,6 +164,7 @@ class Trigger:
     user_mention: bool
     role_mention: bool
     everyone_mention: bool
+    nsfw: bool
 
     def __init__(self, name, regex, response_type, author, **kwargs):
         self.name = name
@@ -193,6 +194,7 @@ class Trigger:
         self.user_mention = kwargs.get("user_mention", True)
         self.role_mention = kwargs.get("role_mention", False)
         self.everyone_mention = kwargs.get("everyone_mention", False)
+        self.nsfw = kwargs.get("nsfw", False)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -268,6 +270,7 @@ class Trigger:
             "user_mention": self.user_mention,
             "everyone_mention": self.everyone_mention,
             "role_mention": self.role_mention,
+            "nsfw": self.nsfw,
         }
 
     @classmethod

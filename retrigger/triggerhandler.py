@@ -1,15 +1,15 @@
 import asyncio
 import functools
 import logging
+import multiprocessing as mp
 import os
 import random
 import string
 from copy import copy
 from datetime import datetime
 from io import BytesIO
-import multiprocessing as mp
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Literal, Pattern, Tuple, cast, Optional
+from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, cast
 
 import aiohttp
 import discord
@@ -393,6 +393,8 @@ class TriggerHandler:
             if trigger.chance:
                 if random.randint(0, trigger.chance) != 0:
                     continue
+            if trigger.nsfw and not channel.is_nsfw():
+                continue
 
             allowed_trigger = await self.check_bw_list(trigger, message)
             is_auto_mod = trigger.response_type in auto_mod
@@ -635,9 +637,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
             else:
                 try:
                     await channel.send(
@@ -647,9 +653,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "randtext" in trigger.response_type and own_permissions.send_messages:
             await channel.trigger_typing()
@@ -668,9 +678,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
             else:
                 try:
                     await channel.send(
@@ -679,9 +693,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "image" in trigger.response_type and own_permissions.attach_files:
             await channel.trigger_typing()
@@ -704,9 +722,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
             else:
                 try:
                     await channel.send(
@@ -716,9 +738,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "randimage" in trigger.response_type and own_permissions.attach_files:
             await channel.trigger_typing()
@@ -743,9 +769,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
             else:
                 try:
                     await channel.send(
@@ -755,9 +785,13 @@ class TriggerHandler:
                         allowed_mentions=trigger.allowed_mentions(),
                     )
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "dm" in trigger.response_type:
             if trigger.multi_payload:
@@ -770,7 +804,9 @@ class TriggerHandler:
             except discord.errors.Forbidden:
                 log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
             except Exception:
-                log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.exception(
+                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                )
 
         if "dmme" in trigger.response_type:
             if trigger.multi_payload:
@@ -783,14 +819,18 @@ class TriggerHandler:
                 try:
                     trigger_author = await self.bot.fetch_user(trigger.author)
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
             try:
                 await trigger_author.send(response, allowed_mentions=trigger.allowed_mentions())
             except discord.errors.Forbidden:
                 trigger.enabled = False
                 log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
             except Exception:
-                log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.exception(
+                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                )
 
         if "react" in trigger.response_type and own_permissions.add_reactions:
             if trigger.multi_payload:
@@ -803,9 +843,13 @@ class TriggerHandler:
                 try:
                     await message.add_reaction(emoji)
                 except (discord.errors.Forbidden, discord.errors.NotFound):
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "add_role" in trigger.response_type and own_permissions.manage_roles:
 
@@ -824,9 +868,13 @@ class TriggerHandler:
                     if await self.config.guild(guild).add_role_logs():
                         await self.modlog_action(message, trigger, find, _("Added Role"))
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "remove_role" in trigger.response_type and own_permissions.manage_roles:
 
@@ -845,9 +893,13 @@ class TriggerHandler:
                     if await self.config.guild(guild).remove_role_logs():
                         await self.modlog_action(message, trigger, find, _("Removed Role"))
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "kick" in trigger.response_type and own_permissions.kick_members:
             if await self.bot.is_owner(author) or author == guild.owner:
@@ -860,9 +912,13 @@ class TriggerHandler:
                     if await self.config.guild(guild).kick_logs():
                         await self.modlog_action(message, trigger, find, _("Kicked"))
                 except discord.errors.Forbidden:
-                    log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.debug(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
                 except Exception:
-                    log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                    log.exception(
+                        "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                    )
 
         if "ban" in trigger.response_type and own_permissions.ban_members:
             if await self.bot.is_owner(author) or author == guild.owner:
@@ -934,7 +990,9 @@ class TriggerHandler:
             except discord.errors.Forbidden:
                 log.debug("Retrigger encountered an error in %r with trigger %r", guild, trigger)
             except Exception:
-                log.exception("Retrigger encountered an error in %r with trigger %r", guild, trigger)
+                log.exception(
+                    "Retrigger encountered an error in %r with trigger %r", guild, trigger
+                )
 
     async def convert_parms(
         self, message: discord.Message, raw_response: str, trigger: Trigger, find: List[str]
