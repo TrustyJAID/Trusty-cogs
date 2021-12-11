@@ -122,15 +122,19 @@ class CleverbotAPI:
             )
             await ctx.send(msg)
         else:
-            replies = (
-                version_info >= VersionInfo.from_str("3.4.6")
-                and await self.config.guild(ctx.guild).reply()
-            )
-            if ctx.guild and await self.config.guild(ctx.guild).mention():
-                if replies:
-                    await ctx.send(response, reference=ctx.message, mention_author=True)
+            replies = version_info >= VersionInfo.from_str("3.4.6")
+            if ctx.guild:
+                replies = replies or await self.config.guild(ctx.guild).reply()
+                if await self.config.guild(ctx.guild).mention():
+                    if replies:
+                        await ctx.send(response, reference=ctx.message, mention_author=True)
+                    else:
+                        await ctx.send(f"{author.mention} {response}")
                 else:
-                    await ctx.send(f"{author.mention} {response}")
+                    if replies:
+                        await ctx.send(response, reference=ctx.message, mention_author=False)
+                    else:
+                        await ctx.send(response)
             else:
                 if replies:
                     await ctx.send(response, reference=ctx.message, mention_author=False)
@@ -196,13 +200,13 @@ class CleverbotAPI:
             msg += f"{tweak2}% shy and talkative, and "
 
         if tweak3 < 0:
-            msg += f"{100}% self-centered."
+            msg += f"{100}% self-centered "
         if tweak3 >= 0 and tweak3 < 50:
-            msg += f"{100-tweak3}% self-centered."
+            msg += f"{100-tweak3}% self-centered "
         if tweak3 > 50:
-            msg += f"{tweak3}% attentive."
+            msg += f"{tweak3}% attentive "
         if tweak3 == 50:
-            msg += f"{tweak3}% self-centered and attentive."
+            msg += f"{tweak3}% self-centered and attentive "
         return msg
 
     async def global_perms(self, message: discord.Message) -> bool:
@@ -281,9 +285,7 @@ class CleverbotAPI:
         if reply and (reference := getattr(reply, "resolved")) is not None:
             author = getattr(reference, "author")
             if author is not None:
-                is_reply = (
-                    reference.author.id == self.bot.user.id and ctx.me in message.mentions
-                )
+                is_reply = reference.author.id == self.bot.user.id and ctx.me in message.mentions
         if is_mention:
             text = text[len(ctx.me.display_name) + 2 :]
             log.debug(text)

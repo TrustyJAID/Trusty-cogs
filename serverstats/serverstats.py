@@ -16,9 +16,9 @@ from redbot.core.utils.chat_formatting import (
     bold,
     box,
     escape,
+    humanize_list,
     humanize_number,
     humanize_timedelta,
-    humanize_list,
     pagify,
 )
 from redbot.core.utils.menus import start_adding_reactions
@@ -109,6 +109,7 @@ class ServerStats(commands.Cog):
             return
         channel = self.bot.get_channel(channel_id)
         passed = f"<t:{int(guild.created_at.timestamp())}:R>"
+
         created_at = _(
             "{bot} has joined a server!\n "
             "That's **{num}** servers now!\n"
@@ -163,6 +164,7 @@ class ServerStats(commands.Cog):
             "**{bot_name}** joined this server on **{bot_join}**.\n"
             "That's over **{since_join}**!"
         ).format(bot_name=self.bot.user.mention, bot_join=bot_joined, since_join=since_joined)
+
         shard = (
             _("\nShard ID: **{shard_id}/{shard_count}**").format(
                 shard_id=humanize_number(guild.shard_id + 1),
@@ -299,11 +301,10 @@ class ServerStats(commands.Cog):
         em.add_field(
             name=_("Utility:"),
             value=_(
-                "Owner: {owner_mention}\n{owner}\nRegion: {region}\nVerif. level: {verif}\nServer ID: {id}{shard}"
+                "Owner: {owner_mention}\n{owner}\nVerif. level: {verif}\nServer ID: {id}{shard}"
             ).format(
                 owner_mention=bold(str(owner.mention)),
                 owner=bold(str(owner)),
-                region=f"**{vc_regions.get(str(guild.region)) or str(guild.region)}**",
                 verif=bold(verif[str(guild.verification_level)]),
                 id=bold(str(guild.id)),
                 shard=shard,
@@ -1074,9 +1075,7 @@ class ServerStats(commands.Cog):
                     public_flags = ""
                     if version_info >= VersionInfo.from_str("3.4.0"):
                         public_flags = "\n".join(
-                            bold(i.replace("_", " ").title())
-                            for i, v in member.public_flags
-                            if v
+                            bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
                         )
                     created_on = _(
                         "Joined Discord on {user_created}\n"

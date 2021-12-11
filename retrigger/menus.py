@@ -102,6 +102,7 @@ class ReTriggerPages(menus.ListPageSource):
             "__Author__: {author}\n"
             "__Count__: **{count}**\n"
             "__Response__: **{response}**\n"
+            "__NSFW__: **{nsfw}**\n"
         )
         if embeds:
             info = info.format(
@@ -110,6 +111,7 @@ class ReTriggerPages(menus.ListPageSource):
                 author=author.mention,
                 count=trigger.count,
                 response=responses,
+                nsfw=trigger.nsfw,
             )
         else:
             info = info.format(
@@ -118,6 +120,7 @@ class ReTriggerPages(menus.ListPageSource):
                 author=author.name,
                 count=trigger.count,
                 response=responses,
+                nsfw=trigger.nsfw,
             )
         text_response = ""
         if trigger.ignore_commands:

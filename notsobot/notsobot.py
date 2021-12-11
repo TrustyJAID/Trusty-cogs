@@ -8,7 +8,7 @@ import sys
 import textwrap
 import uuid
 from io import BytesIO
-from typing import Optional, Tuple, Union, List
+from typing import List, Optional, Tuple, Union
 from urllib.parse import quote
 
 import aiohttp
@@ -93,7 +93,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
 
     def __init__(self, bot):
         self.bot = bot
@@ -724,9 +724,7 @@ class NotSoBot(commands.Cog):
                 img_list.append(img)
                 count += 1
             temp = BytesIO()
-            img.save(
-                temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0
-            )
+            img.save(temp, format="GIF", save_all=True, append_images=img_list, duration=0, loop=0)
             file_size = temp.tell()
             temp.seek(0)
             file = discord.File(temp, filename="gascii.gif")
@@ -910,38 +908,6 @@ class NotSoBot(commands.Cog):
                 return await self.bot.db.color()
         except AttributeError:
             return await self.bot.get_embed_colour(channel)
-
-    @commands.command(aliases=["text2img", "texttoimage", "text2image"])
-    @commands.bot_has_permissions(attach_files=True)
-    async def tti(self, ctx, *, txt: str):
-        """Generate an image of text"""
-        api = "http://api.img4me.com/?font=arial&fcolor=FFFFFF&size=35&type=png&text={0}".format(
-            quote(txt)
-        )
-        async with ctx.typing():
-            r = await self.get_text(api)
-            b, mime = await self.bytes_download(r)
-            if b is False:
-                await ctx.send(":warning: **Command download function failed...**")
-                return
-            file = discord.File(b, filename="tti.png")
-            await ctx.send(file=file)
-
-    @commands.command(aliases=["comicsans"])
-    @commands.bot_has_permissions(attach_files=True)
-    async def sans(self, ctx, *, txt: str):
-        """Generate an image of text with comicsans"""
-        api = "http://api.img4me.com/?font=comic&fcolor=000000&size=35&type=png&text={0}".format(
-            quote(txt)
-        )
-        async with ctx.typing():
-            r = await self.get_text(api)
-            b, mime = await self.bytes_download(r)
-            if b is False:
-                await ctx.send(":warning: **Command download function failed...**")
-                return
-            file = discord.File(b, filename="tti.png")
-            await ctx.send(file=file)
 
     @commands.command(aliases=["needsmorejpeg", "jpegify", "magik2"])
     @commands.cooldown(2, 5, commands.BucketType.user)
@@ -1197,7 +1163,7 @@ class NotSoBot(commands.Cog):
 
     def do_glitch(self, b, amount, seed, iterations):
         img = Image.open(b)
-        is_gif = img.is_animated
+        is_gif = ((hasattr(img, "is_animated")) and (img.is_animated))
         if not is_gif:
             img = img.convert("RGB")
             b = BytesIO()
@@ -1286,9 +1252,7 @@ class NotSoBot(commands.Cog):
                     await ctx.send(":warning: **Command download function failed...**")
                     return
             if mime in self.gif_mimes:
-                task = ctx.bot.loop.run_in_executor(
-                    None, self.make_pixel_gif, b, pixels
-                )
+                task = ctx.bot.loop.run_in_executor(None, self.make_pixel_gif, b, pixels)
             else:
                 task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels)
             try:

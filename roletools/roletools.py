@@ -253,7 +253,7 @@ class RoleTools(
         *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
         """
-        Gives a role to designatd members.
+        Gives a role to designated members.
 
         `<role>` The role you want to give.
         `[who...]` Who you want to give the role to. This can include any of the following:```diff
