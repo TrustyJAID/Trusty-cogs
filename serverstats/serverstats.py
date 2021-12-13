@@ -150,8 +150,12 @@ class ServerStats(commands.Cog):
 
         passed = (datetime.datetime.utcnow() - guild.created_at).days
         created_at = _("Created on {date}. That's over {num}!").format(
-            date=bold(f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"),
-            num=bold(f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"),
+            date=bold(
+                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            ),
+            num=bold(
+                f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            ),
         )
         total_users = humanize_number(guild.member_count)
         try:
@@ -408,8 +412,12 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
             servers = humanize_number(len(ctx.bot.guilds))
             members = humanize_number(len(self.bot.users))
-            passed = f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-            since = f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            passed = (
+                f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+            )
+            since = (
+                f"<t:{int(ctx.me.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+            )
             msg = _(
                 "{bot} is on {servers} servers serving {members} members!\n"
                 "{bot} was created on **{since}**.\n"
@@ -1069,9 +1077,7 @@ class ServerStats(commands.Cog):
             else:
                 if ctx.channel.permissions_for(ctx.me).embed_links:
                     embed = discord.Embed()
-                    since_created = (
-                        f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-                    )
+                    since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
                     user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
                     public_flags = ""
                     if version_info >= VersionInfo.from_str("3.4.0"):
@@ -1293,37 +1299,40 @@ class ServerStats(commands.Cog):
             number = 50
         if number < 10:
             number = 10
+        async with ctx.typing():
 
-        def joined(member: discord.Member):
-            return getattr(member, "joined_at", datetime.datetime.utcnow())
+            def joined(member: discord.Member):
+                return getattr(member, "joined_at", None) or datetime.datetime.utcnow()
 
-        member_list = sorted(guild.members, key=joined)
-        is_embed = ctx.channel.permissions_for(ctx.me).embed_links
-        x = []
-        for i in range(0, len(member_list), number):
-            x.append(member_list[i : i + number])
-            await asyncio.sleep(0.2)
+            member_list = sorted(guild.members, key=joined)
+            is_embed = ctx.channel.permissions_for(ctx.me).embed_links
+            x = []
+            for i in range(0, len(member_list), number):
+                x.append(member_list[i : i + number])
+                await asyncio.sleep(0.2)
 
-        msg_list = []
-        for page in x:
-            header_msg = (
-                "__**" + _("First ") + str(number) + _(" members of ") + f"{guild.name}**__\n"
-            )
-            msg = ""
-            for member in page:
+            msg_list = []
+            for page in x:
+                header_msg = (
+                    "__**" + _("First ") + str(number) + _(" members of ") + f"{guild.name}**__\n"
+                )
+                msg = ""
+                for member in page:
+                    if is_embed:
+                        msg += f"{member_list.index(member)+1}. {member.mention}\n"
+
+                    else:
+                        msg += f"{member_list.index(member)+1}. {member.name}\n"
                 if is_embed:
-                    msg += f"{member_list.index(member)+1}. {member.mention}\n"
+                    embed = discord.Embed(description=msg)
+                    embed.set_author(
+                        name=guild.name + _(" first members"), icon_url=guild.icon_url
+                    )
+                    msg_list.append(embed)
 
                 else:
-                    msg += f"{member_list.index(member)+1}. {member.name}\n"
-            if is_embed:
-                embed = discord.Embed(description=msg)
-                embed.set_author(name=guild.name + _(" first members"), icon_url=guild.icon_url)
-                msg_list.append(embed)
-
-            else:
-                msg_list.append(header_msg + msg)
-            await asyncio.sleep(0.1)
+                    msg_list.append(header_msg + msg)
+                await asyncio.sleep(0.1)
         await BaseMenu(
             source=ListPages(pages=msg_list),
             delete_message_after=False,
