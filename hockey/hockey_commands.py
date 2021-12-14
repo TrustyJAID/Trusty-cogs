@@ -592,10 +592,26 @@ class HockeyCommands(MixinMeta):
             if not ctx.channel.permissions_for(ctx.message.author).manage_messages:
                 # Don't need everyone spamming this command
                 return
-            atlantic = [team for team in TEAMS if TEAMS[team]["division"] == "Atlantic"]
-            metropolitan = [team for team in TEAMS if TEAMS[team]["division"] == "Metropolitan"]
-            central = [team for team in TEAMS if TEAMS[team]["division"] == "Central"]
-            pacific = [team for team in TEAMS if TEAMS[team]["division"] == "Pacific"]
+            atlantic = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Atlantic" and TEAMS[team]["active"]
+            ]
+            metropolitan = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Metropolitan" and TEAMS[team]["active"]
+            ]
+            central = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Central" and TEAMS[team]["active"]
+            ]
+            pacific = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Pacific" and TEAMS[team]["active"]
+            ]
             team_list = {
                 "Atlantic": atlantic,
                 "Metropolitan": metropolitan,
@@ -617,7 +633,8 @@ class HockeyCommands(MixinMeta):
                 "it to an angry mob after we just won.\n- "
                 "Not following the above rules will result in "
                 "appropriate punishments ranging from a warning "
-                "to a ban. ```\n\nhttps://discord.gg/reddithockey"
+                "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
+                "https://discord.gg/sdpn\nhttps://discord.gg/thehockeyguy"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"

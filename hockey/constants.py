@@ -16,6 +16,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["ducks"],
         "tri_code": "ANA",
+        "active": True,
     },
     "Arizona Coyotes": {
         "away": "#E2D6B5",
@@ -30,6 +31,7 @@ TEAMS = {
         "timezone": "US/Arizona",
         "nickname": ["yotes"],
         "tri_code": "ARI",
+        "active": True,
     },
     "Boston Bruins": {
         "away": "#111111",
@@ -44,6 +46,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["bruins"],
         "tri_code": "BOS",
+        "active": True,
     },
     "Buffalo Sabres": {
         "away": "#FCB514",
@@ -58,6 +61,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["sabres"],
         "tri_code": "BUF",
+        "active": True,
     },
     "Calgary Flames": {
         "away": "#F1BE48",
@@ -72,6 +76,7 @@ TEAMS = {
         "timezone": "US/Mountain",
         "nickname": ["flames"],
         "tri_code": "CGY",
+        "active": True,
     },
     "Carolina Hurricanes": {
         "away": "#A4A9AD",
@@ -86,6 +91,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["canes"],
         "tri_code": "CAR",
+        "active": True,
     },
     "Chicago Blackhawks": {
         "away": "#000000",
@@ -100,6 +106,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": ["hawks"],
         "tri_code": "CHI",
+        "active": True,
     },
     "Colorado Avalanche": {
         "away": "#236192",
@@ -114,6 +121,7 @@ TEAMS = {
         "timezone": "US/Mountain",
         "nickname": ["avs"],
         "tri_code": "COL",
+        "active": True,
     },
     "Columbus Blue Jackets": {
         "away": "#CE1126",
@@ -128,6 +136,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["jackets", "bjs"],
         "tri_code": "CBJ",
+        "active": True,
     },
     "Dallas Stars": {
         "away": "#8F8F8C",
@@ -142,6 +151,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": ["stars"],
         "tri_code": "DAL",
+        "active": True,
     },
     "Detroit Red Wings": {
         "away": "#FFFFFF",
@@ -156,6 +166,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["red wings"],
         "tri_code": "DET",
+        "active": True,
     },
     "Edmonton Oilers": {
         "away": "#041E41",
@@ -170,6 +181,7 @@ TEAMS = {
         "timezone": "US/Mountain",
         "nickname": ["oilers"],
         "tri_code": "EDM",
+        "active": True,
     },
     "Florida Panthers": {
         "away": "#041E42",
@@ -184,6 +196,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["panthers"],
         "tri_code": "FLA",
+        "active": True,
     },
     "Los Angeles Kings": {
         "away": "#B2B7BB",
@@ -198,6 +211,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["kings"],
         "tri_code": "LAK",
+        "active": True,
     },
     "Minnesota Wild": {
         "away": "#C51230",
@@ -212,6 +226,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": ["wild"],
         "tri_code": "MIN",
+        "active": True,
     },
     "Montr\u00e9al Canadiens": {
         "away": "#192168",
@@ -226,6 +241,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["montreal canadiens", "habs", "montreal"],
         "tri_code": "MTL",
+        "active": True,
     },
     "Nashville Predators": {
         "away": "#041E42",
@@ -240,6 +256,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": ["preds"],
         "tri_code": "NSH",
+        "active": True,
     },
     "New Jersey Devils": {
         "away": "#000000",
@@ -254,6 +271,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["devils"],
         "tri_code": "NJD",
+        "active": True,
     },
     "New York Islanders": {
         "away": "#F47920",
@@ -268,6 +286,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["isles"],
         "tri_code": "NYI",
+        "active": True,
     },
     "New York Rangers": {
         "away": "#C8102E",
@@ -278,10 +297,11 @@ TEAMS = {
         "id": 3,
         "invite": "https://discord.gg/nyrangers",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281718864/256x256/cut.png",
-        "team_url": "https://www.nhl.com/rangers",
+        "team_url": "https://www.nhl.com/nyrangers",
         "timezone": "US/Eastern",
         "nickname": ["rangers"],
         "tri_code": "NYR",
+        "active": True,
     },
     "Ottawa Senators": {
         "away": "#CBA044",
@@ -296,6 +316,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["sens"],
         "tri_code": "OTT",
+        "active": True,
     },
     "Philadelphia Flyers": {
         "away": "#000000",
@@ -310,6 +331,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["flyers"],
         "tri_code": "PHI",
+        "active": True,
     },
     "Pittsburgh Penguins": {
         "away": "#CFC493",
@@ -324,6 +346,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["pens"],
         "tri_code": "PIT",
+        "active": True,
     },
     "San Jose Sharks": {
         "away": "#EA7200",
@@ -338,6 +361,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["sharks"],
         "tri_code": "SJS",
+        "active": True,
     },
     "Seattle Kraken": {
         "away": "#5dbcd2",
@@ -352,6 +376,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["kraken"],
         "tri_code": "SEA",
+        "active": True,
     },
     "St. Louis Blues": {
         "away": "#FCB514",
@@ -366,6 +391,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": ["blues"],
         "tri_code": "STL",
+        "active": True,
     },
     "Tampa Bay Lightning": {
         "away": "#FFFFFF",
@@ -380,6 +406,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["bolts"],
         "tri_code": "TBL",
+        "active": True,
     },
     "Team Atlantic": {
         "away": "#fef5aa",
@@ -394,6 +421,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": [],
         "tri_code": "",
+        "active": False,
     },
     "Team Central": {
         "away": "#111111",
@@ -408,6 +436,7 @@ TEAMS = {
         "timezone": "US/Central",
         "nickname": [],
         "tri_code": "",
+        "active": False,
     },
     "Team Metropolitan": {
         "away": "#d1cad2",
@@ -422,6 +451,7 @@ TEAMS = {
         "timezone": "US/Mountain",
         "nickname": [],
         "tri_code": "",
+        "active": False,
     },
     "Team Pacific": {
         "away": "#FFFFFF",
@@ -436,6 +466,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": [],
         "tri_code": "",
+        "active": False,
     },
     "Toronto Maple Leafs": {
         "away": "#FFFFFF",
@@ -450,6 +481,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["leafs"],
         "tri_code": "TOR",
+        "active": True,
     },
     "Vancouver Canucks": {
         "away": "#008852",
@@ -464,6 +496,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["canucks", "nucks", "nuks"],
         "tri_code": "VAN",
+        "active": True,
     },
     "Vegas Golden Knights": {
         "away": "#333F42",
@@ -478,6 +511,7 @@ TEAMS = {
         "timezone": "US/Pacific",
         "nickname": ["knights"],
         "tri_code": "VGK",
+        "active": True,
     },
     "Washington Capitals": {
         "away": "#CF0A2C",
@@ -492,6 +526,7 @@ TEAMS = {
         "timezone": "US/Eastern",
         "nickname": ["caps"],
         "tri_code": "WSH",
+        "active": True,
     },
     "Winnipeg Jets": {
         "away": "#AC162C",
@@ -500,12 +535,13 @@ TEAMS = {
         "emoji": "WinnipegJets:664664065112539154",
         "home": "#041E41",
         "id": 52,
-        "invite": "https://discord.gg/wpgjets",
+        "invite": "https://discord.gg/Q7bm7ZK8QG",
         "logo": "https://cms.nhl.bamgrid.com/images/photos/281723512/256x256/cut.png",
         "team_url": "https://www.nhl.com/jets",
         "timezone": "US/Central",
         "nickname": ["jets"],
         "tri_code": "WPG",
+        "active": True,
     },
     "Montreal Wanderers": {
         "conference": "",
@@ -520,6 +556,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "St. Louis Eagles": {
         "conference": "",
@@ -534,6 +571,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Hamilton Tigers": {
         "conference": "",
@@ -548,6 +586,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Montreal Maroons": {
         "conference": "",
@@ -562,6 +601,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Brooklyn Americans": {
         "conference": "",
@@ -576,6 +616,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Philadelphia Quakers": {
         "conference": "",
@@ -590,6 +631,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Cleveland Barons": {
         "conference": "",
@@ -604,6 +646,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Ottawa Senators (1917)": {
         "conference": "",
@@ -618,6 +661,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Quebec Bulldogs": {
         "conference": "",
@@ -632,6 +676,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Toronto Arenas": {
         "conference": "",
@@ -646,6 +691,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Toronto St. Patricks": {
         "conference": "",
@@ -660,6 +706,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "New York Americans": {
         "conference": "",
@@ -674,6 +721,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Pittsburgh Pirates": {
         "conference": "",
@@ -688,6 +736,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Detroit Cougars": {
         "conference": "",
@@ -702,6 +751,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Detroit Falcons": {
         "conference": "",
@@ -716,6 +766,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Oakland Seals": {
         "conference": "",
@@ -730,6 +781,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "California Golden Seals": {
         "conference": "",
@@ -744,6 +796,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Minnesota North Stars": {
         "conference": "Prince of Wales",
@@ -758,6 +811,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Atlanta Flames": {
         "conference": "",
@@ -772,6 +826,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Colorado Rockies": {
         "conference": "",
@@ -786,6 +841,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Kansas City Scouts": {
         "conference": "",
@@ -800,6 +856,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Hartford Whalers": {
         "conference": "Prince of Wales",
@@ -814,6 +871,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Quebec Nordiques": {
         "conference": "Prince of Wales",
@@ -828,6 +886,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Phoenix Coyotes": {
         "conference": "Western",
@@ -842,6 +901,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Winnipeg Jets (1979)": {
         "conference": "Clarence Campbell",
@@ -856,6 +916,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Atlanta Thrashers": {
         "conference": "",
@@ -870,6 +931,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Team Honda West": {
         "conference": "",
@@ -884,6 +946,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Team MassMutual East": {
         "conference": "",
@@ -898,6 +961,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Team Scotia North": {
         "conference": "",
@@ -912,6 +976,7 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
     "Team Discover Central": {
         "conference": "",
@@ -926,5 +991,6 @@ TEAMS = {
         "team_url": "",
         "nickname": [],
         "invite": "No Server Found",
+        "active": False,
     },
 }
