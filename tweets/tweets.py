@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.7.2"
+    __version__ = "2.8.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -310,10 +310,10 @@ class Tweets(TweetsAPI, commands.Cog):
         *usernames: str,
     ) -> None:
         """
-        Set an accounts retweets being posted
+        Set whether to use custom embeds or just post the tweet url
 
         `<channel>` The channel the usernames are posting in
-        `<true_or_false>` `true` if you want retweets to be displayed or `false` if not.
+        `<true_or_false>` `true` if you want custom embeds to be used or `false` if not.
         `[usernames...]` The usernames you want to edit the replies setting for.
         This must be the users @handle with spaces signifying a different account.
         """
@@ -351,6 +351,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accouts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="restart")
@@ -409,6 +411,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accounts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="retweets")
@@ -461,6 +465,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accounts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="add")
@@ -847,6 +853,7 @@ class Tweets(TweetsAPI, commands.Cog):
             "3. On the standalone apps page select regenerate **Access Token and Secret** "
             "and copy those somewhere safe.\n\n"
             "4. Do `[p]set api twitter "
+            "bearer_token YOUR_BEARER_TOKEN "
             "consumer_key YOUR_CONSUMER_KEY "
             "consumer_secret YOUR_CONSUMER_SECRET "
             "access_token YOUR_ACCESS_TOKEN "
