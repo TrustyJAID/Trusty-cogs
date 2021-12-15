@@ -87,7 +87,7 @@ class TweetsAPI:
             # api = await self.authenticate()
             if self.mystream is None:
                 await self._start_stream(tweet_list, api)
-            elif self.mystream and self.mystream.cancelled():
+            elif self.mystream and self.stream_task.cancelled():
                 count += 1
                 await self._start_stream(tweet_list, api)
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
@@ -100,10 +100,10 @@ class TweetsAPI:
         access_token = keys.get("access_token")
         access_secret = keys.get("access_secret")
         try:
-            stream_start = TweetListener(
+            self.mystream = TweetListener(
                 consumer, consumer_secret, access_token, access_secret, self.bot
             )
-            self.mystream = stream_start.filter(follow=tweet_list)
+            self.stream_task = self.mystream.filter(follow=tweet_list)
         except Exception:
             log.error("Error starting stream", exc_info=True)
 
