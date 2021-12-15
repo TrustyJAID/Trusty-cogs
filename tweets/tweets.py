@@ -205,12 +205,12 @@ class Tweets(TweetsAPI, commands.Cog):
     async def get_twitter_user(self, username: str) -> tweepy.User:
         try:
             api = await self.authenticate()
-            fake_task = functools.partial(api.get_user, username)
+            fake_task = functools.partial(api.get_user, screen_name=username)
             task = self.bot.loop.run_in_executor(None, fake_task)
             user = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
             raise
-        except tweepy.error.TweepError:
+        except tweepy.errors.TweepyException:
             raise
         return user
 
@@ -222,7 +222,7 @@ class Tweets(TweetsAPI, commands.Cog):
         except asyncio.TimeoutError:
             await ctx.send(_("Looking up the user timed out."))
             return
-        except tweepy.error.TweepError:
+        except tweepy.errors.TweepyException:
             await ctx.send(_("{username} could not be found.").format(username=username))
             return
         profile_url = "https://twitter.com/" + user.screen_name
