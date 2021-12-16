@@ -437,6 +437,7 @@ class HockeyCommands(MixinMeta):
             "playoffs": "playoffs_total",
             "pre-season": "pre-season_total",
         }.get(leaderboard_type, "total")
+        position = None
 
         for member_id in leaderboard:
             if str(member_id[0]) == str(ctx.author.id):
@@ -493,6 +494,22 @@ class HockeyCommands(MixinMeta):
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
+
+        if ctx.assume_yes:
+            em = discord.Embed(timestamp=datetime.now())
+            description = ""
+            for msg in leaderboard_list[0]:
+                description += msg
+            em.description = description
+            em.set_author(
+                name=ctx.guild.name
+                + _(" Pickems {style} Leaderboard").format(style=leaderboard_type_str),
+                icon_url=ctx.guild.icon_url,
+            )
+            em.set_thumbnail(url=ctx.guild.icon_url)
+            await ctx.send(embed=em)
+            return
+        if position:
             await ctx.send(position)
         await BaseMenu(
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
@@ -657,6 +674,11 @@ class HockeyCommands(MixinMeta):
                 div_emoji = "<:" + TEAMS["Team {}".format(division)]["emoji"] + ">"
                 msg = "{0} __**{1} DIVISION**__ {0}".format(div_emoji, division.upper())
                 await ctx.send(msg)
+                for team in team_list[division]:
+                    team_emoji = "<:" + TEAMS[team]["emoji"] + ">"
+                    team_link = TEAMS[team]["invite"]
+                    msg = "{0} {1} {0}".format(team_emoji, team_link)
+                    await ctx.send(msg)
                 for team in team_list[division]:
                     team_emoji = "<:" + TEAMS[team]["emoji"] + ">"
                     team_link = TEAMS[team]["invite"]

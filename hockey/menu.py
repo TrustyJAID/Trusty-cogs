@@ -297,7 +297,7 @@ class LeaderboardPages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page: List[str]) -> discord.Embed:
-        em = discord.Embed(timestamp=datetime.utcnow())
+        em = discord.Embed(timestamp=datetime.now())
         description = ""
         for msg in page:
             description += msg
