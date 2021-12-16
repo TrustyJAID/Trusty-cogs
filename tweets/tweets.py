@@ -132,7 +132,7 @@ class Tweets(TweetsAPI, commands.Cog):
                 temp = BytesIO()
                 filename = ctx.message.attachments[0].filename
                 await ctx.message.attachments[0].save(temp)
-                api.update_with_media(filename, status=message, file=temp)
+                api.update_status_with_media(filename, status=message, file=temp)
             else:
                 api.update_status(message)
         except Exception:
@@ -152,7 +152,7 @@ class Tweets(TweetsAPI, commands.Cog):
         """
         api = await self.authenticate()
         try:
-            fake_task = functools.partial(api.trends_available)
+            fake_task = functools.partial(api.available_trends)
             task = self.bot.loop.run_in_executor(None, fake_task)
             location_list = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
@@ -168,7 +168,7 @@ class Tweets(TweetsAPI, commands.Cog):
             await ctx.send("{} Is not a correct location!".format(location))
             return
         try:
-            fake_task = functools.partial(api.trends_place, country_id["woeid"])
+            fake_task = functools.partial(api.get_place_trends, country_id["woeid"])
             task = self.bot.loop.run_in_executor(None, fake_task)
             trends = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
