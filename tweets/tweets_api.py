@@ -204,7 +204,7 @@ class TweetsAPI:
         if status.in_reply_to_screen_name:
             api = await self.authenticate()
             try:
-                reply = api.statuses_lookup(id_=[status.in_reply_to_status_id])[0]
+                reply = api.lookup_statuses(id_=[status.in_reply_to_status_id])[0]
                 # log.debug(reply)
                 in_reply_to = _("In reply to {name} (@{screen_name})").format(
                     name=reply.user.name, screen_name=reply.user.screen_name

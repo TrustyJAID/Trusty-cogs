@@ -7,16 +7,13 @@ from html import unescape
 from typing import Any, List, Optional
 
 import discord
+import tweepy
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-
 from redbot.core.utils.chat_formatting import escape
 from redbot.vendored.discord.ext import menus
-
-import tweepy
-
 
 log = logging.getLogger("red.Trusty-cogs.tweets")
 _ = Translator("Tweets", __file__)
@@ -244,7 +241,7 @@ class TweetPages(menus.PageSource):
         return em
 
     def _get_reply(self, ids: List[int]) -> tweepy.Status:
-        return self._api.statuses_lookup(ids)
+        return self._api.lookup_statuses(ids)
 
 class StopButton(discord.ui.Button):
     def __init__(
