@@ -205,12 +205,12 @@ class Tweets(TweetsAPI, commands.Cog):
     async def get_twitter_user(self, username: str) -> tweepy.User:
         try:
             api = await self.authenticate()
-            fake_task = functools.partial(api.get_user, username)
+            fake_task = functools.partial(api.get_user, screen_name=username)
             task = self.bot.loop.run_in_executor(None, fake_task)
             user = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
             raise
-        except tweepy.error.TweepError:
+        except tweepy.errors.TweepyException:
             raise
         return user
 
@@ -222,7 +222,7 @@ class Tweets(TweetsAPI, commands.Cog):
         except asyncio.TimeoutError:
             await ctx.send(_("Looking up the user timed out."))
             return
-        except tweepy.error.TweepError:
+        except tweepy.errors.TweepyException:
             await ctx.send(_("{username} could not be found.").format(username=username))
             return
         profile_url = "https://twitter.com/" + user.screen_name
@@ -310,10 +310,10 @@ class Tweets(TweetsAPI, commands.Cog):
         *usernames: str,
     ) -> None:
         """
-        Set an accounts retweets being posted
+        Set whether to use custom embeds or just post the tweet url
 
         `<channel>` The channel the usernames are posting in
-        `<true_or_false>` `true` if you want retweets to be displayed or `false` if not.
+        `<true_or_false>` `true` if you want custom embeds to be used or `false` if not.
         `[usernames...]` The usernames you want to edit the replies setting for.
         This must be the users @handle with spaces signifying a different account.
         """
@@ -351,6 +351,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accouts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="restart")
@@ -409,6 +411,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accounts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="retweets")
@@ -461,6 +465,8 @@ class Tweets(TweetsAPI, commands.Cog):
                 verb=_("will") if true_or_false else _("will not"),
                 replies=humanize_list(added_replies),
             )
+        else:
+            msg = _("No accounts were found in {channel}.").format(channel=channel.mention)
         await ctx.send(msg)
 
     @_autotweet.command(name="add")
@@ -847,6 +853,7 @@ class Tweets(TweetsAPI, commands.Cog):
             "3. On the standalone apps page select regenerate **Access Token and Secret** "
             "and copy those somewhere safe.\n\n"
             "4. Do `[p]set api twitter "
+            "bearer_token YOUR_BEARER_TOKEN "
             "consumer_key YOUR_CONSUMER_KEY "
             "consumer_secret YOUR_CONSUMER_SECRET "
             "access_token YOUR_ACCESS_TOKEN "

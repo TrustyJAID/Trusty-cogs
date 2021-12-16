@@ -2,16 +2,17 @@ import asyncio
 import functools
 import logging
 from html import unescape
-from typing import Any, List, Optional, Dict
+from typing import Any, Dict, List, Optional
 
 import discord
 import tweepy
 from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator
+from redbot.core.utils import bounded_gather
 from redbot.core.utils.chat_formatting import escape
+from tweepy.asynchronous import AsyncStream
 
 from .tweet_entry import TweetEntry
 
@@ -20,25 +21,37 @@ _ = Translator("Tweets", __file__)
 log = logging.getLogger("red.trusty-cogs.Tweets")
 
 
-class TweetListener(tweepy.StreamListener):
-    def __init__(self, api: tweepy.API, bot: Red):
-        super().__init__(api=api)
+class TweetListener(AsyncStream):
+    def __init__(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        access_token: str,
+        access_token_secret: str,
+        bot: Red,
+    ):
+        super().__init__(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+        )
         self.bot = bot
 
-    def on_status(self, status: tweepy.Status) -> None:
+    async def on_status(self, status: tweepy.models.Status) -> None:
         self.bot.dispatch("tweet_status", status)
 
-    def on_error(self, status_code: int) -> None:
+    async def on_error(self, status_code: int) -> None:
         msg = _("A tweet stream error has occured! ") + str(status_code)
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    def on_disconnect(self, notice: Any) -> None:
+    async def on_disconnect(self, notice: Any) -> None:
         msg = _("Twitter has sent a disconnect code")
         log.info(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    def on_warning(self, notice: Any) -> None:
+    async def on_warning(self, notice: Any) -> None:
         msg = _("Twitter has sent a disconnection warning")
         log.warn(msg)
         self.bot.dispatch("tweet_error", msg)
@@ -70,27 +83,27 @@ class TweetsAPI:
             if not tweet_list:
                 await asyncio.sleep(base_sleep)
                 continue
-            if not api:
-                api = await self.authenticate()
+            # if not api:
+            # api = await self.authenticate()
             if self.mystream is None:
                 await self._start_stream(tweet_list, api)
-            elif self.mystream and not getattr(self.mystream, "running"):
+            elif self.mystream and self.stream_task.cancelled():
                 count += 1
                 await self._start_stream(tweet_list, api)
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
             await asyncio.sleep(base_sleep * count)
 
     async def _start_stream(self, tweet_list: List[str], api: tweepy.API) -> None:
+        keys = await self.bot.get_shared_api_tokens("twitter")
+        consumer = keys.get("consumer_key")
+        consumer_secret = keys.get("consumer_secret")
+        access_token = keys.get("access_token")
+        access_secret = keys.get("access_secret")
         try:
-            stream_start = TweetListener(api, self.bot)
-            self.mystream = tweepy.Stream(api.auth, stream_start, daemon=True)
-            fake_task = functools.partial(self.mystream.filter, follow=tweet_list, is_async=True)
-            task = self.bot.loop.run_in_executor(None, fake_task)
-            try:
-                await asyncio.wait_for(task, timeout=5)
-            except asyncio.TimeoutError:
-                log.info("Timeout opening tweet stream.")
-                pass
+            self.mystream = TweetListener(
+                consumer, consumer_secret, access_token, access_secret, self.bot
+            )
+            self.stream_task = self.mystream.filter(follow=tweet_list)
         except Exception:
             log.error("Error starting stream", exc_info=True)
 
@@ -106,7 +119,6 @@ class TweetsAPI:
         return tweepy.API(
             auth,
             wait_on_rate_limit=True,
-            wait_on_rate_limit_notify=True,
             retry_count=10,
             retry_delay=5,
             retry_errors=[500, 502, 503, 504],
@@ -150,7 +162,7 @@ class TweetsAPI:
             return
         await channel.send(str(error) + help_msg)
 
-    async def build_tweet_embed(self, status: tweepy.Status) -> discord.Embed:
+    async def build_tweet_embed(self, status: tweepy.models.Status) -> discord.Embed:
         username = status.user.screen_name
         post_url = "https://twitter.com/{}/status/{}".format(status.user.screen_name, status.id)
         em = discord.Embed(
@@ -211,7 +223,7 @@ class TweetsAPI:
         return em
 
     @commands.Cog.listener()
-    async def on_tweet_status(self, status: tweepy.Status) -> None:
+    async def on_tweet_status(self, status: tweepy.models.Status) -> None:
         """Posts the tweets to the channel"""
         username = status.user.screen_name
         user_id = status.user.id
@@ -255,7 +267,7 @@ class TweetsAPI:
         self,
         channel_send: discord.TextChannel,
         em: discord.Embed,
-        status: tweepy.Status,
+        status: tweepy.models.Status,
         use_custom_embed: bool = True,
     ):
         username = status.user.screen_name

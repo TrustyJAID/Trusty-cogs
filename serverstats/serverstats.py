@@ -1294,26 +1294,36 @@ class ServerStats(commands.Cog):
             number = 50
         if number < 10:
             number = 10
+        async with ctx.typing():
 
-        def joined(member: discord.Member):
-            return getattr(member, "joined_at", datetime.utcnow())
+            def joined(member: discord.Member):
+                return getattr(member, "joined_at", None) or datetime.datetime.utcnow()
 
-        member_list = sorted(guild.members, key=joined)
-        is_embed = ctx.channel.permissions_for(ctx.me).embed_links
-        x = []
-        for i in range(0, len(member_list), number):
-            x.append(member_list[i : i + number])
-            await asyncio.sleep(0.2)
+            member_list = sorted(guild.members, key=joined)
+            is_embed = ctx.channel.permissions_for(ctx.me).embed_links
+            x = []
+            for i in range(0, len(member_list), number):
+                x.append(member_list[i : i + number])
+                await asyncio.sleep(0.2)
 
-        msg_list = []
-        for page in x:
-            header_msg = (
-                "__**" + _("First ") + str(number) + _(" members of ") + f"{guild.name}**__\n"
-            )
-            msg = ""
-            for member in page:
+            msg_list = []
+            for page in x:
+                header_msg = (
+                    "__**" + _("First ") + str(number) + _(" members of ") + f"{guild.name}**__\n"
+                )
+                msg = ""
+                for member in page:
+                    if is_embed:
+                        msg += f"{member_list.index(member)+1}. {member.mention}\n"
+
+                    else:
+                        msg += f"{member_list.index(member)+1}. {member.name}\n"
                 if is_embed:
-                    msg += f"{member_list.index(member)+1}. {member.mention}\n"
+                    embed = discord.Embed(description=msg)
+                    embed.set_author(
+                        name=guild.name + _(" first members"), icon_url=guild.icon_url
+                    )
+                    msg_list.append(embed)
 
                 else:
                     msg += f"{member_list.index(member)+1}. {member.name}\n"

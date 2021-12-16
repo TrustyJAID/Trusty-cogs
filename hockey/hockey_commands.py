@@ -492,6 +492,7 @@ class HockeyCommands(MixinMeta):
             "playoffs": "playoffs_total",
             "pre-season": "pre-season_total",
         }.get(leaderboard_type, "total")
+        position = None
 
         for member_id in leaderboard:
             if str(member_id[0]) == str(ctx.author.id):
@@ -548,6 +549,22 @@ class HockeyCommands(MixinMeta):
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
+
+        if ctx.assume_yes:
+            em = discord.Embed(timestamp=datetime.now())
+            description = ""
+            for msg in leaderboard_list[0]:
+                description += msg
+            em.description = description
+            em.set_author(
+                name=ctx.guild.name
+                + _(" Pickems {style} Leaderboard").format(style=leaderboard_type_str),
+                icon_url=ctx.guild.icon_url,
+            )
+            em.set_thumbnail(url=ctx.guild.icon_url)
+            await ctx.send(embed=em)
+            return
+        if position:
             await ctx.send(position)
         await BaseMenu(
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
@@ -678,10 +695,26 @@ class HockeyCommands(MixinMeta):
             if not await self.slash_check_permissions(ctx, member):
                 # Don't need everyone spamming this command
                 return
-            atlantic = [team for team in TEAMS if TEAMS[team]["division"] == "Atlantic"]
-            metropolitan = [team for team in TEAMS if TEAMS[team]["division"] == "Metropolitan"]
-            central = [team for team in TEAMS if TEAMS[team]["division"] == "Central"]
-            pacific = [team for team in TEAMS if TEAMS[team]["division"] == "Pacific"]
+            atlantic = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Atlantic" and TEAMS[team]["active"]
+            ]
+            metropolitan = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Metropolitan" and TEAMS[team]["active"]
+            ]
+            central = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Central" and TEAMS[team]["active"]
+            ]
+            pacific = [
+                team
+                for team in TEAMS
+                if TEAMS[team]["division"] == "Pacific" and TEAMS[team]["active"]
+            ]
             team_list = {
                 "Atlantic": atlantic,
                 "Metropolitan": metropolitan,
@@ -703,7 +736,8 @@ class HockeyCommands(MixinMeta):
                 "it to an angry mob after we just won.\n- "
                 "Not following the above rules will result in "
                 "appropriate punishments ranging from a warning "
-                "to a ban. ```\n\nhttps://discord.gg/reddithockey"
+                "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
+                "https://discord.gg/sdpn\nhttps://discord.gg/thehockeyguy"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"
             western_conference = "https://i.imgur.com/UFYJTDF.png"
@@ -731,3 +765,4 @@ class HockeyCommands(MixinMeta):
                     team_link = TEAMS[team]["invite"]
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.channel.send(msg)
+
