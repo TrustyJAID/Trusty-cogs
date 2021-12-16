@@ -151,8 +151,8 @@ class GameDayThreads(MixinMeta):
         await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
         if cur_state:
             msg = _("GDT game updates set to {states}").format(
-                    states=humanize_list(list(set(state)))
-                )
+                states=humanize_list(list(set(state)))
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -184,8 +184,8 @@ class GameDayThreads(MixinMeta):
             await self.create_gdt(ctx.guild)
         else:
             msg = _("You need to first toggle channel creation with `{prefix}gdt toggle`.").format(
-                    prefix=ctx.clean_prefix
-                )
+                prefix=ctx.clean_prefix
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -210,9 +210,9 @@ class GameDayThreads(MixinMeta):
         guild = ctx.guild
         if await self.config.guild(guild).create_channels():
             msg = _(
-                    "You cannot have both game day channels and game day threads in the same server. "
-                    "Use `{prefix}gdc toggle` first to disable game day channels then try again."
-                ).format(prefix=ctx.clean_prefix)
+                "You cannot have both game day channels and game day threads in the same server. "
+                "Use `{prefix}gdc toggle` first to disable game day channels then try again."
+            ).format(prefix=ctx.clean_prefix)
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -284,9 +284,9 @@ class GameDayThreads(MixinMeta):
 
         if await self.config.guild(guild).create_channels():
             msg = _(
-                    "You cannot have both game day channels and game day threads in the same server. "
-                    "Use `{prefix}gdc toggle` first to disable game day channels then try again."
-                ).format(prefix=ctx.clean_prefix)
+                "You cannot have both game day channels and game day threads in the same server. "
+                "Use `{prefix}gdc toggle` first to disable game day channels then try again."
+            ).format(prefix=ctx.clean_prefix)
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -318,8 +318,8 @@ class GameDayThreads(MixinMeta):
             for game in game_list:
                 await self.create_gdt(guild, game)
         msg = _("Game Day threads for {team} setup in {channel}").format(
-                team=team, channel=channel.mention
-            )
+            team=team, channel=channel.mention
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -352,6 +352,16 @@ class GameDayThreads(MixinMeta):
                     cur_channels = await self.config.guild(guild).gdt()
                     if cur_channels:
                         cur_channel = guild.get_thread(cur_channels[0])
+                        if not cur_channel:
+                            try:
+                                cur_channel = await guild.fetch_channel(cur_channels[0])
+                            except Exception:
+                                cur_channel = None
+                                await self.config.guild(guild).gdt.clear()
+                                # clear the config data so that this always contains at most
+                                # 1 game day thread when only one team is specified
+                                # fetch_channel is used as a backup incase the thread
+                                # becomes archived and bot restarts and needs its refernce
                     else:
                         cur_channel = None
                         # this is dumb but eh
