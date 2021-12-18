@@ -46,8 +46,13 @@ class TweetListener(AsyncStream):
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    async def on_disconnect(self, notice: Any) -> None:
+    async def on_disconnect(self) -> None:
         msg = _("Twitter has sent a disconnect code")
+        log.info(msg)
+        self.bot.dispatch("tweet_error", msg)
+
+    async def on_disconnect_message(self, message: Any) -> None:
+        msg = _("Twitter has sent a disconnect message {message}").format(message=message)
         log.info(msg)
         self.bot.dispatch("tweet_error", msg)
 
