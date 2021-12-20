@@ -46,8 +46,8 @@ class TweetListener(AsyncStream):
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    async def on_disconnect(self, notice: Any) -> None:
-        msg = _("Twitter has sent a disconnect code")
+    async def on_disconnect_message(self, message: Any) -> None:
+        msg = _("Twitter has sent a disconnect message {message}").format(message=message)
         log.info(msg)
         self.bot.dispatch("tweet_error", msg)
 
@@ -87,7 +87,7 @@ class TweetsAPI:
             # api = await self.authenticate()
             if self.mystream is None:
                 await self._start_stream(tweet_list, api)
-            elif self.mystream and self.stream_task.cancelled():
+            elif self.mystream and (self.stream_task.cancelled() or self.stream_task.done()):
                 count += 1
                 await self._start_stream(tweet_list, api)
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
