@@ -1034,6 +1034,7 @@ SLASH_COMMANDS = {
                     "type": 3,
                     "description": "The name of the player to search for",
                     "required": True,
+                    "autocomplete": True,
                 }
             ],
         },
@@ -1079,6 +1080,7 @@ SLASH_COMMANDS = {
                     "type": 3,
                     "description": "The team server invite you want.",
                     "required": True,
+                    "autocomplete": True,
                 }
             ],
         },

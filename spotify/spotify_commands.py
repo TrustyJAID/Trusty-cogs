@@ -1,6 +1,6 @@
 import logging
 from copy import copy
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import discord
 import tekore
@@ -19,6 +19,7 @@ from .helpers import (
     SpotifyURIConverter,
     song_embed,
     time_convert,
+    VALID_RECOMMENDATIONS,
 )
 from .menus import (
     SpotifyAlbumPages,
@@ -48,6 +49,109 @@ ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), deli
 
 
 class SpotifyCommands:
+
+    @staticmethod
+    def convert_slash_args(interaction: discord.Interaction, option: dict):
+        convert_args = {
+            3: lambda x: x,
+            4: lambda x: int(x),
+            5: lambda x: bool(x),
+            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
+            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
+            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
+            9: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)) or interaction.guild.get_member(int(x)),
+            10: lambda x: float(x),
+        }
+        resolved = interaction.data.get("resolved", {})
+        final_resolved = {}
+        if resolved:
+            resolved_users = resolved.get("users")
+            if resolved_users:
+                resolved_members = resolved.get("members")
+                for _id, data in resolved_users.items():
+                    if resolved_members:
+                        member_data = resolved_members[_id]
+                        member_data["user"] = data
+                        member = discord.Member(data=member_data, guild=interaction.guild, state=interaction._state)
+                        final_resolved[int(_id)] = member
+                    else:
+                        user = discord.User(data=data, state=interaction._state)
+                        final_resolved[int(_id)] = user
+            resolved_channels = data.get("channels")
+            if resolved_channels:
+                for _id, data in resolved_channels.items():
+                    data["position"] = None
+                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
+                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
+                    final_resolved[int(_id)] = channel
+            resolved_messages = resolved.get("messages")
+            if resolved_messages:
+                for _id, data in resolved_messages.items():
+                    msg = discord.Message(state=interaction._state, channel=interaction.channel, data=data)
+                    final_resolved[int(_id)] = msg
+            resolved_roles = resolved.get("roles")
+            if resolved_roles:
+                for _id, data in resolved_roles.items():
+                    role = discord.Role(guild=interaction.guild, state=interaction._state, data=data)
+                    final_resolved[int(_id)] = role
+        return convert_args[option["type"]](option["value"])
+
+    async def set_genres(self):
+        try:
+            self.GENRES = await self._spotify_client.recommendation_genre_seeds()
+        except Exception:
+            log.exception("Error grabbing genres.")
+
+    async def get_genre_choices(self, cur_value: str):
+        supplied_genres = ""
+        for sup in cur_value.split(" "):
+            if sup in self.GENRES:
+                supplied_genres += sup + " "
+
+        ret = [{"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"} for g in self.GENRES]
+        if supplied_genres:
+            ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
+        return ret
+
+    async def parse_spotify_recommends(self, interaction: discord.Interaction):
+        command_options = interaction.data["options"][0]["options"]
+        if interaction.type.value == 4:
+            cur_value = command_options[0]["value"]
+            if not self.GENRES:
+                await self.set_genres()
+
+            genre_choices = await self.get_genre_choices(cur_value)
+            await interaction.response.auto_complete(genre_choices[:25])
+            return
+        recommendations = {"limit": 100, "market": "from_token"}
+        detailed = False
+        for option in command_options:
+            name = option["name"]
+            if name == "detailed":
+                detailed = True
+                continue
+            if name in VALID_RECOMMENDATIONS and name != "mode":
+                recommendations[f"target_{name}"] = VALID_RECOMMENDATIONS[name](option["value"])
+            elif name == "genres":
+                recommendations[name] = option["value"].strip().split(" ")
+            elif name in ["artist", "track"]:
+                song_data = SPOTIFY_RE.finditer(option["value"])
+                tracks = []
+                artists = []
+                if song_data:
+                    for match in song_data:
+                        if match.group(2) == "track":
+                            tracks.append(match.group(3))
+                        if match.group(2) == "artist":
+                            artists.append(match.group(3))
+                if tracks:
+                    recommendations["track_ids"] = tracks
+                if artists:
+                    recommendations["artist_ids"] = artists
+            else:
+                recommendations[f"target_{name}"] = option["value"]
+        await self.spotify_recommendations(interaction, detailed, recommendations=recommendations)
+
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
         """
@@ -56,7 +160,7 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             command_mapping = {
                 "now": self.spotify_now,
-                "recommendations": self.spotify_recommendations,
+                "recommendations": self.parse_spotify_recommends,
                 "forgetme": self.spotify_forgetme,
                 "me": self.spotify_me,
                 "search": self.spotify_search,
@@ -77,11 +181,23 @@ class SpotifyCommands:
             }
             option = ctx.data["options"][0]["name"]
             func = command_mapping[option]
+            if option == "recommendations":
+                await func(ctx)
+                return
+
             try:
-                kwargs = {i["name"]: i["value"] for i in ctx.data["options"][0].get("options", [])}
+                kwargs = {}
+                for option in ctx.data["options"][0].get("options", []):
+                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
             except KeyError:
                 kwargs = {}
                 pass
+            except AttributeError:
+                log.exception("Error converting interaction arguments")
+                await ctx.response.send_message(
+                    _("One or more options you have provided are not available in DM's."), ephemeral=True
+                )
+                return
             await func(ctx, **kwargs)
 
     @spotify_com.group(name="set")
@@ -750,8 +866,6 @@ class SpotifyCommands:
             is_slash = True
             await ctx.response.defer()
             author = ctx.user
-            if member:
-                member = ctx.guild.get_member(int(member))
         else:
             author = ctx.author
             await ctx.trigger_typing()
@@ -759,13 +873,14 @@ class SpotifyCommands:
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        if member:
+        if member and isinstance(member, discord.Member):
             if not [c for c in member.activities if c.type == discord.ActivityType.listening]:
                 msg = _("That user is not currently listening to Spotify on Discord.")
                 if is_slash:
                     await ctx.followup.send(msg, ephemeral=True)
                 else:
                     await ctx.send(msg)
+                return
             else:
                 activity = [
                     c for c in member.activities if c.type == discord.ActivityType.listening
@@ -773,6 +888,8 @@ class SpotifyCommands:
                 user_spotify = tekore.Spotify(sender=self._sender)
                 with user_spotify.token_as(user_token):
                     track = await user_spotify.track(activity.track_id)
+        else:
+            member = None
         if ctx.guild:
             delete_after = await self.config.guild(ctx.guild).delete_message_after()
             clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
@@ -977,7 +1094,6 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             is_slash = True
             await ctx.response.defer()
-            recommendations = await RecommendationsConverter.convert_slash(self, recommendations)
         else:
             await ctx.trigger_typing()
 

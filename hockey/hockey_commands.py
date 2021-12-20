@@ -272,6 +272,24 @@ class HockeyCommands(MixinMeta):
         log.debug(players)
         return player_ids, players
 
+    async def player_choices(self, name: str) -> List[dict]:
+        now = datetime.utcnow()
+        saved = datetime.fromtimestamp(await self.config.player_db())
+        path = cog_data_path(self) / "players.json"
+        ret = []
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            async with self.session.get(
+                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+            ) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await self.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
+            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
+                if name.lower() in player["fullName"].lower():
+                    ret.append({"name": player["fullName"], "value": player["fullName"]})
+        return ret
+
     @hockey_commands.command(aliases=["players"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def player(
@@ -765,4 +783,3 @@ class HockeyCommands(MixinMeta):
                     team_link = TEAMS[team]["invite"]
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.channel.send(msg)
-

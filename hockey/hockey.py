@@ -531,6 +531,20 @@ class Hockey(
         }
         option = interaction.data["options"][0]["name"]
         func = command_mapping[option]
+        if option == "otherdiscords" and interaction.data["options"][0]["options"][0].get(
+            "focused", False
+        ):
+            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
+            team_choices = [{"name": t, "value": t} for t in TEAMS if current_data in t.lower()]
+            await interaction.response.auto_complete(team_choices[:25])
+            return
+        if option == "player" and interaction.data["options"][0]["options"][0].get(
+            "focused", False
+        ):
+            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
+            player_choices = await self.player_choices(current_data)
+            await interaction.response.auto_complete(player_choices[:25])
+            return
         try:
             kwargs = {
                 i["name"]: i["value"] for i in interaction.data["options"][0].get("options", [])
