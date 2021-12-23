@@ -226,13 +226,13 @@ class SpotifyCommands:
         """
         if isinstance(ctx, discord.Interaction):
             command_mapping = {
-                "add": self.slash_playlist_add,
-                "create": self.slash_playlist_create,
-                "featured": self.slash_playlist_featured,
-                "follow": self.slash_playlist_follow,
-                "list": self.slash_playlist_list,
-                "remove": self.slash_playlist_remove,
-                "view": self.slash_playlist_view,
+                "add": self.spotify_playlist_add,
+                "create": self.spotify_playlist_create,
+                "featured": self.spotify_playlist_featured,
+                "follow": self.spotify_playlist_follow,
+                "list": self.spotify_playlist_list,
+                "remove": self.spotify_playlist_remove,
+                "view": self.spotify_playlist_view,
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
@@ -253,8 +253,8 @@ class SpotifyCommands:
         """
         if isinstance(ctx, discord.Interaction):
             command_mapping = {
-                "follow": self.slash_artist_follow,
-                "albums": self.slash_artist_albums,
+                "follow": self.spotify_artist_follow,
+                "albums": self.spotify_artist_albums,
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
@@ -276,8 +276,8 @@ class SpotifyCommands:
         """
         if isinstance(ctx, discord.Interaction):
             command_mapping = {
-                "transfer": self.slash_device_transfer,
-                "list": self.slash_device_list,
+                "transfer": self.spotify_device_transfer,
+                "list": self.spotify_device_list,
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
@@ -2105,7 +2105,7 @@ class SpotifyCommands:
 
     @spotify_playlist.command(name="list", aliases=["ls"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def playlist_playlist_list(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def spotify_playlist_list(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List your Spotify Playlists
 
@@ -2117,8 +2117,10 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             is_slash = True
+            author = ctx.user
         else:
             await ctx.trigger_typing()
+            author = ctx.author
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
@@ -2139,7 +2141,7 @@ class SpotifyCommands:
             timeout = await self.config.guild(ctx.guild).menu_timeout()
         else:
             delete_after, clear_after, timeout = False, True, 120
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
+        show_private = await self.config.user(author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
         if show_private:
@@ -2177,8 +2179,10 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             is_slash = True
+            author = ctx.user
         else:
             await ctx.trigger_typing()
+            author = ctx.author
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
@@ -2200,10 +2204,10 @@ class SpotifyCommands:
             timeout = await self.config.guild(ctx.guild).menu_timeout()
         else:
             delete_after, clear_after, timeout = False, True, 120
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
+        show_private = await self.config.user(author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
+        show_private = await self.config.user(author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
         if show_private:

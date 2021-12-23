@@ -1755,7 +1755,7 @@ class SpotifyBaseMenu(discord.ui.View):
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
         if is_slash:
-            await ctx.response.send_message(**kwargs, view=self)
+            await ctx.followup.send(**kwargs, view=self)
             self.message = await ctx.original_message()
         else:
             self.message = await channel.send(**kwargs, view=self)
@@ -1850,7 +1850,7 @@ class SpotifyBaseMenu(discord.ui.View):
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{CROSS MARK}", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", row=1)
     async def stop_pages(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ) -> None:
