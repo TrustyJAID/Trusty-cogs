@@ -282,7 +282,7 @@ msgstr "{emoji} `{time}` {chan_type} Salon créé {perp_msg} {channel}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:863
 msgid "{chan_type} Channel Deleted {chan_name} ({chan_id})"
-msgstr "{emoji} `{time}` {chan_type}  supprimé {perp_msg} {chan_id}"
+msgstr "{chan_type} supprimé {chan_name} {chan_id}"
 
 #: /root/pixymire/homemade/extendedmodlog/eventmixin.py:875
 msgid "Deleted by "

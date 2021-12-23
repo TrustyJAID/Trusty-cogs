@@ -500,7 +500,17 @@ class Spotify(SpotifyCommands, commands.Cog):
                     albums.append(match.group(3))
                 if match.group(2) == "playlist":
                     playlists.append(match.group(3))
-
+                    
+        ctx = await self.bot.get_context(message)
+        user = self.bot.get_user(payload.user_id)
+        if not user:
+            return
+        if str(payload.emoji) not in listen_for:
+            return
+        user_token = await self.get_user_auth(ctx, user)
+        if not user_token:
+            return
+          
         user_spotify = tekore.Spotify(sender=self._sender)
         action = listen_for[str(payload.emoji)]
         if action == "play" or action == "playpause":
