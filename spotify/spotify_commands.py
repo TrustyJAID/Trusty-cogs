@@ -364,7 +364,7 @@ class SpotifyCommands:
             commands["spotify"] = command_id
         await ctx.tick()
 
-    @spotify_set.command(name="disable")
+    @spotify_slash.command(name="disable")
     @commands.guild_only()
     async def spotify_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
         """
