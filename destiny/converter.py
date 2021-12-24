@@ -1,7 +1,6 @@
 import logging
 import re
-
-from typing import Optional
+from typing import Optional, List
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -17,6 +16,74 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 @cog_i18n(_)
 class DestinyActivity(Converter):
     """Returns the correct history code if provided a named one"""
+
+    CHOICES: List[dict] = [
+        {"name": "all", "value": "0"},
+        {"name": "story", "value": "2"},
+        {"name": "strike", "value": "3"},
+        {"name": "raid", "value": "4"},
+        {"name": "allpvp", "value": "5"},
+        {"name": "patrol", "value": "6"},
+        {"name": "allpve", "value": "7"},
+        {"name": "control", "value": "10"},
+        {"name": "clash", "value": "12"},
+        {"name": "crimsondoubles", "value": "15"},
+        {"name": "nightfall", "value": "16"},
+        {"name": "heroicnightfall", "value": "17"},
+        {"name": "allstrikes", "value": "18"},
+        {"name": "ironbanner", "value": "19"},
+        {"name": "allmayhem", "value": "25"},
+        {"name": "supremacy", "value": "31"},
+        {"name": "privatematchesall", "value": "32"},
+        {"name": "survival", "value": "37"},
+        {"name": "countdown", "value": "38"},
+        {"name": "trialsofthenine", "value": "39"},
+        {"name": "social", "value": "40"},
+        {"name": "trialscountdown", "value": "41"},
+        {"name": "trialssurvival", "value": "42"},
+        {"name": "ironbannercontrol", "value": "43"},
+        {"name": "ironbannerclash", "value": "44"},
+        {"name": "ironbannersupremacy", "value": "45"},
+        {"name": "scorednightfall", "value": "46"},
+        {"name": "scoredheroicnightfall", "value": "47"},
+        {"name": "rumble", "value": "48"},
+        {"name": "alldoubles", "value": "49"},
+        {"name": "doubles", "value": "50"},
+        {"name": "privatematchesclash", "value": "51"},
+        {"name": "privatematchescontrol", "value": "52"},
+        {"name": "privatematchessupremacy", "value": "53"},
+        {"name": "privatematchescountdown", "value": "54"},
+        {"name": "privatematchessurvival", "value": "55"},
+        {"name": "privatematchesmayhem", "value": "56"},
+        {"name": "privatematchesrumble", "value": "57"},
+        {"name": "heroicadventure", "value": "58"},
+        {"name": "showdown", "value": "59"},
+        {"name": "lockdown", "value": "60"},
+        {"name": "scorched", "value": "61"},
+        {"name": "scorchedteam", "value": "62"},
+        {"name": "gambit", "value": "63"},
+        {"name": "allpvecompetitive", "value": "64"},
+        {"name": "breakthrough", "value": "65"},
+        {"name": "blackarmoryrun", "value": "66"},
+        {"name": "salvage", "value": "67"},
+        {"name": "ironbannersalvage", "value": "68"},
+        {"name": "pvpcompetitive", "value": "69"},
+        {"name": "pvpquickplay", "value": "70"},
+        {"name": "clashquickplay", "value": "71"},
+        {"name": "clashcompetitive", "value": "72"},
+        {"name": "controlquickplay", "value": "73"},
+        {"name": "controlcompetitive", "value": "74"},
+        {"name": "gambirprime", "value": "75"},
+        {"name": "reckoning", "value": "76"},
+        {"name": "menagerie", "value": "77"},
+        {"name": "vexoffensive", "value": "78"},
+        {"name": "nightmarehunt", "value": "79"},
+        {"name": "elimination", "value": "80"},
+        {"name": "momentum", "value": "81"},
+        {"name": "dungeon", "value": "82"},
+        {"name": "sundial", "value": "83"},
+        {"name": "trialsofosiris", "value": "84"},
+    ]
 
     async def convert(self, ctx: commands.Context, argument: str) -> int:
         possible_results: dict = {
@@ -257,8 +324,7 @@ class DestinyItemType(Converter):
 
 @cog_i18n(_)
 class DestinyEververseItemType(Converter):
-    """Returns the correct item type code if provided a named one
-    """
+    """Returns the correct item type code if provided a named one"""
 
     ITEM_TYPE_RE = re.compile(
         r"(ghosts?|ships?|vehicles?|sparrows?|finishers?|packages?|consumables?)", flags=re.I
@@ -269,15 +335,12 @@ class DestinyEververseItemType(Converter):
         ret = {"item_types": [], "item_sub_types": []}
         item_types: dict = {
             "consumable": 9,
-            "ship":  21,
+            "ship": 21,
             "vehicle": 22,
             "ghost": 24,
             "finisher": 29,
         }
-        item_sub_types: dict = {
-            "shaders": 20,
-            "ornaments": 21
-        }
+        item_sub_types: dict = {"shaders": 20, "ornaments": 21}
         for i in self.ITEM_TYPE_RE.findall(argument):
             if i in item_types:
                 ret["item_types"].append(item_types[i])

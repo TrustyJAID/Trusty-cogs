@@ -5,7 +5,7 @@ import logging
 from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import aiohttp
 import discord
@@ -13,7 +13,8 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n, get_locale
-from redbot.core.utils.predicates import MessagePredicate
+from redbot.core.utils.predicates import ReactionPredicate
+from redbot.core.utils.menus import start_adding_reactions
 
 from .errors import (
     Destiny2APICooldown,
@@ -60,6 +61,7 @@ class DestinyAPI:
         self.config: Config
         self.bot: Red
         self.throttle: float
+        self.destiny_item_cache: dict
 
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
@@ -181,6 +183,11 @@ class DestinyAPI:
         """
         This sets up the OAuth flow for logging into the API
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         client_id = await self.config.api_token.client_id()
         if not client_id:
             raise Destiny2MissingAPITokens(
@@ -193,12 +200,12 @@ class DestinyAPI:
             "everything after `?code=` shown in the URL.\n"
         )
         try:
-            await ctx.author.send(msg + url)
+            await author.send(msg + url)
         except discord.errors.Forbidden:
-            await ctx.send(msg + url)
+            await ctx.channel.send(msg + url)
         try:
-            msg = await ctx.bot.wait_for(
-                "message", check=lambda m: m.author == ctx.message.author, timeout=60
+            msg = await self.bot.wait_for(
+                "message", check=lambda m: m.author == author, timeout=60
             )
         except asyncio.TimeoutError:
             return None
@@ -370,7 +377,9 @@ class DestinyAPI:
                     # We generally don't care about dummy items in the lookup
                     continue
                 # items.append(data)
-                items[str(data["hash"])] = data
+                item_hash = data.get("hash")
+                if item_hash:
+                    items[str(data["hash"])] = data
         return items
 
     async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
@@ -573,65 +582,93 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def has_oauth(self, ctx: commands.Context, user: discord.Member = None) -> bool:
+    async def has_oauth(
+        self, ctx: Union[commands.Context, discord.Interaction], user: discord.Member = None
+    ) -> bool:
         """
         Basic checks to see if the user has OAuth setup
         if not or the OAuth keys are expired this will call the refresh
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
+
+        error_msg = _(
+                "You need to authenticate your Bungie.net account before this command will work."
+            )
+
         if user:
             if not (
                 await self.config.user(user).oauth() or await self.config.user(user).account()
             ):
                 # bypass OAuth procedure since the user has not authorized it
-                return await ctx.send(
-                    _("That user has not provided an OAuth scope to view destiny data.")
-                )
+                msg = _("That user has not provided an OAuth scope to view destiny data.")
+                if is_slash:
+                    await ctx.followup.send(msg, ephemeral=True)
+                else:
+                    await ctx.send(msg)
+                return
             else:
                 return True
-        if not await self.config.user(ctx.author).oauth():
+        if not await self.config.user(author).oauth():
             now = datetime.now().timestamp()
             try:
                 data = await self.get_o_auth(ctx)
                 if not data:
+                    if is_slash:
+                        await ctx.followup.send(error_msg)
+                    else:
+                        await ctx.send(error_msg)
                     return False
             except Destiny2InvalidParameters as e:
                 try:
-                    await ctx.author.send(str(e))
+                    await author.send(str(e))
                 except discord.errors.Forbidden:
-                    await ctx.send(str(e))
+                    await ctx.channel.send(str(e))
+                if is_slash:
+                    await ctx.followup.send(error_msg)
+                else:
+                    await ctx.send(error_msg)
                 return False
             except Destiny2MissingAPITokens:
                 # await ctx.send(str(e))
                 return True  # Some magic so we can still keep it all under one top level command
             data["expires_at"] = now + data["expires_in"]
             data["refresh_expires_at"] = now + data["refresh_expires_in"]
-            await self.config.user(ctx.author).oauth.set(data)
+            await self.config.user(author).oauth.set(data)
             try:
-                await ctx.author.send(_("Credentials saved."))
+                await author.send(_("Credentials saved."))
             except discord.errors.Forbidden:
-                await ctx.send(_("Credentials saved."))
-        if not await self.config.user(ctx.author).account():
-            data = await self.get_user_profile(ctx.author)
+                await ctx.channel.send(_("Credentials saved."))
+        if not await self.config.user(author).account():
+            data = await self.get_user_profile(author)
             platform = ""
             if len(data["destinyMemberships"]) > 1:
                 datas, platform = await self.pick_account(ctx, data)
                 if not datas:
+                    if is_slash:
+                        await ctx.followup.send(error_msg)
+                    else:
+                        await ctx.send(error_msg)
                     return False
                 name = datas["displayName"]
-                await self.config.user(ctx.author).account.set(datas)
+                await self.config.user(author).account.set(datas)
             else:
                 name = data["destinyMemberships"][0]["displayName"]
                 platform = BUNGIE_MEMBERSHIP_TYPES[data["destinyMemberships"][0]["membershipType"]]
-                await self.config.user(ctx.author).account.set(data["destinyMemberships"][0])
-            await ctx.send(
+                await self.config.user(author).account.set(data["destinyMemberships"][0])
+            await ctx.channel.send(
                 _("Account set to {name} {platform}").format(name=name, platform=platform)
             )
-        if await self.config.user(ctx.author).account.membershipType() == 4:
+        if await self.config.user(author).account.membershipType() == 4:
             data = await self.get_user_profile(ctx.author)
             datas, platform = await self.pick_account(ctx, data)
             name = datas["displayName"]
-            await self.config.user(ctx.author).account.set(datas)
-            await ctx.send(
+            await self.config.user(author).account.set(datas)
+            await ctx.channel.send(
                 _("Account set to {name} {platform}").format(name=name, platform=platform)
             )
         return True
@@ -641,6 +678,10 @@ class DestinyAPI:
         Have the user pick which account they want to pull data
         from if they have multiple accounts across platforms
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         msg = _(
             "There are multiple destiny memberships "
             "available, which one would you like to use?\n"
@@ -658,19 +699,24 @@ class DestinyAPI:
         if membership:
             return (membership, membership_name)
         try:
-            await ctx.author.send(msg)
-            pred = MessagePredicate.valid_int(user=ctx.author)
+            message = await author.send(msg)
         except discord.errors.Forbidden:
-            await ctx.send(msg)
-            pred = MessagePredicate.valid_int(ctx)
+            message = await ctx.channel.send(msg)
+
+        emojis = ReactionPredicate.NUMBER_EMOJIS[1:-(len(profile["destinyMemberships"]) + 1)]
+        log.debug(emojis)
+        start_adding_reactions(message, emojis)
+        pred = ReactionPredicate.with_emojis(
+            emojis=emojis, message=message, user=author
+        )
         try:
-            msg = await ctx.bot.wait_for("message", check=pred, timeout=60)
+            msg = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             return None, None
 
-        membership = profile["destinyMemberships"][int(pred.result) - 1]
+        membership = profile["destinyMemberships"][int(pred.result)]
         membership_name = BUNGIE_MEMBERSHIP_TYPES[
-            profile["destinyMemberships"][int(pred.result) - 1]["membershipType"]
+            profile["destinyMemberships"][int(pred.result)]["membershipType"]
         ]
         return (membership, membership_name)
 
@@ -722,6 +768,7 @@ class DestinyAPI:
                     # response_data = await resp.text()
                     # data = json.loads(response_data)
                     data = await resp.json()
+                    simple_items = {}
                     for key, value in data.items():
                         path = cog_data_path(self) / f"{key}.json"
                         with path.open(encoding="utf-8", mode="w") as f:
@@ -735,6 +782,26 @@ class DestinyAPI:
                                 )
                             else:
                                 json.dump(value, f)
+                        if key == "DestinyInventoryItemDefinition":
+                            for item_hash, item_data in value.items():
+                                simple_items[item_hash] = {
+                                    "displayProperties": item_data["displayProperties"],
+                                    "itemType": item_data.get("itemType", 0),
+                                    "hash": int(item_hash),
+                                    "loreHash": item_data.get("loreHash", None),
+                                }
+                            path = cog_data_path(self) / "simpleitems.json"
+                            with path.open(encoding="utf-8", mode="w") as f:
+                                if self.bot.user.id in DEV_BOTS:
+                                    json.dump(
+                                        simple_items,
+                                        f,
+                                        indent=4,
+                                        sort_keys=False,
+                                        separators=(",", " : "),
+                                    )
+                                else:
+                                    json.dump(simple_items, f)
                     await self.config.manifest_version.set(manifest_data["version"])
         return manifest_data["version"]
 

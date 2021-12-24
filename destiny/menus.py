@@ -138,7 +138,6 @@ class BaseMenu(discord.ui.View):
             timeout=timeout,
         )
         self.cog = cog
-        self.bot = None
         self.message = message
         self._source = source
         self.ctx = None
@@ -156,6 +155,7 @@ class BaseMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = DestinySelect(self.source.select_options[:25])
             self.add_item(self.select_view)
+        self.author = None
 
     @property
     def source(self):
@@ -163,7 +163,6 @@ class BaseMenu(discord.ui.View):
 
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
-        self.bot = ctx.bot
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
@@ -182,10 +181,16 @@ class BaseMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        self.ctx = ctx
+
         page = await self._source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
+        if isinstance(ctx, discord.Interaction):
+            self.message = await ctx.followup.send(**kwargs, view=self)
+            self.author = ctx.user
+            pass
+        else:
+            self.message = await channel.send(**kwargs, view=self)
+            self.author = ctx.author
         return self.message
 
     async def show_page(self, page_number):
@@ -218,12 +223,7 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (self.author.id,):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
