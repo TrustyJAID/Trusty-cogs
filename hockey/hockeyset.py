@@ -2,7 +2,6 @@ import logging
 from typing import Optional, Union
 
 import discord
-from discord.http import Route
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -130,8 +129,7 @@ class HockeySetCommands(MixinMeta):
         """
         Enable Spotify commands as slash commands globally
         """
-        route = Route("POST", f"/applications/{ctx.guild.me.id}/commands")
-        data = await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=self.SLASH_COMMANDS)
         command_id = int(data.get("id"))
         log.info(data)
         self.slash_commands[command_id] = self.hockey_slash_commands
@@ -146,9 +144,11 @@ class HockeySetCommands(MixinMeta):
         Disable Spotify commands as slash commands globally
         """
         commands = await self.config.commands()
-        command_id = commands["hockey"]
-        route = Route("DELETE", f"/applications/{ctx.guild.me.id}/commands/{command_id}")
-        await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        command_id = commands.get("hockey")
+        if not command_id:
+            await ctx.send("There is no global slash command registered from this cog on this bot.")
+            return
+        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
         async with self.config.commands() as commands:
             del commands["hockey"]
         await ctx.tick()
@@ -160,8 +160,7 @@ class HockeySetCommands(MixinMeta):
         """
         Enable Spotify commands as slash commands in this server
         """
-        route = Route("POST", f"/applications/{ctx.me.id}/guilds/{ctx.guild.id}/commands")
-        data = await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS)
         command_id = int(data.get("id"))
         log.info(data)
         if ctx.guild.id not in self.slash_commands["guilds"]:
@@ -179,14 +178,11 @@ class HockeySetCommands(MixinMeta):
         Delete servers slash commands
         """
         commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("hockey", None)
+        command_id = commands.get("hockey")
         if not command_id:
-            await ctx.send(_("Slash commands are not enabled in this guild."))
+            await ctx.send(_("This cogs slash commands are not enabled in this guild."))
             return
-        route = Route(
-            "DELETE", f"/applications/{ctx.me.id}/guilds/{ctx.guild.id}/commands/{command_id}"
-        )
-        await ctx.bot.http.request(route, json=self.SLASH_COMMANDS)
+        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
         del self.slash_commands["guilds"][ctx.guild.id][command_id]
         await ctx.tick()
 

@@ -272,7 +272,10 @@ class Destiny(DestinyAPI, commands.Cog):
         Disable destiny commands as slash commands globally
         """
         commands = await self.config.commands()
-        command_id = commands["destiny"]
+        command_id = commands.get("destiny")
+        if not command_id:
+            await ctx.send("There is no global slash command registered from this cog on this bot.")
+            return
         await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
         async with self.config.commands() as commands:
             del commands["destiny"]
