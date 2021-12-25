@@ -85,20 +85,41 @@ class Spotify(SpotifyCommands, commands.Cog):
         self.slash_commands = {"guilds": {}}
         self.SLASH_COMMANDS = SLASH_COMMANDS
 
+    async def pre_check_slash(self, interaction):
+        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
+            await interaction.response.send_message(
+                _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+            await interaction.response.send_message(
+                _("Commands are not allowed in this channel or guild."), ephemeral=True
+            )
+            return False
+        return True
+
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
         # log.debug(f"Interaction received {interaction.data['name']}")
-        log.debug(interaction.data)
         interaction_id = int(interaction.data.get("id", 0))
-        log.debug(interaction.id)
-        log.debug(interaction_id)
         if interaction.guild.id in self.slash_commands["guilds"]:
             if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                    interaction
-                )
+                if await self.pre_check_slash(interaction):
+                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
+                        interaction
+                    )
         if interaction_id in self.slash_commands:
-            await self.slash_commands[interaction_id](interaction)
+            if await self.pre_check_slash(interaction):
+                await self.slash_commands[interaction_id](interaction)
 
     async def play_from_message(self, interaction: discord.Interaction):
         log.debug(interaction.message)

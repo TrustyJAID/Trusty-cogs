@@ -152,20 +152,63 @@ class Destiny(DestinyAPI, commands.Cog):
                     final_resolved[int(_id)] = role
         return convert_args[option["type"]](option["value"])
 
+    async def check_requires(self, func, interaction):
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        fake_ctx.bot = self.bot
+        fake_ctx.cog = self
+        fake_ctx.command = func
+        fake_ctx.permission_state = commands.requires.PermState.NORMAL
+
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        resp = await func.requires.verify(fake_ctx)
+        if not resp:
+            await interaction.response.send_message(
+                _("You are not authorized to use this command."), ephemeral=True
+            )
+        return resp
+
+    async def pre_check_slash(self, interaction):
+        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
+            await interaction.response.send_message(
+                _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+            await interaction.response.send_message(
+                _("Commands are not allowed in this channel or guild."), ephemeral=True
+            )
+            return False
+        return True
+
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
         # log.debug(f"Interaction received {interaction.data['name']}")
-        log.debug(interaction.data)
         interaction_id = int(interaction.data.get("id", 0))
-        log.debug(interaction.id)
-        log.debug(interaction_id)
-        if interaction.guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                    interaction
-                )
+
+        guild = interaction.guild
+        if guild and guild.id in self.slash_commands["guilds"]:
+            if interaction_id in self.slash_commands["guilds"][guild.id]:
+                if await self.pre_check_slash(interaction):
+                    await self.slash_commands["guilds"][guild.id][interaction_id](interaction)
         if interaction_id in self.slash_commands:
-            await self.slash_commands[interaction_id](interaction)
+            if await self.pre_check_slash(interaction):
+                await self.slash_commands[interaction_id](interaction)
 
     async def parse_history(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"]
@@ -211,6 +254,9 @@ class Destiny(DestinyAPI, commands.Cog):
             }
             option = ctx.data["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
             if option == "history":
                 await func(ctx)
                 return
@@ -255,7 +301,9 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Enable destiny commands as slash commands globally
         """
-        data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_global_command(
+            ctx.guild.me.id, payload=self.SLASH_COMMANDS
+        )
         command_id = int(data.get("id"))
         log.info(data)
         self.slash_commands[command_id] = self.destiny
@@ -274,7 +322,9 @@ class Destiny(DestinyAPI, commands.Cog):
         commands = await self.config.commands()
         command_id = commands.get("destiny")
         if not command_id:
-            await ctx.send("There is no global slash command registered from this cog on this bot.")
+            await ctx.send(
+                "There is no global slash command registered from this cog on this bot."
+            )
             return
         await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
         async with self.config.commands() as commands:
@@ -287,7 +337,9 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Enable destiny commands as slash commands in this server
         """
-        data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_guild_command(
+            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
+        )
         command_id = int(data.get("id"))
         log.info(data)
         if ctx.guild.id not in self.slash_commands["guilds"]:
@@ -969,7 +1021,7 @@ class Destiny(DestinyAPI, commands.Cog):
             else:
                 await ctx.send(msg)
             return
-        clan = await self.get_clan_members(ctx.author, clan_id)
+        clan = await self.get_clan_members(author, clan_id)
         headers = [
             "Discord Name",
             "Discord ID",
@@ -1109,6 +1161,7 @@ class Destiny(DestinyAPI, commands.Cog):
         await ctx.send_interactive(pagify(msg))
 
     @destiny.command(name="reset")
+    @commands.mod_or_permissions(manage_channels=True)
     async def destiny_reset_time(self, ctx: commands.Context):
         """
         Show approximately when Weekyl and Daily reset is
@@ -1412,9 +1465,9 @@ class Destiny(DestinyAPI, commands.Cog):
             # log.debug(char)
             try:
                 xur = await self.get_vendor(author, char_id, "2190858386")
-                xur_def = (
-                    await self.get_definition("DestinyVendorDefinition", ["2190858386"])
-                )["2190858386"]
+                xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
+                    "2190858386"
+                ]
 
             except Destiny2APIError:
                 log.error("I can't seem to see Xûr at the moment")
@@ -1438,9 +1491,7 @@ class Destiny(DestinyAPI, commands.Cog):
             colour=discord.Colour.red(),
             description=xur_def["displayProperties"]["description"],
         )
-        embed.set_thumbnail(
-            url=IMAGE_URL + xur_def["displayProperties"]["largeTransparentIcon"]
-        )
+        embed.set_thumbnail(url=IMAGE_URL + xur_def["displayProperties"]["largeTransparentIcon"])
         # embed.set_author(name=_("Xûr's current wares"))
         # location = xur_def["locations"][0]["destinationHash"]
         # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
@@ -1455,9 +1506,7 @@ class Destiny(DestinyAPI, commands.Cog):
             perk_hashes = [
                 str(p["singleInitialItemHash"]) for p in item["sockets"]["socketEntries"]
             ]
-            perk_data = await self.get_definition(
-                "DestinyInventoryItemDefinition", perk_hashes
-            )
+            perk_data = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
             perks = ""
             item_embed = discord.Embed(title=item["displayProperties"]["name"])
             item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
@@ -1490,9 +1539,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 for stat_hash, stat_data in xur["itemComponents"]["stats"]["data"][index][
                     "stats"
                 ].items():
-                    stat_info = (
-                        await self.get_definition("DestinyStatDefinition", [stat_hash])
-                    )[str(stat_hash)]
+                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
+                        str(stat_hash)
+                    ]
                     stat_name = stat_info["displayProperties"]["name"]
                     stat_value = stat_data["value"]
                     prog = "█" * int(stat_value / 6)
@@ -1515,8 +1564,8 @@ class Destiny(DestinyAPI, commands.Cog):
             )
             embeds.insert(0, item_embed)
         embeds.insert(0, embed)
-            # await ctx.send(embed=embed)
-            # await ctx.tick()
+        # await ctx.send(embed=embed)
+        # await ctx.tick()
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -1574,15 +1623,10 @@ class Destiny(DestinyAPI, commands.Cog):
         item_hashes = [i["itemHash"] for k, i in eververse_sales.items()]
         item_defs = await self.get_definition("DestinyInventoryItemDefinition", item_hashes)
         item_costs = [c["itemHash"] for k, i in eververse_sales.items() for c in i["costs"]]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemDefinition", item_costs
-        )
+        item_cost_defs = await self.get_definition("DestinyInventoryItemDefinition", item_costs)
         for item_hash, vendor_item in eververse_sales.items():
             item = item_defs[str(vendor_item["itemHash"])]
-            if (
-                item["itemType"] not in item_types["item_types"]
-                and item_types["item_types"] != []
-            ):
+            if item["itemType"] not in item_types["item_types"] and item_types["item_types"] != []:
                 # log.debug("ignoring item from type %s" % item["itemType"])
                 continue
             if (
@@ -1657,9 +1701,9 @@ class Destiny(DestinyAPI, commands.Cog):
             try:
                 spider = await self.get_vendor(author, char_id, "863940356")
                 await self.save(spider, "spider.json")
-                spider_def = (
-                    await self.get_definition("DestinyVendorDefinition", ["863940356"])
-                )["863940356"]
+                spider_def = (await self.get_definition("DestinyVendorDefinition", ["863940356"]))[
+                    "863940356"
+                ]
             except Destiny2APIError:
                 log.error("I can't seem to see the Spider at the moment", exc_info=True)
                 msg = _("I can't access the Spider at the moment.")
@@ -1800,9 +1844,7 @@ class Destiny(DestinyAPI, commands.Cog):
             + spider_def["displayProperties"]["subtitle"]
         )
         item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
-        item_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_hashes
-        )
+        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
         item_costs = [
             c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
         ]
@@ -1826,10 +1868,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 costs = data["costs"][0]
                 cost = item_cost_defs[str(costs["itemHash"])]
                 cost_str = (
-                    str(costs["quantity"])
-                    + " "
-                    + cost["displayProperties"]["name"]
-                    + refresh_str
+                    str(costs["quantity"]) + " " + cost["displayProperties"]["name"] + refresh_str
                 )
             except IndexError:
                 cost_str = "None" + refresh_str
@@ -1907,9 +1946,7 @@ class Destiny(DestinyAPI, commands.Cog):
             + banshee_def["displayProperties"]["subtitle"]
         )
         item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
-        item_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_hashes
-        )
+        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
         item_costs = [
             c["itemHash"] for k, i in banshee["sales"]["data"].items() for c in i["costs"]
         ]
@@ -1932,9 +1969,7 @@ class Destiny(DestinyAPI, commands.Cog):
             perk_str = ""
             if str(key) in banshee["itemComponents"]["sockets"]["data"]:
                 perk_hashes = []
-                for perk_hash in banshee["itemComponents"]["sockets"]["data"][str(key)][
-                    "sockets"
-                ]:
+                for perk_hash in banshee["itemComponents"]["sockets"]["data"][str(key)]["sockets"]:
                     if "plugHash" in perk_hash:
                         perk_hashes.append(str(perk_hash["plugHash"]))
                 perks = await self.get_definition(
@@ -2037,9 +2072,7 @@ class Destiny(DestinyAPI, commands.Cog):
             + f" ({char_class})"
         )
         item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
-        item_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_hashes
-        )
+        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
         item_costs = [
             c["itemHash"] for k, i in banshee["sales"]["data"].items() for c in i["costs"]
         ]
@@ -2060,9 +2093,9 @@ class Destiny(DestinyAPI, commands.Cog):
 
             if item["itemType"] in [0]:
                 continue
-            item_data = (
-                await self.get_definition("DestinyInventoryItemDefinition", [item_hash])
-            )[str(item_hash)]
+            item_data = (await self.get_definition("DestinyInventoryItemDefinition", [item_hash]))[
+                str(item_hash)
+            ]
             stats_str = ""
             slot_hash = item_data.get("equippingBlock", {}).get("equipmentSlotTypeHash", {})
             if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
@@ -2070,9 +2103,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 for stat_hash, stat_data in banshee["itemComponents"]["stats"]["data"][key][
                     "stats"
                 ].items():
-                    stat_info = (
-                        await self.get_definition("DestinyStatDefinition", [stat_hash])
-                    )[str(stat_hash)]
+                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
+                        str(stat_hash)
+                    ]
                     stat_name = stat_info["displayProperties"]["name"]
                     stat_value = stat_data["value"]
                     prog = "█" * int(stat_value / 6)
@@ -2140,9 +2173,9 @@ class Destiny(DestinyAPI, commands.Cog):
             race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
                 str(char["raceHash"])
             ]
-            gender = (
-                await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
-            )[str(char["genderHash"])]
+            gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
+                str(char["genderHash"])
+            ]
             char_class = (
                 await self.get_definition("DestinyClassDefinition", [char["classHash"]])
             )[str(char["classHash"])]
@@ -2155,9 +2188,7 @@ class Destiny(DestinyAPI, commands.Cog):
             if "titleRecordHash" in char:
                 # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
                 char_title = (
-                    await self.get_definition(
-                        "DestinyRecordDefinition", [char["titleRecordHash"]]
-                    )
+                    await self.get_definition("DestinyRecordDefinition", [char["titleRecordHash"]])
                 )[str(char["titleRecordHash"])]
                 title_info = "**{title_name}**\n{title_desc}\n"
                 try:
@@ -2166,9 +2197,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         gilded = _("Gilded ")
                     title_name = (
                         f"{gilded}"
-                        + char_title["titleInfo"]["titlesByGenderHash"][
-                            str(char["genderHash"])
-                        ]
+                        + char_title["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
                     )
                     title_desc = char_title["displayProperties"]["description"]
                     titles += title_info.format(title_name=title_name, title_desc=title_desc)
@@ -2209,9 +2238,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     light = ""
                 perk_list = chars["itemComponents"]["perks"]["data"][instance_id]["perks"]
                 perk_hashes = [p["perkHash"] for p in perk_list]
-                perk_data = await self.get_definition(
-                    "DestinySandboxPerkDefinition", perk_hashes
-                )
+                perk_data = await self.get_definition("DestinySandboxPerkDefinition", perk_hashes)
                 perks = ""
                 for perk_hash, perk in perk_data.items():
                     properties = perk["displayProperties"]
@@ -2360,9 +2387,9 @@ class Destiny(DestinyAPI, commands.Cog):
             race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
                 str(char["raceHash"])
             ]
-            gender = (
-                await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
-            )[str(char["genderHash"])]
+            gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
+                str(char["genderHash"])
+            ]
             log.debug(gender)
             char_class = (
                 await self.get_definition("DestinyClassDefinition", [char["classHash"]])
@@ -2398,9 +2425,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 date = datetime.datetime.strptime(activities["period"], "%Y-%m-%dT%H:%M:%SZ")
                 embed.timestamp = date
                 if activity_data["displayProperties"]["hasIcon"]:
-                    embed.set_thumbnail(
-                        url=IMAGE_URL + activity_data["displayProperties"]["icon"]
-                    )
+                    embed.set_thumbnail(url=IMAGE_URL + activity_data["displayProperties"]["icon"])
                 elif (
                     activity_data["pgcrImage"] != "/img/misc/missing_icon_d2.png"
                     and "emblemPath" in char

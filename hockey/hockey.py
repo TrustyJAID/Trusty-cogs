@@ -502,16 +502,61 @@ class Hockey(
         interaction_id = int(interaction.data.get("id", 0))
         if interaction.guild.id in self.slash_commands["guilds"]:
             if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                log.debug("Interaction in guilds")
-                await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                    interaction
-                )
+                if await self.pre_check_slash(interaction):
+                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
+                        interaction
+                    )
         if interaction_id in self.slash_commands:
-            await self.slash_commands[interaction_id](interaction)
+            if await self.pre_check_slash(interaction):
+                await self.slash_commands[interaction_id](interaction)
 
     #######################################################################
     # Where parsing of slash commands happens                             #
     #######################################################################
+
+    async def check_requires(self, func, interaction):
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        fake_ctx.bot = self.bot
+        fake_ctx.cog = self
+        fake_ctx.command = func
+        fake_ctx.permission_state = commands.requires.PermState.NORMAL
+
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        resp = await func.requires.verify(fake_ctx)
+        if not resp:
+            await interaction.response.send_message(
+                _("You are not authorized to use this command."), ephemeral=True
+            )
+        return resp
+
+    async def pre_check_slash(self, interaction):
+        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
+            await interaction.response.send_message(
+                _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+            await interaction.response.send_message(
+                _("Commands are not allowed in this channel or guild."), ephemeral=True
+            )
+            return False
+        return True
 
     async def hockey_slash_commands(self, interaction: discord.Interaction) -> None:
         """
@@ -531,6 +576,9 @@ class Hockey(
         }
         option = interaction.data["options"][0]["name"]
         func = command_mapping[option]
+        if getattr(func, "requires", None):
+            if not await self.check_requires(func, interaction):
+                return
         if option == "otherdiscords" and interaction.data["options"][0]["options"][0].get(
             "focused", False
         ):
@@ -572,6 +620,9 @@ class Hockey(
         }
         option = interaction.data["options"][0]["options"][0]["name"]
         func = command_mapping[option]
+        if getattr(func, "requires", None):
+            if not await self.check_requires(func, interaction):
+                return
         try:
             kwargs = {
                 i["name"]: i["value"]
@@ -595,6 +646,9 @@ class Hockey(
         }
         option = interaction.data["options"][0]["options"][0]["name"]
         func = command_mapping[option]
+        if getattr(func, "requires", None):
+            if not await self.check_requires(func, interaction):
+                return
         try:
             kwargs = {
                 i["name"]: i["value"]
@@ -631,6 +685,9 @@ class Hockey(
         }
         option = interaction.data["options"][0]["options"][0]["name"]
         func = command_mapping[option]
+        if getattr(func, "requires", None):
+            if not await self.check_requires(func, interaction):
+                return
         try:
             kwargs = {
                 i["name"]: i["value"]

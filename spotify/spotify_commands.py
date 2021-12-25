@@ -151,6 +151,28 @@ class SpotifyCommands:
                 recommendations[f"target_{name}"] = option["value"]
         await self.spotify_recommendations(interaction, detailed, recommendations=recommendations)
 
+    async def check_requires(self, func, interaction):
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        fake_ctx.bot = self.bot
+        fake_ctx.cog = self
+        fake_ctx.command = func
+        fake_ctx.permission_state = commands.requires.PermState.NORMAL
+
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        resp = await func.requires.verify(fake_ctx)
+        if not resp:
+            await interaction.response.send_message(
+                _("You are not authorized to use this command."), ephemeral=True
+            )
+        return resp
+
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
         """
@@ -180,6 +202,9 @@ class SpotifyCommands:
             }
             option = ctx.data["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
             if option == "recommendations":
                 await func(ctx)
                 return
@@ -235,6 +260,9 @@ class SpotifyCommands:
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
             try:
                 kwargs = {
                     i["name"]: i["value"]
@@ -257,6 +285,9 @@ class SpotifyCommands:
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
             try:
                 kwargs = {
                     i["name"]: i["value"]
@@ -280,6 +311,9 @@ class SpotifyCommands:
             }
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
             try:
                 kwargs = {
                     i["name"]: i["value"]

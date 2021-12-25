@@ -45,7 +45,7 @@ SLASH_COMMANDS = {
                         },
                         {
                             "name": "details_or_lore",
-                            "description": "test",
+                            "description": "Whether to display details or lore of the item.",
                             "type": 3,
                             "required": False,
                             "choices": [
@@ -62,7 +62,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "entry",
-                            "description": "test",
+                            "description": "The Lore entry you want to read.",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -96,8 +96,18 @@ SLASH_COMMANDS = {
             "description": "Display a menu of each character's equipped weapons and their info",
             "type": 1,
             "options": [
-                {"name": "user", "description": "test", "type": 6, "required": False},
-                {"name": "full", "description": "test", "type": 3, "required": False},
+                {
+                    "name": "user",
+                    "description": "The user whose loadout you want to see.",
+                    "type": 6,
+                    "required": False,
+                },
+                {
+                    "name": "full",
+                    "description": "Whether or not to display the full information.",
+                    "type": 5,
+                    "required": False,
+                },
             ],
         },
         {
