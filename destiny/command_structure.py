@@ -38,7 +38,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "search",
-                            "description": "test",
+                            "description": "The item to lookup.",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -84,7 +84,7 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "activity",
-                    "description": "test",
+                    "description": "The activity type you want to see history of.",
                     "type": 3,
                     "required": True,
                     "autocomplete": True,
@@ -142,7 +142,7 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "stat_type",
-                    "description": "test",
+                    "description": "The type of stats you want to see.",
                     "type": 3,
                     "required": True,
                     "choices": [
@@ -155,7 +155,6 @@ SLASH_COMMANDS = {
                         {"name": "Gambit", "value": "allPvECompetitive"},
                     ],
                 },
-                {"name": "all", "description": "test", "type": 3, "required": True},
             ],
         },
         {
@@ -176,7 +175,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "clan_id",
-                            "description": "test",
+                            "description": "Your clan ID or URL to your clan page.",
                             "type": 3,
                             "required": False,
                         }
@@ -187,7 +186,12 @@ SLASH_COMMANDS = {
                     "description": "Set the clan ID for this server",
                     "type": 1,
                     "options": [
-                        {"name": "clan_id", "description": "test", "type": 3, "required": True}
+                        {
+                            "name": "clan_id",
+                            "description": "Your clan ID or URL to your clan page.",
+                            "type": 3,
+                            "required": True,
+                        }
                     ],
                 },
                 {
@@ -197,7 +201,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "output_format",
-                            "description": "test",
+                            "description": "The output format if required either csv or md.",
                             "type": 3,
                             "required": False,
                             "choices": [
@@ -216,29 +220,49 @@ SLASH_COMMANDS = {
             "options": [],
         },
         {
-            "name": "test",
-            "description": "Display a menu of your basic character's info",
-            "type": 1,
-            "options": [],
-        },
-        {
             "name": "xur",
             "description": "Display a menu of X\u00fbr's current wares",
             "type": 1,
-            "options": [{"name": "full", "description": "test", "type": 5, "required": False}],
+            "options": [
+                {
+                    "name": "full",
+                    "description": "Whether to display full information from xur.",
+                    "type": 5,
+                    "required": False,
+                }
+            ],
         },
         {
             "name": "user",
             "description": "Display a menu of your basic character's info",
             "type": 1,
-            "options": [{"name": "user", "description": "test", "type": 6, "required": False}],
+            "options": [
+                {
+                    "name": "user",
+                    "description": "Someone other than yourself you would like to lookup if they've registered.",
+                    "type": 6,
+                    "required": False,
+                }
+            ],
         },
         {
             "name": "eververse",
             "description": "Display items currently available on the Eververse in a menu",
             "type": 1,
             "options": [
-                {"name": "item_types", "description": "test", "type": 3, "required": False}
+                {
+                    "name": "item_types",
+                    "description": "The item type from eververse to display.",
+                    "type": 4,
+                    "required": False,
+                    "choices": [
+                        {"name": "Consumable", "value": 9},
+                        {"name": "Ship", "value": 21},
+                        {"name": "Vehicle", "value": 22},
+                        {"name": "Ghost", "value": 24},
+                        {"name": "Finisher", "value": 29},
+                    ],
+                }
             ],
         },
         {

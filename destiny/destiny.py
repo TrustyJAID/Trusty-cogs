@@ -371,8 +371,18 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Remove your authorization to the destiny API on the bot
         """
-        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
-        await ctx.send(_("Your authorization has been reset."))
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
+        await self.red_delete_data_for_user(requester="user", user_id=author.id)
+        msg = _("Your authorization has been reset.")
+        if is_slash:
+            await ctx.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx.send(msg)
 
     async def parse_search_items(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"][0]["options"]
@@ -784,7 +794,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await ctx.send(msg)
             return
         try:
-            clan_info = await self.get_clan_info(ctx.author, clan_id)
+            clan_info = await self.get_clan_info(author, clan_id)
             embed = await self.make_clan_embed(clan_info)
         except Exception:
             log.exception("Error getting clan info")
@@ -951,7 +961,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await ctx.followup.send(msg, ephemeral=True)
             else:
                 await ctx.send(msg)
-        clan_pending = await self.get_clan_pending(ctx.author, clan_id)
+        clan_pending = await self.get_clan_pending(author, clan_id)
         if not clan_pending["results"]:
             msg = _("There is no one pending clan approval.")
             if is_slash:
@@ -974,7 +984,7 @@ class Destiny(DestinyAPI, commands.Cog):
             membership_id = approved["destinyUserInfo"]["membershipId"]
             membership_type = approved["destinyUserInfo"]["membershipType"]
             await self.approve_clan_pending(
-                ctx.author, clan_id, membership_type, membership_id, approved
+                author, clan_id, membership_type, membership_id, approved
             )
         except Destiny2APIError as e:
             log.exception("error approving clan member.")
@@ -1054,7 +1064,7 @@ class Destiny(DestinyAPI, commands.Cog):
             try:
                 bungie_id = member["bungieNetUserInfo"]["membershipId"]
                 # bungie_name = member["bungieNetUserInfo"]["displayName"]
-                creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
+                creds = await self.get_bnet_user_credentials(author, bungie_id)
                 steam_id = ""
                 for cred in creds:
                     if "credentialAsString" in cred:
@@ -1599,10 +1609,12 @@ class Destiny(DestinyAPI, commands.Cog):
 
         if not await self.has_oauth(ctx):
             return
+        if isinstance(item_types, int):
+            item_types = {"item_types": [item_types], "item_sub_types": []}
         if not item_types:
             item_types = {"item_types": [9, 19, 21, 22, 24, 29], "item_sub_types": [21, 20]}
         try:
-            chars = await self.get_characters(ctx.author)
+            chars = await self.get_characters(author)
         except Destiny2APIError:
             # log.debug(e)
             await self.missing_profile(ctx)
@@ -1611,7 +1623,7 @@ class Destiny(DestinyAPI, commands.Cog):
         eververse_sales = {}
         for char_id, char in chars["characters"]["data"].items():
             try:
-                ev = await self.get_vendor(ctx.author, char_id, "3361454721")
+                ev = await self.get_vendor(author, char_id, "3361454721")
                 eververse_sales.update(ev["sales"]["data"])
 
             except Destiny2APIError:
@@ -2015,7 +2027,7 @@ class Destiny(DestinyAPI, commands.Cog):
         if not await self.has_oauth(ctx):
             return
         try:
-            chars = await self.get_characters(ctx.author)
+            chars = await self.get_characters(author)
         except Destiny2APIError:
             # log.debug(e)
             await self.missing_profile(ctx)
@@ -2137,7 +2149,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(embed=embed)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def loadout(
         self, ctx: commands.Context, full: Optional[bool] = False, user: discord.Member = None
     ) -> None:
@@ -2284,7 +2296,7 @@ class Destiny(DestinyAPI, commands.Cog):
         ).start(ctx=ctx)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def gambit(self, ctx: commands.Context) -> None:
         """
         Display a menu of each characters gambit stats
@@ -2295,7 +2307,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "allPvECompetitive")
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def pvp(self, ctx: commands.Context) -> None:
         """
         Display a menu of each character's pvp stats
@@ -2306,7 +2318,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "allPvP")
 
     @destiny.command(aliases=["raids"])
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def raid(self, ctx: commands.Context) -> None:
         """
         Display a menu for each character's RAID stats
@@ -2317,7 +2329,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "raid")
 
     @destiny.command(aliases=["qp"])
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def quickplay(self, ctx: commands.Context) -> None:
         """
         Display a menu of past quickplay matches
@@ -2328,7 +2340,7 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.history(ctx, 70)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True, )
     async def history(self, ctx: commands.Context, activity: DestinyActivity) -> None:
         """
         Display a menu of each character's last 5 activities
@@ -2668,8 +2680,8 @@ class Destiny(DestinyAPI, commands.Cog):
         return await self.get_char_colour(embed, char)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
-    async def stats(self, ctx: commands.Context, stat_type: StatsPage, all: bool = True) -> None:
+    @commands.bot_has_permissions(embed_links=True)
+    async def stats(self, ctx: commands.Context, stat_type: StatsPage) -> None:
         """
         Display each character's stats for a specific activity
         `<activity>` The type of stats to display, available options are:
@@ -2686,7 +2698,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
         if not await self.has_oauth(ctx):
             return
-        user = ctx.author
+        user = author
         try:
             chars = await self.get_characters(user)
         except Destiny2APIError:
@@ -2716,7 +2728,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @checks.is_owner()
-    @commands.bot_has_permissions(add_reactions=True)
     async def manifest(self, ctx: commands.Context, d1: bool = False) -> None:
         """
         See the current manifest version and optionally re-download it
