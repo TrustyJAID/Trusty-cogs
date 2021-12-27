@@ -43,7 +43,7 @@ class StarboardEvents:
                     em.set_author(
                         name=author.display_name,
                         url=message.jump_url,
-                        icon_url=str(author.avatar_url),
+                        icon_url=str(author.avatar.url),
                     )
         else:
             em = discord.Embed(timestamp=message.created_at)
@@ -55,7 +55,7 @@ class StarboardEvents:
                 em.color = discord.Colour(starboard.colour)
             em.description = message.system_content
             em.set_author(
-                name=author.display_name, url=message.jump_url, icon_url=str(author.avatar_url)
+                name=author.display_name, url=message.jump_url, icon_url=str(author.avatar.url)
             )
             if message.attachments:
                 attachment = message.attachments[0]
@@ -224,6 +224,10 @@ class StarboardEvents:
             try:
                 msg = await channel.fetch_message(payload.message_id)
             except (discord.errors.NotFound, discord.Forbidden):
+                return
+            if not starboard.selfstar and msg.author.id == payload.user_id:
+                log.debug("Is a selfstar so let's return")
+                # this is here to prevent 1 threshold selfstars
                 return
             em = await self._build_embed(guild, msg, starboard)
             count_msg = "{} **#{}**".format(payload.emoji, count)
