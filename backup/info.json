@@ -8,7 +8,7 @@
     "hidden" : true,
     "install_msg" : "This cog will create folders to save server backups locally. Warning: Ensure all backups are used for personal use or data gathering. User messages are still owned by the original author. All externally saved data must be stored on an encrypted drive.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

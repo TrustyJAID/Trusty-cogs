@@ -9,7 +9,7 @@
     "hidden" : false,
     "install_msg" : "Needs to be setup with an API key first. See `[p]cleverbotset apikey` / `[p]cleverbotset ioapikey`\n[p]cleverbot <text>` to talk with cleverbot.\n`@Mention <text>` works too.\n`[p]cleverbotset toggle` toggles replies by mention.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

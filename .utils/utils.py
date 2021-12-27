@@ -194,6 +194,23 @@ def mass_fix():
 
 
 @cli.command()
+@click.option("--key", prompt="Enter the json key you want to edit.", help="Name of the key being edited")
+@click.option("--value", prompt="Enter the value for the key you want changed.", help="The value you want the key edited to.")
+def edit(key, value):
+    for folder in os.listdir(f"{ROOT}/"):
+        if folder.startswith("."):
+            continue
+        try:
+            with open(f"{ROOT}/{folder}/info.json", "r") as infile:
+                info = InfoJson.from_json(json.load(infile))
+            setattr(info, key, value)
+            save_json(f"{ROOT}/{folder}/info.json", info.__dict__)
+        except Exception:
+            log.exception(f"Error reading info.json in {folder}")
+            continue
+
+
+@cli.command()
 @click.option("--author", default=DEFAULT_AUTHOR, help="Author of the cog", prompt=True)
 @click.option("--name", prompt="Enter the name of the cog", help="Name of the cog being added")
 @click.option(

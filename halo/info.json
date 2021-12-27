@@ -8,7 +8,7 @@
     "hidden" : true,
     "install_msg" : "Set your API key from https://developer.haloapi.com and access different stats from Halo 5 and Halo Wars 2.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

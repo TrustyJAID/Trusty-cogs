@@ -9,7 +9,7 @@
     "hidden" : false,
     "install_msg" : "Use `[p]setguildjoin` to set a channel to see all new servers the bot is added to and some information about them.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

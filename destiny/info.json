@@ -8,7 +8,7 @@
     "hidden" : false,
     "install_msg" : "Use `[p]destiny` to see available commands. Note: This cog will download ~160 MB of data to more efficiently search for item names. You must acquire an API key from https://www.bungie.net/en/Application \n Select **Create New App** \n Choose **Confidential** OAuth client type \n Select the scope you would like the bot to have access to \n Set the redirect URL to https://localhost/. Users wishing to access commands after you have supplied the tokens will be asked to authorize their account on your app. Once they have approved it they will be granted access to use commands.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,
@@ -19,7 +19,10 @@
         "embed_links"
     ],
     "required_cogs" : {},
-    "requirements" : ["tabulate", "pytz"],
+    "requirements" : [
+        "tabulate",
+        "pytz"
+    ],
     "short" : "Destiny 2 information",
     "tags" : [
         "destiny",

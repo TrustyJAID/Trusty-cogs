@@ -202,6 +202,10 @@ class StarboardEvents:
                     msg = await channel.fetch_message(payload.message_id)
                 except (discord.errors.NotFound, discord.Forbidden):
                     return
+                reactions = [payload.user_id]
+                if payload.user_id == msg.author.id:
+                    if not starboard.selfstar:
+                        reactions.remove(payload.user_id)
                 star_message = StarboardMessage(
                     guild=guild.id,
                     original_message=payload.message_id,
@@ -209,7 +213,7 @@ class StarboardEvents:
                     new_message=None,
                     new_channel=None,
                     author=msg.author.id,
-                    reactions=[payload.user_id],
+                    reactions=reactions,
                 )
             starboard.stars_added += 1
             key = f"{payload.channel_id}-{payload.message_id}"

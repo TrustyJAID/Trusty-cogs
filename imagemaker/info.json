@@ -11,7 +11,7 @@
     "hidden" : false,
     "install_msg" : "This cog contains a data folder with a single font and files to create your own `isnowillegal` image. Type `[p]help ImageMaker` to see available commands.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

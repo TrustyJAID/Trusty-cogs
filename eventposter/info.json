@@ -8,7 +8,7 @@
     "hidden" : false,
     "install_msg" : "Setup a channel with `[p]eventset channel` for announcements and an admin channel with `[p]eventset approvalchannel`. Then anyone can ask to make an event with `[p]event`",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,
@@ -20,7 +20,10 @@
         "add_reactions"
     ],
     "required_cogs" : {},
-    "requirements" : ["python-dateutil", "pytz"],
+    "requirements" : [
+        "python-dateutil",
+        "pytz"
+    ],
     "short" : "Admin approved announcments/events",
     "tags" : [
         "events"

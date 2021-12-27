@@ -8,7 +8,7 @@
     "hidden" : true,
     "install_msg" : "You probably don't want to use this cog.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         7,

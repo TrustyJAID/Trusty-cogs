@@ -8,7 +8,7 @@
     "hidden" : false,
     "install_msg" : "Thanks for installing.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.3.0",
+    "min_bot_version" : "3.5.0",
     "min_python_version" : [
         3,
         8,
@@ -21,7 +21,6 @@
     "required_cogs" : {},
     "requirements" : [],
     "short" : "Block or Allow invite links based on guild ID. Accepts invite links to extract guild ID's.",
-    "tags" : [
-    ],
+    "tags" : [],
     "type" : "COG"
 }
