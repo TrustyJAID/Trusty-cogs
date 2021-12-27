@@ -225,6 +225,10 @@ class StarboardEvents:
                 msg = await channel.fetch_message(payload.message_id)
             except (discord.errors.NotFound, discord.Forbidden):
                 return
+            if not starboard.selfstar and msg.author.id == payload.user_id:
+                log.debug("Is a selfstar so let's return")
+                # this is here to prevent 1 threshold selfstars
+                return
             em = await self._build_embed(guild, msg, starboard)
             count_msg = "{} **#{}**".format(payload.emoji, count)
             post_msg = await star_channel.send(count_msg, embed=em)
