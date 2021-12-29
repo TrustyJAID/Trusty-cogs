@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Literal, Optional
 
 import aiohttp
@@ -31,7 +31,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -67,7 +67,11 @@ class Runescape(commands.Cog):
     @tasks.loop(seconds=60)
     async def check_new_metrics(self):
         for username, activities in self.metrics.items():
-            data = await self.get_profile(username, 20)
+            try:
+                data = await self.get_profile(username, 20)
+            except Exception:
+                log.exception("Error pulling profile info for %s", username)
+                continue
             for activity in reversed(data.activities):
                 if activity.id not in activities.posted_activities:
                     await self.post_activity(data, activities.channels, activity)
@@ -361,6 +365,25 @@ class Runescape(commands.Cog):
             return
         skills = await self.stats_message(data)
         await ctx.maybe_send_embed(skills)
+
+    @runescape.command()
+    async def reset(self, ctx: commands.Context) -> None:
+        """Show Runescapes Daily, Weekly, and Monthly reset times."""
+        today = datetime.now(timezone.utc).replace(minute=0)
+        daily = today + timedelta(hours=((0 - today.hour) % 24))
+        weekly = daily + timedelta(days=((2 - daily.weekday()) % 7))
+        monthly = datetime(
+            year=daily.year, month=daily.month, day=28, hour=0, tzinfo=timezone.utc
+        ) + timedelta(days=4)
+        weekly_reset_str = int(weekly.timestamp())
+        daily_reset_str = int(daily.timestamp())
+        monthly_reset_str = int(monthly.timestamp())
+        msg = (
+            "Daily Reset is <t:{daily}:R> (<t:{daily}>).\n"
+            "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
+            "Monthly Reset is <t:{month}:R> (<t:{month}>)."
+        ).format(weekly=weekly_reset_str, daily=daily_reset_str, month=monthly_reset_str)
+        await ctx.send(msg)
 
     async def stats_message(self, p: Profile) -> str:
         table = str(p)
