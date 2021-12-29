@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+from pathlib import Path
 from typing import Dict, Literal, Optional, Tuple, Union
 
 import discord
@@ -10,6 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
+from .command_structure import SLASH_COMMANDS
 from .event_obj import ApproveView, Event, ValidImage
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
@@ -46,15 +49,19 @@ class EventPoster(commands.Cog):
             "required_roles": [],
             "playerclass_options": {},
             "make_thread": False,
+            "commands": {},
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_user)
+        self.config.register_global(commands={})
         self.event_cache: Dict[int, Dict[int, Event]] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.bot.loop.create_task(self.initialize())
         self.cleanup_old_events.start()
         self.waiting_approval = {}
+        self.SLASH_COMMANDS = SLASH_COMMANDS
+        self.slash_commands = {"guilds": {}}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -62,6 +69,118 @@ class EventPoster(commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    @staticmethod
+    def convert_slash_args(interaction: discord.Interaction, option: dict):
+        convert_args = {
+            3: lambda x: x,
+            4: lambda x: int(x),
+            5: lambda x: bool(x),
+            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
+            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
+            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
+            9: lambda x: final_resolved[int(x)]
+            or interaction.guild.get_role(int(x))
+            or interaction.guild.get_member(int(x)),
+            10: lambda x: float(x),
+        }
+        resolved = interaction.data.get("resolved", {})
+        final_resolved = {}
+        if resolved:
+            resolved_users = resolved.get("users")
+            if resolved_users:
+                resolved_members = resolved.get("members")
+                for _id, data in resolved_users.items():
+                    if resolved_members:
+                        member_data = resolved_members[_id]
+                        member_data["user"] = data
+                        member = discord.Member(
+                            data=member_data, guild=interaction.guild, state=interaction._state
+                        )
+                        final_resolved[int(_id)] = member
+                    else:
+                        user = discord.User(data=data, state=interaction._state)
+                        final_resolved[int(_id)] = user
+            resolved_channels = resolved.get("channels")
+            if resolved_channels:
+                for _id, data in resolved_channels.items():
+                    data["position"] = None
+                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
+                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
+                    final_resolved[int(_id)] = channel
+            resolved_messages = resolved.get("messages")
+            if resolved_messages:
+                for _id, data in resolved_messages.items():
+                    msg = discord.Message(
+                        state=interaction._state, channel=interaction.channel, data=data
+                    )
+                    final_resolved[int(_id)] = msg
+            resolved_roles = resolved.get("roles")
+            if resolved_roles:
+                for _id, data in resolved_roles.items():
+                    role = discord.Role(
+                        guild=interaction.guild, state=interaction._state, data=data
+                    )
+                    final_resolved[int(_id)] = role
+        return convert_args[option["type"]](option["value"])
+
+    async def check_requires(self, func, interaction):
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        fake_ctx.bot = self.bot
+        fake_ctx.cog = self
+        fake_ctx.command = func
+        fake_ctx.permission_state = commands.requires.PermState.NORMAL
+
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        resp = await func.requires.verify(fake_ctx)
+        if not resp:
+            await interaction.response.send_message(
+                _("You are not authorized to use this command."), ephemeral=True
+            )
+        return resp
+
+    async def pre_check_slash(self, interaction):
+        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
+            await interaction.response.send_message(
+                _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+            await interaction.response.send_message(
+                _("Commands are not allowed in this channel or guild."), ephemeral=True
+            )
+            return False
+        return True
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        # log.debug(f"Interaction received {interaction.data['name']}")
+        interaction_id = int(interaction.data.get("id", 0))
+
+        guild = interaction.guild
+        if guild and guild.id in self.slash_commands["guilds"]:
+            if interaction_id in self.slash_commands["guilds"][guild.id]:
+                if await self.pre_check_slash(interaction):
+                    await self.slash_commands["guilds"][guild.id][interaction_id](interaction)
+        if interaction_id in self.slash_commands:
+            if await self.pre_check_slash(interaction):
+                await self.slash_commands[interaction_id](interaction)
 
     def cog_unload(self):
         self.cleanup_old_events.cancel()
@@ -144,6 +263,17 @@ class EventPoster(commands.Cog):
                     self.bot.add_view(event)
         except Exception:
             log.exception("Error loading events")
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in all_guilds.items():
+            if data["commands"]:
+                self.slash_commands["guilds"][guild_id] = {}
+                for command, command_id in data["commands"].items():
+                    if command == "event":
+                        self.slash_commands["guilds"][guild_id][command_id] = self.event_commands
+        commands = await self.config.commands()
+        for command_name, command_id in commands.items():
+            if command_name == "event":
+                self.slash_commands[command_id] = self.event_commands
         self._ready.set()
 
     async def add_user_to_event(self, user: discord.Member, event: Event) -> None:
@@ -180,7 +310,41 @@ class EventPoster(commands.Cog):
         event.check_join_enabled()
         await event.update_event()
 
-    @commands.command(name="eventping", aliases=["eventmention"])
+    @commands.group(name="event")
+    @commands.guild_only()
+    async def event_commands(self, ctx: commands.Context):
+        """All event related commands."""
+        if isinstance(ctx, discord.Interaction):
+            command_mapping = {
+                "join": self.join_event,
+                "make": self.make_event,
+                "show": self.show_event,
+                "ping": self.event_ping,
+                "clear": self.clear_event,
+                "edit": self.event_edit,
+                "set": self.event_settings,
+                "leave": self.leave_event,
+            }
+            option = ctx.data["options"][0]["name"]
+            func = command_mapping[option]
+
+            try:
+                kwargs = {}
+                for option in ctx.data["options"][0].get("options", []):
+                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
+            except KeyError:
+                kwargs = {}
+                pass
+            except AttributeError:
+                log.exception("Error converting interaction arguments")
+                await ctx.response.send_message(
+                    _("One or more options you have provided are not available in DM's."),
+                    ephemeral=True,
+                )
+                return
+            await func(ctx, **kwargs)
+
+    @event_commands.command(name="ping", aliases=["mention"])
     @commands.guild_only()
     async def event_ping(
         self,
@@ -195,29 +359,51 @@ class EventPoster(commands.Cog):
         `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.
         `[message]` Optional message to include with the ping.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
         announcement_channel, approval_channel = await self.get_channels(ctx)
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event running with people to ping."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event running with people to ping.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         event_data = await self.config.guild(ctx.guild).events()
-        event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
+        event = Event.from_json(self.bot, event_data[str(author.id)])
         msg = event.mention(include_maybe) + ":\n" + message
+        if is_slash:
+            await ctx.followup.send_message(_("Pinging users of your event."), ephemeral=True)
         for page in pagify(msg):
-            await ctx.send(page, allowed_mentions=discord.AllowedMentions(users=True))
+            await ctx.channel.send(page, allowed_mentions=discord.AllowedMentions(users=True))
             # include AllowedMentions here just incase someone has user mentions disabled
             # since this is intended to ping the users.
 
     async def check_requirements(self, ctx: commands.Context) -> bool:
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
+
         max_events = await self.config.guild(ctx.guild).max_events()
         if (
             max_events is not None
             and ctx.guild.id in self.event_cache
             and len(self.event_cache[ctx.guild.id]) >= max_events
         ):
-            await ctx.send(
-                _(
-                    "The maximum number of events are already posted. Please wait until one finishes."
-                )
+            msg = _(
+                "The maximum number of events are already posted. Please wait until one finishes."
             )
+            if is_slash:
+                await ctx.response.send_message(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
             return False
         required_roles = [
             ctx.guild.get_role(r)
@@ -230,18 +416,22 @@ class EventPoster(commands.Cog):
             for role in required_roles:
                 if role is None:
                     continue
-                if role in ctx.author.roles:
+                if role in author.roles:
                     allowed = True
         if not allowed:
-            await ctx.send(_("You do not have one of the required roles to create events."))
+            msg = _("You do not have one of the required roles to create events.")
+            if is_slash:
+                await ctx.response.send_message(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
         return allowed
 
-    @commands.command(name="event")
+    @event_commands.command(name="make")
     @commands.guild_only()
     async def make_event(
         self,
         ctx: commands.Context,
-        members: commands.Greedy[discord.Member],
+        members: commands.Greedy[discord.Member] = [],
         max_slots: Optional[int] = None,
         *,
         description: str,
@@ -268,17 +458,25 @@ class EventPoster(commands.Cog):
         """
         if not await self.check_requirements(ctx):
             return
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) in await self.config.guild(ctx.guild).events():
+        if str(author.id) in await self.config.guild(ctx.guild).events():
             if not await self.check_clear_event(ctx):
                 return
             else:
                 to_del = []
                 for message_id, event in self.event_cache[ctx.guild.id].items():
-                    if event.hoster == ctx.author.id:
-                        await event.edit(ctx, content=_("This event has ended."))
+                    if event.hoster == author.id:
+                        await event.edit(content=_("This event has ended."))
                         to_del.append(event.message)
                     async with self.config.guild(ctx.guild).events() as cur_events:
 
@@ -291,8 +489,8 @@ class EventPoster(commands.Cog):
                         del self.event_cache[ctx.guild.id][e]
                     except KeyError:
                         pass
-        if ctx.author not in members:
-            members.insert(0, ctx.author)
+        if author not in members:
+            members.insert(0, author)
         member_list = [m.id for m in members]
         if not max_slots:
 
@@ -301,7 +499,7 @@ class EventPoster(commands.Cog):
         select_options = await self.config.guild(ctx.guild).playerclass_options()
         event = Event(
             bot=self.bot,
-            hoster=ctx.author.id,
+            hoster=author.id,
             members=list(member_list),
             event=description,
             max_slots=max_slots,
@@ -312,6 +510,7 @@ class EventPoster(commands.Cog):
         )
 
         if await self.config.guild(ctx.guild).bypass_admin():
+            await ctx.followup.send(_("Creating your event."))
             return await self.post_event(ctx, event)
 
         new_view = discord.ui.View()
@@ -323,7 +522,11 @@ class EventPoster(commands.Cog):
         new_view.add_item(deny_button)
 
         em = await event.make_event_embed(ctx)
-        await ctx.send(_("Please wait for someone to approve your event request."))
+        msg = _("Please wait for someone to approve your event request.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
         admin_msg = await approval_channel.send(embed=em, view=new_view)
         self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
 
@@ -353,14 +556,20 @@ class EventPoster(commands.Cog):
         announcement_channel = ctx.guild.get_channel(event.channel)
         posted_message = await announcement_channel.send(ping, embed=em, view=event, **sanitize)
         if await self.config.guild(ctx.guild).make_thread():
-            thread = await posted_message.start_thread(name=event.event[:100])
-            event.thread = thread.id
-            for m in event.members:
-                try:
-                    await thread.add_user(ctx.guild.get_member(m))
-                except Exception:
-                    log.exception("Error adding members to new thread.")
-        event.message = posted_message.id
+            try:
+                thread = await posted_message.create_thread(name=event.event[:100])
+                made_thread = True
+            except Exception:
+                made_thread = False
+            if made_thread:
+                event.thread = thread.id
+                for m in event.members:
+                    try:
+                        await thread.add_user(ctx.guild.get_member(m))
+                    except Exception:
+                        log.exception("Error adding members to new thread.")
+        setattr(event, "message", posted_message.id)
+        # event.message = posted_message.id
         async with self.config.guild(ctx.guild).events() as cur_events:
             cur_events[str(event.hoster)] = event.to_json()
         if ctx.guild.id not in self.event_cache:
@@ -371,7 +580,7 @@ class EventPoster(commands.Cog):
         # except discord.errors.Forbidden:
         # pass
 
-    @commands.command(name="clearevent", aliases=["endevent"])
+    @event_commands.command(name="clear", aliases=["end"])
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def clear_event(self, ctx: commands.Context, clear: bool = False) -> None:
@@ -380,63 +589,118 @@ class EventPoster(commands.Cog):
 
         `[clear]` yes/no to clear your current running event.
         """
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have any events running."))
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+            prefix = "/"
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+            prefix = ctx.clean_prefix
+
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have any events running.")
+            if is_slash:
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
+            return
         elif not clear:
             event_data = await self.config.guild(ctx.guild).events()
-            event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
+            event = Event.from_json(self.bot, event_data[str(author.id)])
             if not event:
                 async with self.config.guild(ctx.guild).events() as events:
                     # clear the broken event
-                    del events[str(ctx.author.id)]
+                    del events[str(author.id)]
                     del self.event_cache[ctx.guild.id][event.message]
-                return await ctx.send(_("You don't have any events running."))
+                msg = _("You don't have any events running.")
+                if is_slash:
+                    await ctx.followup.send(msg, ephemeral=True)
+                else:
+                    await ctx.send(msg)
+                return
             em = await event.make_event_embed(ctx)
-            return await ctx.send(
-                _(
-                    "{author}, you're currently hosting. "
-                    "Type `{prefix}clearevent yes` to clear it."
-                ).format(author=ctx.author.display_name, prefix=ctx.clean_prefix),
-                embed=em,
-            )
+            msg = _(
+                "{author}, you're currently hosting. "
+                "Type `{prefix}event clear yes` to clear it."
+            ).format(author=author.display_name, prefix=prefix)
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(
+                    msg,
+                    embed=em,
+                )
+            return
         else:
             async with self.config.guild(ctx.guild).events() as events:
-                event = Event.from_json(self.bot, events[str(ctx.author.id)])
-                await event.edit(ctx, content=_("This event has ended."))
-                del events[str(ctx.author.id)]
+                event = Event.from_json(self.bot, events[str(author.id)])
+                await event.edit(content=_("This event has ended."))
+                del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
-            await ctx.tick()
+            msg = _("Your event has been cleared.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
 
-    @commands.command(name="showevent")
+    @event_commands.command(name="show")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def show_event(self, ctx: commands.Context, member: discord.Member = None) -> None:
         """Show current event being run by a member"""
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+            prefix = "/"
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+            prefix = ctx.clean_prefix
+
         if member is None:
-            member = ctx.author
+            member = author
         if str(member.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(
-                _("{member} does not have any events running.").format(member=member)
+            msg = _("{member} does not have any events running.").format(
+                member=member.display_name
             )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         event_data = await self.config.guild(ctx.guild).events()
         event = Event.from_json(self.bot, event_data[str(member.id)])
         if not event:
             async with self.config.guild(ctx.guild).events() as events:
                 # clear the broken event
-                del events[str(ctx.author.id)]
+                del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
-            return await ctx.send(
-                _("{member} is not currently hosting an event.").format(member=member.display_name)
+            msg = _("{member} is not currently hosting an event.").format(
+                member=member.display_name
             )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         em = await event.make_event_embed(ctx)
-        await ctx.send(
-            _(
-                "{member} is currently hosting. " "Type `{prefix}clearevent yes` to clear it."
-            ).format(member=member.display_name, prefix=ctx.clean_prefix),
-            embed=em,
-        )
+        msg = _(
+            "{member} is currently hosting. Type `{prefix}clearevent yes` to clear it."
+        ).format(member=member.display_name, prefix=prefix)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(
+                msg,
+                embed=em,
+            )
 
-    @commands.command(name="join")
+    @event_commands.command(name="join")
     @commands.guild_only()
     async def join_event(
         self,
@@ -444,95 +708,142 @@ class EventPoster(commands.Cog):
         hoster: discord.Member,
     ) -> None:
         """Join an event being hosted"""
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(
-                _("{hoster} is not currently hosting any events.").format(
+            msg = _("{hoster} is not currently hosting any events.").format(
                     hoster=hoster.display_name
                 )
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         event_data = await self.config.guild(ctx.guild).events()
         event = Event.from_json(self.bot, event_data[str(hoster.id)])
         if not event:
             async with self.config.guild(ctx.guild).events() as events:
                 # clear the broken event
-                del events[str(ctx.author.id)]
+                del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
-            return await ctx.send(
-                _("{hoster} is not currently hosting any events.").format(
+            msg = _("{hoster} is not currently hosting any events.").format(
                     hoster=hoster.display_name
                 )
-            )
-        if ctx.author.id in event.members:
-            return await ctx.send(_("You're already participating in this event!"))
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
+        if author.id in event.members:
+            msg = _("You're already participating in this event!")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         await self.add_user_to_event(ctx.author, event)
-        await ctx.tick()
+        msg = _("Adding you to {hoster}'s event.").format(hoster=hoster)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @commands.command(name="leaveevent")
+    @event_commands.command(name="leave")
     @commands.guild_only()
     async def leave_event(self, ctx: commands.Context, hoster: discord.Member) -> None:
         """Leave an event being hosted"""
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(
-                _("{hoster} is not currently hosting any events.").format(
+            msg = _("{hoster} is not currently hosting any events.").format(
                     hoster=hoster.display_name
                 )
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         event_data = await self.config.guild(ctx.guild).events()
         event = Event.from_json(self.bot, event_data[str(hoster.id)])
         if not event:
             async with self.config.guild(ctx.guild).events() as events:
                 # clear the broken event
-                del events[str(ctx.author.id)]
+                del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
-            return await ctx.send(
-                _("{hoster} is not currently hosting any events.").format(
+            msg = _("{hoster} is not currently hosting any events.").format(
                     hoster=hoster.display_name
                 )
-            )
-        if ctx.author.id not in event.members:
-            return await ctx.send(_("You're not participating in this event!"))
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
+        if author.id not in event.members:
+            msg = _("You're not participating in this event!")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         await self.remove_user_from_event(ctx.author, event)
-        await ctx.tick()
+        msg = _("Removing you from {hoster}'s event.").format(hoster=hoster)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @commands.command(name="removefromevent")
-    @commands.guild_only()
-    async def remove_from_event(
-        self, ctx: commands.Context, member: discord.Member, hoster: discord.Member = None
-    ) -> None:
-        """
-        Remove a user from an event you're hosting
-
-        `<member>` The member to remove from your event
-        `<hoster>` mod/admin only to specify whos event to remove a user from.
-        """
-        if hoster and not await self.is_mod_or_admin(ctx.author):
-            return await ctx.send(_("You cannot remove a member from someone elses event"))
-        if hoster is None:
-            hoster = ctx.author
-        if member is hoster:
-            return await ctx.send(_("You cannot remove the hoster from this event."))
-        if str(hoster.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You are not currently hosting any events."))
-        event_data = await self.config.guild(ctx.guild).events()
-        event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
-        if not event:
-            async with self.config.guild(ctx.guild).events() as events:
-                # clear the broken event
-                del events[str(ctx.author.id)]
-                del self.event_cache[ctx.guild.id][event.message]
-            return await ctx.send(_("That user is not currently hosting any events."))
-        if member.id not in event.members:
-            return await ctx.send(_("That member is not participating in that event!"))
-        await self.remove_from_event(member, event)
-        await ctx.tick()
-
-    @commands.group(name="eventedit", aliases=["editevent"])
+    @event_commands.group(name="edit")
     @commands.guild_only()
     async def event_edit(self, ctx: commands.Context):
         """
         Edit various things in events
         """
-        pass
+        if isinstance(ctx, discord.Interaction):
+            command_mapping = {
+                "title": self.title,
+                "slots": self.slots,
+                "remaining": self.remaining,
+                "memberadd": self.members_add,
+                "memberremove": self.members_remove,
+                "maybeadd": self.maybe_add,
+                "mayberemove": self.maybe_remove,
+            }
+            option = ctx.data["options"][0]["options"][0]["name"]
+            options = ctx.data["options"][0]["options"][0]
+            func = command_mapping[option]
+
+            try:
+                kwargs = {}
+                for option in options.get("options", []):
+                    if option["name"] in ["new_members", "members"]:
+                        kwargs[option["name"]] = (self.convert_slash_args(ctx, option),)
+                    else:
+                        kwargs[option["name"]] = self.convert_slash_args(ctx, option)
+            except KeyError:
+                kwargs = {}
+                pass
+            except AttributeError:
+                log.exception("Error converting interaction arguments")
+                await ctx.response.send_message(
+                    _("One or more options you have provided are not available in DM's."),
+                    ephemeral=True,
+                )
+                return
+            await func(ctx, **kwargs)
 
     @event_edit.command()
     @commands.guild_only()
@@ -542,21 +853,34 @@ class EventPoster(commands.Cog):
 
         `<new_description>` The new description for your event
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 event.event = new_description
-                em = await event.make_event_embed(ctx)
-
-                await event.edit(ctx, embed=em)
-                async with self.config.guild(ctx.guild).events() as cur_events:
-                    cur_events[str(event.hoster)] = event.to_json()
-                self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+                await event.update_event()
+        msg = _("Editing your event title to: {new_title}").format(new_title=new_description)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     async def get_channels(
         self, ctx: commands.Context
@@ -567,21 +891,33 @@ class EventPoster(commands.Cog):
         announcement_channel = ctx.guild.get_channel(
             await self.config.guild(ctx.guild).announcement_channel()
         )
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            prefix = "/"
+        else:
+            author = ctx.author
+            prefix = ctx.clean_prefix
         if not approval_channel and not await self.config.guild(ctx.guild).bypass_admin():
-            await ctx.send(
-                _(
-                    "No admin channel has been setup on this server. "
-                    "Use `{prefix}eventset approvalchannel` to add one."
-                ).format(prefix=ctx.clean_prefix)
-            )
+            msg = _(
+                "No admin channel has been setup on this server. "
+                "Use `{prefix}event set approvalchannel` to add one."
+            ).format(prefix=prefix)
+            if is_slash:
+                await ctx.followup.send_message(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
             return None, None
         if not announcement_channel:
-            await ctx.send(
-                _(
-                    "No announcement channel has been setup on this server. "
-                    "Use `{prefix}eventset channel` to add one."
-                ).format(prefix=ctx.clean_prefix)
-            )
+            msg = _(
+                "No announcement channel has been setup on this server. "
+                "Use `{prefix}event set channel` to add one."
+            ).format(prefix=prefix)
+            if is_slash:
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
             return None, None
         return announcement_channel, approval_channel
 
@@ -593,21 +929,34 @@ class EventPoster(commands.Cog):
 
         `<new_slots>` The number of available slots for your events activity
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 event.max_slots = new_slots
-                em = await event.make_event_embed(ctx)
-
-                await event.edit(ctx, embed=em)
-                async with self.config.guild(ctx.guild).events() as cur_events:
-                    cur_events[str(event.hoster)] = event.to_json()
-                self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+                await event.update_event()
+        msg = _("Editing your events max slots to: {new_slots}").format(new_slots=new_slots)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @event_edit.command()
     @commands.guild_only()
@@ -615,73 +964,118 @@ class EventPoster(commands.Cog):
         """
         Show how long until your event will be automatically ended if available.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 seconds = await self.config.guild(ctx.guild).cleanup_seconds()
                 if seconds is None:
-                    return await ctx.send(
-                        _("There is no automatic timeout of events in this server.")
-                    )
-                await ctx.send(
-                    _("Your event has {time} remaining until it is ended automatically.").format(
+                    msg = _("There is no automatic timeout of events in this server.")
+                    if is_slash:
+                        await ctx.followup.send(msg)
+                    else:
+                        await ctx.send(msg)
+                    return
+                msg = _("Your event has {time} remaining until it is ended automatically.").format(
                         time=event.remaining(seconds)
                     )
-                )
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
                 return
 
-    @event_edit.group()
+    @event_edit.command(name="memberadd")
     @commands.guild_only()
-    async def members(self, ctx: commands.Context):
-        """Edit event members"""
-        pass
-
-    @members.command(name="add")
-    @commands.guild_only()
-    async def members_add(self, ctx: commands.Context, *new_members: discord.Member):
+    async def members_add(self, ctx: commands.Context, new_members: commands.Greedy[discord.Member]):
         """
         Add members to your event (hopefully not against their will)
 
         `[new_members...]` The members you want to add to your event
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if not new_members:
             return await ctx.send_help()
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 for m in new_members:
                     await self.add_user_to_event(m, event)
 
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+        msg = _("Added {members} to your event.").format(members=humanize_list(new_members))
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @members.command(name="remove", aliases=["rem"])
+    @event_edit.command(name="memberremove", aliases=["memberrem"])
     @commands.guild_only()
-    async def members_remove(self, ctx: commands.Context, *members: discord.Member):
+    async def members_remove(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
         """
         Remove members from your event (hopefully not against their will)
 
         `[members...]` The members you want to add to your event
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if not members:
             return await ctx.send_help()
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 for m in members:
                     if m.id in event.members or m.id in event.maybe:
                         await self.remove_user_from_event(m, event)
@@ -689,31 +1083,43 @@ class EventPoster(commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+        msg = _("Removed {members} from your event.").format(members=humanize_list(new_members))
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @event_edit.group()
+    @event_edit.command(name="maybeadd")
     @commands.guild_only()
-    async def maybe(self, ctx: commands.Context):
-        """Edit event members"""
-        pass
-
-    @maybe.command(name="add")
-    @commands.guild_only()
-    async def maybe_add(self, ctx: commands.Context, *new_members: discord.Member):
+    async def maybe_add(self, ctx: commands.Context, new_members: commands.Greedy[discord.Member]):
         """
         Add members to your events maybe list
 
         `[new_members...]` The members you want to add to your event
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if not new_members:
             return await ctx.send_help()
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 for m in new_members:
                     if m.id not in event.members:
                         await self.add_user_to_maybe(m, event)
@@ -721,25 +1127,43 @@ class EventPoster(commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+        msg = _("Added {members} to maybe on your event.").format(members=humanize_list(new_members))
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @maybe.command(name="remove", aliases=["rem"])
+    @event_edit.command(name="mayberemove", aliases=["mayberem"])
     @commands.guild_only()
-    async def maybe_remove(self, ctx: commands.Context, *members: discord.Member):
+    async def maybe_remove(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
         """
         Remove members from your events maybe list
 
         `[members...]` The members you want to remove from your event
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if not members:
             return await ctx.send_help()
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
-            return await ctx.send(_("You don't have an event to edit right now."))
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event to edit right now.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == ctx.author.id:
+            if event.hoster == author.id:
                 for m in members:
                     if m.id in event.members or m.id in event.maybe:
                         await self.remove_user_from_event(m, event)
@@ -747,7 +1171,11 @@ class EventPoster(commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        await ctx.tick()
+        msg = _("Removed {members} from maybe on your event.").format(members=humanize_list(new_members))
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     async def is_mod_or_admin(self, member: discord.Member) -> bool:
         guild = member.guild
@@ -762,18 +1190,138 @@ class EventPoster(commands.Cog):
         return False
 
     async def check_clear_event(self, ctx: commands.Context) -> bool:
+
         new_view = ApproveView(ctx)
-        await ctx.send(
-            _("You already have an event running, would you like to cancel it?"), view=new_view
-        )
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+        msg = _("You already have an event running, would you like to cancel it?")
+        if is_slash:
+            await ctx.followup.send(msg, view=new_view, ephemeral=True)
+        else:
+            await ctx.send(msg, view=new_view)
         await new_view.wait()
         return new_view.approved
 
-    @commands.group(name="eventset")
+    @event_commands.group(name="set")
     @commands.guild_only()
     async def event_settings(self, ctx: commands.Context) -> None:
         """Manage server specific settings for events"""
+        if isinstance(ctx, discord.Interaction):
+            command_mapping = {
+                "settings": self.show_event_settings,
+                "addplayerclass": self.add_guild_playerclass,
+                "removeplayerclass": self.remove_guild_playerclass,
+                "listplayerclass": self.list_guild_playerclass,
+                "class": self.set_default_player_class,
+                "defaultmax": self.set_default_max_slots,
+                "channel": self.set_channel,
+                "cleanup": self.set_cleanup_interval,
+                "maxevents": self.set_max_events,
+                "bypass": self.bypass_admin_approval,
+                "thread": self.make_thread,
+                "approvalchannel": self.set_approval_channel,
+                "roles": self.set_required_roles,
+                "links": self.set_custom_link,
+                "viewlinks": self.view_links,
+                "ping": self.set_ping,
+            }
+            option = ctx.data["options"][0]["options"][0]["name"]
+            options = ctx.data["options"][0]["options"][0]
+            func = command_mapping[option]
+
+            try:
+                kwargs = {}
+                for option in options.get("options", []):
+                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
+            except KeyError:
+                kwargs = {}
+                pass
+            except AttributeError:
+                log.exception("Error converting interaction arguments")
+                await ctx.response.send_message(
+                    _("One or more options you have provided are not available in DM's."),
+                    ephemeral=True,
+                )
+                return
+            await func(ctx, **kwargs)
+
+    @event_settings.group(name="slash")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def event_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Slash command toggling for event
+        """
         pass
+
+    @event_slash.command(name="global")
+    @commands.is_owner()
+    async def event_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Enable event commands as slash commands globally
+        """
+        data = await ctx.bot.http.upsert_global_command(
+            ctx.guild.me.id, payload=self.SLASH_COMMANDS
+        )
+        command_id = int(data.get("id"))
+        log.info(data)
+        self.slash_commands[command_id] = self.event_commands
+        async with self.config.commands() as commands:
+            commands["event"] = command_id
+        await ctx.tick()
+
+    @event_slash.command(name="globaldel")
+    @commands.is_owner()
+    async def event_global_slash_disable(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Disable event commands as slash commands globally
+        """
+        commands = await self.config.commands()
+        command_id = commands.get("event")
+        if not command_id:
+            await ctx.send(
+                "There is no global slash command registered from this cog on this bot."
+            )
+            return
+        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
+        async with self.config.commands() as commands:
+            del commands["event"]
+        await ctx.tick()
+
+    @event_slash.command(name="enable")
+    @commands.guild_only()
+    async def event_guild_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Enable event commands as slash commands in this server
+        """
+        data = await ctx.bot.http.upsert_guild_command(
+            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
+        )
+        command_id = int(data.get("id"))
+        log.info(data)
+        if ctx.guild.id not in self.slash_commands["guilds"]:
+            self.slash_commands["guilds"][ctx.guild.id] = {}
+        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.event_commands
+        async with self.config.guild(ctx.guild).commands() as commands:
+            commands["event"] = command_id
+        await ctx.tick()
+
+    @event_slash.command(name="disable")
+    @commands.guild_only()
+    async def event_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Delete servers slash commands
+        """
+        commands = await self.config.guild(ctx.guild).commands()
+        command_id = commands.get("event", None)
+        if not command_id:
+            await ctx.send(_("Slash commands are not enabled in this guild."))
+            return
+        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
+        del self.slash_commands["guilds"][ctx.guild.id][command_id]
+        async with self.config.guild(ctx.guild).commands() as commands:
+            del commands["event"]
+        await ctx.tick()
 
     @event_settings.command(name="settings")
     @commands.guild_only()
@@ -782,6 +1330,15 @@ class EventPoster(commands.Cog):
         """
         Show the current event settings.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         data = await self.config.guild(ctx.guild).all()
         approval_channel = ctx.guild.get_channel(data["approval_channel"])
         announcement_channel = ctx.guild.get_channel(data["announcement_channel"])
@@ -820,16 +1377,12 @@ class EventPoster(commands.Cog):
                 roles=humanize_list([r.mention for r in roles if r is not None])
             )
         embed.description = msg
-        await ctx.send(embed=embed)
+        if is_slash:
+            await ctx.followup.send(embed=embed)
+        else:
+            await ctx.send(embed=embed)
 
-    @event_settings.group(name="playerclass", aliases=["playerclasses"])
-    @commands.guild_only()
-    @commands.mod_or_permissions(manage_messages=True)
-    async def playerclasses(self, ctx: commands.Context):
-        """Commands for setting up playerclass choices"""
-        pass
-
-    @playerclasses.command(name="add")
+    @event_settings.command(name="addplayerclass")
     async def add_guild_playerclass(
         self,
         ctx: commands.Context,
@@ -848,17 +1401,34 @@ class EventPoster(commands.Cog):
         Note: There is a maximum of 25 classes you can add. The class name
         can also only be a maximum of 100 characters.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+            if emoji is not None:
+                emoji = discord.PartialEmoji.from_str(emoji)
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if len(player_class) > 100:
-            await ctx.send(_("Player classes can be a maximum of 100 characters."))
+            msg = _("Player classes can be a maximum of 100 characters.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if len(options) >= 25:
-                await ctx.send(
-                    _(
+                msg = _(
                         "You can have a maximum of 25 player classes to select from."
                         "Delete some first before trying to add more."
                     )
-                )
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
                 return
             if player_class not in options:
                 if emoji is not None:
@@ -869,19 +1439,30 @@ class EventPoster(commands.Cog):
                     else:
                         emoji = str(emoji)
                 options[player_class] = emoji
-        await ctx.send(
-            _("{player_class} has been added as an available option.").format(
+        msg = _("{player_class} has been added as an available option.").format(
                 player_class=player_class
             )
-        )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
-    @playerclasses.command(name="remove")
+    @event_settings.command(name="removeplayerclass")
     async def remove_guild_playerclass(self, ctx: commands.Context, *, player_class: str):
         """
         Add a playerclass choice for users to pick from for this server.
 
         `<player_class>` The name of the playerclass you want to remove.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         success_msg = _("{player_class} has been removed as an available option.").format(
             player_class=player_class
         )
@@ -891,22 +1472,38 @@ class EventPoster(commands.Cog):
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if player_class in options:
                 del options[player_class]
-                await ctx.send(success_msg)
+                if is_slash:
+                    await ctx.followup.send(success_msg)
+                else:
+                    await ctx.send(success_msg)
             else:
-                await ctx.send(fail_msg)
+                if is_slash:
+                    await ctx.followup.send(fail_msg)
+                else:
+                    await ctx.send(fail_msg)
 
-    @playerclasses.command(name="list")
+    @event_settings.command(name="listplayerclass")
     async def list_guild_playerclass(self, ctx: commands.Context):
         """
         List the playerclass choices in this server.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
         player_classes = await self.config.guild(ctx.guild).playerclass_options()
         player_classes = humanize_list(list(player_classes.keys()))
-        await ctx.send(
-            _("{guild} Available Playerclasses: **{player_classes}**").format(
+        msg = _("{guild} Available Playerclasses: **{player_classes}**").format(
                 guild=ctx.guild.name, player_classes=player_classes
             )
-        )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @event_settings.command(name="remove", aliases=["rem"])
     @commands.mod_or_permissions(manage_messages=True)
@@ -924,15 +1521,34 @@ class EventPoster(commands.Cog):
         a message jump link, or the message ID if the command is in the same channel
         as the event message itself.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if isinstance(hoster_or_message, discord.Member):
             if hoster_or_message and not await self.is_mod_or_admin(ctx.author):
-                return await ctx.send(_("You cannot remove a member from someone elses event"))
+                msg = _("You cannot remove someone elses event")
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
+                return
             if str(hoster_or_message.id) not in await self.config.guild(ctx.guild).events():
-                return await ctx.send(_("You are not currently hosting any events."))
+                msg = _("That user is not currently hosting any events.")
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
+                return
             to_del = []
             for message_id, event in self.event_cache[ctx.guild.id].items():
                 if event.hoster == hoster_or_message.id:
-                    await event.edit(ctx, content=_("This event has ended."))
+                    await event.edit(content=_("This event has ended."))
                     to_del.append(event.message)
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     del cur_events[str(event.hoster)]
@@ -945,15 +1561,24 @@ class EventPoster(commands.Cog):
             try:
                 event = self.event_cache[ctx.guild.id][hoster_or_message.id]
             except KeyError:
-                return await ctx.send(_("I could not find an event under that message."))
-            await event.edit(ctx, content=_("This event has ended."))
+                msg = _("I could not find an event under that message.")
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
+                return
+            await event.edit(content=_("This event has ended."))
             async with self.config.guild(ctx.guild).events() as cur_events:
                 try:
                     del cur_events[str(event.hoster)]
                 except KeyError:
                     pass
             del self.event_cache[ctx.guild.id][event.message]
-        await ctx.tick()
+        msg = _("The event you have provided has been ended.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @event_settings.command(name="class")
     @commands.guild_only()
@@ -968,21 +1593,35 @@ class EventPoster(commands.Cog):
         during an event you have signed up for if the event updates with new
         members or changes in any way the event will reflect this change.
         """
-        await self.config.member(ctx.author).player_class.set(player_class)
-        if player_class:
-            await ctx.send(
-                _("Your player class has been set to {player_class}").format(
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
+        await self.config.member(author).player_class.set(player_class)
+        msg = _("Your player class has been set to {player_class}").format(
                     player_class=player_class
                 )
-            )
+        if player_class:
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
         else:
-            await ctx.send("Your player class has been reset.")
+            msg = _("Your player class has been reset.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
         if ctx.guild.id not in self.event_cache:
             return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if ctx.author.id in event.members:
-                em = await event.make_event_embed(ctx)
-                await event.edit(ctx, embed=em)
+            if author.id in event.members:
+                await event.update_event()
 
     @event_settings.command(name="defaultmax", aliases=["max"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -995,14 +1634,25 @@ class EventPoster(commands.Cog):
 
         `[max_slots]` The maximum number of slots allowed by default for events.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if max_slots is not None and max_slots <= 0:
             max_slots = None
         await self.config.guild(ctx.guild).default_max.set(max_slots)
-        await ctx.send(
-            _("Default maximum slots for events set to {max_slots} slots.").format(
+        msg = _("Default maximum slots for events set to {max_slots} slots.").format(
                 max_slots=max_slots
             )
-        )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @event_settings.command(name="channel")
     @checks.mod_or_permissions(manage_messages=True)
@@ -1018,8 +1668,22 @@ class EventPoster(commands.Cog):
 
         If no channel is set events cannot be created.
         """
-        if channel and not channel.permissions_for(ctx.me).embed_links:
-            return await ctx.send(_("I require `Embed Links` permission to use that channel."))
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
+        if channel and not channel.permissions_for(ctx.guild.me).embed_links:
+            msg = _("I require `Embed Links` permission to use that channel.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         save_channel = None
         reply = _("Announcement channel ")
         if channel:
@@ -1029,7 +1693,10 @@ class EventPoster(commands.Cog):
         else:
             reply += _("cleared.")
             await self.config.guild(ctx.guild).announcement_channel.clear()
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="cleanup")
     @checks.mod_or_permissions(manage_messages=True)
@@ -1047,6 +1714,15 @@ class EventPoster(commands.Cog):
         will check since the timestamp. If not it will check time after the event
         has been posted. Timestamp can be seen from the events embed.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if time:
             await self.config.guild(ctx.guild).cleanup_seconds.set(int(time.total_seconds()))
             reply = _("I will cleanup events older than {time}.").format(
@@ -1055,7 +1731,10 @@ class EventPoster(commands.Cog):
         else:
             reply = _("I will not cleanup messages regardless of age.")
             await self.config.guild(ctx.guild).cleanup_seconds.clear()
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="maxevents")
     @checks.mod_or_permissions(manage_messages=True)
@@ -1075,6 +1754,15 @@ class EventPoster(commands.Cog):
         will last until the designated time after an event has started. Alternatively
         a mod or admin can cancel an event through `[p]eventset remove`
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if number_of_events is not None and number_of_events <= 0:
             number_of_events = None
         if number_of_events:
@@ -1083,7 +1771,10 @@ class EventPoster(commands.Cog):
         else:
             reply = _("I will not restrict the maximum number of events.")
             await self.config.guild(ctx.guild).max_events.clear()
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="bypass")
     @checks.mod_or_permissions(manage_messages=True)
@@ -1095,13 +1786,25 @@ class EventPoster(commands.Cog):
         `<true_or_false>` `True` or `False` whether or not to allow events
         to bypass admin approval.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if true_or_false:
             await self.config.guild(ctx.guild).bypass_admin.set(true_or_false)
             reply = _("I will post events without admin apprval first.")
         else:
             reply = _("I will not post events without admin apprval first.")
             await self.config.guild(ctx.guild).bypass_admin.clear()
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="thread")
     @checks.mod_or_permissions(manage_messages=True, manage_threads=True)
@@ -1114,13 +1817,24 @@ class EventPoster(commands.Cog):
         `<true_or_false>` `True` or `False` whether or not to allow events
         to bypass admin approval.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
         if true_or_false:
             await self.config.guild(ctx.guild).make_thread.set(true_or_false)
             reply = _("I will create events with a thread for discussion.")
         else:
             reply = _("I will not create events with a thread for discussion.")
             await self.config.guild(ctx.guild).make_thread.clear()
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="approvalchannel", aliases=["adminchannel"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1136,8 +1850,22 @@ class EventPoster(commands.Cog):
 
         Note: This is required unless bypass has been enabled.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if channel and not channel.permissions_for(ctx.me).embed_links:
-            return await ctx.send(_("I require `Embed Links` permission to use that channel."))
+            msg = _("I require `Embed Links` permission to use that channel.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         save_channel = None
         reply = _("Admin approval channel ")
         if channel:
@@ -1147,8 +1875,10 @@ class EventPoster(commands.Cog):
         else:
             await self.config.guild(ctx.guild).approval_channel.clear()
             reply += _("cleared.")
-
-        await ctx.send(reply)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="roles", aliases=["role"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1160,14 +1890,27 @@ class EventPoster(commands.Cog):
         `[roles...]` the role(s) that are allowed to create events. If not provided,
         there will be no restriction on who can create an event.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         if roles:
             role_ids = [r.id for r in roles]
             role_names = humanize_list([r.name for r in roles])
             await self.config.guild(ctx.guild).required_roles.set(role_ids)
-            await ctx.send(_("Roles allowed to create events: {roles}.").format(roles=role_names))
+            reply = _("Roles allowed to create events: {roles}.").format(roles=role_names)
         else:
             await self.config.guild(ctx.guild).required_roles.clear()
-            await ctx.send(_("Anyone will now be able to create an event."))
+            reply = _("Anyone will now be able to create an event.")
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="links")
     @checks.mod_or_permissions(manage_messages=True)
@@ -1180,9 +1923,21 @@ class EventPoster(commands.Cog):
         `<link>` needs to be an image link to be used for the thumbnail when the keyword
         is found in the event title.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
         async with self.config.guild(ctx.guild).custom_links() as custom_links:
             custom_links[keyword.lower()] = link
-        await ctx.tick()
+        reply = _("An image with the keyword {keyword} has been added.").format(keyword=keyword)
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)
 
     @event_settings.command(name="viewlinks", aliases=["showlinks"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -1221,8 +1976,21 @@ class EventPoster(commands.Cog):
         `[roles...]` is a space separated list of roles to be pinged when an announcement
         is made. Use `here` or `everyone` if you want to ping that specific group of people.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            author = ctx.user
+            await ctx.response.defer()
+        else:
+            author = ctx.author
+            await ctx.trigger_typing()
+
         role_mentions = [r.mention for r in roles if isinstance(r, discord.Role)]
         here = [f"@{r}" for r in roles if r in ["here", "everyone"]]
         msg = humanize_list(role_mentions + here)
         await self.config.guild(ctx.guild).ping.set(msg)
-        await ctx.tick()
+        reply = _("Pings have been registered.")
+        if is_slash:
+            await ctx.followup.send(reply)
+        else:
+            await ctx.send(reply)

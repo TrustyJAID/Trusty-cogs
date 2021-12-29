@@ -68,8 +68,12 @@ class ApproveView(discord.ui.View):
         self.add_item(self.deny_button)
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.id != self.ctx.author.id:
-            return False
+        if isinstance(self.ctx, discord.Interaction):
+            if interaction.user.id != self.ctx.user.id:
+                return False
+        else:
+            if interaction.user.id != self.ctx.author.id:
+                return False
         return True
 
 
@@ -132,7 +136,8 @@ class JoinEventButton(discord.ui.Button):
         if self.view.thread:
             try:
                 thread = interaction.guild.get_thread(self.view.thread)
-                await thread.add_user(interaction.user)
+                if not thread.archived:
+                    await thread.add_user(interaction.user)
             except Exception:
                 log.exception("Error adding user to event thread")
         self.view.members.append(interaction.user.id)
@@ -181,7 +186,8 @@ class LeaveEventButton(discord.ui.Button):
         if self.view.thread:
             try:
                 thread = interaction.guild.get_thread(self.view.thread)
-                await thread.remove_user(interaction.user)
+                if not thread.archived:
+                    await thread.remove_user(interaction.user)
             except Exception:
                 log.exception("Error removing user from event thread")
         if interaction.user.id in self.view.members:
@@ -226,9 +232,11 @@ class PlayerClassSelect(discord.ui.Select):
             if self.view.thread:
                 try:
                     thread = interaction.guild.get_thread(self.view.thread)
-                    await thread.add_user(interaction.user)
+                    if not thread.archived:
+                        await thread.add_user(interaction.user)
                 except Exception:
                     log.exception("Error adding user to event thread")
+        await self.view.update_event()
 
 
 class MaybeJoinEventButton(discord.ui.Button):
@@ -413,7 +421,12 @@ class Event(discord.ui.View):
     async def update_event(self):
         ctx = await self.get_ctx(self.bot)
         em = await self.make_event_embed(ctx)
-        await self.edit(ctx, embed=em)
+        await self.edit(embed=em)
+        if self.thread is not None:
+            guild = self.bot.get_guild(self.guild)
+            thread = guild.get_thread(self.thread)
+            if thread.name != self.event[:100]:
+                await thread.edit(name=self.event[:100])
         config = self.bot.get_cog("EventPoster").config
         async with config.guild_from_id(self.guild).events() as cur_events:
             cur_events[str(self.hoster)] = self.to_json()
@@ -425,7 +438,7 @@ class Event(discord.ui.View):
             # event = Event.from_json(self.bot, events[str(user.id)])
             ctx = await self.get_ctx(self.bot)
             if ctx:
-                await self.edit(ctx, content=_("This event has ended."), view=None)
+                await self.edit(content=_("This event has ended."), view=None)
             del events[str(self.hoster)]
             del self.bot.get_cog("EventPoster").event_cache[self.guild][self.message]
 
@@ -436,7 +449,7 @@ class Event(discord.ui.View):
         This can't be used to invoke another command but
         it is useful to get a basis for an events final posted message.
         """
-        guild = bot.get_guild(self.guild)
+        guild = self.bot.get_guild(self.guild)
         if not guild:
             return None
         chan = guild.get_channel(self.channel)
@@ -446,10 +459,10 @@ class Event(discord.ui.View):
             msg = await chan.fetch_message(self.message)
         except (discord.errors.NotFound, discord.errors.Forbidden):
             return None
-        return await bot.get_context(msg)
+        return await self.bot.get_context(msg)
 
-    async def edit(self, context: commands.Context, **kwargs) -> None:
-        ctx = await self.get_ctx(context.bot)
+    async def edit(self, **kwargs) -> None:
+        ctx = await self.get_ctx(self.bot)
         view = kwargs.pop("view", self)
         if not ctx:
             return
@@ -470,10 +483,10 @@ class Event(discord.ui.View):
             name=_("{hoster} is hosting").format(hoster=hoster), icon_url=hoster.avatar.url
         )
         try:
-            prefixes = await ctx.bot.get_valid_prefixes(ctx.guild)
+            prefixes = await self.bot.get_valid_prefixes(ctx.guild)
             prefix = prefixes[0]
         except AttributeError:
-            prefixes = await ctx.bot.get_prefix(ctx.message)
+            prefixes = await self.bot.get_prefix(ctx.message)
             prefix = prefixes[0]
         max_slots_msg = ""
         if self.max_slots:
