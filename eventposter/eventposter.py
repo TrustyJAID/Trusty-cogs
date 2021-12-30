@@ -331,7 +331,10 @@ class EventPoster(commands.Cog):
             try:
                 kwargs = {}
                 for option in ctx.data["options"][0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
+                    if option in ["new_members", "members"]:
+                        kwargs[option["name"]] = (self.convert_slash_args(ctx, option),)
+                    else:
+                        kwargs[option["name"]] = self.convert_slash_args(ctx, option)
             except KeyError:
                 kwargs = {}
                 pass
@@ -426,6 +429,8 @@ class EventPoster(commands.Cog):
                 await ctx.send(msg)
         return allowed
 
+
+
     @event_commands.command(name="make")
     @commands.guild_only()
     async def make_event(
@@ -456,6 +461,8 @@ class EventPoster(commands.Cog):
         daylight savings time. For example PST time may sometimes be UTC+8 in which case
         PDT must be used instead.
         """
+        if not isinstance(members, list):
+            members = [members]
         if not await self.check_requirements(ctx):
             return
         is_slash = False
