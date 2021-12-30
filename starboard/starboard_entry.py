@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import asyncio
-import discord
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from redbot import version_info, VersionInfo
+import discord
+from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 
@@ -72,18 +73,25 @@ class StarboardEntry:
             # this will account for non-members reactions and still count
             # for the starboard count
             return True
-        user_roles = set([role.id for role in member.roles])
-        if self.whitelist:
-            for role in self.whitelist:
-                if role in user_roles:
+        guild = member.guild
+        whitelisted_roles = [
+            guild.get_role(rid).id for rid in self.whitelist if guild.get_role(rid) is not None
+        ]
+        blacklisted_roles = [
+            guild.get_role(rid).id for rid in self.blacklist if guild.get_role(rid) is not None
+        ]
+        if whitelisted_roles:
+            # only count if the whitelist contains actual roles
+            for role in whitelisted_roles:
+                if role in member.roles:
                     return True
             return False
             # Since we'd normally return True
             # if there is a whitelist we want to ensure only whitelisted
             # roles can starboard something
-        elif self.blacklist:
-            for role in self.blacklist:
-                if role in user_roles:
+        if blacklisted_roles:
+            for role in blacklisted_roles:
+                if role in member.roles:
                     return False
 
         return True
@@ -109,18 +117,28 @@ class StarboardEntry:
         guild = bot.get_guild(self.guild)
         if channel.is_nsfw() and not guild.get_channel(self.channel).is_nsfw():
             return False
-        if self.whitelist:
-            if channel.id in self.whitelist:
+        whitelisted_channels = [
+            guild.get_channel(cid).id
+            for cid in self.whitelist
+            if guild.get_channel(cid) is not None
+        ]
+        blacklisted_channels = [
+            guild.get_channel(cid).id
+            for cid in self.blacklist
+            if guild.get_channel(cid) is not None
+        ]
+        if whitelisted_channels:
+            if channel.id in whitelisted_channels:
                 return True
-            if channel.category_id and channel.category_id in self.whitelist:
+            if channel.category_id and channel.category_id in whitelisted_channels:
                 return True
             return False
-        else:
-            if channel.id in self.blacklist:
+        if blacklisted_channels:
+            if channel.id in blacklisted_channels:
                 return False
-            if channel.category_id and channel.category_id in self.blacklist:
+            if channel.category_id and channel.category_id in blacklisted_channels:
                 return False
-            return True
+        return True
 
     async def to_json(self) -> dict:
         return {
