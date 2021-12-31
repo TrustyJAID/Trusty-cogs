@@ -6,7 +6,15 @@ SLASH_COMMANDS = {
             "name": "remove",
             "description": "Remove a specified trigger",
             "type": 1,
-            "options": [{"name": "trigger", "description": "test", "type": 3, "required": True}],
+            "options": [
+                {
+                    "name": "trigger",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                    "autocomplete": True,
+                }
+            ],
         },
         {
             "name": "modlog",
@@ -24,7 +32,12 @@ SLASH_COMMANDS = {
                     "description": "Set the modlog channel for filtered words",
                     "type": 1,
                     "options": [
-                        {"name": "channel", "description": "test", "type": 3, "required": True}
+                        {
+                            "name": "channel",
+                            "description": "The channel to send retrigger modlog entries to.",
+                            "type": 7,
+                            "required": True,
+                        }
                     ],
                 },
                 {
@@ -64,24 +77,56 @@ SLASH_COMMANDS = {
             "description": "Add a trigger to automatically publish content in news channels.",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
             "name": "explain",
             "description": "Explain how to use retrigger",
             "type": 1,
-            "options": [{"name": "page_num", "description": "test", "type": 3, "required": False}],
+            "options": [
+                {
+                    "name": "page_num",
+                    "description": " ",
+                    "type": 3,
+                    "required": False,
+                }
+            ],
         },
         {
             "name": "filter",
             "description": "Add a trigger to delete a message",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "check_filenames", "description": "test", "type": 3, "required": False},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "check_filenames",
+                    "description": " ",
+                    "type": 5,
+                    "required": False,
+                },
             ],
         },
         {
@@ -89,9 +134,24 @@ SLASH_COMMANDS = {
             "description": "Add a trigger for command as if you used the command",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "command", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "command",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -99,10 +159,30 @@ SLASH_COMMANDS = {
             "description": "Add a text response trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "text", "description": "test", "type": 3, "required": True},
-                {"name": "delete_after", "description": "test", "type": 3, "required": False},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "text",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "delete_after",
+                    "description": "seconds",
+                    "type": 4,
+                    "required": False,
+                },
             ],
         },
         {
@@ -115,10 +195,16 @@ SLASH_COMMANDS = {
                     "description": "Remove a channel, user, or role from triggers allowlist",
                     "type": 1,
                     "options": [
-                        {"name": "trigger", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "trigger",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {
                             "name": "channel_user_role",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                         },
@@ -129,10 +215,16 @@ SLASH_COMMANDS = {
                     "description": "Add a channel, user, or role to triggers allowlist",
                     "type": 1,
                     "options": [
-                        {"name": "trigger", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "trigger",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {
                             "name": "channel_user_role",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                         },
@@ -145,9 +237,24 @@ SLASH_COMMANDS = {
             "description": "Add a dm response trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "text", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "text",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -155,9 +262,24 @@ SLASH_COMMANDS = {
             "description": "Add a trigger to add a role",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "roles", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "roles",
+                    "description": " ",
+                    "type": 8,
+                    "required": True,
+                },
             ],
         },
         {
@@ -165,8 +287,18 @@ SLASH_COMMANDS = {
             "description": "Add a trigger to ban users for saying specific things found with regex",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -174,9 +306,24 @@ SLASH_COMMANDS = {
             "description": "Add trigger to DM yourself",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "text", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "text",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -191,7 +338,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -205,12 +352,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "text", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "text",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -220,12 +372,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "set_to", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "set_to",
+                            "description": " ",
+                            "type": 5,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -235,7 +392,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -249,23 +406,28 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "time", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "time",
+                            "description": " ",
+                            "type": 4,
+                            "required": True,
+                        },
                         {
                             "name": "style",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "choices": [
                                 {"name": "Guild", "value": "guild"},
-                                {"name": "Server", "value": "guild"},
+                                {"name": "Server", "value": "server"},
                                 {"name": "Channel", "value": "channel"},
                                 {"name": "User", "value": "user"},
-                                {"name": "Member", "value": "user"},
+                                {"name": "Member", "value": "member"},
                             ],
                         },
                     ],
@@ -277,15 +439,15 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "delete_after",
-                            "description": "test",
-                            "type": 3,
+                            "description": " ",
+                            "type": 4,
                             "required": True,
                         },
                     ],
@@ -297,12 +459,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "chance", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "chance",
+                            "description": "1 in chance",
+                            "type": 4,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -312,12 +479,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "command", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "command",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -327,7 +499,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -341,12 +513,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "emojis", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "emojis",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -356,12 +533,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "regex", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "regex",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -371,12 +553,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "roles", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "roles",
+                            "description": " ",
+                            "type": 8,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -386,22 +573,27 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "set_to", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "set_to",
+                            "description": " ",
+                            "type": 5,
+                            "required": True,
+                        },
                     ],
                 },
                 {
                     "name": "ocr",
-                    "description": "Toggle whether to use Optical Character Recognition to search for text within images.",
+                    "description": "Toggle whether to use Optical Character Recognition.",
                     "type": 1,
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -415,7 +607,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -424,17 +616,22 @@ SLASH_COMMANDS = {
                 },
                 {
                     "name": "usermention",
-                    "description": "Set whether or not to send this trigger will mention users in the reply",
+                    "description": "Set whether or not to mention users in the reply",
                     "type": 1,
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "set_to", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "set_to",
+                            "description": " ",
+                            "type": 5,
+                            "required": True,
+                        },
                     ],
                 },
                 {
@@ -444,7 +641,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -458,12 +655,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "set_to", "description": "test", "type": 3, "required": False},
+                        {
+                            "name": "set_to",
+                            "description": " ",
+                            "type": 5,
+                            "required": False,
+                        },
                     ],
                 },
                 {
@@ -473,7 +675,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -487,12 +689,17 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
-                        {"name": "set_to", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "set_to",
+                            "description": " ",
+                            "type": 5,
+                            "required": True,
+                        },
                     ],
                 },
             ],
@@ -502,9 +709,24 @@ SLASH_COMMANDS = {
             "description": "Add a trigger to remove a role",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "roles", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "roles",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -512,9 +734,24 @@ SLASH_COMMANDS = {
             "description": "Add trigger to rename users",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "text", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "text",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -522,9 +759,24 @@ SLASH_COMMANDS = {
             "description": "Add a multiple response trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "multi_response", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "multi_response",
+                    "description": "See `[p]help retrigger multi`",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -532,9 +784,24 @@ SLASH_COMMANDS = {
             "description": "Add a reaction trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "emojis", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "emojis",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -547,10 +814,16 @@ SLASH_COMMANDS = {
                     "description": "Remove a channel, user, or role from triggers blocklist",
                     "type": 1,
                     "options": [
-                        {"name": "trigger", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "trigger",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {
                             "name": "channel_user_role",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                         },
@@ -561,10 +834,16 @@ SLASH_COMMANDS = {
                     "description": "Add a channel, user, or role to triggers blocklist",
                     "type": 1,
                     "options": [
-                        {"name": "trigger", "description": "test", "type": 3, "required": True},
+                        {
+                            "name": "trigger",
+                            "description": " ",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {
                             "name": "channel_user_role",
-                            "description": "test",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                         },
@@ -577,9 +856,24 @@ SLASH_COMMANDS = {
             "description": "Add an image/file response trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "image_url", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "image_url",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -589,12 +883,17 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "trigger",
-                    "description": "test",
+                    "description": " ",
                     "type": 3,
                     "required": False,
                     "autocomplete": True,
                 },
-                {"name": "guild_id", "description": "test", "type": 3, "required": False},
+                {
+                    "name": "guild_id",
+                    "description": "Bot owner only, the guild ID to lookup triggers.",
+                    "type": 3,
+                    "required": False,
+                },
             ],
         },
         {
@@ -602,9 +901,24 @@ SLASH_COMMANDS = {
             "description": "Add an image to resize in response to a trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "image_url", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "image_url",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -612,10 +926,30 @@ SLASH_COMMANDS = {
             "description": "Add an image/file response with text trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "text", "description": "test", "type": 3, "required": True},
-                {"name": "image_url", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "text",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "image_url",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -623,9 +957,24 @@ SLASH_COMMANDS = {
             "description": "Add a command trigger",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
-                {"name": "command", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "command",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
         {
@@ -633,8 +982,18 @@ SLASH_COMMANDS = {
             "description": "Add a trigger to kick users for saying specific things found with regex",
             "type": 1,
             "options": [
-                {"name": "name", "description": "test", "type": 3, "required": True},
-                {"name": "regex", "description": "test", "type": 3, "required": True},
+                {
+                    "name": "name",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
+                {
+                    "name": "regex",
+                    "description": " ",
+                    "type": 3,
+                    "required": True,
+                },
             ],
         },
     ],
