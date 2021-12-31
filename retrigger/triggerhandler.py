@@ -82,10 +82,8 @@ class TriggerHandler:
 
     async def remove_trigger_from_cache(self, guild_id: int, trigger: Trigger) -> None:
         try:
-            for t in self.triggers[guild_id]:
-                if t.name == trigger.name:
-                    self.triggers[guild_id].remove(t)
-        except ValueError:
+            del self.triggers[guild_id][trigger.name]
+        except KeyError:
             # it will get removed on the next reload of the cog
             log.info("Trigger can't be removed :blobthinking:")
             pass
@@ -341,7 +339,7 @@ class TriggerHandler:
         if version_info >= VersionInfo.from_str("3.4.0"):
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
-        if not any(t.check_edits for t in self.triggers[guild.id]):
+        if not any(t.check_edits for t in self.triggers[guild.id].values()):
             # log.debug(f"No triggers in {guild=} have check_edits enabled")
             return
         if "bot" in payload.data["author"]:
@@ -385,7 +383,7 @@ class TriggerHandler:
 
         autoimmune = getattr(self.bot, "is_automod_immune", None)
         auto_mod = ["delete", "kick", "ban", "add_role", "remove_role"]
-        for trigger in self.triggers[guild.id]:
+        for trigger in self.triggers[guild.id].values():
             if not trigger.enabled:
                 continue
             if edit and not trigger.check_edits:
@@ -1138,8 +1136,6 @@ class TriggerHandler:
             for trigger_name, trigger in data["trigger_list"].items():
                 if trigger["author"] == user_id:
                     await self.remove_trigger(guild_id, trigger_name)
-                    t = await Trigger.from_json(trigger)
-                    await self.remove_trigger_from_cache(guild_id, t)
 
     async def remove_trigger(self, guild_id: int, trigger_name: str) -> bool:
         """Returns true or false if the trigger was removed"""
@@ -1169,5 +1165,6 @@ class TriggerHandler:
                                 )
                                 log.error(msg, exc_info=True)
                     del trigger_list[triggers]
+                    del self.triggers[guild_id][trigger_name]
                     return True
         return False

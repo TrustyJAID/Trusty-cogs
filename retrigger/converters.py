@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import List, Pattern, Tuple, Union, Optional, Literal
+from enum import Enum
+from typing import Dict, List, Literal, Optional, Pattern, Tuple, Union
 
 import discord
 from discord.ext.commands.converter import Converter, IDConverter, RoleConverter
@@ -20,6 +21,24 @@ except ImportError:
     import re
 
 
+TRIGGER_RESPONSE = [
+    "dm",
+    "dmme",
+    "remove_role",
+    "add_role",
+    "ban",
+    "kick",
+    "text",
+    "filter",
+    "delete",
+    "publish",
+    "react",
+    "rename",
+    "command",
+    "mock",
+]
+
+
 class MultiResponse(Converter):
     """
     This will parse my defined multi response pattern and provide usable formats
@@ -29,25 +48,10 @@ class MultiResponse(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> Union[List[str], List[int]]:
         result = []
         match = re.split(r"(;)", argument)
-        valid_reactions = [
-            "dm",
-            "dmme",
-            "remove_role",
-            "add_role",
-            "ban",
-            "kick",
-            "text",
-            "filter",
-            "delete",
-            "publish",
-            "react",
-            "rename",
-            "command",
-            "mock",
-        ]
+
         log.debug(match)
         my_perms = ctx.channel.permissions_for(ctx.me)
-        if match[0] not in valid_reactions:
+        if match[0] not in TRIGGER_RESPONSE:
             raise BadArgument(
                 _("`{response}` is not a valid reaction type.").format(response=match[0])
             )
@@ -125,76 +129,72 @@ class Trigger:
     Trigger class to handle trigger objects
     """
 
-    name: str
-    regex: Pattern
-    response_type: List[
-        Literal[
-            "dm",
-            "dmme",
-            "remove_role",
-            "add_role",
-            "ban",
-            "kick",
-            "text",
-            "delete",
-            "publish",
-            "react",
-            "rename",
-            "command",
-            "mock",
-        ]
-    ]
-    author: int
-    count: int
-    image: Union[List[Union[int, str]], str, None]
-    text: Union[List[Union[int, str]], str, None]
-    whitelist: list
-    blacklist: list
-    cooldown: dict
-    multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]]
-    created: int
-    ignore_commands: bool
-    check_edits: bool
-    ocr_search: bool
-    delete_after: int
-    read_filenames: bool
-    chance: int
-    reply: Optional[bool]
-    tts: bool
-    user_mention: bool
-    role_mention: bool
-    everyone_mention: bool
-    nsfw: bool
+    __slots__ = (
+        "name",
+        "regex",
+        "response_type",
+        "author",
+        "enabled",
+        "text",
+        "count",
+        "image",
+        "whitelist",
+        "blacklist",
+        "cooldown",
+        "multi_payload",
+        "ignore_commands",
+        "check_edits",
+        "ocr_search",
+        "delete_after",
+        "read_filenames",
+        "chance",
+        "reply",
+        "tts",
+        "user_mention",
+        "role_mention",
+        "everyone_mention",
+        "nsfw",
+        "_created_at",
+    )
 
-    def __init__(self, name, regex, response_type, author, **kwargs):
-        self.name = name
+    def __init__(
+        self,
+        name: str,
+        regex: str,
+        response_type: List[Literal[TRIGGER_RESPONSE]],
+        author: int,
+        **kwargs,
+    ):
+        self.name: str = name
         try:
-            self.regex = re.compile(regex)
+            self.regex: Pattern = re.compile(regex)
         except Exception:
             raise
-        self.response_type = response_type
-        self.author = author
-        self.enabled = kwargs.get("enabled", True)
-        self.count = kwargs.get("count", 0)
-        self.image = kwargs.get("image", None)
-        self.text = kwargs.get("text", None)
-        self.whitelist = kwargs.get("whitelist", [])
-        self.blacklist = kwargs.get("blacklist", [])
-        self.cooldown = kwargs.get("cooldown", {})
-        self.multi_payload = kwargs.get("multi_payload", [])
-        self.created_at = kwargs.get("created_at", 0)
-        self.ignore_commands = kwargs.get("ignore_commands", False)
-        self.check_edits = kwargs.get("check_edits", False)
-        self.ocr_search = kwargs.get("ocr_search", False)
-        self.delete_after = kwargs.get("delete_after", None)
-        self.read_filenames = kwargs.get("read_filenames", False)
-        self.chance = kwargs.get("chance", 0)
-        self.reply = kwargs.get("reply", None)
-        self.tts = kwargs.get("tts", False)
-        self.user_mention = kwargs.get("user_mention", True)
-        self.role_mention = kwargs.get("role_mention", False)
-        self.everyone_mention = kwargs.get("everyone_mention", False)
-        self.nsfw = kwargs.get("nsfw", False)
+        self.response_type: List[Literal[TRIGGER_RESPONSE]] = response_type
+        self.author: int = author
+        self.enabled: bool = kwargs.get("enabled", True)
+        self.count: int = kwargs.get("count", 0)
+        self.image: Union[List[Union[int, str]], str, None] = kwargs.get("image", None)
+        self.text: Union[List[Union[int, str]], str, None] = kwargs.get("text", None)
+        self.whitelist: List[int] = kwargs.get("whitelist", [])
+        self.blacklist: List[int] = kwargs.get("blacklist", [])
+        self.cooldown: Dict[str, int] = kwargs.get("cooldown", {})
+        self.multi_payload: Union[List[MultiResponse], Tuple[MultiResponse, ...]] = kwargs.get(
+            "multi_payload", []
+        )
+        self._created_at: int = kwargs.get("created_at", 0)
+        self.ignore_commands: bool = kwargs.get("ignore_commands", False)
+        self.check_edits: bool = kwargs.get("check_edits", False)
+        self.ocr_search: bool = kwargs.get("ocr_search", False)
+        self.delete_after: int = kwargs.get("delete_after", None)
+        self.read_filenames: bool = kwargs.get("read_filenames", False)
+        self.chance: int = kwargs.get("chance", 0)
+        self.reply: Optional[bool] = kwargs.get("reply", None)
+        self.tts: bool = kwargs.get("tts", False)
+        self.user_mention: bool = kwargs.get("user_mention", True)
+        self.role_mention: bool = kwargs.get("role_mention", False)
+        self.everyone_mention: bool = kwargs.get("everyone_mention", False)
+        self.nsfw: bool = kwargs.get("nsfw", False)
 
     def enable(self):
         """Explicitly enable this trigger"""
@@ -207,6 +207,14 @@ class Trigger:
     def toggle(self):
         """Toggle whether or not this trigger is enabled."""
         self.enabled = not self.enabled
+
+    @property
+    def created_at(self):
+        return discord.utils.snowflake_time(self._created_at)
+
+    @property
+    def timestamp(self):
+        return self.created_at.timestamp()
 
     def allowed_mentions(self):
         if version_info >= VersionInfo.from_str("3.4.6"):
@@ -258,7 +266,7 @@ class Trigger:
             "blacklist": self.blacklist,
             "cooldown": self.cooldown,
             "multi_payload": self.multi_payload,
-            "created_at": self.created_at,
+            "created_at": self._created_at,
             "ignore_commands": self.ignore_commands,
             "check_edits": self.check_edits,
             "ocr_search": self.ocr_search,
@@ -296,13 +304,12 @@ class Trigger:
 
 class TriggerExists(Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> Union[Trigger, str]:
-        bot = ctx.bot
         guild = ctx.guild
-        config = bot.get_cog("ReTrigger").config
-        trigger_list = await config.guild(guild).trigger_list()
         result = None
-        if argument in trigger_list:
-            result = await Trigger.from_json(trigger_list[argument])
+        if ctx.guild.id not in ctx.cog.triggers:
+            raise BadArgument(_("There are no triggers setup on this server."))
+        if argument in ctx.cog.triggers[guild.id]:
+            return ctx.cog.triggers[guild.id][argument]
         else:
             result = argument
         return result

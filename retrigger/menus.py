@@ -30,9 +30,9 @@ class ExplainReTriggerPages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
             em = discord.Embed(
-                description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                description=page, colour=await menu.cog.bot.get_embed_colour(menu.ctx.channel)
             )
             em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
@@ -57,7 +57,7 @@ class ReTriggerPages(menus.ListPageSource):
     async def format_page(self, menu: menus.MenuPages, trigger: Trigger):
         self.selection = trigger
         msg_list = []
-        embeds = menu.ctx.channel.permissions_for(menu.ctx.me).embed_links
+        embeds = menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links
         good = "\N{WHITE HEAVY CHECK MARK}"
         bad = "\N{NEGATIVE SQUARED CROSS MARK}"
         # trigger = await Trigger.from_json(triggers)
@@ -65,7 +65,7 @@ class ReTriggerPages(menus.ListPageSource):
         author = self.guild.get_member(trigger.author)
         if not author:
             try:
-                author = await menu.ctx.bot.fetch_user(trigger.author)
+                author = await menu.cog.bot.fetch_user(trigger.author)
             except Exception:
                 author = discord.Object(id=trigger.author)
                 author.name = _("Unknown or Deleted User")
@@ -95,12 +95,14 @@ class ReTriggerPages(menus.ListPageSource):
             responses = humanize_list(trigger.response_type)
         else:
             responses = _("This trigger has no actions and should be removed.")
+        timestamp = int(trigger.timestamp)
 
         info = _(
             "__Name__: **{name}** \n"
             "__Active__: **{enabled}**\n"
             "__Author__: {author}\n"
             "__Count__: **{count}**\n"
+            "__Created__: **<t:{created}:R>**\n"
             "__Response__: **{response}**\n"
             "__NSFW__: **{nsfw}**\n"
         )
@@ -109,6 +111,7 @@ class ReTriggerPages(menus.ListPageSource):
                 name=trigger.name,
                 enabled=good if trigger.enabled else bad,
                 author=author.mention,
+                created=timestamp,
                 count=trigger.count,
                 response=responses,
                 nsfw=trigger.nsfw,
@@ -118,6 +121,7 @@ class ReTriggerPages(menus.ListPageSource):
                 name=trigger.name,
                 enabled=good if trigger.enabled else bad,
                 author=author.name,
+                created=timestamp,
                 count=trigger.count,
                 response=responses,
                 nsfw=trigger.nsfw,
@@ -227,8 +231,7 @@ class ReTriggerPages(menus.ListPageSource):
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(
-                timestamp=menu.ctx.message.created_at,
-                colour=await menu.ctx.embed_colour(),
+                colour=await menu.cog.bot.get_embed_colour(menu.ctx.channel),
                 title=_("Triggers for {guild}").format(guild=self.guild.name),
             )
             em.set_author(name=author, icon_url=author.avatar.url)
@@ -236,7 +239,7 @@ class ReTriggerPages(menus.ListPageSource):
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} Created")
-                em.timestamp = discord.utils.snowflake_time(trigger.created_at)
+                em.timestamp = trigger.created_at
 
             first = True
             for pages in pagify(info, page_length=1024):
@@ -412,9 +415,6 @@ class DeleteTriggerButton(discord.ui.Button):
             await interaction.response.edit_message(
                 content=_("This trigger has been deleted."), view=None
             )
-            for t in self.view.cog.triggers[self.view.ctx.guild.id]:
-                if t.name == self.view.source.selection.name:
-                    self.view.cog.triggers[self.view.ctx.guild.id].remove(t)
 
     async def callback(self, interaction: discord.Interaction):
         """Enables and disables triggers"""
@@ -472,10 +472,14 @@ class ReTriggerMenu(discord.ui.View):
         self.add_item(self.stop_button)
         self.current_page = page_start
         self.select_view: Optional[ReTriggerSelectOption] = None
+        self.author = None
 
     @property
     def source(self):
         return self._source
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
@@ -487,6 +491,15 @@ class ReTriggerMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
+        is_slash = False
+
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        if self.ctx is None:
+            self.ctx = ctx
 
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
@@ -506,7 +519,11 @@ class ReTriggerMenu(discord.ui.View):
                 options=options, placeholder=_("Pick a Trigger")
             )
             self.add_item(self.select_view)
-        return await channel.send(**kwargs, view=self)
+        if is_slash:
+            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
+        else:
+            self.message = await channel.send(**kwargs, view=self)
+        return self.message
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -556,12 +573,7 @@ class ReTriggerMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (self.author.id,):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -608,9 +620,12 @@ class BaseMenu(discord.ui.View):
     def source(self):
         return self._source
 
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
-        self.bot = ctx.bot
+        self.bot = self.cog.bot
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
@@ -629,10 +644,21 @@ class BaseMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        self.ctx = ctx
+        is_slash = False
+
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        if self.ctx is None:
+            self.ctx = ctx
         page = await self._source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
+        if is_slash:
+            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
+        else:
+            self.message = await channel.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number):
@@ -659,12 +685,7 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (self.author.id,):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
