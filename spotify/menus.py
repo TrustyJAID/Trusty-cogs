@@ -653,50 +653,46 @@ class SpotifySelectTrack(discord.ui.Select):
         for track_ in self.options:
             if track_id == track_.track.id:
                 track = track_.track
+        device_id = None
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        await interaction.response.send_message(
+                            _("I could not find an active device to play songs on."),
+                            ephemeral=True,
+                        )
+                        return
                 else:
-                    await user_spotify.playback_start_context(
-                        self.view.source.context.uri, offset=track_id
-                    )
-                    track_name = track.name
-                    artists = humanize_list([i.name for i in track.artists])
-                    await interaction.response.send_message(
-                        _("Playing {track} by {artist} on {device}.").format(
-                            track=track_name, artist=artists, device=cur.device.name
-                        ),
-                        ephemeral=True,
-                    )
+                    device = cur.device
+                await user_spotify.playback_start_context(
+                    self.view.source.context.uri, offset=track_id, device_id=device_id
+                )
+                track_name = track.name
+                artists = humanize_list([i.name for i in track.artists])
+                await interaction.response.send_message(
+                    _("Playing {track} by {artist} on {device}.").format(
+                        track=track_name, artist=artists, device=device.name
+                    ),
+                    ephemeral=True,
+                )
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
@@ -721,30 +717,40 @@ class PlayPauseButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         """go to the previous page"""
         try:
+            device_id = None
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        await interaction.response.send_message(
+                            _("I could not find an active device to play songs on."),
+                            ephemeral=True,
+                        )
+                        return
+                else:
+                    device = cur.device
+                    device_id = device.id
                 if cur.item.id == self.view.source.current_track.id:
                     if cur.is_playing:
                         await interaction.response.send_message(
-                            _("Pausing Spotify on {device}.").format(device=cur.device.name),
+                            _("Pausing Spotify on {device}.").format(device=device.name),
                             ephemeral=True,
                         )
-                        await user_spotify.playback_pause()
+                        await user_spotify.playback_pause(device_id=device_id)
                         self.emoji = emoji_handler.get_emoji("play")
                     else:
                         await interaction.response.send_message(
-                            _("Resuming Spotify playback on {device}.").format(
-                                device=cur.device.name
-                            ),
+                            _("Resuming Spotify playback on {device}.").format(device=device.name),
                             ephemeral=True,
                         )
-                        await user_spotify.playback_resume()
+                        await user_spotify.playback_resume(device_id=device_id)
                         self.emoji = emoji_handler.get_emoji("pause")
                 else:
                     if self.view.source.current_track.type == "track":
@@ -754,12 +760,12 @@ class PlayPauseButton(discord.ui.Button):
                         )
                         await interaction.response.send_message(
                             _("Playing {track} by {artist} on {device}.").format(
-                                track=track_name, artist=artists, device=cur.device.name
+                                track=track_name, artist=artists, device=device.name
                             ),
                             ephemeral=True,
                         )
                         await user_spotify.playback_start_tracks(
-                            [self.view.source.current_track.id]
+                            [self.view.source.current_track.id], device_id=device_id
                         )
                     else:
                         track_name = self.view.source.current_track.name
@@ -768,36 +774,22 @@ class PlayPauseButton(discord.ui.Button):
                         )
                         await interaction.response.send_message(
                             _("Playing {track} by {artist} on {device}.").format(
-                                track=track_name, artist=artists, device=cur.device.name
+                                track=track_name, artist=artists, device=device.name
                             ),
                             ephemeral=True,
                         )
                         await user_spotify.playback_start_context(
-                            self.view.source.current_track.uri
+                            self.view.source.current_track.uri, device_id=device_id
                         )
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -832,28 +824,14 @@ class PreviousTrackButton(discord.ui.Button):
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_previous()
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -888,28 +866,14 @@ class NextTrackButton(discord.ui.Button):
             with user_spotify.token_as(self.user_token):
                 await user_spotify.playback_next()
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -940,42 +904,44 @@ class ShuffleButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         """go to the next page"""
         try:
+            device_id = None
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        await interaction.response.send_message(
+                            _("I could not find an active device to play songs on."),
+                            ephemeral=True,
+                        )
+                        return
+                else:
+                    device = cur.device
+                    device_id = device.id
                 state = not cur.shuffle_state
                 if state:
                     self.style = discord.ButtonStyle.primary
                 else:
                     self.style = discord.ButtonStyle.grey
-                await user_spotify.playback_shuffle(state)
+                await user_spotify.playback_shuffle(state, device_id=device_id)
+                await interaction.response.send_message(
+                    _("Shuffling Spotify on {device}.").format(device=device.name), ephemeral=True
+                )
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -1023,28 +989,14 @@ class RepeatButton(discord.ui.Button):
                     state = "off"
                 await user_spotify.playback_repeat(state)
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -1086,28 +1038,14 @@ class LikeButton(discord.ui.Button):
                 await user_spotify.saved_tracks_add([self.view.source.current_track.id])
                 self.disabled = True
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
         if isinstance(self.source, SpotifyTrackPages):
             self.source = SpotifyPages(
                 user_token=self.user_token,
@@ -1137,50 +1075,48 @@ class PlayAllButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         """go to the previous page"""
         try:
+            device_id = None
             user_spotify = tekore.Spotify(sender=self.cog._sender)
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    # await interaction.response.send_message(_("I could not find an active device to play songs on."), ephemeral=True)
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        await interaction.response.send_message(
+                            _("I could not find an active device to play songs on."),
+                            ephemeral=True,
+                        )
+                        return
                 else:
-                    if self.view.source.current_track.type == "track":
-                        await user_spotify.playback_start_tracks(
-                            [i.id for i in self.view.source.entries]
-                        )
-                    else:
-                        await user_spotify.playback_start_context(
-                            self.view.source.current_track.uri
-                        )
-                    await interaction.response.send_message(
-                        _("Now playing all songs."), ephemeral=True
+                    device = cur.device
+                if self.view.source.current_track.type == "track":
+                    await user_spotify.playback_start_tracks(
+                        [i.id for i in self.view.source.entries], device_id=device_id
                     )
+                else:
+                    await user_spotify.playback_start_context(
+                        self.view.source.current_track.uri, device_id=device_id
+                    )
+                await interaction.response.send_message(
+                    _("Now playing all songs on {device}.").format(device=device.name),
+                    ephemeral=True,
+                )
         except tekore.Unauthorised:
             await interaction.response.send_message.send(
                 _("I am not authorized to perform this action for you."), ephemeral=True
             )
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
 
 
 class QueueTrackButton(discord.ui.Button):
@@ -1203,52 +1139,51 @@ class QueueTrackButton(discord.ui.Button):
         """go to the previous page"""
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
+            device_id = None
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
-                    return
-                else:
-                    if self.view.source.current_track.type == "track":
-                        await user_spotify.playback_queue_add(self.view.source.current_track.uri)
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
                         await interaction.response.send_message(
-                            _("{track} by {artist} has been added to your queue.").format(
-                                track=self.view.source.current_track.name,
-                                artist=humanize_list(
-                                    [i.name for i in self.view.source.current_track.artists]
-                                ),
-                            ),
+                            _("I could not find an active device to play songs on."),
                             ephemeral=True,
                         )
-                    else:
-                        await user_spotify.playback_start_context(
-                            self.view.source.current_track.uri
-                        )
+                        return
+                else:
+                    device = cur.device
+                if self.view.source.current_track.type == "track":
+                    await user_spotify.playback_queue_add(
+                        self.view.source.current_track.uri, device_id=device_id
+                    )
+                    await interaction.response.send_message(
+                        _("{track} by {artist} has been added to your queue on {device}.").format(
+                            track=self.view.source.current_track.name,
+                            artist=humanize_list(
+                                [i.name for i in self.view.source.current_track.artists]
+                            ),
+                            device=device.name,
+                        ),
+                        ephemeral=True,
+                    )
+                else:
+                    await user_spotify.playback_start_context(
+                        self.view.source.current_track.uri, device_id=device_id
+                    )
         except tekore.Unauthorised:
-            await interaction.response.send_message(
-                _("I am not authorized to perform this action for you.")
-            )
+            await self.cog.not_authorized(interaction)
         except tekore.NotFound:
-            await interaction.response.send_message(
-                _("I could not find an active device to play songs on."), ephemeral=True
-            )
+            await self.cog.no_device(interaction)
         except tekore.Forbidden as e:
-            if "non-premium" in str(e):
-                await interaction.response.send_message(
-                    _("This action is prohibited for non-premium users."), ephemeral=True
-                )
-            else:
-                await interaction.response.send_message(
-                    _("I couldn't perform that action for you."), ephemeral=True
-                )
+            await self.cog.forbidden_action(interaction, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await interaction.response.send_message(
-                _("An exception has occured, please contact the bot owner for more assistance."),
-                ephemeral=True,
-            )
+            await self.cog.unknown_error(interaction)
 
 
 class StopButton(discord.ui.Button):
@@ -1531,6 +1466,11 @@ class SpotifyDeviceView(discord.ui.View):
     def __init__(self, ctx: commands.Context):
         super().__init__(timeout=180)
         self.ctx = ctx
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
+        self.device_id = None
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.author.id:
@@ -1543,15 +1483,25 @@ class SpotifyDeviceView(discord.ui.View):
 
 class SpotifySelectDevice(discord.ui.Select):
     def __init__(
-        self, options: List[discord.SelectOption], user_token: str, sender: tekore.AsyncSender
+        self,
+        options: List[discord.SelectOption],
+        user_token: str,
+        sender: tekore.AsyncSender,
+        send_callback=True,
     ):
         super().__init__(
             min_values=1, max_values=1, options=options, placeholder=_("Pick a device")
         )
         self._sender = sender
         self.user_token = user_token
+        self.send_callback = send_callback
+        self.device_id = None
 
     async def callback(self, interaction: discord.Interaction):
+        self.view.device_id = self.values[0]
+        if not self.send_callback:
+            self.view.stop()
+            return
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(self.user_token):
             now = await user_spotify.playback()
@@ -1850,10 +1800,17 @@ class SpotifyBaseMenu(discord.ui.View):
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", row=1)
+    @discord.ui.button(
+        style=discord.ButtonStyle.red,
+        emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+        row=1,
+    )
     async def stop_pages(
         self, button: discord.ui.Button, interaction: discord.Interaction
     ) -> None:
+        """stops the pagination session."""
+        self.stop()
+        await interaction.message.delete()
         """stops the pagination session."""
         self.stop()
         await interaction.message.delete()

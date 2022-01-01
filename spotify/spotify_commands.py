@@ -307,6 +307,7 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             command_mapping = {
                 "transfer": self.spotify_device_transfer,
+                "default": self.spotify_device_default,
                 "list": self.spotify_device_list,
             }
             option = ctx.data["options"][0]["options"][0]["name"]
@@ -314,6 +315,33 @@ class SpotifyCommands:
             if getattr(func, "requires", None):
                 if not await self.check_requires(func, ctx):
                     return
+            command_options = ctx.data["options"][0]["options"][0]["options"]
+            if ctx.type.value == 4:
+                cur_value = command_options[0]["value"]
+                if not await self.config.user(ctx.user).token():
+                    # really don't want to force users to auth from autocomplete
+                    log.debug("No tokens.")
+                    return
+                user_token = await self.get_user_auth(ctx)
+                if not user_token:
+                    log.debug("STILL No tokens.")
+                    return
+                if ctx.user.id not in self._temp_user_devices:
+                    try:
+                        user_devices = []
+                        user_spotify = tekore.Spotify(sender=self._sender)
+                        with user_spotify.token_as(user_token):
+                            devices = await user_spotify.playback_devices()
+                        for d in devices:
+                            user_devices.append({"name": d.name, "value": d.id})
+                        self._temp_user_devices[ctx.user.id] = user_devices
+                    except Exception:
+                        log.exception("uhhhhhh")
+                        return
+
+                choices = [i for i in self._temp_user_devices[ctx.user.id] if cur_value in i["name"].lower()]
+                await ctx.response.auto_complete(choices[:25])
+                return
             try:
                 kwargs = {
                     i["name"]: i["value"]
@@ -346,7 +374,10 @@ class SpotifyCommands:
         async with self.config.guild(ctx.guild).commands() as commands:
             if "play on spotify" in commands:
                 command_id = commands["play on spotify"]
-                await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
+                try:
+                    await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
+                except Exception:
+                    pass
                 del commands["play on spotify"]
             else:
                 data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=json)
@@ -426,7 +457,10 @@ class SpotifyCommands:
         """
         msg = _("I am not authorized to perform this action for you.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -436,7 +470,10 @@ class SpotifyCommands:
         """
         msg = _("It appears you're not currently listening to Spotify.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -446,7 +483,10 @@ class SpotifyCommands:
         """
         msg = _("You need to authorize me to interact with spotify.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -456,7 +496,10 @@ class SpotifyCommands:
         """
         msg = _("I could not find an active device to play songs on.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -472,7 +515,10 @@ class SpotifyCommands:
             msg = _("I couldn't perform that action for you.")
         msg = _("You need to authorize me to interact with spotify.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -482,7 +528,10 @@ class SpotifyCommands:
         """
         msg = _("An exception has occured, please contact the bot owner for more assistance.")
         if isinstance(ctx, discord.Interaction):
-            await ctx.followup.send(msg, ephemeral=True)
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg)
 
@@ -1368,18 +1417,34 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
+            device_id = None
             with user_spotify.token_as(user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.config.user(author).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        await self.no_device(ctx)
+                else:
+                    device = cur.device
+                    device_id = device.id
                 if not cur or not cur.is_playing:
-                    await user_spotify.playback_resume()
+                    await user_spotify.playback_resume(device_id=device_ide)
                 else:
                     msg = _("You are already playing music on Spotify.")
                     if is_slash:
@@ -1387,7 +1452,7 @@ class SpotifyCommands:
                     else:
                         await ctx.reply(msg)
             if is_slash:
-                await ctx.followup.send(_("Resuming playback."), ephemeral=True)
+                await ctx.followup.send(_("Resuming playback."))
             else:
                 await ctx.react_quietly(
                     emoji_handler.get_emoji(
@@ -1498,6 +1563,9 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             is_slash = True
+            user = ctx.user
+        else:
+            user = ctx.author
 
         url_or_playlist_name = url_or_playlist_name.replace("🧑‍🎨", ":artist:")
         # because discord will replace this in URI's automatically 🙄
@@ -1518,8 +1586,13 @@ class SpotifyCommands:
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.config.user(user).default_device()
+                else:
+                    device_id = None
                 if tracks:
-                    await user_spotify.playback_start_tracks(tracks)
+                    await user_spotify.playback_start_tracks(tracks, device_id=device_id)
                     if is_slash:
                         all_tracks = await user_spotify.tracks(tracks)
                         track = all_tracks[0]
@@ -1543,7 +1616,7 @@ class SpotifyCommands:
                         )
                     return
                 if new_uri:
-                    await user_spotify.playback_start_context(new_uri)
+                    await user_spotify.playback_start_context(new_uri, device_id=device_id)
                     if is_slash:
                         if uri_type == "playlist":
                             cur_tracks = await user_spotify.playlist(new_uri)
@@ -1592,7 +1665,7 @@ class SpotifyCommands:
                             playlists.append(p)
                     for playlist in playlists:
                         if url_or_playlist_name.lower() in playlist.name.lower():
-                            await user_spotify.playback_start_context(playlist.uri)
+                            await user_spotify.playback_start_context(playlist.uri, device_id=device_id)
                             if is_slash:
                                 await ctx.followup.send(
                                     _("Now playing {playlist}").format(playlist=playlist.name),
@@ -1615,7 +1688,7 @@ class SpotifyCommands:
                             or url_or_playlist_name.lower()
                             in ", ".join(a.name for a in track.track.artists)
                         ):
-                            await user_spotify.playback_start_tracks([track.track.id])
+                            await user_spotify.playback_start_tracks([track.track.id], device_id=device_id)
                             if is_slash:
                                 track_name = track.track.name
                                 artists = getattr(track.track, "artists", [])
@@ -1641,7 +1714,7 @@ class SpotifyCommands:
                             return
                 else:
                     cur = await user_spotify.saved_tracks(limit=50)
-                    await user_spotify.playback_start_tracks([t.track.id for t in cur.items])
+                    await user_spotify.playback_start_tracks([t.track.id for t in cur.items], device_id=device_id)
                     await ctx.react_quietly(
                         emoji_handler.get_emoji(
                             "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
@@ -1741,6 +1814,9 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
 
         if state and state.lower() not in ["off", "track", "context"]:
             msg = _("Repeat must accept either `off`, `track`, or `context`.")
@@ -1769,29 +1845,45 @@ class SpotifyCommands:
                 else:
                     cur = await user_spotify.playback()
                     if not cur:
-                        return await ctx.send(
-                            _("I could not find an active device to play songs on.")
-                        )
-                    if cur.repeat_state == "off":
+                        device_id = await self.config.user(author).default_device()
+                        devices = await user_spotify.playback_devices()
+                        device = None
+                        for d in devices:
+                            if d.id == device_id:
+                                device = d
+                        if not device:
+                            await self.no_device(ctx)
+                            log.debug("exiting here")
+                    else:
+                        device = cur.device
+                        device_id = device.id
+                    if cur and cur.repeat_state == "off":
                         state = "context"
                         emoji = emoji_handler.get_emoji(
                             "repeat", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
-                    if cur.repeat_state == "context":
+                    if cur and cur.repeat_state == "context":
                         state = "track"
                         emoji = emoji_handler.get_emoji(
                             "repeatone",
                             ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                         )
-                    if cur.repeat_state == "track":
+                    if cur and cur.repeat_state == "track":
                         state = "off"
                         emoji = emoji_handler.get_emoji(
                             "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
-                await user_spotify.playback_repeat(str(state).lower())
+                    if state is None:
+                        state = "off"
+                        emoji = emoji_handler.get_emoji(
+                            "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
+                        )
+                await user_spotify.playback_repeat(str(state).lower(), device_id=device_id)
             if is_slash:
                 await ctx.followup.send(
-                    _("Setting Spotify repeat to {state}.").format(state=state.title()),
+                    _("Setting Spotify repeat to {state} on {device}.").format(
+                        state=state.title(), device=device.name
+                    ),
                     ephemeral=True,
                 )
             else:
@@ -1820,6 +1912,9 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
@@ -1830,9 +1925,20 @@ class SpotifyCommands:
                 if state is None:
                     cur = await user_spotify.playback()
                     if not cur:
-                        await self.no_device(ctx)
-                    state = not cur.shuffle_state
-                await user_spotify.playback_shuffle(state)
+                        device_id = await self.config.user(author).default_device()
+                        devices = await user_spotify.playback_devices()
+                        device = None
+                        for d in devices:
+                            if d.id == device_id:
+                                device = d
+                        if not device:
+                            await self.no_device(ctx)
+                        state = False
+                    else:
+                        device = cur.device
+                        device_id = device.id
+                        state = not cur.shuffle_state
+                await user_spotify.playback_shuffle(state, device_id=device_id)
             if is_slash:
                 if state:
                     await ctx.followup.send(_("Shuffling songs on Spotify."), ephemeral=True)
@@ -1991,7 +2097,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -2008,7 +2114,7 @@ class SpotifyCommands:
             new_device = None
             if device_name:
                 for d in devices:
-                    if device_name.lower() in d.name.lower():
+                    if device_name.lower() in d.name.lower() or device_name == d.id:
                         log.debug(f"Transferring playback to {d.name}")
                         new_device = d
             else:
@@ -2037,6 +2143,103 @@ class SpotifyCommands:
             if is_slash:
                 await ctx.followup.send(
                     _("Transferring playback to {device}").format(device=new_device.name),
+                    ephemeral=True,
+                )
+            else:
+                await ctx.tick()
+        except tekore.Unauthorised:
+            log.debug("Error transferring playback", exc_info=True)
+            await self.not_authorized(ctx)
+        except tekore.NotFound:
+            await self.no_device(ctx)
+        except tekore.Forbidden as e:
+            await self.forbidden_action(ctx, str(e))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.unknown_error(ctx)
+
+    @spotify_device.command(name="default")
+    @commands.bot_has_permissions(add_reactions=True)
+    async def spotify_device_default(
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        *,
+        device_name: Optional[str] = None,
+    ):
+        """
+        Set your default device to attempt to start playing new tracks on
+        if you aren't currently listening to Spotify.
+
+        `<device_name>` The name of the device you want to switch to.
+        """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer(ephemeral=True)
+            is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
+
+        user_token = await self.get_user_auth(ctx)
+        if not user_token:
+            return await self.no_user_token(ctx)
+        try:
+            is_playing = False
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                devices = await user_spotify.playback_devices()
+                now = await user_spotify.playback()
+                if now and now.is_playing:
+                    is_playing = True
+            new_device = None
+            if device_name:
+                for d in devices:
+                    if device_name.lower() in d.name.lower() or device_name == d.id:
+                        log.debug(f"Transferring playback to {d.name}")
+                        new_device = d
+            else:
+                new_view = SpotifyDeviceView(ctx)
+                options = []
+                for device in devices[:25]:
+                    options.append(discord.SelectOption(label=device.name[:25], value=device.id))
+                options.insert(0, discord.SelectOption(label="None", value="None"))
+                select_view = SpotifySelectDevice(options, user_token, self._sender, send_callback=False)
+                new_view.add_item(select_view)
+                msg = _("Pick the device you want to set as your default player")
+                if is_slash:
+                    await ctx.followup.send(msg, view=new_view)
+                else:
+                    await ctx.send(msg, view=new_view)
+                await new_view.wait()
+                device_id = new_view.device_id if new_view.device_id != "None" else None
+
+                if device_id:
+                    for d in devices:
+                        if device.id == new_view.device_id:
+                            device_name = d.name
+                    await self.config.user(author).default_device.set(device_id)
+                else:
+                    await self.config.user(author).default_device.clear()
+                    device_name = "None"
+                msg = _("Saving default device as {device}.").format(device=device_name)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
+                # new_device = await self.spotify_pick_device(ctx, devices)
+                return
+            if not new_device:
+                msg = _("I will not save your default device for you.")
+                if is_slash:
+                    await ctx.followup.send(msg, ephemeral=True)
+                else:
+                    await ctx.send(msg)
+                await self.config.user(author).default_device.clear()
+                return
+            await self.config.user(author).default_device.set(new_device.id)
+            if is_slash:
+                await ctx.followup.send(
+                    _("Saving default device as {device}.").format(device=new_device.name),
                     ephemeral=True,
                 )
             else:

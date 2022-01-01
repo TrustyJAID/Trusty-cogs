@@ -37,7 +37,7 @@ class Spotify(SpotifyCommands, commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828)
-        self.config.register_user(token={}, listen_for={}, show_private=False)
+        self.config.register_user(token={}, listen_for={}, show_private=False, default_device=None)
         self.config.register_guild(
             clear_reactions_after=True, delete_message_after=False, menu_timeout=120, commands={}
         )
@@ -84,6 +84,7 @@ class Spotify(SpotifyCommands, commands.Cog):
             self.rpc_extension = DashboardRPC_Spotify(self)
         self.slash_commands = {"guilds": {}}
         self.SLASH_COMMANDS = SLASH_COMMANDS
+        self._temp_user_devices = {}
 
     async def pre_check_slash(self, interaction):
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
@@ -166,11 +167,16 @@ class Spotify(SpotifyCommands, commands.Cog):
 
         user_spotify = tekore.Spotify(sender=self._sender)
         # play the song if it exists
+
         try:
             with user_spotify.token_as(user_token):
                 if tracks:
-
-                    await user_spotify.playback_start_tracks(tracks)
+                    cur = await user_spotify.playback()
+                    if not cur:
+                        device_id = await self.config.user(user).default_device()
+                    else:
+                        device_id = None
+                    await user_spotify.playback_start_tracks(tracks, device_id=device_id)
                     all_tracks = await user_spotify.tracks(tracks)
                     track = all_tracks[0]
                     track_name = track.name
@@ -241,9 +247,15 @@ class Spotify(SpotifyCommands, commands.Cog):
                             ),
                             ephemeral=True,
                         )
-        except Exception:
-            log.exception("Error on reaction add play")
-            pass
+        except tekore.Unauthorised:
+            await self.not_authorized(interaction)
+        except tekore.NotFound:
+            await self.no_device(interaction)
+        except tekore.Forbidden as e:
+            await self.forbidden_action(interaction, str(e))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.unknown_error(interaction)
 
     async def migrate_settings(self):
         if await self.config.version() < "1.4.9":

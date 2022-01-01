@@ -237,6 +237,7 @@ SLASH_COMMANDS = {
             ],
         },
         {"name": "pause", "description": "Pauses Spotify for you", "type": 1},
+        {"name": "resume", "description": "Resumes Spotify for you", "type": 1},
         {"name": "me", "description": "Shows your current Spotify Settings", "type": 1},
         {
             "name": "playlist",
@@ -355,9 +356,24 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "device_name",
-                            "description": "The name of the device you want to transfer Spotify playback to.",
+                            "description": "The name of the device.",
                             "type": 3,
                             "required": False,
+                            "autocomplete": True,
+                        }
+                    ],
+                },
+                {
+                    "name": "default",
+                    "description": "Set your default device to play Spotify.",
+                    "type": 1,
+                    "options": [
+                        {
+                            "name": "device_name",
+                            "description": "The name of the device.",
+                            "type": 3,
+                            "required": False,
+                            "autocomplete": True,
                         }
                     ],
                 },
