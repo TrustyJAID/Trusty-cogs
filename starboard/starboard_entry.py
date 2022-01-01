@@ -75,10 +75,10 @@ class StarboardEntry:
             return True
         guild = member.guild
         whitelisted_roles = [
-            guild.get_role(rid).id for rid in self.whitelist if guild.get_role(rid) is not None
+            guild.get_role(rid) for rid in self.whitelist if guild.get_role(rid) is not None
         ]
         blacklisted_roles = [
-            guild.get_role(rid).id for rid in self.blacklist if guild.get_role(rid) is not None
+            guild.get_role(rid) for rid in self.blacklist if guild.get_role(rid) is not None
         ]
         if whitelisted_roles:
             # only count if the whitelist contains actual roles
