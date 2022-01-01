@@ -462,7 +462,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     async def not_playing(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
@@ -475,7 +475,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     async def no_user_token(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
@@ -488,7 +488,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     async def no_device(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
@@ -501,7 +501,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     async def forbidden_action(
         self, ctx: Union[commands.Context, discord.Interaction], error: str
@@ -520,7 +520,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     async def unknown_error(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
@@ -533,7 +533,7 @@ class SpotifyCommands:
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
-            await ctx.reply(msg)
+            await ctx.reply(msg, mention_author=False)
 
     @spotify_set.command(name="listen")
     async def set_reaction_listen(
@@ -1439,12 +1439,12 @@ class SpotifyCommands:
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await self.no_device(ctx)
+                        return await self.no_device(ctx)
                 else:
                     device = cur.device
                     device_id = device.id
                 if not cur or not cur.is_playing:
-                    await user_spotify.playback_resume(device_id=device_ide)
+                    await user_spotify.playback_resume(device_id=device_id)
                 else:
                     msg = _("You are already playing music on Spotify.")
                     if is_slash:
@@ -1852,8 +1852,8 @@ class SpotifyCommands:
                             if d.id == device_id:
                                 device = d
                         if not device:
-                            await self.no_device(ctx)
-                            log.debug("exiting here")
+                            return await self.no_device(ctx)
+
                     else:
                         device = cur.device
                         device_id = device.id
@@ -1932,7 +1932,7 @@ class SpotifyCommands:
                             if d.id == device_id:
                                 device = d
                         if not device:
-                            await self.no_device(ctx)
+                            return await self.no_device(ctx)
                         state = False
                     else:
                         device = cur.device
