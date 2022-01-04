@@ -31,7 +31,7 @@ class Runescape(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.2"
+    __version__ = "1.3.3"
 
     def __init__(self, bot):
         self.bot: Red = bot
@@ -143,6 +143,56 @@ class Runescape(commands.Cog):
     async def osrs(self, ctx: commands.Context) -> None:
         """Search for OSRS highscores"""
         pass
+
+    @runescape.command(name="wiki")
+    async def runescape_wiki(self, ctx: commands.Context, *, search: str):
+        """Look for something on the runescape Wiki."""
+        base_url = "https://runescape.wiki/w/?curid="
+        wiki_url = "https://runescape.wiki/api.php"
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": search,
+            "format": "json",
+        }
+        headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
+        async with self.session.get(wiki_url, headers=headers, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(f"I could not find information about `{search}` on the Runescape Wiki.")
+                return
+        msg = f"Runescape Wiki Results for `{search}`:\n"
+        for search in data["query"]["search"]:
+            page_id = search["pageid"]
+            title = search['title']
+            msg += f"[{title}]({base_url}{page_id})\n"
+        await ctx.maybe_send_embed(msg)
+
+    @osrs.command(name="wiki")
+    async def osrs_wiki(self, ctx: commands.Context, *, search: str):
+        """Look for something on the runescape Wiki."""
+        base_url = "https://oldschool.runescape.wiki/w/?curid="
+        wiki_url = "https://oldschool.runescape.wiki/api.php"
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": search,
+            "format": "json",
+        }
+        headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
+        async with self.session.get(wiki_url, headers=headers, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(f"I could not find information about `{search}` on the Runescape Wiki.")
+                return
+        msg = f"Old School Runescape Wiki Results for `{search}`:\n"
+        for search in data["query"]["search"]:
+            page_id = search["pageid"]
+            title = search['title']
+            msg += f"[{title}]({base_url}{page_id})\n"
+        await ctx.maybe_send_embed(msg)
 
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
