@@ -635,11 +635,6 @@ class HockeySetCommands(MixinMeta):
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
             team = await HockeyTeams().convert(ctx, team)
             if channel:
@@ -690,11 +685,6 @@ class HockeySetCommands(MixinMeta):
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
             team = await HockeyTeams().convert(ctx, team)
             if channel:

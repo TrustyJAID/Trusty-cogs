@@ -734,7 +734,8 @@ class HockeyPickems(MixinMeta):
         data = await self.pickems_config.guild(ctx.guild).all()
         category_channel = ctx.guild.get_channel(data.get("pickems_category"))
         category = category_channel.mention if category_channel else None
-        timezone = data["pickems_timezone"] or _("Home Teams Timezone")
+        channel = ctx.guild.get_channel(data.get("pickems_channel"))
+        channel = channel.mention if channel else None
         global_bank = await bank.is_global()
         currency_name = await bank.get_currency_name(ctx.guild)
         if global_bank:
@@ -745,27 +746,23 @@ class HockeyPickems(MixinMeta):
             base_credits = await self.pickems_config.guild(ctx.guild).base_credits()
             top_credits = await self.pickems_config.guild(ctx.guild).top_credits()
             top_members = await self.pickems_config.guild(ctx.guild).top_amount()
-        if timezone is None:
-            timezone = _("Home Teams Timezone")
         msg = _(
             "**Pickems Settings for {guild}**\n"
-            "__Category:__ **{category}**\n"
-            "__Timezone:__ **{timezone}**\n"
+            "__Channel:__ **{channel}**\n"
             "__Base {currency}:__ {base_credits}\n"
             "__Weekly {currency}:__ Top {top_members} members will earn {top_credits} {currency}\n"
             "__Channels:__\n {channels}\n"
         ).format(
             guild=ctx.guild.name,
-            category=category,
+            channel=channel,
             channels="\n".join([f"<#{chan}>" for chan in data.get("pickems_channels")]),
-            timezone=timezone,
             currency=currency_name,
             top_members=top_members,
             top_credits=top_credits,
             base_credits=base_credits,
         )
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.send_message(discord.Embed(description=msg))
+            await ctx.response.send_message(embed=discord.Embed(description=msg))
         else:
             await ctx.maybe_send_embed(msg)
 
@@ -795,11 +792,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
             is_slash = True
             author = ctx.user
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
         else:
             author = ctx.author
@@ -855,11 +847,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
             is_slash = True
             author = ctx.user
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
         else:
             author = ctx.author
@@ -914,11 +901,6 @@ class HockeyPickems(MixinMeta):
 
             is_slash = True
             author = ctx.user
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
         else:
             author = ctx.author
@@ -980,11 +962,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
 
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
 
         global_bank = await bank.is_global()
@@ -1032,11 +1009,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
 
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
             if channel:
                 channel = guild.get_channel(int(channel))
@@ -1057,7 +1029,7 @@ class HockeyPickems(MixinMeta):
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
         await self.create_weekly_pickems_pages([ctx.guild])
-        msg = _("I will now automatically create pickems pages every Sunday.")
+        msg = _("I will now automatically create pickems pages every day.")
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -1073,11 +1045,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
 
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
@@ -1098,11 +1065,6 @@ class HockeyPickems(MixinMeta):
         if isinstance(ctx, discord.Interaction):
 
             is_slash = True
-            if not await self.slash_check_permissions(ctx, ctx.user, manage_channels=True):
-                await ctx.response.send_message(
-                    _("You are not authorized to use this command."), ephemeral=True
-                )
-                return
             await ctx.response.defer()
         if date is None:
             new_date = datetime.now()

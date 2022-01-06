@@ -327,6 +327,9 @@ class EventPoster(commands.Cog):
             }
             option = ctx.data["options"][0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             try:
                 kwargs = {}
@@ -832,6 +835,9 @@ class EventPoster(commands.Cog):
             option = ctx.data["options"][0]["options"][0]["name"]
             options = ctx.data["options"][0]["options"][0]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             try:
                 kwargs = {}
@@ -1236,6 +1242,9 @@ class EventPoster(commands.Cog):
             option = ctx.data["options"][0]["options"][0]["name"]
             options = ctx.data["options"][0]["options"][0]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             try:
                 kwargs = {}
