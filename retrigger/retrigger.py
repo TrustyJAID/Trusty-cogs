@@ -205,6 +205,31 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         else:
             await ctx.send(msg)
 
+    async def _find_good_emojis(self, interaction: discord.Interaction, option: dict):
+        list_emojis = [
+            discord.PartialEmoji.from_str(e.strip())
+            for e in option["value"].split(";")
+        ]
+        good_emojis = []
+        log.debug(option["value"])
+        log.debug(list_emojis)
+        if any([e.is_unicode_emoji() for e in list_emojis]):
+            await interaction.response.send_message("Some emojis were not found, attempting to find unicode emojis.")
+            msg = await interaction.original_message()
+            for emoji in list_emojis:
+                if emoji.is_unicode_emoji():
+                    try:
+                        await msg.add_reaction(emoji)
+                        good_emojis.append(str(emoji))
+                    except Exception:
+                        pass
+                else:
+                    good_emojis.append(str(emoji)[1:-1])
+        else:
+            good_emojis = [str(emoji)[1:-1] for emoji in list_emojis]
+        return good_emojis
+
+
     @commands.group()
     @commands.guild_only()
     async def retrigger(self, ctx: commands.Context) -> None:
@@ -245,7 +270,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"]
             option = options[0]["name"]
             func = command_mapping[option]
-            if ctx.type.value == 4:
+            if ctx.type.value == 4 and options[0]["options"][0].get("focused", False):
                 cur_value = options[0]["options"][0]["value"]
                 if ctx.guild.id in self.triggers:
                     choices = [
@@ -259,12 +284,32 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 log.debug("sending autocomplete response")
                 return
 
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
+
             try:
                 kwargs = {}
                 for option in ctx.data["options"][0].get("options", []):
                     name = option["name"]
                     if name == "trigger":
-                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(option["value"], None)
+                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(
+                            option["value"], None
+                        )
+                    elif name == "regex":
+                        try:
+                            re.compile(option["value"])
+                            kwargs[name] = option["value"]
+                        except Exception as e:
+                            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(
+                                arg=option["value"], e=e
+                            )
+                            await ctx.response.send_message(err_msg, ephemeral=True)
+                            return
+                    elif name == "emojis":
+                        good_emojis = await self._find_good_emojis(ctx, option)
+                        kwargs[name] = good_emojis
+
                     else:
                         kwargs[name] = self.convert_slash_args(ctx, option)
             except KeyError:
@@ -392,6 +437,9 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"][0]["options"]
             option = options[0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             try:
                 kwargs = {}
@@ -430,6 +478,9 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"][0]["options"]
             option = options[0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             try:
                 kwargs = {}
@@ -528,6 +579,9 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"][0]["options"]
             option = options[0]["name"]
             func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
 
             if ctx.type.value == 4:
                 cur_value = options[0]["options"][0]["value"]
@@ -548,7 +602,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 for option in options[0].get("options", []):
                     name = option["name"]
                     if name == "trigger":
-                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(option["value"], None)
+                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(
+                            option["value"], None
+                        )
+                    elif name == "emojis":
+                        good_emojis = await self._find_good_emojis(ctx, option)
+                        kwargs[name] = good_emojis
                     else:
                         kwargs[name] = self.convert_slash_args(ctx, option)
             except KeyError:
@@ -843,7 +902,10 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @whitelist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
     async def whitelist_remove(
-        self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
+        self,
+        ctx: commands.Context,
+        trigger: TriggerExists,
+        channel_user_role: commands.Greedy[ChannelUserRole],
     ) -> None:
         """
         Remove a channel, user, or role from triggers allowlist
@@ -885,7 +947,10 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @blacklist.command(name="add")
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_add(
-        self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
+        self,
+        ctx: commands.Context,
+        trigger: TriggerExists,
+        channel_user_role: commands.Greedy[ChannelUserRole],
     ) -> None:
         """
         Add a channel, user, or role to triggers blocklist
@@ -924,7 +989,10 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @blacklist.command(name="remove", aliases=["rem", "del"])
     @checks.mod_or_permissions(manage_messages=True)
     async def blacklist_remove(
-        self, ctx: commands.Context, trigger: TriggerExists, *channel_user_role: ChannelUserRole
+        self,
+        ctx: commands.Context,
+        trigger: TriggerExists,
+        channel_user_role: commands.Greedy[ChannelUserRole],
     ) -> None:
         """
         Remove a channel, user, or role from triggers blocklist
@@ -1197,9 +1265,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         trigger.everyone_mention = set_to
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1209,7 +1283,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} everyone mentions set to: {set_to}").format(
             name=trigger.name, set_to=trigger.everyone_mention
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1230,9 +1304,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         trigger.role_mention = set_to
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1242,7 +1322,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} role mentions set to: {set_to}").format(
             name=trigger.name, set_to=trigger.role_mention
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1260,9 +1340,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         trigger.check_edits = not trigger.check_edits
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1272,7 +1358,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} check edits set to: {ignore_edits}").format(
             name=trigger.name, ignore_edits=trigger.check_edits
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1290,9 +1376,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if trigger.multi_payload:
             return await self._no_multi(ctx)
@@ -1304,7 +1396,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
         # self.triggers[ctx.guild.id].append(trigger)
         msg = _("Trigger {name} text changed to `{text}`").format(name=trigger.name, text=text)
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1326,9 +1418,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if chance < 0:
             chance = 0
@@ -1343,7 +1441,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             )
         else:
             msg = _("Trigger {name} chance changed to always.").format(name=trigger.name)
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1368,9 +1466,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if "text" not in trigger.response_type:
             return await self._no_edit(ctx)
@@ -1379,7 +1483,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 delete_after_seconds = delete_after.total_seconds()
             if delete_after.total_seconds() < 1:
                 msg = _("`delete_after` must be greater than 1 second.")
-                if isinstance(ctx, discord.Interaction):
+                if is_slash:
                     await ctx.response.send_message(msg)
                 else:
                     await ctx.send(msg)
@@ -1394,7 +1498,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} will now delete after `{time}` seconds.").format(
             name=trigger.name, time=delete_after_seconds
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1411,9 +1515,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         trigger.ignore_commands = not trigger.ignore_commands
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1423,7 +1533,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} ignoring commands set to `{text}`").format(
             name=trigger.name, text=trigger.ignore_commands
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1443,9 +1553,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if trigger.multi_payload:
             return await self._no_multi(ctx)
@@ -1453,7 +1569,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         existing_cmd = self.bot.get_command(cmd_list[0])
         if existing_cmd is None:
             msg = _("`{command}` doesn't seem to be an available command.").format(command=command)
-            if isinstance(ctx, discord.Interaction):
+            if is_slash:
                 await ctx.response.send_message(msg)
             else:
                 await ctx.send(msg)
@@ -1468,7 +1584,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} command changed to `{command}`").format(
             name=trigger.name, command=command
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1490,16 +1606,22 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         """
         if not isinstance(roles, tuple):
             roles = (roles,)
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if trigger.multi_payload:
             return await self._no_multi(ctx)
         for role in roles:
             if role >= ctx.me.top_role:
                 msg = _("I can't assign roles higher than my own.")
-                if isinstance(ctx, discord.Interaction):
+                if is_slash:
                     await ctx.response.send_message(msg)
                 else:
                     await ctx.send(msg)
@@ -1508,7 +1630,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 continue
             if role >= ctx.author.top_role:
                 msg = _("I can't assign roles higher than you are able to assign.")
-                if isinstance(ctx, discord.Interaction):
+                if is_slash:
                     await ctx.response.send_message(msg)
                 else:
                     await ctx.send(msg)
@@ -1524,7 +1646,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} role edits changed to `{roles}`").format(
             name=trigger.name, roles=humanize_list([r.name for r in roles])
         )
-        if isinstance(ctx, discord.Interaction):
+        if is_slash:
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
@@ -1532,7 +1654,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @_edit.command(name="react", aliases=["emojis"])
     @checks.mod_or_permissions(manage_messages=True)
     async def edit_reactions(
-        self, ctx: commands.Context, trigger: TriggerExists, *emojis: ValidEmoji
+        self, ctx: commands.Context, trigger: TriggerExists, emojis: commands.Greedy[ValidEmoji]
     ) -> None:
         """
         Edit the emoji reactions of a saved trigger.
@@ -1544,9 +1666,15 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+            is_slash = True
+        else:
+            author = ctx.author
+            is_slash = False
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
-        if not await self.can_edit(ctx.author, trigger):
+        if not await self.can_edit(author, trigger):
             return await self._not_authorized(ctx)
         if "react" not in trigger.response_type:
             return await self._no_edit(ctx)
@@ -1559,8 +1687,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         msg = _("Trigger {name} reactions changed to {emojis}").format(
             name=trigger.name, emojis=humanize_list(emoji_s)
         )
-        if isinstance(ctx, discord.Interaction):
-            await ctx.response.send_message(msg)
+        if is_slash:
+            if ctx.response.is_done():
+                await ctx.followup.send(msg)
+            else:
+                await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
 
@@ -1879,7 +2010,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["randtext"], author, text=text, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["randtext"],
+            author,
+            text=text,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -1907,7 +2043,14 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             return await self._already_exists(ctx, name)
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
-        new_trigger = Trigger(name, regex, ["dm"], author, text=text, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id)
+        new_trigger = Trigger(
+            name,
+            regex,
+            ["dm"],
+            author,
+            text=text,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
+        )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
@@ -1936,7 +2079,14 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             return await self._already_exists(ctx, name)
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
-        new_trigger = Trigger(name, regex, ["dmme"], author, text=text, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id)
+        new_trigger = Trigger(
+            name,
+            regex,
+            ["dmme"],
+            author,
+            text=text,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
+        )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
@@ -1967,7 +2117,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["rename"], author, text=text, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["rename"],
+            author,
+            text=text,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2016,7 +2171,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             if not filename:
                 return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["image"], author, image=filename, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["image"],
+            author,
+            image=filename,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2047,7 +2207,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         filename = await self.wait_for_multiple_images(ctx)
 
         new_trigger = Trigger(
-            name, regex, ["randimage"], author, image=filename, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["randimage"],
+            author,
+            image=filename,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2100,7 +2265,13 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             if not filename:
                 return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["image"], author, image=filename, text=text, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["image"],
+            author,
+            image=filename,
+            text=text,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2151,7 +2322,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             if not filename:
                 return await ctx.send(_("That is not a valid file link."))
         new_trigger = Trigger(
-            name, regex, ["resize"], author, image=filename, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["resize"],
+            author,
+            image=filename,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2182,7 +2358,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["ban"], author, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id, check_edits=True
+            name,
+            regex,
+            ["ban"],
+            author,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
+            check_edits=True,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2213,7 +2394,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["kick"], author, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id, check_edits=True
+            name,
+            regex,
+            ["kick"],
+            author,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
+            check_edits=True,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2227,7 +2413,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(add_reactions=True)
     async def react(
-        self, ctx: commands.Context, name: str, regex: ValidRegex, *emojis: ValidEmoji
+        self,
+        ctx: commands.Context,
+        name: str,
+        regex: ValidRegex,
+        emojis: commands.Greedy[ValidEmoji],
     ) -> None:
         """
         Add a reaction trigger
@@ -2245,7 +2435,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["react"], author, text=emojis, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["react"],
+            author,
+            text=emojis,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2273,7 +2468,13 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             return await self._already_exists(ctx, name)
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
-        new_trigger = Trigger(name, regex, ["publish"], author, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id)
+        new_trigger = Trigger(
+            name,
+            regex,
+            ["publish"],
+            author,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
+        )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
         self.triggers[ctx.guild.id][new_trigger.name] = new_trigger
@@ -2308,7 +2509,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["command"], author, text=command, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["command"],
+            author,
+            text=command,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2360,7 +2566,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["mock"], author, text=command, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["mock"],
+            author,
+            text=command,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2416,7 +2627,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def addrole(
-        self, ctx: commands.Context, name: str, regex: ValidRegex, *roles: discord.Role
+        self,
+        ctx: commands.Context,
+        name: str,
+        regex: ValidRegex,
+        roles: commands.Greedy[discord.Role],
     ) -> None:
         """
         Add a trigger to add a role
@@ -2444,7 +2659,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["add_role"], author, text=role_ids, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["add_role"],
+            author,
+            text=role_ids,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2458,7 +2678,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def removerole(
-        self, ctx: commands.Context, name: str, regex: ValidRegex, *roles: discord.Role
+        self,
+        ctx: commands.Context,
+        name: str,
+        regex: ValidRegex,
+        roles: commands.Greedy[discord.Role],
     ) -> None:
         """
         Add a trigger to remove a role
@@ -2486,7 +2710,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         new_trigger = Trigger(
-            name, regex, ["remove_role"], author, text=role_ids, created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id
+            name,
+            regex,
+            ["remove_role"],
+            author,
+            text=role_ids,
+            created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
         if ctx.guild.id not in self.triggers:
             self.triggers[ctx.guild.id] = {}
@@ -2503,7 +2732,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         ctx: commands.Context,
         name: str,
         regex: ValidRegex,
-        *multi_response: MultiResponse,
+        multi_response: commands.Greedy[MultiResponse],
     ) -> None:
         """
         Add a multiple response trigger
