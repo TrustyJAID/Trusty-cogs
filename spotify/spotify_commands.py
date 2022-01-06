@@ -376,13 +376,16 @@ class SpotifyCommands:
                 command_id = commands["play on spotify"]
                 try:
                     await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
+                    del commands["play on spotify"]
                 except Exception:
                     pass
-                del commands["play on spotify"]
+
             else:
                 data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=json)
                 command_id = int(data.get("id"))
                 commands["play on spotify"] = command_id
+                if ctx.guild.id not in self.slash_commands["guilds"]:
+                    self.slash_commands["guilds"][ctx.guild.id] = {}
                 self.slash_commands["guilds"][ctx.guild.id][command_id] = self.play_from_message
 
         await ctx.tick()

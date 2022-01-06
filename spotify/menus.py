@@ -614,10 +614,15 @@ class SpotifyPages(menus.PageSource):
                     self.is_liked = liked[0]
                 if cur_state.context is not None:
                     playlist_id = cur_state.context.uri.split(":")[-1]
-                    cur_tracks = await user_spotify.playlist(playlist_id)
+                    if cur_state.context.type == "playlist":
+                        cur_tracks = await user_spotify.playlist(playlist_id)
+                        tracks = [t.track for t in cur_tracks.tracks.items]
+                    if cur_state.context.type == "album":
+                        cur_tracks = await user_spotify.album(playlist_id)
+                        tracks = [t for t in cur_tracks.tracks.items]
                     self.context_name = cur_tracks.name
-                    for track in cur_tracks.tracks.items:
-                        self.select_options.append(SpotifyTrackOption(track.track))
+                    for track in tracks:
+                        self.select_options.append(SpotifyTrackOption(track))
                 if self.select_options and cur_state.context is None:
                     self.select_options = []
         except tekore.Unauthorised:
@@ -1406,13 +1411,13 @@ class SpotifyUserMenu(discord.ui.View):
             self.like_button.disabled = False
         if self.source.select_options:
             options = self.source.select_options[:25]
-            self.remove_item(self.select_view)
             if len(self.source.select_options) > 25 and page_number > 12:
+                self.remove_item(self.select_view)
                 options = self.source.select_options[page_number - 12 : page_number + 13]
-            self.select_view = SpotifySelectTrack(
-                options, self.cog, self.user_token, self.source.context_name
-            )
-            self.add_item(self.select_view)
+                self.select_view = SpotifySelectTrack(
+                    options, self.cog, self.user_token, self.source.context_name
+                )
+                self.add_item(self.select_view)
         if self.select_view and not self.source.select_options:
             self.remove_item(self.select_view)
             self.select_view = None
