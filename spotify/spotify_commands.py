@@ -1,6 +1,6 @@
 import logging
 from copy import copy
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 import discord
 import tekore
@@ -18,7 +18,6 @@ from .helpers import (
     SpotifyURIConverter,
     song_embed,
     time_convert,
-    VALID_RECOMMENDATIONS,
 )
 from .menus import (
     SpotifyAlbumPages,
@@ -48,130 +47,6 @@ ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), deli
 
 
 class SpotifyCommands:
-
-    @staticmethod
-    def convert_slash_args(interaction: discord.Interaction, option: dict):
-        convert_args = {
-            3: lambda x: x,
-            4: lambda x: int(x),
-            5: lambda x: bool(x),
-            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
-            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
-            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
-            9: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)) or interaction.guild.get_member(int(x)),
-            10: lambda x: float(x),
-        }
-        resolved = interaction.data.get("resolved", {})
-        final_resolved = {}
-        if resolved:
-            resolved_users = resolved.get("users")
-            if resolved_users:
-                resolved_members = resolved.get("members")
-                for _id, data in resolved_users.items():
-                    if resolved_members:
-                        member_data = resolved_members[_id]
-                        member_data["user"] = data
-                        member = discord.Member(data=member_data, guild=interaction.guild, state=interaction._state)
-                        final_resolved[int(_id)] = member
-                    else:
-                        user = discord.User(data=data, state=interaction._state)
-                        final_resolved[int(_id)] = user
-            resolved_channels = data.get("channels")
-            if resolved_channels:
-                for _id, data in resolved_channels.items():
-                    data["position"] = None
-                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
-                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
-                    final_resolved[int(_id)] = channel
-            resolved_messages = resolved.get("messages")
-            if resolved_messages:
-                for _id, data in resolved_messages.items():
-                    msg = discord.Message(state=interaction._state, channel=interaction.channel, data=data)
-                    final_resolved[int(_id)] = msg
-            resolved_roles = resolved.get("roles")
-            if resolved_roles:
-                for _id, data in resolved_roles.items():
-                    role = discord.Role(guild=interaction.guild, state=interaction._state, data=data)
-                    final_resolved[int(_id)] = role
-        return convert_args[option["type"]](option["value"])
-
-    async def set_genres(self):
-        try:
-            self.GENRES = await self._spotify_client.recommendation_genre_seeds()
-        except Exception:
-            log.exception("Error grabbing genres.")
-
-    async def get_genre_choices(self, cur_value: str):
-        supplied_genres = ""
-        for sup in cur_value.split(" "):
-            if sup in self.GENRES:
-                supplied_genres += sup + " "
-
-        ret = [{"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"} for g in self.GENRES]
-        if supplied_genres:
-            ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
-        return ret
-
-    async def parse_spotify_recommends(self, interaction: discord.Interaction):
-        command_options = interaction.data["options"][0]["options"]
-        if interaction.type.value == 4:
-            cur_value = command_options[0]["value"]
-            if not self.GENRES:
-                await self.set_genres()
-
-            genre_choices = await self.get_genre_choices(cur_value)
-            await interaction.response.auto_complete(genre_choices[:25])
-            return
-        recommendations = {"limit": 100, "market": "from_token"}
-        detailed = False
-        for option in command_options:
-            name = option["name"]
-            if name == "detailed":
-                detailed = True
-                continue
-            if name in VALID_RECOMMENDATIONS and name != "mode":
-                recommendations[f"target_{name}"] = VALID_RECOMMENDATIONS[name](option["value"])
-            elif name == "genres":
-                recommendations[name] = option["value"].strip().split(" ")
-            elif name in ["artist", "track"]:
-                song_data = SPOTIFY_RE.finditer(option["value"])
-                tracks = []
-                artists = []
-                if song_data:
-                    for match in song_data:
-                        if match.group(2) == "track":
-                            tracks.append(match.group(3))
-                        if match.group(2) == "artist":
-                            artists.append(match.group(3))
-                if tracks:
-                    recommendations["track_ids"] = tracks
-                if artists:
-                    recommendations["artist_ids"] = artists
-            else:
-                recommendations[f"target_{name}"] = option["value"]
-        await self.spotify_recommendations(interaction, detailed, recommendations=recommendations)
-
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
 
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
@@ -371,6 +246,10 @@ class SpotifyCommands:
             "description": "",
             "options": [],
         }
+        global_commands = await self.config.commands()
+        if "play on spotify" in global_commands:
+            await ctx.send(_("This command is already registered globally."))
+            return
         async with self.config.guild(ctx.guild).commands() as commands:
             if "play on spotify" in commands:
                 command_id = commands["play on spotify"]
@@ -387,6 +266,36 @@ class SpotifyCommands:
                 if ctx.guild.id not in self.slash_commands["guilds"]:
                     self.slash_commands["guilds"][ctx.guild.id] = {}
                 self.slash_commands["guilds"][ctx.guild.id][command_id] = self.play_from_message
+
+        await ctx.tick()
+
+    @spotify_slash.command(name="globalcontext")
+    @commands.is_owner()
+    async def spotify_global_context(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Toggle right click play on spotify for messages
+        """
+        json = {
+            "name": "Play on Spotify",
+            "type": 3,
+            "description": "",
+            "options": [],
+        }
+        async with self.config.commands() as commands:
+            if "play on spotify" in commands:
+                command_id = commands["play on spotify"]
+                try:
+                    await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
+                    del commands["play on spotify"]
+                    del self.slash_commands[command_id]
+                except Exception:
+                    pass
+
+            else:
+                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=json)
+                command_id = int(data.get("id"))
+                commands["play on spotify"] = command_id
+                self.slash_commands[command_id] = self.play_from_message
 
         await ctx.tick()
 
@@ -413,11 +322,11 @@ class SpotifyCommands:
         Disable Spotify commands as slash commands globally
         """
         commands = await self.config.commands()
-        command_id = commands.get("spotify")
+        command_id = commands.get("spotify", None)
         if not command_id:
             await ctx.send("There is no global slash command registered from this cog on this bot.")
             return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
+        await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
         async with self.config.commands() as commands:
             del commands["spotify"]
         await ctx.tick()
@@ -428,6 +337,10 @@ class SpotifyCommands:
         """
         Enable Spotify commands as slash commands in this server
         """
+        global_commands = await self.config.commands()
+        if "spotify" in global_commands:
+            await ctx.send(_("This command is already registered globally."))
+            return
         data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS)
         command_id = int(data.get("id"))
         if ctx.guild.id not in self.slash_commands["guilds"]:
@@ -443,10 +356,14 @@ class SpotifyCommands:
         """
         Delete servers slash commands
         """
+        global_commands = await self.config.commands()
+        if "spotify" in global_commands:
+            await ctx.send(_("This command is already registered globally."))
+            return
         commands = await self.config.guild(ctx.guild).commands()
         command_id = commands.get("spotify", None)
         if not command_id:
-            await ctx.send(_("This cogs slash commands are not enabled in this guild."))
+            await ctx.send(_("This command is not enabled in this guild."))
             return
         await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
         del self.slash_commands["guilds"][ctx.guild.id][command_id]
@@ -574,7 +491,7 @@ class SpotifyCommands:
                     added[emoji_str] = action
                 else:
                     try:
-                        await ctx.guild.message.add_reaction(str(emoji))
+                        await ctx.message.add_reaction(str(emoji))
                         current[str(emoji)] = action
                         added[str(emoji)] = action
                     except discord.errors.HTTPException:
@@ -764,7 +681,7 @@ class SpotifyCommands:
                 emoji = discord.PartialEmoji.from_str(raw_emoji)
                 if emoji.is_unicode_emoji():
                     try:
-                        await ctx.guild.message.add_reaction(str(emoji))
+                        await ctx.message.add_reaction(str(emoji))
                         emoji_handler.replace_emoji(name, str(emoji))
                         emojis[name] = str(emoji)
                         emojis_changed[name] = str(emoji)
@@ -1026,7 +943,7 @@ class SpotifyCommands:
                 elif isinstance(cur.item, tekore.model.FullEpisode):
                     return await ctx.send(_("I cannot play podcasts from spotify."))
                 elif cur.is_playing and not getattr(cur.item, "is_local", False):
-                    msg = copy(ctx.guild.message)
+                    msg = copy(ctx.message)
                     msg.content = ctx.prefix + f"play {cur.item.uri}"
                     self.bot.dispatch("message", msg)
                     await ctx.tick()

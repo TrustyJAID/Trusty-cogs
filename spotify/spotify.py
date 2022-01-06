@@ -8,11 +8,11 @@ import discord
 import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
 
 from .command_structure import SLASH_COMMANDS
 from .helpers import SPOTIFY_RE, InvalidEmoji
 from .spotify_commands import SpotifyCommands
+from .slash import SpotifySlash
 
 try:
     from .rpc import DashboardRPC_Spotify
@@ -26,7 +26,7 @@ _ = Translator("Spotify", __file__)
 
 
 @cog_i18n(_)
-class Spotify(SpotifyCommands, commands.Cog):
+class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
     """
     Display information from Spotify's API
     """
@@ -86,177 +86,6 @@ class Spotify(SpotifyCommands, commands.Cog):
         self.SLASH_COMMANDS = SLASH_COMMANDS
         self._temp_user_devices = {}
 
-    async def pre_check_slash(self, interaction):
-        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
-            await interaction.response.send_message(
-                _("You are not allowed to run this command here."), ephemeral=True
-            )
-            return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
-            await interaction.response.send_message(
-                _("Commands are not allowed in this channel or guild."), ephemeral=True
-            )
-            return False
-        return True
-
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-        if interaction.guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                        interaction
-                    )
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
-
-    async def play_from_message(self, interaction: discord.Interaction):
-        log.debug(interaction.message)
-        message_data = list(interaction.data["resolved"]["messages"].values())[0]
-        message = discord.Message(
-            state=interaction._state, channel=interaction.channel, data=message_data
-        )
-        log.debug(message)
-        user = interaction.user
-        ctx = await self.bot.get_context(message)
-        user_token = await self.get_user_auth(ctx, user)
-        if not user_token:
-            return
-
-        content = message.content + " "
-        if message.embeds:
-            em_dict = message.embeds[0].to_dict()
-            content += " ".join(v for k, v in em_dict.items() if k in ["title", "description"])
-            if "title" in em_dict:
-                if "url" in em_dict["title"]:
-                    content += " " + em_dict["title"]["url"]
-            if "fields" in em_dict:
-                for field in em_dict["fields"]:
-                    content += " " + field["name"] + " " + field["value"]
-            log.debug(content)
-        content = content.replace("🧑‍🎨", ":artist:")
-        # because discord will replace this in URI's automatically 🙄
-        song_data = SPOTIFY_RE.finditer(content)
-        tracks = []
-        albums = []
-        playlists = []
-        uri_type = ""
-        if song_data:
-            new_uri = ""
-            for match in song_data:
-                new_uri = f"spotify:{match.group(2)}:{match.group(3)}"
-                uri_type = match.group(2)
-                if match.group(2) == "track":
-                    tracks.append(match.group(3))
-                if match.group(2) == "album":
-                    albums.append(match.group(3))
-                if match.group(2) == "playlist":
-                    playlists.append(match.group(3))
-
-        user_spotify = tekore.Spotify(sender=self._sender)
-        # play the song if it exists
-
-        try:
-            with user_spotify.token_as(user_token):
-                if tracks:
-                    cur = await user_spotify.playback()
-                    if not cur:
-                        device_id = await self.config.user(user).default_device()
-                    else:
-                        device_id = None
-                    await user_spotify.playback_start_tracks(tracks, device_id=device_id)
-                    all_tracks = await user_spotify.tracks(tracks)
-                    track = all_tracks[0]
-                    track_name = track.name
-                    artists = getattr(track, "artists", [])
-                    artist = humanize_list([a.name for a in artists])
-                    track_artist = humanize_list([a.name for a in artists])
-                    await interaction.response.send_message(
-                        _("Now playing {track} by {artist}").format(
-                            track=track_name, artist=artist
-                        ),
-                        ephemeral=True,
-                    )
-                    return
-                elif new_uri:
-                    log.debug("new uri is %s", new_uri)
-                    await user_spotify.playback_start_context(new_uri)
-                    if uri_type == "playlist":
-                        cur_tracks = await user_spotify.playlist(new_uri)
-                        track_name = cur_tracks.name
-                        await interaction.response.send_message(
-                            _("Now playing {track}").format(track=track_name),
-                            ephemeral=True,
-                        )
-                    if uri_type == "artist":
-                        artist_id = new_uri.split(":")[-1]
-                        cur_tracks = await user_spotify.artist(artist_id)
-                        track_name = cur_tracks.name
-                        await interaction.response.send_message(
-                            _("Now playing top tracks by {track}").format(track=track_name),
-                            ephemeral=True,
-                        )
-                    if uri_type == "album":
-                        album_id = new_uri.split(":")[-1]
-                        cur_tracks = await user_spotify.album(album_id)
-                        track_name = cur_tracks.name
-                        artists = getattr(cur_tracks, "artists", [])
-                        artist = humanize_list([a.name for a in artists])
-                        track_artist = humanize_list([a.name for a in artists])
-                        await interaction.response.send_message(
-                            _("Now playing {track} by {artist}.").format(
-                                track=track_name, artist=track_artist
-                            ),
-                            ephemeral=True,
-                        )
-                    return
-                elif message.embeds:
-                    em = message.embeds[0]
-                    query = None
-                    if em.description:
-                        look = f"{em.title if em.title else ''}-{em.description}"
-                        find = re.search(r"\[(.+)\]", look)
-                        if find:
-                            query = find.group(1)
-                    else:
-                        query = em.title if em.title else ""
-                    if not query or query == "-":
-                        return
-                    search = await user_spotify.search(query, ("track",), "from_token", limit=50)
-                    # log.debug(search)
-                    tracks = search[0].items
-                    if tracks:
-                        track_name = tracks[0].name
-                        track_artist = humanize_list(tracks[0].artists)
-                        await user_spotify.playback_start_tracks([t.id for t in tracks])
-                        await interaction.response.send_message(
-                            _("Now playing {track} by {artist}").format(
-                                track=track_name, artist=track_artist
-                            ),
-                            ephemeral=True,
-                        )
-        except tekore.Unauthorised:
-            await self.not_authorized(interaction)
-        except tekore.NotFound:
-            await self.no_device(interaction)
-        except tekore.Forbidden as e:
-            await self.forbidden_action(interaction, str(e))
-        except tekore.HTTPError:
-            log.exception("Error grabing user info from spotify")
-            await self.unknown_error(interaction)
-
     async def migrate_settings(self):
         if await self.config.version() < "1.4.9":
             all_users = await self.config.all_users()
@@ -309,7 +138,10 @@ class Spotify(SpotifyCommands, commands.Cog):
                         self.slash_commands["guilds"][guild_id][command_id] = self.spotify_com
         commands = await self.config.commands()
         for command_name, command_id in commands.items():
-            self.slash_commands[command_id] = self.spotify_com
+            if command_name == "spotify":
+                self.slash_commands[command_id] = self.spotify_com
+            if command_name == "play on spotify":
+                self.slash_commands[command_id] = self.play_from_message
         self._ready.set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
