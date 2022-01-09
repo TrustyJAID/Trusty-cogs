@@ -61,9 +61,13 @@ class EventChooser(Converter):
             "channel_delete",
             "guild_change",
             "emoji_change",
+            "stickers_change",
             "commands_used",
             "invite_created",
             "invite_deleted",
+            "thread_create",
+            "thread_delete",
+            "thread_change"
         ]
         result = None
         if argument.startswith("member_"):
@@ -108,9 +112,13 @@ class EventMixin:
             "channel_delete": discord.Colour.dark_teal(),
             "guild_change": discord.Colour.blurple(),
             "emoji_change": discord.Colour.gold(),
+            "stickers_change": discord.Colour.gold(),
             "commands_used": cmd_colour,
             "invite_created": discord.Colour.blurple(),
             "invite_deleted": discord.Colour.blurple(),
+            "thread_change": discord.Colour.teal(),
+            "thread_create": discord.Colour.teal(),
+            "thread_delete": discord.Colour.dark_teal(),
         }
         colour = defaults[event_type]
         if self.settings[guild.id][event_type]["colour"] is not None:
@@ -334,6 +342,11 @@ class EventMixin:
             channel.permissions_for(guild.me).embed_links
             and self.settings[guild.id]["message_delete"]["embed"]
         )
+        ctx = await self.bot.get_context(message)
+        logger.debug(ctx.valid)
+        if ctx.valid and self.settings[guild.id]["message_delete"]["ignore_commands"]:
+            logger.debug("Ignoring valid command messages.")
+            return
         time = message.created_at
         perp = None
         if channel.permissions_for(guild.me).view_audit_log and check_audit_log:
@@ -1881,3 +1894,360 @@ class EventMixin:
             await channel.send(embed=embed)
         else:
             await channel.send(escape(msg, mass_mentions=True))
+
+    @commands.Cog.listener()
+    async def on_thread_join(self, thread: discord.Thread) -> None:
+        guild = thread.guild
+        if guild.id not in self.settings:
+            return
+        if not self.settings[guild.id]["thread_create"]["enabled"]:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        if await self.is_ignored_channel(guild, thread.parent):
+            return
+        try:
+            channel = await self.modlog_channel(guild, "thread_create")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["thread_create"]["embed"]
+        )
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        time = datetime.datetime.now(datetime.timezone.utc)
+        channel_type = str(thread.type).title()
+        embed = discord.Embed(
+            description=f"{thread.mention} {thread.name}",
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "thread_create"),
+        )
+        embed.set_author(
+            name=_("{chan_type} Thread Created {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=thread.name, chan_id=thread.id
+            )
+        )
+        # msg = _("Channel Created ") + str(new_channel.id) + "\n"
+        perp, reason = await self.get_audit_log_reason(
+            guild, thread, discord.AuditLogAction.thread_create
+        )
+        if thread.owner:
+            owner = thread.owner
+        else:
+            owner = await self.bot.fetch_user(thread.owner_id)
+        embed.add_field(name=_("Type"), value=channel_type)
+        perp_msg = _("by {perp} (`{perp_id}`)").format(perp=owner, perp_id=owner.id)
+        embed.add_field(name=_("Created by "), value=owner.mention)
+        if reason:
+            perp_msg += _(" Reason: {reason}").format(reason=reason)
+            embed.add_field(name=_("Reason "), value=reason, inline=False)
+        msg = _("{emoji} `{time}` {chan_type} channel created {perp_msg} {channel}").format(
+            emoji=self.settings[guild.id]["thread_create"]["emoji"],
+            time=time.strftime("%H:%M:%S"),
+            chan_type=channel_type,
+            perp_msg=perp_msg,
+            channel=thread.mention,
+        )
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
+
+    @commands.Cog.listener()
+    async def on_thread_delete(self, thread: discord.Thread):
+        guild = thread.guild
+        if guild.id not in self.settings:
+            return
+        if not self.settings[guild.id]["thread_delete"]["enabled"]:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        if await self.is_ignored_channel(guild, thread.parent):
+            return
+        try:
+            channel = await self.modlog_channel(guild, "thread_delete")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["channel_delete"]["embed"]
+        )
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        channel_type = str(thread.type).title()
+        time = datetime.datetime.now(datetime.timezone.utc)
+        embed = discord.Embed(
+            description=thread.name,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "channel_delete"),
+        )
+        embed.set_author(
+            name=_("{chan_type} Thread Deleted {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=thread.name, chan_id=thread.id
+            )
+        )
+        perp, reason = await self.get_audit_log_reason(
+            guild, thread, discord.AuditLogAction.thread_delete
+        )
+
+        perp_msg = ""
+        embed.add_field(name=_("Type"), value=channel_type)
+        if perp:
+            perp_msg = _("by {perp} (`{perp_id}`)").format(perp=perp, perp_id=perp.id)
+            embed.add_field(name=_("Deleted by "), value=perp.mention)
+        if reason:
+            perp_msg += _(" Reason: {reason}").format(reason=reason)
+            embed.add_field(name=_("Reason "), value=reason, inline=False)
+        msg = _("{emoji} `{time}` {chan_type} channel deleted {perp_msg} {channel}").format(
+            emoji=self.settings[guild.id]["thread_delete"]["emoji"],
+            time=time.strftime("%H:%M:%S"),
+            chan_type=channel_type,
+            perp_msg=perp_msg,
+            channel=f"#{thread.name} ({thread.id})",
+        )
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
+
+    @commands.Cog.listener()
+    async def on_thread_update(
+        self, before: discord.Thread, after: discord.Thread
+    ) -> None:
+        guild = before.guild
+        if guild.id not in self.settings:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        if not self.settings[guild.id]["thread_change"]["enabled"]:
+            return
+        if await self.is_ignored_channel(guild, before):
+            return
+        try:
+            channel = await self.modlog_channel(guild, "thread_change")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["thread_change"]["embed"]
+        )
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        channel_type = str(after.type).title()
+        time = datetime.datetime.now(datetime.timezone.utc)
+        embed = discord.Embed(
+            description=after.mention,
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "thread_change"),
+        )
+        embed.set_author(
+            name=_("{chan_type} Thread Updated {chan_name} ({chan_id})").format(
+                chan_type=channel_type, chan_name=before.name, chan_id=before.id
+            )
+        )
+        msg = _("{emoji} `{time}` Updated Thread {channel}\n").format(
+            emoji=self.settings[guild.id]["thread_change"]["emoji"],
+            time=time.strftime("%H:%M:%S"),
+            channel=before.name,
+        )
+        worth_updating = False
+        perp = None
+        reason = None
+        text_updates = {
+            "name": _("Name"),
+            "slowmode_delay": _("Slowmode delay"),
+            "auto_archive_duration": _("Archive Duration"),
+            "locked": _("Locked"),
+            "archived": _("Archived")
+        }
+        before_changes = []
+        after_changes = []
+        for attr, name in text_updates.items():
+            before_attr = getattr(before, attr)
+            after_attr = getattr(after, attr)
+            if before_attr != after_attr:
+                worth_updating = True
+                if before_attr == "":
+                    before_attr = "None"
+                if after_attr == "":
+                    after_attr = "None"
+                before_str = _("Before ") + f"{name}: {before_attr}\n"
+                after_str = _("After ") + f"{name}: {after_attr}\n"
+                msg += before_str + after_str
+                before_changes.append(f"{name}: {before_attr}\n")
+                after_changes.append(f"{name}: {after_attr}\n")
+                perp, reason = await self.get_audit_log_reason(
+                    guild, before, discord.AuditLogAction.thread_update
+                )
+        if before_changes or after_changes:
+            embed.add_field(name=_("Before"), value="".join(i for i in before_changes))
+            embed.add_field(name=_("After"), value="".join(i for i in after_changes))
+        if before.archiver_id != after.archiver_id:
+            worth_updating = True
+            member = before.guild.get_member(after.archiver_id)
+            embed.add_field(name=_("Archived by:"), value=f"{member.mention}")
+            perp, reason = await self.get_audit_log_reason(
+                guild, before, discord.AuditLogAction.channel_update
+            )
+
+        if perp:
+            msg += _("Updated by ") + str(perp) + "\n"
+            embed.add_field(name=_("Updated by "), value=perp.mention)
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason, inline=False)
+        if not worth_updating:
+            return
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(escape(msg, mass_mentions=True))
+
+
+    @commands.Cog.listener()
+    async def on_guild_stickers_update(
+        self, guild: discord.Guild, before: Sequence[discord.Emoji], after: Sequence[discord.Emoji]
+    ) -> None:
+        if guild.id not in self.settings:
+            return
+        if version_info >= VersionInfo.from_str("3.4.0"):
+            if await self.bot.cog_disabled_in_guild(self, guild):
+                return
+        if not self.settings[guild.id]["stickers_change"]["enabled"]:
+            return
+        try:
+            channel = await self.modlog_channel(guild, "stickers_change")
+        except RuntimeError:
+            return
+        embed_links = (
+            channel.permissions_for(guild.me).embed_links
+            and self.settings[guild.id]["stickers_change"]["embed"]
+        )
+        if version_info >= VersionInfo.from_str("3.4.1"):
+            await i18n.set_contextual_locales_from_guild(self.bot, guild)
+        # set guild level i18n
+        perp = None
+
+        time = datetime.datetime.now(datetime.timezone.utc)
+        embed = discord.Embed(
+            description="",
+            timestamp=time,
+            colour=await self.get_event_colour(guild, "stickers_change"),
+        )
+        embed.set_author(name=_("Updated Server Stickers"))
+        msg = _("{emoji} `{time}` Updated Server Stickers").format(
+            emoji=self.settings[guild.id]["stickers_change"]["emoji"], time=time.strftime("%H:%M:%S")
+        )
+        worth_updating = False
+        b = set(before)
+        a = set(after)
+        added_emoji: Optional[discord.GuildSticker] = None
+        removed_emoji: Optional[discord.GuildSticker] = None
+        # discord.Emoji uses id for hashing so we use set difference to get added/removed emoji
+        try:
+            added_emoji = (a - b).pop()
+        except KeyError:
+            pass
+        try:
+            removed_emoji = (b - a).pop()
+        except KeyError:
+            pass
+        # changed emojis have their name and/or allowed roles changed while keeping id unchanged
+        if added_emoji is not None:
+            to_iter = before + (added_emoji,)
+        else:
+            to_iter = before
+        changed_emoji = set((e, e.name) for e in after)
+        changed_emoji.difference_update((e, e.name) for e in to_iter)
+        try:
+            changed_emoji = changed_emoji.pop()[0]
+        except KeyError:
+            changed_emoji = None
+        else:
+            for old_emoji in before:
+                if old_emoji.id == changed_emoji.id:
+                    break
+            else:
+                # this shouldn't happen but it's here just in case
+                changed_emoji = None
+        action = None
+        if removed_emoji is not None:
+            worth_updating = True
+            new_msg = _("`{emoji_name}` (ID: {emoji_id}) Removed from the guild\n").format(
+                emoji_name=removed_emoji, emoji_id=removed_emoji.id
+            )
+            msg += new_msg
+            embed.description += new_msg
+            action = discord.AuditLogAction.emoji_delete
+            embed.set_image(url=removed_emoji.url)
+        elif added_emoji is not None:
+            worth_updating = True
+            new_emoji = f"{added_emoji} `{added_emoji}`"
+            new_msg = _("{emoji} Added to the guild\n").format(emoji=new_emoji)
+            msg += new_msg
+            embed.description += new_msg
+            action = discord.AuditLogAction.emoji_create
+            embed.set_image(url=added_emoji.url)
+        elif changed_emoji is not None:
+            worth_updating = True
+            emoji_name = f"{changed_emoji} `{changed_emoji}`"
+            embed.set_image(url=changed_emoji.url)
+            if old_emoji.name != changed_emoji.name:
+                new_msg = _("{emoji} Renamed from {old_emoji_name} to {new_emoji_name}\n").format(
+                    emoji=emoji_name,
+                    old_emoji_name=old_emoji.name,
+                    new_emoji_name=changed_emoji.name,
+                )
+                # emoji_update shows only for renames and not for role restriction updates
+                action = discord.AuditLogAction.emoji_update
+                msg += new_msg
+                embed.description += new_msg
+            if old_emoji.emoji != changed_emoji.emoji:
+                new_msg = _("{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n").format(
+                    emoji=emoji_name,
+                    old_emoji_name=old_emoji.emoji,
+                    new_emoji_name=changed_emoji.emoji,
+                )
+                # emoji_update shows only for renames and not for role restriction updates
+                action = discord.AuditLogAction.sticker_update
+                msg += new_msg
+                embed.description += new_msg
+            if old_emoji.description != changed_emoji.description:
+                new_msg = _("{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n").format(
+                    emoji=emoji_name,
+                    old_emoji_name=old_emoji.emoji,
+                    new_emoji_name=changed_emoji.emoji,
+                )
+                # emoji_update shows only for renames and not for role restriction updates
+                action = discord.AuditLogAction.sticker_update
+                msg += new_msg
+                embed.description += new_msg
+
+        perp = None
+        reason = None
+        if not worth_updating:
+            return
+        if channel.permissions_for(guild.me).view_audit_log:
+            if action:
+                async for log in guild.audit_logs(limit=1, action=action):
+                    perp = log.user
+                    if log.reason:
+                        reason = log.reason
+                    break
+        if perp:
+            embed.add_field(name=_("Updated by "), value=perp.mention)
+            msg += _("Updated by ") + str(perp) + "\n"
+        if reason:
+            msg += _("Reason ") + reason + "\n"
+            embed.add_field(name=_("Reason "), value=reason, inline=False)
+        if embed_links:
+            await channel.send(embed=embed)
+        else:
+            await channel.send(msg)
