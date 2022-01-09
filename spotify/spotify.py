@@ -136,12 +136,16 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
                         ] = self.play_from_message
                     if command == "spotify":
                         self.slash_commands["guilds"][guild_id][command_id] = self.spotify_com
+                    if command == "queue on spotify":
+                        self.slash_commands["guilds"][guild_id][command_id] = self.queue_from_message
         commands = await self.config.commands()
         for command_name, command_id in commands.items():
             if command_name == "spotify":
                 self.slash_commands[command_id] = self.spotify_com
             if command_name == "play on spotify":
                 self.slash_commands[command_id] = self.play_from_message
+            if command_name == "queue on spotify":
+                self.slash_commands[command_id] = self.queue_from_message
         self._ready.set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:

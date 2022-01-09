@@ -50,6 +50,111 @@ class SpotifySlash:
             return False
         return True
 
+    async def queue_from_message(self, interaction: discord.Interaction):
+        log.debug(interaction.message)
+        message_data = list(interaction.data["resolved"]["messages"].values())[0]
+        message = discord.Message(
+            state=interaction._state, channel=interaction.channel, data=message_data
+        )
+        log.debug(message)
+        user = interaction.user
+        ctx = await self.bot.get_context(message)
+        user_token = await self.get_user_auth(ctx, user)
+        if not user_token:
+            return
+
+        content = message.content + " "
+        if message.embeds:
+            em_dict = message.embeds[0].to_dict()
+            content += " ".join(v for k, v in em_dict.items() if k in ["title", "description"])
+            if "title" in em_dict:
+                if "url" in em_dict["title"]:
+                    content += " " + em_dict["title"]["url"]
+            if "fields" in em_dict:
+                for field in em_dict["fields"]:
+                    content += " " + field["name"] + " " + field["value"]
+            log.debug(content)
+        content = content.replace("🧑‍🎨", ":artist:")
+        # because discord will replace this in URI's automatically 🙄
+        song_data = SPOTIFY_RE.finditer(content)
+        tracks = []
+        if song_data:
+            for match in song_data:
+                if match.group(2) == "track":
+                    tracks.append(match.group(3))
+
+        user_spotify = tekore.Spotify(sender=self._sender)
+        # play the song if it exists
+
+        try:
+            with user_spotify.token_as(user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.config.user(user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if device is None:
+                        await self.no_device(interaction)
+                        return
+                else:
+                    device = cur.device
+                if tracks:
+                    all_tracks = await user_spotify.tracks(tracks)
+                    await user_spotify.playback_queue_add(all_tracks[0].uri, device_id=device.id)
+                    track = all_tracks[0]
+                    track_name = track.name
+                    artists = getattr(track, "artists", [])
+                    artist = humanize_list([a.name for a in artists])
+                    track_artist = humanize_list([a.name for a in artists])
+                    await interaction.response.send_message(
+                        _("Queueing {track} by {artist} on {device}.").format(
+                            track=track_name, artist=artist, device=device.name
+                        ),
+                        ephemeral=True,
+                    )
+                    return
+                elif message.embeds:
+                    em = message.embeds[0]
+                    query = None
+                    if em.description:
+                        look = f"{em.title if em.title else ''}-{em.description}"
+                        find = re.search(r"\[(.+)\]", look)
+                        if find:
+                            query = find.group(1)
+                    else:
+                        query = em.title if em.title else ""
+                    if not query or query == "-":
+                        return
+                    search = await user_spotify.search(query, ("track",), "from_token", limit=50)
+                    # log.debug(search)
+                    tracks = search[0].items
+                    if tracks:
+                        track_name = tracks[0].name
+                        track_artist = humanize_list(tracks[0].artists)
+                        await user_spotify.playback_queue_add(tracks[0].id)
+                        await interaction.response.send_message(
+                            _("Queueing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=track_artist, device=device.name
+                            ),
+                            ephemeral=True,
+                        )
+                else:
+                    await interaction.response.send_message(
+                        _("No Spotify track could be found on that message."), ephemeral=True
+                    )
+        except tekore.Unauthorised:
+            await self.not_authorized(interaction)
+        except tekore.NotFound:
+            await self.no_device(interaction)
+        except tekore.Forbidden as e:
+            await self.forbidden_action(interaction, str(e))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.unknown_error(interaction)
+
     async def play_from_message(self, interaction: discord.Interaction):
         log.debug(interaction.message)
         message_data = list(interaction.data["resolved"]["messages"].values())[0]
@@ -98,13 +203,22 @@ class SpotifySlash:
 
         try:
             with user_spotify.token_as(user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.config.user(user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if device is None:
+                        await self.no_device(interaction)
+                        return
+                else:
+                    device = cur.device
+
                 if tracks:
-                    cur = await user_spotify.playback()
-                    if not cur:
-                        device_id = await self.config.user(user).default_device()
-                    else:
-                        device_id = None
-                    await user_spotify.playback_start_tracks(tracks, device_id=device_id)
+                    await user_spotify.playback_start_tracks(tracks, device_id=device.id)
                     all_tracks = await user_spotify.tracks(tracks)
                     track = all_tracks[0]
                     track_name = track.name
@@ -112,20 +226,23 @@ class SpotifySlash:
                     artist = humanize_list([a.name for a in artists])
                     track_artist = humanize_list([a.name for a in artists])
                     await interaction.response.send_message(
-                        _("Now playing {track} by {artist}").format(
-                            track=track_name, artist=artist
+                        _("Now playing {track} by {artist} on {device}.").format(
+                            track=track_name, artist=artist, device=device.name
                         ),
                         ephemeral=True,
                     )
                     return
                 elif new_uri:
                     log.debug("new uri is %s", new_uri)
-                    await user_spotify.playback_start_context(new_uri)
+                    await user_spotify.playback_start_context(new_uri, device_id=device.id)
                     if uri_type == "playlist":
-                        cur_tracks = await user_spotify.playlist(new_uri)
+                        playlist_id = new_uri.split(":")[-1]
+                        cur_tracks = await user_spotify.playlist(playlist_id)
                         track_name = cur_tracks.name
                         await interaction.response.send_message(
-                            _("Now playing {track}").format(track=track_name),
+                            _("Now playing {track} on {device}.").format(
+                                track=track_name, device=device.name
+                            ),
                             ephemeral=True,
                         )
                     if uri_type == "artist":
@@ -133,7 +250,9 @@ class SpotifySlash:
                         cur_tracks = await user_spotify.artist(artist_id)
                         track_name = cur_tracks.name
                         await interaction.response.send_message(
-                            _("Now playing top tracks by {track}").format(track=track_name),
+                            _("Now playing top tracks by {track} on {device}.").format(
+                                track=track_name, device=device.name
+                            ),
                             ephemeral=True,
                         )
                     if uri_type == "album":
@@ -144,8 +263,8 @@ class SpotifySlash:
                         artist = humanize_list([a.name for a in artists])
                         track_artist = humanize_list([a.name for a in artists])
                         await interaction.response.send_message(
-                            _("Now playing {track} by {artist}.").format(
-                                track=track_name, artist=track_artist
+                            _("Now playing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=track_artist, device=device.name
                             ),
                             ephemeral=True,
                         )
@@ -168,13 +287,19 @@ class SpotifySlash:
                     if tracks:
                         track_name = tracks[0].name
                         track_artist = humanize_list(tracks[0].artists)
-                        await user_spotify.playback_start_tracks([t.id for t in tracks])
+                        await user_spotify.playback_start_tracks(
+                            [t.id for t in tracks], device_id=device.id
+                        )
                         await interaction.response.send_message(
-                            _("Now playing {track} by {artist}").format(
-                                track=track_name, artist=track_artist
+                            _("Now playing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=track_artist, device=device.name
                             ),
                             ephemeral=True,
                         )
+                else:
+                    await interaction.response.send_message(
+                        _("No Spotify track could be found on that message."), ephemeral=True
+                    )
         except tekore.Unauthorised:
             await self.not_authorized(interaction)
         except tekore.NotFound:
@@ -247,13 +372,16 @@ class SpotifySlash:
 
     async def get_genre_choices(self, cur_value: str):
         supplied_genres = ""
+        new_genre = ""
         for sup in cur_value.split(" "):
             if sup in self.GENRES:
-                supplied_genres += sup + " "
+                supplied_genres += f"{sup} "
+            else:
+                new_genre = sup
 
         ret = [
             {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
-            for g in self.GENRES
+            for g in self.GENRES if new_genre in g
         ]
         if supplied_genres:
             ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
@@ -298,7 +426,7 @@ class SpotifySlash:
                 recommendations[f"target_{name}"] = option["value"]
         await self.spotify_recommendations(interaction, detailed, recommendations=recommendations)
 
-    async def check_requires(self, func, interaction):
+    async def check_requires(self, func, interaction) -> bool:
         fake_ctx = discord.Object(id=interaction.id)
         fake_ctx.author = interaction.user
         fake_ctx.guild = interaction.guild
@@ -313,9 +441,12 @@ class SpotifySlash:
             channel = interaction.channel
 
         fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
+        msg = _("You are not authorized to use this command.")
+        try:
+            resp = await func.requires.verify(fake_ctx)
+        except Exception:
+            await interaction.response.send_message(msg, ephemeral=True)
+            return False
         if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
+            await interaction.response.send_message(msg, ephemeral=True)
         return resp

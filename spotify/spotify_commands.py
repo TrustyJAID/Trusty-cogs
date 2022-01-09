@@ -240,16 +240,14 @@ class SpotifyCommands:
         """
         Toggle right click play on spotify for messages
         """
-        json = {
+        play = {
             "name": "Play on Spotify",
             "type": 3,
-            "description": "",
-            "options": [],
         }
-        global_commands = await self.config.commands()
-        if "play on spotify" in global_commands:
-            await ctx.send(_("This command is already registered globally."))
-            return
+        queue = {
+            "name": "Queue on Spotify",
+            "type": 3,
+        }
         async with self.config.guild(ctx.guild).commands() as commands:
             if "play on spotify" in commands:
                 command_id = commands["play on spotify"]
@@ -260,12 +258,28 @@ class SpotifyCommands:
                     pass
 
             else:
-                data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=json)
+                data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=play)
                 command_id = int(data.get("id"))
                 commands["play on spotify"] = command_id
                 if ctx.guild.id not in self.slash_commands["guilds"]:
                     self.slash_commands["guilds"][ctx.guild.id] = {}
                 self.slash_commands["guilds"][ctx.guild.id][command_id] = self.play_from_message
+
+            if "queue on spotify" in commands:
+                command_id = commands["queue on spotify"]
+                try:
+                    await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
+                    del commands["queue on spotify"]
+                except Exception:
+                    pass
+
+            else:
+                data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=queue)
+                command_id = int(data.get("id"))
+                commands["queue on spotify"] = command_id
+                if ctx.guild.id not in self.slash_commands["guilds"]:
+                    self.slash_commands["guilds"][ctx.guild.id] = {}
+                self.slash_commands["guilds"][ctx.guild.id][command_id] = self.queue_from_message
 
         await ctx.tick()
 
@@ -275,11 +289,13 @@ class SpotifyCommands:
         """
         Toggle right click play on spotify for messages
         """
-        json = {
+        play = {
             "name": "Play on Spotify",
             "type": 3,
-            "description": "",
-            "options": [],
+        }
+        queue = {
+            "name": "Queue on Spotify",
+            "type": 3,
         }
         async with self.config.commands() as commands:
             if "play on spotify" in commands:
@@ -290,12 +306,25 @@ class SpotifyCommands:
                     del self.slash_commands[command_id]
                 except Exception:
                     pass
-
             else:
-                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=json)
+                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=play)
                 command_id = int(data.get("id"))
                 commands["play on spotify"] = command_id
                 self.slash_commands[command_id] = self.play_from_message
+
+            if "queue on spotify" in commands:
+                command_id = commands["queue on spotify"]
+                try:
+                    await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
+                    del commands["queue on spotify"]
+                    del self.slash_commands[command_id]
+                except Exception:
+                    pass
+            else:
+                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=queue)
+                command_id = int(data.get("id"))
+                commands["queue on spotify"] = command_id
+                self.slash_commands[command_id] = self.queue_from_message
 
         await ctx.tick()
 
@@ -356,10 +385,7 @@ class SpotifyCommands:
         """
         Delete servers slash commands
         """
-        global_commands = await self.config.commands()
-        if "spotify" in global_commands:
-            await ctx.send(_("This command is already registered globally."))
-            return
+
         commands = await self.config.guild(ctx.guild).commands()
         command_id = commands.get("spotify", None)
         if not command_id:
@@ -369,6 +395,10 @@ class SpotifyCommands:
         del self.slash_commands["guilds"][ctx.guild.id][command_id]
         async with self.config.guild(ctx.guild).commands() as commands:
             del commands["spotify"]
+        global_commands = await self.config.commands()
+        if "spotify" in global_commands:
+            await ctx.send(_("This command is already registered globally so you may still see it."))
+            return
         await ctx.tick()
 
     async def not_authorized(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
@@ -810,7 +840,7 @@ class SpotifyCommands:
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             author = ctx.user
         else:
             author = ctx.author
@@ -860,6 +890,7 @@ class SpotifyCommands:
         ctx: Union[commands.Context, discord.Interaction],
         detailed: Optional[bool] = False,
         member: Optional[discord.Member] = None,
+        public: bool = True,
     ):
         """
         Displays your currently played spotify song
@@ -870,7 +901,7 @@ class SpotifyCommands:
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=not public)
             author = ctx.user
         else:
             author = ctx.author
@@ -1039,7 +1070,7 @@ class SpotifyCommands:
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
         else:
             await ctx.trigger_typing()
         try:
@@ -1301,7 +1332,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -1397,7 +1428,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -1433,7 +1464,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -1481,7 +1512,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
             user = ctx.user
         else:
@@ -1670,7 +1701,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         tracks = []
@@ -1732,7 +1763,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
             author = ctx.user
         else:
@@ -1830,7 +1861,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
             author = ctx.user
         else:
@@ -1893,7 +1924,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         try:
@@ -1956,7 +1987,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         volume = max(min(100, volume), 0)  # constrains volume to be within 100
@@ -2183,7 +2214,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -2201,9 +2232,9 @@ class SpotifyCommands:
             for c, d in enumerate(devices):
                 devices_msg += f"{c+1}. `{d.name}` - {d.type} - {d.volume_percent}% "
                 if d.is_active:
-                    devices_msg += emoji_handler.get_emoji(
+                    devices_msg += str(emoji_handler.get_emoji(
                         "playpause", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
+                    ))
                 devices_msg += "\n"
             if is_slash:
                 if ctx.channel.permissions_for(ctx.guild.me).embed_links:
@@ -2232,7 +2263,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
         else:
             await ctx.trigger_typing()
@@ -2410,7 +2441,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         user_token = await self.get_user_auth(ctx)
@@ -2454,7 +2485,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         tracks = []
@@ -2518,7 +2549,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         tracks = []
@@ -2581,7 +2612,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
 
         tracks = []
@@ -2671,7 +2702,7 @@ class SpotifyCommands:
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
-            await ctx.response.defer()
+            await ctx.response.defer(ephemeral=True)
             is_slash = True
         else:
             await ctx.trigger_typing()

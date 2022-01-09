@@ -10,13 +10,19 @@ SLASH_COMMANDS = {
                 {
                     "name": "detailed",
                     "type": 5,
-                    "description": "Show a detailed view of your current songs",
+                    "description": "Show a detailed view",
                     "required": False,
                 },
                 {
                     "name": "member",
                     "type": 6,
                     "description": "A discord user with a current spotify status.",
+                    "required": False,
+                },
+                {
+                    "name": "public",
+                    "type": 5,
+                    "description": "Display for everyone?",
                     "required": False,
                 },
             ],
@@ -29,11 +35,11 @@ SLASH_COMMANDS = {
                 {
                     "name": "follow",
                     "type": 1,
-                    "description": "Add an artist to your Spotify library.",
+                    "description": "Add an artist to your Spotify library",
                     "options": [
                         {
                             "name": "to_follow",
-                            "description": "The artist link you want to follow.",
+                            "description": "The artist link",
                             "type": 3,
                             "required": True,
                         }
@@ -62,15 +68,10 @@ SLASH_COMMANDS = {
                 {
                     "name": "url_or_playlist_name",
                     "type": 3,
-                    "description": "The Spotify URL or playlist name you want to play.",
+                    "description": "The Spotify URL or playlist name",
                     "required": False,
                 }
             ],
-        },
-        {
-            "name": "genres",
-            "description": "Display all available genres for recommendations",
-            "type": 1,
         },
         {
             "name": "next",
@@ -90,7 +91,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "songs",
                     "type": 3,
-                    "description": "The song URL you want to queue to play after the current song.",
+                    "description": "The song URL you want to queue",
                     "required": True,
                 }
             ],
@@ -103,7 +104,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "detailed",
                     "type": 5,
-                    "description": "Show a detailed view of your current songs",
+                    "description": "Show a detailed view",
                     "required": False,
                 }
             ],
@@ -116,7 +117,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "genres",
                     "type": 3,
-                    "description": "Must be any combination of valid genres used as the seed.",
+                    "description": "Must be any combination of valid genres",
                     "required": True,
                     "autocomplete": True,
                 },
@@ -311,7 +312,7 @@ SLASH_COMMANDS = {
                         },
                         {
                             "name": "public",
-                            "description": "Whether or not the followed playlist should be public.",
+                            "description": "Should the playlist be public?",
                             "type": 5,
                             "required": False,
                         },
@@ -324,13 +325,13 @@ SLASH_COMMANDS = {
                     "Options": [
                         {
                             "name": "name",
-                            "description": "The name of the playlist you want to remove a track from.",
+                            "description": "The name of the playlist",
                             "type": 3,
                             "required": True,
                         },
                         {
                             "name": "to_remove",
-                            "description": "The link to the song you want to remove from the playlist.",
+                            "description": "The link to the song",
                             "type": 3,
                             "required": True,
                         },
