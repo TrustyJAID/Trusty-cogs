@@ -500,7 +500,8 @@ class Hockey(
     async def on_interaction(self, interaction: discord.Interaction):
         # log.debug(f"Interaction received {interaction.data['name']}")
         interaction_id = int(interaction.data.get("id", 0))
-        if interaction.guild.id in self.slash_commands["guilds"]:
+        guild = interaction.guild
+        if guild and interaction.guild.id in self.slash_commands["guilds"]:
             if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
                 if await self.pre_check_slash(interaction):
                     await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
@@ -584,14 +585,14 @@ class Hockey(
         ):
             current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
             team_choices = [{"name": t, "value": t} for t in TEAMS if current_data in t.lower()]
-            await interaction.response.auto_complete(team_choices[:25])
+            await interaction.response.autocomplete(team_choices[:25])
             return
         if option == "player" and interaction.data["options"][0]["options"][0].get(
             "focused", False
         ):
             current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
             player_choices = await self.player_choices(current_data)
-            await interaction.response.auto_complete(player_choices[:25])
+            await interaction.response.autocomplete(player_choices[:25])
             return
         try:
             kwargs = {

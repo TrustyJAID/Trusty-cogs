@@ -191,7 +191,7 @@ class SpotifyCommands:
                 if not await self.check_requires(func, ctx):
                     return
             command_options = ctx.data["options"][0]["options"][0].get("options", [])
-            if ctx.type.value == 4:
+            if ctx.is_autocomplete:
                 cur_value = command_options[0]["value"]
                 if not await self.config.user(ctx.user).token():
                     # really don't want to force users to auth from autocomplete
@@ -215,7 +215,7 @@ class SpotifyCommands:
                         return
 
                 choices = [i for i in self._temp_user_devices[ctx.user.id] if cur_value in i["name"].lower()]
-                await ctx.response.auto_complete(choices[:25])
+                await ctx.response.autocomplete(choices[:25])
                 return
             try:
                 kwargs = {

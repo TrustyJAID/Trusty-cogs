@@ -270,7 +270,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"]
             option = options[0]["name"]
             func = command_mapping[option]
-            if ctx.type.value == 4 and options[0]["options"][0].get("focused", False):
+            if ctx.is_autocomplete and options[0]["options"][0].get("focused", False):
                 cur_value = options[0]["options"][0]["value"]
                 if ctx.guild.id in self.triggers:
                     choices = [
@@ -280,7 +280,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                     ]
                 else:
                     choices = []
-                await ctx.response.auto_complete(choices[:25])
+                await ctx.response.autocomplete(choices[:25])
                 log.debug("sending autocomplete response")
                 return
 
@@ -583,7 +583,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 if not await self.check_requires(func, ctx):
                     return
 
-            if ctx.type.value == 4:
+            if ctx.is_autocomplete:
                 cur_value = options[0]["options"][0]["value"]
                 if ctx.guild.id in self.triggers:
                     choices = [
@@ -593,7 +593,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                     ]
                 else:
                     choices = []
-                await ctx.response.auto_complete(choices[:25])
+                await ctx.response.autocomplete(choices[:25])
                 log.debug("sending autocomplete response")
                 return
 

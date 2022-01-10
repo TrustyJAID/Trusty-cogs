@@ -409,7 +409,7 @@ class SpotifySlash:
                 await self.set_genres()
 
             genre_choices = await self.get_genre_choices(cur_value)
-            await interaction.response.auto_complete(genre_choices[:25])
+            await interaction.response.autocomplete(genre_choices[:25])
             return
         recommendations = {"limit": 100, "market": "from_token"}
         detailed = False
