@@ -403,7 +403,7 @@ class SpotifySlash:
 
     async def parse_spotify_recommends(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"]
-        if interaction.type.value == 4:
+        if interaction.is_autocomplete:
             cur_value = command_options[0]["value"]
             if not self.GENRES:
                 await self.set_genres()

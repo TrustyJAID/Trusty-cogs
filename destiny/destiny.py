@@ -212,14 +212,14 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_history(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"]
-        if interaction.type.value == 4:
+        if interaction.is_autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = DestinyActivity.CHOICES
             choices = []
             for choice in possible_options:
                 if cur_value.lower() in choice["name"].lower():
                     choices.append(choice)
-            await interaction.response.auto_complete(choices[:25])
+            await interaction.response.autocomplete(choices[:25])
             return
         kwargs = {}
         for option in command_options:
@@ -386,7 +386,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_search_items(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.type.value == 4:
+        if interaction.is_autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = await self.search_definition("simpleitems", cur_value)
             choices = []
@@ -395,7 +395,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if name:
                     choices.append({"name": name, "value": hash_key})
             log.debug(len(choices))
-            await interaction.response.auto_complete(choices[:25])
+            await interaction.response.autocomplete(choices[:25])
             return
         kwargs = {}
         for option in command_options:
@@ -404,7 +404,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_search_lore(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.type.value == 4:
+        if interaction.is_autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = self.get_entities("DestinyLoreDefinition")
             choices = []
@@ -413,7 +413,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 if cur_value.lower() in name.lower():
                     choices.append({"name": name, "value": name})
             log.debug(len(choices))
-            await interaction.response.auto_complete(choices[:25])
+            await interaction.response.autocomplete(choices[:25])
             return
         kwargs = {}
         for option in command_options:
