@@ -489,7 +489,7 @@ class Tweets(TweetsAPI, commands.Cog):
             msg = _("Looking up user timed out")
             await ctx.send(msg)
             return
-        except tweepy.TweepError as e:
+        except tweepy.errors.TweepyError as e:
             msg = _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
             log.error(msg, exc_info=True)
             await ctx.send(_("That username does not exist."))
@@ -800,7 +800,7 @@ class Tweets(TweetsAPI, commands.Cog):
                 for status in tweepy.Cursor(api.user_timeline, id=username).items(1):
                     user_id = status.user.id
                     screen_name = status.user.screen_name
-            except tweepy.TweepError as e:
+            except tweepy.errors.TweepyError as e:
                 msg = (
                     _("Whoops! Something went wrong here. The error code is ") + f"{e} {username}"
                 )
