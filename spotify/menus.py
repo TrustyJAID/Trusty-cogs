@@ -620,6 +620,10 @@ class SpotifyPages(menus.PageSource):
                     if cur_state.context.type == "album":
                         cur_tracks = await user_spotify.album(playlist_id)
                         tracks = [t for t in cur_tracks.tracks.items]
+                    if cur_state.context.type == "artist":
+                        cur_tracks = await user_spotify.artist(playlist_id)
+                        top_tracks = await user_spotify.artist_top_tracks(playlist_id, "from_token")
+                        tracks = [t for t in top_tracks]
                     self.context_name = cur_tracks.name
                     for track in tracks:
                         self.select_options.append(SpotifyTrackOption(track))
@@ -671,10 +675,7 @@ class SpotifySelectTrack(discord.ui.Select):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await interaction.response.send_message(
-                            _("I could not find an active device to play songs on."),
-                            ephemeral=True,
-                        )
+                        await self.cog.no_device(interaction)
                         return
                 else:
                     device = cur.device
@@ -734,10 +735,7 @@ class PlayPauseButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await interaction.response.send_message(
-                            _("I could not find an active device to play songs on."),
-                            ephemeral=True,
-                        )
+                        await self.cog.no_device(interaction)
                         return
                 else:
                     device = cur.device
@@ -1037,9 +1035,8 @@ class LikeButton(discord.ui.Button):
             with user_spotify.token_as(self.user_token):
                 cur = await user_spotify.playback()
                 if not cur:
-                    await interaction.response.send_message(
-                        _("I could not find an active device to play songs on."), ephemeral=True
-                    )
+                    await self.cog.no_device(interaction)
+                    return
                 await user_spotify.saved_tracks_add([self.view.source.current_track.id])
                 self.disabled = True
         except tekore.Unauthorised:
@@ -1092,10 +1089,7 @@ class PlayAllButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await interaction.response.send_message(
-                            _("I could not find an active device to play songs on."),
-                            ephemeral=True,
-                        )
+                        await self.cog.no_device(interaction)
                         return
                 else:
                     device = cur.device
@@ -1155,10 +1149,7 @@ class QueueTrackButton(discord.ui.Button):
                         if d.id == device_id:
                             device = d
                     if not device:
-                        await interaction.response.send_message(
-                            _("I could not find an active device to play songs on."),
-                            ephemeral=True,
-                        )
+                        await self.cog.no_device(interaction)
                         return
                 else:
                     device = cur.device

@@ -7,7 +7,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .helpers import SPOTIFY_RE, VALID_RECOMMENDATIONS
+from .helpers import SPOTIFY_RE, VALID_RECOMMENDATIONS, song_embed
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -18,7 +18,8 @@ class SpotifySlash:
     async def on_interaction(self, interaction: discord.Interaction):
         # log.debug(f"Interaction received {interaction.data['name']}")
         interaction_id = int(interaction.data.get("id", 0))
-        if interaction.guild.id in self.slash_commands["guilds"]:
+        guild = interaction.guild
+        if guild and guild.id in self.slash_commands["guilds"]:
             if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
                 if await self.pre_check_slash(interaction):
                     await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
@@ -109,10 +110,12 @@ class SpotifySlash:
                     artists = getattr(track, "artists", [])
                     artist = humanize_list([a.name for a in artists])
                     track_artist = humanize_list([a.name for a in artists])
+                    em = await song_embed(track, False)
                     await interaction.response.send_message(
                         _("Queueing {track} by {artist} on {device}.").format(
                             track=track_name, artist=artist, device=device.name
                         ),
+                        embed=em,
                         ephemeral=True,
                     )
                     return
@@ -135,10 +138,12 @@ class SpotifySlash:
                         track_name = tracks[0].name
                         track_artist = humanize_list(tracks[0].artists)
                         await user_spotify.playback_queue_add(tracks[0].id)
+                        em = await song_embed(tracks[0], False)
                         await interaction.response.send_message(
                             _("Queueing {track} by {artist} on {device}.").format(
                                 track=track_name, artist=track_artist, device=device.name
                             ),
+                            embed=em,
                             ephemeral=True,
                         )
                 else:
@@ -225,10 +230,12 @@ class SpotifySlash:
                     artists = getattr(track, "artists", [])
                     artist = humanize_list([a.name for a in artists])
                     track_artist = humanize_list([a.name for a in artists])
+                    em = await song_embed(track, False)
                     await interaction.response.send_message(
                         _("Now playing {track} by {artist} on {device}.").format(
                             track=track_name, artist=artist, device=device.name
                         ),
+                        embed=em,
                         ephemeral=True,
                     )
                     return
@@ -281,6 +288,7 @@ class SpotifySlash:
                         query = em.title if em.title else ""
                     if not query or query == "-":
                         return
+                    log.debug(query)
                     search = await user_spotify.search(query, ("track",), "from_token", limit=50)
                     # log.debug(search)
                     tracks = search[0].items
@@ -290,11 +298,17 @@ class SpotifySlash:
                         await user_spotify.playback_start_tracks(
                             [t.id for t in tracks], device_id=device.id
                         )
+                        em = await song_embed(tracks[0], False)
                         await interaction.response.send_message(
                             _("Now playing {track} by {artist} on {device}.").format(
                                 track=track_name, artist=track_artist, device=device.name
                             ),
+                            embed=em,
                             ephemeral=True,
+                        )
+                    else:
+                        await interaction.response.send_message(
+                            _("No Spotify track could be found on that message."), ephemeral=True
                         )
                 else:
                     await interaction.response.send_message(

@@ -9,7 +9,7 @@ from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_timedelta
+from redbot.core.utils.chat_formatting import humanize_timedelta, humanize_list
 from tabulate import tabulate
 
 log = logging.getLogger("red.trusty-cogs.spotify")
@@ -107,7 +107,7 @@ def time_convert(length: Union[int, str]) -> int:
 async def song_embed(track: tekore.model.FullTrack, detailed: bool) -> discord.Embed:
     em = discord.Embed(color=discord.Colour(0x1DB954))
     url = f"https://open.spotify.com/track/{track.id}"
-    artist_title = f"{track.name} by " + ", ".join(a.name for a in track.artists)
+    artist_title = f"{track.name} by " + humanize_list([a.name for a in track.artists])
     album = getattr(track, "album", "")
     if album:
         album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
@@ -116,7 +116,8 @@ async def song_embed(track: tekore.model.FullTrack, detailed: bool) -> discord.E
         url=url,
         icon_url=SPOTIFY_LOGO,
     )
-    em.description = f"[{artist_title}]({url})\n\n{album}"
+    total_time = str(datetime.timedelta(seconds=track.duration_ms / 1000))
+    em.description = f"[{artist_title}]({url}) - `{total_time:.7}`\n\n{album}"
     if track.album.images:
         em.set_thumbnail(url=track.album.images[0].url)
     return em

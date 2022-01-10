@@ -190,7 +190,7 @@ class SpotifyCommands:
             if getattr(func, "requires", None):
                 if not await self.check_requires(func, ctx):
                     return
-            command_options = ctx.data["options"][0]["options"][0]["options"]
+            command_options = ctx.data["options"][0]["options"][0].get("options", [])
             if ctx.type.value == 4:
                 cur_value = command_options[0]["value"]
                 if not await self.config.user(ctx.user).token():
@@ -865,12 +865,19 @@ class SpotifyCommands:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 cur = await user_spotify.current_user()
+                device_id = await self.config.user(author).default_device()
+                devices = await user_spotify.playback_devices()
+                device_name = "None"
+                for d in devices:
+                    if d.id == device_id:
+                        device_name = d.name
+                msg += _("Default Spotify Device: {device}").format(device=device_name)
         if show_private or isinstance(ctx.channel, discord.DMChannel):
             msg += _(
                 "Spotify Name: [{display_name}](https://open.spotify.com/user/{user_id})\n"
                 "Subscription: {product}\n"
             ).format(display_name=cur.display_name, product=cur.product, user_id=cur.id)
-        if isinstance(ctx.channel, discord.DMChannel):
+        if isinstance(ctx.channel, discord.DMChannel) or is_slash:
             private = _("Country: {country}\nSpotify ID: {id}\nEmail: {email}\n").format(
                 country=cur.country, id=cur.id, email=cur.email
             )
@@ -1989,6 +1996,9 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer(ephemeral=True)
             is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
 
         volume = max(min(100, volume), 0)  # constrains volume to be within 100
         user_token = await self.get_user_auth(ctx)
@@ -1998,6 +2008,17 @@ class SpotifyCommands:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
                 cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.config.user(author).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        return await self.no_device(ctx)
+                else:
+                    device = cur.device
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
                     emoji = emoji_handler.get_emoji(
@@ -2017,7 +2038,7 @@ class SpotifyCommands:
 
             if is_slash:
                 await ctx.followup.send(
-                    _("Setting Spotify's volume to {volume}.").format(volume=volume),
+                    _("Setting {device}'s volume to {volume}.").format(volume=volume, device=device.name),
                     ephemeral=True,
                 )
             else:
@@ -2216,6 +2237,9 @@ class SpotifyCommands:
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer(ephemeral=True)
             is_slash = True
+            author = ctx.user
+        else:
+            author = ctx.author
 
         user_token = await self.get_user_auth(ctx)
         if not user_token:
@@ -2228,7 +2252,7 @@ class SpotifyCommands:
                 now = await user_spotify.playback()
                 if now and now.is_playing:
                     is_playing = True
-            devices_msg = _("{author}'s Spotify Devices:\n").format(author=ctx.author.display_name)
+            devices_msg = _("{author}'s Spotify Devices:\n").format(author=author.display_name)
             for c, d in enumerate(devices):
                 devices_msg += f"{c+1}. `{d.name}` - {d.type} - {d.volume_percent}% "
                 if d.is_active:
