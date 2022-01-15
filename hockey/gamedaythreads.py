@@ -377,6 +377,8 @@ class GameDayThreads(MixinMeta):
             else:
                 await self.delete_gdt(guild)
                 for game in game_list:
+                    if game.game_state == "Postponed":
+                        continue
                     await self.create_gdt(guild, game)
 
     async def create_gdt(self, guild: discord.Guild, game_data: Optional[Game] = None) -> None:
@@ -456,6 +458,7 @@ class GameDayThreads(MixinMeta):
         # await config.guild(guild).create_channels.set(True)
         await self.config.channel(new_chn).team.set([team])
         await self.config.channel(new_chn).guild_id.set(guild.id)
+        await self.config.channel(new_chn).parent.set(channel.id)
         gdt_state_updates = await self.config.guild(guild).gdt_state_updates()
         await self.config.channel(new_chn).game_states.set(gdt_state_updates)
         # Gets the timezone to use for game day channel topic

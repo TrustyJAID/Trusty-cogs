@@ -155,21 +155,18 @@ class HockeyCommands(MixinMeta):
         by searching for team or get all standings at once
         separated by division
         """
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
         source = {
             "all": StandingsPages,
             "conference": ConferenceStandingsPages,
             "western": ConferenceStandingsPages,
             "eastern": ConferenceStandingsPages,
             "division": DivisionStandingsPages,
-            "massmutual": DivisionStandingsPages,
             "central": DivisionStandingsPages,
-            "discover": DivisionStandingsPages,
-            "scotia": DivisionStandingsPages,
-            "north": DivisionStandingsPages,
-            "massmutual": DivisionStandingsPages,
-            "east": DivisionStandingsPages,
-            "honda": DivisionStandingsPages,
-            "west": DivisionStandingsPages,
+            "metropolitan": DivisionStandingsPages,
+            "atlantic": DivisionStandingsPages,
+            "pacific": DivisionStandingsPages,
         }
         if search is None:
             search = "all"
@@ -207,8 +204,8 @@ class HockeyCommands(MixinMeta):
         """
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
-            if teams_and_date:
-                teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
+            # if teams_and_date:
+                # teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
         log.debug(teams_and_date)
         await GamesMenu(
             source=Schedule(**teams_and_date, session=self.session),

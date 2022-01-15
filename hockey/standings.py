@@ -16,18 +16,14 @@ from .helper import utc_to_local
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 DIVISIONS: List[str] = [
-    "central",
-    "discover",
     "division",
-    "scotia",
-    "north",
-    "massmutual",
-    "east",
-    "honda",
-    "west",
+    "metropolitan",
+    "atlantic",
+    "central",
+    "pacific"
 ]
 
-CONFERENCES: List[str] = []  # ["eastern", "western", "conference"]
+CONFERENCES: List[str] = ["eastern", "western", "conference"]
 # The NHL removed conferences from the standings in the 2021 season
 
 

@@ -31,6 +31,7 @@ from .hockey_commands import HockeyCommands
 from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
 from .pickems import Pickems
+from .slash import HockeySlash
 from .standings import Standings
 from .teamentry import TeamEntry
 
@@ -56,6 +57,7 @@ class Hockey(
     GameDayThreads,
     HockeyDev,
     HockeyPickems,
+    HockeySlash,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -116,6 +118,7 @@ class Hockey(
             "goal_notifications": False,
             "start_notifications": False,
             "guild_id": None,
+            "parent": None,
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)
@@ -495,208 +498,3 @@ class Hockey(
                 await ctx.send(_("Emoji changing cancelled"))
             break
         return msg
-
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-        guild = interaction.guild
-        if guild and interaction.guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                        interaction
-                    )
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
-
-    #######################################################################
-    # Where parsing of slash commands happens                             #
-    #######################################################################
-
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
-
-    async def pre_check_slash(self, interaction):
-        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
-            await interaction.response.send_message(
-                _("You are not allowed to run this command here."), ephemeral=True
-            )
-            return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
-            await interaction.response.send_message(
-                _("Commands are not allowed in this channel or guild."), ephemeral=True
-            )
-            return False
-        return True
-
-    async def hockey_slash_commands(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        command_mapping = {
-            "standings": self.standings,
-            "games": self.games,
-            "schedule": self.schedule,
-            "player": self.player,
-            "roster": self.roster,
-            "leaderboard": self.leaderboard,
-            "otherdiscords": self.otherdiscords,
-            "set": self.slash_hockey_set,
-            "pickems": self.slash_pickems_commands,
-            "gdt": self.slash_gdt_commands,
-        }
-        option = interaction.data["options"][0]["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        if option == "otherdiscords" and interaction.data["options"][0]["options"][0].get(
-            "focused", False
-        ):
-            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
-            team_choices = [{"name": t, "value": t} for t in TEAMS if current_data in t.lower()]
-            await interaction.response.autocomplete(team_choices[:25])
-            return
-        if option == "player" and interaction.data["options"][0]["options"][0].get(
-            "focused", False
-        ):
-            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
-            player_choices = await self.player_choices(current_data)
-            await interaction.response.autocomplete(player_choices[:25])
-            return
-        try:
-            kwargs = {
-                i["name"]: i["value"] for i in interaction.data["options"][0].get("options", [])
-            }
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_pickems_commands(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        command_mapping = {
-            "settings": self.pickems_settings,
-            "basecredits": self.pickems_credits_base,
-            "topcredits": self.pickems_credits_top,
-            "winners": self.pickems_credits_amount,
-            "message": self.set_pickems_message,
-            "setup": self.setup_auto_pickems,
-            "clear": self.delete_auto_pickems,
-            "page": self.pickems_page,
-            "votes": self.pickemsvotes,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {
-                i["name"]: i["value"]
-                for i in interaction.data["options"][0]["options"][0].get("options", [])
-            }
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_gdt_commands(self, interaction: discord.Interaction) -> None:
-        command_mapping = {
-            "settings": self.gdt_settings,
-            "delete": self.gdt_delete,
-            "defaultstate": self.gdt_default_game_state,
-            "create": self.gdt_create,
-            "toggle": self.gdt_toggle,
-            "channel": self.gdt_channel,
-            "setup": self.gdt_setup,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {
-                i["name"]: i["value"]
-                for i in interaction.data["options"][0]["options"][0].get("options", [])
-            }
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_hockey_set(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        if not interaction.guild:
-            await interaction.response.send_message(
-                _("These commands are only available in a guild.")
-            )
-            return
-        if not await self.slash_check_permissions(
-            interaction, interaction.user, manage_messages=True
-        ):
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-            return
-        command_mapping = {
-            "settings": self.hockey_settings,
-            "poststandings": self.post_standings,
-            "add": self.add_goals,
-            "remove": self.remove_goals,
-            "stateupdates": self.set_game_state_updates,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {
-                i["name"]: i["value"]
-                for i in interaction.data["options"][0]["options"][0].get("options", [])
-            }
-        except KeyError:
-            kwargs = {}
-            pass
-        log.debug(kwargs)
-        await func(interaction, **kwargs)
-        pass

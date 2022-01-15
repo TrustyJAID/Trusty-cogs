@@ -1004,11 +1004,18 @@ SLASH_COMMANDS = {
             "type": 1,
             "options": [
                 {
-                    "name": "teams_and_date",
+                    "name": "team",
                     "type": 3,
-                    "description": "Specific teams or dates you want to see game information for",
+                    "description": " ",
                     "required": False,
-                }
+                    "autocomplete": True,
+                },
+                {
+                    "name": "date",
+                    "type": 3,
+                    "description": "YYYY-MM-DD formatted",
+                    "required": False,
+                },
             ],
         },
         {
@@ -1017,11 +1024,18 @@ SLASH_COMMANDS = {
             "type": 1,
             "options": [
                 {
-                    "name": "teams_and_date",
+                    "name": "team",
                     "type": 3,
-                    "description": "Specific teams or dates you want to see game information for",
+                    "description": " ",
                     "required": False,
-                }
+                    "autocomplete": True,
+                },
+                {
+                    "name": "date",
+                    "type": 3,
+                    "description": "YYYY-MM-DD formatted",
+                    "required": False,
+                },
             ],
         },
         {
@@ -1046,7 +1060,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "search",
                     "type": 3,
-                    "description": "The name of the player to search for",
+                    "description": "The teams roster to look for",
                     "required": True,
                 },
                 {
@@ -1067,6 +1081,37 @@ SLASH_COMMANDS = {
                     "type": 3,
                     "description": "Must be either seasonal, weekly, or worst.",
                     "required": False,
+                    "choices": [
+                        {"name": "Seasonal", "value": "seasonal"},
+                        {"name": "Weekly", "value": "weekly"},
+                        {"name": "Playoffs", "value": "playoffs"},
+                        {"name": "Weekly Playoffs", "value": "playoffs_weekly"},
+                        {"name": "Pre-Season", "value": "pre-season"},
+                        {"name": "Weekly Pre-Season", "value": "pre-season_weekly"},
+                        {"name": "Worst", "value": "worst"},
+                    ],
+                }
+            ],
+        },
+        {
+            "name": "standings",
+            "description": "Show the current NHL Standings",
+            "type": 1,
+            "options": [
+                {
+                    "name": "search",
+                    "type": 3,
+                    "description": "All, conference, or division.",
+                    "required": True,
+                    "choices": [
+                        {"name": "All", "value": "all"},
+                        {"name": "Metropolitan", "value": "metropolitan"},
+                        {"name": "Atlantic", "value": "atlantic"},
+                        {"name": "Central", "value": "central"},
+                        {"name": "Pacific", "value": "pacific"},
+                        {"name": "Eastern", "value": "eastern"},
+                        {"name": "Western", "value": "western"},
+                    ],
                 }
             ],
         },
@@ -1252,6 +1297,7 @@ SLASH_COMMANDS = {
                             "type": 3,
                             "required": True,
                             "description": "The team you want to setup Game Day Threads for.",
+                            "autocomplete": True,
                         },
                         {
                             "name": "channel",
@@ -1284,6 +1330,15 @@ SLASH_COMMANDS = {
                             "description": "The type of standings you want to show.",
                             "type": 3,
                             "required": True,
+                            "choices": [
+                                {"name": "All", "value": "all"},
+                                {"name": "Metropolitan", "value": "metropolitan"},
+                                {"name": "Atlantic", "value": "atlantic"},
+                                {"name": "Central", "value": "central"},
+                                {"name": "Pacific", "value": "pacific"},
+                                {"name": "Eastern", "value": "eastern"},
+                                {"name": "Western", "value": "western"},
+                            ],
                         },
                         {
                             "name": "channel",
@@ -1303,6 +1358,7 @@ SLASH_COMMANDS = {
                             "description": "The team you want updates for. Do all for all teams.",
                             "type": 3,
                             "required": True,
+                            "autocomplete": True,
                         },
                         {
                             "name": "channel",
@@ -1322,6 +1378,7 @@ SLASH_COMMANDS = {
                             "description": "The team you want updates for. Do all for all teams.",
                             "type": 3,
                             "required": True,
+                            "autocomplete": True,
                         },
                         {
                             "name": "channel",
