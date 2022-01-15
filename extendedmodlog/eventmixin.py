@@ -603,10 +603,9 @@ class EventMixin:
         time = datetime.datetime.now(datetime.timezone.utc)
         users = len(guild.members)
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/develop/cogs/general.py
-        since_created = (time - member.created_at).days
-        user_created = member.created_at.strftime("%d %b %Y %H:%M")
+        user_created = int(member.created_at.timestamp())
 
-        created_on = "{}\n({} days ago)".format(user_created, since_created)
+        created_on = "<t:{user_created}>\n(<t:{user_created}:R>)".format(user_created=user_created)
 
         possible_link = await self.get_invite_link(member)
         if embed_links:
