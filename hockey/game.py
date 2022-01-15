@@ -626,6 +626,13 @@ class Game:
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
         async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
+            if data["parent"] and any([i in data["team"] for i in post_state]):
+                try:
+                    parent = await get_channel_obj(bot, data["parent"], data)
+                    msg = parent.get_partial_message(channel_id)
+                    bot.loop.create_task(msg.edit(embed=em))
+                except Exception:
+                    log.exception("Error editing thread start message.")
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
