@@ -206,9 +206,10 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             await ctx.send(msg)
 
     async def _find_good_emojis(self, interaction: discord.Interaction, option: dict):
+        emojis = option["value"].split(" ")
         list_emojis = [
             discord.PartialEmoji.from_str(e.strip())
-            for e in option["value"].split(";")
+            for e in option["value"].split(" ")
         ]
         good_emojis = []
         log.debug(option["value"])

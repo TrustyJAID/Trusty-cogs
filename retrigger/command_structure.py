@@ -520,7 +520,7 @@ SLASH_COMMANDS = {
                         },
                         {
                             "name": "emojis",
-                            "description": "Seperate with ;",
+                            "description": " ",
                             "type": 3,
                             "required": True,
                         },
@@ -798,7 +798,7 @@ SLASH_COMMANDS = {
                 },
                 {
                     "name": "emojis",
-                    "description": "Seperate with ;",
+                    "description": " ",
                     "type": 3,
                     "required": True,
                 },
