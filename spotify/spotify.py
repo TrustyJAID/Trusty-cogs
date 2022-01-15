@@ -246,18 +246,32 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
         scope = tekore.Scope(*scope_list)
         auth = tekore.UserAuth(self._credentials, scope=scope)
         self.temp_cache[author.id] = auth
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            msg = _(
+                "Please accept the authorization [here]({auth}) and **DM "
+                "me** with the final full url."
+            ).format(auth=auth.url)
 
-        msg = _(
-            "Please accept the authorization in the following link and reply "
-            "to me with the full url\n\n {auth}"
-        ).format(auth=auth.url)
+        else:
+            msg = _(
+                "Please accept the authorization in the following link and reply "
+                "to me with the full url\n\n {auth}"
+            ).format(auth=auth.url)
 
         def check(message):
             return (author.id in self.dashboard_authed) or (
                 message.author.id == author.id and self._tokens[-1] in message.content
             )
 
-        await author.send(msg)
+        if is_slash:
+            if ctx.response.is_done():
+                await ctx.followup.send(msg, ephemeral=True)
+            else:
+                await ctx.response.send_message(msg, ephemeral=True)
+        else:
+            await author.send(msg)
         try:
             check_msg = await self.bot.wait_for("message", check=check, timeout=120)
         except asyncio.TimeoutError:

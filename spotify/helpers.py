@@ -333,7 +333,7 @@ class SpotifyURIConverter(Converter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str) -> re.Match:
-        match = SPOTIFY_RE.match(argument)
+        match = SPOTIFY_RE.finditer(argument)
         if not match:
             raise BadArgument(
                 _("{argument} is not a valid Spotify URL or URI.").format(argument=argument)

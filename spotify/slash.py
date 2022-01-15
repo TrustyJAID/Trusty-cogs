@@ -422,7 +422,7 @@ class SpotifySlash:
                 recommendations[f"target_{name}"] = VALID_RECOMMENDATIONS[name](option["value"])
             elif name == "genres":
                 recommendations[name] = option["value"].strip().split(" ")
-            elif name in ["artist", "track"]:
+            elif name in ["artists", "tracks"]:
                 song_data = SPOTIFY_RE.finditer(option["value"])
                 tracks = []
                 artists = []

@@ -1380,6 +1380,11 @@ class SpotifyUserMenu(discord.ui.View):
                 self.shuffle_button.style = discord.ButtonStyle.primary
 
             if self.source.select_options:
+                for op in self.source.select_options:
+                    if self.source.current_track and self.source.current_track.id == op.value:
+                        op.emoji = discord.PartialEmoji.from_str("\N{SPEAKER WITH THREE SOUND WAVES}")
+                    else:
+                        op.emoji = None
                 self.select_view = SpotifySelectTrack(
                     self.source.select_options[:25],
                     self.cog,
@@ -1400,8 +1405,14 @@ class SpotifyUserMenu(discord.ui.View):
             self.like_button.disabled = True
         if not self._source.is_liked:
             self.like_button.disabled = False
+        kwargs = await self._get_kwargs_from_page(page)
         if self.source.select_options:
             options = self.source.select_options[:25]
+            for op in self.source.select_options:
+                if self.source.current_track and self.source.current_track.id == op.value:
+                    op.emoji = discord.PartialEmoji.from_str("\N{SPEAKER WITH THREE SOUND WAVES}")
+                else:
+                    op.emoji = None
             if len(self.source.select_options) > 25 and page_number > 12:
                 self.remove_item(self.select_view)
                 options = self.source.select_options[page_number - 12 : page_number + 13]
@@ -1412,7 +1423,6 @@ class SpotifyUserMenu(discord.ui.View):
         if self.select_view and not self.source.select_options:
             self.remove_item(self.select_view)
             self.select_view = None
-        kwargs = await self._get_kwargs_from_page(page)
         if self.message is not None:
             await self.message.edit(**kwargs, view=self)
         else:
