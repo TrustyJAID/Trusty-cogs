@@ -254,7 +254,7 @@ class Events:
                 return None
         # we can stop here
 
-        if not guild.me.permissions_in(channel).send_messages:
+        if not channel.permissions_for(guild.me).send_messages:
             log.info(_("Permissions Error. User that joined: ") + "{0}".format(member))
             log.info(
                 _("Bot doesn't have permissions to send messages to ")
