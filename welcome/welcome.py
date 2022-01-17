@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import discord
@@ -73,7 +73,7 @@ class Welcome(Events, commands.Cog):
         self.config.register_guild(**default_settings)
         self.group_check = bot.loop.create_task(self.group_welcome())
         self.joined = {}
-        self.today_count = {"now": datetime.utcnow()}
+        self.today_count = {"now": datetime.now(timezone.utc)}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """

@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from random import choice as rand_choice
 from typing import List, Optional, Pattern, Union, cast
 
@@ -149,7 +149,7 @@ class Events:
                 url = str(member.avatar_url)
             em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
-            em.timestamp = datetime.utcnow()
+            em.timestamp = datetime.now(timezone.utc)
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
             em.set_author(name=username, icon_url=str(member.avatar_url))
         return em
@@ -167,7 +167,7 @@ class Events:
         if member.bot:
             return await self.bot_welcome(member, guild)
         td = timedelta(days=await self.config.guild(guild).MINIMUM_DAYS())
-        if (datetime.utcnow() - member.created_at) <= td:
+        if (datetime.now(timezone.utc) - member.created_at) <= td:
             log.info(_("Member joined with an account newer than required days."))
             return
         has_filter = self.bot.get_cog("Filter")
@@ -177,8 +177,8 @@ class Events:
                 log.info(_("Member joined with a bad username."))
                 return
 
-        if datetime.utcnow().date() > self.today_count["now"].date():
-            self.today_count = {"now": datetime.utcnow()}
+        if datetime.now(timezone.utc).date() > self.today_count["now"].date():
+            self.today_count = {"now": datetime.now(timezone.utc)}
             # reset the daily count when a user joins the following day or when the cog is reloaded
 
         if guild.id not in self.today_count:
