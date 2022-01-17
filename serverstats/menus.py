@@ -152,11 +152,11 @@ class JoinGuildButton(discord.ui.Button):
         super().__init__(style=style, row=row, label=_("Join Guild"))
 
     async def callback(self, interaction: discord.Interaction):
-        invite = await self.view.cog.get_guild_invite(self.source.guild)
+        invite = await self.view.cog.get_guild_invite(self.view.source.guild)
         if invite:
-            await interaction.send_message(str(invite))
+            await interaction.response.send_message(str(invite))
         else:
-            await interaction.send_message(
+            await interaction.response.send_message(
                 _("I cannot find or create an invite for `{guild}`").format(
                     guild=self.source.guild.name
                 )
@@ -200,9 +200,12 @@ class BaseView(discord.ui.View):
             self.add_item(self.leave_guild_button)
             self.add_item(self.join_guild_button)
 
+    @property
+    def source(self):
+        return self._source
+
     async def start(self, ctx: commands.Context):
         await self.send_initial_message(ctx, ctx.channel)
-
 
     async def send_initial_message(self, ctx, channel):
         """|coro|

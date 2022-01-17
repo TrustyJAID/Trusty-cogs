@@ -157,7 +157,7 @@ class ServerStats(commands.Cog):
         try:
             joined_at = guild.me.joined_at
         except AttributeError:
-            joined_at = datetime.utcnow()
+            joined_at = datetime.now(timezone.utc)
         bot_joined = f"<t:{int(joined_at.timestamp())}:D>"
         since_joined = f"<t:{int(joined_at.timestamp())}:R>"
         joined_on = _(
@@ -719,7 +719,7 @@ class ServerStats(commands.Cog):
         days: int,
         role: Union[discord.Role, Tuple[discord.Role], None],
     ) -> List[discord.Member]:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         after = now - datetime.timedelta(days=days)
         member_list = []
         if role:
@@ -1297,7 +1297,7 @@ class ServerStats(commands.Cog):
         async with ctx.typing():
 
             def joined(member: discord.Member):
-                return getattr(member, "joined_at", None) or datetime.datetime.utcnow()
+                return getattr(member, "joined_at", None) or datetime.datetime.now(timezone.utc)
 
             member_list = sorted(guild.members, key=joined)
             is_embed = ctx.channel.permissions_for(ctx.me).embed_links
@@ -1422,7 +1422,7 @@ class ServerStats(commands.Cog):
                 return inv
         else:  # No existing invite found that is valid
             channels_and_perms = zip(
-                guild.text_channels, map(guild.me.permissions_in, guild.text_channels)
+                guild.text_channels, map(lambda x: x.permissions_for(guild.me), guild.text_channels)
             )
             channel = next(
                 (channel for channel, perms in channels_and_perms if perms.create_instant_invite),
