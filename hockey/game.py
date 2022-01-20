@@ -112,6 +112,7 @@ class Game:
         self.home_roster = kwargs.get("home_roster")
         self.game_type = kwargs.get("game_type")
         self.link = kwargs.get("link")
+        self.season = kwargs.get("season")
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -239,10 +240,32 @@ class Game:
         game_list = [game for date in data["dates"] for game in date["games"]]
         return game_list
 
+    def nst_url(self):
+        return f"https://www.naturalstattrick.com/game.php?season={self.season}&game={str(self.game_id)[5:]}&view=limited#gameflow"
+
+    def heatmap_url(self, style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all"):
+        base_url = "https://www.naturalstattrick.com/heatmaps/games/"
+        if style == "home5v4":
+            home = TEAMS[self.home_team]["tri_code"]
+            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{home}-5v4.png"
+        elif style == "away5v4":
+            away = TEAMS[self.away_team]["tri_code"]
+            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{away}-5v4.png"
+        else:
+            return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{style}.png"
+
+    def gameflow_url(self, corsi: bool = True, strength: Literal["all", "ev", "5v5", "sva"] = "all"):
+        base_url = "https://www.naturalstattrick.com/graphs/"
+        diff = "cfdiff" if corsi else "xgdiff"
+        return f"{base_url}{self.season}-{str(self.game_id)[5:]}-{diff}-{strength}.png"
+
     async def make_game_embed(
         self,
         include_plays: bool = False,
         period_goals: Optional[Literal["1st", "2nd", "3rd"]] = None,
+        include_heatmap: bool = False,
+        include_gameflow: bool = False,
+        include_goals: bool = True,
     ) -> discord.Embed:
         """
         Builds the game embed when the command is called
@@ -278,6 +301,12 @@ class Game:
             em.add_field(
                 name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_str
             )
+        if include_heatmap:
+            em.set_image(url=self.heatmap_url())
+            em.description = f"[Natural Stat Trick]({self.nst_url()})"
+        if include_gameflow:
+            em.set_image(url=self.gameflow_url())
+            em.description = f"[Natural Stat Trick]({self.nst_url()})"
 
         if self.game_state != "Preview":
             home_msg = _("Goals: **{home_score}**\nShots: **{home_shots}**").format(
@@ -293,7 +322,7 @@ class Game:
                 name=f"{self.home_emoji} {self.home_team} {self.home_emoji}", value=home_msg
             )
 
-            if self.goals != []:
+            if self.goals != [] and include_goals:
                 goal_msg = ""
                 first_goals = [goal for goal in self.goals if goal.period_ord == "1st"]
                 second_goals = [goal for goal in self.goals if goal.period_ord == "2nd"]
@@ -628,6 +657,7 @@ class Game:
         async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
             if data["parent"] and any([i in data["team"] for i in post_state]):
                 try:
+                    em = await self.make_game_embed(False, None)
                     parent = await get_channel_obj(bot, data["parent"], data)
                     msg = parent.get_partial_message(channel_id)
                     bot.loop.create_task(msg.edit(embed=em))
@@ -914,6 +944,7 @@ class Game:
         players.update(away_roster)
         players.update(home_roster)
         game_id = data["gameData"]["game"]["pk"]
+        season = data["gameData"]["game"]["season"]
         period_starts = {}
         for play in data["liveData"]["plays"]["allPlays"]:
             if play["result"]["eventTypeId"] == "PERIOD_START":
@@ -983,4 +1014,5 @@ class Game:
             home_roster=home_roster,
             link=link,
             game_type=game_type,
+            season=season,
         )

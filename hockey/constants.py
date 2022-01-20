@@ -1019,6 +1019,78 @@ SLASH_COMMANDS = {
             ],
         },
         {
+            "name": "heatmap",
+            "description": "Get game heatmaps",
+            "type": 1,
+            "options": [
+                {
+                    "name": "team",
+                    "type": 3,
+                    "description": " ",
+                    "required": False,
+                    "autocomplete": True,
+                },
+                {
+                    "name": "date",
+                    "type": 3,
+                    "description": "YYYY-MM-DD formatted",
+                    "required": False,
+                },
+                {
+                    "name": "style",
+                    "type": 3,
+                    "description": " ",
+                    "required": False,
+                    "choices": [
+                        {"name": "All", "value": "all"},
+                        {"name": "EV", "value": "ev"},
+                        {"name": "5v5", "value": "5v5"},
+                        {"name": "SVA", "value": "sva"},
+                        {"name": "Home 5v4", "value": "home5v4"},
+                        {"name": "Away 5v4", "value": "away5v4"}
+                    ]
+                },
+            ],
+        },
+        {
+            "name": "gameflow",
+            "description": "Show gameflow for a game",
+            "type": 1,
+            "options": [
+                {
+                    "name": "team",
+                    "type": 3,
+                    "description": " ",
+                    "required": False,
+                    "autocomplete": True,
+                },
+                {
+                    "name": "date",
+                    "type": 3,
+                    "description": "YYYY-MM-DD formatted",
+                    "required": False,
+                },
+                {
+                    "name": "corsi",
+                    "type": 5,
+                    "description": " ",
+                    "required": False,
+                },
+                {
+                    "name": "strength",
+                    "type": 3,
+                    "description": " ",
+                    "required": False,
+                    "choices": [
+                        {"name": "All", "value": "all"},
+                        {"name": "EV", "value": "ev"},
+                        {"name": "5v5", "value": "5v5"},
+                        {"name": "SVA", "value": "sva"}
+                    ]
+                },
+            ],
+        },
+        {
             "name": "schedule",
             "description": "Show the current NHL Schedule",
             "type": 1,
@@ -1062,6 +1134,7 @@ SLASH_COMMANDS = {
                     "type": 3,
                     "description": "The teams roster to look for",
                     "required": True,
+                    "autocomplete": True,
                 },
                 {
                     "name": "season",

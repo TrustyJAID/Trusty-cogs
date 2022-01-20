@@ -31,6 +31,13 @@ class Schedule(menus.PageSource):
         self._session: aiohttp.CLientSession = kwargs.get("session")
         self.select_options = []
         self.search_range = 30
+        self.include_heatmap = kwargs.get("include_heatmap", False)
+        self.include_gameflow = kwargs.get("include_gameflow", False)
+        self.include_plays = kwargs.get("include_plays", False)
+        self.include_goals = kwargs.get("include_goals", True)
+        self.style = kwargs.get("style", "all")
+        self.corsi = kwargs.get("corsi", True)
+        self.strength = kwargs.get("strength", "all")
 
     @property
     def index(self) -> int:
@@ -81,7 +88,17 @@ class Schedule(menus.PageSource):
                 data = await resp.json()
         game_obj = await Game.from_json(data)
         # return {"content": f"{self.index+1}/{len(self._cache)}", "embed": await game_obj.make_game_embed()}
-        return await game_obj.make_game_embed(True)
+        em = await game_obj.make_game_embed(
+            include_plays=self.include_plays,
+            include_goals=self.include_goals,
+        )
+        if self.include_heatmap:
+            em.set_image(url=game_obj.heatmap_url(style=self.style))
+            em.description = f"[Natural Stat Trick]({game_obj.nst_url()})"
+        if self.include_gameflow:
+            em.set_image(url=game_obj.gameflow_url(corsi=self.corsi, strength=self.strength))
+            em.description = f"[Natural Stat Trick]({game_obj.nst_url()})"
+        return em
 
     async def next(self, choice: Optional[int] = None, skip: bool = False) -> dict:
         """

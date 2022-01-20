@@ -329,24 +329,24 @@ async def check_valid_team(team_name: str, standings: bool = False) -> List[str]
     is_team = []
     active_team = set()
     inactive_team = set()
-    conference: List[str] = []  # ["eastern", "western", "conference"]
+    conference: List[str] = ["eastern", "western", "conference"]
     division = [
         "central",
-        "discover",
+        "metropolitan",
         "division",
-        "scotia",
-        "north",
-        "massmutual",
-        "east",
-        "honda",
-        "west",
+        "pacific",
+        "atlantic",
     ]
     if team_name.lower() == "all":
         return ["all"]
-    if team_name in conference and standings:
-        return [team_name]
-    if team_name.lower() in division and standings:
-        return [team_name]
+    if standings:
+        if team_name in conference:
+            return [team_name]
+        if team_name.lower() in division:
+            return [team_name]
+        for div in division:
+            if team_name.lower() in div:
+                return [div]
     for team, data in TEAMS.items():
         if team_name.lower() in team.lower():
             if data["active"]:

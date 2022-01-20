@@ -383,6 +383,7 @@ class Hockey(
                         self.current_games[link]["count"] += 1
                         if posted_final:
                             self.current_games[link]["count"] = 10
+                    await asyncio.sleep(1)
 
                 for link in self.current_games:
                     if self.current_games[link]["count"] == 10:
@@ -412,13 +413,11 @@ class Hockey(
             # Final cleanup of config incase something went wrong
             # Should be mostly unnecessary at this point
             async with self.config.teams() as all_teams:
-                for team in await self.config.teams():
-                    all_teams.remove(team)
+                for team in all_teams:
                     team["goal_id"] = {}
                     team["game_state"] = "Null"
                     team["game_start"] = ""
                     team["period"] = 0
-                    all_teams.append(team)
 
             await asyncio.sleep(300)
 
@@ -468,14 +467,17 @@ class Hockey(
         for team in TEAMS:
             TEAMS[team]["emoji"] = data[team][0] if data[team][0] is not None else data["Other"][0]
         team_data = json.dumps(TEAMS, indent=4, sort_keys=True, separators=(",", " : "))
+        slash = json.dumps(self.SLASH_COMMANDS, indent=4, sort_keys=True, separators=(",", " : "))
         constants_string = (
             f'BASE_URL = "{BASE_URL}"\n'
             f'HEADSHOT_URL = "{HEADSHOT_URL}"\n'
             f'CONTENT_URL = "{CONTENT_URL}"\n'
             f"CONFIG_ID = {CONFIG_ID}\n"
-            f"TEAMS = {team_data}"
+            f"TEAMS = {team_data}\n"
+            f"SLASH_COMMANDS = {slash}\n"
         )
-        path = Path(__file__).parent / "constants.py"
+        path = Path(__file__).parent / "new-constants.py"
+        constants_string = constants_string.replace("true", "True").replace("false", "False")
         with path.open("w") as outfile:
             outfile.write(constants_string)
 

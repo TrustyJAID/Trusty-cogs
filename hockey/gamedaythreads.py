@@ -316,6 +316,8 @@ class GameDayThreads(MixinMeta):
         else:
             game_list = await Game.get_games(session=self.session)
             for game in game_list:
+                if game.game_state == "Postponed":
+                    continue
                 await self.create_gdt(guild, game)
         msg = _("Game Day threads for {team} setup in {channel}").format(
             team=team, channel=channel.mention

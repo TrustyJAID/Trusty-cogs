@@ -136,13 +136,21 @@ class HockeySlash(MixinMeta):
         self, interaction: discord.Interaction, include_inactive: bool, include_all: bool
     ) -> Optional[dict]:
         if interaction.is_autocomplete:
-            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
+            for cmd in interaction.data.get("options", []):
+                if cmd.get("focused", False):
+                    current_data = cmd.get("value", "")
+                for group in cmd.get("options", []):
+                    if group.get("focused", False):
+                        current_data = group.get("value", "")
+                    for sub in group.get("options", []):
+                        if sub.get("focused", False):
+                            current_data = sub.get("value", "")
             if include_all:
                 team_choices = [{"name": "All", "value": "all"}]
             else:
                 team_choices = []
             for t, d in TEAMS.items():
-                if current_data in t.lower():
+                if current_data.lower() in t.lower():
                     if not include_inactive and not d["active"]:
                         continue
                     team_choices.append({"name": t, "value": t})
@@ -176,6 +184,8 @@ class HockeySlash(MixinMeta):
         command_mapping = {
             "standings": self.standings,
             "games": self.games,
+            "heatmap": self.heatmap,
+            "gameflow": self.gameflow,
             "schedule": self.schedule,
             "player": self.player,
             "roster": self.roster,
@@ -188,7 +198,7 @@ class HockeySlash(MixinMeta):
         option = interaction.data["options"][0]["name"]
         func = command_mapping[option]
 
-        if option in ["games", "schedule"]:
+        if option in ["games", "schedule", "heatmap", "gameflow"]:
             kwargs = await self.parse_teams_and_date(interaction)
             if kwargs:
                 await func(interaction, **kwargs)

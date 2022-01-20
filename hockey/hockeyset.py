@@ -39,6 +39,7 @@ class HockeySetCommands(MixinMeta):
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
         post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
         gdc_channels = await self.config.guild(guild).gdc()
+        gdt_channels = await self.config.guild(guild).gdt()
         if gdc_channels is None:
             gdc_channels = []
         if standings_channel is not None:
@@ -69,16 +70,18 @@ class HockeySetCommands(MixinMeta):
                 standings_msg = "None"
             channels = ""
             for channel in await self.config.all_channels():
-                chn = guild.get_channel(channel)
+                chn = guild.get_channel_or_thread(channel)
                 if chn is not None:
-                    teams = ", ".join(t for t in await self.config.channel(chn).team())
+                    teams = humanize_list([t for t in await self.config.channel(chn).team()])
                     is_gdc = "(GDC)" if chn.id in gdc_channels else ""
+                    is_gdt = "(GDT)" if chn.id in gdt_channels else ""
                     game_states = await self.config.channel(chn).game_states()
-                    channels += f"{chn.mention}{is_gdc}: {teams}\n"
-
-                    if len(game_states) != 4:
-                        channels += _("Game States: ") + ", ".join(s for s in game_states)
-                        channels += "\n"
+                    channels += f"{chn.mention}{is_gdc}{is_gdt}:\n"
+                    channels += _("Team(s): {teams}\n").format(teams=teams)
+                    if game_states:
+                        channels += _("Game States: {game_states}\n").format(
+                            game_states=humanize_list(game_states)
+                        )
 
             notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
                 game_start=await self.config.guild(guild).game_state_notifications(),
@@ -127,9 +130,11 @@ class HockeySetCommands(MixinMeta):
     @commands.is_owner()
     async def hockey_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
         """
-        Enable Spotify commands as slash commands globally
+        Enable Hockey commands as slash commands globally
         """
-        data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_global_command(
+            ctx.guild.me.id, payload=self.SLASH_COMMANDS
+        )
         command_id = int(data.get("id"))
         log.info(data)
         self.slash_commands[command_id] = self.hockey_slash_commands
@@ -141,12 +146,14 @@ class HockeySetCommands(MixinMeta):
     @commands.is_owner()
     async def hockey_global_slash_disable(self, ctx: Union[commands.Context, discord.Interaction]):
         """
-        Disable Spotify commands as slash commands globally
+        Disable Hockey commands as slash commands globally
         """
         commands = await self.config.commands()
         command_id = commands.get("hockey")
         if not command_id:
-            await ctx.send("There is no global slash command registered from this cog on this bot.")
+            await ctx.send(
+                "There is no global slash command registered from this cog on this bot."
+            )
             return
         await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
         async with self.config.commands() as commands:
@@ -158,9 +165,11 @@ class HockeySetCommands(MixinMeta):
     @commands.admin_or_permissions(manage_guild=True)
     async def hockey_guild_slash(self, ctx: commands.Context):
         """
-        Enable Spotify commands as slash commands in this server
+        Enable Hockey commands as slash commands in this server
         """
-        data = await ctx.bot.http.upsert_guild_command(ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS)
+        data = await ctx.bot.http.upsert_guild_command(
+            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
+        )
         command_id = int(data.get("id"))
         log.info(data)
         if ctx.guild.id not in self.slash_commands["guilds"]:
@@ -175,7 +184,7 @@ class HockeySetCommands(MixinMeta):
     @commands.admin_or_permissions(manage_guild=True)
     async def hockey_delete_guild_slash(self, ctx: commands.Context):
         """
-        Delete servers slash commands
+        Delete Hockey commands as slash commands in this server
         """
         commands = await self.config.guild(ctx.guild).commands()
         command_id = commands.get("hockey")

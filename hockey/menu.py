@@ -14,6 +14,7 @@ from .constants import TEAMS
 from .errors import NoSchedule
 from .helper import DATE_RE
 from .player import Player
+from .schedule import Schedule
 from .standings import Standings
 
 _ = Translator("Hockey", __file__)
@@ -202,6 +203,72 @@ class PickDateButton(discord.ui.Button):
             await self.view.show_page(0)
 
 
+class HeatmapButton(discord.ui.Button):
+    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
+        super().__init__(style=style, row=row, label=_("Heatmap"))
+        self.style = style
+
+    async def callback(self, interaction: discord.Interaction):
+        """stops the pagination session."""
+        mapping = {
+            "all": "ev",
+            "ev": "5v5",
+            "5v5": "sva",
+            "sva": "home5v4",
+            "home5v4": "away5v4",
+            "away5v4": "all",
+        }
+        if self.view.source.include_gameflow:
+            self.view.source.include_gameflow = False
+        if not self.view.source.include_heatmap:
+            self.view.source.include_heatmap = True
+            self.label = _("Heatmap {style}").format(style=self.view.source.style)
+            await self.view.show_page(0)
+            return
+        else:
+            self.view.source.style = mapping[self.view.source.style]
+            self.label = _("Heatmap {style}").format(style=self.view.source.style)
+            await self.view.show_page(0)
+            return
+
+
+class GameflowButton(discord.ui.Button):
+    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
+        super().__init__(style=style, row=row, label=_("Gameflow"))
+        self.style = style
+
+    async def callback(self, interaction: discord.Interaction):
+        """stops the pagination session."""
+        mapping = {
+            (True, "all"): (True, "ev"),
+            (True, "ev"): (True, "5v5"),
+            (True, "5v5"): (True, "sva"),
+            (True, "sva"): (False, "all"),
+            (False, "all"): (False, "ev"),
+            (False, "ev"): (False, "5v5"),
+            (False, "5v5"): (False, "sva"),
+            (False, "sva"): (True, "all"),
+        }
+        if self.view.source.include_heatmap:
+            self.view.source.include_heatmap = False
+        if not self.view.source.include_gameflow:
+            self.view.source.include_gameflow = True
+            corsi = "Corsi" if self.view.source.corsi else "Expected Goals"
+            strength = self.view.source.strength
+            self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
+            await self.view.show_page(0)
+            return
+        else:
+            lookup = (self.view.source.corsi, self.view.source.strength)
+            corsi_bool, strength = mapping[lookup]
+            self.view.source.corsi = corsi_bool
+            self.view.source.strength = strength
+            corsi = "Corsi" if corsi_bool else "Expected Goals"
+            self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
+            await self.view.show_page(0)
+            return
+
+
 class HockeySelectGame(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption]):
         super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
@@ -235,6 +302,8 @@ class GamesMenu(discord.ui.View):
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.pick_team_button = PickTeamButton(discord.ButtonStyle.primary, 1)
         self.change_date_button = PickDateButton(discord.ButtonStyle.primary, 1)
+        self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
+        self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
@@ -242,6 +311,14 @@ class GamesMenu(discord.ui.View):
         self.add_item(self.stop_button)
         self.add_item(self.pick_team_button)
         self.add_item(self.change_date_button)
+        if isinstance(self.source, Schedule):
+            self.heatmap_button.label = _("Heatmap {style}").format(style=self.source.style)
+            corsi = "Corsi" if self.source.corsi else "Expected Goals"
+            self.gameflow_button.label = _("Gameflow {corsi} {strength}").format(
+                corsi=corsi, strength=self.source.strength
+            )
+            self.add_item(self.heatmap_button)
+            self.add_item(self.gameflow_button)
         self.select_view = None
         self.author = None
 
@@ -444,7 +521,9 @@ class PlayerPages(menus.ListPageSource):
 
 class HockeySelectPlayer(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption]):
-        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a Player"))
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Pick a Player")
+        )
 
     async def callback(self, interaction: discord.Interaction):
         player_id = int(self.values[0])

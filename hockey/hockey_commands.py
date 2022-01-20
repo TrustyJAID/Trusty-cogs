@@ -10,7 +10,7 @@ from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
@@ -205,10 +205,105 @@ class HockeyCommands(MixinMeta):
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
             # if teams_and_date:
-                # teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
+            # teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
         log.debug(teams_and_date)
         await GamesMenu(
             source=Schedule(**teams_and_date, session=self.session),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    async def heatmap(
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        style: str = "all",
+        *,
+        teams_and_date: Optional[TeamDateFinder] = {},
+    ) -> None:
+        """
+        Display game heatmaps.
+
+        `[style]` must be one of "all", "ev", "5v5", "sva", "home5v4", or "away5v4"
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
+        styles = ["all", "ev", "5v5", "sva", "home5v4", "away5v4"]
+        if style not in styles:
+            await ctx.send(
+                _("Style must be one of {styles}.").format(styles=humanize_list(styles))
+            )
+            return
+        if "style" in teams_and_date:
+            teams_and_date.pop("style")
+        log.debug(teams_and_date)
+        await GamesMenu(
+            source=Schedule(
+                **teams_and_date,
+                session=self.session,
+                include_goals=False,
+                include_heatmap=True,
+                style=style,
+            ),
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    async def gameflow(
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        strength: str = "all",
+        corsi: bool = True,
+        *,
+        teams_and_date: Optional[TeamDateFinder] = {},
+    ) -> None:
+        """
+        Display games gameflow.
+
+        `[strength]` must be one of "all", "ev", "5v5", or "sva".
+        `[corsi]` either true or false.
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
+        styles = ["all", "ev", "5v5", "sva"]
+        if strength not in styles:
+            await ctx.send(
+                _("Style must be one of {styles}.").format(styles=humanize_list(styles))
+            )
+            return
+        if "strength" in teams_and_date:
+            teams_and_date.pop("strength")
+        if "corsi" in teams_and_date:
+            teams_and_date.pop("corsi")
+        log.debug(teams_and_date)
+        await GamesMenu(
+            source=Schedule(
+                **teams_and_date,
+                session=self.session,
+                include_goals=False,
+                include_gameflow=True,
+                corsi=corsi,
+                strength=strength,
+            ),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,
