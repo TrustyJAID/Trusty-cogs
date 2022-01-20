@@ -31,7 +31,7 @@ from .converters import (
     MultiGuildConverter,
     PermissionConverter,
 )
-from .menus import BaseView, AvatarPages, GuildPages, ListPages, BaseView
+from .menus import BaseView, AvatarPages, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")

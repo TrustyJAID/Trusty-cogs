@@ -73,6 +73,7 @@ class SpotifyCommands:
                 "device": self.spotify_device,
                 "playlist": self.spotify_playlist,
                 "set": self.spotify_set,
+                "artist": self.spotify_artist,
             }
             option = ctx.data["options"][0]["name"]
             func = command_mapping[option]
@@ -1738,6 +1739,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                songs = await SpotifyURIConverter().convert(ctx, songs)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 await ctx.response.defer(ephemeral=True)
             is_slash = True
@@ -2548,6 +2554,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                to_add = await SpotifyURIConverter().convert(ctx, to_add)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 await ctx.response.defer(ephemeral=True)
             is_slash = True
@@ -2613,6 +2624,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                to_remove = await SpotifyURIConverter().convert(ctx, to_remove)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 await ctx.response.defer(ephemeral=True)
             is_slash = True
@@ -2677,6 +2693,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 await ctx.response.defer(ephemeral=True)
             is_slash = True
@@ -2724,6 +2745,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 await ctx.response.defer()
             is_slash = True
@@ -2769,6 +2795,11 @@ class SpotifyCommands:
             return await self.no_user_token(ctx)
         is_slash = False
         if isinstance(ctx, discord.Interaction):
+            try:
+                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
             if not ctx.response.is_done():
                 if not ctx.response.is_done():
                     await ctx.response.defer(ephemeral=True)

@@ -616,14 +616,14 @@ class SpotifyPages(menus.PageSource):
                     playlist_id = cur_state.context.uri.split(":")[-1]
                     if cur_state.context.type == "playlist":
                         cur_tracks = await user_spotify.playlist(playlist_id)
-                        tracks = [t.track for t in cur_tracks.tracks.items]
+                        tracks = [t.track for t in cur_tracks.tracks.items if t.track is not None]
                     if cur_state.context.type == "album":
                         cur_tracks = await user_spotify.album(playlist_id)
-                        tracks = [t for t in cur_tracks.tracks.items]
+                        tracks = [t for t in cur_tracks.tracks.items if t is not None]
                     if cur_state.context.type == "artist":
                         cur_tracks = await user_spotify.artist(playlist_id)
                         top_tracks = await user_spotify.artist_top_tracks(playlist_id, "from_token")
-                        tracks = [t for t in top_tracks]
+                        tracks = [t for t in top_tracks if t is not None]
                     self.context_name = cur_tracks.name
                     for track in tracks:
                         self.select_options.append(SpotifyTrackOption(track))
