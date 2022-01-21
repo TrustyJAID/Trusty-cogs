@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import discord
-from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -226,12 +225,11 @@ class Goal:
                         role = discord.utils.get(guild.roles, name=f"{montreal[0]} GOAL")
             except Exception:
                 log.error("Error trying to find montreal goal role")
-            if version_info >= VersionInfo.from_str("3.4.0"):
-                if goal_notifications:
-                    log.debug(goal_notifications)
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-                else:
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+            if goal_notifications:
+                log.debug(goal_notifications)
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
+            else:
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
 
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
@@ -296,10 +294,7 @@ class Goal:
                 channel = guild.get_channel(int(channel_id))
                 if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
-                        if version_info >= VersionInfo.from_str("3.4.6"):
-                            message = channel.get_partial_message(message_id)
-                        else:
-                            message = await channel.fetch_message(message_id)
+                        message = channel.get_partial_message(message_id)
                     except (discord.errors.NotFound, discord.errors.Forbidden):
                         continue
                     except Exception:
@@ -367,10 +362,7 @@ class Goal:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
             try:
-                if version_info >= VersionInfo.from_str("3.4.6"):
-                    message = channel.get_partial_message(message_id)
-                else:
-                    message = await channel.fetch_message(message_id)
+                message = channel.get_partial_message(message_id)
             except (discord.errors.NotFound, discord.errors.Forbidden):
                 return
             guild = channel.guild

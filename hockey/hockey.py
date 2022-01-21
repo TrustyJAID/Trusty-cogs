@@ -97,6 +97,7 @@ class Hockey(
             "gdc": [],
             "gdt": [],
             "delete_gdc": True,
+            "update_gdt": True,
             "rules": "",
             "team_rules": "",
             "game_state_notifications": False,
@@ -113,6 +114,7 @@ class Hockey(
             "team": [],
             "game_states": ["Preview", "Live", "Final", "Goal"],
             "to_delete": False,
+            "update": True,
             "publish_states": [],
             "game_state_notifications": False,
             "goal_notifications": False,
@@ -308,10 +310,25 @@ class Hockey(
         while True:
             try:
                 async with self.session.get(f"{BASE_URL}/api/v1/schedule") as resp:
-                    data = await resp.json()
+                    if resp.status == 200:
+                        data = await resp.json()
+                    else:
+                        log.info("Error checking schedule. %s", resp.status)
+                        await asyncio.sleep(30)
+                        continue
+            except aiohttp.client_exceptions.ClientConnectorError:
+                # this will most likely happen if there's a temporary failure in name resolution
+                # this ends up calling the check_new_day earlier than expected causing
+                # game day channels and pickems to fail to update prpoperly
+                # continue after waiting 30 seconds should prevent that.
+                data = {"dates": []}
+                await asyncio.sleep(30)
+                continue
             except Exception:
                 log.exception("Error grabbing the schedule for today.")
                 data = {"dates": []}
+                await asyncio.sleep(60)
+                continue
             if data["dates"] != []:
                 self.current_games = {
                     game["link"]: {"count": 0, "game": None, "disabled_buttons": False}

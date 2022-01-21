@@ -1361,6 +1361,19 @@ SLASH_COMMANDS = {
                     ],
                 },
                 {
+                    "name": "update",
+                    "type": 1,
+                    "description": "Edit starting game day thread message.",
+                    "options": [
+                        {
+                            "name": "update_start",
+                            "type": 5,
+                            "required": True,
+                            "description": " ",
+                        }
+                    ],
+                },
+                {
                     "name": "setup",
                     "type": 1,
                     "description": "Setup game day threads for a single team or all teams.",

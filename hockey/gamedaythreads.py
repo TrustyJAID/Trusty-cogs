@@ -78,14 +78,16 @@ class GameDayThreads(MixinMeta):
                 created_threads = "None"
         else:
             created_threads = "None"
+        update_gdt = await self.config.guild(guild).update_gdt()
         if not ctx.channel.permissions_for(guild.me).embed_links:
             msg = _(
-                "```GDT settings for {guild}\nCreate Game Day Threads: {create_threads}"
-                "\nTeam: {team}\n"
+                "```GDT settings for {guild}\nCreate Game Day Threads: {create_threads}\n"
+                "Edit Start Message: {gdt_update}\nTeam: {team}\n"
                 "Current Threads: {created_threads}\nDefault Game State: {game_states}\n```"
             ).format(
                 guild=guild.name,
                 create_threads=create_threads,
+                gdt_update=update_gdt,
                 team=team,
                 created_threads=created_threads,
                 game_states=humanize_list(game_states),
@@ -98,6 +100,7 @@ class GameDayThreads(MixinMeta):
             em = discord.Embed(title=_("GDT settings for ") + guild.name)
             em.colour = await self.bot.get_embed_colour(ctx.channel)
             em.add_field(name=_("Create Game Day Threads"), value=str(create_threads))
+            em.add_field(name=_("Update GDT"), value=str(update_gdt))
             em.add_field(name=_("Team"), value=str(team))
             em.add_field(name=_("Current Threads"), value=created_threads[:1024])
             if not game_states:
@@ -163,6 +166,30 @@ class GameDayThreads(MixinMeta):
                 await ctx.followup.send(msg)
             else:
                 await ctx.send(msg)
+
+    @gdt.command(name="updates")
+    async def gdt_update_start(
+        self, ctx: Union[commands.Context, discord.Interaction], update_start: bool
+    ) -> None:
+        """
+        Set whether or not the starting thread message will update as the game progresses.
+
+        `<update_start>` either true or false.
+        """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
+        await self.config.guild(ctx.guild).update_gdt.set(update_start)
+        if update_start:
+            msg = _("Game day channels will update as the game progresses.")
+        else:
+            msg = _("Game day threads will not update as the game progresses.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @gdt.command(name="create")
     async def gdt_create(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
@@ -458,9 +485,11 @@ class GameDayThreads(MixinMeta):
         async with self.config.guild(guild).gdt() as current_gdc:
             current_gdc.append(new_chn.id)
         # await config.guild(guild).create_channels.set(True)
+        update_gdt = await self.config.guild(guild).update_gdt()
         await self.config.channel(new_chn).team.set([team])
         await self.config.channel(new_chn).guild_id.set(guild.id)
         await self.config.channel(new_chn).parent.set(channel.id)
+        await self.config.channel(new_chn).update.set(update_gdt)
         gdt_state_updates = await self.config.guild(guild).gdt_state_updates()
         await self.config.channel(new_chn).game_states.set(gdt_state_updates)
         # Gets the timezone to use for game day channel topic

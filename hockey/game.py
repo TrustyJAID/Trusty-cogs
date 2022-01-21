@@ -6,7 +6,6 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
-from redbot import VersionInfo, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -610,13 +609,7 @@ class Game:
         config = bot.get_cog("Hockey").config
         all_channels = await bot.get_cog("Hockey").config.all_channels()
         async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
-            if data["parent"] and any([i in data["team"] for i in post_state]):
-                try:
-                    parent = await get_channel_obj(bot, data["parent"], data)
-                    msg = parent.get_partial_message(channel_id)
-                    bot.loop.create_task(msg.edit(embed=em))
-                except Exception:
-                    log.exception("Error editing thread start message.")
+            await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
@@ -644,6 +637,17 @@ class Game:
         except Exception:
             log.exception("Could not post goal in %s", repr(channel))
 
+    async def maybe_edit_gamedaythread_message(self, bot: Red, channel_id: int, data: dict) -> None:
+        post_state = ["all", self.home_team, self.away_team]
+        if data["parent"] and any([i in data["team"] for i in post_state]) and data["update"]:
+            try:
+                em = await self.make_game_embed(False, None)
+                parent = await get_channel_obj(bot, data["parent"], data)
+                msg = parent.get_partial_message(channel_id)
+                bot.loop.create_task(msg.edit(embed=em))
+            except Exception:
+                log.exception("Error editing thread start message.")
+
     async def post_game_state(self, bot: Red) -> None:
         """
         When a game state has changed this is called to create the embed
@@ -655,14 +659,7 @@ class Game:
         tasks = []
         all_channels = await bot.get_cog("Hockey").config.all_channels()
         async for channel_id, data in AsyncIter(all_channels.items(), steps=100):
-            if data["parent"] and any([i in data["team"] for i in post_state]):
-                try:
-                    em = await self.make_game_embed(False, None)
-                    parent = await get_channel_obj(bot, data["parent"], data)
-                    msg = parent.get_partial_message(channel_id)
-                    bot.loop.create_task(msg.edit(embed=em))
-                except Exception:
-                    log.exception("Error editing thread start message.")
+            await self.maybe_edit_gamedaythread_message(bot, channel_id, data)
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
@@ -705,27 +702,20 @@ class Game:
             # heh inclusive or
             allowed_mentions = {}
             home_role, away_role = await get_team_role(guild, self.home_team, self.away_team)
-            if version_info >= VersionInfo.from_str("3.4.0"):
-                if state_notifications:
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
-                else:
-                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
+            if state_notifications:
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=True)}
+            else:
+                allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if self.game_type == "R" and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
-                    if version_info >= VersionInfo.from_str("3.4.0"):
-                        allowed_mentions = {
-                            "allowed_mentions": discord.AllowedMentions(roles=False)
-                        }
-                    else:
-                        allowed_mentions = {}
+                    allowed_mentions = {
+                        "allowed_mentions": discord.AllowedMentions(roles=False)
+                    }
             if "SO" in self.period_ord:
                 if not guild_settings["so_notifications"]:
-                    if version_info >= VersionInfo.from_str("3.4.0"):
-                        allowed_mentions = {
-                            "allowed_mentions": discord.AllowedMentions(roles=False)
-                        }
-                    else:
-                        allowed_mentions = {}
+                    allowed_mentions = {
+                        "allowed_mentions": discord.AllowedMentions(roles=False)
+                    }
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
