@@ -21,6 +21,16 @@ _ = Translator("Tweets", __file__)
 log = logging.getLogger("red.trusty-cogs.Tweets")
 
 
+class MissingTokenError(Exception):
+
+    async def send_error(self, ctx: commands.Context):
+        await ctx.send(
+            _(
+                "You need to set your API tokens. See `{prefix}tweetset creds` for information on how."
+            ).format(prefix=ctx.clean_prefix)
+        )
+
+
 class TweetListener(AsyncStream):
     def __init__(
         self,
@@ -114,6 +124,9 @@ class TweetsAPI:
         consumer_secret = keys.get("consumer_secret")
         access_token = keys.get("access_token")
         access_secret = keys.get("access_secret")
+        keys = [consumer, consumer_secret, access_token, access_secret]
+        if any([k is None for k in keys]):
+            raise MissingTokenError()
         auth = tweepy.OAuthHandler(consumer, consumer_secret)
         auth.set_access_token(access_token, access_secret)
         return tweepy.API(
@@ -204,7 +217,7 @@ class TweetsAPI:
         if status.in_reply_to_screen_name:
             api = await self.authenticate()
             try:
-                reply = api.lookup_statuses(id_=[status.in_reply_to_status_id])[0]
+                reply = api.lookup_statuses(id=[status.in_reply_to_status_id])[0]
                 # log.debug(reply)
                 in_reply_to = _("In reply to {name} (@{screen_name})").format(
                     name=reply.user.name, screen_name=reply.user.screen_name

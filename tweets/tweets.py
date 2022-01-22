@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_list, humanize_number, pa
 
 from .menus import BaseMenu, TweetListPages, TweetPages, TweetsMenu
 from .tweet_entry import ChannelData, TweetEntry
-from .tweets_api import TweetsAPI
+from .tweets_api import MissingTokenError, TweetsAPI
 
 _ = Translator("Tweets", __file__)
 
@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.8.0"
+    __version__ = "2.8.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -128,6 +128,11 @@ class Tweets(TweetsAPI, commands.Cog):
         """
         try:
             api = await self.authenticate()
+        except MissingTokenError as e:
+            await e.send_error(ctx)
+            return
+        try:
+
             if ctx.message.attachments != []:
                 temp = BytesIO()
                 filename = ctx.message.attachments[0].filename
@@ -150,7 +155,11 @@ class Tweets(TweetsAPI, commands.Cog):
         different trend information from that location
         default is `United States`
         """
-        api = await self.authenticate()
+        try:
+            api = await self.authenticate()
+        except MissingTokenError as e:
+            await e.send_error(ctx)
+            return
         try:
             fake_task = functools.partial(api.available_trends)
             task = self.bot.loop.run_in_executor(None, fake_task)
@@ -256,7 +265,11 @@ class Tweets(TweetsAPI, commands.Cog):
         Display a users tweets as a scrollable message
         """
         async with ctx.typing():
-            api = await self.authenticate()
+            try:
+                api = await self.authenticate()
+            except MissingTokenError as e:
+                await e.send_error(ctx)
+                return
         await TweetsMenu(
             source=TweetPages(api=api, username=username, loop=ctx.bot.loop), cog=self
         ).start(ctx=ctx)
@@ -622,7 +635,11 @@ class Tweets(TweetsAPI, commands.Cog):
         `list_name` is the name of the list
         `channel` is the channel where the tweets will be posted
         """
-        api = await self.authenticate()
+        try:
+            api = await self.authenticate()
+        except MissingTokenError as e:
+            await e.send_error(ctx)
+            return
         try:
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
@@ -698,7 +715,11 @@ class Tweets(TweetsAPI, commands.Cog):
         `list_name` is the name of the list
         `channel` is the channel where the tweets will be posted
         """
-        api = await self.authenticate()
+        try:
+            api = await self.authenticate()
+        except MissingTokenError as e:
+            await e.send_error(ctx)
+            return
         try:
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
@@ -792,7 +813,11 @@ class Tweets(TweetsAPI, commands.Cog):
         If `username` is not provided all users posting in the provided channel
         will be removed.
         """
-        api = await self.authenticate()
+        try:
+            api = await self.authenticate()
+        except MissingTokenError as e:
+            await e.send_error(ctx)
+            return
         user_id: Optional[int] = None
         screen_name: Optional[str] = None
         if username:
