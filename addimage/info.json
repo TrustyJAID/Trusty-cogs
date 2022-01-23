@@ -8,7 +8,7 @@
     "hidden" : false,
     "install_msg" : "This cog will create folders to save and delete images added locally. `[p]addimage` to add an image to the guild. Owner can add global bot images.",
     "max_bot_version" : "0.0.0",
-    "min_bot_version" : "3.1.8",
+    "min_bot_version" : "3.4.0",
     "min_python_version" : [
         3,
         7,

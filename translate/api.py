@@ -426,7 +426,7 @@ class GoogleTranslateAPI:
         """
         try:
             return await self.bot.allowed_by_whitelist_blacklist(
-                author, who_id=author.id, guild_id=guild.id, role_ids=[r.id for r in author.roles]
+                author, who_id=author.id, guild=guild, role_ids=[r.id for r in author.roles]
             )
         except AttributeError:
             if await self.bot.is_owner(author):
