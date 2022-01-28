@@ -1478,7 +1478,6 @@ class Destiny(DestinyAPI, commands.Cog):
                 xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
                     "2190858386"
                 ]
-
             except Destiny2APIError:
                 log.error("I can't seem to see Xûr at the moment")
                 today = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -1493,13 +1492,24 @@ class Destiny(DestinyAPI, commands.Cog):
                     await ctx.send(msg)
                 return
             break
+        try:
+            loc_index = xur["vendor"]["data"]["vendorLocationIndex"]
+            loc = xur_def["locations"][loc_index].get("destinationHash")
+            location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
+                str(loc), None
+            )
+            location = location_data.get("displayProperties", {}).get("description", "")
+        except Exception:
+            log.exception("Cannot get xur's location")
+            location = _("Unknown")
         # items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
         embeds: List[discord.Embed] = []
         # data = await self.get_definition("DestinyInventoryItemDefinition", items)
+        description = xur_def["displayProperties"]["description"]
         embed = discord.Embed(
             title=_("Xûr's current wares"),
             colour=discord.Colour.red(),
-            description=xur_def["displayProperties"]["description"],
+            description=f"{location}\n{description}",
         )
         embed.set_thumbnail(url=IMAGE_URL + xur_def["displayProperties"]["largeTransparentIcon"])
         # embed.set_author(name=_("Xûr's current wares"))
@@ -2149,7 +2159,9 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.send(embed=embed)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def loadout(
         self, ctx: commands.Context, full: Optional[bool] = False, user: discord.Member = None
     ) -> None:
@@ -2296,7 +2308,9 @@ class Destiny(DestinyAPI, commands.Cog):
         ).start(ctx=ctx)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def gambit(self, ctx: commands.Context) -> None:
         """
         Display a menu of each characters gambit stats
@@ -2307,7 +2321,9 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "allPvECompetitive")
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def pvp(self, ctx: commands.Context) -> None:
         """
         Display a menu of each character's pvp stats
@@ -2318,7 +2334,9 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "allPvP")
 
     @destiny.command(aliases=["raids"])
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def raid(self, ctx: commands.Context) -> None:
         """
         Display a menu for each character's RAID stats
@@ -2329,7 +2347,9 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.stats(ctx, "raid")
 
     @destiny.command(aliases=["qp"])
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def quickplay(self, ctx: commands.Context) -> None:
         """
         Display a menu of past quickplay matches
@@ -2340,7 +2360,9 @@ class Destiny(DestinyAPI, commands.Cog):
             await self.history(ctx, 70)
 
     @destiny.command()
-    @commands.bot_has_permissions(embed_links=True, )
+    @commands.bot_has_permissions(
+        embed_links=True,
+    )
     async def history(self, ctx: commands.Context, activity: DestinyActivity) -> None:
         """
         Display a menu of each character's last 5 activities
