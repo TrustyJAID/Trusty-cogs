@@ -1577,23 +1577,33 @@ class Destiny(DestinyAPI, commands.Cog):
         # embed.set_author(name=_("Xûr's current wares"))
         # location = xur_def["locations"][0]["destinationHash"]
         # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
-        for index, item_base in xur["sales"]["data"].items():
-            item = (
-                await self.get_definition(
-                    "DestinyInventoryItemDefinition", [item_base["itemHash"]]
-                )
-            )[str(item_base["itemHash"])]
+        all_hashes = [i["itemHash"] for i in xur["sales"]["data"].values()]
+        all_items = await self.get_definition("DestinyInventoryItemDefinition", all_hashes)
+        all_perk_hashes = []
+        for item_hash, item in all_items.items():
             if not (item["equippable"]):
                 continue
-            perk_hashes = [
-                str(p["singleInitialItemHash"]) for p in item["sockets"]["socketEntries"]
-            ]
-            perk_data = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
+            for perk in item["sockets"]["socketEntries"]:
+                all_perk_hashes.append(str(perk["singleInitialItemHash"]))
+        all_perks = await self.get_definition("DestinyInventoryItemDefinition", all_perk_hashes)
+        stat_hashes = []
+        for item_index in xur["sales"]["data"]:
+            if item_index in xur["itemComponents"]["stats"]["data"]:
+                for stat_hash in xur["itemComponents"]["stats"]["data"][item_index]["stats"]:
+                    stat_hashes.append(stat_hash)
+        all_stats = await self.get_definition("DestinyStatDefinition", stat_hashes)
+        for index, item_base in xur["sales"]["data"].items():
+            item = all_items[str(item_base["itemHash"])]
+            if not (item["equippable"]):
+                continue
             perks = ""
             item_embed = discord.Embed(title=item["displayProperties"]["name"])
             item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
             item_embed.set_image(url=IMAGE_URL + item["screenshot"])
-            for perk_hash, perk in perk_data.items():
+            for perk_data in item["sockets"]["socketEntries"]:
+                perk = all_perks.get(str(perk_data["singleInitialItemHash"]), None)
+                if perk is None:
+                    continue
                 properties = perk["displayProperties"]
                 if "Common" in perk["itemTypeAndTierDisplayName"]:
                     continue
@@ -1621,9 +1631,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 for stat_hash, stat_data in xur["itemComponents"]["stats"]["data"][index][
                     "stats"
                 ].items():
-                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                        str(stat_hash)
-                    ]
+                    stat_info = all_stats[str(stat_hash)]
                     stat_name = stat_info["displayProperties"]["name"]
                     stat_value = stat_data["value"]
                     prog = "█" * int(stat_value / 6)
