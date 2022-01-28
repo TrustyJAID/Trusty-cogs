@@ -246,6 +246,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 "clan": self.clan,
                 "quickplay": self.quickplay,
                 "xur": self.xur,
+                "whereisxur": self.whereisxur,
                 "user": self.user,
                 "eververse": self.eververse,
                 "joinme": self.destiny_join_command,
@@ -1445,6 +1446,67 @@ class Destiny(DestinyAPI, commands.Cog):
         with path.open(encoding="utf-8", mode="w") as f:
             json.dump(data, f, indent=4, sort_keys=False, separators=(",", " : "))
 
+    @destiny.command(aliases=["whereisxûr"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def whereisxur(self, ctx: commands.Context) -> None:
+        """
+        Display Xûr's current location
+        """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+            author = ctx.user
+        else:
+            await ctx.trigger_typing()
+            author = ctx.author
+
+        if not await self.has_oauth(ctx):
+            return
+        try:
+            chars = await self.get_characters(author)
+            # await self.save(chars, "characters.json")
+        except Destiny2APIError:
+            # log.debug(e)
+            await self.missing_profile(ctx)
+            return
+        for char_id, char in chars["characters"]["data"].items():
+            # log.debug(char)
+            try:
+                xur = await self.get_vendor(author, char_id, "2190858386")
+                xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
+                    "2190858386"
+                ]
+            except Destiny2APIError:
+                log.error("I can't seem to see Xûr at the moment")
+                today = datetime.datetime.now(tz=datetime.timezone.utc)
+                friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
+                    (4 - today.weekday()) % 7
+                )
+                next_xur = f"<t:{int(friday.timestamp())}:R>"
+                msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
+                return
+            break
+        try:
+            loc_index = xur["vendor"]["data"]["vendorLocationIndex"]
+            loc = xur_def["locations"][loc_index].get("destinationHash")
+            location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
+                str(loc), None
+            )
+            location_name = location_data.get("displayProperties", {}).get("name", "")
+        except Exception:
+            log.exception("Cannot get xur's location")
+            location_name = _("Unknown")
+        msg = _("Xûr's current location is {location}.").format(location=location_name)
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
+
     @destiny.command(aliases=["xûr"])
     @commands.bot_has_permissions(embed_links=True)
     async def xur(self, ctx: commands.Context, full: bool = False) -> None:
@@ -1498,7 +1560,7 @@ class Destiny(DestinyAPI, commands.Cog):
             location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
                 str(loc), None
             )
-            location = location_data.get("displayProperties", {}).get("description", "")
+            location = location_data.get("displayProperties", {}).get("name", "")
         except Exception:
             log.exception("Cannot get xur's location")
             location = _("Unknown")

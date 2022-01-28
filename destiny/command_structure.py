@@ -233,6 +233,11 @@ SLASH_COMMANDS = {
             ],
         },
         {
+            "name": "whereisxur",
+            "description": "Show X\u00fbr's current location.",
+            "type": 1,
+        },
+        {
             "name": "user",
             "description": "Display a menu of your basic character's info",
             "type": 1,
