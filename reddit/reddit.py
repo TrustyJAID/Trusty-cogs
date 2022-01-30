@@ -1,9 +1,11 @@
+import asyncio
 import logging
 from typing import Optional, Mapping
 
 import aiohttp
 import apraw
 import discord
+from discord.ext import tasks
 from apraw.models import Submission, Subreddit
 from redbot.core import Config, checks, commands
 from redbot.core.utils import bounded_gather
@@ -22,7 +24,7 @@ class Reddit(commands.Cog):
     A cog to get information from the Reddit API
     """
 
-    __version__ = "1.1.3"
+    __version__ = "1.1.4"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -33,7 +35,9 @@ class Reddit(commands.Cog):
         self._streams = {}
         default = {"subreddits": {}}
         self.config.register_global(**default)
-        bot.loop.create_task(self.initialize())
+        self._ready: asyncio.Event = asyncio.Event()
+        self.bot.loop.create_task(self.initialize())
+        self.stream_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -47,6 +51,26 @@ class Reddit(commands.Cog):
         Nothing to delete
         """
         return
+
+    @tasks.loop(seconds=300)
+    async def stream_loop(self):
+        if self.login:
+            for sub, data in self.subreddits.items():
+                if sub not in self._streams:
+                    subreddit = await self.login.subreddit(data["name"])
+                    self._streams[sub] = self.bot.loop.create_task(
+                        self._run_subreddit_stream(subreddit)
+                    )
+                elif sub in self._streams and self._streams[sub].done():
+                    subreddit = await self.login.subreddit(data["name"])
+                    self._streams[sub] = self.bot.loop.create_task(
+                        self._run_subreddit_stream(subreddit)
+                    )
+
+    @stream_loop.before_loop
+    async def before_stream_loop(self):
+        await self.bot.wait_until_red_ready()
+        await self._ready.wait()
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
@@ -64,6 +88,7 @@ class Reddit(commands.Cog):
                 except Exception:
                     log.debug(f"Error closing stream in {name}")
             await self.initialize()
+            self.stream_loop.restart()
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -79,16 +104,13 @@ class Reddit(commands.Cog):
                 user_agent=f"Trusty-cogs/{self.__version__} on {self.bot.user}",
             )
             log.debug("Logged into Reddit.")
+            self.subreddits = await self.config.subreddits()
+            self._ready.set()
+        except KeyError:
+            log.error("You have not provided all the correct information I need to login to reddit.")
         except Exception:
             log.exception("Error logging into Reddit.")
-        if self.login:
-            self.subreddits = await self.config.subreddits()
-            for sub, data in self.subreddits.items():
-                if sub not in self._streams:
-                    subreddit = await self.login.subreddit(data["name"])
-                    self._streams[sub] = self.bot.loop.create_task(
-                        self._run_subreddit_stream(subreddit)
-                    )
+
 
     async def _run_subreddit_stream(self, subreddit: Subreddit) -> None:
         """
