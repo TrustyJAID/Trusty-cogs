@@ -41,6 +41,7 @@ class Goal:
     home_score: int
     away_score: int
     strength: str
+    strength_code: str
     empty_net: bool
     event: str
     link: Optional[str]
@@ -62,6 +63,7 @@ class Goal:
         self.home_score = kwargs.get("home_score")
         self.away_score = kwargs.get("away_score")
         self.strength = kwargs.get("strength")
+        self.strength_code = kwargs.get("strength_code")
         self.empty_net = kwargs.get("empty_net")
         self.event = kwargs.get("event")
         self.link = kwargs.get("link", None)
@@ -107,12 +109,14 @@ class Goal:
 
         if "strength" in data["result"]:
             str_dat = data["result"]["strength"]["name"]
+            strength_code = data["result"]["strength"]["code"]
             strength = "Even Strength" if str_dat == "Even" else str_dat
             if data["about"]["ordinalNum"] == "SO":
                 strength = "Shoot Out"
         else:
             strength = " "
-        empty_net = data["result"]["emptyNet"] if "emptyNet" in data["result"] else False
+            strength_code = " "
+        empty_net = data["result"].get("emptyNet", False)
         player_id = f"ID{scorer_id[0]}" if scorer_id != [] else None
         if player_id in players:
             jersey_no = players[player_id]["jerseyNumber"]
@@ -144,6 +148,7 @@ class Goal:
             home_score=data["about"]["goals"]["home"],
             away_score=data["about"]["goals"]["away"],
             strength=strength,
+            strength_code=strength_code,
             empty_net=empty_net,
             event=data["result"]["event"],
             link=link,
@@ -182,7 +187,8 @@ class Goal:
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
-
+            if channel.guild.me.is_timed_out():
+                return
             should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
                 post_data.append(
@@ -204,6 +210,7 @@ class Goal:
             if not channel.permissions_for(guild.me).send_messages:
                 log.debug("No permission to send messages in %s", repr(channel))
                 return None
+
             config = bot.get_cog("Hockey").config
             game_day_channels = await config.guild(guild).gdc()
             # Don't want to ping people in the game day channels
@@ -361,6 +368,8 @@ class Goal:
         try:
             if not channel.permissions_for(channel.guild.me).embed_links:
                 return
+            if channel.guild.me.is_timed_out():
+                return
             try:
                 message = channel.get_partial_message(message_id)
             except (discord.errors.NotFound, discord.errors.Forbidden):
@@ -394,20 +403,29 @@ class Goal:
         for goal in game.home_goals:
             scorer = ""
             scorer_num = ""
+            if goal.time > self.time:
+                break
             if f"ID{goal.scorer_id}" in players:
                 scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 home_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":
                 home_msg += score.format(scorer=scorer)
+
         for goal in game.away_goals:
             scorer = ""
+            if goal.time > self.time:
+                # if the goal object building this shootout display
+                # is in the shootout and we reach a goal that happened *after*
+                # this goal object, we break for a cleaner looking shootout display.
+                break
             if f"ID{goal.scorer_id}" in players:
                 scorer = players[f"ID{goal.scorer_id}"]["person"]["fullName"]
             if goal.event in ["Shot", "Missed Shot"] and goal.period_ord == "SO":
                 away_msg += miss.format(scorer=scorer)
             if goal.event in ["Goal"] and goal.period_ord == "SO":
                 away_msg += score.format(scorer=scorer)
+
         return home_msg, away_msg
 
     async def goal_post_embed(self, game: Game) -> discord.Embed:
@@ -424,9 +442,8 @@ class Goal:
             if self.team_name in TEAMS
             else 0
         )
-        title = "🚨 {} #{} {} {} 🚨".format(
-            self.team_name, self.jersey_no, self.strength, self.event
-        )
+        empty_net = _("Empty Net ") if self.empty_net else ""
+        title = f"🚨 {self.team_name} #{self.jersey_no} {empty_net}{self.strength} {self.event} 🚨"
         url = TEAMS[self.team_name]["team_url"] if self.team_name in TEAMS else "https://nhl.com"
         logo = TEAMS[self.team_name]["logo"] if self.team_name in TEAMS else "https://nhl.com"
         if not shootout:
@@ -462,8 +479,10 @@ class Goal:
                 em = discord.Embed(description=self.description, colour=colour)
                 em.set_author(name=title, url=url, icon_url=logo)
             home_msg, away_msg = await self.get_shootout_display(game)
-            em.add_field(name=game.home_team, value=home_msg)
-            em.add_field(name=game.away_team, value=away_msg)
+            if home_msg:
+                em.add_field(name=game.home_team, value=home_msg)
+            if away_msg:
+                em.add_field(name=game.away_team, value=away_msg)
             em.set_footer(
                 text=str(game.period_time_left)
                 + _(" left in the ")

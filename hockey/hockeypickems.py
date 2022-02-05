@@ -201,11 +201,13 @@ class HockeyPickems(MixinMeta):
                 )
 
     async def edit_pickems_message(
-        self, channel: discord.TextChannel, message_id: int, game: Game, pickem: Pickems
+        self, channel: discord.Thread, message_id: int, game: Game, pickem: Pickems
     ) -> None:
         log.debug("Editing Pickems")
 
         try:
+            if channel.archived and channel.permissions_for(channel.guild.me).manage_threads:
+                await channel.edit(archived=False)
             content = await self.make_pickems_msg(channel.guild, game)
             message = channel.get_partial_message(message_id)
             await message.edit(content=content, view=pickem)

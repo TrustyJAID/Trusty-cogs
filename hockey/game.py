@@ -70,8 +70,6 @@ class Game:
         self.home_score = kwargs.get("home_score")
         self.away_score = kwargs.get("away_score")
         self.goals = kwargs.get("goals")
-        self.home_goals = kwargs.get("home_goals")
-        self.away_goals = kwargs.get("away_goals")
         self.home_abr = kwargs.get("home_abr")
         self.away_abr = kwargs.get("away_abr")
         self.period = kwargs.get("period")
@@ -119,6 +117,14 @@ class Game:
         )
 
     @property
+    def home_goals(self):
+        return [g for g in self.goals if g.team_name == self.home_team]
+
+    @property
+    def away_goals(self):
+        return [g for g in self.goals if g.team_name == self.away_team]
+
+    @property
     def timestamp(self) -> int:
         """
         This is just a helper property to access the game_start as
@@ -140,8 +146,6 @@ class Game:
             "home_score": self.home_score,
             "away_score": self.away_score,
             "goals": [goal.to_json() for goal in self.goals],
-            "home_goals": self.home_goals,
-            "away_goals": self.away_goals,
             "home_abr": self.home_abr,
             "away_abr": self.away_abr,
             "period": self.period,
@@ -357,10 +361,12 @@ class Game:
                                 time=goal.time_remaining, ord=goal.period_ord
                             )
                         goal_msg += _(
-                            "{emoji} [{team} Goal By {description} {left}]({link})\n\n"
+                            "{emoji} [{team} {empty_net}{strength} Goal By {description} {left}]({link})\n\n"
                         ).format(
                             emoji=emoji,
                             team=goal.team_name,
+                            empty_net="EN " if goal.empty_net else "",
+                            strength=goal.strength_code,
                             description=goal.description,
                             link=goal.link,
                             left=left,
@@ -382,7 +388,9 @@ class Game:
                         )
                         count += 1
                 if len(so_goals) != 0:
-                    home_msg, away_msg = await self.goals[0].get_shootout_display(self)
+                    home_msg, away_msg = await self.goals[-1].get_shootout_display(self)
+                    # get the last goal so that we always post the full current
+                    # shootout display here
                     em.add_field(
                         name=_("{team} Shootout").format(team=self.home_team), value=home_msg
                     )
@@ -629,6 +637,8 @@ class Game:
         if not channel.permissions_for(channel.guild.me).send_messages:
             log.debug("No permission to send messages in %s", repr(channel))
             return
+        if channel.guild.me.is_timed_out():
+            return
         try:
             msg = await channel.send(embed=embed)
             if publish and channel.is_news():
@@ -663,7 +673,8 @@ class Game:
             channel = await get_channel_obj(bot, channel_id, data)
             if not channel:
                 continue
-
+            if channel.guild.me.is_timed_out():
+                continue
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             if should_post:
                 bot.loop.create_task(
@@ -980,8 +991,8 @@ class Game:
         return cls(
             game_id=game_id,
             game_state=game_state,
-            home_team=data["gameData"]["teams"]["home"]["name"],
-            away_team=data["gameData"]["teams"]["away"]["name"],
+            home_team=home_team,
+            away_team=away_team,
             period=data["liveData"]["linescore"]["currentPeriod"],
             home_shots=data["liveData"]["linescore"]["teams"]["home"]["shotsOnGoal"],
             away_shots=data["liveData"]["linescore"]["teams"]["away"]["shotsOnGoal"],
@@ -989,8 +1000,6 @@ class Game:
             away_score=data["liveData"]["linescore"]["teams"]["away"]["goals"],
             game_start=data["gameData"]["datetime"]["dateTime"],
             goals=goals,
-            home_goals=[goal for goal in goals if home_team in goal.team_name],
-            away_goals=[goal for goal in goals if away_team in goal.team_name],
             home_abr=data["gameData"]["teams"]["home"]["abbreviation"],
             away_abr=data["gameData"]["teams"]["away"]["abbreviation"],
             period_ord=period_ord,

@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from typing import Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import quote
@@ -14,7 +14,14 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
+from .helper import (
+    YEAR_RE,
+    HockeyStandings,
+    HockeyTeams,
+    TeamDateFinder,
+    YearFinder,
+    utc_to_local,
+)
 from .menu import (
     BaseMenu,
     ConferenceStandingsPages,
@@ -318,7 +325,7 @@ class HockeyCommands(MixinMeta):
         teams_and_date: Optional[TeamDateFinder] = {},
     ) -> None:
         """
-        Gets all upcoming NHL games for the current season as a list
+        Gets upcoming NHL games for the current season as a list
 
         If team is provided it will grab that teams schedule
         A date may also be provided and the bot will search for games within
@@ -337,6 +344,58 @@ class HockeyCommands(MixinMeta):
             clear_reactions_after=True,
             timeout=180,
         ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    async def season(
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        team: HockeyTeams,
+        season: str = None,
+    ) -> None:
+        """
+        Gets all upcoming NHL games for the current season for one team.
+
+        `<team>` The name of the teams season schedule you want to post.
+        `[season]` must be YYYYYYYY format. e.g. 20212022.
+        """
+        if season is None:
+            season = f"{datetime.now().year}{datetime.now().year+1}"
+        if "-" in season:
+            start, end = season.split("-")
+            season = f"{start}{end}"
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.send_message(
+                _("Posting {team}'s season schedule for {season}.").format(
+                    team=team, season=season
+                ),
+                ephemeral=True,
+            )
+        url = f"{BASE_URL}/api/v1/schedule?season={season}"
+        url += "&teamId=" + ",".join([str(TEAMS[team]["id"])])
+        log.debug(team)
+        log.debug(TEAMS[team]["id"])
+        log.debug(url)
+        async with self.session.get(url) as resp:
+            data = await resp.json()
+        games = [game for date in data["dates"] for game in date["games"]]
+        msg = ""
+        for game in games:
+            game_start = datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ")
+            game_start = game_start.replace(tzinfo=timezone.utc)
+            home_team = game["teams"]["home"]["team"]["name"]
+            away_team = game["teams"]["away"]["team"]["name"]
+            home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
+            away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
+            date_str = f"<t:{int(game_start.timestamp())}:d>"
+            time_str = f"<t:{int(game_start.timestamp())}:t>"
+            msg += f"{date_str} - {away_emoji} @ " f"{home_emoji} - {time_str}\n"
+        for page in pagify(msg):
+            await ctx.channel.send(page)
+            break
+        # x = list(pagify(msg))
+        # await ctx.send(str(len(x)))
+        # await ctx.send(x[0])
 
     async def player_id_lookup(self, name: str) -> Tuple[List[int], Dict[int, dict]]:
         now = datetime.utcnow()
