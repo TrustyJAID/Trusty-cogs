@@ -313,6 +313,8 @@ class HockeyPickems(MixinMeta):
         guild_message = await self.pickems_config.guild(guild).pickems_message()
         global_bank = await bank.is_global()
         currency_name = await bank.get_currency_name(guild)
+        if guild.me.is_timed_out():
+            return None
         if global_bank:
             base_credits = await self.pickems_config.base_credits()
             top_credits = await self.pickems_config.top_credits()

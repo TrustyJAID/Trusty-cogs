@@ -368,6 +368,8 @@ class GameDayThreads(MixinMeta):
                 continue
             if not await self.config.guild(guild).create_threads():
                 continue
+            if guild.me.is_timed_out():
+                continue
             team = await self.config.guild(guild).gdt_team()
             if team != "all":
                 next_games = await Game.get_games_list(team, datetime.now(), session=self.session)
@@ -424,6 +426,8 @@ class GameDayThreads(MixinMeta):
         if channel is None:
             # Return none if there's no category to create the channel
             log.debug("Not channel")
+            return
+        if guild.me.is_timed_out():
             return
         if not channel.permissions_for(guild.me).create_public_threads:
             log.info(

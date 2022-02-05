@@ -153,6 +153,8 @@ class StarboardEvents:
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
+        if guild.me.is_timed_out():
+            return
         channel = guild.get_channel(payload.channel_id)
 
         if guild.id not in self.starboards:

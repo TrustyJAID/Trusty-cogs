@@ -186,6 +186,8 @@ class EventMixin:
             return
         if await self.is_ignored_channel(ctx.guild, ctx.channel):
             return
+        if guild.me.is_timed_out():
+            return
         try:
             channel = await self.modlog_channel(guild, "commands_used")
         except RuntimeError:
@@ -278,9 +280,10 @@ class EventMixin:
         guild = self.bot.get_guild(guild_id)
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         # settings = await self.config.guild(guild).message_delete()
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"]:
@@ -416,9 +419,10 @@ class EventMixin:
         guild = self.bot.get_guild(guild_id)
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         settings = self.settings[guild.id]["message_delete"]
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
@@ -586,9 +590,10 @@ class EventMixin:
             return
         # if not await self.config.guild(guild).user_join.enabled():
         # return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         try:
             channel = await self.modlog_channel(guild, "user_join")
         except RuntimeError:
@@ -662,9 +667,10 @@ class EventMixin:
             return
         if not self.settings[guild.id]["user_left"]["enabled"]:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         try:
             channel = await self.modlog_channel(guild, "user_left")
         except RuntimeError:
@@ -801,9 +807,10 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_create"]["enabled"]:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if await self.is_ignored_channel(guild, new_channel):
             return
         try:
@@ -861,9 +868,10 @@ class EventMixin:
             return
         if not self.settings[guild.id]["channel_delete"]["enabled"]:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if await self.is_ignored_channel(guild, old_channel):
             return
         try:
@@ -937,9 +945,10 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["channel_change"]["enabled"]:
             return
         if await self.is_ignored_channel(guild, before):
@@ -1066,9 +1075,10 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["role_change"]["enabled"]:
             return
         try:
@@ -1141,9 +1151,10 @@ class EventMixin:
         guild = role.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["role_create"]["enabled"]:
             return
         try:
@@ -1190,9 +1201,10 @@ class EventMixin:
         guild = role.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["role_delete"]["enabled"]:
             return
         try:
@@ -1241,9 +1253,10 @@ class EventMixin:
             return
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         settings = self.settings[guild.id]["message_edit"]
         if not settings["enabled"]:
             return
@@ -1302,9 +1315,10 @@ class EventMixin:
         guild = after
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["guild_change"]["enabled"]:
             return
         try:
@@ -1386,9 +1400,10 @@ class EventMixin:
     ) -> None:
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["emoji_change"]["enabled"]:
             return
         try:
@@ -1533,9 +1548,10 @@ class EventMixin:
         guild = member.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["voice_change"]["enabled"]:
             return
         if member.bot and not self.settings[guild.id]["voice_change"]["bots"]:
@@ -1658,9 +1674,10 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["user_change"]["enabled"]:
             return
         if not self.settings[guild.id]["user_change"]["bots"] and after.bot:
@@ -1759,9 +1776,10 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if invite.code not in self.settings[guild.id]["invite_links"]:
             created_at = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
             inviter = getattr(invite, "inviter", discord.Object(id=0))
@@ -1838,9 +1856,10 @@ class EventMixin:
         guild = invite.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["invite_deleted"]["enabled"]:
             return
         try:
@@ -1901,9 +1920,10 @@ class EventMixin:
             return
         if not self.settings[guild.id]["thread_create"]["enabled"]:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if await self.is_ignored_channel(guild, thread.parent):
             return
         try:
@@ -1962,9 +1982,10 @@ class EventMixin:
             return
         if not self.settings[guild.id]["thread_delete"]["enabled"]:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if await self.is_ignored_channel(guild, thread.parent):
             return
         try:
@@ -2021,9 +2042,10 @@ class EventMixin:
         guild = before.guild
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["thread_change"]["enabled"]:
             return
         if await self.is_ignored_channel(guild, before):
@@ -2116,9 +2138,10 @@ class EventMixin:
     ) -> None:
         if guild.id not in self.settings:
             return
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        if guild.me.is_timed_out():
+            return
         if not self.settings[guild.id]["stickers_change"]["enabled"]:
             return
         try:

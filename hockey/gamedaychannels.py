@@ -268,6 +268,8 @@ class GameDayChannels(MixinMeta):
                 continue
             if not await self.config.guild(guild).create_channels():
                 continue
+            if guild.me.is_timed_out():
+                continue
             team = await self.config.guild(guild).gdc_team()
             if team != "all":
                 next_games = await Game.get_games_list(team, datetime.now(), session=self.session)
