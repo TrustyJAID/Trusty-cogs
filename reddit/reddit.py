@@ -123,10 +123,12 @@ class Reddit(commands.Cog):
                 channel = self.bot.get_channel(channel_id)
                 if channel is None:
                     continue
+                if channel.guild.me.is_timed_out():
+                    continue
                 chan_perms = channel.permissions_for(channel.guild.me)
                 if not chan_perms.send_messages and not chan_perms.manage_webhooks:
                     continue
-                use_embed = True  # channel.id not in self.regular_embed_channels
+                use_embed = channel.permissions_for(channel.guild.me).embed_links
                 contents = await make_embed_from_submission(channel, subreddit, submission)
                 if not contents:
                     continue

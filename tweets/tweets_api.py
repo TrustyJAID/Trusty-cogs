@@ -248,8 +248,11 @@ class TweetsAPI:
                     await self.del_account(channel_id, user_id, username)
                     continue
                 channel_send = guild.get_channel(int(channel_id))
+
             if channel_send is None:
                 await self.del_account(channel_id, user_id, username)
+                continue
+            if channel_send.guild.me.is_timed_out():
                 continue
             chan_perms = channel_send.permissions_for(channel_send.guild.me)
             if not chan_perms.send_messages and not chan_perms.manage_webhooks:
