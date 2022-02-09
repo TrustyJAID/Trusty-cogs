@@ -265,8 +265,8 @@ class ScheduleList(menus.PageSource):
                 home_score = game["teams"]["home"]["score"]
                 away_score = game["teams"]["away"]["score"]
                 msg += (
-                    f"{game_state} - **{away_score}** {away_emoji} {away_abr} @ "
-                    f"{home_emoji} {home_abr} **{home_score}**\n"
+                    f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
+                    f"**{home_score}** {home_emoji} {home_abr} \n"
                 )
             else:
                 time_str = f"<t:{int(game_start.timestamp())}:t>"
