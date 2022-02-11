@@ -876,7 +876,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if not isinstance(channel_user_role, tuple):
+        if not isinstance(channel_user_role, list):
             channel_user_role = (channel_user_role,)
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
@@ -919,7 +919,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if not isinstance(channel_user_role, tuple):
+        if not isinstance(channel_user_role, list):
             channel_user_role = (channel_user_role,)
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
@@ -964,7 +964,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if not isinstance(channel_user_role, tuple):
+        if not isinstance(channel_user_role, list):
             channel_user_role = (channel_user_role,)
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
@@ -1006,7 +1006,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if not isinstance(channel_user_role, tuple):
+        if not isinstance(channel_user_role, list):
             channel_user_role = (channel_user_role,)
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
