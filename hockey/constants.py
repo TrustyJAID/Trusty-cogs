@@ -1006,7 +1006,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "team",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "autocomplete": True,
                 },
@@ -1026,7 +1026,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "team",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "autocomplete": True,
                 },
@@ -1039,7 +1039,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "style",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "choices": [
                         {"name": "All", "value": "all"},
@@ -1060,7 +1060,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "team",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "autocomplete": True,
                 },
@@ -1073,13 +1073,13 @@ SLASH_COMMANDS = {
                 {
                     "name": "corsi",
                     "type": 5,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                 },
                 {
                     "name": "strength",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "choices": [
                         {"name": "All", "value": "all"},
@@ -1098,7 +1098,7 @@ SLASH_COMMANDS = {
                 {
                     "name": "team",
                     "type": 3,
-                    "description": " ",
+                    "description": ".",
                     "required": False,
                     "autocomplete": True,
                 },
@@ -1369,7 +1369,7 @@ SLASH_COMMANDS = {
                             "name": "update_start",
                             "type": 5,
                             "required": True,
-                            "description": " ",
+                            "description": ".",
                         }
                     ],
                 },
