@@ -9,7 +9,7 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "trigger",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                     "autocomplete": True,
@@ -79,13 +79,13 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -98,7 +98,7 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "page_num",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": False,
                 }
@@ -111,19 +111,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "check_filenames",
-                    "description": " ",
+                    "description": ".",
                     "type": 5,
                     "required": False,
                 },
@@ -136,19 +136,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "command",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -161,19 +161,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "text",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -197,14 +197,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "channel_user_role",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -217,14 +217,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "channel_user_role",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -239,19 +239,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "text",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -264,19 +264,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "roles",
-                    "description": " ",
+                    "description": ".",
                     "type": 8,
                     "required": True,
                 },
@@ -289,13 +289,13 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -308,19 +308,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "text",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -338,7 +338,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -352,14 +352,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "text",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -372,14 +372,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "set_to",
-                            "description": " ",
+                            "description": ".",
                             "type": 5,
                             "required": True,
                         },
@@ -392,7 +392,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -406,20 +406,20 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "time",
-                            "description": " ",
+                            "description": ".",
                             "type": 4,
                             "required": True,
                         },
                         {
                             "name": "style",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "choices": [
@@ -439,14 +439,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "delete_after",
-                            "description": " ",
+                            "description": ".",
                             "type": 4,
                             "required": True,
                         },
@@ -459,7 +459,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -479,14 +479,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "command",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -499,7 +499,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -513,14 +513,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "emojis",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -533,14 +533,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "regex",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -553,14 +553,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "roles",
-                            "description": " ",
+                            "description": ".",
                             "type": 8,
                             "required": True,
                         },
@@ -573,14 +573,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "set_to",
-                            "description": " ",
+                            "description": ".",
                             "type": 5,
                             "required": True,
                         },
@@ -593,7 +593,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -607,7 +607,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -621,14 +621,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "set_to",
-                            "description": " ",
+                            "description": ".",
                             "type": 5,
                             "required": True,
                         },
@@ -641,7 +641,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -655,14 +655,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "set_to",
-                            "description": " ",
+                            "description": ".",
                             "type": 5,
                             "required": False,
                         },
@@ -675,7 +675,7 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
@@ -689,14 +689,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "set_to",
-                            "description": " ",
+                            "description": ".",
                             "type": 5,
                             "required": True,
                         },
@@ -711,19 +711,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "roles",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -736,19 +736,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "text",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -761,13 +761,13 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -786,19 +786,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "emojis",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -816,14 +816,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "channel_user_role",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -836,14 +836,14 @@ SLASH_COMMANDS = {
                     "options": [
                         {
                             "name": "trigger",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                             "autocomplete": True,
                         },
                         {
                             "name": "channel_user_role",
-                            "description": " ",
+                            "description": ".",
                             "type": 3,
                             "required": True,
                         },
@@ -858,19 +858,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "image_url",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -883,7 +883,7 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "trigger",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": False,
                     "autocomplete": True,
@@ -903,19 +903,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "image_url",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -928,25 +928,25 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "text",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "image_url",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -959,19 +959,19 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "command",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
@@ -984,13 +984,13 @@ SLASH_COMMANDS = {
             "options": [
                 {
                     "name": "name",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
                 {
                     "name": "regex",
-                    "description": " ",
+                    "description": ".",
                     "type": 3,
                     "required": True,
                 },
