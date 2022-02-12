@@ -1438,14 +1438,6 @@ class Destiny(DestinyAPI, commands.Cog):
             page_start=0,
         ).start(ctx=ctx)
 
-    async def save(self, data: dict, loc: str = "sample.json"):
-        if self.bot.user.id not in DEV_BOTS:
-            return
-        base_path = Path(__file__).parent
-        path = base_path / loc
-        with path.open(encoding="utf-8", mode="w") as f:
-            json.dump(data, f, indent=4, sort_keys=False, separators=(",", " : "))
-
     @destiny.command(aliases=["whereisxûr"])
     @commands.bot_has_permissions(embed_links=True)
     async def whereisxur(self, ctx: commands.Context) -> None:
@@ -1579,18 +1571,17 @@ class Destiny(DestinyAPI, commands.Cog):
         # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
         all_hashes = [i["itemHash"] for i in xur["sales"]["data"].values()]
         all_items = await self.get_definition("DestinyInventoryItemDefinition", all_hashes)
-        all_perk_hashes = []
-        for item_hash, item in all_items.items():
-            if not (item["equippable"]):
-                continue
-            for perk in item["sockets"]["socketEntries"]:
-                all_perk_hashes.append(str(perk["singleInitialItemHash"]))
-        all_perks = await self.get_definition("DestinyInventoryItemDefinition", all_perk_hashes)
         stat_hashes = []
+        perk_hashes = []
         for item_index in xur["sales"]["data"]:
             if item_index in xur["itemComponents"]["stats"]["data"]:
                 for stat_hash in xur["itemComponents"]["stats"]["data"][item_index]["stats"]:
                     stat_hashes.append(stat_hash)
+            if item_index in xur["itemComponents"]["reusablePlugs"]["data"]:
+                for __, plugs in xur["itemComponents"]["reusablePlugs"]["data"][item_index]["plugs"].items():
+                    for plug in plugs:
+                        perk_hashes.append(plug["plugItemHash"])
+        all_perks = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
         all_stats = await self.get_definition("DestinyStatDefinition", stat_hashes)
         for index, item_base in xur["sales"]["data"].items():
             item = all_items[str(item_base["itemHash"])]
@@ -1600,30 +1591,31 @@ class Destiny(DestinyAPI, commands.Cog):
             item_embed = discord.Embed(title=item["displayProperties"]["name"])
             item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
             item_embed.set_image(url=IMAGE_URL + item["screenshot"])
-            for perk_data in item["sockets"]["socketEntries"]:
-                perk = all_perks.get(str(perk_data["singleInitialItemHash"]), None)
-                if perk is None:
-                    continue
-                properties = perk["displayProperties"]
-                if "Common" in perk["itemTypeAndTierDisplayName"]:
-                    continue
-                if (
-                    properties["name"] == "Empty Mod Socket"
-                    or properties["name"] == "Default Ornament"
-                    or properties["name"] == "Change Energy Type"
-                    or properties["name"] == "Empty Catalyst Socket"
-                ):
-                    continue
-                if "name" in properties and "description" in properties:
-                    if not properties["name"]:
+            for perk_index in xur["itemComponents"]["reusablePlugs"]["data"].get(index, {"plugs": []})["plugs"]:
+                for perk_hash in xur["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][perk_index]:
+                    perk = all_perks.get(str(perk_hash["plugItemHash"]), None)
+                    if perk is None:
                         continue
-                    # await self.save(perk, properties["name"] + ".json")
-                    if full:
-                        perks += "**{0}** - {1}\n".format(
-                            properties["name"], properties["description"]
-                        )
-                    else:
-                        perks += "- **{0}**\n".format(properties["name"])
+                    properties = perk["displayProperties"]
+                    if "Common" in perk["itemTypeAndTierDisplayName"]:
+                        continue
+                    if (
+                        properties["name"] == "Empty Mod Socket"
+                        or properties["name"] == "Default Ornament"
+                        or properties["name"] == "Change Energy Type"
+                        or properties["name"] == "Empty Catalyst Socket"
+                    ):
+                        continue
+                    if "name" in properties and "description" in properties:
+                        if not properties["name"]:
+                            continue
+                        # await self.save(perk, properties["name"] + ".json")
+                        if full:
+                            perks += "**{0}** - {1}\n".format(
+                                properties["name"], properties["description"]
+                            )
+                        else:
+                            perks += "- **{0}**\n".format(properties["name"])
             stats_str = ""
             slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
             if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
@@ -1806,72 +1798,75 @@ class Destiny(DestinyAPI, commands.Cog):
                 return
             break
 
-            # await self.save(spider, "spider.json")
-            currency_datas = await self.get_definition(
-                "DestinyInventoryItemLiteDefinition",
-                [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
-            )
-            date = datetime.datetime.strptime(
-                spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-            )
-            date = date.replace(tzinfo=datetime.timezone.utc)
-            date_str = f"<t:{int(date.timestamp())}:R>"
-            # await self.save(spider, "spider.json")
-            description = spider_def["displayProperties"]["description"]
-            description += f"\n\n**Refreshes {date_str}**"
-            embed = discord.Embed(description=description)
-            embed.set_thumbnail(
-                url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
-            )
-            embed.set_author(
-                name=spider_def["displayProperties"]["name"]
-                + ", "
-                + spider_def["displayProperties"]["subtitle"]
-            )
-            item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
-            item_defs = await self.get_definition(
-                "DestinyInventoryItemLiteDefinition", item_hashes
-            )
-            item_costs = [
-                c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
-            ]
-            item_cost_defs = await self.get_definition(
-                "DestinyInventoryItemLiteDefinition", item_costs
-            )
-            for key, data in spider["sales"]["data"].items():
-                item_hash = data["itemHash"]
-                refresh_str = ""
-                if "overrideNextRefreshDate" in data:
-                    date = datetime.datetime.strptime(
-                        data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                    )
-                    date = date.replace(tzinfo=datetime.timezone.utc)
-                    refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
+        # await self.save(spider, "spider.json")
+        currency_datas = await self.get_definition(
+            "DestinyInventoryItemLiteDefinition",
+            [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
+        )
+        date = datetime.datetime.strptime(
+            spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+        )
+        date = date.replace(tzinfo=datetime.timezone.utc)
+        date_str = f"<t:{int(date.timestamp())}:R>"
+        # await self.save(spider, "spider.json")
+        description = spider_def["displayProperties"]["description"]
+        description += f"\n\n**Refreshes {date_str}**"
+        embed = discord.Embed(description=description)
+        embed.set_thumbnail(
+            url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
+        )
+        embed.set_author(
+            name=spider_def["displayProperties"]["name"]
+            + ", "
+            + spider_def["displayProperties"]["subtitle"]
+        )
+        item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
+        item_defs = await self.get_definition(
+            "DestinyInventoryItemLiteDefinition", item_hashes
+        )
+        item_costs = [
+            c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
+        ]
+        item_cost_defs = await self.get_definition(
+            "DestinyInventoryItemLiteDefinition", item_costs
+        )
+        for key, data in spider["sales"]["data"].items():
+            item_hash = data["itemHash"]
+            refresh_str = ""
+            if "overrideNextRefreshDate" in data:
+                date = datetime.datetime.strptime(
+                    data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                )
+                date = date.replace(tzinfo=datetime.timezone.utc)
+                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
 
-                item = item_defs[str(item_hash)]
-                if item["itemType"] in [0, 26]:
-                    continue
-                try:
-                    costs = data["costs"][0]
-                    cost = item_cost_defs[str(costs["itemHash"])]
-                    cost_str = (
-                        str(costs["quantity"])
-                        + " "
-                        + cost["displayProperties"]["name"]
-                        + refresh_str
-                    )
-                except IndexError:
-                    cost_str = "None" + refresh_str
-                embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
+            item = item_defs[str(item_hash)]
+            if item["itemType"] in [0, 26]:
+                continue
+            try:
+                costs = data["costs"][0]
+                cost = item_cost_defs[str(costs["itemHash"])]
+                cost_str = (
+                    str(costs["quantity"])
+                    + " "
+                    + cost["displayProperties"]["name"]
+                    + refresh_str
+                )
+            except IndexError:
+                cost_str = "None" + refresh_str
+            embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
 
-                await asyncio.sleep(0)
-            player_currency = ""
-            for item in chars["profileCurrencies"]["data"]["items"]:
-                quantity = item["quantity"]
-                name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
-                player_currency += f"{name}: **{quantity}**\n"
-            embed.add_field(name=_("Current Currencies"), value=player_currency)
-        await ctx.send(embed=embed)
+            await asyncio.sleep(0)
+        player_currency = ""
+        for item in chars["profileCurrencies"]["data"]["items"]:
+            quantity = item["quantity"]
+            name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
+            player_currency += f"{name}: **{quantity}**\n"
+        embed.add_field(name=_("Current Currencies"), value=player_currency)
+        if is_slash:
+            await ctx.followup.send(embed=embed)
+        else:
+            await ctx.send(embed=embed)
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)

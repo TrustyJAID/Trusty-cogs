@@ -390,7 +390,7 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"components": "304,305,400,401,402"}
+        params = {"components": "304,305,308,310,400,401,402"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
@@ -724,7 +724,7 @@ class DestinyAPI:
         if self.bot.user.id not in DEV_BOTS:
             return
         base_path = Path(__file__).parent
-        path = base_path / loc
+        path = base_path / "samples" / loc
         with path.open(encoding="utf-8", mode="w") as f:
             json.dump(data, f, indent=4, sort_keys=False, separators=(",", " : "))
 
