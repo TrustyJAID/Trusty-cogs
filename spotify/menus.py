@@ -626,7 +626,8 @@ class SpotifyPages(menus.PageSource):
                         tracks = [t for t in top_tracks if t is not None]
                     self.context_name = cur_tracks.name
                     for track in tracks:
-                        self.select_options.append(SpotifyTrackOption(track))
+                        if track.id is not None:
+                            self.select_options.append(SpotifyTrackOption(track))
                 if self.select_options and cur_state.context is None:
                     self.select_options = []
         except tekore.Unauthorised:
