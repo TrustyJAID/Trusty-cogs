@@ -107,8 +107,6 @@ class Events:
                 for word in bad_words:
                     username = username.replace(word, "[Redacted]")
         em = discord.Embed(description=converted_msg)
-        if isinstance(member, discord.Member):
-            em.set_thumbnail(url=str(member.avatar_url))
         if EMBED_DATA["colour"]:
             em.colour = EMBED_DATA["colour"]
         if EMBED_DATA["title"]:

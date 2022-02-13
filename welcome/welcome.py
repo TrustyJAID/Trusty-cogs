@@ -42,7 +42,7 @@ default_settings = {
         "title": None,
         "colour": 0,
         "footer": None,
-        "thumbnail": None,
+        "thumbnail": "avatar",
         "image": None,
         "image_goodbye": None,
         "icon_url": None,
@@ -65,7 +65,7 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.4.3"
+    __version__ = "2.4.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -106,65 +106,71 @@ class Welcome(Events, commands.Cog):
     @commands.guild_only()
     async def welcomeset(self, ctx: commands.Context) -> None:
         """Sets welcome module settings"""
-        guild = ctx.message.guild
-        if ctx.invoked_subcommand is None:
-            guild_settings = await self.config.guild(guild).get_raw()
-            setting_names = {
-                "GREETING": _("Random Greeting "),
-                "GOODBYE": _("Random Goodbye "),
-                "GROUPED": _("Grouped welcomes "),
-                "ON": _("Welcomes On "),
-                "CHANNEL": _("Channel "),
-                "LEAVE_ON": _("Goodbyes On "),
-                "LEAVE_CHANNEL": _("Leaving Channel "),
-                "DELETE_PREVIOUS_GREETING": _("Previous greeting deleted "),
-                "DELETE_PREVIOUS_GOODBYE": _("Previous goodbye deleted "),
-                "DELETE_AFTER_GREETING": _("Greeting deleted after "),
-                "DELETE_AFTER_GOODBYE": _("Goodbye deleted after "),
-                "MINIMUM_DAYS": _("Minimum days old to welcome "),
-                "WHISPER": _("Whisper "),
-                "BOTS_MSG": _("Bots message "),
-                "BOTS_ROLE": _("Bots role "),
-                "EMBED": _("Embeds "),
-            }
-            msg = ""
-            if ctx.channel.permissions_for(ctx.me).embed_links:
-                embed = discord.Embed(colour=await ctx.embed_colour())
-                embed.set_author(name=_("Welcome settings for ") + guild.name)
-                # embed.description = "\n".join(g for g in guild_settings["GREETING"])
-                for attr, name in setting_names.items():
-                    if attr in ["GREETING", "GOODBYE"]:
-                        embed.add_field(
-                            name=name,
-                            value="\n".join(g for g in guild_settings[attr])[:1024],
-                            inline=False,
-                        )
-                        continue
-                    if attr in ["CHANNEL", "LEAVE_CHANNEL"]:
-                        chan = guild.get_channel(guild_settings[attr])
-                        if chan is not None:
-                            msg += f"**{name}**: {chan.mention}\n"
-                        else:
-                            msg += f"**{name}**:" + _(" None") + "\n"
-                        continue
-                    if attr == "BOTS_ROLE":
-                        role = guild.get_role(guild_settings["BOTS_ROLE"])
-                        if role is not None:
-                            msg += f"**{name}**: {role.mention}\n"
-                        else:
-                            msg += f"**{name}**:" + _(" None") + "\n"
-                        continue
-                    else:
-                        msg += f"**{name}**: {guild_settings[attr]}\n"
-                embed.description = msg
-                await ctx.send(embed=embed)
+        pass
 
-            else:
-                msg = "```\n"
-                for attr, name in setting_names.items():
-                    msg += name + str(guild_settings[attr]) + "\n"
-                msg += "```"
-                await ctx.send(msg)
+    @welcomeset.command(name="settings")
+    async def welcome_settings(self, ctx: commands.Context) -> None:
+        """
+        Show the servers welcome settings
+        """
+        guild = ctx.message.guild
+        guild_settings = await self.config.guild(guild).get_raw()
+        setting_names = {
+            "GREETING": _("Random Greeting "),
+            "GOODBYE": _("Random Goodbye "),
+            "GROUPED": _("Grouped welcomes "),
+            "ON": _("Welcomes On "),
+            "CHANNEL": _("Channel "),
+            "LEAVE_ON": _("Goodbyes On "),
+            "LEAVE_CHANNEL": _("Leaving Channel "),
+            "DELETE_PREVIOUS_GREETING": _("Previous greeting deleted "),
+            "DELETE_PREVIOUS_GOODBYE": _("Previous goodbye deleted "),
+            "DELETE_AFTER_GREETING": _("Greeting deleted after "),
+            "DELETE_AFTER_GOODBYE": _("Goodbye deleted after "),
+            "MINIMUM_DAYS": _("Minimum days old to welcome "),
+            "WHISPER": _("Whisper "),
+            "BOTS_MSG": _("Bots message "),
+            "BOTS_ROLE": _("Bots role "),
+            "EMBED": _("Embeds "),
+        }
+        msg = ""
+        if ctx.channel.permissions_for(ctx.me).embed_links:
+            embed = discord.Embed(colour=await ctx.embed_colour())
+            embed.set_author(name=_("Welcome settings for ") + guild.name)
+            # embed.description = "\n".join(g for g in guild_settings["GREETING"])
+            for attr, name in setting_names.items():
+                if attr in ["GREETING", "GOODBYE"]:
+                    embed.add_field(
+                        name=name,
+                        value="\n".join(g for g in guild_settings[attr])[:1024],
+                        inline=False,
+                    )
+                    continue
+                if attr in ["CHANNEL", "LEAVE_CHANNEL"]:
+                    chan = guild.get_channel(guild_settings[attr])
+                    if chan is not None:
+                        msg += f"**{name}**: {chan.mention}\n"
+                    else:
+                        msg += f"**{name}**:" + _(" None") + "\n"
+                    continue
+                if attr == "BOTS_ROLE":
+                    role = guild.get_role(guild_settings["BOTS_ROLE"])
+                    if role is not None:
+                        msg += f"**{name}**: {role.mention}\n"
+                    else:
+                        msg += f"**{name}**:" + _(" None") + "\n"
+                    continue
+                else:
+                    msg += f"**{name}**: {guild_settings[attr]}\n"
+            embed.description = msg
+            await ctx.send(embed=embed)
+
+        else:
+            msg = "```\n"
+            for attr, name in setting_names.items():
+                msg += name + str(guild_settings[attr]) + "\n"
+            msg += "```"
+            await ctx.send(msg)
 
     @welcomeset.group(name="greeting", aliases=["welcome"])
     async def welcomeset_greeting(self, ctx: commands.Context) -> None:
