@@ -74,7 +74,7 @@ class Encoding(commands.Cog):
     @hash_cmd.group(name="md5")
     async def hash_md5(self, ctx: commands.Context, *, txt: str) -> None:
         """
-        MD5 Encrypt Text
+        MD5 Hash some Text
         """
         md5 = hashlib.md5(txt.encode()).hexdigest()
         await ctx.send("**MD5**\n" + md5)
@@ -82,7 +82,7 @@ class Encoding(commands.Cog):
     @hash_cmd.command(name="sha1")
     async def hash_sha1(self, ctx: commands.Context, *, txt: str) -> None:
         """
-        SHA1 Encrypt Text
+        SHA1 Hash some Text
         """
         sha = hashlib.sha1(txt.encode()).hexdigest()
         await ctx.send("**SHA1**\n" + sha)
@@ -90,7 +90,7 @@ class Encoding(commands.Cog):
     @hash_cmd.command(name="sha256")
     async def hash_sha256(self, ctx: commands.Context, *, txt: str) -> None:
         """
-        SHA256 Encrypt Text
+        SHA256 Hash some Text
         """
         sha256 = hashlib.sha256(txt.encode()).hexdigest()
         await ctx.send("**SHA256**\n" + sha256)
@@ -98,7 +98,7 @@ class Encoding(commands.Cog):
     @hash_cmd.command(name="sha512")
     async def hash_sha512(self, ctx: commands.Context, *, txt: str) -> None:
         """
-        SHA512 Encrypt Text
+        SHA512 Hash some Text
         """
         sha512 = hashlib.sha512(txt.encode()).hexdigest()
         await ctx.send("**SHA512**\n" + sha512)

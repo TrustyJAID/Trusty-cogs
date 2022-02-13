@@ -944,6 +944,7 @@ class ServerStats(commands.Cog):
     @commands.command()
     @checks.is_owner()
     @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
     async def setguildjoin(
         self, ctx: commands.Context, channel: discord.TextChannel = None
     ) -> None:
@@ -962,7 +963,7 @@ class ServerStats(commands.Cog):
         """
         Stop bots join/leave server messages
         """
-        await self.config.join_channel.set(None)
+        await self.config.join_channel.clear()
         await ctx.send(_("No longer posting joined or left servers."))
 
     @commands.command(hidden=True)
