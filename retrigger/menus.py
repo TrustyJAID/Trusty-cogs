@@ -130,7 +130,7 @@ class ReTriggerPages(menus.ListPageSource):
             )
         if "rename" in trigger.response_type:
             if trigger.multi_payload:
-                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
+                response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "rename")
             else:
                 response = trigger.text
             info += _("__Rename__: ") + "**{response}**\n".format(response=response)
