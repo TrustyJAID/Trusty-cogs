@@ -679,8 +679,3 @@ class HockeyCommands(MixinMeta):
                     team_link = TEAMS[team]["invite"]
                     msg = "{0} {1} {0}".format(team_emoji, team_link)
                     await ctx.send(msg)
-                for team in team_list[division]:
-                    team_emoji = "<:" + TEAMS[team]["emoji"] + ">"
-                    team_link = TEAMS[team]["invite"]
-                    msg = "{0} {1} {0}".format(team_emoji, team_link)
-                    await ctx.send(msg)
