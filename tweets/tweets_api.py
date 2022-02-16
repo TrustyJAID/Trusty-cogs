@@ -175,6 +175,33 @@ class TweetsAPI:
             return
         await channel.send(str(error) + help_msg)
 
+    async def replace_short_url(self, status: tweepy.models.Status) -> str:
+        """
+        Replaces the content of a status with the full URL of the link.
+        """
+        og_text = status.text
+        if hasattr(status, "entities"):
+            entity_media = status.entities.get("media", [])
+            for media in entity_media:
+                media_url = media.get("url")
+                full_url = media.get("expanded_url")
+                if media_url and full_url:
+                    og_text = og_text.replace(media_url, full_url)
+            entity_urls = status.entities.get("urls", [])
+            for url in entity_urls:
+                media_url = url.get("url")
+                full_url = url.get("expanded_url")
+                if media_url and full_url:
+                    og_text = og_text.replace(media_url, full_url)
+        if hasattr(status, "extended_entities"):
+            extended_media = status.extended_entities.get("media", [])
+            for media in extended_media:
+                media_url = media.get("url")
+                full_url = media.get("expanded_url")
+                if media_url and full_url:
+                    og_text = og_text.replace(media_url, full_url)
+        return og_text
+
     async def build_tweet_embed(self, status: tweepy.models.Status) -> discord.Embed:
         username = status.user.screen_name
         post_url = "https://twitter.com/{}/status/{}".format(status.user.screen_name, status.id)
@@ -200,7 +227,7 @@ class TweetsAPI:
                     img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
                     em.set_image(url=img)
             else:
-                text = status.text
+                text = await self.replace_short_url(status)
         else:
             em.set_author(
                 name=status.user.name, url=post_url, icon_url=status.user.profile_image_url
@@ -213,7 +240,7 @@ class TweetsAPI:
                     img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
                     em.set_image(url=img)
             else:
-                text = status.text
+                text = await self.replace_short_url(status)
         if status.in_reply_to_screen_name:
             api = await self.authenticate()
             try:
@@ -222,7 +249,7 @@ class TweetsAPI:
                 in_reply_to = _("In reply to {name} (@{screen_name})").format(
                     name=reply.user.name, screen_name=reply.user.screen_name
                 )
-                reply_text = unescape(reply.text)
+                reply_text = unescape(await self.replace_short_url(reply))
                 if hasattr(reply, "extended_tweet"):
                     reply_text = unescape(reply.extended_tweet["full_text"])
                 if hasattr(reply, "extended_entities") and not em.image:

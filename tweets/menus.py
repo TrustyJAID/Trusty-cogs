@@ -202,7 +202,7 @@ class TweetPages(menus.PageSource):
                     img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
                     em.set_image(url=img)
             else:
-                text = status.text
+                text = await menu.cog.replace_short_url(status)
         else:
             em.set_author(
                 name=status.user.name, url=post_url, icon_url=status.user.profile_image_url
@@ -215,7 +215,7 @@ class TweetPages(menus.PageSource):
                     img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
                     em.set_image(url=img)
             else:
-                text = status.text
+                text = await menu.cog.replace_short_url(status)
         if status.in_reply_to_screen_name:
             try:
                 task = self._loop.run_in_executor(
@@ -228,7 +228,7 @@ class TweetPages(menus.PageSource):
                     in_reply_to = _("In reply to {name} (@{screen_name})").format(
                         name=reply.user.name, screen_name=reply.user.screen_name
                     )
-                    reply_text = unescape(reply.text)
+                    reply_text = unescape(await menu.cog.replace_short_url(reply))
                     if hasattr(reply, "extended_tweet"):
                         reply_text = unescape(reply.extended_tweet["full_text"])
                     if hasattr(reply, "extended_entities") and not em.image:
@@ -238,7 +238,7 @@ class TweetPages(menus.PageSource):
                 log.debug("Error grabbing in reply to tweet.", exc_info=True)
 
         em.description = escape(unescape(text), formatting=True)
-        return em
+        return {"embed": em, "content": str(post_url)}
 
     def _get_reply(self, ids: List[int]) -> tweepy.Status:
         return self._api.lookup_statuses(ids)
