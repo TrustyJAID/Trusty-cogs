@@ -118,11 +118,11 @@ class Events:
         if EMBED_DATA["thumbnail"]:
             url = EMBED_DATA["thumbnail"]
             if url == "guild":
-                url = str(guild.icon_url)
+                url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar_url)
+                url = str(member.avatar.url)
             em.set_thumbnail(url=url)
         if EMBED_DATA["image"] or EMBED_DATA["image_goodbye"]:
             url = ""
@@ -131,25 +131,25 @@ class Events:
             if EMBED_DATA["image_goodbye"] and not is_welcome:
                 url = EMBED_DATA["image_goodbye"]
             if url == "guild":
-                url = str(guild.icon_url)
+                url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar_url)
+                url = str(member.avatar.url)
             em.set_image(url=url)
         if EMBED_DATA["icon_url"]:
             url = EMBED_DATA["icon_url"]
             if url == "guild":
-                url = str(guild.icon_url)
+                url = str(guild.icon.url)
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar_url)
+                url = str(member.avatar.url)
             em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
             em.timestamp = datetime.now(timezone.utc)
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
-            em.set_author(name=username, icon_url=str(member.avatar_url))
+            em.set_author(name=username, icon_url=str(member.avatar.url))
         return em
 
     @commands.Cog.listener()
