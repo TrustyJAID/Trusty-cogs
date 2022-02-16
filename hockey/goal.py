@@ -220,7 +220,7 @@ class Goal:
             guild_notifications = await config.guild(guild).goal_notifications()
             channel_notifications = await config.channel(channel).goal_notifications()
             goal_notifications = guild_notifications or channel_notifications
-            publish_goals = "Goal" in await config.channel(channel).publish_states()
+            # publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
             montreal = ["Montréal Canadiens", "Montreal Canadiens"]
 
@@ -295,10 +295,10 @@ class Goal:
                 log.exception("Error iterating saved goals")
                 return
             for guild_id, channel_id, message_id in old_msgs:
-                guild = bot.get_guild(guild_id)
+                guild = bot.get_guild(int(guild_id))
                 if not guild:
                     continue
-                channel = guild.get_channel(int(channel_id))
+                channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
                 if channel and channel.permissions_for(channel.guild.me).read_message_history:
                     try:
                         message = channel.get_partial_message(message_id)
@@ -345,7 +345,7 @@ class Goal:
             guild = bot.get_guild(guild_id)
             if not guild:
                 continue
-            channel = await get_channel_obj(bot, channel_id, {"guild_id": guild_id})
+            channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
             if channel is None:
                 continue
             bot.loop.create_task(self.edit_goal(bot, channel, message_id, em))
