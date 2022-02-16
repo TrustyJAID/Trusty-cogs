@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Union
 
 import discord
+from discord import Interaction
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -23,13 +24,17 @@ class RoleToolsReactions(RoleToolsMixin):
 
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
-    async def cleanup(self, ctx: Context) -> None:
+    async def cleanup(self, ctx: Union[Context, Interaction]) -> None:
         """
         Cleanup old/missing reaction roles and settings.
 
         Note: This will also clear out reaction roles if the bot is just
         missing permissions to see the reactions.
         """
+        is_slash = False
+        if isinstance(ctx, Interaction):
+            is_slash = True
+            await ctx.response.defer()
         guild = ctx.guild
         async with ctx.typing():
             async with self.config.guild(ctx.guild).reaction_roles() as cur_settings:
@@ -60,7 +65,11 @@ class RoleToolsReactions(RoleToolsMixin):
                         pass
                     async with self.config.role_from_id(role_id).reactions() as reactions:
                         reactions.remove(key)
-        await ctx.send(_("I am finished deleting old settings."))
+        msg = _("I am finished deleting old settings.")
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
 
     @roletools.command(hidden=True)
     @commands.is_owner()
@@ -113,37 +122,45 @@ class RoleToolsReactions(RoleToolsMixin):
     @roletools.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def reactroles(self, ctx: Context) -> None:
+    async def reactroles(self, ctx: Union[Context, Interaction]) -> None:
         """
         View current bound roles in the server
         """
+        is_slash = False
+        if isinstance(ctx, Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no bound roles in this server."))
+            msg = _("There are no bound roles in this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
-        async with ctx.typing():
-            msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
-            for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
-                channel_id, msg_id, emoji = key.split("-")
-                if emoji.isdigit():
-                    emoji = self.bot.get_emoji(int(emoji))
-                if not emoji:
-                    emoji = _("Emoji from another server")
-                role = ctx.guild.get_role(role_id)
-                channel = ctx.guild.get_channel(int(channel_id))
-                if channel:
-                    # This can be potentially a very expensive operation
-                    # so instead we fake the message link unless the channel is missing
-                    # this way they can check themselves without rate limitng
-                    # the bot trying to fetch something constantly that is broken.
-                    message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
-                else:
-                    message = None
-                msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
-                    role=role.mention if role else _("None"),
-                    emoji=emoji,
-                    message=message if message else _("None"),
-                )
-            pages = list(pagify(msg))
+        msg = _("Reaction Roles in {guild}\n").format(guild=ctx.guild.name)
+        for key, role_id in self.settings[ctx.guild.id]["reaction_roles"].items():
+            channel_id, msg_id, emoji = key.split("-")
+            if emoji.isdigit():
+                emoji = self.bot.get_emoji(int(emoji))
+            if not emoji:
+                emoji = _("Emoji from another server")
+            role = ctx.guild.get_role(role_id)
+            channel = ctx.guild.get_channel(int(channel_id))
+            if channel:
+                # This can be potentially a very expensive operation
+                # so instead we fake the message link unless the channel is missing
+                # this way they can check themselves without rate limitng
+                # the bot trying to fetch something constantly that is broken.
+                message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
+            else:
+                message = None
+            msg += _("{emoji} - {role} [Reaction Message]({message})\n").format(
+                role=role.mention if role else _("None"),
+                emoji=emoji,
+                message=message if message else _("None"),
+            )
+        pages = list(pagify(msg))
         await BaseMenu(
             source=ReactRolePages(
                 pages=pages,
@@ -160,7 +177,7 @@ class RoleToolsReactions(RoleToolsMixin):
     @commands.bot_has_permissions(manage_messages=True)
     async def clearreact(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         message: discord.Message,
         *emojis: Optional[Union[discord.Emoji, str]],
     ) -> None:
@@ -176,10 +193,17 @@ class RoleToolsReactions(RoleToolsMixin):
         Note: This will only clear reactions which have a corresponding
         reaction role on it.
         """
-        if not message.channel.permissions_for(ctx.me).manage_messages:
-            await ctx.send(
-                _("I require manage messages in order to clear other people's reactions.")
-            )
+        is_slash = False
+        if isinstance(ctx, Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
+        if not message.channel.permissions_for(ctx.guild.me).manage_messages:
+            msg = _("I require manage messages in order to clear other people's reactions.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if emojis:
             for emoji in emojis:
@@ -198,7 +222,11 @@ class RoleToolsReactions(RoleToolsMixin):
             try:
                 await message.clear_reactions()
             except discord.HTTPException:
-                await ctx.send(_("There was an error clearing reactions on that message."))
+                msg = _("There was an error clearing reactions on that message.")
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
                 return
             for key in self.settings[ctx.guild.id]["reaction_roles"].keys():
                 if f"{message.channel.id}-{message.id}" in key:
@@ -217,7 +245,7 @@ class RoleToolsReactions(RoleToolsMixin):
     @commands.admin_or_permissions(manage_roles=True)
     async def react(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         message: discord.Message,
         emoji: Union[discord.Emoji, str],
         *,
@@ -231,8 +259,28 @@ class RoleToolsReactions(RoleToolsMixin):
         `<emoji>` The emoji you want people to react with to get the role.
         `<role>` The role you want people to receive for reacting.
         """
+        is_slash = False
+        if isinstance(ctx, Interaction):
+            is_slash = True
+            try:
+                fake_ctx = discord.Object(ctx.id)
+                fake_ctx.bot = self.bot
+                fake_ctx.channel = ctx.channel
+                fake_ctx.guild = ctx.guild
+                fake_ctx.cog = self
+                message = await commands.MessageConverter().convert(fake_ctx, message)
+            except Exception:
+                log.exception("Cannot find message to edit")
+                await ctx.response.send_message(_("That message could not be found."))
+                return
+            await ctx.response.defer()
+
         if not message.guild or message.guild.id != ctx.guild.id:
-            await ctx.send(_("You cannot add a Reaction Role to a message not in this guild."))
+            msg = _("You cannot add a Reaction Role to a message not in this guild.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         async with self.config.guild(ctx.guild).reaction_roles() as cur_setting:
             if isinstance(emoji, discord.Emoji):
@@ -251,13 +299,15 @@ class RoleToolsReactions(RoleToolsMixin):
             cur_setting[key] = role.id
         async with self.config.role(role).reactions() as reactions:
             reactions.append(key)
-        await ctx.send(
-            _("Created the reaction role {role} to {emoji} on {message}").format(
+        msg = _("Created the reaction role {role} to {emoji} on {message}").format(
                 role=role.name, emoji=emoji, message=message.jump_url
             )
-        )
+        if is_slash:
+            await ctx.followup.send(msg)
+        else:
+            await ctx.send(msg)
         if send_to_react:
-            await ctx.send(
+            await ctx.channel.send(
                 _(
                     "I couldn't add the emoji to the message. Please make "
                     "sure to add the emoji to the message for this to work."
@@ -274,7 +324,7 @@ class RoleToolsReactions(RoleToolsMixin):
             try:
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
             except asyncio.TimeoutError:
-                await ctx.send(
+                await ctx.channel.send(
                     _("Okay I won't automatically make {role} self assignable.").format(
                         role=role.name
                     )
@@ -283,7 +333,7 @@ class RoleToolsReactions(RoleToolsMixin):
             if pred.result:
                 await self.config.role(role).selfassignable.set(True)
                 await self.config.role(role).selfremovable.set(True)
-                await ctx.send(
+                await ctx.channel.send(
                     _("{role} has been made self assignable and self removeable.").format(
                         role=role.name
                     )
@@ -293,7 +343,7 @@ class RoleToolsReactions(RoleToolsMixin):
     @commands.admin_or_permissions(manage_roles=True)
     async def remreact(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         message: discord.Message,
         *,
         role_or_emoji: Union[RoleHierarchyConverter, discord.Emoji, str],
@@ -308,16 +358,42 @@ class RoleToolsReactions(RoleToolsMixin):
 
         Note: This will not remove the emoji reactions on the message.
         """
+        is_slash = False
+        if isinstance(ctx, Interaction):
+            is_slash = True
+            try:
+                fake_ctx = discord.Object(ctx.id)
+                fake_ctx.bot = self.bot
+                fake_ctx.channel = ctx.channel
+                fake_ctx.guild = ctx.guild
+                fake_ctx.cog = self
+                message = await commands.MessageConverter().convert(fake_ctx, message)
+            except Exception:
+                log.exception("Cannot find message to edit")
+                await ctx.response.send_message(_("That message could not be found."))
+                return
+            await ctx.response.defer()
+
         if not message.guild or message.guild.id != ctx.guild.id:
-            await ctx.send(
-                _("You cannot remove a Reaction Role from a message not in this guild.")
-            )
+            msg = _("You cannot remove a Reaction Role from a message not in this guild.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no roletools settings on this server."))
+            msg = _("There are no roletools settings on this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if not self.settings[ctx.guild.id]["reaction_roles"]:
-            await ctx.send(_("There are no reaction roles setup for this guild."))
+            msg = _("There are no reaction roles setup for this guild.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         found = False
         if isinstance(role_or_emoji, discord.Role):
@@ -352,17 +428,21 @@ class RoleToolsReactions(RoleToolsMixin):
             except Exception:
                 pass
 
-            await ctx.send(
-                _("Removed role reaction on {role} to {emoji} on {message}").format(
+            msg = _("Removed role reaction on {role} to {emoji} on {message}").format(
                     role=role, emoji=emoji, message=message.jump_url
                 )
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
         else:
-            await ctx.send(
-                _(
+            msg = _(
                     "I could not find a reaction role on that message or for that role/emoji combination."
                 )
-            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
 
     @roletools.command(aliases=["bulksreacts"])
     @commands.admin_or_permissions(manage_roles=True)

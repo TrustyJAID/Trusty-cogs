@@ -4,6 +4,7 @@ import logging
 from typing import List, Optional, Union
 
 import discord
+from discord import Interaction
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -227,18 +228,118 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
+    async def select_option_autocomplete(self, interaction: discord.Interaction) -> None:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).select_options()
+        cur_values = interaction.data["options"][0]["options"][0]["options"]
+        cur_value = next(i for i in cur_values if i.get("focused", False)).get("value")
+        supplied_options = ""
+        new_option = ""
+        for sup in cur_value.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            {"name": f"{supplied_options} {g}", "value": f"{supplied_options} {g}"}
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(0, {"name": supplied_options, "value": supplied_options})
+        return ret
+
+    async def select_menu_autocomplete(self, interaction: discord.Interaction) -> None:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).select_menus()
+        cur_values = interaction.data["options"][0]["options"][0]["options"]
+        cur_value = next(i for i in cur_values if i.get("focused", False)).get("value")
+        supplied_options = ""
+        new_option = ""
+        for sup in cur_value.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            {"name": f"{supplied_options} {g}", "value": f"{supplied_options} {g}"}
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(0, {"name": supplied_options, "value": supplied_options})
+        return ret
+
     @roletools.group(name="select")
     @commands.admin_or_permissions(manage_roles=True)
-    async def select(self, ctx: Context) -> None:
+    async def select(self, ctx: Union[Context, Interaction]) -> None:
         """
         Setup role select menus
         """
-        pass
+        if isinstance(ctx, discord.Interaction):
+            command_mapping = {
+                "create": self.create_select_menu,
+                "view": self.select_menus_view,
+                "delete": self.delete_select_menu,
+                "edit": self.edit_with_select,
+                "send": self.send_select,
+                "viewoptions": self.select_options_view,
+                "createoption": self.create_select_option,
+                "deleteoption": self.delete_select_option,
+            }
+            options = ctx.data["options"][0]["options"][0]["options"]
+            option = ctx.data["options"][0]["options"][0]["name"]
+            func = command_mapping[option]
+            kwargs = {}
+            if ctx.is_autocomplete and option == "create":
+                new_options = await self.select_option_autocomplete(ctx)
+                if len(new_options) == 0:
+                    new_options.append(
+                        {
+                            "name": "You need to create some options first.",
+                            "value": "This option does not exist",
+                        }
+                    )
+                await ctx.response.autocomplete(new_options[:25])
+                return
+            if ctx.is_autocomplete and option in ["send", "edit", "delete"]:
+                new_options = await self.select_menu_autocomplete(ctx)
+                if len(new_options) == 0:
+                    new_options.append(
+                        {
+                            "name": "You need to create some options first.",
+                            "value": "This option does not exist",
+                        }
+                    )
+                await ctx.response.autocomplete(new_options[:25])
+                return
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
+
+            try:
+                for op in options:
+                    name = op["name"]
+                    if name in kwargs:
+                        continue
+                    kwargs[name] = self.convert_slash_args(ctx, op)
+            except KeyError:
+                kwargs = {}
+                pass
+            except AttributeError:
+                await ctx.response.send_message(
+                    ("One or more options you have provided are not available in DM's."),
+                    ephemeral=True,
+                )
+                return
+            await func(ctx, **kwargs)
 
     @select.command(name="create")
     async def create_select_menu(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         name: str,
         options: commands.Greedy[SelectOptionRoleConverter],
         min_values: Optional[int] = None,
@@ -257,19 +358,43 @@ class RoleToolsSelect(RoleToolsMixin):
         `[placeholder]` - This is the default text on the menu when no option has been
         chosen yet.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
+
+        if " " in name:
+            msg = _("There cannot be a space in the name of a select menu.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
         if len(await self.config.guild(ctx.guild).select_options()) < 1:
-            await ctx.send(
-                _(
-                    "You must setup some options first with "
-                    "`{prefix}roletools select options create`."
-                ).format(prefix=ctx.clean_prefix)
-            )
+            msg = _(
+                "You must setup some options first with "
+                "`{prefix}roletools select options create`."
+            ).format(prefix=ctx.clean_prefix)
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if len(options) < 1:
-            await ctx.send(_("You have not provided any valid select options to use."))
+            msg = _("You have not provided any valid select options to use.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if len(name) > 70:
-            await ctx.send(_("The name should be less than 70 characters long."))
+            msg = _("The name should be less than 70 characters long.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if min_values is None:
             min_values = 1
@@ -309,41 +434,51 @@ class RoleToolsSelect(RoleToolsMixin):
         view = SelectRoleView(self)
         view.add_item(select_menus)
         self.views.append(view)
-        msg = await ctx.send(_("Here is how your select menu will look."), view=view)
+        msg_str = _("Here is how your select menu will look.")
+        if is_slash:
+            msg = await ctx.send(msg_str, view=view)
+        else:
+            msg = await ctx.followup.send(msg_str, view=view)
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             select_menus[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
     @select.command(name="delete", aliases=["del", "remove"])
-    async def delete_select_menu(self, ctx: Context, *, name: str) -> None:
+    async def delete_select_menu(self, ctx: Union[Context, Interaction], *, name: str) -> None:
         """
         Delete a saved select menu.
 
         `<name>` - the name of the select menu you want to delete.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
+
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             if name.lower() in select_menus:
                 del select_menus[name.lower()]
-                await ctx.send(_("Select Option `{name}` has been deleted.").format(name=name))
+                msg = _("Select Option `{name}` has been deleted.").format(name=name)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
                 try:
                     del self.settings[ctx.guild.id]["select_menus"][name.lower()]
                 except KeyError:
                     pass
             else:
-                await ctx.send(
-                    _("Select Option `{name}` doesn't appear to exist.").format(name=name)
-                )
+                msg = _("Select Option `{name}` doesn't appear to exist.").format(name=name)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
 
-    @select.group(name="options", aliases=["option"])
-    async def options(self, ctx: Context) -> None:
-        """
-        Commands for managing RoleTools select menu options
-        """
-        pass
-
-    @options.command(name="create", aliases=["add"])
+    @select.command(name="createoption", aliases=["addoption"])
     async def create_select_option(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         name: str,
         role: RoleHierarchyConverter,
         label: Optional[str] = None,
@@ -362,11 +497,31 @@ class RoleToolsSelect(RoleToolsMixin):
         Note: If no label and no emoji are provided the roles name will be used instead.
         This name will not update if the role name is changed.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            try:
+                role = await RoleHierarchyConverter().convert(ctx, role.mention)
+            except commands.BadArgument as e:
+                await ctx.response.send_message(e, ephemeral=True)
+                return
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
+
         if " " in name:
-            await ctx.send(_("There cannot be a space in the name of a select option."))
+            msg = _("There cannot be a space in the name of a select option.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if len(name) > 70:
-            await ctx.send(_("The name should be less than 70 characters long."))
+            msg = _("The name should be less than 70 characters long.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         emoji_id = None
         if emoji is not None:
@@ -421,15 +576,26 @@ class RoleToolsSelect(RoleToolsMixin):
         )
         view = SelectRoleView(self)
         view.add_item(select_menus)
-        await ctx.send(_("Here is how your select option will look."), view=view)
+        msg = _("Here is how your select option will look.")
+        if is_slash:
+            await ctx.followup.send(msg, view=view)
+        else:
+            await ctx.send(msg, view=view)
 
-    @options.command(name="delete", aliases=["del", "remove"])
-    async def delete_select_option(self, ctx: Context, *, name: str) -> None:
+    @select.command(name="deleteoption", aliases=["deloption", "removeoption", "remoption"])
+    async def delete_select_option(self, ctx: Union[Context, Interaction], *, name: str) -> None:
         """
-        Delete a saved button.
+        Delete a saved option.
 
         `<name>` - the name of the button you want to delete.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
+
         async with self.config.guild(ctx.guild).select_options() as select_options:
             if name in select_options:
                 role_id = select_options[name]["role_id"]
@@ -437,16 +603,22 @@ class RoleToolsSelect(RoleToolsMixin):
                 async with self.config.role_from_id(role_id).select_options() as role_select:
                     if name in role_select:
                         role_select.remove(name)
-                await ctx.send(_("Select Option `{name}` has been deleted.").format(name=name))
+                msg = _("Select Option `{name}` has been deleted.").format(name=name)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
             else:
-                await ctx.send(
-                    _("Select Option `{name}` doesn't appear to exist.").format(name=name)
-                )
+                msg = _("Select Option `{name}` doesn't appear to exist.").format(name=name)
+                if is_slash:
+                    await ctx.followup.send(msg)
+                else:
+                    await ctx.send(msg)
 
     @select.command(name="send")
     async def send_select(
         self,
-        ctx: Context,
+        ctx: Union[Context, Interaction],
         channel: discord.TextChannel,
         menus: commands.Greedy[SelectRoleConverter],
         *,
@@ -460,12 +632,26 @@ class RoleToolsSelect(RoleToolsMixin):
         message up to a maximum of 5.
         `<message>` - The message to be included with the select menu.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+            _menus = []
+            for menu in menus.split(" "):
+                if menu:
+                    _menus.append(await SelectRoleConverter().convert(fake_ctx, menu))
+            menus = _menus
+
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
         # log.debug(options)
         if not menus:
-            await ctx.send(_("You need to specify at least one menu setup previously."))
+            msg = _("You need to specify at least one menu setup previously.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         for select in menus:
             new_view.add_item(select)
@@ -478,11 +664,13 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.settings[ctx.guild.id]["select_menus"][select.name.lower()][
                     "messages"
                 ].append(message_key)
+        if is_slash:
+            await ctx.followup.send(_("Message sent."))
 
     @select.command(name="edit")
     async def edit_with_select(
         self,
-        ctx: commands.Context,
+        ctx: Union[Context, Interaction],
         message: discord.Message,
         menus: commands.Greedy[SelectRoleConverter],
     ) -> None:
@@ -492,11 +680,40 @@ class RoleToolsSelect(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
         """
-        if message.author.id != ctx.me.id:
-            await ctx.send(_("I cannot edit someone elses message to include buttons."))
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            try:
+                fake_ctx = discord.Object(ctx.id)
+                fake_ctx.bot = self.bot
+                fake_ctx.channel = ctx.channel
+                fake_ctx.guild = ctx.guild
+                fake_ctx.cog = self
+                message = await commands.MessageConverter().convert(fake_ctx, message)
+            except Exception:
+                log.exception("Cannot find message to edit")
+                await ctx.response.send_message(_("That message could not be found."))
+                return
+            await ctx.response.defer()
+            _menus = []
+            for menu in menus.split(" "):
+                if menu:
+                    _menus.append(await SelectRoleConverter().convert(fake_ctx, menu))
+            menus = _menus
+
+        if message.author.id != ctx.guild.me.id:
+            msg = _("I cannot edit someone elses message to include buttons.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         if not menus:
-            await ctx.send(_("You need to specify at least one menu setup previously."))
+            msg = _("You need to specify at least one menu setup previously.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         view = SelectRoleView(self)
         for select_menu in menus:
@@ -511,55 +728,62 @@ class RoleToolsSelect(RoleToolsMixin):
                     self.settings[ctx.guild.id]["select_menus"][select.name.lower()][
                         "messages"
                     ].append(message_key)
+        if is_slash:
+            await ctx.followup.send(_("Message edited."))
 
     @select.command(name="view", aliases=["list"])
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True)
-    async def select_menus_view(self, ctx: Context) -> None:
+    async def select_menus_view(self, ctx: Union[Context, Interaction]) -> None:
         """
         View current select menus setup for role assign in this server.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no select menus in this server."))
+            msg = _("There are no select menus in this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         pages = []
-        async with ctx.typing():
+        for name, select_data in self.settings[ctx.guild.id]["select_menus"].items():
+            msg = _("Select Menus in {guild}\n").format(guild=ctx.guild.name)
+            options = select_data["options"]
+            min_values = select_data["min_values"]
+            max_values = select_data["max_values"]
+            placeholder = select_data["placeholder"]
 
-            for name, select_data in self.settings[ctx.guild.id]["select_menus"].items():
-                msg = _("Select Menus in {guild}\n").format(guild=ctx.guild.name)
-                options = select_data["options"]
-                min_values = select_data["min_values"]
-                max_values = select_data["max_values"]
-                placeholder = select_data["placeholder"]
+            msg += _(
+                "**Name:** {name}\n**Options:** {options}\n**Placeholder:** {placeholder}\n"
+                "**Min Values:** {min_values}\n**Max Values:** {max_values}\n"
+            ).format(
+                name=name,
+                options=humanize_list(options),
+                placeholder=placeholder,
+                min_values=min_values,
+                max_values=max_values,
+            )
+            for messages in select_data["messages"]:
+                channel_id, msg_id = messages.split("-")
 
-                msg += _(
-                    "**Name:** {name}\n**Options:** {options}\n**Placeholder:** {placeholder}\n"
-                    "**Min Values:** {min_values}\n**Max Values:** {max_values}\n"
-                ).format(
-                    name=name,
-                    options=humanize_list(options),
-                    placeholder=placeholder,
-                    min_values=min_values,
-                    max_values=max_values,
+                channel = ctx.guild.get_channel(int(channel_id))
+                if channel:
+                    # This can be potentially a very expensive operation
+                    # so instead we fake the message link unless the channel is missing
+                    # this way they can check themselves without rate limitng
+                    # the bot trying to fetch something constantly that is broken.
+                    message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
+                else:
+                    message = "None"
+                msg += _("[Menu Message]({message})\n").format(
+                    message=message,
                 )
-                for messages in select_data["messages"]:
-                    channel_id, msg_id = messages.split("-")
-
-                    channel = ctx.guild.get_channel(int(channel_id))
-                    if channel:
-                        # This can be potentially a very expensive operation
-                        # so instead we fake the message link unless the channel is missing
-                        # this way they can check themselves without rate limitng
-                        # the bot trying to fetch something constantly that is broken.
-                        message = (
-                            f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
-                        )
-                    else:
-                        message = "None"
-                    msg += _("[Menu Message]({message})\n").format(
-                        message=message,
-                    )
-                pages.append(msg)
+            pages.append(msg)
         await BaseMenu(
             source=SelectMenuPages(
                 pages=pages,
@@ -571,39 +795,46 @@ class RoleToolsSelect(RoleToolsMixin):
             page_start=0,
         ).start(ctx=ctx)
 
-    @options.command(name="view", aliases=["list"])
+    @select.command(name="viewoptions", aliases=["listoptions", "viewoption", "listoption"])
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True)
-    async def select_options_view(self, ctx: Context) -> None:
+    async def select_options_view(self, ctx: Union[Context, Interaction]) -> None:
         """
         View current select menus setup for role assign in this server.
         """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+
         if ctx.guild.id not in self.settings:
-            await ctx.send(_("There are no select menus in this server."))
+            msg = _("There are no select menu options in this server.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return
         pages = []
-        async with ctx.typing():
+        for name, select_data in self.settings[ctx.guild.id]["select_options"].items():
+            msg = _("Select Options in {guild}\n").format(guild=ctx.guild.name)
+            role = ctx.guild.get_role(select_data["role_id"])
+            label = select_data["label"]
+            emoji = select_data["emoji"]
+            if emoji is not None:
+                emoji = discord.PartialEmoji.from_str(emoji)
+            description = select_data["description"]
 
-            for name, select_data in self.settings[ctx.guild.id]["select_options"].items():
-                msg = _("Select Options in {guild}\n").format(guild=ctx.guild.name)
-                role = ctx.guild.get_role(select_data["role_id"])
-                label = select_data["label"]
-                emoji = select_data["emoji"]
-                if emoji is not None:
-                    emoji = discord.PartialEmoji.from_str(emoji)
-                description = select_data["description"]
-
-                msg += _(
-                    "**Name:** {name}\n**Role:** {role}\n**Emoji:** {emoji}\n"
-                    "**Label:** {label}\n**description:** {description}\n"
-                ).format(
-                    name=name,
-                    role=role.mention if role else _("Missing Role"),
-                    emoji=emoji,
-                    label=label,
-                    description=description,
-                )
-                pages.append(msg)
+            msg += _(
+                "**Name:** {name}\n**Role:** {role}\n**Emoji:** {emoji}\n"
+                "**Label:** {label}\n**description:** {description}\n"
+            ).format(
+                name=name,
+                role=role.mention if role else _("Missing Role"),
+                emoji=emoji,
+                label=label,
+                description=description,
+            )
+            pages.append(msg)
         await BaseMenu(
             source=SelectOptionPages(
                 pages=pages,

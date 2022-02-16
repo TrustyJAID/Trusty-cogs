@@ -99,9 +99,9 @@ class ReactRolePages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
             em = discord.Embed(
-                description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                description=page, colour=await menu.bot.get_embed_colour(menu.ctx)
             )
             em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
@@ -117,9 +117,9 @@ class ButtonRolePages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
             if len(page) > 4000:
-                em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
+                em = discord.Embed(colour=await menu.bot.get_embed_colour(menu.ctx))
                 count = 0
                 for pages in pagify(page, page_length=1024):
                     if count < 4:
@@ -129,7 +129,7 @@ class ButtonRolePages(menus.ListPageSource):
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
                 em = discord.Embed(
-                    description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                    description=page, colour=await menu.bot.get_embed_colour(menu.ctx)
                 )
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
@@ -145,9 +145,9 @@ class SelectOptionPages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
             if len(page) > 4000:
-                em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
+                em = discord.Embed(colour=await menu.bot.get_embed_colour(menu.ctx))
                 count = 0
                 for pages in pagify(page, page_length=1024):
                     if count < 4:
@@ -157,7 +157,7 @@ class SelectOptionPages(menus.ListPageSource):
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
                 em = discord.Embed(
-                    description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                    description=page, colour=await menu.bot.get_embed_colour(menu.ctx)
                 )
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
@@ -173,9 +173,9 @@ class SelectMenuPages(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.me).embed_links:
+        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
             if len(page) > 4000:
-                em = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx))
+                em = discord.Embed(colour=await menu.bot.get_embed_colour(menu.ctx))
                 count = 0
                 for pages in pagify(page, page_length=1024):
                     if count < 4:
@@ -185,7 +185,7 @@ class SelectMenuPages(menus.ListPageSource):
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             else:
                 em = discord.Embed(
-                    description=page, colour=await menu.ctx.bot.get_embed_colour(menu.ctx)
+                    description=page, colour=await menu.bot.get_embed_colour(menu.ctx)
                 )
                 em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
             return em
@@ -332,6 +332,7 @@ class BaseMenu(discord.ui.View):
         self.message = message
         self._source = source
         self.ctx = None
+        self.author = None
         self.current_page = kwargs.get("page_start", 0)
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
@@ -361,7 +362,7 @@ class BaseMenu(discord.ui.View):
 
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
-        self.bot = ctx.bot
+        self.bot = self.cog.bot
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
@@ -381,9 +382,19 @@ class BaseMenu(discord.ui.View):
         This implementation shows the first page of the source.
         """
         self.ctx = ctx
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
         page = await self._source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
+        if is_slash:
+            if not ctx.response.is_done():
+                await ctx.response.defer()
+            self.message = await ctx.followup.send(**kwargs, view=self)
+            self.author = ctx.user
+        else:
+            self.message = await channel.send(**kwargs, view=self)
+            self.author = ctx.author
         return self.message
 
     async def show_page(self, page_number):
@@ -419,12 +430,7 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
-        if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
+        if interaction.user.id not in (*self.bot.owner_ids, self.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

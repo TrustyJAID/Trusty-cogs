@@ -33,8 +33,12 @@ class RoleHierarchyConverter(commands.RoleConverter):
     """
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
-        if not ctx.me.guild_permissions.manage_roles:
+        if not ctx.guild.me.guild_permissions.manage_roles:
             raise BadArgument(_("I require manage roles permission to use this command."))
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
         except commands.BadArgument:
@@ -60,13 +64,13 @@ class RoleHierarchyConverter(commands.RoleConverter):
                         "be assigned or removed by Nitro boosting the server."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.me.top_role:
+            if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than my highest role in the discord hierarchy."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.author.top_role and ctx.author.id != ctx.guild.owner_id:
+            if role >= author.top_role and author.id != ctx.guild.owner_id:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than your "
@@ -80,8 +84,12 @@ class SelfRoleConverter(commands.RoleConverter):
     """Converts a partial role name into a role object that can actually be applied."""
 
     async def convert(self, ctx: commands.Context, argument: str) -> discord.Role:
-        if not ctx.me.guild_permissions.manage_roles:
+        if not ctx.guild.me.guild_permissions.manage_roles:
             raise BadArgument(_("I require manage roles permission to use this command."))
+        if isinstance(ctx, discord.Interaction):
+            author = ctx.user
+        else:
+            author = ctx.author
         role = None
         try:
             role = await commands.RoleConverter().convert(ctx, argument)
@@ -112,7 +120,7 @@ class SelfRoleConverter(commands.RoleConverter):
                         "be assigned or removed by Nitro boosting the server."
                     ).format(role=role.mention)
                 )
-            if role >= ctx.me.top_role:
+            if role >= ctx.guild.me.top_role:
                 raise BadArgument(
                     _(
                         "The {role} role is higher than my highest role in the discord hierarchy."
