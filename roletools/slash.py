@@ -5,11 +5,13 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_timedelta
 
+from .abc import RoleToolsMixin
+
 _ = Translator("ReTrigger", __file__)
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
 
 
-class RoleToolsSlash:
+class RoleToolsSlash(RoleToolsMixin):
     def __init__(self, *args):
         self.config: Config
         self.slash_commands: dict
