@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Union
 
 import discord
+from discord import Interaction
 from redbot.core import bank, commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
