@@ -1,7 +1,9 @@
 # https://github.com/NotSoSuper/NotSoBot
 
 import asyncio
+import copy
 import logging
+import os
 import random
 import re
 import sys
@@ -93,7 +95,7 @@ class NotSoBot(commands.Cog):
     """
 
     __author__ = ["NotSoSuper", "TrustyJAID"]
-    __version__ = "2.5.2"
+    __version__ = "2.5.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -103,45 +105,45 @@ class NotSoBot(commands.Cog):
         self.twitch_cache = []
         self.api_count = 0
         self.emoji_map = {
-            "a": "",
-            "b": "",
-            "c": "©",
-            "d": "↩",
-            "e": "",
-            "f": "",
-            "g": "⛽",
-            "h": "♓",
-            "i": "ℹ",
-            "j": "" or "",
-            "k": "",
-            "l": "",
-            "m": "Ⓜ",
-            "n": "♑",
-            "o": "⭕" or "",
-            "p": "",
-            "q": "",
-            "r": "®",
-            "s": "" or "⚡",
-            "t": "",
-            "u": "⛎",
-            "v": "" or "♈",
-            "w": "〰" or "",
-            "x": "❌" or "⚔",
-            "y": "✌",
-            "z": "Ⓩ",
-            "1": "1⃣",
-            "2": "2⃣",
-            "3": "3⃣",
-            "4": "4⃣",
-            "5": "5⃣",
-            "6": "6⃣",
-            "7": "7⃣",
-            "8": "8⃣",
-            "9": "9⃣",
-            "0": "0⃣",
-            "$": "",
-            "!": "❗",
-            "?": "❓",
+            "a": "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+            "b": "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
+            "c": "\N{REGIONAL INDICATOR SYMBOL LETTER C}",
+            "d": "\N{REGIONAL INDICATOR SYMBOL LETTER D}",
+            "e": "\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+            "f": "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
+            "g": "\N{REGIONAL INDICATOR SYMBOL LETTER G}",
+            "h": "\N{REGIONAL INDICATOR SYMBOL LETTER H}",
+            "i": "\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+            "j": "\N{REGIONAL INDICATOR SYMBOL LETTER J}",
+            "k": "\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+            "l": "\N{REGIONAL INDICATOR SYMBOL LETTER L}",
+            "m": "\N{REGIONAL INDICATOR SYMBOL LETTER M}",
+            "n": "\N{REGIONAL INDICATOR SYMBOL LETTER N}",
+            "o": "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+            "p": "\N{REGIONAL INDICATOR SYMBOL LETTER P}",
+            "q": "\N{REGIONAL INDICATOR SYMBOL LETTER Q}",
+            "r": "\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+            "s": "\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+            "t": "\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+            "u": "\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+            "v": "\N{REGIONAL INDICATOR SYMBOL LETTER V}",
+            "w": "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
+            "x": "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
+            "y": "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+            "z": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}",
+            "1": "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}",
+            "2": "\N{DIGIT TWO}\N{COMBINING ENCLOSING KEYCAP}",
+            "3": "\N{DIGIT THREE}\N{COMBINING ENCLOSING KEYCAP}",
+            "4": "\N{DIGIT FOUR}\N{COMBINING ENCLOSING KEYCAP}",
+            "5": "\N{DIGIT FIVE}\N{COMBINING ENCLOSING KEYCAP}",
+            "6": "\N{DIGIT SIX}\N{COMBINING ENCLOSING KEYCAP}",
+            "7": "\N{DIGIT SEVEN}\N{COMBINING ENCLOSING KEYCAP}",
+            "8": "\N{DIGIT EIGHT}\N{COMBINING ENCLOSING KEYCAP}",
+            "9": "\N{DIGIT NINE}\N{COMBINING ENCLOSING KEYCAP}",
+            "0": "\N{DIGIT ZERO}\N{COMBINING ENCLOSING KEYCAP}",
+            "$": "\N{HEAVY DOLLAR SIGN}",
+            "!": "\N{HEAVY EXCLAMATION MARK SYMBOL}",
+            "?": "\N{BLACK QUESTION MARK ORNAMENT}",
             " ": "　",
         }
         self.retro_regex = re.compile(
@@ -209,6 +211,19 @@ class NotSoBot(commands.Cog):
             await ctx.send("The contents of this command is too large to upload!")
         file.close()
 
+    @staticmethod
+    async def determine_mime_type(image_header: str):
+        if ("GIF89a" or "GIF87a") in image_header:
+            return "image/gif"
+        elif "\x89PNG" in image_header:
+            return "image/png"
+        elif "\xFF\xD8\xFF" in image_header:
+            return "image/jpeg"
+        elif "\x00\x00\x01\x00" in image_header:
+            return "image/x-icon"
+        else:
+            return None          
+
     async def bytes_download(
         self, url: Union[discord.Asset, discord.Attachment, str]
     ) -> Tuple[Union[BytesIO, bool], Union[str, bool]]:
@@ -218,6 +233,11 @@ class NotSoBot(commands.Cog):
                 b = BytesIO()
                 await url.save(b)
                 mime = getattr(url, "content_type", "None")
+                if mime == "None":
+                    a = copy.deepcopy(b)
+                    a.seek(0)
+                    image_header = a.read()[:20]
+                    mime = await self.determine_mime_type(str(image_header))
                 return b, mime
             except discord.HTTPException:
                 return False, False
@@ -240,21 +260,17 @@ class NotSoBot(commands.Cog):
             return False, False
 
     def do_magik(self, scale, img):
+        img.seek(0)
         try:
             list_imgs = []
-            exif = {}
-            exif_msg = ""
             count = 0
             i = wand.image.Image(file=img)
+            i.transform_colorspace("cmyk")
             i.format = "png"
-            i.alpha_channel = True
             if i.size >= (3000, 3000):
                 return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None, 0
-            exif.update(
-                {count: (k[5:], v) for k, v in i.metadata.items() if k.startswith("exif:")}
-            )
             count += 1
-            i.transform(resize="800x800>")
+            i.transform(resize="800x800")
             i.liquid_rescale(
                 width=int(i.width * 0.5),
                 height=int(i.height * 0.5),
@@ -272,25 +288,16 @@ class NotSoBot(commands.Cog):
             file_size = magikd.tell()
             magikd.seek(0)
             list_imgs.append(magikd)
-            for x in exif:
-                if len(exif[x]) >= 2000:
-                    continue
-                exif_msg += "**Exif data for image #{0}**\n".format(str(x + 1)) + code.format(
-                    exif[x]
-                )
-            else:
-                if len(exif_msg) == 0:
-                    exif_msg = None
             file = discord.File(list_imgs[0], filename="magik.png")
             i.close()
             for img in list_imgs:
                 img.close()
-            return file, exif_msg, file_size
+            return file, file_size
         except Exception:
             log.error("Error processing magik", exc_info=True)
 
     @commands.command(aliases=["imagemagic", "imagemagick", "magic", "magick", "cas", "liquid"])
-    @commands.cooldown(2, 5, commands.BucketType.user)
+    @commands.cooldown(2, 20, commands.BucketType.user)
     async def magik(self, ctx, urls: ImageFinder = None, scale: int = 2, scale_msg: str = ""):
         """
         Apply magik to Image(s)
@@ -299,16 +306,21 @@ class NotSoBot(commands.Cog):
         """
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
-        msg = await ctx.message.channel.send("ok, processing")
         async with ctx.typing():
             b, mime = await self.bytes_download(urls[0])
+            if mime == "None":
+                b.seek(0)
+                image_header = b.read()[:20]
+                mime = await self.determine_mime_type(str(image_header))
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            await msg.delete()
-            task = self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
+            if mime in self.gif_mimes:
+                task = self.bot.loop.run_in_executor(None, self.do_gmagik, b, 1)
+            else:
+                task = self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
             try:
-                file, content_msg, file_size = await asyncio.wait_for(task, timeout=60)
+                file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, TypeError):
                 return await ctx.send(
                     "That image is either too large or given image format is unsupported."
@@ -316,17 +328,13 @@ class NotSoBot(commands.Cog):
             if type(file) == str:
                 await ctx.send(file)
                 return
-            if content_msg is None:
-                content_msg = scale_msg
-            else:
-                content_msg = scale_msg + content_msg
 
-            await self.safe_send(ctx, content_msg, file, file_size)
+            await self.safe_send(ctx, scale_msg, file, file_size)
 
     def do_gmagik(self, image, frame_delay):
         final = BytesIO()
-        # if is_gif:
         is_gif = False
+        image.seek(0)
         with wand.image.Image() as new_image:
             with wand.image.Image(file=image) as img:
                 if len(getattr(img, "sequence", [])) > 1:
@@ -334,7 +342,7 @@ class NotSoBot(commands.Cog):
                 if is_gif:
                     log.debug("Is gif")
                     for change in img.sequence:
-                        change.transform(resize="512x512>")
+                        change.transform(resize="512x512")
                         change.liquid_rescale(
                             width=int(change.width * 0.5),
                             height=int(change.height * 0.5),
@@ -360,7 +368,7 @@ class NotSoBot(commands.Cog):
                             i = img.clone().convert("gif")
                         else:
                             i = new_image.sequence[-1].clone()
-                        i.transform(resize="512x512>")
+                        i.transform(resize="512x512")
                         i.liquid_rescale(
                             width=int(i.width * 0.75),
                             height=int(i.height * 0.75),
@@ -393,7 +401,7 @@ class NotSoBot(commands.Cog):
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
-        x = await ctx.message.channel.send("ok, processing (this might take a while for big gifs)")
+        msg = await ctx.send("ok, processing (this might take a while for big gifs)")
         async with ctx.typing():
             if frame_delay > 60:
                 frame_delay = 60
@@ -403,18 +411,23 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            try:
+            if mime in self.gif_mimes:
                 task = self.bot.loop.run_in_executor(None, self.do_gmagik, b, frame_delay)
+            else:
+                task = self.bot.loop.run_in_executor(None, self.do_magik, 2, b)
+            try:
                 file, file_size = await asyncio.wait_for(task, timeout=120)
             except asyncio.TimeoutError:
                 return await ctx.send("That image is too large.")
-
             except Exception:
                 log.exception("Error running gmagik")
                 await ctx.send(":warning: Gmagik failed...")
                 return
             await self.safe_send(ctx, None, file, file_size)
-            await x.delete()
+            try:
+                await msg.delete()
+            except discord.errors.NotFound:
+                pass
 
     @commands.command()
     @commands.bot_has_permissions(attach_files=True)
@@ -448,20 +461,16 @@ class NotSoBot(commands.Cog):
             )
             return
         async with ctx.typing():
-            xx = await ctx.message.channel.send("ok, processing")
             b, mime = await self.bytes_download(url)
-            if mime not in self.image_mimes and not isinstance(url, discord.Asset):
-                return await ctx.send("That is not a valid image!")
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
             is_gif = mime in self.gif_mimes
-            font_path = str(bundled_data_path(self)) + "/arial.ttf"
+            font_path = f"{str(bundled_data_path(self))}{os.sep}arial.ttf"
             try:
                 color = wand.color.Color(color)
             except ValueError:
                 await ctx.send(":warning: **That is not a valid color!**")
-                await xx.delete()
                 return
             font = wand.font.Font(path=font_path, size=size, color=color)
             if x > 100:
@@ -475,8 +484,8 @@ class NotSoBot(commands.Cog):
 
             def make_caption_image(b, text, color, font, x, y, is_gif):
                 final = BytesIO()
+                b.seek(0)
                 with wand.image.Image(file=b) as img:
-
                     i = img.clone()
                     x = int(i.height * (x * 0.01))
                     y = int(i.width * (y * 0.01))
@@ -496,7 +505,6 @@ class NotSoBot(commands.Cog):
                 final.close()
                 return file, file_size
 
-            await xx.delete()
             task = ctx.bot.loop.run_in_executor(
                 None, make_caption_image, b, text, color, font, x, y, is_gif
             )
@@ -554,7 +562,7 @@ class NotSoBot(commands.Cog):
     @commands.cooldown(1, 5)
     @commands.bot_has_permissions(attach_files=True)
     async def triggered(self, ctx, urls: ImageFinder = None):
-        """Generate a Triggered Gif for a User or Image"""
+        """Generate a Triggered GIF for a user or image"""
         if urls is None:
             urls = [ctx.author.avatar_url_as(format="png")]
         avatar = urls[0]
@@ -689,7 +697,6 @@ class NotSoBot(commands.Cog):
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
-        x = await ctx.send("ok, processing")
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
             if mime not in self.image_mimes and not isinstance(url, discord.Asset):
@@ -707,7 +714,6 @@ class NotSoBot(commands.Cog):
                 )
             file = discord.File(temp, "iascii.png")
             temp.close()
-            await x.delete()
             await self.safe_send(ctx, None, file, file_size)
 
     def do_gascii(self, b):
@@ -747,9 +753,7 @@ class NotSoBot(commands.Cog):
         if urls is None:
             urls = await ImageFinder().search_for_images(ctx)
         url = urls[0]
-        x = await ctx.message.channel.send("ok, processing")
         async with ctx.typing():
-
             b, mime = await self.bytes_download(url)
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
@@ -762,7 +766,6 @@ class NotSoBot(commands.Cog):
             except Exception:
                 log.exception("Error Running gascii")
                 return await ctx.send("There was an error performing gascii.")
-            await x.delete()
             await self.safe_send(ctx, None, file, file_size)
 
     @commands.command()
@@ -841,7 +844,6 @@ class NotSoBot(commands.Cog):
             if len(urls) == 1:
                 await ctx.send("You need to supply more than 1 image.")
                 return
-            xx = await ctx.message.channel.send("ok, processing")
             count = 0
             list_im = []
             for url in urls:
@@ -878,7 +880,6 @@ class NotSoBot(commands.Cog):
 
             if len(list_im) < 2:
                 return await ctx.send("You need to supply more than 1 image.")
-            await xx.delete()
             task = ctx.bot.loop.run_in_executor(None, make_merge, list_im)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
@@ -984,6 +985,7 @@ class NotSoBot(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.send("That image is too large.")
         except Exception:
+            log.error("Error in vaporwave: ", exc_info=True)
             return await ctx.send("That image cannot be vaporwaved.")
         await self.safe_send(ctx, None, file, file_size)
 
@@ -991,7 +993,6 @@ class NotSoBot(commands.Cog):
     @commands.bot_has_permissions(attach_files=True)
     async def minecraftachievement(self, ctx, *, txt: str):
         """Generate a Minecraft Achievement"""
-
         b, mime = await self.bytes_download("https://i.imgur.com/JtNJFZy.png")
         if b is False:
             await ctx.send(":warning: **Command download function failed...**")
@@ -1252,7 +1253,7 @@ class NotSoBot(commands.Cog):
                     await ctx.send(":warning: **Command download function failed...**")
                     return
             if mime in self.gif_mimes:
-                task = ctx.bot.loop.run_in_executor(None, self.make_pixel_gif, b, pixels)
+                task = ctx.bot.loop.run_in_executor(None, self.make_pixel_gif, b, pixels, None)
             else:
                 task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels)
             try:
@@ -1318,13 +1319,12 @@ class NotSoBot(commands.Cog):
             width = int(img.width / 2) if int(img.width / 2) > 0 else 1
             h1.crop(width=width, height=int(img.height), gravity="east")
             h2 = h1.clone()
-            h1.rotate(degree=180)
-            h1.flip()
+            h2.flop()
             h1.save(file=f)
             h2.save(file=f2)
         f.seek(0)
         f2.seek(0)
-        list_im = [f2, f]
+        list_im = [f, f2]
         imgs = [ImageOps.mirror(Image.open(i).convert("RGBA")) for i in list_im]
         min_shape = sorted([(np.sum(i.size), i.size) for i in imgs])[0][1]
         imgs_comb = np.hstack([np.asarray(i.resize(min_shape)) for i in imgs])
@@ -1367,10 +1367,10 @@ class NotSoBot(commands.Cog):
         f2 = BytesIO()
         with wand.image.Image(file=b) as img:
             h1 = img.clone()
-            h1.transform("50%x100%")
+            width = int(img.width / 2) if int(img.width / 2) > 0 else 1
+            h1.crop(width=width, height=int(img.height), gravity="west")
             h2 = h1.clone()
-            h2.rotate(degree=180)
-            h2.flip()
+            h2.flop()
             h1.save(file=f)
             h2.save(file=f2)
         f.seek(0)
@@ -1468,6 +1468,7 @@ class NotSoBot(commands.Cog):
         f2 = BytesIO()
         with wand.image.Image(file=b) as img:
             h1 = img.clone()
+            h1.flop()
             width = int(img.width) if int(img.width) > 0 else 1
             h1.crop(width=width, height=int(img.height / 2), gravity="south")
             h2 = h1.clone()
@@ -1555,8 +1556,6 @@ class NotSoBot(commands.Cog):
         url = urls[0]
         async with ctx.typing():
             b, mime = await self.bytes_download(url)
-            if mime not in self.image_mimes and not isinstance(url, discord.Asset):
-                return await ctx.send("That is not a valid image!")
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
