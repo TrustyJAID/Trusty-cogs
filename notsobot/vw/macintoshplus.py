@@ -2,11 +2,15 @@
 # https://github.com/rickyhan/macintoshplus
 """Vaporwaveは音楽のジャンルや芸術運動である[3] [4]このようなバウンスハウス、またはchillwave、そして、より広く、エレクトロニックダンスミュージック、などのインディーseapunkから2010年代初頭のダンスのジャンルに出現した。 、その態度やメッセージに多くの多様性と曖昧さ、vaporwaveがありますが：時々の両方が、大量消費社会の批判とパロディとして機能し80年代のヤッピー文化、[5]とニューエイジの音楽、音響的および審美的に彼らのノスタルジックで好奇心の魅力を紹介しながら、アーティファクト。"""
 import hashlib
+import logging
 import os
 from math import cos, sin, tan
 from random import Random, choice, randint
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+
+log = logging.getLogger("red.trusty-cogs.NotSoBot.macintoshplus")
+
 
 japanese_corpus = """それは20年前の今日だった
 サージェント·ペッパーは、プレイするバンドを教え
@@ -65,7 +69,14 @@ greek = [
 
 def random_color(k=0):
     RGB = int(k % 255), int(255 * cos(k)), int(255 * (1 - sin(k)))
-    return RGB
+    normalized_rgb = []
+    for value in list(RGB):
+        if value > 255:
+            value = 255
+        if value < 0:
+            value = 0
+        normalized_rgb.append(value)
+    return tuple(normalized_rgb)
 
 
 def full_width(txt):
@@ -77,7 +88,7 @@ def full_width(txt):
 
 def draw_text(txt, image, k=0, x=0, y=30):
     """takes a image and places txt on it"""
-    print("adding text:", txt.encode("utf-8"))
+    log.debug("adding text:", txt.encode("utf-8"))
     font_path = main_dir + "/resources/arial.ttf"
     draw = ImageDraw.Draw(image)
 
@@ -112,7 +123,7 @@ def draw_text(txt, image, k=0, x=0, y=30):
 
 def insert_bubble(foreground_path, im):
     """insert notification bubble on the bottom right corner"""
-    print("adding bubble:", foreground_path)
+    log.debug("adding bubble:", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -126,7 +137,7 @@ def insert_bubble(foreground_path, im):
 
 def insert_window_as_background(foreground_path, im, k=0):
     """fractal generative art, not a great idea for vaporwave though. not ironic enough"""
-    print("adding window:", foreground_path)
+    log.debug("adding window:", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -145,7 +156,7 @@ def insert_window_as_background(foreground_path, im, k=0):
 
 def insert_cascade(foreground_path, im, k=0, x=100, y=100):
     """another postironic function. raster box drawing"""
-    print("adding window:", foreground_path)
+    log.debug("adding window:", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -167,7 +178,7 @@ def insert_cascade(foreground_path, im, k=0, x=100, y=100):
 
 def insert_window_as_background2(foreground_path, im):
     """another postironic function. raster box drawing"""
-    print("adding window:", foreground_path)
+    log.debug("adding window:", foreground_path)
     foreground = Image.open(foreground_path)
     background_size = im.size
     foreground_size = foreground.size
@@ -192,7 +203,7 @@ def horizon(background_path, im):
 def insert_pic(foreground_path, im, k=0, x=0, y=1000):
     """add Vaporwaveは音楽のジャンルや芸術運動である style pic. k is for nuanced
     transformations such as rotation and oscillation"""
-    print("adding pic:", foreground_path)
+    log.debug("adding pic:", foreground_path)
 
     foreground = Image.open(foreground_path)
     background_size = im.size
@@ -240,6 +251,7 @@ def draw_method1(k, name, im):
         seedvalue = hashseed(name)
     x, y = size = (1000, 1000)
     # im = horizon(choice(backgrounds),im)
+    im = im.convert("RGB")
     im = insert_cascade(Random(seedvalue + str(0)).choice(windows), im, k=0.5)
     im = insert_pic(Random(seedvalue + str(1)).choice(pics), im, k=0, x=int(x / 2), y=int(y / 2))
     im = insert_pic(Random(seedvalue + str(3)).choice(pics), im, k=0, x=int(x / 2), y=0)
