@@ -53,7 +53,6 @@ class RoleToolsRequires(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
         required: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """
@@ -99,7 +98,6 @@ class RoleToolsRequires(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
         required: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """

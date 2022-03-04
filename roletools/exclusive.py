@@ -58,7 +58,6 @@ class RoleToolsExclusive(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
         exclude: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """
@@ -83,6 +82,8 @@ class RoleToolsExclusive(RoleToolsMixin):
             await ctx.response.defer()
         else:
             await ctx.trigger_typing()
+
+        log.debug(exclude)
 
         cur_setting = await self.config.role(role).exclusive_to()
         inclusive = await self.config.role(role).inclusive_with()
@@ -147,7 +148,6 @@ class RoleToolsExclusive(RoleToolsMixin):
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
         exclude: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
         """
