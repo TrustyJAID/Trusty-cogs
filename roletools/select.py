@@ -436,9 +436,9 @@ class RoleToolsSelect(RoleToolsMixin):
         self.views.append(view)
         msg_str = _("Here is how your select menu will look.")
         if is_slash:
-            msg = await ctx.send(msg_str, view=view)
-        else:
             msg = await ctx.followup.send(msg_str, view=view)
+        else:
+            msg = await ctx.send(msg_str, view=view)
         async with self.config.guild(ctx.guild).select_menus() as select_menus:
             select_menus[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
