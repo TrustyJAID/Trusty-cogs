@@ -1347,7 +1347,6 @@ class EventMixin:
         )
         guild_updates = {
             "name": _("Name:"),
-            "region": _("Region:"),
             "afk_timeout": _("AFK Timeout:"),
             "afk_channel": _("AFK Channel:"),
             "icon": _("Server Icon:"),
