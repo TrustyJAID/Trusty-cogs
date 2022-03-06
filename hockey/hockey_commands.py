@@ -6,6 +6,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import quote
 
 import discord
+from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
@@ -438,7 +439,7 @@ class HockeyCommands(MixinMeta):
         with path.open(encoding="utf-8", mode="r") as f:
             async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
                 if name.lower() in player["fullName"].lower():
-                    ret.append({"name": player["fullName"], "value": player["fullName"]})
+                    ret.append(Choice(name=player["fullName"], value=player["fullName"]))
         return ret
 
     @hockey_commands.command(aliases=["players"])

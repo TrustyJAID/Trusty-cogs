@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Dict, List, Literal, Optional, Sequence, Union
 
 import discord
+from discord.enums import InteractionType
+from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
@@ -135,7 +137,7 @@ class HockeySlash(MixinMeta):
     async def team_autocomplete(
         self, interaction: discord.Interaction, include_inactive: bool, include_all: bool
     ) -> Optional[dict]:
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             for cmd in interaction.data.get("options", []):
                 if cmd.get("focused", False):
                     current_data = cmd.get("value", "")
@@ -146,22 +148,22 @@ class HockeySlash(MixinMeta):
                         if sub.get("focused", False):
                             current_data = sub.get("value", "")
             if include_all:
-                team_choices = [{"name": "All", "value": "all"}]
+                team_choices = [Choice(name="All", value="all")]
             else:
                 team_choices = []
             for t, d in TEAMS.items():
                 if current_data.lower() in t.lower():
                     if not include_inactive and not d["active"]:
                         continue
-                    team_choices.append({"name": t, "value": t})
+                    team_choices.append(Choice(name=t, value=t))
             await interaction.response.autocomplete(team_choices[:25])
             return None
 
     async def parse_teams_and_date(self, interaction: discord.Interaction) -> Optional[dict]:
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
             team_choices = [
-                {"name": t, "value": t} for t, d in TEAMS.items() if current_data in t.lower()
+                Choice(name=t, value=t) for t, d in TEAMS.items() if current_data in t.lower()
             ]
             await interaction.response.autocomplete(team_choices[:25])
             return None
@@ -203,13 +205,13 @@ class HockeySlash(MixinMeta):
             if kwargs:
                 await func(interaction, **kwargs)
             return
-        if option == "otherdiscords" and interaction.is_autocomplete:
+        if option == "otherdiscords" and interaction.type is InteractionType.autocomplete:
             await self.team_autocomplete(interaction, False, False)
             return
-        if option == "roster" and interaction.is_autocomplete:
+        if option == "roster" and interaction.type is InteractionType.autocomplete:
             await self.team_autocomplete(interaction, True, False)
             return
-        if option == "player" and interaction.is_autocomplete:
+        if option == "player" and interaction.type is InteractionType.autocomplete:
             current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
             player_choices = await self.player_choices(current_data)
             await interaction.response.autocomplete(player_choices[:25])
@@ -271,7 +273,7 @@ class HockeySlash(MixinMeta):
         }
         option = interaction.data["options"][0]["options"][0]["name"]
         func = command_mapping[option]
-        if option == "setup" and interaction.is_autocomplete:
+        if option == "setup" and interaction.type is InteractionType.autocomplete:
             await self.team_autocomplete(interaction, False, True)
             return
         if getattr(func, "requires", None):
@@ -313,7 +315,7 @@ class HockeySlash(MixinMeta):
         }
         option = interaction.data["options"][0]["options"][0]["name"]
         func = command_mapping[option]
-        if option == "add" and interaction.is_autocomplete:
+        if option == "add" and interaction.type is InteractionType.autocomplete:
             await self.team_autocomplete(interaction, False, True)
             return
         if getattr(func, "requires", None):

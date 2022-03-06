@@ -213,6 +213,7 @@ class Goal:
 
             config = bot.get_cog("Hockey").config
             game_day_channels = await config.guild(guild).gdc()
+            game_day_threads = await config.guild(guild).gdt()
             # Don't want to ping people in the game day channels
             can_embed = channel.permissions_for(guild.me).embed_links
             can_manage_webhooks = False  # channel.permissions_for(guild.me).manage_webhooks
@@ -241,6 +242,10 @@ class Goal:
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
+                    role = None
+
+            if game_day_threads is not None:
+                if channel.id in game_day_threads:
                     role = None
 
             if not can_embed and can_manage_webhooks:
@@ -333,7 +338,7 @@ class Goal:
         return
 
     async def edit_team_goal(
-        self, bot: Red, game_data: Game, og_msg: Tuple[int, int, int]
+        self, bot: Red, game_data: Game, og_msg: List[Tuple[int, int, int]]
     ) -> None:
         """
         When a goal scorer has changed we want to edit the original post
@@ -342,7 +347,7 @@ class Goal:
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
         async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=100):
-            guild = bot.get_guild(guild_id)
+            guild = bot.get_guild(int(guild_id))
             if not guild:
                 continue
             channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
@@ -376,16 +381,21 @@ class Goal:
                 return
             guild = channel.guild
             game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
+            game_day_threads = await bot.get_cog("Hockey").config.guild(guild).gdt()
             role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:
+                    role = None
+            if game_day_threads is not None:
+                if channel.id in game_day_threads:
                     role = None
             if role is None or "missed" in self.event.lower():
                 await message.edit(embed=em)
             else:
                 await message.edit(content=role.mention, embed=em)
         except (discord.errors.NotFound, discord.errors.Forbidden):
+            log.exception("Apparently could not edit a message")
             return
         except Exception:
             log.exception("Could not edit goal in %s", repr(channel))
