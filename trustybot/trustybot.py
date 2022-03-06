@@ -91,19 +91,30 @@ class TrustyBot(commands.Cog):
 
         guild = ctx.guild
         webhook = None
-        for hook in await ctx.channel.webhooks():
+        is_thread = False
+        if isinstance(ctx.channel, discord.Thread):
+            is_thread = True
+            channel = ctx.channel.parent
+        else:
+            channel = ctx.channel
+        for hook in await channel.webhooks():
             if hook.name == guild.me.name:
                 webhook = hook
         if webhook is None:
-            webhook = await ctx.channel.create_webhook(name=guild.me.name)
-        avatar = member.avatar_url_as(format="png")
+            webhook = await channel.create_webhook(name=guild.me.name)
+        avatar = member.avatar.url
         msg = msg.replace("@everyone", "everyone").replace("@here", "here")
         for mention in ctx.message.mentions:
             msg = msg.replace(mention.mention, mention.display_name)
         # Apparently webhooks have @everyone permissions
         if ctx.channel.permissions_for(ctx.me).manage_messages:
             await ctx.message.delete()
-        await webhook.send(msg, username=member.display_name, avatar_url=avatar)
+        await webhook.send(
+            msg,
+            username=member.display_name,
+            avatar_url=avatar,
+            thread=ctx.channel if is_thread else None,
+        )
 
     @commands.command()
     async def pingtime(self, ctx: commands.Context):
