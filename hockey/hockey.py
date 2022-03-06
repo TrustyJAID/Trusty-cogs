@@ -201,7 +201,7 @@ class Hockey(
         for g_id, data in all_guilds.items():
             if str(user_id) in data["leaderboard"]:
                 del data["leaderboard"][str(user_id)]
-                await self.pickems_config.guild_from_id(g_id).leaderboard.set(data["leaderboard"])
+                await self.pickems_config.guild_from_id(int(g_id)).leaderboard.set(data["leaderboard"])
 
     async def initialize(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
@@ -248,7 +248,7 @@ class Hockey(
         }
         all_guilds = await self.pickems_config.all_guilds()
         for guild_id in all_guilds.keys():
-            async with self.pickems_config.guild_from_id(guild_id).leaderboard() as leaderboard:
+            async with self.pickems_config.guild_from_id(int(guild_id)).leaderboard() as leaderboard:
                 async for user_id, data in AsyncIter(leaderboard.items()):
                     for key, value in DEFAULT_LEADERBOARD.items():
                         if key not in data:
@@ -259,37 +259,37 @@ class Hockey(
         all_guilds = await self.config.all_guilds()
         async for guild_id, data in AsyncIter(all_guilds.items(), steps=100):
             if data.get("leaderboard"):
-                await self.pickems_config.guild_from_id(guild_id).leaderboard.set(
+                await self.pickems_config.guild_from_id(int(guild_id)).leaderboard.set(
                     data["leaderboard"]
                 )
                 try:
-                    await self.config.guild_from_id(guild_id).leaderboard.clear()
+                    await self.config.guild_from_id(int(guild_id)).leaderboard.clear()
                 except Exception:
                     pass
                 log.info(f"Migrating leaderboard for {guild_id}")
             if data.get("pickems"):
                 try:
-                    await self.config.guild_from_id(guild_id).pickems.clear()
+                    await self.config.guild_from_id(int(guild_id)).pickems.clear()
                 except Exception:
                     pass
                 log.info(f"Migrating pickems for {guild_id}")
             if data.get("pickems_channels"):
                 if not isinstance(data["pickems_channels"], list):
                     # this is just because I don't care but should get it working
-                    await self.pickems_config.guild_from_id(guild_id).pickems_channels.set(
+                    await self.pickems_config.guild_from_id(int(guild_id)).pickems_channels.set(
                         data["pickems_channels"]
                     )
                 try:
-                    await self.config.guild_from_id(guild_id).pickems_channels.clear()
+                    await self.config.guild_from_id(int(guild_id)).pickems_channels.clear()
                 except Exception:
                     pass
                 log.info(f"Migrating pickems channels for {guild_id}")
             if data.get("pickems_category"):
-                await self.pickems_config.guild_from_id(guild_id).pickems_category.set(
+                await self.pickems_config.guild_from_id(int(guild_id)).pickems_category.set(
                     data["pickems_category"]
                 )
                 try:
-                    await self.config.guild_from_id(guild_id).pickems_category.clear()
+                    await self.config.guild_from_id(int(guild_id)).pickems_category.clear()
                 except Exception:
                     pass
                 log.info(f"Migrating pickems categories for {guild_id}")

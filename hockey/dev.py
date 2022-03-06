@@ -448,7 +448,7 @@ class HockeyDev(MixinMeta):
                 guild = self.bot.get_guild(data["guild_id"])
                 if not guild:
                     await self.config.channel_from_id(channel_id).clear()
-                    await self.config.guild_from_id(data["guild_id"]).clear()
+                    await self.config.guild_from_id(int(data["guild_id"])).clear()
                     log.info(f"Removed the following channels {channel_id}")
                     continue
                 channel = guild.get_channel
@@ -470,7 +470,7 @@ class HockeyDev(MixinMeta):
         for guild_id in await self.config.all_guilds():
             guild = self.bot.get_guild(guild_id)
             if guild is None:
-                await self.config.guild_from_id(guild_id).clear()
+                await self.config.guild_from_id(int(guild_id)).clear()
             else:
                 if not await self.config.guild(guild).create_channels():
                     await self.config.guild(guild).gdc.clear()
@@ -504,5 +504,5 @@ class HockeyDev(MixinMeta):
         Clears the bots seasonal pickems leaderboard
         """
         for guild_id in await self.pickems_config.all_guilds():
-            await self.config.guild_from_id(guild_id).leaderboard.clear()
+            await self.config.guild_from_id(int(guild_id)).leaderboard.clear()
         await ctx.send(_("Seasonal pickems leaderboards cleared."))

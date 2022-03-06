@@ -204,7 +204,7 @@ class EventPoster(commands.Cog):
                     event = data["events"][str(user_id)]["message"]
                     del self.event_cache[guild_id][event]
                 del data["events"][str(user_id)]
-                await self.config.guild_from_id(guild_id).events.set(data["events"])
+                await self.config.guild_from_id(int(guild_id)).events.set(data["events"])
         all_members = await self.config.all_members()
         for guild_id, members in all_members.items():
             if user_id in members:
@@ -213,7 +213,7 @@ class EventPoster(commands.Cog):
     @tasks.loop(seconds=60)
     async def cleanup_old_events(self):
         for guild_id, events in self.event_cache.items():
-            cleanup_seconds = await self.config.guild_from_id(guild_id).cleanup_seconds()
+            cleanup_seconds = await self.config.guild_from_id(int(guild_id)).cleanup_seconds()
             to_remove = []
             if not cleanup_seconds:
                 continue
@@ -226,7 +226,7 @@ class EventPoster(commands.Cog):
                 if ctx:
                     await events[msg_id].edit(ctx, content=_("This event has ended."), view=None)
 
-                async with self.config.guild_from_id(guild_id).events() as guild_events:
+                async with self.config.guild_from_id(int(guild_id)).events() as guild_events:
                     del guild_events[str(events[msg_id].hoster)]
                     # log.debug("deleted from config")
                 del events[msg_id]

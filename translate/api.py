@@ -98,7 +98,7 @@ class GoogleTranslateAPI:
             for key, value in self._global_counter.items():
                 count[key] = value
         for guild_id, data in self._guild_counter.items():
-            async with self.config.guild_from_id(guild_id).count() as count:
+            async with self.config.guild_from_id(int(guild_id)).count() as count:
                 for key, value in data.items():
                     count[key] = value
 

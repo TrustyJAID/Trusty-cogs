@@ -70,7 +70,7 @@ class HockeyPickems(MixinMeta):
             all_pickems = self.all_pickems.copy()
             async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=10):
                 data = {}
-                async with self.pickems_config.guild_from_id(guild_id).pickems() as data:
+                async with self.pickems_config.guild_from_id(int(guild_id)).pickems() as data:
                     for name, pickem in pickems.items():
                         if pickem._should_save:
                             # log.debug("Saving pickem %r", pickem)
@@ -101,11 +101,11 @@ class HockeyPickems(MixinMeta):
             pickems_list = data.get("pickems", {})
             if pickems_list is None:
                 log.info(f"Resetting pickems in {guild_id} for incompatible type")
-                await self.pickems_config.guild_from_id(guild_id).pickems.clear()
+                await self.pickems_config.guild_from_id(int(guild_id)).pickems.clear()
                 continue
             if type(pickems_list) is list:
                 log.info(f"Resetting pickems in {guild_id} for incompatible type")
-                await self.pickems_config.guild_from_id(guild_id).pickems.clear()
+                await self.pickems_config.guild_from_id(int(guild_id)).pickems.clear()
                 continue
             # pickems = [Pickems.from_json(p) for p in pickems_list]
             pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}

@@ -428,13 +428,13 @@ class Event(discord.ui.View):
             if thread.name != self.event[:100]:
                 await thread.edit(name=self.event[:100])
         config = self.bot.get_cog("EventPoster").config
-        async with config.guild_from_id(self.guild).events() as cur_events:
+        async with config.guild_from_id(int(self.guild)).events() as cur_events:
             cur_events[str(self.hoster)] = self.to_json()
         self.bot.get_cog("EventPoster").event_cache[self.guild][self.message] = self
 
     async def end_event(self):
         config = self.bot.get_cog("EventPoster").config
-        async with config.guild_from_id(self.guild).events() as events:
+        async with config.guild_from_id(int(self.guild)).events() as events:
             # event = Event.from_json(self.bot, events[str(user.id)])
             ctx = await self.get_ctx(self.bot)
             if ctx:

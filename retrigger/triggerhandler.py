@@ -1139,7 +1139,7 @@ class TriggerHandler:
 
     async def remove_trigger(self, guild_id: int, trigger_name: str) -> bool:
         """Returns true or false if the trigger was removed"""
-        async with self.config.guild_from_id(guild_id).trigger_list() as trigger_list:
+        async with self.config.guild_from_id(int(guild_id)).trigger_list() as trigger_list:
             for triggers in trigger_list:
                 # trigger = Trigger.from_json(trigger_list[triggers])
                 if triggers == trigger_name:

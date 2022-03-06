@@ -44,7 +44,7 @@ class Starboard(StarboardEvents, commands.Cog):
         log.debug("Started building starboards cache from config.")
         for guild_id in await self.config.all_guilds():
             self.starboards[guild_id] = {}
-            all_data = await self.config.guild_from_id(guild_id).starboards()
+            all_data = await self.config.guild_from_id(int(guild_id)).starboards()
             for name, data in all_data.items():
                 try:
                     starboard = await StarboardEntry.from_json(data, guild_id)
