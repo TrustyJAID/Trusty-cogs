@@ -3,6 +3,8 @@ import re
 
 import discord
 import tekore
+from discord.enums import InteractionType
+from discord.slash import CommandOptionChoice
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -394,16 +396,19 @@ class SpotifySlash:
                 new_genre = sup
 
         ret = [
-            {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
-            for g in self.GENRES if new_genre in g
+            CommandOptionChoice(name=f"{supplied_genres} {g}", value=f"{supplied_genres} {g}")
+            # {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
+            for g in self.GENRES
+            if new_genre in g
         ]
         if supplied_genres:
-            ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
+            # ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
+            ret.insert(0, CommandOptionChoice(name=supplied_genres, value=supplied_genres))
         return ret
 
     async def parse_spotify_recommends(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"]
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             cur_value = command_options[0]["value"]
             if not self.GENRES:
                 await self.set_genres()

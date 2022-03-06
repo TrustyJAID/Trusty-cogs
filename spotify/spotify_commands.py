@@ -3,6 +3,8 @@ from copy import copy
 from typing import Optional, Union
 
 import discord
+from discord.enums import InteractionType
+from discord.app_commands import Choice
 import tekore
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -192,7 +194,7 @@ class SpotifyCommands:
                 if not await self.check_requires(func, ctx):
                     return
             command_options = ctx.data["options"][0]["options"][0].get("options", [])
-            if ctx.is_autocomplete:
+            if ctx.type is InteractionType.autocomplete:
                 cur_value = command_options[0]["value"]
                 if not await self.config.user(ctx.user).token():
                     # really don't want to force users to auth from autocomplete
@@ -209,7 +211,8 @@ class SpotifyCommands:
                         with user_spotify.token_as(user_token):
                             devices = await user_spotify.playback_devices()
                         for d in devices:
-                            user_devices.append({"name": d.name, "value": d.id})
+                            # user_devices.append({"name": d.name, "value": d.id})
+                            user_devices.append(Choice(name=d.name, value=d.id))
                         self._temp_user_devices[ctx.user.id] = user_devices
                     except Exception:
                         log.exception("uhhhhhh")
@@ -218,7 +221,7 @@ class SpotifyCommands:
                 choices = [
                     i
                     for i in self._temp_user_devices[ctx.user.id]
-                    if cur_value in i["name"].lower()
+                    if cur_value in i.name.lower()
                 ]
                 await ctx.response.autocomplete(choices[:25])
                 return
