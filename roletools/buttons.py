@@ -5,6 +5,8 @@ from typing import Optional, Union
 
 import discord
 from discord import Interaction
+from discord.app_commands import Choice
+from discord.enums import InteractionType
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -143,12 +145,12 @@ class RoleToolsButtons(RoleToolsMixin):
                 new_option = sup
 
         ret = [
-            {"name": f"{supplied_options} {g}", "value": f"{supplied_options} {g}"}
+            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
             for g in list(select_options.keys())
             if new_option in g
         ]
         if supplied_options:
-            ret.insert(0, {"name": supplied_options, "value": supplied_options})
+            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
         return ret
 
     @roletools.group(name="buttons", aliases=["button"])
@@ -168,7 +170,7 @@ class RoleToolsButtons(RoleToolsMixin):
             options = ctx.data["options"][0]["options"][0]["options"]
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
-            if ctx.is_autocomplete and option in ["create", "edit", "delete"]:
+            if ctx.type is InteractionType.autocomplete and option in ["create", "edit", "delete"]:
                 new_options = await self.button_autocomplete(ctx)
                 if len(new_options) == 0:
                     new_options.append(

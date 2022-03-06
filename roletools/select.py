@@ -5,6 +5,8 @@ from typing import List, Optional, Union
 
 import discord
 from discord import Interaction
+from discord.app_commands import Choice
+from discord.enums import InteractionType
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -242,12 +244,12 @@ class RoleToolsSelect(RoleToolsMixin):
                 new_option = sup
 
         ret = [
-            {"name": f"{supplied_options} {g}", "value": f"{supplied_options} {g}"}
+            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
             for g in list(select_options.keys())
             if new_option in g
         ]
         if supplied_options:
-            ret.insert(0, {"name": supplied_options, "value": supplied_options})
+            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
         return ret
 
     async def select_menu_autocomplete(self, interaction: discord.Interaction) -> None:
@@ -264,12 +266,12 @@ class RoleToolsSelect(RoleToolsMixin):
                 new_option = sup
 
         ret = [
-            {"name": f"{supplied_options} {g}", "value": f"{supplied_options} {g}"}
+            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
             for g in list(select_options.keys())
             if new_option in g
         ]
         if supplied_options:
-            ret.insert(0, {"name": supplied_options, "value": supplied_options})
+            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
         return ret
 
     @roletools.group(name="select")
@@ -293,7 +295,7 @@ class RoleToolsSelect(RoleToolsMixin):
             option = ctx.data["options"][0]["options"][0]["name"]
             func = command_mapping[option]
             kwargs = {}
-            if ctx.is_autocomplete and option == "create":
+            if ctx.type is InteractionType.autocomplete and option == "create":
                 new_options = await self.select_option_autocomplete(ctx)
                 if len(new_options) == 0:
                     new_options.append(
@@ -304,7 +306,7 @@ class RoleToolsSelect(RoleToolsMixin):
                     )
                 await ctx.response.autocomplete(new_options[:25])
                 return
-            if ctx.is_autocomplete and option in ["send", "edit", "delete"]:
+            if ctx.type is InteractionType.autocomplete and option in ["send", "edit", "delete"]:
                 new_options = await self.select_menu_autocomplete(ctx)
                 if len(new_options) == 0:
                     new_options.append(
