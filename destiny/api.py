@@ -292,10 +292,25 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {"components": "100,103,104,200,202,204,205,300,302,304,307,800,900,1000,1100"}
+        params = {"components": "100,102,103,104,200,201,202,204,205,300,302,304,307,600,800,900,1000,1100,1300"}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
+        return await self.request_url(url, params=params, headers=headers)
+
+    async def get_character(self, user: discord.User, character_id: int) -> dict:
+        """
+        This pulls the data for each character from the API given a user object
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception as e:
+            log.error(e, exc_info=True)
+            raise Destiny2RefreshTokenError
+        params = {"components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"}
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Character/{character_id}"
         return await self.request_url(url, params=params, headers=headers)
 
     def get_entities(self, entity: str, d1: bool = False) -> dict:

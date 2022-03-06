@@ -11,6 +11,8 @@ from typing import List, Literal, Optional, Union
 
 import discord
 import pytz
+from discord.enums import InteractionType
+from discord.app_commands import Choice
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
@@ -212,13 +214,13 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_history(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"]
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = DestinyActivity.CHOICES
             choices = []
             for choice in possible_options:
                 if cur_value.lower() in choice["name"].lower():
-                    choices.append(choice)
+                    choices.append(Choice(name=choice["name"], value=choice["value"]))
             await interaction.response.autocomplete(choices[:25])
             return
         kwargs = {}
@@ -387,14 +389,14 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_search_items(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = await self.search_definition("simpleitems", cur_value)
             choices = []
             for hash_key, data in possible_options.items():
                 name = data["displayProperties"]["name"]
                 if name:
-                    choices.append({"name": name, "value": hash_key})
+                    choices.append(Choice(name=name, value=hash_key))
             log.debug(len(choices))
             await interaction.response.autocomplete(choices[:25])
             return
@@ -405,14 +407,14 @@ class Destiny(DestinyAPI, commands.Cog):
 
     async def parse_search_lore(self, interaction: discord.Interaction):
         command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.is_autocomplete:
+        if interaction.type is InteractionType.autocomplete:
             cur_value = command_options[0]["value"]
             possible_options = self.get_entities("DestinyLoreDefinition")
             choices = []
             for hash_key, data in possible_options.items():
                 name = data["displayProperties"]["name"]
                 if cur_value.lower() in name.lower():
-                    choices.append({"name": name, "value": name})
+                    choices.append(Choice(name=name, value=name))
             log.debug(len(choices))
             await interaction.response.autocomplete(choices[:25])
             return
@@ -1213,6 +1215,24 @@ class Destiny(DestinyAPI, commands.Cog):
                 return
             if not user:
                 user = ctx.author
+        try:
+            chars = await self.get_characters(user)
+            await self.save(chars, "character.json")
+        except Destiny2APIError as e:
+            log.error(e, exc_info=True)
+            await self.missing_profile(ctx)
+            return
+        hash_list = []
+        for data in chars["profileCurrencies"]["data"]["items"]:
+            # for hash_id in data["itemQuantities"]:
+            hash_list.append(data["itemHash"])
+        all_currencies = await self.get_definition("DestinyInventoryItemDefinition", hash_list)
+        msg = ""
+        for data in chars["profileCurrencies"]["data"]["items"]:
+            amount = data["quantity"]
+            value = all_currencies[str(data["itemHash"])]
+            msg += value["displayProperties"]["name"] + f": {amount}\n"
+        """
             try:
                 me = await self.get_aggregate_activity_history(user, "2305843009299686584")
                 await self.save(me, "aggregate_activity.json")
@@ -1253,6 +1273,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     + "**\n\n"
                 )
             break
+        """
         for page in pagify(msg):
             await ctx.send(page)
 
@@ -1578,7 +1599,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 for stat_hash in xur["itemComponents"]["stats"]["data"][item_index]["stats"]:
                     stat_hashes.append(stat_hash)
             if item_index in xur["itemComponents"]["reusablePlugs"]["data"]:
-                for __, plugs in xur["itemComponents"]["reusablePlugs"]["data"][item_index]["plugs"].items():
+                for __, plugs in xur["itemComponents"]["reusablePlugs"]["data"][item_index][
+                    "plugs"
+                ].items():
                     for plug in plugs:
                         perk_hashes.append(plug["plugItemHash"])
         all_perks = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
@@ -1591,8 +1614,12 @@ class Destiny(DestinyAPI, commands.Cog):
             item_embed = discord.Embed(title=item["displayProperties"]["name"])
             item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
             item_embed.set_image(url=IMAGE_URL + item["screenshot"])
-            for perk_index in xur["itemComponents"]["reusablePlugs"]["data"].get(index, {"plugs": []})["plugs"]:
-                for perk_hash in xur["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][perk_index]:
+            for perk_index in xur["itemComponents"]["reusablePlugs"]["data"].get(
+                index, {"plugs": []}
+            )["plugs"]:
+                for perk_hash in xur["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][
+                    perk_index
+                ]:
                     perk = all_perks.get(str(perk_hash["plugItemHash"]), None)
                     if perk is None:
                         continue
@@ -1821,9 +1848,7 @@ class Destiny(DestinyAPI, commands.Cog):
             + spider_def["displayProperties"]["subtitle"]
         )
         item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
-        item_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_hashes
-        )
+        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
         item_costs = [
             c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
         ]
@@ -1847,10 +1872,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 costs = data["costs"][0]
                 cost = item_cost_defs[str(costs["itemHash"])]
                 cost_str = (
-                    str(costs["quantity"])
-                    + " "
-                    + cost["displayProperties"]["name"]
-                    + refresh_str
+                    str(costs["quantity"]) + " " + cost["displayProperties"]["name"] + refresh_str
                 )
             except IndexError:
                 cost_str = "None" + refresh_str
