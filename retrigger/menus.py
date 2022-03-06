@@ -14,6 +14,11 @@ from redbot.vendored.discord.ext import menus
 
 from .converters import ChannelUserRole, Trigger
 
+try:
+    import regex as re
+except ImportError:
+    import re
+
 log = logging.getLogger("red.Trusty-cogs.retrigger")
 _ = Translator("ReTrigger", __file__)
 
@@ -389,6 +394,78 @@ class ToggleTriggerButton(discord.ui.Button):
             await self.view.show_checked_page(self.view.current_page)
 
 
+class ReTriggerEditModal(discord.ui.Modal):
+    def __init__(self, trigger: Trigger, button: discord.ui.Button):
+        super().__init__(title=f"{trigger.name[:45]}")
+        self.text = discord.ui.TextInput(
+            style=discord.TextStyle.paragraph, label="Response", default=trigger.text
+        )
+        self.regex = discord.ui.TextInput(
+            style=discord.TextStyle.paragraph, label="Regex", default=trigger.regex.pattern
+        )
+        self.add_item(self.text)
+        self.add_item(self.regex)
+        self.og_button = button
+        self.trigger = trigger
+
+    async def on_submit(self, interaction: discord.Interaction):
+        edited_text = False
+        edited_regex = False
+        msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
+        guild = interaction.guild
+        if self.trigger.text != self.text.value:
+            self.trigger.text = self.text.value
+            edited_text = True
+            msg += _("Text: `{text}`\n").format(text=self.text.value)
+        if self.trigger.regex.pattern != self.regex.value:
+            try:
+                self.trigger.regex = re.compile(self.regex.value)
+            except Exception as e:
+                await interaction.response.send_message(
+                    _("The provided regex pattern is not valid: {e}").format(e=e), ephemeral=True
+                )
+                return
+            edited_regex = True
+            msg += _("Regex: `{regex}`\n").format(regex=self.regex.value)
+        if edited_text or edited_regex:
+            await interaction.response.send_message(msg)
+            async with self.og_button.view.cog.config.guild(guild).trigger_list() as trigger_list:
+                trigger_list[self.trigger.name] = await self.trigger.to_json()
+        else:
+            await interaction.response.send_message(_("None of the values have changed."))
+        await self.og_button.view.show_checked_page(self.og_button.view.current_page)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        """Just extends the default reaction_check to use owner_ids"""
+        owner_id = interaction.guild.owner.id
+        if interaction.user.id not in (
+            self.trigger.author,
+            owner_id,
+            *self.og_button.view.cog.bot.owner_ids,
+        ):
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
+
+
+class ReTriggerEditButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+    ):
+        super().__init__(style=style, row=row)
+        self.style = style
+        self.emoji = "\N{GEAR}\N{VARIATION SELECTOR-16}"
+        self.label = _("Edit Trigger")
+
+    async def callback(self, interaction: discord.Interaction):
+        modal = ReTriggerEditModal(self.view.source.selection, self)
+        await interaction.response.send_modal(modal)
+
+
 class DeleteTriggerButton(discord.ui.Button):
     def __init__(
         self,
@@ -460,6 +537,7 @@ class ReTriggerMenu(discord.ui.View):
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
+        self.edit_button = ReTriggerEditButton(discord.ButtonStyle.primary, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 1)
         self.delete_button = DeleteTriggerButton(discord.ButtonStyle.red, 1)
         self.toggle_button = ToggleTriggerButton(discord.ButtonStyle.grey, 1)
@@ -470,6 +548,7 @@ class ReTriggerMenu(discord.ui.View):
         self.add_item(self.toggle_button)
         self.add_item(self.delete_button)
         self.add_item(self.stop_button)
+        self.add_item(self.edit_button)
         self.current_page = page_start
         self.select_view: Optional[ReTriggerSelectOption] = None
         self.author = None
@@ -573,7 +652,7 @@ class ReTriggerMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id not in (self.author.id,):
+        if interaction.user.id not in (self.author.id, *self.cog.bot.owner_ids):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )

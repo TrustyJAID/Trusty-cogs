@@ -3,10 +3,12 @@ import json
 import logging
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 import discord
 from discord.ext import tasks
+from discord.enums import InteractionType
+from discord.app_commands import Choice
 from redbot.core import Config, VersionInfo, checks, commands, modlog, version_info
 from redbot.core.commands import TimedeltaConverter
 from redbot.core.i18n import Translator, cog_i18n
@@ -69,7 +71,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         self.config.register_guild(**default_guild)
         self.config.register_global(trigger_timeout=1, commands={})
         self.re_pool = Pool()
-        self.triggers = {}
+        self.triggers: Dict[int, Dict[str, Trigger]] = {}
         self.__unload = self.cog_unload
         self.trigger_timeout = 1
         self.save_loop.start()
@@ -139,6 +141,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                     new_trigger = await Trigger.from_json(trigger)
                 except Exception:
                     log.exception("Error trying to compile regex pattern.")
+                    continue
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild][new_trigger.name] = new_trigger
@@ -271,11 +274,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             options = ctx.data["options"]
             option = options[0]["name"]
             func = command_mapping[option]
-            if ctx.is_autocomplete and options[0]["options"][0].get("focused", False):
+            if ctx.type is InteractionType.autocomplete and options[0]["options"][0].get("focused", False):
                 cur_value = options[0]["options"][0]["value"]
                 if ctx.guild.id in self.triggers:
                     choices = [
-                        {"name": t.name, "value": t.name}
+                        Choice(name=t.name, value=t.name)
                         for t in self.triggers[ctx.guild.id].values()
                         if cur_value in t.name
                     ]
@@ -584,11 +587,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 if not await self.check_requires(func, ctx):
                     return
 
-            if ctx.is_autocomplete:
+            if ctx.type is InteractionType.autocomplete:
                 cur_value = options[0]["options"][0]["value"]
                 if ctx.guild.id in self.triggers:
                     choices = [
-                        {"name": t.name, "value": t.name}
+                        Choice(name=t.name, value=t.name)
                         for t in self.triggers[ctx.guild.id].values()
                         if cur_value in t.name
                     ]
