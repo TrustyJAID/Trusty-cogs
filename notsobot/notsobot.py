@@ -503,7 +503,6 @@ class NotSoBot(commands.Cog):
                             new_image.save(file=final)
                     i.save(file=final)
                     i.close()
-                    img.close()
                 file_size = final.tell()
                 final.seek(0)
                 filename = f"caption.{'png' if not is_gif else 'gif'}"
@@ -1369,7 +1368,6 @@ class NotSoBot(commands.Cog):
             h2.flop()
             h1.save(file=f)
             h2.save(file=f2)
-            img.close()
             h1.close()
             h2.close()
             b.close()
@@ -1429,7 +1427,6 @@ class NotSoBot(commands.Cog):
             h2.flop()
             h1.save(file=f)
             h2.save(file=f2)
-            img.close()
             h1.close()
             h2.close()
             b.close()
@@ -1618,7 +1615,6 @@ class NotSoBot(commands.Cog):
                     final.seek(0)
                     filename = self.random_filename(True, "png")
                     file = discord.File(final, filename=filename)
-                    image.close()
                     final.close()
                 return file, file_size
 
@@ -1648,7 +1644,6 @@ class NotSoBot(commands.Cog):
             def flop_img(b):
                 with Image.open(b) as img:
                     image = ImageOps.mirror(img)
-                    img.close()
                 with BytesIO() as final:
                     image.save(final, "png")
                     file_size = final.tell()
@@ -1656,7 +1651,6 @@ class NotSoBot(commands.Cog):
                     filename = self.random_filename(True, "png")
                     file = discord.File(final, filename=filename)
                     image.close()
-                    final.close()
                 return file, file_size
 
             task = ctx.bot.loop.run_in_executor(None, flop_img, b)
@@ -1683,7 +1677,6 @@ class NotSoBot(commands.Cog):
             def invert_img(b):
                 with Image.open(b).convert("RGB") as img:
                     image = ImageOps.invert(img)
-                    img.close()
                 with BytesIO() as final:
                     image.save(final, "png")
                     file_size = final.tell()
@@ -1691,7 +1684,6 @@ class NotSoBot(commands.Cog):
                     filename = self.random_filename(True, "png")
                     file = discord.File(final, filename=filename)
                     image.close()
-                    final.close()
                 return file, file_size
 
             task = ctx.bot.loop.run_in_executor(None, invert_img, b)
@@ -1719,7 +1711,6 @@ class NotSoBot(commands.Cog):
             def rotate_img(b, degrees):
                 with Image.open(b).convert("RGBA") as img:
                     image = img.rotate(int(degrees))
-                    img.close()
                 with BytesIO() as final:
                     image.save(final, "png")
                     file_size = final.tell()
@@ -1727,7 +1718,6 @@ class NotSoBot(commands.Cog):
                     filename = self.random_filename(True, "png")
                     file = discord.File(final, filename=filename)
                     image.close()
-                    final.close()
                 return file, file_size
 
             task = ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
