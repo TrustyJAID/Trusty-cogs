@@ -2871,9 +2871,9 @@ class Destiny(DestinyAPI, commands.Cog):
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
             try:
-                react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=15)
+                react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=30)
             except asyncio.TimeoutError:
-                await msg.delete()
+                await ctx.send(_("I will not download the manifest."))
             if pred.result:
                 try:
                     version = await self.get_manifest()
