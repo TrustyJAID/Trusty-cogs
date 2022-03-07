@@ -871,6 +871,7 @@ class Tweets(TweetsAPI, commands.Cog):
         ctx: commands.Context,
     ) -> None:
         """How to get and set your twitter API tokens."""
+        elevated = "[elevated access](https://developer.twitter.com/en/docs/twitter-api/getting-started/about-twitter-api#Access)"
         msg = _(
             "1. Visit https://apps.twitter.com and apply for a developer account.\n"
             "2. Once your account is approved Create a standalone app and copy the "
@@ -882,6 +883,7 @@ class Tweets(TweetsAPI, commands.Cog):
             "consumer_key YOUR_CONSUMER_KEY "
             "consumer_secret YOUR_CONSUMER_SECRET "
             "access_token YOUR_ACCESS_TOKEN "
-            "access_secret YOUR_ACCESS_SECRET`"
-        )
+            "access_secret YOUR_ACCESS_SECRET`\n\n"
+            "**Note:** You will require {elevated} to use everything in this cog."
+        ).format(elevated=elevated)
         await ctx.maybe_send_embed(msg)
