@@ -11,9 +11,11 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
-from .abc import RoleToolsMixin, roletools
+from .abc import RoleToolsMixin
 from .converter import RoleEmojiConverter, RoleHierarchyConverter
 from .menus import BaseMenu, ReactRolePages
+
+roletools = RoleToolsMixin.roletools
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)

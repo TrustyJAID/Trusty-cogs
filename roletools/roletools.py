@@ -12,7 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter, bounded_gather
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .abc import roletools
+from .abc import RoleToolsMixin
 from .buttons import RoleToolsButtons
 from .command_structure import SLASH_COMMANDS
 from .converter import RawUserIds, RoleHierarchyConverter, SelfRoleConverter
@@ -25,6 +25,8 @@ from .requires import RoleToolsRequires
 from .select import RoleToolsSelect
 from .settings import RoleToolsSettings
 from .slash import RoleToolsSlash
+
+roletools = RoleToolsMixin.roletools
 
 log = logging.getLogger("red.Trusty-cogs.RoleTools")
 _ = Translator("RoleTools", __file__)

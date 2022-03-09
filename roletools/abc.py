@@ -30,67 +30,6 @@ log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("Roletools", __file__)
 
 
-@commands.group()
-@commands.guild_only()
-async def roletools(self: commands.Cog, ctx: Context) -> None:
-    """
-    Commands for creating custom role settings
-    """
-    if isinstance(ctx, discord.Interaction):
-        command_mapping = {
-            "exclude": self.exclusive,
-            "bulkreact": self.bulkreact,
-            "sticky": self.sticky,
-            "react": self.react,
-            "selfrem": self.selfrem,
-            "buttons": self.buttons,
-            "giverole": self.giverole,
-            "viewroles": self.viewroles,
-            "select": self.select,
-            "forcerole": self.forcerole,
-            "globalatomic": self.globalatomic,
-            "selfrole": self.selfrole,
-            "include": self.inclusive,
-            "cleanup": self.cleanup,
-            "autorole": self.autorole,
-            "selfadd": self.selfadd,
-            "required": self.required_roles,
-            "ownercleanup": self.ownercleanup,
-            "forceroleremove": self.forceroleremove,
-            "reactroles": self.reactroles,
-            "cost": self.cost,
-            "removerole": self.removerole,
-            "remreact": self.remreact,
-            "clearreact": self.clearreact,
-            "atomic": self.atomic,
-        }
-        options = ctx.data["options"][0]
-        option = options["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, ctx):
-                return
-
-        if getattr(func, "_prepare_cooldowns", None):
-            if not await self.check_cooldowns(func, ctx):
-                return
-
-        try:
-            kwargs = {}
-            for option in options.get("options", []):
-                name = option["name"]
-                kwargs[name] = self.convert_slash_args(ctx, option)
-        except KeyError:
-            kwargs = {}
-            pass
-        except AttributeError:
-            log.exception("Error getting past main parser")
-            await ctx.response.send_message(
-                _("One or more options you have provided are not available in DM's."),
-                ephemeral=True,
-            )
-            return
-        await func(ctx, **kwargs)
 
 
 class RoleToolsMixin(ABC):
@@ -100,13 +39,73 @@ class RoleToolsMixin(ABC):
     Basically, to keep developers sane when not all attributes are defined in each mixin.
     """
 
-    c = roletools
-
     def __init__(self, *_args):
         self.config: Config
         self.bot: Red
         self.settings: Dict[Any, Any]
         self._ready: asyncio.Event
+
+    @commands.group()
+    @commands.guild_only()
+    async def roletools(self: commands.Cog, ctx: Context) -> None:
+        """
+        Commands for creating custom role settings
+        """
+        if isinstance(ctx, discord.Interaction):
+            command_mapping = {
+                "exclude": self.exclusive,
+                "bulkreact": self.bulkreact,
+                "sticky": self.sticky,
+                "react": self.react,
+                "selfrem": self.selfrem,
+                "buttons": self.buttons,
+                "giverole": self.giverole,
+                "viewroles": self.viewroles,
+                "select": self.select,
+                "forcerole": self.forcerole,
+                "globalatomic": self.globalatomic,
+                "selfrole": self.selfrole,
+                "include": self.inclusive,
+                "cleanup": self.cleanup,
+                "autorole": self.autorole,
+                "selfadd": self.selfadd,
+                "required": self.required_roles,
+                "ownercleanup": self.ownercleanup,
+                "forceroleremove": self.forceroleremove,
+                "reactroles": self.reactroles,
+                "cost": self.cost,
+                "removerole": self.removerole,
+                "remreact": self.remreact,
+                "clearreact": self.clearreact,
+                "atomic": self.atomic,
+            }
+            options = ctx.data["options"][0]
+            option = options["name"]
+            func = command_mapping[option]
+            if getattr(func, "requires", None):
+                if not await self.check_requires(func, ctx):
+                    return
+
+            if getattr(func, "_prepare_cooldowns", None):
+                if not await self.check_cooldowns(func, ctx):
+                    return
+
+            try:
+                kwargs = {}
+                for option in options.get("options", []):
+                    name = option["name"]
+                    kwargs[name] = self.convert_slash_args(ctx, option)
+            except KeyError:
+                kwargs = {}
+                pass
+            except AttributeError:
+                log.exception("Error getting past main parser")
+                await ctx.response.send_message(
+                    _("One or more options you have provided are not available in DM's."),
+                    ephemeral=True,
+                )
+                return
+            await func(ctx, **kwargs)
 
     #######################################################################
     # roletools.py                                                        #
