@@ -535,6 +535,10 @@ class Event(discord.ui.View):
         for name, link in thumbnails.items():
             if name.lower() in self.event.lower():
                 em.set_thumbnail(url=link)
+        images = await config.guild(ctx.guild).large_links()
+        for name, link in images.items():
+            if name.lower() in self.event.lower():
+                em.set_image(url=link)
         return em
 
     @classmethod

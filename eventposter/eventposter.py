@@ -42,6 +42,7 @@ class EventPoster(commands.Cog):
             "ping": "",
             "events": {},
             "custom_links": {},
+            "large_links": {},
             "default_max": None,
             "cleanup_seconds": None,
             "bypass_admin": False,
@@ -1954,6 +1955,21 @@ class EventPoster(commands.Cog):
             await ctx.followup.send(reply)
         else:
             await ctx.send(reply)
+
+    @event_settings.command(name="largelinks")
+    @checks.mod_or_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def set_custom_large_link(self, ctx: commands.Context, keyword: str, link: ValidImage) -> None:
+        """
+        Set the custom embed image for events
+
+        `<keyword>` is the word that will be searched for in event titles.
+        `<link>` needs to be an image link to be used for the thumbnail when the keyword
+        is found in the event title.
+        """
+        async with self.config.guild(ctx.guild).large_links() as custom_links:
+            custom_links[keyword.lower()] = link
+        await ctx.tick()
 
     @event_settings.command(name="viewlinks", aliases=["showlinks"])
     @checks.mod_or_permissions(manage_messages=True)
