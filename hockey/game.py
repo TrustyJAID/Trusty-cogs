@@ -588,7 +588,7 @@ class Game:
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
-        if self.game_state == "Final" and (self.first_star is not None or count >= 10):
+        if self.game_state == "Final" and count >= 20:
             """Final game state checks"""
 
             if (self.home_score + self.away_score) != 0:
