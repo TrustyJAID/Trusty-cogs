@@ -399,11 +399,11 @@ class Hockey(
                                 await self.set_guild_pickem_winner(game)
                             except Exception:
                                 log.exception("Pickems Set Winner error: ")
-                            self.current_games[link]["count"] = 20
+                            self.current_games[link]["count"] = 21
                     await asyncio.sleep(1)
 
                 for link in self.current_games:
-                    if self.current_games[link]["count"] == 20:
+                    if self.current_games[link]["count"] == 21:
                         to_delete.append(link)
                 for link in to_delete:
                     del self.current_games[link]
