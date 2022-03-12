@@ -715,18 +715,25 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Show approximately when Weekyl and Daily reset is
         """
-        today = datetime.datetime.now()
+        today = datetime.datetime.now(datetime.timezone.utc)
         tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
-        pacific = pytz.timezone("US/Pacific")
-        weekly = datetime.datetime(year=tuesday.year, month=tuesday.month, day=tuesday.day, hour=9)
-        reset_time = today + datetime.timedelta(hours=((9 - today.hour) % 24))
-        daily = datetime.datetime(
-            year=reset_time.year, month=reset_time.month, day=reset_time.day, hour=reset_time.hour
+        weekly = datetime.datetime(
+            year=tuesday.year,
+            month=tuesday.month,
+            day=tuesday.day,
+            hour=17,
+            tzinfo=datetime.timezone.utc,
         )
-        weekly_reset = pacific.localize(weekly)
-        weekly_reset_str = int(weekly_reset.timestamp())
-        daily_reset = pacific.localize(daily)
-        daily_reset_str = int(daily_reset.timestamp())
+        reset_time = today + datetime.timedelta(hours=((17 - today.hour) % 24))
+        daily = datetime.datetime(
+            year=reset_time.year,
+            month=reset_time.month,
+            day=reset_time.day,
+            hour=reset_time.hour,
+            tzinfo=datetime.timezone.utc,
+        )
+        weekly_reset_str = int(weekly.timestamp())
+        daily_reset_str = int(daily.timestamp())
         msg = _(
             "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
             "Daily Reset is <t:{daily}:R> (<t:{daily}>)."
