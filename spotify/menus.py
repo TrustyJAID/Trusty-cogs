@@ -845,6 +845,7 @@ class PreviousTrackButton(discord.ui.Button):
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
+        await interaction.response.defer()
 
 
 class NextTrackButton(discord.ui.Button):
@@ -887,6 +888,7 @@ class NextTrackButton(discord.ui.Button):
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
+        await interaction.response.defer()
 
 
 class ShuffleButton(discord.ui.Button):
@@ -955,6 +957,8 @@ class ShuffleButton(discord.ui.Button):
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class RepeatButton(discord.ui.Button):
@@ -1010,6 +1014,7 @@ class RepeatButton(discord.ui.Button):
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
+        await interaction.response.defer()
 
 
 class LikeButton(discord.ui.Button):
@@ -1057,6 +1062,7 @@ class LikeButton(discord.ui.Button):
             )
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page)
+        await interaction.response.defer()
 
 
 class PlayAllButton(discord.ui.Button):
@@ -1117,6 +1123,7 @@ class PlayAllButton(discord.ui.Button):
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.cog.unknown_error(interaction)
+        await interaction.response.defer()
 
 
 class QueueTrackButton(discord.ui.Button):
@@ -1181,6 +1188,7 @@ class QueueTrackButton(discord.ui.Button):
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.cog.unknown_error(interaction)
+        await interaction.response.defer()
 
 
 class StopButton(discord.ui.Button):
@@ -1211,6 +1219,7 @@ class ForwardButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page + 1)
+        await interaction.response.defer()
 
 
 class BackButton(discord.ui.Button):
@@ -1225,6 +1234,7 @@ class BackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page - 1)
+        await interaction.response.defer()
 
 
 class LastItemButton(discord.ui.Button):
@@ -1239,6 +1249,7 @@ class LastItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(self.view._source.get_max_pages() - 1)
+        await interaction.response.defer()
 
 
 class FirstItemButton(discord.ui.Button):
@@ -1253,6 +1264,7 @@ class FirstItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0)
+        await interaction.response.defer()
 
 
 class SpotifyUserMenu(discord.ui.View):
