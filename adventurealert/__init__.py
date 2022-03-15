@@ -8,4 +8,4 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 
 async def setup(bot):
-    bot.add_cog(AdventureAlert(bot))
+    await bot.add_cog(AdventureAlert(bot))
