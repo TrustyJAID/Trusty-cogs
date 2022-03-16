@@ -158,7 +158,7 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         await self._ready.wait()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if DASHBOARD:
             self.rpc_extension.unload()
         if self._sender:

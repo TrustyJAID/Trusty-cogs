@@ -60,7 +60,7 @@ class Tweets(TweetsAPI, commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         try:
             self.bot.remove_dev_env_value("tweets")
         except Exception:

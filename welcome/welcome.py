@@ -939,7 +939,6 @@ class Welcome(Events, commands.Cog):
             verb = _("on")
         await ctx.send(_("Mentioning the user turned {verb}").format(verb=verb))
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.group_check.cancel()
 
-    __unload = cog_unload

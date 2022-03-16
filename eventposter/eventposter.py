@@ -183,7 +183,7 @@ class EventPoster(commands.Cog):
             if await self.pre_check_slash(interaction):
                 await self.slash_commands[interaction_id](interaction)
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.cleanup_old_events.cancel()
         for guild_id, events in self.event_cache.items():
             for user_id, event in events.items():

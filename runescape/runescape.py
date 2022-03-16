@@ -49,7 +49,7 @@ class Runescape(commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.check_new_metrics.cancel()
         self.bot.loop.create_task(self.session.close())
 

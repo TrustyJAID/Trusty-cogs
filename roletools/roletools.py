@@ -160,7 +160,7 @@ class RoleTools(
             log.exception("Error initializing Slash commands")
         self._ready.set()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         for view in self.views:
             # Don't forget to remove persistent views when the cog is unloaded.
             log.debug(f"Stopping view {view}")

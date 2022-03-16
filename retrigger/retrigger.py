@@ -85,7 +85,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if 218773382617890828 in self.bot.owner_ids:
             try:
                 self.bot.remove_dev_env_value("retrigger")

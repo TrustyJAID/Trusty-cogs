@@ -459,6 +459,6 @@ class Twitch(TwitchAPI, commands.Cog):
         ).format(prefix=ctx.clean_prefix)
         await ctx.maybe_send_embed(msg)
 
-    def cog_unload(self):
+    async def cog_unload(self):
         if getattr(self, "loop", None):
             self.loop.cancel()

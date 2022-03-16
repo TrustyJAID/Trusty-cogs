@@ -199,7 +199,7 @@ class Reddit(commands.Cog):
             msg = "{0} from <#{1}>({1})".format(post_url, channel.id)
             log.exception(msg)
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         if self.login:
             try:
                 self.bot.loop.create_task(self.login.close())

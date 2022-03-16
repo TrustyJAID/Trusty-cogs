@@ -180,7 +180,7 @@ class Hockey(
             allowed |= member.guild_permissions >= discord.Permissions(**perms)
         return allowed
 
-    def cog_unload(self):
+    async def cog_unload(self):
         try:
             self.bot.remove_dev_env_value("hockey")
         except Exception:

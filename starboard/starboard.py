@@ -56,7 +56,7 @@ class Starboard(StarboardEvents, commands.Cog):
         self.ready.set()
         log.debug("Done building starboards cache from config.")
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         self.ready.clear()
         self.init_task.cancel()
         if self.cleanup_loop:

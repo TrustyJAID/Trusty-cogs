@@ -396,7 +396,6 @@ class TrustyAvatar(commands.Cog):
                 log.debug("changing avatar to {}".format(new_avatar))
             await asyncio.sleep(randint(1800, 3600))
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.loop.cancel()
 
-    __unload = cog_unload

@@ -39,7 +39,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.loop.cancel()
 
     async def red_delete_data_for_user(self, **kwargs):

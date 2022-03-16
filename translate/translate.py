@@ -454,9 +454,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         ).format(prefix=ctx.prefix)
         await ctx.maybe_send_embed(msg)
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self._clear_cache.cancel()
         self._save_loop.cancel()
         self.bot.loop.create_task(self._save_usage_stats())
-
-    __unload = cog_unload
