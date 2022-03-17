@@ -614,6 +614,8 @@ class SpotifyPages(menus.PageSource):
                     self.is_liked = liked[0]
                 if cur_state.context is not None:
                     playlist_id = cur_state.context.uri.split(":")[-1]
+                    cur_tracks = None
+                    tracks = []
                     if cur_state.context.type == "playlist":
                         cur_tracks = await user_spotify.playlist(playlist_id)
                         tracks = [t.track for t in cur_tracks.tracks.items if t.track is not None]
@@ -624,7 +626,12 @@ class SpotifyPages(menus.PageSource):
                         cur_tracks = await user_spotify.artist(playlist_id)
                         top_tracks = await user_spotify.artist_top_tracks(playlist_id, "from_token")
                         tracks = [t for t in top_tracks if t is not None]
-                    self.context_name = cur_tracks.name
+                    if cur_state.context.type == "collection":
+                        cur_tracks = await user_spotify.saved_tracks(limit=50)
+                        cur_tracks.name = _("Saved Tracks")
+                        tracks = [t.track for t in cur_tracks.items if t is not None]
+                    if cur_tracks:
+                        self.context_name = cur_tracks.name
                     for track in tracks:
                         if track.id is not None:
                             self.select_options.append(SpotifyTrackOption(track))
