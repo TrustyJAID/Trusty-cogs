@@ -12,8 +12,8 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
-from .command_structure import SLASH_COMMANDS
 from .event_obj import ApproveView, Event, ValidImage
+from .slash import EventPosterSlash
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
@@ -27,7 +27,7 @@ EVENT_EMOJIS = [
 
 
 @cog_i18n(_)
-class EventPoster(commands.Cog):
+class EventPoster(EventPosterSlash, commands.Cog):
     """Create admin approved events/announcements"""
 
     __version__ = "2.1.0"
@@ -51,6 +51,7 @@ class EventPoster(commands.Cog):
             "playerclass_options": {},
             "make_thread": False,
             "commands": {},
+            "enable_slash": False,
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
@@ -58,11 +59,8 @@ class EventPoster(commands.Cog):
         self.config.register_global(commands={})
         self.event_cache: Dict[int, Dict[int, Event]] = {}
         self._ready: asyncio.Event = asyncio.Event()
-        self.bot.loop.create_task(self.initialize())
         self.cleanup_old_events.start()
         self.waiting_approval = {}
-        self.SLASH_COMMANDS = SLASH_COMMANDS
-        self.slash_commands = {"guilds": {}}
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -70,118 +68,6 @@ class EventPoster(commands.Cog):
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
-
-    @staticmethod
-    def convert_slash_args(interaction: discord.Interaction, option: dict):
-        convert_args = {
-            3: lambda x: x,
-            4: lambda x: int(x),
-            5: lambda x: bool(x),
-            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
-            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
-            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
-            9: lambda x: final_resolved[int(x)]
-            or interaction.guild.get_role(int(x))
-            or interaction.guild.get_member(int(x)),
-            10: lambda x: float(x),
-        }
-        resolved = interaction.data.get("resolved", {})
-        final_resolved = {}
-        if resolved:
-            resolved_users = resolved.get("users")
-            if resolved_users:
-                resolved_members = resolved.get("members")
-                for _id, data in resolved_users.items():
-                    if resolved_members:
-                        member_data = resolved_members[_id]
-                        member_data["user"] = data
-                        member = discord.Member(
-                            data=member_data, guild=interaction.guild, state=interaction._state
-                        )
-                        final_resolved[int(_id)] = member
-                    else:
-                        user = discord.User(data=data, state=interaction._state)
-                        final_resolved[int(_id)] = user
-            resolved_channels = resolved.get("channels")
-            if resolved_channels:
-                for _id, data in resolved_channels.items():
-                    data["position"] = None
-                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
-                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
-                    final_resolved[int(_id)] = channel
-            resolved_messages = resolved.get("messages")
-            if resolved_messages:
-                for _id, data in resolved_messages.items():
-                    msg = discord.Message(
-                        state=interaction._state, channel=interaction.channel, data=data
-                    )
-                    final_resolved[int(_id)] = msg
-            resolved_roles = resolved.get("roles")
-            if resolved_roles:
-                for _id, data in resolved_roles.items():
-                    role = discord.Role(
-                        guild=interaction.guild, state=interaction._state, data=data
-                    )
-                    final_resolved[int(_id)] = role
-        return convert_args[option["type"]](option["value"])
-
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
-
-    async def pre_check_slash(self, interaction):
-        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
-            await interaction.response.send_message(
-                _("You are not allowed to run this command here."), ephemeral=True
-            )
-            return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
-            await interaction.response.send_message(
-                _("Commands are not allowed in this channel or guild."), ephemeral=True
-            )
-            return False
-        return True
-
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-
-        guild = interaction.guild
-        if guild and guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][guild.id][interaction_id](interaction)
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
 
     async def cog_unload(self):
         self.cleanup_old_events.cancel()
@@ -241,7 +127,7 @@ class EventPoster(commands.Cog):
         await self._ready.wait()
         # Finish loading all the events to memory first before checking
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         await self.bot.wait_until_red_ready()
         try:
             for guild_id in await self.config.all_guilds():
@@ -264,17 +150,6 @@ class EventPoster(commands.Cog):
                     self.bot.add_view(event)
         except Exception:
             log.exception("Error loading events")
-        all_guilds = await self.config.all_guilds()
-        for guild_id, data in all_guilds.items():
-            if data["commands"]:
-                self.slash_commands["guilds"][guild_id] = {}
-                for command, command_id in data["commands"].items():
-                    if command == "event":
-                        self.slash_commands["guilds"][guild_id][command_id] = self.event_commands
-        commands = await self.config.commands()
-        for command_name, command_id in commands.items():
-            if command_name == "event":
-                self.slash_commands[command_id] = self.event_commands
         self._ready.set()
 
     async def add_user_to_event(self, user: discord.Member, event: Event) -> None:
@@ -310,85 +185,6 @@ class EventPoster(commands.Cog):
             event.maybe.remove(user.id)
         event.check_join_enabled()
         await event.update_event()
-
-    @commands.group(name="event")
-    @commands.guild_only()
-    async def event_commands(self, ctx: commands.Context):
-        """All event related commands."""
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "join": self.join_event,
-                "make": self.make_event,
-                "show": self.show_event,
-                "ping": self.event_ping,
-                "clear": self.clear_event,
-                "edit": self.event_edit,
-                "set": self.event_settings,
-                "leave": self.leave_event,
-            }
-            option = ctx.data["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    if option in ["new_members", "members"]:
-                        kwargs[option["name"]] = (self.convert_slash_args(ctx, option),)
-                    else:
-                        kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
-
-    @event_commands.command(name="ping", aliases=["mention"])
-    @commands.guild_only()
-    async def event_ping(
-        self,
-        ctx: commands.Context,
-        include_maybe: Optional[bool] = True,
-        *,
-        message: Optional[str] = None,
-    ) -> None:
-        """
-        Ping all the registered users for your event including optional message
-
-        `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.
-        `[message]` Optional message to include with the ping.
-        """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-        else:
-            await ctx.trigger_typing()
-        announcement_channel, approval_channel = await self.get_channels(ctx)
-        if str(author.id) not in await self.config.guild(ctx.guild).events():
-            msg = _("You don't have an event running with people to ping.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
-            return
-        event_data = await self.config.guild(ctx.guild).events()
-        event = Event.from_json(self.bot, event_data[str(author.id)])
-        msg = event.mention(include_maybe) + ":\n" + message
-        if is_slash:
-            await ctx.followup.send_message(_("Pinging users of your event."), ephemeral=True)
-        for page in pagify(msg):
-            await ctx.channel.send(page, allowed_mentions=discord.AllowedMentions(users=True))
-            # include AllowedMentions here just incase someone has user mentions disabled
-            # since this is intended to ping the users.
 
     async def check_requirements(self, ctx: commands.Context) -> bool:
         is_slash = False
@@ -433,7 +229,50 @@ class EventPoster(commands.Cog):
                 await ctx.send(msg)
         return allowed
 
+    @commands.group(name="event")
+    @commands.guild_only()
+    async def event_commands(self, ctx: commands.Context):
+        """All event related commands."""
+        pass
 
+    @event_commands.command(name="ping", aliases=["mention"])
+    @commands.guild_only()
+    async def event_ping(
+        self,
+        ctx: commands.Context,
+        include_maybe: Optional[bool] = True,
+        *,
+        message: Optional[str] = None,
+    ) -> None:
+        """
+        Ping all the registered users for your event including optional message
+
+        `[include_maybe=True]` either `true` or `false` to include people who registered as maybe.
+        `[message]` Optional message to include with the ping.
+        """
+        is_slash = False
+        if isinstance(ctx, discord.Interaction):
+            is_slash = True
+            await ctx.response.defer()
+        else:
+            await ctx.trigger_typing()
+        announcement_channel, approval_channel = await self.get_channels(ctx)
+        if str(author.id) not in await self.config.guild(ctx.guild).events():
+            msg = _("You don't have an event running with people to ping.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
+        event_data = await self.config.guild(ctx.guild).events()
+        event = Event.from_json(self.bot, event_data[str(author.id)])
+        msg = event.mention(include_maybe) + ":\n" + message
+        if is_slash:
+            await ctx.followup.send_message(_("Pinging users of your event."), ephemeral=True)
+        for page in pagify(msg):
+            await ctx.channel.send(page, allowed_mentions=discord.AllowedMentions(users=True))
+            # include AllowedMentions here just incase someone has user mentions disabled
+            # since this is intended to ping the users.
 
     @event_commands.command(name="make")
     @commands.guild_only()
@@ -823,41 +662,6 @@ class EventPoster(commands.Cog):
         """
         Edit various things in events
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "title": self.title,
-                "slots": self.slots,
-                "remaining": self.remaining,
-                "memberadd": self.members_add,
-                "memberremove": self.members_remove,
-                "maybeadd": self.maybe_add,
-                "mayberemove": self.maybe_remove,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            options = ctx.data["options"][0]["options"][0]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options.get("options", []):
-                    if option["name"] in ["new_members", "members"]:
-                        kwargs[option["name"]] = (self.convert_slash_args(ctx, option),)
-                    else:
-                        kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @event_edit.command()
     @commands.guild_only()
@@ -1221,47 +1025,6 @@ class EventPoster(commands.Cog):
     @commands.guild_only()
     async def event_settings(self, ctx: commands.Context) -> None:
         """Manage server specific settings for events"""
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "settings": self.show_event_settings,
-                "addplayerclass": self.add_guild_playerclass,
-                "removeplayerclass": self.remove_guild_playerclass,
-                "listplayerclass": self.list_guild_playerclass,
-                "class": self.set_default_player_class,
-                "defaultmax": self.set_default_max_slots,
-                "channel": self.set_channel,
-                "cleanup": self.set_cleanup_interval,
-                "maxevents": self.set_max_events,
-                "bypass": self.bypass_admin_approval,
-                "thread": self.make_thread,
-                "approvalchannel": self.set_approval_channel,
-                "roles": self.set_required_roles,
-                "links": self.set_custom_link,
-                "viewlinks": self.view_links,
-                "ping": self.set_ping,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            options = ctx.data["options"][0]["options"][0]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options.get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @event_settings.group(name="slash")
     @commands.admin_or_permissions(manage_guild=True)
@@ -1274,71 +1037,15 @@ class EventPoster(commands.Cog):
     @event_slash.command(name="global")
     @commands.is_owner()
     async def event_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable event commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.event_commands
-        async with self.config.commands() as commands:
-            commands["event"] = command_id
-        await ctx.tick()
-
-    @event_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def event_global_slash_disable(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Disable event commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("event")
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["event"]
-        await ctx.tick()
-
-    @event_slash.command(name="enable")
-    @commands.guild_only()
-    async def event_guild_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable event commands as slash commands in this server
-        """
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.event_commands
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["event"] = command_id
-        await ctx.tick()
-
-    @event_slash.command(name="disable")
-    @commands.guild_only()
-    async def event_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Delete servers slash commands
-        """
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("event", None)
-        if not command_id:
-            await ctx.send(_("Slash commands are not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        async with self.config.guild(ctx.guild).commands() as commands:
-            del commands["event"]
-        await ctx.tick()
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self.event_group, override=True)
+        else:
+            self.bot.tree.remove_command("event")
 
     @event_settings.command(name="settings")
     @commands.guild_only()
@@ -1408,7 +1115,7 @@ class EventPoster(commands.Cog):
         player_class: str,
     ):
         """
-        Add a playerclass choice for users to pick from for this server.
+        Add a playerclass choice for users to pick from on this server.
 
         `[emoji]` Can be any emoji and is used on the drop down selector to
         help distinguish the classes.
@@ -1423,8 +1130,6 @@ class EventPoster(commands.Cog):
             is_slash = True
             author = ctx.user
             await ctx.response.defer()
-            if emoji is not None:
-                emoji = discord.PartialEmoji.from_str(emoji)
         else:
             author = ctx.author
             await ctx.trigger_typing()
@@ -1467,7 +1172,7 @@ class EventPoster(commands.Cog):
     @event_settings.command(name="removeplayerclass")
     async def remove_guild_playerclass(self, ctx: commands.Context, *, player_class: str):
         """
-        Add a playerclass choice for users to pick from for this server.
+        Remove a playerclass choice for users to pick from on this server.
 
         `<player_class>` The name of the playerclass you want to remove.
         """
