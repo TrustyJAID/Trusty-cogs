@@ -25,7 +25,7 @@ _ = Translator("Spotify", __file__)
 
 
 @cog_i18n(_)
-class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.Group):
+class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
     """
     Display information from Spotify's API
     """
@@ -62,6 +62,7 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.
             ],
             version="0.0.0",
             commands={},
+            enable_slash=False,
         )
 
         self._app_token = None
@@ -70,7 +71,6 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.
         self._sender = None
         self._credentials = None
         self._ready = asyncio.Event()
-        self.bot.loop.create_task(self.initialize())
         self.HAS_TOKENS = False
         self.current_menus = {}
         self.user_menus = {}
@@ -97,7 +97,7 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.
                 await self.config.user_from_id(user_id).listen_for.set(new_data)
             await self.config.version.set(self.__version__)
 
-    async def initialize(self):
+    async def cog_load(self):
         await self.migrate_settings()
 
         tokens = await self.bot.get_shared_api_tokens("spotify")

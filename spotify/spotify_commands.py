@@ -86,6 +86,19 @@ class SpotifyCommands:
         Slash command toggling for Spotify
         """
 
+    @spotify_slash.command(name="global")
+    @commands.is_owner()
+    async def set_global_slash_toggle(self, ctx: commands.Context):
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self.spotify)
+        else:
+            self.bot.tree.remove_command("spotify")
+
     @spotify_slash.command(name="context")
     async def spotify_context(self, ctx: Union[commands.Context, discord.Interaction]):
         """
