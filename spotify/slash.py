@@ -1,35 +1,357 @@
 import logging
 import re
 
+from typing import Optional, Literal
+
 import discord
 import tekore
-from discord.enums import InteractionType
-from discord.app_commands import Choice
+from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .helpers import SPOTIFY_RE, VALID_RECOMMENDATIONS, song_embed
+from .helpers import SPOTIFY_RE, song_embed
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
 class SpotifySlash:
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-        guild = interaction.guild
-        if guild and guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                        interaction
-                    )
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
+
+    artist = app_commands.Group(name="artist", description="View Spotify Artist info")
+    playlist = app_commands.Group(name="playlist", description="View Spotify Playlists")
+    device = app_commands.Group(name="device", description="Spotify Device commands")
+
+    KEY_CHOICES = [
+        app_commands.Choice(name="C (also B♯, Ddouble flat)", value=0),
+        app_commands.Choice(name="C♯, D♭ (also Bdouble sharp)", value=1),
+        app_commands.Choice(name="D (also Cdouble sharp, Edouble flat)", value=2),
+        app_commands.Choice(name="D♯, E♭ (also Fdouble flat)", value=3),
+        app_commands.Choice(name="E (also Ddouble sharp, F♭)", value=4),
+        app_commands.Choice(name="F (also E♯, Gdouble flat)", value=5),
+        app_commands.Choice(name="F♯, G♭ (also Edouble sharp)", value=6),
+        app_commands.Choice(name="G (also Fdouble sharp, Adouble flat)", value=7),
+        app_commands.Choice(name="G♯, A♭", value=8),
+        app_commands.Choice(name="A (also Gdouble sharp, Bdouble flat)", value=9),
+        app_commands.Choice(name="A♯, B♭ (also Cdouble flat)", value=10),
+        app_commands.Choice(name="B (also Adouble sharp, C♭)", value=11),
+    ]
+    MODE_CHOICES = [
+        app_commands.Choice(name="major", value=1),
+        app_commands.Choice(name="minor", value=0),
+    ]
+
+    @app_commands.command(name="now", description="Displays your currently played spotify song")
+    async def spotify_now_slash(
+        self,
+        ctx: discord.Interaction,
+        detailed: Optional[bool] = False,
+        member: Optional[discord.Member] = None,
+        public: bool = True,
+    ):
+        """Displays your currently played spotify song"""
+        await self.spotify_now(ctx, detailed, member, public)
+
+    @app_commands.command(name="recommendations", description="Get Spotify Recommendations")
+    @app_commands.choices(
+        key=KEY_CHOICES,
+        mode=MODE_CHOICES,
+    )
+    @app_commands.describe(
+        genres="Must be any combination of valid genres",
+        tracks="Any Spotify track URL used as the seed.",
+        artists="Any Spotify artist URL used as the seed.",
+        acousticness="A value from 0 to 100 the target acousticness of the tracks.",
+        danceability="A value from 0 to 100 describing how danceable the tracks are.",
+        energy="Energy is a measure from 0 to 100 and represents a perceptual measure of intensity and activity",
+        instrumentalness="A value from 0 to 100 representing whether or not a track contains vocals.",
+        key="The target key of the tracks.",
+        liveness="A value from 0-100 representing the presence of an audience in the recording.",
+        loudness="The overall loudness of a track in decibels (dB) between -60 and 0 db.",
+        mode="The target modality (major or minor) of the track.",
+        popularity="A value from 0-100 the target popularity of the tracks.",
+        speechiness="A value from 0-100 Speechiness is the presence of spoken words in a track.",
+        tempo="The overall estimated tempo of a track in beats per minute (BPM).",
+        time_signature="The time signature ranges from 3 to 7 indicating time signatures of '3/4', to '7/4'.",
+        valence="A measure from 0 to 100 describing the musical positiveness conveyed by a track",
+    )
+    async def spotify_recommendations_slash(
+        self,
+        interaction: discord.Interaction,
+        genres: str,
+        tracks: Optional[str],
+        artists: Optional[str],
+        acousticness: Optional[app_commands.Range[int, 0, 100]],
+        danceability: Optional[app_commands.Range[int, 0, 100]],
+        energy: Optional[app_commands.Range[int, 0, 100]],
+        instrumentalness: Optional[app_commands.Range[int, 0, 100]],
+        key: Optional[app_commands.Choice[int]],
+        liveness: Optional[app_commands.Range[int, 0, 100]],
+        loudness: Optional[app_commands.Range[int, 0, 100]],
+        mode: Optional[app_commands.Choice[int]],
+        popularity: Optional[app_commands.Range[int, 0, 100]],
+        speechiness: Optional[app_commands.Range[int, 0, 100]],
+        tempo: Optional[int],
+        time_signature: Optional[int],
+        valence: Optional[app_commands.Range[int, 0, 100]],
+        detailed: Optional[bool],
+    ):
+        """Get Spotify Recommendations"""
+        recs = {
+            "genres": [g for g in genres.split(" ")],
+            "track_ids": tracks,
+            "artist_ids": artists,
+            "limit": 100,
+            "market": "from_token",
+            "target_acousticness": acousticness,
+            "target_danceability": danceability,
+            "target_energy": energy,
+            "target_instrumentalness": instrumentalness,
+            "target_key": key.value if key else None,
+            "target_liveness": liveness,
+            "target_loudness": loudness,
+            "target_mode": mode.value if mode else None,
+            "target_popularity": popularity,
+            "target_speechiness": speechiness,
+            "target_tempo": tempo,
+            "target_time_signature": time_signature,
+            "target_valence": valence,
+        }
+        await self.spotify_recommendations(interaction, detailed, recommendations=recs)
+
+    @spotify_recommendations_slash.autocomplete("genres")
+    async def genres_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+        namespace: app_commands.Namespace,
+    ):
+        supplied_genres = ""
+        new_genre = ""
+        for sup in current.split(" "):
+            if sup in self.GENRES:
+                supplied_genres += f"{sup} "
+            else:
+                new_genre = sup
+
+        ret = [
+            app_commands.Choice(name=f"{supplied_genres} {g}", value=f"{supplied_genres} {g}")
+            # {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
+            for g in self.GENRES
+            if new_genre in g
+        ]
+        if supplied_genres:
+            # ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
+            ret.insert(0, app_commands.Choice(name=supplied_genres, value=supplied_genres))
+        return ret[:25]
+
+    @device.command(name="transfer")
+    async def spotify_device_transfer_slash(
+        self, interaction: discord.Interaction, device_name: str
+    ):
+        """Change the currently playing spotify device"""
+        await self.spotify_device_transfer(interaction, device_name=device_name)
+
+    @device.command(name="default")
+    async def spotify_device_default_slash(
+        self, interaction: discord.Interaction, device_name: str
+    ):
+        """
+        Set your default device to attempt to start playing new tracks on
+        if you aren't currently listening to Spotify.
+        """
+        await self.spotify_device_default(interaction, device_name)
+
+    @device.command(name="list")
+    async def spotify_device_list_slash(self, interaction: discord.Interaction):
+        """List all available devices for Spotify"""
+        await self.spotify_device_list(interaction)
+
+    @spotify_device_transfer_slash.autocomplete("device_name")
+    @spotify_device_default_slash.autocomplete("device_name")
+    async def device_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+        namespace: app_commands.Namespace,
+    ):
+        if not await self.config.user(interaction.user).token():
+            # really don't want to force users to auth from autocomplete
+            log.debug("No tokens.")
+            return
+        user_token = await self.get_user_auth(interaction)
+        if not user_token:
+            log.debug("STILL No tokens.")
+            return
+        if interaction.user.id not in self._temp_user_devices:
+            try:
+                user_devices = []
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    devices = await user_spotify.playback_devices()
+                for d in devices:
+                    # user_devices.append({"name": d.name, "value": d.id})
+                    user_devices.append(app_commands.Choice(name=d.name, value=d.id))
+                self._temp_user_devices[interaction.user.id] = user_devices
+            except Exception:
+                log.exception("uhhhhhh")
+                return
+
+        choices = [
+            i for i in self._temp_user_devices[interaction.user.id] if current in i.name.lower()
+        ]
+        return choices[:25]
+
+    @app_commands.command(name="forgetme")
+    async def spotify_forgetme_slash(self, interaction: discord.Interaction):
+        """Forget all your spotify settings and credentials on the bot"""
+        await self.spotify_forgetme(interaction)
+
+    @app_commands.command(name="me")
+    async def spotify_me_slash(self, interaction: discord.Interaction):
+        """Shows your current Spotify Settings"""
+        await self.spotify_me(interaction)
+
+    @app_commands.command(name="genres")
+    async def spotify_genres_slash(self, interaction: discord.Interaction):
+        """Display all available genres for recommendations"""
+        await self.spotify_genres(interaction)
+
+    @app_commands.command(name="recent")
+    async def spotify_recently_played_slash(
+        self, interaction: discord.Interaction, detailed: Optional[bool]
+    ):
+        """Display your most recently played songs on Spotify"""
+        await self.spotify_recently_played(interaction, detailed)
+
+    @app_commands.command(name="toptracks")
+    async def top_tracks_slash(self, interaction: discord.Interaction):
+        """List your top tracks on Spotify"""
+        await self.top_tracks(interaction)
+
+    @app_commands.command(name="topartists")
+    async def top_artsist_slash(self, interaction: discord.Interaction):
+        """List your top artists on Spotify"""
+        await self.top_artists(interaction)
+
+    @app_commands.command(name="new")
+    async def spotify_new_slash(self, interaction: discord.Interaction):
+        """List new releases on Spotify"""
+        await self.spotify_new(interaction)
+
+    @app_commands.command(name="pause")
+    async def spotify_pause_slash(self, interaction: discord.Interaction):
+        """Pauses Spotify for you"""
+        await self.spotify_pause(interaction)
+
+    @app_commands.command(name="resume")
+    async def spotify_resume_slash(self, interaction: discord.Interaction):
+        """Resumes Spotify for you"""
+        await self.spotify_resume(interaction)
+
+    @app_commands.command(name="next")
+    async def spotify_next_slash(self, interaction: discord.Interaction):
+        """Skips to the next track in queue on Spotify"""
+        await self.spotify_next(interaction)
+
+    @app_commands.command(name="previous")
+    async def spotify_previous_slash(self, interaction: discord.Interaction):
+        """Skip to the previous track in queue on Spotify"""
+        await self.spotify_previous(interaction)
+
+    @app_commands.command(name="play")
+    async def spotify_play_slash(
+        self, interaction: discord.Interaction, url_or_playlist_name: Optional[str]
+    ):
+        """Play a track, playlist, or album on Spotify"""
+        await self.spotify_play(interaction, url_or_playlist_name)
+
+    @app_commands.command(name="queue")
+    async def spotify_queue_add_slash(self, interaction: discord.Interaction, songs: str):
+        """Queue a song to play next on Spotify"""
+        await self.spotify_queue_add(interaction, songs=songs)
+
+    @app_commands.command(name="repeat")
+    async def spotify_repeat_slash(
+        self, interaction: discord.Interaction, state: Optional[Literal["off", "track", "context"]]
+    ):
+        """Set your Spotify players repeat state"""
+        await self.spotify_repeat(interaction, state)
+
+    @app_commands.command(name="shuffle")
+    async def spotify_shuffle_slash(self, interaction: discord.Interaction, state: Optional[bool]):
+        """Set your Spotify players shuffle state"""
+        await self.spotify_shuffle(interaction, state)
+
+    @app_commands.command(name="seek")
+    @app_commands.describe(seconds="Seconds or a value formatted like 00:00:00 (hh:mm:ss)")
+    async def spotify_seek_slash(self, interaction: discord.Interaction, seconds: str):
+        """Seek to a specific point in the current song."""
+        await self.spotify_seek(interaction, seconds)
+
+    @app_commands.command(name="volume")
+    async def spotify_volume_slash(
+        self, interaction: discord.Interaction, volume: app_commands.Range[int, 0, 100]
+    ):
+        """Set your Spotify players volume percentage"""
+        await self.spotify_volume(interaction, volume)
+
+    @playlist.command(name="featured")
+    async def spotify_playlist_featured_slash(self, interaction: discord.Interaction):
+        """List your Spotify featured Playlists"""
+        await self.spotify_playlist_featured(interaction)
+
+    @playlist.command(name="list")
+    async def spotify_playlist_list_slash(self, interaction: discord.Interaction):
+        """List your Spotify Playlists"""
+        await self.spotify_playlist_list(interaction)
+
+    @playlist.command(name="view")
+    async def spotify_playlist_view_slash(self, interaction: discord.Interaction):
+        """View details about your Spotify playlists"""
+        await self.spotify_playlist_view(interaction)
+
+    @playlist.command(name="create")
+    async def spotify_playlist_create_slash(
+        self,
+        interaction: discord.Interaction,
+        name: str,
+        public: Optional[bool] = False,
+        description: Optional[str] = "",
+    ):
+        """Create a Spotify Playlist"""
+        await self.spotify_playlist_create(interaction, name, public, description=description)
+
+    @playlist.command(name="add")
+    async def spotify_playlist_add_slash(
+        self, interaction: discord.Interaction, name: str, to_add: str
+    ):
+        """Add a track to a Spotify Playlist"""
+        await self.spotify_playlist_add(interaction, name, to_add=to_add)
+
+    @playlist.command(name="remove")
+    async def spotify_playlist_remove_slash(
+        self, interaction: discord.Interaction, name: str, to_remove: str
+    ):
+        """Add a track to a Spotify Playlist"""
+        await self.spotify_playlist_add(interaction, name, to_remove=to_remove)
+
+    @playlist.command(name="follow")
+    async def spotify_playlist_follow_slash(
+        self, interaction: discord.Interaction, to_follow: str, public: Optional[bool] = False
+    ):
+        """Add a playlist to your Spotify library"""
+        await self.spotify_playlist_follow(interaction, public, to_follow=to_follow)
+
+    @artist.command(name="follow")
+    async def spotify_artist_follow_slash(self, interaction: discord.Interaction, to_follow: str):
+        """Add an artist to your Spotify Library"""
+        await self.spotify_artist_follow(interaction, to_follow=to_follow)
+
+    @artist.command(name="albums")
+    async def spotify_artist_albums_slash(self, interaction: discord.Interaction, to_follow: str):
+        """View an artists albums on Spotify"""
+        await self.spotify_artist_albums(interaction, to_follow=to_follow)
 
     async def pre_check_slash(self, interaction):
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
@@ -53,13 +375,22 @@ class SpotifySlash:
             return False
         return True
 
-    async def queue_from_message(self, interaction: discord.Interaction):
-        log.debug(interaction.message)
-        message_data = list(interaction.data["resolved"]["messages"].values())[0]
-        message = discord.Message(
-            state=interaction._state, channel=interaction.channel, data=message_data
-        )
-        log.debug(message)
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        # log.debug(f"Interaction received {interaction.data['name']}")
+        interaction_id = int(interaction.data.get("id", 0))
+        guild = interaction.guild
+        if guild and guild.id in self.slash_commands["guilds"]:
+            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
+                if await self.pre_check_slash(interaction):
+                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
+                        interaction
+                    )
+        if interaction_id in self.slash_commands:
+            if await self.pre_check_slash(interaction):
+                await self.slash_commands[interaction_id](interaction)
+
+    async def queue_from_message(self, interaction: discord.Interaction, message: discord.Message):
         user = interaction.user
         ctx = await self.bot.get_context(message)
         user_token = await self.get_user_auth(ctx, user)
@@ -162,13 +493,7 @@ class SpotifySlash:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(interaction)
 
-    async def play_from_message(self, interaction: discord.Interaction):
-        log.debug(interaction.message)
-        message_data = list(interaction.data["resolved"]["messages"].values())[0]
-        message = discord.Message(
-            state=interaction._state, channel=interaction.channel, data=message_data
-        )
-        log.debug(message)
+    async def play_from_message(self, interaction: discord.Interaction, message: discord.Message):
         user = interaction.user
         ctx = await self.bot.get_context(message)
         user_token = await self.get_user_auth(ctx, user)
@@ -326,124 +651,11 @@ class SpotifySlash:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(interaction)
 
-    @staticmethod
-    def convert_slash_args(interaction: discord.Interaction, option: dict):
-        convert_args = {
-            3: lambda x: x,
-            4: lambda x: int(x),
-            5: lambda x: bool(x),
-            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
-            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
-            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
-            9: lambda x: final_resolved[int(x)]
-            or interaction.guild.get_role(int(x))
-            or interaction.guild.get_member(int(x)),
-            10: lambda x: float(x),
-        }
-        resolved = interaction.data.get("resolved", {})
-        final_resolved = {}
-        if resolved:
-            resolved_users = resolved.get("users")
-            if resolved_users:
-                resolved_members = resolved.get("members")
-                for _id, data in resolved_users.items():
-                    if resolved_members:
-                        member_data = resolved_members[_id]
-                        member_data["user"] = data
-                        member = discord.Member(
-                            data=member_data, guild=interaction.guild, state=interaction._state
-                        )
-                        final_resolved[int(_id)] = member
-                    else:
-                        user = discord.User(data=data, state=interaction._state)
-                        final_resolved[int(_id)] = user
-            resolved_channels = data.get("channels")
-            if resolved_channels:
-                for _id, data in resolved_channels.items():
-                    data["position"] = None
-                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
-                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
-                    final_resolved[int(_id)] = channel
-            resolved_messages = resolved.get("messages")
-            if resolved_messages:
-                for _id, data in resolved_messages.items():
-                    msg = discord.Message(
-                        state=interaction._state, channel=interaction.channel, data=data
-                    )
-                    final_resolved[int(_id)] = msg
-            resolved_roles = resolved.get("roles")
-            if resolved_roles:
-                for _id, data in resolved_roles.items():
-                    role = discord.Role(
-                        guild=interaction.guild, state=interaction._state, data=data
-                    )
-                    final_resolved[int(_id)] = role
-        return convert_args[option["type"]](option["value"])
-
     async def set_genres(self):
         try:
             self.GENRES = await self._spotify_client.recommendation_genre_seeds()
         except Exception:
             log.exception("Error grabbing genres.")
-
-    async def get_genre_choices(self, cur_value: str):
-        supplied_genres = ""
-        new_genre = ""
-        for sup in cur_value.split(" "):
-            if sup in self.GENRES:
-                supplied_genres += f"{sup} "
-            else:
-                new_genre = sup
-
-        ret = [
-            Choice(name=f"{supplied_genres} {g}", value=f"{supplied_genres} {g}")
-            # {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
-            for g in self.GENRES
-            if new_genre in g
-        ]
-        if supplied_genres:
-            # ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
-            ret.insert(0, Choice(name=supplied_genres, value=supplied_genres))
-        return ret
-
-    async def parse_spotify_recommends(self, interaction: discord.Interaction):
-        command_options = interaction.data["options"][0]["options"]
-        if interaction.type is InteractionType.autocomplete:
-            cur_value = command_options[0]["value"]
-            if not self.GENRES:
-                await self.set_genres()
-
-            genre_choices = await self.get_genre_choices(cur_value)
-            await interaction.response.autocomplete(genre_choices[:25])
-            return
-        recommendations = {"limit": 100, "market": "from_token"}
-        detailed = False
-        for option in command_options:
-            name = option["name"]
-            if name == "detailed":
-                detailed = True
-                continue
-            if name in VALID_RECOMMENDATIONS and name != "mode":
-                recommendations[f"target_{name}"] = VALID_RECOMMENDATIONS[name](option["value"])
-            elif name == "genres":
-                recommendations[name] = option["value"].strip().split(" ")
-            elif name in ["artists", "tracks"]:
-                song_data = SPOTIFY_RE.finditer(option["value"])
-                tracks = []
-                artists = []
-                if song_data:
-                    for match in song_data:
-                        if match.group(2) == "track":
-                            tracks.append(match.group(3))
-                        if match.group(2) == "artist":
-                            artists.append(match.group(3))
-                if tracks:
-                    recommendations["track_ids"] = tracks
-                if artists:
-                    recommendations["artist_ids"] = artists
-            else:
-                recommendations[f"target_{name}"] = option["value"]
-        await self.spotify_recommendations(interaction, detailed, recommendations=recommendations)
 
     async def check_requires(self, func, interaction) -> bool:
         fake_ctx = discord.Object(id=interaction.id)

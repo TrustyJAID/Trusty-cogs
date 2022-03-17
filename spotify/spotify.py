@@ -9,7 +9,6 @@ import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .command_structure import SLASH_COMMANDS
 from .helpers import SPOTIFY_RE, InvalidEmoji
 from .spotify_commands import SpotifyCommands
 from .slash import SpotifySlash
@@ -26,7 +25,7 @@ _ = Translator("Spotify", __file__)
 
 
 @cog_i18n(_)
-class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
+class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.Group):
     """
     Display information from Spotify's API
     """
@@ -83,7 +82,6 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
         if DASHBOARD:
             self.rpc_extension = DashboardRPC_Spotify(self)
         self.slash_commands = {"guilds": {}}
-        self.SLASH_COMMANDS = SLASH_COMMANDS
         self._temp_user_devices = {}
 
     async def migrate_settings(self):
@@ -134,14 +132,10 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
                         self.slash_commands["guilds"][guild_id][
                             command_id
                         ] = self.play_from_message
-                    if command == "spotify":
-                        self.slash_commands["guilds"][guild_id][command_id] = self.spotify_com
                     if command == "queue on spotify":
                         self.slash_commands["guilds"][guild_id][command_id] = self.queue_from_message
         commands = await self.config.commands()
         for command_name, command_id in commands.items():
-            if command_name == "spotify":
-                self.slash_commands[command_id] = self.spotify_com
             if command_name == "play on spotify":
                 self.slash_commands[command_id] = self.play_from_message
             if command_name == "queue on spotify":

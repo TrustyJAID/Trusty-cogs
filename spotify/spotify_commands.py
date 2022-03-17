@@ -49,132 +49,30 @@ ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), deli
 
 
 class SpotifyCommands:
+
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Spotify commands
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "now": self.spotify_now,
-                "recommendations": self.parse_spotify_recommends,
-                "forgetme": self.spotify_forgetme,
-                "me": self.spotify_me,
-                "search": self.spotify_search,
-                "genres": self.spotify_genres,
-                "recent": self.spotify_recently_played,
-                "pause": self.spotify_pause,
-                "resume": self.spotify_resume,
-                "next": self.spotify_next,
-                "previous": self.spotify_previous,
-                "play": self.spotify_play,
-                "queue": self.spotify_queue_add,
-                "repeat": self.spotify_repeat,
-                "seek": self.spotify_seek,
-                "volume": self.spotify_volume,
-                "device": self.spotify_device,
-                "playlist": self.spotify_playlist,
-                "set": self.spotify_set,
-                "artist": self.spotify_artist,
-            }
-            option = ctx.data["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-            if option == "recommendations":
-                await func(ctx)
-                return
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @spotify_com.group(name="set")
     async def spotify_set(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Setup Spotify cog
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {}
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            try:
-                kwargs = {
-                    i["name"]: i["value"]
-                    for i in ctx.data["options"][0]["options"][0].get("options", [])
-                }
-            except KeyError:
-                kwargs = {}
-                pass
-            await func(ctx, **kwargs)
 
     @spotify_com.group(name="playlist", aliases=["playlists"])
     async def spotify_playlist(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         View Spotify Playlists
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "add": self.spotify_playlist_add,
-                "create": self.spotify_playlist_create,
-                "featured": self.spotify_playlist_featured,
-                "follow": self.spotify_playlist_follow,
-                "list": self.spotify_playlist_list,
-                "remove": self.spotify_playlist_remove,
-                "view": self.spotify_playlist_view,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-            try:
-                kwargs = {
-                    i["name"]: i["value"]
-                    for i in ctx.data["options"][0]["options"][0].get("options", [])
-                }
-            except KeyError:
-                kwargs = {}
-                pass
-            await func(ctx, **kwargs)
 
     @spotify_com.group(name="artist", aliases=["artists"])
     async def spotify_artist(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         View Spotify Artist info
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "follow": self.spotify_artist_follow,
-                "albums": self.spotify_artist_albums,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-            try:
-                kwargs = {
-                    i["name"]: i["value"]
-                    for i in ctx.data["options"][0]["options"][0].get("options", [])
-                }
-            except KeyError:
-                kwargs = {}
-                pass
-            await func(ctx, **kwargs)
 
     @spotify_com.group(name="device")
     @commands.bot_has_permissions(add_reactions=True)
@@ -182,58 +80,6 @@ class SpotifyCommands:
         """
         Spotify device commands
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "transfer": self.spotify_device_transfer,
-                "default": self.spotify_device_default,
-                "list": self.spotify_device_list,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-            command_options = ctx.data["options"][0]["options"][0].get("options", [])
-            if ctx.type is InteractionType.autocomplete:
-                cur_value = command_options[0]["value"]
-                if not await self.config.user(ctx.user).token():
-                    # really don't want to force users to auth from autocomplete
-                    log.debug("No tokens.")
-                    return
-                user_token = await self.get_user_auth(ctx)
-                if not user_token:
-                    log.debug("STILL No tokens.")
-                    return
-                if ctx.user.id not in self._temp_user_devices:
-                    try:
-                        user_devices = []
-                        user_spotify = tekore.Spotify(sender=self._sender)
-                        with user_spotify.token_as(user_token):
-                            devices = await user_spotify.playback_devices()
-                        for d in devices:
-                            # user_devices.append({"name": d.name, "value": d.id})
-                            user_devices.append(Choice(name=d.name, value=d.id))
-                        self._temp_user_devices[ctx.user.id] = user_devices
-                    except Exception:
-                        log.exception("uhhhhhh")
-                        return
-
-                choices = [
-                    i
-                    for i in self._temp_user_devices[ctx.user.id]
-                    if cur_value in i.name.lower()
-                ]
-                await ctx.response.autocomplete(choices[:25])
-                return
-            try:
-                kwargs = {
-                    i["name"]: i["value"]
-                    for i in ctx.data["options"][0]["options"][0].get("options", [])
-                }
-            except KeyError:
-                kwargs = {}
-                pass
-            await func(ctx, **kwargs)
 
     @spotify_set.group(name="slash")
     @commands.admin_or_permissions(manage_guild=True)
@@ -241,7 +87,12 @@ class SpotifyCommands:
         """
         Slash command toggling for Spotify
         """
-        pass
+
+    @spotify_slash.command(name="sync")
+    async def sync_spotify(self, ctx: commands.Context):
+        """Sync spotify slash commands"""
+        await self.bot.tree.sync()
+        await ctx.tick()
 
     @spotify_slash.command(name="context")
     async def spotify_context(self, ctx: Union[commands.Context, discord.Interaction]):
@@ -342,87 +193,6 @@ class SpotifyCommands:
                 commands["queue on spotify"] = command_id
                 self.slash_commands[command_id] = self.queue_from_message
 
-        await ctx.tick()
-
-    @spotify_slash.command(name="global")
-    @commands.is_owner()
-    async def spotify_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable Spotify commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.spotify_com
-        async with self.config.commands() as commands:
-            commands["spotify"] = command_id
-        await ctx.tick()
-
-    @spotify_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def spotify_global_slash_disable(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ):
-        """
-        Disable Spotify commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("spotify", None)
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["spotify"]
-        await ctx.tick()
-
-    @spotify_slash.command(name="enable")
-    @commands.guild_only()
-    async def spotify_guild_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable Spotify commands as slash commands in this server
-        """
-        global_commands = await self.config.commands()
-        if "spotify" in global_commands:
-            await ctx.send(_("This command is already registered globally."))
-            return
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.spotify_com
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["spotify"] = command_id
-        await ctx.tick()
-
-    @spotify_slash.command(name="disable")
-    @commands.guild_only()
-    async def spotify_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Delete servers slash commands
-        """
-
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("spotify", None)
-        if not command_id:
-            await ctx.send(_("This command is not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        async with self.config.guild(ctx.guild).commands() as commands:
-            del commands["spotify"]
-        global_commands = await self.config.commands()
-        if "spotify" in global_commands:
-            await ctx.send(
-                _("This command is already registered globally so you may still see it.")
-            )
-            return
         await ctx.tick()
 
     async def not_authorized(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
@@ -915,7 +685,6 @@ class SpotifyCommands:
             await ctx.send(embed=em)
 
     @spotify_com.command(name="now", aliases=["np"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def spotify_now(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -970,7 +739,9 @@ class SpotifyCommands:
                     user_token=user_token, sender=self._sender, detailed=detailed
                 )
             else:
-                page_source = SpotifyTrackPages(items=[track], detailed=detailed, cur_track=track.id)
+                page_source = SpotifyTrackPages(
+                    items=[track], detailed=detailed, cur_track=track.id
+                )
             x = SpotifyUserMenu(
                 source=page_source,
                 delete_message_after=delete_after,
@@ -1285,7 +1056,7 @@ class SpotifyCommands:
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def top_artists(self, ctx: Union[commands.Context, discord.Interaction]):
         """
-        List your top tracks on spotify
+        List your top artists on spotify
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:
