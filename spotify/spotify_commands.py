@@ -3,8 +3,6 @@ from copy import copy
 from typing import Optional, Union
 
 import discord
-from discord.enums import InteractionType
-from discord.app_commands import Choice
 import tekore
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -87,12 +85,6 @@ class SpotifyCommands:
         """
         Slash command toggling for Spotify
         """
-
-    @spotify_slash.command(name="sync")
-    async def sync_spotify(self, ctx: commands.Context):
-        """Sync spotify slash commands"""
-        await self.bot.tree.sync()
-        await ctx.tick()
 
     @spotify_slash.command(name="context")
     async def spotify_context(self, ctx: Union[commands.Context, discord.Interaction]):
