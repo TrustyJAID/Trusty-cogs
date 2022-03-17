@@ -136,7 +136,6 @@ class SpotifySlash:
         self,
         interaction: discord.Interaction,
         current: str,
-        namespace: app_commands.Namespace,
     ):
         supplied_genres = ""
         new_genre = ""
@@ -185,7 +184,6 @@ class SpotifySlash:
         self,
         interaction: discord.Interaction,
         current: str,
-        namespace: app_commands.Namespace,
     ):
         if not await self.config.user(interaction.user).token():
             # really don't want to force users to auth from autocomplete
