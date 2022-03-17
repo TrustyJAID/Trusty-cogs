@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from .helpers import SPOTIFY_RE, InvalidEmoji
 from .spotify_commands import SpotifyCommands
 from .slash import SpotifySlash
+from .menus import emoji_handler
 
 try:
     from .rpc import DashboardRPC_Spotify

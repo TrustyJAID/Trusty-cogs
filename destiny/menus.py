@@ -12,6 +12,8 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, humanize_list
 from redbot.vendored.discord.ext import menus
 
+BASE_URL = "https://bungie.net"
+
 
 log = logging.getLogger("red.Trusty-cogs.destiny")
 _ = Translator("Destiny", __file__)
@@ -37,6 +39,48 @@ class BasePages(menus.ListPageSource):
     async def format_page(self, menu: menus.MenuPages, page):
         page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return page
+
+
+class VaultPages(menus.ListPageSource):
+    def __init__(self, pages: list, cog: commands.Cog):
+        super().__init__(pages, per_page=1)
+        self.pages = pages
+        self.select_options = []
+        self.cog = cog
+        self.current_item_hash = None
+        self.current_item_instance = None
+
+        for count, page in enumerate(pages):
+            self.select_options.append(
+                discord.SelectOption(
+                    label=_("Page {number}").format(number=count + 1),
+                    value=count,
+                    description="figure out how to get the gun name here",
+                )
+            )
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, page):
+        self.current_item_hash = page["itemHash"]
+        self.current_item_instance = page.get("itemInstanceId", None)
+        items = await self.cog.get_definition("DestinyInventoryItemDefinition", [self.current_item_hash])
+        item_data = items[str(self.current_item_hash)]
+        embed = discord.Embed(title=item_data.get("displayProperties", {"name": "None"}).get("name"))
+        if "displayProperties" in item_data:
+            embed.set_thumbnail(url=BASE_URL + item_data["displayProperties"]["icon"])
+        if item_data.get("screenshot", None):
+            embed.set_image(url=BASE_URL + item_data["screenshot"])
+        if self.current_item_instance is not None:
+            instance_data = await self.cog.get_instanced_item(menu.author, self.current_item_instance)
+            perk_hashes = [i["perkHash"] for i in instance_data["perks"]["data"]["perks"]]
+            perk_info = await self.cog.get_definition("DestinyInventoryItemDefinition", perk_hashes)
+            perk_str = "\n".join(perk["displayProperties"]["name"] for perk in perk_info.values())
+            embed.description = perk_str
+
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
 
 
 class StopButton(discord.ui.Button):
@@ -164,6 +208,10 @@ class BaseMenu(discord.ui.View):
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         # await self.source._prepare_once()
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
     async def _get_kwargs_from_page(self, page):

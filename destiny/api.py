@@ -57,12 +57,6 @@ class DestinyAPI:
     bot: Red
     throttle: float
 
-    def __init__(self, *args):
-        self.config: Config
-        self.bot: Red
-        self.throttle: float
-        self.destiny_item_cache: dict
-
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
     ) -> dict:
@@ -92,7 +86,7 @@ class DestinyAPI:
                         log.debug(url)
                         raise Destiny2InvalidParameters(data)
                 else:
-                    log.error("Could not connect to the API")
+                    log.error("Could not connect to the API: %s", resp.status)
                     raise Destiny2APIError
 
     async def post_url(
@@ -130,6 +124,24 @@ class DestinyAPI:
                     data = await resp.json()
                     log.error("Could not connect to the API %s" % data)
                     raise Destiny2APIError(data.get("Message", "Unknown error."))
+
+    async def transfer_item(
+        self,
+        item_hash: int,
+        item_instance: int,
+        character_id: int,
+        to_vault: bool,
+        membership_type: int,
+        stack_size: int,
+    ):
+        data = {
+            "itemReferenceHash": item_hash,
+            "stackSize": stack_size,
+            "transferToVault": to_vault,
+            "itemId": item_instance,
+            "characterId": character_id,
+            "membershipType": membership_type,
+        }
 
     async def get_access_token(self, code: str) -> dict:
         """
@@ -292,7 +304,9 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {"components": "100,102,103,104,200,201,202,204,205,300,302,304,307,600,800,900,1000,1100,1300"}
+        params = {
+            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,600,800,900,1000,1100,1300"
+        }
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
@@ -307,10 +321,26 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {"components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"}
+        params = {
+            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"
+        }
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Character/{character_id}"
+        return await self.request_url(url, params=params, headers=headers)
+
+    async def get_instanced_item(self, user: discord.User, instanced_item: int) -> dict:
+        try:
+            headers = await self.build_headers(user)
+        except Exception as e:
+            log.error(e, exc_info=True)
+            raise Destiny2RefreshTokenError
+        params = {
+            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"
+        }
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Item/{instanced_item}/"
         return await self.request_url(url, params=params, headers=headers)
 
     def get_entities(self, entity: str, d1: bool = False) -> dict:
@@ -612,8 +642,8 @@ class DestinyAPI:
             author = ctx.author
 
         error_msg = _(
-                "You need to authenticate your Bungie.net account before this command will work."
-            )
+            "You need to authenticate your Bungie.net account before this command will work."
+        )
 
         if user:
             if not (
@@ -718,12 +748,10 @@ class DestinyAPI:
         except discord.errors.Forbidden:
             message = await ctx.channel.send(msg)
 
-        emojis = ReactionPredicate.NUMBER_EMOJIS[1:-(len(profile["destinyMemberships"]) + 1)]
+        emojis = ReactionPredicate.NUMBER_EMOJIS[1 : -(len(profile["destinyMemberships"]) + 1)]
         log.debug(emojis)
         start_adding_reactions(message, emojis)
-        pred = ReactionPredicate.with_emojis(
-            emojis=emojis, message=message, user=author
-        )
+        pred = ReactionPredicate.with_emojis(emojis=emojis, message=message, user=author)
         try:
             msg = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:

@@ -2,22 +2,16 @@ import asyncio
 import csv
 import datetime
 import functools
-import json
 import logging
 import re
 from io import BytesIO, StringIO
-from pathlib import Path
 from typing import List, Literal, Optional, Union
 
 import discord
-import pytz
-from discord.enums import InteractionType
-from discord.app_commands import Choice
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
-    humanize_list,
     humanize_timedelta,
     pagify,
 )
@@ -26,10 +20,10 @@ from redbot.core.utils.predicates import ReactionPredicate
 from tabulate import tabulate
 
 from .api import DestinyAPI
-from .command_structure import SLASH_COMMANDS
 from .converter import DestinyActivity, DestinyEververseItemType, SearchInfo, StatsPage
 from .errors import Destiny2APIError, Destiny2MissingManifest
-from .menus import BaseMenu, BasePages
+from .menus import BaseMenu, BasePages, VaultPages
+from .slash import DestinySlash
 
 DEV_BOTS = (552261846951002112,)
 # If you want parsing the manifest data to be easier add your
@@ -45,7 +39,7 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)
-class Destiny(DestinyAPI, commands.Cog):
+class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog):
     """
     Get information from the Destiny 2 API
     """
@@ -54,11 +48,13 @@ class Destiny(DestinyAPI, commands.Cog):
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
+        super().__init__()
         self.bot = bot
         default_global = {
             "api_token": {"api_key": "", "client_id": "", "client_secret": ""},
             "manifest_version": "",
             "commands": {},
+            "enable_slash": False,
         }
         default_user = {"oauth": {}, "account": {}}
         self.config = Config.get_conf(self, 35689771456)
@@ -66,9 +62,6 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config.register_user(**default_user)
         self.config.register_guild(clan_id=None, commands={})
         self.throttle: float = 0
-        self.SLASH_COMMANDS = SLASH_COMMANDS
-        self.slash_commands = {"guilds": {}}
-        self.bot.loop.create_task(self.initialize())
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -88,197 +81,9 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         await self.config.user_from_id(user_id).clear()
 
-    async def initialize(self):
-        all_guilds = await self.config.all_guilds()
-        for guild_id, data in all_guilds.items():
-            if data["commands"]:
-                self.slash_commands["guilds"][guild_id] = {}
-                for command, command_id in data["commands"].items():
-                    if command == "destiny":
-                        self.slash_commands["guilds"][guild_id][command_id] = self.destiny
-        commands = await self.config.commands()
-        for command_name, command_id in commands.items():
-            self.slash_commands[command_id] = self.destiny
-
-    @staticmethod
-    def convert_slash_args(interaction: discord.Interaction, option: dict):
-        convert_args = {
-            3: lambda x: x,
-            4: lambda x: int(x),
-            5: lambda x: bool(x),
-            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
-            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
-            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
-            9: lambda x: final_resolved[int(x)]
-            or interaction.guild.get_role(int(x))
-            or interaction.guild.get_member(int(x)),
-            10: lambda x: float(x),
-        }
-        resolved = interaction.data.get("resolved", {})
-        final_resolved = {}
-        if resolved:
-            resolved_users = resolved.get("users")
-            if resolved_users:
-                resolved_members = resolved.get("members")
-                for _id, data in resolved_users.items():
-                    if resolved_members:
-                        member_data = resolved_members[_id]
-                        member_data["user"] = data
-                        member = discord.Member(
-                            data=member_data, guild=interaction.guild, state=interaction._state
-                        )
-                        final_resolved[int(_id)] = member
-                    else:
-                        user = discord.User(data=data, state=interaction._state)
-                        final_resolved[int(_id)] = user
-            resolved_channels = data.get("channels")
-            if resolved_channels:
-                for _id, data in resolved_channels.items():
-                    data["position"] = None
-                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
-                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
-                    final_resolved[int(_id)] = channel
-            resolved_messages = resolved.get("messages")
-            if resolved_messages:
-                for _id, data in resolved_messages.items():
-                    msg = discord.Message(
-                        state=interaction._state, channel=interaction.channel, data=data
-                    )
-                    final_resolved[int(_id)] = msg
-            resolved_roles = resolved.get("roles")
-            if resolved_roles:
-                for _id, data in resolved_roles.items():
-                    role = discord.Role(
-                        guild=interaction.guild, state=interaction._state, data=data
-                    )
-                    final_resolved[int(_id)] = role
-        return convert_args[option["type"]](option["value"])
-
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
-
-    async def pre_check_slash(self, interaction):
-        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
-            await interaction.response.send_message(
-                _("You are not allowed to run this command here."), ephemeral=True
-            )
-            return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
-            await interaction.response.send_message(
-                _("Commands are not allowed in this channel or guild."), ephemeral=True
-            )
-            return False
-        return True
-
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-
-        guild = interaction.guild
-        if guild and guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][guild.id][interaction_id](interaction)
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
-
-    async def parse_history(self, interaction: discord.Interaction):
-        command_options = interaction.data["options"][0]["options"]
-        if interaction.type is InteractionType.autocomplete:
-            cur_value = command_options[0]["value"]
-            possible_options = DestinyActivity.CHOICES
-            choices = []
-            for choice in possible_options:
-                if cur_value.lower() in choice["name"].lower():
-                    choices.append(Choice(name=choice["name"], value=choice["value"]))
-            await interaction.response.autocomplete(choices[:25])
-            return
-        kwargs = {}
-        for option in command_options:
-            kwargs[option["name"]] = option["value"]
-        await self.history(interaction, **kwargs)
-
     @commands.group()
     async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "pvp": self.pvp,
-                "banshee": self.banshee,
-                "forgetme": self.forgetme,
-                "gambit": self.gambit,
-                "reset": self.destiny_reset_time,
-                "search": self.search,
-                "raid": self.raid,
-                "history": self.parse_history,
-                "loadout": self.loadout,
-                "milestone": self.milestone,
-                "ada-1": self.ada_1_inventory,
-                "spider": self.spider,
-                "clan": self.clan,
-                "quickplay": self.quickplay,
-                "xur": self.xur,
-                "whereisxur": self.whereisxur,
-                "user": self.user,
-                "eververse": self.eververse,
-                "joinme": self.destiny_join_command,
-                "rahool": self.rahool,
-                "stats": self.stats,
-            }
-            option = ctx.data["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-            if option == "history":
-                await func(ctx)
-                return
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     async def missing_profile(self, ctx: Union[commands.Context, discord.Interaction]):
         msg = _("I can't seem to find your Destiny profile.")
@@ -301,73 +106,15 @@ class Destiny(DestinyAPI, commands.Cog):
     @destiny_slash.command(name="global")
     @commands.is_owner()
     async def destiny_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable destiny commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.destiny
-        async with self.config.commands() as commands:
-            commands["destiny"] = command_id
-        await ctx.tick()
-
-    @destiny_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def destiny_global_slash_disable(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ):
-        """
-        Disable destiny commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("destiny")
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["destiny"]
-        await ctx.tick()
-
-    @destiny_slash.command(name="enable")
-    @commands.guild_only()
-    async def destiny_guild_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable destiny commands as slash commands in this server
-        """
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.destiny
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["destiny"] = command_id
-        await ctx.tick()
-
-    @destiny_slash.command(name="disable")
-    @commands.guild_only()
-    async def destiny_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Delete servers slash commands
-        """
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("destiny", None)
-        if not command_id:
-            await ctx.send(_("Slash commands are not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        async with self.config.guild(ctx.guild).commands() as commands:
-            del commands["destiny"]
-        await ctx.tick()
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self, override=True)
+        else:
+            self.bot.tree.remove_command("destiny")
 
     @destiny.command()
     async def forgetme(self, ctx: commands.Context) -> None:
@@ -387,73 +134,11 @@ class Destiny(DestinyAPI, commands.Cog):
         else:
             await ctx.send(msg)
 
-    async def parse_search_items(self, interaction: discord.Interaction):
-        command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.type is InteractionType.autocomplete:
-            cur_value = command_options[0]["value"]
-            possible_options = await self.search_definition("simpleitems", cur_value)
-            choices = []
-            for hash_key, data in possible_options.items():
-                name = data["displayProperties"]["name"]
-                if name:
-                    choices.append(Choice(name=name, value=hash_key))
-            log.debug(len(choices))
-            await interaction.response.autocomplete(choices[:25])
-            return
-        kwargs = {}
-        for option in command_options:
-            kwargs[option["name"]] = option["value"]
-        await self.items(interaction, **kwargs)
-
-    async def parse_search_lore(self, interaction: discord.Interaction):
-        command_options = interaction.data["options"][0]["options"][0]["options"]
-        if interaction.type is InteractionType.autocomplete:
-            cur_value = command_options[0]["value"]
-            possible_options = self.get_entities("DestinyLoreDefinition")
-            choices = []
-            for hash_key, data in possible_options.items():
-                name = data["displayProperties"]["name"]
-                if cur_value.lower() in name.lower():
-                    choices.append(Choice(name=name, value=name))
-            log.debug(len(choices))
-            await interaction.response.autocomplete(choices[:25])
-            return
-        kwargs = {}
-        for option in command_options:
-            kwargs[option["name"]] = option["value"]
-        await self.lore(interaction, **kwargs)
-
     @destiny.group(aliases=["s"])
     async def search(self, ctx: commands.Context) -> None:
         """
         Search for a destiny item, vendor, record, etc.
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "items": self.parse_search_items,
-                "lore": self.parse_search_lore,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if option == "items":
-                await func(ctx)
-                return
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     async def get_weapon_possible_perks(self, weapon: dict) -> dict:
         perks = {}
@@ -1177,23 +862,30 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.mod_or_permissions(manage_channels=True)
     async def destiny_reset_time(self, ctx: commands.Context):
         """
-        Show approximately when Weekyl and Daily reset is
+        Show exactly when Weekyl and Daily reset is
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-        today = datetime.datetime.now()
+        today = datetime.datetime.now(datetime.timezone.utc)
         tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
-        pacific = pytz.timezone("US/Pacific")
-        weekly = datetime.datetime(year=tuesday.year, month=tuesday.month, day=tuesday.day, hour=9)
-        reset_time = today + datetime.timedelta(hours=((9 - today.hour) % 24))
-        daily = datetime.datetime(
-            year=reset_time.year, month=reset_time.month, day=reset_time.day, hour=reset_time.hour
+        weekly = datetime.datetime(
+            year=tuesday.year,
+            month=tuesday.month,
+            day=tuesday.day,
+            hour=17,
+            tzinfo=datetime.timezone.utc,
         )
-        weekly_reset = pacific.localize(weekly)
-        weekly_reset_str = int(weekly_reset.timestamp())
-        daily_reset = pacific.localize(daily)
-        daily_reset_str = int(daily_reset.timestamp())
+        reset_time = today + datetime.timedelta(hours=((17 - today.hour) % 24))
+        daily = datetime.datetime(
+            year=reset_time.year,
+            month=reset_time.month,
+            day=reset_time.day,
+            hour=reset_time.hour,
+            tzinfo=datetime.timezone.utc,
+        )
+        weekly_reset_str = int(weekly.timestamp())
+        daily_reset_str = int(daily.timestamp())
         msg = _(
             "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
             "Daily Reset is <t:{daily}:R> (<t:{daily}>)."
@@ -1202,6 +894,35 @@ class Destiny(DestinyAPI, commands.Cog):
             await ctx.response.send_message(msg)
         else:
             await ctx.send(msg)
+
+    @destiny.command(name="vault", hidden=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def show_destiny_vault(self, ctx: commands.Context) -> None:
+        """
+        Allows you to interact with your vault through discord
+        """
+        user = ctx.author
+        if not await self.has_oauth(ctx, user):
+            return
+
+        try:
+            chars = await self.get_characters(user)
+            await self.save(chars, "character.json")
+        except Destiny2APIError as e:
+            log.error(e, exc_info=True)
+            await self.missing_profile(ctx)
+            return
+        items = [i for i in chars["profileInventory"]["data"]["items"] if "itemInstanceId" in i]
+        source = VaultPages(items, self)
+        await BaseMenu(
+            source=source,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=60,
+            cog=self,
+            page_start=0,
+        ).start(ctx=ctx)
+
 
     @destiny.command(hidden=True)
     @commands.bot_has_permissions(embed_links=True)
@@ -1215,6 +936,10 @@ class Destiny(DestinyAPI, commands.Cog):
                 return
             if not user:
                 user = ctx.author
+        data = await self.get_instanced_item(user, 6917529197668728225)
+        await self.save(data, "instanced_item.json")
+        await ctx.tick()
+        return
         try:
             chars = await self.get_characters(user)
             await self.save(chars, "character.json")
@@ -1222,6 +947,11 @@ class Destiny(DestinyAPI, commands.Cog):
             log.error(e, exc_info=True)
             await self.missing_profile(ctx)
             return
+        for char_id in chars["characters"]["data"].keys():
+            aggr_stats = await self.get_aggregate_activity_history(user, char_id)
+            await self.save(aggr_stats, f"{char_id}.json")
+        await ctx.tick()
+        return
         hash_list = []
         for data in chars["profileCurrencies"]["data"]["items"]:
             # for hash_id in data["itemQuantities"]:
@@ -1894,7 +1624,7 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(embed_links=True)
     async def rahool(self, ctx: commands.Context) -> None:
         """
-        Display Spiders wares
+        Display Rahool's wares
         """
         is_slash = False
         if isinstance(ctx, discord.Interaction):
@@ -2107,7 +1837,7 @@ class Destiny(DestinyAPI, commands.Cog):
         self, ctx: commands.Context, *, character: Optional[str] = None
     ) -> None:
         """
-        Display Banshee-44's wares
+        Display Ada-1's wares
 
         `[character]` Show inventory specific to a character class. Must be either
         Hunter, Warlock, or Titan. Default is whichever is the first character found.
@@ -2793,7 +2523,7 @@ class Destiny(DestinyAPI, commands.Cog):
     async def stats(self, ctx: commands.Context, stat_type: StatsPage) -> None:
         """
         Display each character's stats for a specific activity
-        `<activity>` The type of stats to display, available options are:
+        `<stat_type>` The type of stats to display, available options are:
         `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
         is_slash = False
