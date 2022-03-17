@@ -12,3 +12,6 @@ async def setup(bot):
     await bot.add_cog(cog)
     if not await cog.config.enable_slash():
         bot.tree.remove_command("spotify")
+    if await cog.config.enable_context():
+        bot.tree.add_command(cog.play_from_message_ctx)
+        bot.tree.add_command(cog.queue_from_message_ctx)

@@ -63,6 +63,7 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
             version="0.0.0",
             commands={},
             enable_slash=False,
+            enable_context=False,
         )
 
         self._app_token = None
@@ -123,23 +124,6 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog):
                 emoji_handler.replace_emoji(name, emoji)
             except InvalidEmoji:
                 pass
-        all_guilds = await self.config.all_guilds()
-        for guild_id, data in all_guilds.items():
-            if data["commands"]:
-                self.slash_commands["guilds"][guild_id] = {}
-                for command, command_id in data["commands"].items():
-                    if command == "play on spotify":
-                        self.slash_commands["guilds"][guild_id][
-                            command_id
-                        ] = self.play_from_message
-                    if command == "queue on spotify":
-                        self.slash_commands["guilds"][guild_id][command_id] = self.queue_from_message
-        commands = await self.config.commands()
-        for command_name, command_id in commands.items():
-            if command_name == "play on spotify":
-                self.slash_commands[command_id] = self.play_from_message
-            if command_name == "queue on spotify":
-                self.slash_commands[command_id] = self.queue_from_message
         self._ready.set()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:

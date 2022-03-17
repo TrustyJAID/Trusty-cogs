@@ -387,20 +387,28 @@ class SpotifySlash:
             return False
         return True
 
+    @app_commands.context_menu(name="Play on Spotify")
+    async def play_from_message_ctx(interaction: discord.Interaction, message: discord.Message):
+        pass
+
+    @app_commands.context_menu(name="Queue on Spotify")
+    async def queue_from_message_ctx(interaction: discord.Interaction, message: discord.Message):
+        pass
+
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-        guild = interaction.guild
-        if guild and guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                        interaction
-                    )
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
+        # borrow most of this from d.py so that this can work within the context
+        # of a cog so I have the rest of my methods available
+        name = interaction.data.get("name")
+        data = interaction.data
+        resolved = app_commands.Namespace._get_resolved_items(interaction, data.get("resolved", {}))
+        target_id = data.get("target_id")
+        key = app_commands.namespace.ResolveKey.any_with(target_id)
+        value = resolved.get(key)
+        if name == "Play on Spotify":
+            await self.play_from_message(interaction, value)
+        if name == "Queue on Spotify":
+            await self.queue_from_message(interaction, value)
 
     async def queue_from_message(self, interaction: discord.Interaction, message: discord.Message):
         user = interaction.user

@@ -100,104 +100,23 @@ class SpotifyCommands:
             self.bot.tree.remove_command("spotify")
 
     @spotify_slash.command(name="context")
-    async def spotify_context(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Toggle right click play on spotify for messages
-        """
-        play = {
-            "name": "Play on Spotify",
-            "type": 3,
-        }
-        queue = {
-            "name": "Queue on Spotify",
-            "type": 3,
-        }
-        async with self.config.guild(ctx.guild).commands() as commands:
-            if "play on spotify" in commands:
-                command_id = commands["play on spotify"]
-                try:
-                    await ctx.bot.http.delete_guild_command(
-                        ctx.guild.me.id, ctx.guild.id, command_id
-                    )
-                    del commands["play on spotify"]
-                except Exception:
-                    pass
-
-            else:
-                data = await ctx.bot.http.upsert_guild_command(
-                    ctx.guild.me.id, ctx.guild.id, payload=play
-                )
-                command_id = int(data.get("id"))
-                commands["play on spotify"] = command_id
-                if ctx.guild.id not in self.slash_commands["guilds"]:
-                    self.slash_commands["guilds"][ctx.guild.id] = {}
-                self.slash_commands["guilds"][ctx.guild.id][command_id] = self.play_from_message
-
-            if "queue on spotify" in commands:
-                command_id = commands["queue on spotify"]
-                try:
-                    await ctx.bot.http.delete_guild_command(
-                        ctx.guild.me.id, ctx.guild.id, command_id
-                    )
-                    del commands["queue on spotify"]
-                except Exception:
-                    pass
-
-            else:
-                data = await ctx.bot.http.upsert_guild_command(
-                    ctx.guild.me.id, ctx.guild.id, payload=queue
-                )
-                command_id = int(data.get("id"))
-                commands["queue on spotify"] = command_id
-                if ctx.guild.id not in self.slash_commands["guilds"]:
-                    self.slash_commands["guilds"][ctx.guild.id] = {}
-                self.slash_commands["guilds"][ctx.guild.id][command_id] = self.queue_from_message
-
-        await ctx.tick()
-
-    @spotify_slash.command(name="globalcontext")
     @commands.is_owner()
     async def spotify_global_context(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Toggle right click play on spotify for messages
         """
-        play = {
-            "name": "Play on Spotify",
-            "type": 3,
-        }
-        queue = {
-            "name": "Queue on Spotify",
-            "type": 3,
-        }
-        async with self.config.commands() as commands:
-            if "play on spotify" in commands:
-                command_id = commands["play on spotify"]
-                try:
-                    await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
-                    del commands["play on spotify"]
-                    del self.slash_commands[command_id]
-                except Exception:
-                    pass
-            else:
-                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=play)
-                command_id = int(data.get("id"))
-                commands["play on spotify"] = command_id
-                self.slash_commands[command_id] = self.play_from_message
-
-            if "queue on spotify" in commands:
-                command_id = commands["queue on spotify"]
-                try:
-                    await ctx.bot.http.delete_global_command(ctx.me.id, command_id)
-                    del commands["queue on spotify"]
-                    del self.slash_commands[command_id]
-                except Exception:
-                    pass
-            else:
-                data = await ctx.bot.http.upsert_global_command(ctx.guild.me.id, payload=queue)
-                command_id = int(data.get("id"))
-                commands["queue on spotify"] = command_id
-                self.slash_commands[command_id] = self.queue_from_message
-
+        current = await self.config.enable_context()
+        await self.config.enable_context.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Context commands are {verb}.").format(verb=verb))
+        # play = discord.app_commands.ContextMenu(name="Play on Spotify", callback=self.fake_method, type=discord.enums.AppCommandType.message)
+        # queue = discord.app_commands.ContextMenu(name="Queue on Spotify", callback=self.fake_method, type=discord.enums.AppCommandType.message)
+        if not current:
+            self.bot.tree.add_command(self.play_from_message_ctx, override=True)
+            self.bot.tree.add_command(self.queue_from_message_ctx, override=True)
+        else:
+            self.bot.tree.remove_command(self.play_from_message_ctx)
+            self.bot.tree.remove_command(self.queue_from_message_ctx)
         await ctx.tick()
 
     async def not_authorized(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
