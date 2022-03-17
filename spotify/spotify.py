@@ -25,7 +25,7 @@ _ = Translator("Spotify", __file__)
 
 
 @cog_i18n(_)
-class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.Group):
+class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, commands.Cog):
     """
     Display information from Spotify's API
     """
@@ -34,6 +34,7 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.
     __version__ = "1.7.0"
 
     def __init__(self, bot):
+        super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828)
         self.config.register_user(token={}, listen_for={}, show_private=False, default_device=None)
@@ -84,9 +85,6 @@ class Spotify(SpotifyCommands, SpotifySlash, commands.Cog, discord.app_commands.
             self.rpc_extension = DashboardRPC_Spotify(self)
         self.slash_commands = {"guilds": {}}
         self._temp_user_devices = {}
-
-    def __repr__(self):
-        return "I am a cog class"
 
     async def migrate_settings(self):
         if await self.config.version() < "1.4.9":
