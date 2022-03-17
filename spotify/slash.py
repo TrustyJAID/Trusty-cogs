@@ -18,21 +18,15 @@ _ = Translator("Spotify", __file__)
 
 class SpotifySlash:
 
-    spotify = app_commands.Group(
-        name="spotify", description="Display information from Spotify's API"
-    )
     artist = app_commands.Group(
-        name="artist", description="View Spotify Artist info", parent=spotify
+        name="artist", description="View Spotify Artist info"
     )
     playlist = app_commands.Group(
-        name="playlist", description="View Spotify Playlists", parent=spotify
+        name="playlist", description="View Spotify Playlists"
     )
     device = app_commands.Group(
-        name="device", description="Spotify Device commands", parent=spotify
+        name="device", description="Spotify Device commands"
     )
-    spotify.add_command(artist)
-    spotify.add_command(playlist)
-    spotify.add_command(device)
 
     KEY_CHOICES = [
         app_commands.Choice(name="C (also B♯, Ddouble flat)", value=0),
@@ -53,7 +47,7 @@ class SpotifySlash:
         app_commands.Choice(name="minor", value=0),
     ]
 
-    @spotify.command(name="now", description="Displays your currently played spotify song")
+    @app_commands.command(name="now", description="Displays your currently played spotify song")
     async def spotify_now_slash(
         self,
         ctx: discord.Interaction,
@@ -64,7 +58,7 @@ class SpotifySlash:
         """Displays your currently played spotify song"""
         await self.spotify_now(ctx, detailed, member, public)
 
-    @spotify.command(name="recommendations", description="Get Spotify Recommendations")
+    @app_commands.command(name="recommendations", description="Get Spotify Recommendations")
     @app_commands.choices(
         key=KEY_CHOICES,
         mode=MODE_CHOICES,
@@ -212,94 +206,94 @@ class SpotifySlash:
         ]
         return choices[:25]
 
-    @spotify.command(name="forgetme")
+    @app_commands.command(name="forgetme")
     async def spotify_forgetme_slash(self, interaction: discord.Interaction):
         """Forget all your spotify settings and credentials on the bot"""
         await self.spotify_forgetme(interaction)
 
-    @spotify.command(name="me")
+    @app_commands.command(name="me")
     async def spotify_me_slash(self, interaction: discord.Interaction):
         """Shows your current Spotify Settings"""
         await self.spotify_me(interaction)
 
-    @spotify.command(name="genres")
+    @app_commands.command(name="genres")
     async def spotify_genres_slash(self, interaction: discord.Interaction):
         """Display all available genres for recommendations"""
         await self.spotify_genres(interaction)
 
-    @spotify.command(name="recent")
+    @app_commands.command(name="recent")
     async def spotify_recently_played_slash(
         self, interaction: discord.Interaction, detailed: Optional[bool]
     ):
         """Display your most recently played songs on Spotify"""
         await self.spotify_recently_played(interaction, detailed)
 
-    @spotify.command(name="toptracks")
+    @app_commands.command(name="toptracks")
     async def top_tracks_slash(self, interaction: discord.Interaction):
         """List your top tracks on Spotify"""
         await self.top_tracks(interaction)
 
-    @spotify.command(name="topartists")
+    @app_commands.command(name="topartists")
     async def top_artsist_slash(self, interaction: discord.Interaction):
         """List your top artists on Spotify"""
         await self.top_artists(interaction)
 
-    @spotify.command(name="new")
+    @app_commands.command(name="new")
     async def spotify_new_slash(self, interaction: discord.Interaction):
         """List new releases on Spotify"""
         await self.spotify_new(interaction)
 
-    @spotify.command(name="pause")
+    @app_commands.command(name="pause")
     async def spotify_pause_slash(self, interaction: discord.Interaction):
         """Pauses Spotify for you"""
         await self.spotify_pause(interaction)
 
-    @spotify.command(name="resume")
+    @app_commands.command(name="resume")
     async def spotify_resume_slash(self, interaction: discord.Interaction):
         """Resumes Spotify for you"""
         await self.spotify_resume(interaction)
 
-    @spotify.command(name="next")
+    @app_commands.command(name="next")
     async def spotify_next_slash(self, interaction: discord.Interaction):
         """Skips to the next track in queue on Spotify"""
         await self.spotify_next(interaction)
 
-    @spotify.command(name="previous")
+    @app_commands.command(name="previous")
     async def spotify_previous_slash(self, interaction: discord.Interaction):
         """Skip to the previous track in queue on Spotify"""
         await self.spotify_previous(interaction)
 
-    @spotify.command(name="play")
+    @app_commands.command(name="play")
     async def spotify_play_slash(
         self, interaction: discord.Interaction, url_or_playlist_name: Optional[str]
     ):
         """Play a track, playlist, or album on Spotify"""
         await self.spotify_play(interaction, url_or_playlist_name)
 
-    @spotify.command(name="queue")
+    @app_commands.command(name="queue")
     async def spotify_queue_add_slash(self, interaction: discord.Interaction, songs: str):
         """Queue a song to play next on Spotify"""
         await self.spotify_queue_add(interaction, songs=songs)
 
-    @spotify.command(name="repeat")
+    @app_commands.command(name="repeat")
     async def spotify_repeat_slash(
         self, interaction: discord.Interaction, state: Optional[Literal["off", "track", "context"]]
     ):
         """Set your Spotify players repeat state"""
         await self.spotify_repeat(interaction, state)
 
-    @spotify.command(name="shuffle")
+    @app_commands.command(name="shuffle")
     async def spotify_shuffle_slash(self, interaction: discord.Interaction, state: Optional[bool]):
         """Set your Spotify players shuffle state"""
         await self.spotify_shuffle(interaction, state)
 
-    @spotify.command(name="seek")
+    @app_commands.command(name="seek")
     @app_commands.describe(seconds="Seconds or a value formatted like 00:00:00 (hh:mm:ss)")
     async def spotify_seek_slash(self, interaction: discord.Interaction, seconds: str):
         """Seek to a specific point in the current song."""
         await self.spotify_seek(interaction, seconds)
 
-    @spotify.command(name="volume")
+    @app_commands.command(name="volume")
     async def spotify_volume_slash(
         self, interaction: discord.Interaction, volume: app_commands.Range[int, 0, 100]
     ):
