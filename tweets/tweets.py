@@ -687,7 +687,7 @@ class Tweets(TweetsAPI, commands.Cog):
             for page in pagify(msg_send, ["\n"]):
                 await ctx.send(page)
             command = f"`{ctx.prefix}autotweet restart`"
-            msg = _("Now do {commant} when you've finished adding all accounts!").format(
+            msg = _("Now do {command} when you've finished adding all accounts!").format(
                 command=command
             )
             await ctx.send(msg)
