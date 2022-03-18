@@ -29,6 +29,12 @@ class TimeDeltaTransformer(app_commands.Transformer):
         return timedelta(seconds=value)
 
 
+class SnowflakeTransformer(app_commands.Transformer):
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> int:
+        return int(value)
+
+
 class ReTriggerSlash:
 
     modlog = app_commands.Group(
@@ -459,8 +465,12 @@ class ReTriggerSlash:
         await func(interaction, _trigger)
 
     @app_commands.command(name="list")
+    @app_commands.describe(guild_id="Only available to bot owner")
     async def list_slash(
-        self, interaction: discord.Interaction, trigger: Optional[str], guild_id: Optional[int]
+        self,
+        interaction: discord.Interaction,
+        trigger: Optional[str],
+        guild_id: Optional[app_commands.Transform[str, SnowflakeTransformer]],
     ):
         """List information about a trigger"""
         func = self.list
@@ -468,7 +478,13 @@ class ReTriggerSlash:
             return
         if not await self.check_requires(func, interaction):
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
+        if guild_id is None:
+            guild_id = interaction.guild.id
+
+        if trigger is not None:
+            _trigger = self.triggers[guild_id][trigger]
+        else:
+            _trigger = None
         await func(interaction, guild_id, _trigger)
 
     @app_commands.command(name="remove")
@@ -484,7 +500,9 @@ class ReTriggerSlash:
 
     @app_commands.command(name="explain")
     async def explain_slash(
-        self, interaction: discord.Interaction, page_num: Optional[app_commands.Range[int, 1, 13]]
+        self,
+        interaction: discord.Interaction,
+        page_num: Optional[app_commands.Range[int, 1, 13]] = 1,
     ):
         """Explain how to use retrigger"""
         await self.explain(interaction, page_num)
@@ -674,11 +692,7 @@ class ReTriggerSlash:
 
     @app_commands.command(name="addrole")
     async def addrole_slash(
-        self,
-        interaction: discord.Interaction,
-        name: str,
-        regex: str,
-        role: discord.Role
+        self, interaction: discord.Interaction, name: str, regex: str, role: discord.Role
     ):
         """Add a trigger to add a role"""
         func = self.addrole
@@ -697,11 +711,7 @@ class ReTriggerSlash:
 
     @app_commands.command(name="removerole")
     async def removerole_slash(
-        self,
-        interaction: discord.Interaction,
-        name: str,
-        regex: str,
-        role: discord.Role
+        self, interaction: discord.Interaction, name: str, regex: str, role: discord.Role
     ):
         """Add a trigger to remove a role"""
         func = self.removerole
@@ -744,10 +754,14 @@ class ReTriggerSlash:
     @remove_slash.autocomplete("trigger")
     async def trigger_autocomplete(self, interaction: discord.Interaction, current: str):
         guild_id = interaction.guild.id
-        if getattr(interaction.namespace, "guild_id") and await self.bot.is_owner(
-            interaction.user
-        ):
-            guild_id = interaction.namespace.guild_id
+        try:
+            if getattr(interaction.namespace, "guild_id") and await self.bot.is_owner(
+                interaction.user
+            ):
+                guild_id = int(interaction.namespace.guild_id)
+        except Exception:
+            log.exception("error checking another guild")
+        log.debug(f"checking {guild_id} - {type(guild_id)}")
         if guild_id in self.triggers:
             choices = [
                 app_commands.Choice(name=t.name, value=t.name)
@@ -755,7 +769,7 @@ class ReTriggerSlash:
                 if current in t.name
             ]
         else:
-            choices = []
+            choices = [app_commands.Choice(name="No Triggers set", value="No Triggers set")]
         return choices[:25]
 
     async def check_requires(self, func, interaction):
