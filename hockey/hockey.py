@@ -18,7 +18,6 @@ from .constants import (
     CONFIG_ID,
     CONTENT_URL,
     HEADSHOT_URL,
-    SLASH_COMMANDS,
     TEAMS,
 )
 from .dev import HockeyDev
@@ -45,7 +44,6 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     This allows the metaclass used for proper type detection to
     coexist with discord.py's metaclass
     """
-
     pass
 
 
@@ -58,6 +56,7 @@ class Hockey(
     HockeyDev,
     HockeyPickems,
     HockeySlash,
+    discord.app_commands.Group,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -69,7 +68,7 @@ class Hockey(
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
-        super().__init__(self)
+        super().__init__()
         self.bot = bot
         default_global = {
             "teams": [],
@@ -77,6 +76,7 @@ class Hockey(
             "print": False,
             "last_day": 0,
             "commands": {},
+            "enable_slash": False,
         }
         for team in TEAMS:
             team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
@@ -152,8 +152,6 @@ class Hockey(
         self.games_playing = False
         self.session = aiohttp.ClientSession()
         self._ready: asyncio.Event = asyncio.Event()
-        self.slash_commands = {"guilds": {}}
-        self.SLASH_COMMANDS = SLASH_COMMANDS
         # self._ready is used to prevent pickems from opening
         # data from the wrong file location
 
@@ -163,22 +161,6 @@ class Hockey(
         """
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
-
-    async def slash_check_permissions(
-        self, interaction: discord.Interaction, member: discord.Member, **perms
-    ) -> bool:
-        """
-        Checks if the member has the correct permissions
-
-        """
-        guild = interaction.guild
-        allowed = False
-        if guild:
-            allowed |= await self.bot.is_mod(member)
-            allowed |= await self.bot.is_admin(member)
-            allowed |= await self.bot.is_owner(member)
-            allowed |= member.guild_permissions >= discord.Permissions(**perms)
-        return allowed
 
     async def cog_unload(self):
         try:
@@ -203,7 +185,7 @@ class Hockey(
                 del data["leaderboard"][str(user_id)]
                 await self.pickems_config.guild_from_id(int(g_id)).leaderboard.set(data["leaderboard"])
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
             try:
                 self.bot.add_dev_env_value("hockey", lambda x: self)
@@ -211,15 +193,6 @@ class Hockey(
                 pass
         self.loop = asyncio.create_task(self.game_check_loop())
         await self.migrate_settings()
-        all_guilds = await self.config.all_guilds()
-        for guild_id, data in all_guilds.items():
-            if data["commands"]:
-                command_id = data["commands"]["hockey"]
-                self.slash_commands["guilds"][guild_id] = {}
-                self.slash_commands["guilds"][guild_id][command_id] = self.hockey_slash_commands
-        global_commands = await self.config.commands()
-        if global_commands.get("hockey"):
-            self.slash_commands[global_commands.get("hockey")] = self.hockey_slash_commands
 
     async def migrate_settings(self) -> None:
         schema_version = await self.config.schema_version()
@@ -484,14 +457,12 @@ class Hockey(
         for team in TEAMS:
             TEAMS[team]["emoji"] = data[team][0] if data[team][0] is not None else data["Other"][0]
         team_data = json.dumps(TEAMS, indent=4, sort_keys=True, separators=(",", " : "))
-        slash = json.dumps(self.SLASH_COMMANDS, indent=4, sort_keys=True, separators=(",", " : "))
         constants_string = (
             f'BASE_URL = "{BASE_URL}"\n'
             f'HEADSHOT_URL = "{HEADSHOT_URL}"\n'
             f'CONTENT_URL = "{CONTENT_URL}"\n'
             f"CONFIG_ID = {CONFIG_ID}\n"
             f"TEAMS = {team_data}\n"
-            f"SLASH_COMMANDS = {slash}\n"
         )
         path = Path(__file__).parent / "new-constants.py"
         constants_string = constants_string.replace("true", "True").replace("false", "False")

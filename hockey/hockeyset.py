@@ -129,71 +129,15 @@ class HockeySetCommands(MixinMeta):
     @hockey_slash.command(name="global")
     @commands.is_owner()
     async def hockey_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable Hockey commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.hockey_slash_commands
-        async with self.config.commands() as commands:
-            commands["hockey"] = command_id
-        await ctx.tick()
-
-    @hockey_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def hockey_global_slash_disable(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Disable Hockey commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("hockey")
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["hockey"]
-        await ctx.tick()
-
-    @hockey_slash.command(name="enable")
-    @commands.guild_only()
-    @commands.admin_or_permissions(manage_guild=True)
-    async def hockey_guild_slash(self, ctx: commands.Context):
-        """
-        Enable Hockey commands as slash commands in this server
-        """
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.hockey_slash_commands
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["hockey"] = command_id
-        await ctx.tick()
-
-    @hockey_slash.command(name="disable")
-    @commands.guild_only()
-    @commands.admin_or_permissions(manage_guild=True)
-    async def hockey_delete_guild_slash(self, ctx: commands.Context):
-        """
-        Delete Hockey commands as slash commands in this server
-        """
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("hockey")
-        if not command_id:
-            await ctx.send(_("This cogs slash commands are not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        await ctx.tick()
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self)
+        else:
+            self.bot.tree.remove_command("hockey")
 
     async def check_notification_settings(self, guild: discord.Guild) -> str:
         reply = ""

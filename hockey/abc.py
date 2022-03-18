@@ -28,6 +28,7 @@ class MixinMeta(ABC):
     """
 
     def __init__(self, *_args):
+        super().__init__()
         self.config: Config
         self.bot: Red
         self.loop: Optional[asyncio.Task]

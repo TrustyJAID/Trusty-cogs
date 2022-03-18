@@ -36,6 +36,7 @@ class HockeyPickems(MixinMeta):
     """
 
     def __init__(self, *args):
+        super().__init__()
         self.pickems_games: Dict[str, Game] = {}
         # This is a temporary class attr used for
         # storing only 1 copy of the game object so
@@ -1014,8 +1015,6 @@ class HockeyPickems(MixinMeta):
 
             is_slash = True
             await ctx.response.defer()
-            if channel:
-                channel = guild.get_channel(int(channel))
 
         if channel is None:
             channel = ctx.channel

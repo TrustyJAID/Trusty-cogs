@@ -112,7 +112,7 @@ class HockeyCommands(MixinMeta):
             log.error("error adding team role", exc_info=True)
             await ctx.send(team + _(" is not an available role!"))
 
-    @hockey_commands.command(name="goalsrole")
+    @hockey_commands.command(name="goalsrole", hidden=True)
     async def team_goals(
         self, ctx: Union[commands.Context, discord.Interaction], *, team: HockeyTeams = None
     ) -> None:
@@ -346,7 +346,7 @@ class HockeyCommands(MixinMeta):
             timeout=180,
         ).start(ctx=ctx)
 
-    @hockey_commands.command()
+    @hockey_commands.command(hidden=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def season(
         self,
@@ -421,26 +421,7 @@ class HockeyCommands(MixinMeta):
                     else:
                         players[player["id"]] = player
                         player_ids.insert(0, player["id"])
-        log.debug(players)
         return player_ids, players
-
-    async def player_choices(self, name: str) -> List[dict]:
-        now = datetime.utcnow()
-        saved = datetime.fromtimestamp(await self.config.player_db())
-        path = cog_data_path(self) / "players.json"
-        ret = []
-        if (now - saved) > timedelta(days=1) or not path.exists():
-            async with self.session.get(
-                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
-            ) as resp:
-                with path.open(encoding="utf-8", mode="w") as f:
-                    json.dump(await resp.json(), f)
-            await self.config.player_db.set(int(now.timestamp()))
-        with path.open(encoding="utf-8", mode="r") as f:
-            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
-                if name.lower() in player["fullName"].lower():
-                    ret.append(Choice(name=player["fullName"], value=player["fullName"]))
-        return ret
 
     @hockey_commands.command(aliases=["players"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -462,6 +443,7 @@ class HockeyCommands(MixinMeta):
             is_slash = True
         else:
             await ctx.trigger_typing()
+        log.debug(search)
 
         season = YEAR_RE.search(search)
         season_str = None
@@ -484,8 +466,6 @@ class HockeyCommands(MixinMeta):
                     return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
-        log.debug(season)
-        log.debug(search)
         player_ids, players = await self.player_id_lookup(search.strip())
         if players != {}:
             await BaseMenu(

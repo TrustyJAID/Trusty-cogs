@@ -1,12 +1,14 @@
 import logging
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from typing import Dict, List, Literal, Optional, Sequence, Union
 
 import discord
-from discord.enums import InteractionType
+from discord import app_commands
 from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.data_manager import cog_data_path
 
 from .abc import MixinMeta
 from .constants import TEAMS
@@ -17,78 +19,411 @@ _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
+class DateTransformer(app_commands.Transformer):
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
+        find = DATE_RE.search(value)
+        date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
+        return datetime.strptime(date_str, "%Y-%m-%d")
+
+
 class HockeySlash(MixinMeta):
+
+    pickems_slash = app_commands.Group(
+        name="pickems", description="Manage Hockey Pickems settings"
+    )
+    gdt_slash = app_commands.Group(name="gdt", description="Manage Hockey Game Day Threads")
+    set_slash = app_commands.Group(name="set", description="Setup goal updates, standings, etc.")
+
+    VALID_STANDINGS = Literal[
+        "all",
+        "conference",
+        "western",
+        "eastern",
+        "division",
+        "central",
+        "metropolitan",
+        "atlantic",
+        "pacific",
+    ]
+
+    HOCKEY_STATES = Literal["Preview", "Live", "Final", "Goal", "Periodrecap"]
+
     #######################################################################
     # Where parsing of slash commands happens                             #
     #######################################################################
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # log.debug(f"Interaction received {interaction.data['name']}")
-        interaction_id = int(interaction.data.get("id", 0))
-        guild = interaction.guild
-        if guild and interaction.guild.id in self.slash_commands["guilds"]:
-            if interaction_id in self.slash_commands["guilds"][interaction.guild.id]:
-                if await self.pre_check_slash(interaction):
-                    await self.slash_commands["guilds"][interaction.guild.id][interaction_id](
-                        interaction
-                    )
-        if interaction_id in self.slash_commands:
-            if await self.pre_check_slash(interaction):
-                await self.slash_commands[interaction_id](interaction)
 
-    @staticmethod
-    def convert_slash_args(interaction: discord.Interaction, option: dict):
-        convert_args = {
-            3: lambda x: x,
-            4: lambda x: int(x),
-            5: lambda x: bool(x),
-            6: lambda x: final_resolved[int(x)] or interaction.guild.get_member(int(x)),
-            7: lambda x: final_resolved[int(x)] or interaction.guild.get_channel(int(x)),
-            8: lambda x: final_resolved[int(x)] or interaction.guild.get_role(int(x)),
-            9: lambda x: final_resolved[int(x)]
-            or interaction.guild.get_role(int(x))
-            or interaction.guild.get_member(int(x)),
-            10: lambda x: float(x),
-        }
-        resolved = interaction.data.get("resolved", {})
-        final_resolved = {}
-        if resolved:
-            resolved_users = resolved.get("users")
-            if resolved_users:
-                resolved_members = resolved.get("members")
-                for _id, data in resolved_users.items():
-                    if resolved_members:
-                        member_data = resolved_members[_id]
-                        member_data["user"] = data
-                        member = discord.Member(
-                            data=member_data, guild=interaction.guild, state=interaction._state
-                        )
-                        final_resolved[int(_id)] = member
-                    else:
-                        user = discord.User(data=data, state=interaction._state)
-                        final_resolved[int(_id)] = user
-            resolved_channels = resolved.get("channels")
-            if resolved_channels:
-                for _id, data in resolved_channels.items():
-                    data["position"] = None
-                    _cls, _ = discord.channel._guild_channel_factory(data["type"])
-                    channel = _cls(state=interaction._state, guild=interaction.guild, data=data)
-                    final_resolved[int(_id)] = channel
-            resolved_messages = resolved.get("messages")
-            if resolved_messages:
-                for _id, data in resolved_messages.items():
-                    msg = discord.Message(
-                        state=interaction._state, channel=interaction.channel, data=data
-                    )
-                    final_resolved[int(_id)] = msg
-            resolved_roles = resolved.get("roles")
-            if resolved_roles:
-                for _id, data in resolved_roles.items():
-                    role = discord.Role(
-                        guild=interaction.guild, state=interaction._state, data=data
-                    )
-                    final_resolved[int(_id)] = role
-        return convert_args[option["type"]](option["value"])
+    @app_commands.command(name="standings")
+    async def standings_slash(self, interaction: discord.Interaction, search: VALID_STANDINGS):
+        """Display current standings"""
+        if not await self.pre_check_slash(interaction):
+            return
+        await self.standings(interaction, search=search)
+
+    @app_commands.command(name="games")
+    @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
+    async def games_slash(
+        self,
+        interaction: discord.Interaction,
+        team: Optional[str],
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+    ):
+        """Gets all NHL games"""
+        if not await self.pre_check_slash(interaction):
+            return
+        teams_and_date = {"teams": team, "date": date}
+        await self.games(interaction, teams_and_date=teams_and_date)
+
+    @app_commands.command(name="heatmap")
+    @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
+    async def heatmap_slash(
+        self,
+        interaction: discord.Interaction,
+        style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"],
+        team: Optional[str],
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+    ):
+        """Display game heatmaps."""
+        if not await self.pre_check_slash(interaction):
+            return
+        teams_and_date = {"teams": team, "date": date}
+        await self.heatmap(interaction, style, teams_and_date=teams_and_date)
+
+    @app_commands.command(name="gameflow")
+    @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
+    async def gameflow_slash(
+        self,
+        interaction: discord.Interaction,
+        strength: Literal["all", "ev", "5v5", "sva"],
+        team: Optional[str],
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+        corsi: Optional[bool] = True,
+    ):
+        """Display games gameflow."""
+        if not await self.pre_check_slash(interaction):
+            return
+        teams_and_date = {"teams": team, "date": date}
+        await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
+
+    @app_commands.command(name="schedule")
+    async def schedule_slash(
+        self,
+        interaction: discord.Interaction,
+        team: Optional[str],
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+    ):
+        """Gets upcoming NHL games for the current season as a list"""
+        if not await self.pre_check_slash(interaction):
+            return
+        teams_and_date = {"teams": team, "date": date}
+        await self.schedule(interaction, teams_and_date=teams_and_date)
+
+    @app_commands.command(name="player")
+    @app_commands.describe(player="The name of the player", year="YYYY or YYYYYYYY formatted date")
+    async def player_slash(
+        self, interaction: discord.Interaction, player: str, year: Optional[int]
+    ):
+        """Lookup information about a specific player"""
+        if not await self.pre_check_slash(interaction):
+            return
+        search = str(player)
+        if year:
+            search += f" {year}"
+        await self.player(interaction, search=search)
+
+    @app_commands.command(name="roster")
+    async def roster_slash(
+        self, interaction: discord.Interaction, team: str, season: Optional[int]
+    ):
+        """Get a team roster"""
+        if not await self.pre_check_slash(interaction):
+            return
+        await self.roster(season, search=team)
+
+    @app_commands.command(name="leaderboard")
+    async def leaderboard_slash(
+        self,
+        interaction: discord.Interaction,
+        leaderboard_type: Optional[
+            Literal[
+                "season",
+                "weekly",
+                "playoffs",
+                "playoffs_weekly",
+                "pre-season",
+                "pre-season_weekly",
+                "worst",
+            ]
+        ],
+    ):
+        """Shows the current server leaderboard"""
+        if not await self.pre_check_slash(interaction):
+            return
+        await self.leaderboard(interaction, leaderboard_type)
+
+    @app_commands.command(name="pickemsvotes")
+    async def pickemsvotes_slash(self, interaction: discord.Interaction):
+        """View your current pickems votes for the server"""
+        if not await self.pre_check_slash(interaction):
+            return
+        await self.pickemsvotes(interaction)
+
+    @app_commands.command(name="otherdiscords")
+    async def otherdiscords_slash(self, interaction: discord.Interaction, team: str):
+        """Get team specific discord links"""
+        if not await self.pre_check_slash(interaction):
+            return
+        await self.otherdiscords(interaction, team)
+
+    @pickems_slash.command(name="settings")
+    async def pickems_settings_slash(self, interaction: discord.Interaction):
+        """Show the servers current pickems settings"""
+        func = self.pickems_settings
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @pickems_slash.command(name="message")
+    async def set_pickems_message_slash(
+        self, interaction: discord.Interaction, message: Optional[str]
+    ):
+        """Customize the pickems message for this server"""
+        func = self.set_pickems_message
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, message=message)
+
+    @pickems_slash.command(name="setup")
+    async def setup_auto_pickems_slash(
+        self, interaction: discord.Interaction, channel: Optional[discord.TextChannel]
+    ):
+        """Sets up pickems threads created every day"""
+        func = self.setup_auto_pickems
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, channel)
+
+    @pickems_slash.command(name="clear")
+    async def delete_auto_pickems_slash(self, interaction: discord.Interaction):
+        """Stop posting new pickems threads and clear existing list of pickems threads"""
+        func = self.delete_auto_pickems
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @pickems_slash.command(name="page")
+    async def pickems_page_slash(
+        self,
+        interaction: discord.Interaction,
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+    ):
+        """Generates a pickems page for voting on"""
+        func = self.pickems_page
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, date)
+
+    @gdt_slash.command(name="settings")
+    async def gdt_settings_slash(self, interaction: discord.Interaction):
+        """Shows the current Game Day Thread settings"""
+        func = self.gdt_settings
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @gdt_slash.command(name="delete")
+    async def gdt_delete_slash(self, interaction: discord.Interaction):
+        """Delete all current game day threads for the server"""
+        func = self.gdt_delete
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @gdt_slash.command(name="stateupdates")
+    async def gdt_default_game_state_slash(
+        self,
+        interaction: discord.Interaction,
+        state: HOCKEY_STATES,
+    ):
+        """Set specific state updates to use for game day threads"""
+        func = self.gdt_default_game_state
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, state)
+
+    @gdt_slash.command(name="updates")
+    async def gdt_update_start_slash(self, interaction: discord.Interaction, update_start: bool):
+        """Set whether or not the starting thread message will update as the game progresses."""
+        func = self.gdt_update_start
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, update_start)
+
+    @gdt_slash.command(name="create")
+    async def gdt_create_slash(self, interaction: discord.Interaction):
+        """Creates the next gdt for the server"""
+        func = self.gdt_create
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @gdt_slash.command(name="toggle")
+    async def gdt_toggle_slash(self, interaction: discord.Interaction):
+        """Toggles the game day channel creation on this server"""
+        func = self.gdt_toggle
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @gdt_slash.command(name="channel")
+    async def gdt_channel_slash(
+        self, interaction: discord.Interaction, channel: discord.TextChannel
+    ):
+        """Change the channel used for game day threads."""
+        func = self.gdt_channel
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, channel)
+
+    @gdt_slash.command(name="setup")
+    async def gdt_setup_slash(
+        self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
+    ):
+        """Setup game day threads for a single (or all) teams."""
+        func = self.gdt_setup
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, team, channel)
+
+    @set_slash.command(name="settings")
+    async def hockey_settings_slash(self, interaction: discord.Interaction):
+        """Show hockey settings for this server"""
+        func = self.hockey_settings
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction)
+
+    @set_slash.command(name="poststandings")
+    async def post_standings_slash(
+        self,
+        interaction: discord.Interaction,
+        standings_type: VALID_STANDINGS,
+        channel: Optional[discord.TextChannel],
+    ):
+        """Post automatic standings when all games for the day are done"""
+        func = self.post_standings
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, standings_type, channel)
+
+    @set_slash.command(name="stateupdates")
+    async def set_game_state_updates(
+        self, interaction: discord.Interaction, channel: discord.TextChannel, state: HOCKEY_STATES
+    ):
+        """Toggle specific updates in a designated channel"""
+        func = self.set_game_state_updates
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, channel, state)
+
+    @set_slash.command(name="add")
+    async def add_goals_slash(self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]):
+        """Add a teams goal updates to a channel"""
+        func = self.add_goals
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, team, channel)
+
+    @set_slash.command(name="remove")
+    async def remove_goals_slash(self, interaction: discord.Interaction, team: Optional[str], channel: Optional[discord.TextChannel]):
+        """Removes a teams goal updates from a channel"""
+        func = self.remove_goals
+        if not await self.pre_check_slash(interaction):
+            return
+        if not await self.check_requires(func, interaction):
+            return
+        await func(interaction, team, channel)
+
+    @games_slash.autocomplete("team")
+    @heatmap_slash.autocomplete("team")
+    @gameflow_slash.autocomplete("team")
+    @roster_slash.autocomplete("team")
+    @otherdiscords_slash.autocomplete("team")
+    @gdt_setup_slash.autocomplete("team")
+    @add_goals_slash.autocomplete("team")
+    @remove_goals_slash.autocomplete("team")
+    async def active_team_autocomplete(self, interaction: discord.Interaction, current: str):
+        """Represents active team names for autocomplete purposes"""
+        team_choices = []
+        include_all = interaction.command.name in ["setup", "add"]
+        include_inactive = interaction.command.name in ["roster"]
+        ret = []
+        for t, d in TEAMS.items():
+            team_choices.append(app_commands.Choice(name=t, value=t))
+        if include_all:
+            team_choices.insert(0, app_commands.Choice(name="All", value="all"))
+        for choice in team_choices:
+            if not include_inactive and not TEAMS[choice.name]["active"]:
+                continue
+            if current.lower() in choice.name.lower():
+                ret.append(choice)
+        return ret[:25]
+
+    @player_slash.autocomplete("player")
+    async def player_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice]:
+        now = datetime.utcnow()
+        saved = datetime.fromtimestamp(await self.config.player_db())
+        path = cog_data_path(self) / "players.json"
+        ret = []
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            async with self.session.get(
+                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+            ) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await self.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
+            data = json.loads(f.read())["data"]
+            for player in data:
+                if current.lower() in player["fullName"].lower():
+                    ret.append(Choice(name=player["fullName"], value=player["fullName"]))
+        return ret[:25]
 
     async def check_requires(self, func, interaction):
         fake_ctx = discord.Object(id=interaction.id)
@@ -133,202 +468,3 @@ class HockeySlash(MixinMeta):
             )
             return False
         return True
-
-    async def team_autocomplete(
-        self, interaction: discord.Interaction, include_inactive: bool, include_all: bool
-    ) -> Optional[dict]:
-        if interaction.type is InteractionType.autocomplete:
-            for cmd in interaction.data.get("options", []):
-                if cmd.get("focused", False):
-                    current_data = cmd.get("value", "")
-                for group in cmd.get("options", []):
-                    if group.get("focused", False):
-                        current_data = group.get("value", "")
-                    for sub in group.get("options", []):
-                        if sub.get("focused", False):
-                            current_data = sub.get("value", "")
-            if include_all:
-                team_choices = [Choice(name="All", value="all")]
-            else:
-                team_choices = []
-            for t, d in TEAMS.items():
-                if current_data.lower() in t.lower():
-                    if not include_inactive and not d["active"]:
-                        continue
-                    team_choices.append(Choice(name=t, value=t))
-            await interaction.response.autocomplete(team_choices[:25])
-            return None
-
-    async def parse_teams_and_date(self, interaction: discord.Interaction) -> Optional[dict]:
-        if interaction.type is InteractionType.autocomplete:
-            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
-            team_choices = [
-                Choice(name=t, value=t) for t, d in TEAMS.items() if current_data in t.lower()
-            ]
-            await interaction.response.autocomplete(team_choices[:25])
-            return None
-        kwargs = {}
-        kwargs["teams_and_date"] = {}
-        for option in interaction.data["options"][0].get("options", []):
-            name = option["name"]
-            if name == "date":
-                find = DATE_RE.search(option["value"])
-                date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-                kwargs["teams_and_date"][name] = datetime.strptime(date_str, "%Y-%m-%d")
-            else:
-                kwargs["teams_and_date"][name] = [option["value"]]
-        return kwargs
-
-    async def hockey_slash_commands(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        command_mapping = {
-            "standings": self.standings,
-            "games": self.games,
-            "heatmap": self.heatmap,
-            "gameflow": self.gameflow,
-            "schedule": self.schedule,
-            "player": self.player,
-            "roster": self.roster,
-            "leaderboard": self.leaderboard,
-            "otherdiscords": self.otherdiscords,
-            "set": self.slash_hockey_set,
-            "pickems": self.slash_pickems_commands,
-            "gdt": self.slash_gdt_commands,
-        }
-        option = interaction.data["options"][0]["name"]
-        func = command_mapping[option]
-
-        if option in ["games", "schedule", "heatmap", "gameflow"]:
-            kwargs = await self.parse_teams_and_date(interaction)
-            if kwargs:
-                await func(interaction, **kwargs)
-            return
-        if option == "otherdiscords" and interaction.type is InteractionType.autocomplete:
-            await self.team_autocomplete(interaction, False, False)
-            return
-        if option == "roster" and interaction.type is InteractionType.autocomplete:
-            await self.team_autocomplete(interaction, True, False)
-            return
-        if option == "player" and interaction.type is InteractionType.autocomplete:
-            current_data = interaction.data["options"][0]["options"][0].get("value", "").lower()
-            player_choices = await self.player_choices(current_data)
-            await interaction.response.autocomplete(player_choices[:25])
-            return
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {}
-            for option in interaction.data["options"][0].get("options", []):
-                name = option["name"]
-                kwargs[name] = self.convert_slash_args(interaction, option)
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_pickems_commands(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        command_mapping = {
-            "settings": self.pickems_settings,
-            "basecredits": self.pickems_credits_base,
-            "topcredits": self.pickems_credits_top,
-            "winners": self.pickems_credits_amount,
-            "message": self.set_pickems_message,
-            "setup": self.setup_auto_pickems,
-            "clear": self.delete_auto_pickems,
-            "page": self.pickems_page,
-            "votes": self.pickemsvotes,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {}
-            for option in interaction.data["options"][0]["options"][0].get("options", []):
-                name = option["name"]
-                kwargs[name] = self.convert_slash_args(interaction, option)
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_gdt_commands(self, interaction: discord.Interaction) -> None:
-        command_mapping = {
-            "settings": self.gdt_settings,
-            "delete": self.gdt_delete,
-            "defaultstate": self.gdt_default_game_state,
-            "create": self.gdt_create,
-            "toggle": self.gdt_toggle,
-            "channel": self.gdt_channel,
-            "setup": self.gdt_setup,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if option == "setup" and interaction.type is InteractionType.autocomplete:
-            await self.team_autocomplete(interaction, False, True)
-            return
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {}
-            for option in interaction.data["options"][0]["options"][0].get("options", []):
-                name = option["name"]
-                kwargs[name] = self.convert_slash_args(interaction, option)
-        except KeyError:
-            kwargs = {}
-            pass
-        await func(interaction, **kwargs)
-        pass
-
-    async def slash_hockey_set(self, interaction: discord.Interaction) -> None:
-        """
-        Get information from NHL.com
-        """
-        if not interaction.guild:
-            await interaction.response.send_message(
-                _("These commands are only available in a guild.")
-            )
-            return
-        if not await self.slash_check_permissions(
-            interaction, interaction.user, manage_messages=True
-        ):
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-            return
-        command_mapping = {
-            "settings": self.hockey_settings,
-            "poststandings": self.post_standings,
-            "add": self.add_goals,
-            "remove": self.remove_goals,
-            "stateupdates": self.set_game_state_updates,
-        }
-        option = interaction.data["options"][0]["options"][0]["name"]
-        func = command_mapping[option]
-        if option == "add" and interaction.type is InteractionType.autocomplete:
-            await self.team_autocomplete(interaction, False, True)
-            return
-        if getattr(func, "requires", None):
-            if not await self.check_requires(func, interaction):
-                return
-        try:
-            kwargs = {}
-            for option in interaction.data["options"][0]["options"][0].get("options", []):
-                name = option["name"]
-                kwargs[name] = self.convert_slash_args(interaction, option)
-        except KeyError:
-            kwargs = {}
-            pass
-        log.debug(kwargs)
-        await func(interaction, **kwargs)
-        pass
