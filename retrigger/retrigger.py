@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 import discord
-from discord.app_commands import Choice
-from discord.enums import InteractionType
 from discord.ext import tasks
 from redbot.core import Config, checks, commands, modlog
 from redbot.core.commands import TimedeltaConverter

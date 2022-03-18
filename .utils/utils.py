@@ -50,7 +50,7 @@ HEADER = (
     "TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop)."
     "To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`\n"
     "## About Cogs\n"
-    "{body}\n"
+    "{body}\n\n"
     "Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).\n"
     "## Credits\n"
     "Thank you to everyone who has pushed me to think about new ideas and implement them.\n"
