@@ -754,14 +754,10 @@ class ReTriggerSlash:
     @remove_slash.autocomplete("trigger")
     async def trigger_autocomplete(self, interaction: discord.Interaction, current: str):
         guild_id = interaction.guild.id
-        try:
-            if getattr(interaction.namespace, "guild_id") and await self.bot.is_owner(
-                interaction.user
-            ):
-                guild_id = int(interaction.namespace.guild_id)
-        except Exception:
-            log.exception("error checking another guild")
-        log.debug(f"checking {guild_id} - {type(guild_id)}")
+        if getattr(interaction.namespace, "guild_id") and await self.bot.is_owner(
+            interaction.user
+        ):
+            guild_id = int(interaction.namespace.guild_id)
         if guild_id in self.triggers:
             choices = [
                 app_commands.Choice(name=t.name, value=t.name)
