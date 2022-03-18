@@ -359,7 +359,9 @@ class HockeySlash(MixinMeta):
         await func(interaction, channel, state)
 
     @set_slash.command(name="add")
-    async def add_goals_slash(self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]):
+    async def add_goals_slash(
+        self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
+    ):
         """Add a teams goal updates to a channel"""
         func = self.add_goals
         if not await self.pre_check_slash(interaction):
@@ -369,7 +371,12 @@ class HockeySlash(MixinMeta):
         await func(interaction, team, channel)
 
     @set_slash.command(name="remove")
-    async def remove_goals_slash(self, interaction: discord.Interaction, team: Optional[str], channel: Optional[discord.TextChannel]):
+    async def remove_goals_slash(
+        self,
+        interaction: discord.Interaction,
+        team: Optional[str],
+        channel: Optional[discord.TextChannel],
+    ):
         """Removes a teams goal updates from a channel"""
         func = self.remove_goals
         if not await self.pre_check_slash(interaction):
@@ -397,7 +404,7 @@ class HockeySlash(MixinMeta):
         if include_all:
             team_choices.insert(0, app_commands.Choice(name="All", value="all"))
         for choice in team_choices:
-            if not include_inactive and not TEAMS[choice.name]["active"]:
+            if not include_inactive and not TEAMS.get(choice.name, {"active": True})["active"]:
                 continue
             if current.lower() in choice.name.lower():
                 ret.append(choice)
