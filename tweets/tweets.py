@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.8.2"
+    __version__ = "2.8.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -614,7 +614,7 @@ class Tweets(TweetsAPI, commands.Cog):
         cursor = -1
         list_members: list = []
         for member in tweepy.Cursor(
-            api.list_members, owner_screen_name=owner, slug=list_name, cursor=cursor
+            api.get_list_members, owner_screen_name=owner, slug=list_name, cursor=cursor
         ).items():
             list_members.append(member)
         return list_members
@@ -687,7 +687,7 @@ class Tweets(TweetsAPI, commands.Cog):
             for page in pagify(msg_send, ["\n"]):
                 await ctx.send(page)
             command = f"`{ctx.prefix}autotweet restart`"
-            msg = _("Now do {commant} when you've finished adding all accounts!").format(
+            msg = _("Now do {command} when you've finished adding all accounts!").format(
                 command=command
             )
             await ctx.send(msg)
