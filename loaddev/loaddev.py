@@ -29,7 +29,7 @@ class LoadDev(commands.Cog):
     async def cog_unload(self):
         if not self.bot._cli_flags.dev:
             # only remove the dev cog if the dev cli flag is not set
-            self.bot.remove_cog("Dev")
+            await self.bot.remove_cog("Dev")
 
     async def cog_load(self):
         replace_mock = await self.config.replace_mock()
