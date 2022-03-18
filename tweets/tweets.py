@@ -28,7 +28,7 @@ class Tweets(TweetsAPI, commands.Cog):
     """
 
     __author__ = ["Palm__", "TrustyJAID"]
-    __version__ = "2.8.2"
+    __version__ = "2.8.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -614,7 +614,7 @@ class Tweets(TweetsAPI, commands.Cog):
         cursor = -1
         list_members: list = []
         for member in tweepy.Cursor(
-            api.list_members, owner_screen_name=owner, slug=list_name, cursor=cursor
+            api.get_list_members, owner_screen_name=owner, slug=list_name, cursor=cursor
         ).items():
             list_members.append(member)
         return list_members
