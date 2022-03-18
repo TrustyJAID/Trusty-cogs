@@ -1,15 +1,14 @@
 import logging
-import apraw
 import re
+from typing import Dict, Optional, Union
 
-from typing import Optional, Union, Dict
-
-from redbot.core import commands
-from redbot.core.i18n import Translator
+import apraw
 import discord
+from apraw.models import Submission, Subreddit
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-from apraw.models import Submission, Subreddit
+from redbot.core import commands
+from redbot.core.i18n import Translator
 
 BASE_URL = "https://reddit.com"
 

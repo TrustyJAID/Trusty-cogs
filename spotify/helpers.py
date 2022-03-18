@@ -9,7 +9,7 @@ from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_timedelta, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta
 from tabulate import tabulate
 
 log = logging.getLogger("red.trusty-cogs.spotify")
@@ -326,6 +326,7 @@ class RecommendationsConverter(Converter):
                 _("You must provide either an artist or track seed or a genre for this to work")
             )
         return query
+
 
 class SpotifyURIConverter(Converter):
     """

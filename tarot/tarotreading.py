@@ -1,8 +1,8 @@
-import re
 import random
+import re
+from dataclasses import dataclass
 from random import choice, sample
 from typing import Optional
-from dataclasses import dataclass
 
 import discord
 from redbot.core import commands

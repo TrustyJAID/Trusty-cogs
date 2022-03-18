@@ -1,7 +1,6 @@
 import logging
 import re
-
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import discord
 import tekore
@@ -18,15 +17,9 @@ _ = Translator("Spotify", __file__)
 
 class SpotifySlash:
 
-    artist = app_commands.Group(
-        name="artist", description="View Spotify Artist info"
-    )
-    playlist = app_commands.Group(
-        name="playlist", description="View Spotify Playlists"
-    )
-    device = app_commands.Group(
-        name="device", description="Spotify Device commands"
-    )
+    artist = app_commands.Group(name="artist", description="View Spotify Artist info")
+    playlist = app_commands.Group(name="playlist", description="View Spotify Playlists")
+    device = app_commands.Group(name="device", description="Spotify Device commands")
 
     KEY_CHOICES = [
         app_commands.Choice(name="C (also B♯, Ddouble flat)", value=0),
@@ -393,7 +386,9 @@ class SpotifySlash:
         # of a cog so I have the rest of my methods available
         name = interaction.data.get("name")
         data = interaction.data
-        resolved = app_commands.Namespace._get_resolved_items(interaction, data.get("resolved", {}))
+        resolved = app_commands.Namespace._get_resolved_items(
+            interaction, data.get("resolved", {})
+        )
         target_id = data.get("target_id")
         key = app_commands.namespace.ResolveKey.any_with(target_id)
         value = resolved.get(key)

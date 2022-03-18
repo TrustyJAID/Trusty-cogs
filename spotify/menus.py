@@ -624,7 +624,9 @@ class SpotifyPages(menus.PageSource):
                         tracks = [t for t in cur_tracks.tracks.items if t is not None]
                     if cur_state.context.type == "artist":
                         cur_tracks = await user_spotify.artist(playlist_id)
-                        top_tracks = await user_spotify.artist_top_tracks(playlist_id, "from_token")
+                        top_tracks = await user_spotify.artist_top_tracks(
+                            playlist_id, "from_token"
+                        )
                         tracks = [t for t in top_tracks if t is not None]
                     if cur_state.context.type == "collection":
                         cur_tracks = await user_spotify.saved_tracks(limit=50)
@@ -1412,7 +1414,9 @@ class SpotifyUserMenu(discord.ui.View):
             if self.source.select_options:
                 for op in self.source.select_options:
                     if self.source.current_track and self.source.current_track.id == op.value:
-                        op.emoji = discord.PartialEmoji.from_str("\N{SPEAKER WITH THREE SOUND WAVES}")
+                        op.emoji = discord.PartialEmoji.from_str(
+                            "\N{SPEAKER WITH THREE SOUND WAVES}"
+                        )
                     else:
                         op.emoji = None
                 self.select_view = SpotifySelectTrack(

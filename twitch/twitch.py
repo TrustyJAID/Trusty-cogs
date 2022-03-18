@@ -7,9 +7,9 @@ from redbot.core import Config, checks, commands
 from redbot.core.commands.converter import TimedeltaConverter
 
 from .errors import TwitchError
+from .menus import BaseMenu, TwitchClipsPages, TwitchFollowersPages
 from .twitch_api import TwitchAPI
 from .twitch_models import TwitchFollower
-from .menus import BaseMenu, TwitchClipsPages, TwitchFollowersPages
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 
@@ -31,7 +31,7 @@ class Twitch(TwitchAPI, commands.Cog):
             "access_token": {},
             "twitch_accounts": [],
             "twitch_clips": {},
-            "version": self.__version__, # default value so that migrations are skipped on new installs
+            "version": self.__version__,  # default value so that migrations are skipped on new installs
         }
         user_defaults = {"id": "", "login": "", "display_name": ""}
         self.config.register_global(**global_defaults, force_registration=True)
@@ -211,7 +211,7 @@ class Twitch(TwitchAPI, commands.Cog):
             chan_data = {
                 "view_count": view_count,
                 "check_back": check_back.total_seconds() if check_back else None,
-                "clips": []
+                "clips": [],
             }
             if str(profile.id) not in cur_accounts:
                 try:

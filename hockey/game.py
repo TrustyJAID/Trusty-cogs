@@ -257,7 +257,9 @@ class Game:
         else:
             return f"{base_url}{self.season}/{self.season}-{str(self.game_id)[5:]}-{style}.png"
 
-    def gameflow_url(self, corsi: bool = True, strength: Literal["all", "ev", "5v5", "sva"] = "all"):
+    def gameflow_url(
+        self, corsi: bool = True, strength: Literal["all", "ev", "5v5", "sva"] = "all"
+    ):
         base_url = "https://www.naturalstattrick.com/graphs/"
         diff = "cfdiff" if corsi else "xgdiff"
         return f"{base_url}{self.season}-{str(self.game_id)[5:]}-{diff}-{strength}.png"
@@ -647,7 +649,9 @@ class Game:
         except Exception:
             log.exception("Could not post goal in %s", repr(channel))
 
-    async def maybe_edit_gamedaythread_message(self, bot: Red, channel_id: int, data: dict) -> None:
+    async def maybe_edit_gamedaythread_message(
+        self, bot: Red, channel_id: int, data: dict
+    ) -> None:
         post_state = ["all", self.home_team, self.away_team]
         if data["parent"] and any([i in data["team"] for i in post_state]) and data["update"]:
             try:
@@ -719,14 +723,10 @@ class Game:
                 allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if self.game_type == "R" and "OT" in self.period_ord:
                 if not guild_settings["ot_notifications"]:
-                    allowed_mentions = {
-                        "allowed_mentions": discord.AllowedMentions(roles=False)
-                    }
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if "SO" in self.period_ord:
                 if not guild_settings["so_notifications"]:
-                    allowed_mentions = {
-                        "allowed_mentions": discord.AllowedMentions(roles=False)
-                    }
+                    allowed_mentions = {"allowed_mentions": discord.AllowedMentions(roles=False)}
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
                 if channel.id in game_day_channels:

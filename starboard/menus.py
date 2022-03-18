@@ -7,12 +7,10 @@ import discord
 
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.i18n import Translator
-
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .starboard_entry import StarboardEntry
-
 
 log = logging.getLogger("red.Trusty-cogs.starboard")
 _ = Translator("RoleTools", __file__)

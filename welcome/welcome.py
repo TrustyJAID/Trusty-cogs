@@ -941,4 +941,3 @@ class Welcome(Events, commands.Cog):
 
     async def cog_unload(self):
         self.group_check.cancel()
-

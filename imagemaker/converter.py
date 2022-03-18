@@ -1,11 +1,11 @@
-import discord
 import re
+from typing import List, Pattern, Union
 
+import discord
 import unidecode
-from typing import Pattern, List, Union
-from redbot.core import commands
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
+from redbot.core import commands
 
 IMAGE_LINKS: Pattern = re.compile(
     r"(https?:\/\/[^\"\'\s]*\.(?:png|jpg|jpeg|gif|png|svg)(\?size=[0-9]*)?)", flags=re.I

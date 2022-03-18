@@ -568,8 +568,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
 
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             msg = _("{hoster} is not currently hosting any events.").format(
-                    hoster=hoster.display_name
-                )
+                hoster=hoster.display_name
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -583,8 +583,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
                 del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
             msg = _("{hoster} is not currently hosting any events.").format(
-                    hoster=hoster.display_name
-                )
+                hoster=hoster.display_name
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -619,8 +619,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
 
         if str(hoster.id) not in await self.config.guild(ctx.guild).events():
             msg = _("{hoster} is not currently hosting any events.").format(
-                    hoster=hoster.display_name
-                )
+                hoster=hoster.display_name
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -634,8 +634,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
                 del events[str(author.id)]
                 del self.event_cache[ctx.guild.id][event.message]
             msg = _("{hoster} is not currently hosting any events.").format(
-                    hoster=hoster.display_name
-                )
+                hoster=hoster.display_name
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
@@ -811,8 +811,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
                         await ctx.send(msg)
                     return
                 msg = _("Your event has {time} remaining until it is ended automatically.").format(
-                        time=event.remaining(seconds)
-                    )
+                    time=event.remaining(seconds)
+                )
                 if is_slash:
                     await ctx.followup.send(msg)
                 else:
@@ -821,7 +821,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
 
     @event_edit.command(name="memberadd")
     @commands.guild_only()
-    async def members_add(self, ctx: commands.Context, new_members: commands.Greedy[discord.Member]):
+    async def members_add(
+        self, ctx: commands.Context, new_members: commands.Greedy[discord.Member]
+    ):
         """
         Add members to your event (hopefully not against their will)
 
@@ -864,7 +866,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
 
     @event_edit.command(name="memberremove", aliases=["memberrem"])
     @commands.guild_only()
-    async def members_remove(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
+    async def members_remove(
+        self, ctx: commands.Context, members: commands.Greedy[discord.Member]
+    ):
         """
         Remove members from your event (hopefully not against their will)
 
@@ -944,7 +948,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        msg = _("Added {members} to maybe on your event.").format(members=humanize_list(new_members))
+        msg = _("Added {members} to maybe on your event.").format(
+            members=humanize_list(new_members)
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -988,7 +994,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        msg = _("Removed {members} from maybe on your event.").format(members=humanize_list(new_members))
+        msg = _("Removed {members} from maybe on your event.").format(
+            members=humanize_list(new_members)
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -1143,9 +1151,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
         async with self.config.guild(ctx.guild).playerclass_options() as options:
             if len(options) >= 25:
                 msg = _(
-                        "You can have a maximum of 25 player classes to select from."
-                        "Delete some first before trying to add more."
-                    )
+                    "You can have a maximum of 25 player classes to select from."
+                    "Delete some first before trying to add more."
+                )
                 if is_slash:
                     await ctx.followup.send(msg)
                 else:
@@ -1161,8 +1169,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
                         emoji = str(emoji)
                 options[player_class] = emoji
         msg = _("{player_class} has been added as an available option.").format(
-                player_class=player_class
-            )
+            player_class=player_class
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -1219,8 +1227,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
         player_classes = await self.config.guild(ctx.guild).playerclass_options()
         player_classes = humanize_list(list(player_classes.keys()))
         msg = _("{guild} Available Playerclasses: **{player_classes}**").format(
-                guild=ctx.guild.name, player_classes=player_classes
-            )
+            guild=ctx.guild.name, player_classes=player_classes
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -1325,8 +1333,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
 
         await self.config.member(author).player_class.set(player_class)
         msg = _("Your player class has been set to {player_class}").format(
-                    player_class=player_class
-                )
+            player_class=player_class
+        )
         if player_class:
             if is_slash:
                 await ctx.followup.send(msg)
@@ -1368,8 +1376,8 @@ class EventPoster(EventPosterSlash, commands.Cog):
             max_slots = None
         await self.config.guild(ctx.guild).default_max.set(max_slots)
         msg = _("Default maximum slots for events set to {max_slots} slots.").format(
-                max_slots=max_slots
-            )
+            max_slots=max_slots
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -1663,7 +1671,9 @@ class EventPoster(EventPosterSlash, commands.Cog):
     @event_settings.command(name="largelinks")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
-    async def set_custom_large_link(self, ctx: commands.Context, keyword: str, link: ValidImage) -> None:
+    async def set_custom_large_link(
+        self, ctx: commands.Context, keyword: str, link: ValidImage
+    ) -> None:
         """
         Set the custom embed image for events
 

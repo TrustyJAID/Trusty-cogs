@@ -302,8 +302,8 @@ class RoleToolsReactions(RoleToolsMixin):
         async with self.config.role(role).reactions() as reactions:
             reactions.append(key)
         msg = _("Created the reaction role {role} to {emoji} on {message}").format(
-                role=role.name, emoji=emoji, message=message.jump_url
-            )
+            role=role.name, emoji=emoji, message=message.jump_url
+        )
         if is_slash:
             await ctx.followup.send(msg)
         else:
@@ -431,16 +431,16 @@ class RoleToolsReactions(RoleToolsMixin):
                 pass
 
             msg = _("Removed role reaction on {role} to {emoji} on {message}").format(
-                    role=role, emoji=emoji, message=message.jump_url
-                )
+                role=role, emoji=emoji, message=message.jump_url
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:
                 await ctx.send(msg)
         else:
             msg = _(
-                    "I could not find a reaction role on that message or for that role/emoji combination."
-                )
+                "I could not find a reaction role on that message or for that role/emoji combination."
+            )
             if is_slash:
                 await ctx.followup.send(msg)
             else:

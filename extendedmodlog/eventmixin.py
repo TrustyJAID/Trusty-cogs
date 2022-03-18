@@ -1,19 +1,18 @@
 import asyncio
 import datetime
 import logging
-from typing import Sequence, Union, cast, Optional, Tuple, Dict, List, Any
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-from redbot.core import Config, VersionInfo, commands, modlog, version_info
+from redbot.core import Config, VersionInfo, commands, i18n, modlog, version_info
 from redbot.core.bot import Red
-from redbot.core import i18n
 from redbot.core.utils.chat_formatting import (
     escape,
     humanize_list,
-    inline,
     humanize_timedelta,
+    inline,
     pagify,
 )
 
@@ -67,7 +66,7 @@ class EventChooser(Converter):
             "invite_deleted",
             "thread_create",
             "thread_delete",
-            "thread_change"
+            "thread_change",
         ]
         result = None
         if argument.startswith("member_"):
@@ -384,7 +383,9 @@ class EventMixin:
                 channel=message_channel.mention,
             )
         if embed_links:
-            content = list(pagify(f"{message.author.mention}: {message.content}", page_length=1000))
+            content = list(
+                pagify(f"{message.author.mention}: {message.content}", page_length=1000)
+            )
             embed = discord.Embed(
                 description=content.pop(0),
                 colour=await self.get_event_colour(guild, "message_delete"),
@@ -494,7 +495,9 @@ class EventMixin:
         for invite in await guild.invites():
             try:
 
-                created_at = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
+                created_at = getattr(
+                    invite, "created_at", datetime.datetime.now(datetime.timezone.utc)
+                )
                 channel = getattr(invite, "channel", discord.Object(id=0))
                 inviter = getattr(invite, "inviter", discord.Object(id=0))
                 invites[invite.code] = {
@@ -617,7 +620,9 @@ class EventMixin:
             embed = discord.Embed(
                 description=member.mention,
                 colour=await self.get_event_colour(guild, "user_join"),
-                timestamp=member.joined_at if member.joined_at else datetime.datetime.now(datetime.timezone.utc),
+                timestamp=member.joined_at
+                if member.joined_at
+                else datetime.datetime.now(datetime.timezone.utc),
             )
             embed.add_field(name=_("Total Users:"), value=str(users))
             embed.add_field(name=_("Account created on:"), value=created_on)
@@ -1632,9 +1637,7 @@ class EventMixin:
                 msg += chan_msg + "\n"
                 embed.description = chan_msg
             else:
-                after_chan = (
-                    f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"
-                )
+                after_chan = f"`{after.channel.name}` ({after.channel.id}) {after.channel.mention}"
                 before_chan = (
                     f"`{before.channel.name}` ({before.channel.id}) {before.channel.mention}"
                 )
@@ -1780,7 +1783,9 @@ class EventMixin:
         if guild.me.is_timed_out():
             return
         if invite.code not in self.settings[guild.id]["invite_links"]:
-            created_at = getattr(invite, "created_at", datetime.datetime.now(datetime.timezone.utc))
+            created_at = getattr(
+                invite, "created_at", datetime.datetime.now(datetime.timezone.utc)
+            )
             inviter = getattr(invite, "inviter", discord.Object(id=0))
             channel = getattr(invite, "channel", discord.Object(id=0))
             self.settings[guild.id]["invite_links"][invite.code] = {
@@ -2035,9 +2040,7 @@ class EventMixin:
             await channel.send(msg)
 
     @commands.Cog.listener()
-    async def on_thread_update(
-        self, before: discord.Thread, after: discord.Thread
-    ) -> None:
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread) -> None:
         guild = before.guild
         if guild.id not in self.settings:
             return
@@ -2085,7 +2088,7 @@ class EventMixin:
             "slowmode_delay": _("Slowmode delay"),
             "auto_archive_duration": _("Archive Duration"),
             "locked": _("Locked"),
-            "archived": _("Archived")
+            "archived": _("Archived"),
         }
         before_changes = []
         after_changes = []
@@ -2130,7 +2133,6 @@ class EventMixin:
         else:
             await channel.send(escape(msg, mass_mentions=True))
 
-
     @commands.Cog.listener()
     async def on_guild_stickers_update(
         self, guild: discord.Guild, before: Sequence[discord.Emoji], after: Sequence[discord.Emoji]
@@ -2164,7 +2166,8 @@ class EventMixin:
         )
         embed.set_author(name=_("Updated Server Stickers"))
         msg = _("{emoji} `{time}` Updated Server Stickers").format(
-            emoji=self.settings[guild.id]["stickers_change"]["emoji"], time=time.strftime("%H:%M:%S")
+            emoji=self.settings[guild.id]["stickers_change"]["emoji"],
+            time=time.strftime("%H:%M:%S"),
         )
         worth_updating = False
         b = set(before)
@@ -2231,7 +2234,9 @@ class EventMixin:
                 msg += new_msg
                 embed.description += new_msg
             if old_emoji.emoji != changed_emoji.emoji:
-                new_msg = _("{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n").format(
+                new_msg = _(
+                    "{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n"
+                ).format(
                     emoji=emoji_name,
                     old_emoji_name=old_emoji.emoji,
                     new_emoji_name=changed_emoji.emoji,
@@ -2241,7 +2246,9 @@ class EventMixin:
                 msg += new_msg
                 embed.description += new_msg
             if old_emoji.description != changed_emoji.description:
-                new_msg = _("{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n").format(
+                new_msg = _(
+                    "{emoji} emoji changed from {old_emoji_name} to {new_emoji_name}\n"
+                ).format(
                     emoji=emoji_name,
                     old_emoji_name=old_emoji.emoji,
                     new_emoji_name=changed_emoji.emoji,

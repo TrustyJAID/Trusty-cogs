@@ -4,11 +4,9 @@ import logging
 from typing import Any, List, Optional, Union
 
 import discord
-
 from redbot.core import commands
-from redbot.vendored.discord.ext import menus
 from redbot.core.i18n import Translator
-
+from redbot.vendored.discord.ext import menus
 
 log = logging.getLogger("red.Trusty-cogs.serverstats")
 
@@ -194,7 +192,11 @@ class BaseView(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
-        if isinstance(source, GuildPages) and self.ctx and self.ctx.author.id in self.ctx.bot.owner_ids:
+        if (
+            isinstance(source, GuildPages)
+            and self.ctx
+            and self.ctx.author.id in self.ctx.bot.owner_ids
+        ):
             self.leave_guild_button = LeaveGuildButton(discord.ButtonStyle.red, 1)
             self.join_guild_button = JoinGuildButton(discord.ButtonStyle.green, 1)
             self.add_item(self.leave_guild_button)

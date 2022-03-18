@@ -13,13 +13,7 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 
-from .constants import (
-    BASE_URL,
-    CONFIG_ID,
-    CONTENT_URL,
-    HEADSHOT_URL,
-    TEAMS,
-)
+from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
 from .errors import InvalidFileError
 from .game import Game
@@ -44,6 +38,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
     This allows the metaclass used for proper type detection to
     coexist with discord.py's metaclass
     """
+
     pass
 
 
@@ -183,7 +178,9 @@ class Hockey(
         for g_id, data in all_guilds.items():
             if str(user_id) in data["leaderboard"]:
                 del data["leaderboard"][str(user_id)]
-                await self.pickems_config.guild_from_id(int(g_id)).leaderboard.set(data["leaderboard"])
+                await self.pickems_config.guild_from_id(int(g_id)).leaderboard.set(
+                    data["leaderboard"]
+                )
 
     async def cog_load(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
@@ -221,7 +218,9 @@ class Hockey(
         }
         all_guilds = await self.pickems_config.all_guilds()
         for guild_id in all_guilds.keys():
-            async with self.pickems_config.guild_from_id(int(guild_id)).leaderboard() as leaderboard:
+            async with self.pickems_config.guild_from_id(
+                int(guild_id)
+            ).leaderboard() as leaderboard:
                 async for user_id, data in AsyncIter(leaderboard.items()):
                     for key, value in DEFAULT_LEADERBOARD.items():
                         if key not in data:

@@ -139,7 +139,9 @@ class RoleTools(
                     role = guild.get_role(role_id)
                     if role:
                         await self.config.role(role).auto.set(True)
-                        async with self.config.guild_from_id(int(guild_id)).auto_roles() as auto_roles:
+                        async with self.config.guild_from_id(
+                            int(guild_id)
+                        ).auto_roles() as auto_roles:
                             if role.id not in auto_roles:
                                 auto_roles.append(role.id)
             await self.config.version.set("1.0.1")

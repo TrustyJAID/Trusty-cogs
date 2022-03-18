@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, Optional, Union, List
+from typing import Dict, List, Optional, Union
 
 import aiohttp
 import discord
@@ -172,7 +172,7 @@ class Conversions(commands.Cog):
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
         async with self.session.get(url, headers=await self.get_header(), params=params) as resp:
             data = await resp.json()
-            coins_data = data.get("data",  {})
+            coins_data = data.get("data", {})
             for coin_id, coin_data in coins_data.items():
                 to_ret.append(Coin.from_json(coin_data))
         return to_ret

@@ -481,9 +481,7 @@ class RoleToolsButtons(RoleToolsMixin):
                     # so instead we fake the message link unless the channel is missing
                     # this way they can check themselves without rate limitng
                     # the bot trying to fetch something constantly that is broken.
-                    message = (
-                        f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
-                    )
+                    message = f"https://discord.com/channels/{ctx.guild.id}/{channel_id}/{msg_id}"
                 else:
                     message = "None"
                 msg += _("[Button Message]({message})\n").format(

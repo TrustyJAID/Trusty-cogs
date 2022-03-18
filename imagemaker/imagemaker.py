@@ -7,7 +7,7 @@ import sys
 import textwrap
 from copy import copy
 from io import BytesIO
-from typing import Optional, Union, cast, Tuple
+from typing import Optional, Tuple, Union, cast
 
 import aiohttp
 import discord

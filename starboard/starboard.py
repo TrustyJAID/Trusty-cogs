@@ -1,17 +1,17 @@
-import logging
 import asyncio
-from typing import Union, Dict, Optional
+import logging
 from datetime import timedelta
+from typing import Dict, Optional, Union
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
-from .converters import StarboardExists, RealEmoji
+from .converters import RealEmoji, StarboardExists
 from .events import StarboardEvents
-from .starboard_entry import StarboardEntry, FakePayload
 from .menus import BaseMenu, StarboardPages
+from .starboard_entry import FakePayload, StarboardEntry
 
 _ = Translator("Starboard", __file__)
 log = logging.getLogger("red.trusty-cogs.Starboard")

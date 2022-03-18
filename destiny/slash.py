@@ -1,6 +1,5 @@
 import logging
-
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import discord
 from discord import app_commands

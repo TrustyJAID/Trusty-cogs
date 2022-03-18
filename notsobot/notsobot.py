@@ -221,7 +221,7 @@ class NotSoBot(commands.Cog):
         elif "\x00\x00\x01\x00" in image_header:
             return "image/x-icon"
         else:
-            return None          
+            return None
 
     async def bytes_download(
         self, url: Union[discord.Asset, discord.Attachment, str]
@@ -1200,7 +1200,7 @@ class NotSoBot(commands.Cog):
 
     def do_glitch(self, b, amount, seed, iterations):
         img = Image.open(b)
-        is_gif = ((hasattr(img, "is_animated")) and (img.is_animated))
+        is_gif = (hasattr(img, "is_animated")) and (img.is_animated)
         if not is_gif:
             image = img.convert("RGB")
             img_bytes = BytesIO()

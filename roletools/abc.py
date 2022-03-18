@@ -30,8 +30,6 @@ log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("Roletools", __file__)
 
 
-
-
 class RoleToolsMixin(ABC):
     """
     Base class for well behaved type hint detection with composite class.

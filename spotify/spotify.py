@@ -10,9 +10,9 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 from .helpers import SPOTIFY_RE, InvalidEmoji
-from .spotify_commands import SpotifyCommands
-from .slash import SpotifySlash
 from .menus import emoji_handler
+from .slash import SpotifySlash
+from .spotify_commands import SpotifyCommands
 
 try:
     from .rpc import DashboardRPC_Spotify
@@ -363,7 +363,7 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
                     albums.append(match.group(3))
                 if match.group(2) == "playlist":
                     playlists.append(match.group(3))
-                    
+
         ctx = await self.bot.get_context(message)
         user = self.bot.get_user(payload.user_id)
         if not user:
@@ -373,7 +373,7 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
         user_token = await self.get_user_auth(ctx, user)
         if not user_token:
             return
-          
+
         user_spotify = tekore.Spotify(sender=self._sender)
         action = listen_for[str(payload.emoji)]
         if action == "play" or action == "playpause":

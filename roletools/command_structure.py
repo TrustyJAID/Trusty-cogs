@@ -72,7 +72,13 @@ SLASH_COMMANDS = {
                     "type": 1,
                     "options": [
                         {"name": "channel", "description": ".", "type": 7, "required": True},
-                        {"name": "buttons", "description": ".", "type": 3, "required": True, "autocomplete": True},
+                        {
+                            "name": "buttons",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {"name": "message", "description": ".", "type": 3, "required": True},
                     ],
                 },
@@ -92,9 +98,7 @@ SLASH_COMMANDS = {
                     "name": "delete",
                     "description": "Delete a saved button.",
                     "type": 1,
-                    "options": [
-                        {"name": "name", "description": ".", "type": 3, "required": True}
-                    ],
+                    "options": [{"name": "name", "description": ".", "type": 3, "required": True}],
                 },
                 {
                     "name": "edit",
@@ -102,7 +106,13 @@ SLASH_COMMANDS = {
                     "type": 1,
                     "options": [
                         {"name": "message", "description": ".", "type": 3, "required": True},
-                        {"name": "buttons", "description": ".", "type": 3, "required": True, "autocomplete": True},
+                        {
+                            "name": "buttons",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                     ],
                 },
             ],
@@ -133,7 +143,13 @@ SLASH_COMMANDS = {
                     "type": 1,
                     "options": [
                         {"name": "name", "description": ".", "type": 3, "required": True},
-                        {"name": "options", "description": ".", "type": 3, "required": True, "autocomplete": True},
+                        {
+                            "name": "options",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {
                             "name": "min_values",
                             "description": ".",
@@ -165,7 +181,13 @@ SLASH_COMMANDS = {
                     "description": "Delete a saved option.",
                     "type": 1,
                     "options": [
-                        {"name": "name", "description": ".", "type": 3, "required": True, "autocomplete": True}
+                        {
+                            "name": "name",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        }
                     ],
                 },
                 {
@@ -196,7 +218,13 @@ SLASH_COMMANDS = {
                     "description": "Delete a saved select menu.",
                     "type": 1,
                     "options": [
-                        {"name": "name", "description": ".", "type": 3, "required": True, "autocomplete": True}
+                        {
+                            "name": "name",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        }
                     ],
                 },
                 {
@@ -205,7 +233,13 @@ SLASH_COMMANDS = {
                     "type": 1,
                     "options": [
                         {"name": "message", "description": ".", "type": 3, "required": True},
-                        {"name": "menus", "description": ".", "type": 3, "required": True, "autocomplete": True},
+                        {
+                            "name": "menus",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                     ],
                 },
                 {
@@ -214,7 +248,13 @@ SLASH_COMMANDS = {
                     "type": 1,
                     "options": [
                         {"name": "channel", "description": ".", "type": 7, "required": True},
-                        {"name": "menus", "description": ".", "type": 3, "required": True, "autocomplete": True},
+                        {
+                            "name": "menus",
+                            "description": ".",
+                            "type": 3,
+                            "required": True,
+                            "autocomplete": True,
+                        },
                         {"name": "message", "description": ".", "type": 3, "required": True},
                     ],
                 },
@@ -238,18 +278,14 @@ SLASH_COMMANDS = {
                     "name": "remove",
                     "description": "Remove a role from yourself",
                     "type": 1,
-                    "options": [
-                        {"name": "role", "description": ".", "type": 8, "required": True}
-                    ],
+                    "options": [{"name": "role", "description": ".", "type": 8, "required": True}],
                 },
                 {
                     "name": "add",
                     "description": "Give yourself a role",
                     "type": 1,
-                    "options": [
-                        {"name": "role", "description": ".", "type": 8, "required": True}
-                    ],
-                }
+                    "options": [{"name": "role", "description": ".", "type": 8, "required": True}],
+                },
             ],
         },
         {

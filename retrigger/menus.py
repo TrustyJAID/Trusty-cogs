@@ -8,8 +8,6 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 from redbot.vendored.discord.ext import menus
 
 from .converters import ChannelUserRole, Trigger

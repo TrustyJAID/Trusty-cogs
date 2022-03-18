@@ -22,7 +22,6 @@ log = logging.getLogger("red.trusty-cogs.Tweets")
 
 
 class MissingTokenError(Exception):
-
     async def send_error(self, ctx: commands.Context):
         await ctx.send(
             _(

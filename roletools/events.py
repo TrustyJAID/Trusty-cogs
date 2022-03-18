@@ -130,7 +130,9 @@ class RoleToolsEvents(RoleToolsMixin):
         allowed_discord = datetime.now(timezone.utc) - member.created_at
         # since discords check for verification level 2 is actually discord age not join age
         allowed_server = (
-            (datetime.now(timezone.utc) - member.joined_at) if member.joined_at else timedelta(minutes=10)
+            (datetime.now(timezone.utc) - member.joined_at)
+            if member.joined_at
+            else timedelta(minutes=10)
         )
         if guild.verification_level.value >= 2 and allowed_discord <= timedelta(minutes=5):
             log.debug(f"Waiting 5 minutes for {member.name} in {guild}")

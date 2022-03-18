@@ -243,6 +243,7 @@ class TweetPages(menus.PageSource):
     def _get_reply(self, ids: List[int]) -> tweepy.Status:
         return self._api.lookup_statuses(ids)
 
+
 class StopButton(discord.ui.Button):
     def __init__(
         self,
@@ -385,7 +386,6 @@ class TweetsMenu(discord.ui.View):
     def source(self):
         return self._source
 
-
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         await self._source._prepare_once()
@@ -490,9 +490,7 @@ class BaseMenu(discord.ui.View):
         message: discord.Message = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(
-            timeout=timeout
-        )
+        super().__init__(timeout=timeout)
         self.cog = cog
         self._source = source
         self.ctx: commands.Context = None
@@ -513,7 +511,6 @@ class BaseMenu(discord.ui.View):
     @property
     def source(self):
         return self._source
-
 
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()

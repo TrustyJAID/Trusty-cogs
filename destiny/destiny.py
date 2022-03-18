@@ -10,11 +10,7 @@ from typing import List, Literal, Optional, Union
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import (
-    box,
-    humanize_timedelta,
-    pagify,
-)
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 from tabulate import tabulate
@@ -922,7 +918,6 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
-
 
     @destiny.command(hidden=True)
     @commands.bot_has_permissions(embed_links=True)

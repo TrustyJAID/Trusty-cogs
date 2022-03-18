@@ -3,13 +3,12 @@ import re
 from typing import List, Union
 
 import discord
-from unidecode import unidecode
-
-from rapidfuzz import process
 from discord.ext.commands.converter import IDConverter, _get_from_guilds
 from discord.ext.commands.errors import BadArgument
+from rapidfuzz import process
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from unidecode import unidecode
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
@@ -156,6 +155,7 @@ class ChannelConverter(IDConverter):
             raise BadArgument(f"Channel `{argument}` not found")
         return result
 
+
 class PermissionConverter(IDConverter):
     """
     This is to convert to specific permission names
@@ -190,34 +190,32 @@ class PermissionConverter(IDConverter):
     view_channel
     """
 
-    async def convert(
-        self, ctx: commands.Context, argument: str
-    ) -> str:
+    async def convert(self, ctx: commands.Context, argument: str) -> str:
         valid_perms = [
-                "add_reactions",
-                "attach_files",
-                "connect",
-                "create_instant_invite",
-                "deafen_members",
-                "embed_links",
-                "external_emojis",
-                "manage_messages",
-                "manage_permissions",
-                "manage_roles",
-                "manage_webhooks",
-                "move_members",
-                "mute_members",
-                "priority_speaker",
-                "read_message_history",
-                "read_messages",
-                "send_messages",
-                "send_tts_messages",
-                "speak",
-                "stream",
-                "use_external_emojis",
-                "use_slash_commands",
-                "use_voice_activation",
-                "view_channel",
+            "add_reactions",
+            "attach_files",
+            "connect",
+            "create_instant_invite",
+            "deafen_members",
+            "embed_links",
+            "external_emojis",
+            "manage_messages",
+            "manage_permissions",
+            "manage_roles",
+            "manage_webhooks",
+            "move_members",
+            "mute_members",
+            "priority_speaker",
+            "read_message_history",
+            "read_messages",
+            "send_messages",
+            "send_tts_messages",
+            "speak",
+            "stream",
+            "use_external_emojis",
+            "use_slash_commands",
+            "use_voice_activation",
+            "view_channel",
         ]
         match = re.match(r"|".join(i for i in valid_perms), argument, flags=re.I)
 

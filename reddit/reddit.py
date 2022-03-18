@@ -1,17 +1,17 @@
 import asyncio
 import logging
-from typing import Optional, Mapping
+from typing import Mapping, Optional
 
 import aiohttp
 import apraw
 import discord
-from discord.ext import tasks
 from apraw.models import Submission, Subreddit
+from discord.ext import tasks
 from redbot.core import Config, checks, commands
-from redbot.core.utils import bounded_gather
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils import bounded_gather
 
-from .helpers import make_embed_from_submission, SubredditConverter
+from .helpers import SubredditConverter, make_embed_from_submission
 from .menus import BaseMenu, RedditMenu
 
 log = logging.getLogger("red.Trusty-cogs.reddit")
@@ -107,10 +107,11 @@ class Reddit(commands.Cog):
             self.subreddits = await self.config.subreddits()
             self._ready.set()
         except KeyError:
-            log.error("You have not provided all the correct information I need to login to reddit.")
+            log.error(
+                "You have not provided all the correct information I need to login to reddit."
+            )
         except Exception:
             log.exception("Error logging into Reddit.")
-
 
     async def _run_subreddit_stream(self, subreddit: Subreddit) -> None:
         """

@@ -1,4 +1,3 @@
-
 class ConversionsError(Exception):
     """Base Error class for conversions cog."""
 

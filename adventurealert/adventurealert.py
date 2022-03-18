@@ -107,7 +107,9 @@ class AdventureAlert(
                     users.remove(user_id)
 
             if user_id in settings["adventure_users"]:
-                async with self.config.guild_from_id(int(g_id)).adventure_users() as adventure_users:
+                async with self.config.guild_from_id(
+                    int(g_id)
+                ).adventure_users() as adventure_users:
                     adventure_users.remove(user_id)
 
             if user_id in settings["miniboss_users"]:
@@ -133,7 +135,9 @@ class AdventureAlert(
                     immortal_users.remove(user_id)
 
             if user_id in settings["possessed_users"]:
-                async with self.config.guild_from_id(int(g_id)).possessed_users() as possessed_users:
+                async with self.config.guild_from_id(
+                    int(g_id)
+                ).possessed_users() as possessed_users:
                     possessed_users.remove(user_id)
 
     @commands.group()

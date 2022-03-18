@@ -439,7 +439,7 @@ class Sensor(object):
 
     @property
     def state(self):
-        """ A dictionary of sensor state. Some values can be updated, some are read-only. [dict]"""
+        """A dictionary of sensor state. Some values can be updated, some are read-only. [dict]"""
         data = self._get("state")
         self._state.clear()
         self._state.update(data)
@@ -452,7 +452,7 @@ class Sensor(object):
 
     @property
     def config(self):
-        """ A dictionary of sensor config. Some values can be updated, some are read-only. [dict]"""
+        """A dictionary of sensor config. Some values can be updated, some are read-only. [dict]"""
         data = self._get("config")
         self._config.clear()
         self._config.update(data)
@@ -465,7 +465,7 @@ class Sensor(object):
 
     @property
     def recycle(self):
-        """ True if this resource should be automatically removed when the last reference to it disappears [bool]"""
+        """True if this resource should be automatically removed when the last reference to it disappears [bool]"""
         self._recycle = self._get("manufacturername")
         return self._manufacturername
 
@@ -545,14 +545,14 @@ class Group(Light):
 
     @property
     def lights(self):
-        """ Return a list of all lights in this group"""
+        """Return a list of all lights in this group"""
         # response = self.bridge.request('GET', '/api/{0}/groups/{1}'.format(self.bridge.username, self.group_id))
         # return [Light(self.bridge, int(l)) for l in response['lights']]
         return [Light(self.bridge, int(l)) for l in self._get("lights")]
 
     @lights.setter
     def lights(self, value):
-        """ Change the lights that are in this group"""
+        """Change the lights that are in this group"""
         logger.debug("Setting lights in group {0} to {1}".format(self.group_id, str(value)))
         self._set("lights", value)
 
@@ -575,7 +575,7 @@ class AllLights(Group):
 
 
 class Scene(object):
-    """ Container for Scene """
+    """Container for Scene"""
 
     def __init__(
         self,
@@ -688,7 +688,7 @@ class Bridge(object):
         self.request("PUT", self.api + self.username + "/config", data)
 
     def request(self, mode="GET", address=None, data=None):
-        """ Utility function for HTTP GET/PUT requests for the API"""
+        """Utility function for HTTP GET/PUT requests for the API"""
         if hasattr(self, "token"):
             connection = httplib.HTTPSConnection(self.ip, timeout=20)
             headers = {"Content-Type": "application/json", "Authorization": self.token.bearer()}
@@ -721,7 +721,7 @@ class Bridge(object):
 
     def get_ip_address(self, set_result=False):
 
-        """ Get the bridge ip address from the meethue.com nupnp api """
+        """Get the bridge ip address from the meethue.com nupnp api"""
 
         connection = httplib.HTTPSConnection("www.meethue.com")
         connection.request("GET", "/api/nupnp")
@@ -751,7 +751,7 @@ class Bridge(object):
             return False
 
     def register_app(self):
-        """ Register this computer with the Hue bridge hardware and save the resulting access token """
+        """Register this computer with the Hue bridge hardware and save the resulting access token"""
         registration_request = {"devicetype": "python_hue"}
         response = self.request("POST", self.api, registration_request)
         for line in response:
@@ -773,7 +773,7 @@ class Bridge(object):
                         raise PhueException(error_type, "Unknown username")
 
     def connect(self):
-        """ Connect to the Hue bridge """
+        """Connect to the Hue bridge"""
         logger.info("Attempting to connect to the bridge...")
         # If the ip and username were provided at class init
         if self.ip is not None and self.username is not None:
@@ -800,7 +800,7 @@ class Bridge(object):
                 self.register_app()
 
     def get_light_id_by_name(self, name):
-        """ Lookup a light id based on string name. Case-sensitive. """
+        """Lookup a light id based on string name. Case-sensitive."""
         lights = self.get_light()
         for light_id in lights:
             if PY3K:
@@ -829,7 +829,7 @@ class Bridge(object):
             return [self.lights_by_id[id] for id in sorted(self.lights_by_id)]
 
     def get_sensor_id_by_name(self, name):
-        """ Lookup a sensor id based on string name. Case-sensitive. """
+        """Lookup a sensor id based on string name. Case-sensitive."""
         sensors = self.get_sensor()
         for sensor_id in sensors:
             if PY3K:
@@ -877,15 +877,15 @@ class Bridge(object):
 
     @property
     def lights(self):
-        """ Access lights as a list """
+        """Access lights as a list"""
         return self.get_light_objects()
 
     def get_api(self):
-        """ Returns the full api dictionary """
+        """Returns the full api dictionary"""
         return self.request("GET", self.api + self.username)
 
     def get_light(self, light_id=None, parameter=None):
-        """ Gets state by light_id and parameter"""
+        """Gets state by light_id and parameter"""
 
         if is_string(light_id):
             light_id = self.get_light_id_by_name(light_id)
@@ -962,7 +962,7 @@ class Bridge(object):
 
     @property
     def sensors(self):
-        """ Access sensors as a list """
+        """Access sensors as a list"""
         return self.get_sensor_objects()
 
     def create_sensor(
@@ -977,7 +977,7 @@ class Bridge(object):
         config={},
         recycle=False,
     ):
-        """ Create a new sensor in the bridge. Returns (ID,None) of the new sensor or (None,message) if creation failed. """
+        """Create a new sensor in the bridge. Returns (ID,None) of the new sensor or (None,message) if creation failed."""
         data = {
             "name": name,
             "modelid": modelid,
@@ -1007,7 +1007,7 @@ class Bridge(object):
             return None, result[0]
 
     def get_sensor(self, sensor_id=None, parameter=None):
-        """ Gets state by sensor_id and parameter"""
+        """Gets state by sensor_id and parameter"""
 
         if is_string(sensor_id):
             sensor_id = self.get_sensor_id_by_name(sensor_id)
@@ -1110,11 +1110,11 @@ class Bridge(object):
     # Groups of lights #####
     @property
     def groups(self):
-        """ Access groups as a list """
+        """Access groups as a list"""
         return [Group(self, int(groupid)) for groupid in self.get_group().keys()]
 
     def get_group_id_by_name(self, name):
-        """ Lookup a group id based on string name. Case-sensitive. """
+        """Lookup a group id based on string name. Case-sensitive."""
         groups = self.get_group()
         for group_id in groups:
             if PY3K:

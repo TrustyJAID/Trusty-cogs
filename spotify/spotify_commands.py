@@ -47,7 +47,6 @@ ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), deli
 
 
 class SpotifyCommands:
-
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
         """

@@ -11,7 +11,7 @@ from redbot.core.bot import Red
 from redbot.core.utils import bounded_gather
 
 from .errors import TwitchError
-from .twitch_models import TwitchProfile, TwitchFollower
+from .twitch_models import TwitchFollower, TwitchProfile
 
 log = logging.getLogger("red.Trusty-cogs.Twitch")
 

@@ -398,4 +398,3 @@ class TrustyAvatar(commands.Cog):
 
     async def cog_unload(self):
         self.loop.cancel()
-

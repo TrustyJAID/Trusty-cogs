@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional, List
+from typing import List, Optional
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument

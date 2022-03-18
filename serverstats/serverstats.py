@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from copy import copy
-from io import BytesIO
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import Dict, List, Literal, Optional, Tuple, Union, cast
 
 import aiohttp
@@ -31,7 +31,7 @@ from .converters import (
     MultiGuildConverter,
     PermissionConverter,
 )
-from .menus import BaseView, AvatarPages, GuildPages, ListPages
+from .menus import AvatarPages, BaseView, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
 log = logging.getLogger("red.trusty-cogs.ServerStats")
@@ -272,14 +272,10 @@ class ServerStats(commands.Cog):
             else "https://cdn.discordapp.com/emojis/508929941610430464.png"
             if "PARTNERED" in guild.features
             else discord.Embed.Empty,
-            url=guild.icon.url
-            if guild.icon
-            else "https://cdn.discordapp.com/embed/avatars/1.png",
+            url=guild.icon.url if guild.icon else "https://cdn.discordapp.com/embed/avatars/1.png",
         )
         em.set_thumbnail(
-            url=guild.icon.url
-            if guild.icon
-            else "https://cdn.discordapp.com/embed/avatars/1.png"
+            url=guild.icon.url if guild.icon else "https://cdn.discordapp.com/embed/avatars/1.png"
         )
         em.add_field(name=_("Members:"), value=member_msg)
         em.add_field(
@@ -1079,9 +1075,7 @@ class ServerStats(commands.Cog):
                             bold(i.replace("_", " ").title()) for i, v in member.public_flags if v
                         )
                     created_on = _(
-                        "Joined Discord on {user_created}\n"
-                        "({since_created})\n"
-                        "{public_flags}"
+                        "Joined Discord on {user_created}\n" "({since_created})\n" "{public_flags}"
                     ).format(
                         user_created=user_created,
                         since_created=since_created,
@@ -1423,7 +1417,8 @@ class ServerStats(commands.Cog):
                 return inv
         else:  # No existing invite found that is valid
             channels_and_perms = zip(
-                guild.text_channels, map(lambda x: x.permissions_for(guild.me), guild.text_channels)
+                guild.text_channels,
+                map(lambda x: x.permissions_for(guild.me), guild.text_channels),
             )
             channel = next(
                 (channel for channel, perms in channels_and_perms if perms.create_instant_invite),

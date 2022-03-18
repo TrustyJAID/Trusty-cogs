@@ -40,27 +40,21 @@ VER_REG = re.compile(r"\_\_version\_\_ = \"(\d+\.\d+\.\d+)", flags=re.I)
 DEFAULT_AUTHOR = ["TrustyJAID"]
 
 
-HEADER = """# Trusty-cogs V3
-[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot)
-[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)
-[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)
-[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)
-[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)
-
-
-TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
-To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`
-
-## About Cogs
-
-{body}
-
-Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).
-
-## Credits
-
-Thank you to everyone who has pushed me to think about new ideas and implement them.
-"""
+HEADER = (
+    "# Trusty-cogs V3"
+    "[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot)"
+    "[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)"
+    "[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)"
+    "[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)"
+    "[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)\n\n"
+    "TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop)."
+    "To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`\n"
+    "## About Cogs\n"
+    "{body}\n"
+    "Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).\n"
+    "## Credits\n"
+    "Thank you to everyone who has pushed me to think about new ideas and implement them.\n"
+)
 
 
 @dataclass
@@ -329,26 +323,6 @@ def make(
     )
     log.debug(data_obj)
     save_json(f"{ROOT}/{name}/info.json", data_obj.__dict__)
-
-
-"""
-author: List[str]
-description: Optional[str] = ""
-install_msg: Optional[str] = "Thanks for installing"
-short: Optional[str] = ""
-name: Optional[str] = ""
-min_bot_version: Optional[str] = "3.3.0"
-max_bot_version: Optional[str] = "0.0.0"
-hidden: Optional[bool] = False
-disabled: Optional[bool] = False
-required_cogs: Mapping = field(default_factory=dict)
-requirements: List[str] = field(default_factory=list)
-tags: List[str] = field(default_factory=list)
-type: Optional[str] = "COG"
-permissions: List[str] = field(default_factory=list)
-min_python_version: Optional[List[int]] = field(default_factory=lambda: [3, 8, 0])
-end_user_data_statement: str = "This cog does not persistently store data or metadata about users."
-"""
 
 
 @cli.command()

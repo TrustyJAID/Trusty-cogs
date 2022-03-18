@@ -1,16 +1,3 @@
-import discord
-import logging
-from typing import Optional, Union
-
-from discord.ext.commands.errors import BadArgument
-from redbot.core import Config, checks, commands, version_info, VersionInfo
-from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
-
-from .api import FlagTranslation, GoogleTranslateAPI
-from .converters import ChannelUserRole
-from .errors import GoogleTranslateAPIError
-
 """
 Translator cog
 
@@ -24,6 +11,18 @@ Support the developer                               https://goo.gl/Brchj4
 Invite the bot to your guild                       https://goo.gl/aQm2G7
 Join the official development guild                https://discord.gg/uekTNPj
 """
+import logging
+from typing import Optional, Union
+
+import discord
+from discord.ext.commands.errors import BadArgument
+from redbot.core import Config, VersionInfo, checks, commands, version_info
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
+
+from .api import FlagTranslation, GoogleTranslateAPI
+from .converters import ChannelUserRole
+from .errors import GoogleTranslateAPIError
 
 BASE_URL = "https://translation.googleapis.com"
 _ = Translator("Translate", __file__)

@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Literal, Optional
 
 import aiohttp
@@ -160,12 +160,14 @@ class Runescape(commands.Cog):
             if r.status == 200:
                 data = await r.json()
             else:
-                await ctx.send(f"I could not find information about `{search}` on the Runescape Wiki.")
+                await ctx.send(
+                    f"I could not find information about `{search}` on the Runescape Wiki."
+                )
                 return
         msg = f"Runescape Wiki Results for `{search}`:\n"
         for search in data["query"]["search"]:
             page_id = search["pageid"]
-            title = search['title']
+            title = search["title"]
             msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
@@ -185,12 +187,14 @@ class Runescape(commands.Cog):
             if r.status == 200:
                 data = await r.json()
             else:
-                await ctx.send(f"I could not find information about `{search}` on the Runescape Wiki.")
+                await ctx.send(
+                    f"I could not find information about `{search}` on the Runescape Wiki."
+                )
                 return
         msg = f"Old School Runescape Wiki Results for `{search}`:\n"
         for search in data["query"]["search"]:
             page_id = search["pageid"]
-            title = search['title']
+            title = search["title"]
             msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
