@@ -5,8 +5,6 @@ from typing import List, Optional, Union
 
 import discord
 from discord import Interaction
-from discord.app_commands import Choice
-from discord.enums import InteractionType
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -232,113 +230,12 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
-    async def select_option_autocomplete(self, interaction: discord.Interaction) -> None:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).select_options()
-        cur_values = interaction.data["options"][0]["options"][0]["options"]
-        cur_value = next(i for i in cur_values if i.get("focused", False)).get("value")
-        supplied_options = ""
-        new_option = ""
-        for sup in cur_value.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
-        return ret
-
-    async def select_menu_autocomplete(self, interaction: discord.Interaction) -> None:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).select_menus()
-        cur_values = interaction.data["options"][0]["options"][0]["options"]
-        cur_value = next(i for i in cur_values if i.get("focused", False)).get("value")
-        supplied_options = ""
-        new_option = ""
-        for sup in cur_value.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
-        return ret
-
     @roletools.group(name="select")
     @commands.admin_or_permissions(manage_roles=True)
     async def select(self, ctx: Union[Context, Interaction]) -> None:
         """
         Setup role select menus
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "create": self.create_select_menu,
-                "view": self.select_menus_view,
-                "delete": self.delete_select_menu,
-                "edit": self.edit_with_select,
-                "send": self.send_select,
-                "viewoptions": self.select_options_view,
-                "createoption": self.create_select_option,
-                "deleteoption": self.delete_select_option,
-            }
-            options = ctx.data["options"][0]["options"][0]["options"]
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            kwargs = {}
-            if ctx.type is InteractionType.autocomplete and option == "create":
-                new_options = await self.select_option_autocomplete(ctx)
-                if len(new_options) == 0:
-                    new_options.append(
-                        {
-                            "name": "You need to create some options first.",
-                            "value": "This option does not exist",
-                        }
-                    )
-                await ctx.response.autocomplete(new_options[:25])
-                return
-            if ctx.type is InteractionType.autocomplete and option in ["send", "edit", "delete"]:
-                new_options = await self.select_menu_autocomplete(ctx)
-                if len(new_options) == 0:
-                    new_options.append(
-                        {
-                            "name": "You need to create some options first.",
-                            "value": "This option does not exist",
-                        }
-                    )
-                await ctx.response.autocomplete(new_options[:25])
-                return
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                for op in options:
-                    name = op["name"]
-                    if name in kwargs:
-                        continue
-                    kwargs[name] = self.convert_slash_args(ctx, op)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                await ctx.response.send_message(
-                    ("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @select.command(name="create")
     async def create_select_menu(
@@ -366,6 +263,11 @@ class RoleToolsSelect(RoleToolsMixin):
         if isinstance(ctx, discord.Interaction):
             is_slash = True
             await ctx.response.defer()
+            _options = []
+            for option in options.split(" "):
+                if option:
+                    _options.append(await SelectOptionRoleConverter().convert(ctx, option))
+            options = _options
         else:
             await ctx.trigger_typing()
 
@@ -643,7 +545,7 @@ class RoleToolsSelect(RoleToolsMixin):
             _menus = []
             for menu in menus.split(" "):
                 if menu:
-                    _menus.append(await SelectRoleConverter().convert(fake_ctx, menu))
+                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
             menus = _menus
 
         new_view = SelectRoleView(self)
@@ -702,7 +604,7 @@ class RoleToolsSelect(RoleToolsMixin):
             _menus = []
             for menu in menus.split(" "):
                 if menu:
-                    _menus.append(await SelectRoleConverter().convert(fake_ctx, menu))
+                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
             menus = _menus
 
         if message.author.id != ctx.guild.me.id:

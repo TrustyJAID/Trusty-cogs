@@ -25,34 +25,6 @@ class RoleToolsExclusive(RoleToolsMixin):
         """
         Set role exclusions
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "remove": self.exclusive_remove,
-                "mutual": self.mutual_exclusive_add,
-                "add": self.exclusive_add,
-            }
-            options = ctx.data["options"][0]["options"][0]["options"]
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options:
-                    name = option["name"]
-                    kwargs[name] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                await ctx.response.send_message(
-                    ("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @exclusive.command(name="add")
     @commands.admin_or_permissions(manage_roles=True)

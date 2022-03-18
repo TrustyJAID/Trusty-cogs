@@ -52,6 +52,7 @@ class RoleTools(
     RoleToolsSettings,
     RoleToolsSelect,
     RoleToolsSlash,
+    discord.app_commands.Group,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -63,12 +64,14 @@ class RoleTools(
     __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
+        super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
         self.config.register_global(
             version="0.0.0",
             atomic=True,
             commands={},
+            enable_slash=False,
         )
         self.config.register_guild(
             reaction_roles={},
@@ -96,8 +99,6 @@ class RoleTools(
         self.settings: Dict[int, Any] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.views = []
-        self.slash_commands = {"guilds": {}}
-        self.SLASH_COMMANDS = SLASH_COMMANDS
 
     def cog_check(self, ctx: commands.Context) -> bool:
         return self._ready.is_set()
@@ -109,7 +110,7 @@ class RoleTools(
         pre_processed = super().format_help_for_context(ctx)
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
-    async def initalize(self) -> None:
+    async def cog_load(self) -> None:
         if await self.config.version() < "1.0.1":
             sticky_role_config = Config.get_conf(
                 None, identifier=1358454876, cog_name="StickyRoles"
@@ -156,10 +157,6 @@ class RoleTools(
             await self.initialize_select()
         except Exception:
             log.exception("Error initializing Select")
-        try:
-            await self.load_slash()
-        except Exception:
-            log.exception("Error initializing Slash commands")
         self._ready.set()
 
     async def cog_unload(self):
@@ -707,68 +704,12 @@ class RoleTools(
     @roletools_slash.command(name="global")
     @commands.is_owner()
     async def roletools_global_slash(self, ctx: Context) -> None:
-        """
-        Enable roletools commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.roletools
-        async with self.config.commands() as commands:
-            commands["roletools"] = command_id
-        await ctx.tick()
-
-    @roletools_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def roletools_global_slash_disable(self, ctx: Context) -> None:
-        """
-        Disable roletools commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("roletools")
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["roletools"]
-        await ctx.tick()
-
-    @roletools_slash.command(name="enable")
-    @commands.guild_only()
-    async def roletools_guild_slash(self, ctx: Context) -> None:
-        """
-        Enable roletools commands as slash commands in this server
-        """
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.roletools
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["roletools"] = command_id
-        await ctx.tick()
-
-    @roletools_slash.command(name="disable")
-    @commands.guild_only()
-    async def roletools_delete_slash(self, ctx: Context) -> None:
-        """
-        Delete servers slash commands
-        """
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("roletools", None)
-        if not command_id:
-            await ctx.send(_("Slash commands are not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        async with self.config.guild(ctx.guild).commands() as commands:
-            del commands["roletools"]
-        await ctx.tick()
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self, override=True)
+        else:
+            self.bot.tree.remove_command("role-tools")

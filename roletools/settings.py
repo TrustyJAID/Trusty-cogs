@@ -249,7 +249,7 @@ class RoleToolsSettings(RoleToolsMixin):
         role: RoleHierarchyConverter,
     ) -> None:
         """
-        Set whether or not a user can remove the role from themselves.
+        Set the cost to acquire a role.
 
         `[cost]` The price you want to set the role at in bot credits.
         Setting this to 0 or lower will remove the cost.

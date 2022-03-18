@@ -38,6 +38,7 @@ class RoleToolsMixin(ABC):
     """
 
     def __init__(self, *_args):
+        super().__init__()
         self.config: Config
         self.bot: Red
         self.settings: Dict[Any, Any]
@@ -49,61 +50,6 @@ class RoleToolsMixin(ABC):
         """
         Commands for creating custom role settings
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "exclude": self.exclusive,
-                "bulkreact": self.bulkreact,
-                "sticky": self.sticky,
-                "react": self.react,
-                "selfrem": self.selfrem,
-                "buttons": self.buttons,
-                "giverole": self.giverole,
-                "viewroles": self.viewroles,
-                "select": self.select,
-                "forcerole": self.forcerole,
-                "globalatomic": self.globalatomic,
-                "selfrole": self.selfrole,
-                "include": self.inclusive,
-                "cleanup": self.cleanup,
-                "autorole": self.autorole,
-                "selfadd": self.selfadd,
-                "required": self.required_roles,
-                "ownercleanup": self.ownercleanup,
-                "forceroleremove": self.forceroleremove,
-                "reactroles": self.reactroles,
-                "cost": self.cost,
-                "removerole": self.removerole,
-                "remreact": self.remreact,
-                "clearreact": self.clearreact,
-                "atomic": self.atomic,
-            }
-            options = ctx.data["options"][0]
-            option = options["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            if getattr(func, "_prepare_cooldowns", None):
-                if not await self.check_cooldowns(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options.get("options", []):
-                    name = option["name"]
-                    kwargs[name] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error getting past main parser")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     #######################################################################
     # roletools.py                                                        #
@@ -113,10 +59,6 @@ class RoleToolsMixin(ABC):
     def update_cooldown(
         self, ctx: Context, rate: int, per: float, _type: commands.BucketType
     ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def initalize(self) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -179,18 +121,6 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def roletools_global_slash(self, ctx: Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def roletools_global_slash_disable(self, ctx: Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def roletools_guild_slash(self, ctx: Context) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def roletools_delete_slash(self, ctx: Context) -> None:
         raise NotImplementedError()
 
     #######################################################################
@@ -468,10 +398,6 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def button_autocomplete(self, interaction: discord.Interaction) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def buttons(self, ctx: Union[Context, Interaction]) -> None:
         raise NotImplementedError()
 
@@ -521,14 +447,6 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def initialize_select(self) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def select_option_autocomplete(self, interaction: discord.Interaction) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def select_menu_autocomplete(self, interaction: discord.Interaction) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -599,27 +517,3 @@ class RoleToolsMixin(ABC):
     #######################################################################
     # slash.py                                                            #
     #######################################################################
-
-    @abstractmethod
-    async def load_slash(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def role_hierarchy_options(self, interaction: discord.Interaction):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def check_requires(self, func, interaction: discord.Interaction):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def check_cooldowns(self, func, interaction: discord.Interaction):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def pre_check_slash(self, interaction):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def on_interaction(self, interaction: discord.Interaction):
-        raise NotImplementedError()

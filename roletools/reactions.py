@@ -198,6 +198,17 @@ class RoleToolsReactions(RoleToolsMixin):
         is_slash = False
         if isinstance(ctx, Interaction):
             is_slash = True
+            try:
+                fake_ctx = discord.Object(ctx.id)
+                fake_ctx.bot = self.bot
+                fake_ctx.channel = ctx.channel
+                fake_ctx.guild = ctx.guild
+                fake_ctx.cog = self
+                message = await commands.MessageConverter().convert(fake_ctx, message)
+            except Exception:
+                log.exception("Cannot find message to edit")
+                await ctx.response.send_message(_("That message could not be found."))
+                return
             await ctx.response.defer()
 
         if not message.channel.permissions_for(ctx.guild.me).manage_messages:

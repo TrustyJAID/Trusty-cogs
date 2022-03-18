@@ -5,8 +5,6 @@ from typing import Optional, Union
 
 import discord
 from discord import Interaction
-from discord.app_commands import Choice
-from discord.enums import InteractionType
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -133,77 +131,12 @@ class RoleToolsButtons(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
-    async def button_autocomplete(self, interaction: discord.Interaction) -> None:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).buttons()
-        cur_values = interaction.data["options"][0]["options"][0]["options"]
-        cur_value = next(i for i in cur_values if i.get("focused", False)).get("value")
-        supplied_options = ""
-        new_option = ""
-        for sup in cur_value.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            Choice(name=f"{supplied_options} {g}", value=f"{supplied_options} {g}")
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(0, Choice(name=supplied_options, value=supplied_options))
-        return ret
-
     @roletools.group(name="buttons", aliases=["button"])
     @commands.admin_or_permissions(manage_roles=True)
     async def buttons(self, ctx: Union[Context, Interaction]) -> None:
         """
         Setup role buttons
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "view": self.button_roles_view,
-                "send": self.send_buttons,
-                "create": self.create_button,
-                "delete": self.delete_button,
-                "edit": self.edit_with_buttons,
-            }
-            options = ctx.data["options"][0]["options"][0]["options"]
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if ctx.type is InteractionType.autocomplete and option in ["create", "edit", "delete"]:
-                new_options = await self.button_autocomplete(ctx)
-                if len(new_options) == 0:
-                    new_options.append(
-                        {
-                            "name": "You need to create some options first.",
-                            "value": "This option does not exist",
-                        }
-                    )
-                await ctx.response.autocomplete(new_options[:25])
-                return
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for op in options:
-                    name = op["name"]
-                    if name in kwargs:
-                        continue
-                    kwargs[name] = self.convert_slash_args(ctx, op)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                await ctx.response.send_message(
-                    ("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @buttons.command(name="send")
     async def send_buttons(
@@ -229,7 +162,7 @@ class RoleToolsButtons(RoleToolsMixin):
             _buttons = []
             for menu in buttons.split(" "):
                 if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(fake_ctx, menu))
+                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
             buttons = _buttons
 
         new_view = ButtonRoleView(self)
@@ -404,11 +337,6 @@ class RoleToolsButtons(RoleToolsMixin):
         if isinstance(ctx, discord.Interaction):
             is_slash = True
             await ctx.response.defer()
-            _buttons = []
-            for menu in buttons.split(" "):
-                if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(fake_ctx, menu))
-            buttons = _buttons
 
         async with self.config.guild(ctx.guild).buttons() as buttons:
             if name in buttons:
