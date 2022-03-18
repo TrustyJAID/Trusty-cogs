@@ -128,7 +128,6 @@ class EventPoster(EventPosterSlash, commands.Cog):
         # Finish loading all the events to memory first before checking
 
     async def cog_load(self) -> None:
-        await self.bot.wait_until_red_ready()
         try:
             for guild_id in await self.config.all_guilds():
                 if guild_id not in self.event_cache:
