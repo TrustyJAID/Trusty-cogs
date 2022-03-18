@@ -6,7 +6,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional
+from typing import List, Mapping, Optional
 
 import click
 import tabulate
@@ -194,8 +194,14 @@ def mass_fix():
 
 
 @cli.command()
-@click.option("--key", prompt="Enter the json key you want to edit.", help="Name of the key being edited")
-@click.option("--value", prompt="Enter the value for the key you want changed.", help="The value you want the key edited to.")
+@click.option(
+    "--key", prompt="Enter the json key you want to edit.", help="Name of the key being edited"
+)
+@click.option(
+    "--value",
+    prompt="Enter the value for the key you want changed.",
+    help="The value you want the key edited to.",
+)
 def edit(key, value):
     for folder in os.listdir(f"{ROOT}/"):
         if folder.startswith("."):
@@ -386,11 +392,9 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
                     total += lines
                 except Exception:
                     log.exception(f"Error opening {file_path}")
-                    pass
             totals.append((folder, cog))
         except Exception:
             log.exception(f"Error reading {folder}")
-            pass
     totals = sorted(totals, key=lambda x: x[1], reverse=True)
     totals.insert(0, ("Total", total))
     print(tabulate.tabulate(totals, headers=["Cog", "# of Lines"], tablefmt="pretty"))
@@ -456,7 +460,7 @@ def makereadme():
                 except Exception:
                     log.exception(f"Error reading info.json {file}")
             if _version == "":
-                with open(file) as infile:
+                with open(file, "r", encoding="utf-8") as infile:
                     data = infile.read()
                     maybe_version = VER_REG.search(data)
                     if maybe_version:
@@ -465,7 +469,7 @@ def makereadme():
             to_append = [info.name, _version]
             description = f"<details><summary>{info.short}</summary>{info.description}</details>"
             to_append.append(description)
-            to_append.append(babel_list(info.author, style="standard"))
+            to_append.append(babel_list(info.author, style="standard", locale="en"))
             table_data.append(to_append)
 
     body = tabulate.tabulate(

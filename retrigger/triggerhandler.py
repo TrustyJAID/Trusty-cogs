@@ -72,6 +72,7 @@ class TriggerHandler:
     ALLOW_OCR: bool = ALLOW_OCR
 
     def __init__(self, *args):
+        super().__init__()
         self.config: Config
         self.bot: Red
         self.re_pool: Pool
@@ -86,7 +87,6 @@ class TriggerHandler:
         except KeyError:
             # it will get removed on the next reload of the cog
             log.info("Trigger can't be removed :blobthinking:")
-            pass
 
     async def can_edit(self, author: discord.Member, trigger: Trigger) -> bool:
         """Chekcs to see if the member is allowed to edit the trigger"""
@@ -1120,7 +1120,6 @@ class TriggerHandler:
                     await modlog_channel.send(msg)
             except Exception:
                 log.error("Error posting modlog message", exc_info=True)
-                pass
 
     async def red_delete_data_for_user(
         self,

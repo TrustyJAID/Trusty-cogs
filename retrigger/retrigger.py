@@ -1,15 +1,14 @@
 import asyncio
-import json
 import logging
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 
 import discord
-from discord.ext import tasks
-from discord.enums import InteractionType
 from discord.app_commands import Choice
-from redbot.core import Config, VersionInfo, checks, commands, modlog, version_info
+from discord.enums import InteractionType
+from discord.ext import tasks
+from redbot.core import Config, checks, commands, modlog
 from redbot.core.commands import TimedeltaConverter
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -18,7 +17,6 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
-from .command_structure import SLASH_COMMANDS
 from .converters import (
     ChannelUserRole,
     MultiResponse,
@@ -41,7 +39,7 @@ except ImportError:
 
 
 @cog_i18n(_)
-class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
+class ReTrigger(TriggerHandler, ReTriggerSlash, discord.app_commands.Group, commands.Cog):
     """
     Trigger bot events using regular expressions
 
@@ -54,6 +52,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     __version__ = "2.21.1"
 
     def __init__(self, bot):
+        super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247, force_registration=True)
         default_guild = {
@@ -66,17 +65,13 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             "remove_role_logs": False,
             "filter_logs": False,
             "bypass": False,
-            "commands": {},
         }
         self.config.register_guild(**default_guild)
-        self.config.register_global(trigger_timeout=1, commands={})
+        self.config.register_global(trigger_timeout=1, enable_slash=False)
         self.re_pool = Pool()
         self.triggers: Dict[int, Dict[str, Trigger]] = {}
-        self.__unload = self.cog_unload
         self.trigger_timeout = 1
         self.save_loop.start()
-        self.SLASH_COMMANDS = SLASH_COMMANDS
-        self.slash_commands = {"guilds": {}}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -91,7 +86,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 self.bot.remove_dev_env_value("retrigger")
             except Exception:
                 log.exception("Error removing retrigger from dev environment.")
-                pass
         log.debug("Closing process pools.")
         self.re_pool.close()
         self.bot.loop.run_in_executor(None, self.re_pool.join)
@@ -121,17 +115,12 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
 
     @save_loop.before_loop
     async def before_save_loop(self):
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
         if 218773382617890828 in self.bot.owner_ids:
             # This doesn't work on bot startup but that's fine
             try:
                 self.bot.add_dev_env_value("retrigger", lambda x: self)
             except Exception:
                 log.error("Error adding retrigger to dev environment.")
-                pass
         self.trigger_timeout = await self.config.trigger_timeout()
         data = await self.config.all_guilds()
         for guild, settings in data.items():
@@ -145,7 +134,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                     # I might move this to DM the author of the trigger
                     # before this becomes actually breaking
                 self.triggers[guild][new_trigger.name] = new_trigger
-        await self.load_slash()
 
     async def _not_authorized(self, ctx: Union[commands.Context, discord.Interaction]):
         msg = _("You are not authorized to edit this trigger.")
@@ -209,16 +197,17 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             await ctx.send(msg)
 
     async def _find_good_emojis(self, interaction: discord.Interaction, option: dict):
-        emojis = option["value"].split(" ")
+        option["value"].split(" ")
         list_emojis = [
-            discord.PartialEmoji.from_str(e.strip())
-            for e in option["value"].split(" ")
+            discord.PartialEmoji.from_str(e.strip()) for e in option["value"].split(" ")
         ]
         good_emojis = []
         log.debug(option["value"])
         log.debug(list_emojis)
         if any([e.is_unicode_emoji() for e in list_emojis]):
-            await interaction.response.send_message("Some emojis were not found, attempting to find unicode emojis.")
+            await interaction.response.send_message(
+                "Some emojis were not found, attempting to find unicode emojis."
+            )
             msg = await interaction.original_message()
             for emoji in list_emojis:
                 if emoji.is_unicode_emoji():
@@ -233,7 +222,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             good_emojis = [str(emoji)[1:-1] for emoji in list_emojis]
         return good_emojis
 
-
     @commands.group()
     @commands.guild_only()
     async def retrigger(self, ctx: commands.Context) -> None:
@@ -244,89 +232,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "remove": self.remove,
-                "modlog": self._modlog,
-                "publish": self.publish,
-                "explain": self.explain,
-                "filter": self.filter,
-                "mock": self.mock,
-                "text": self.text,
-                "allowlist": self.whitelist,
-                "dm": self.dm,
-                "addrole": self.addrole,
-                "ban": self.ban,
-                "dmme": self.dmme,
-                "edit": self._edit,
-                "removerole": self.removerole,
-                "rename": self.rename,
-                "multi": self.multi,
-                "react": self.react,
-                "blocklist": self.blacklist,
-                "image": self.image,
-                "list": self.list,
-                "resize": self.resize,
-                "imagetext": self.imagetext,
-                "command": self.command,
-                "kick": self.kick,
-            }
-            options = ctx.data["options"]
-            option = options[0]["name"]
-            func = command_mapping[option]
-            if ctx.type is InteractionType.autocomplete and options[0]["options"][0].get("focused", False):
-                cur_value = options[0]["options"][0]["value"]
-                if ctx.guild.id in self.triggers:
-                    choices = [
-                        Choice(name=t.name, value=t.name)
-                        for t in self.triggers[ctx.guild.id].values()
-                        if cur_value in t.name
-                    ]
-                else:
-                    choices = []
-                await ctx.response.autocomplete(choices[:25])
-                log.debug("sending autocomplete response")
-                return
-
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    name = option["name"]
-                    if name == "trigger":
-                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(
-                            option["value"], None
-                        )
-                    elif name == "regex":
-                        try:
-                            re.compile(option["value"])
-                            kwargs[name] = option["value"]
-                        except Exception as e:
-                            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(
-                                arg=option["value"], e=e
-                            )
-                            await ctx.response.send_message(err_msg, ephemeral=True)
-                            return
-                    elif name == "emojis":
-                        good_emojis = await self._find_good_emojis(ctx, option)
-                        kwargs[name] = good_emojis
-
-                    else:
-                        kwargs[name] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @retrigger.group(name="slash")
     @commands.admin_or_permissions(manage_guild=True)
@@ -334,78 +239,19 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         """
         Slash command toggling for retrigger
         """
-        pass
 
     @retrigger_slash.command(name="global")
     @commands.is_owner()
     async def retrigger_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable retrigger commands as slash commands globally
-        """
-        data = await ctx.bot.http.upsert_global_command(
-            ctx.guild.me.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        self.slash_commands[command_id] = self.retrigger
-        async with self.config.commands() as commands:
-            commands["retrigger"] = command_id
-        await ctx.tick()
-
-    @retrigger_slash.command(name="globaldel")
-    @commands.is_owner()
-    async def retrigger_global_slash_disable(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ):
-        """
-        Disable retrigger commands as slash commands globally
-        """
-        commands = await self.config.commands()
-        command_id = commands.get("retrigger")
-        if not command_id:
-            await ctx.send(
-                "There is no global slash command registered from this cog on this bot."
-            )
-            return
-        await ctx.bot.http.delete_global_command(ctx.guild.me.id, command_id)
-        async with self.config.commands() as commands:
-            del commands["retrigger"]
-        await ctx.tick()
-
-    @retrigger_slash.command(name="enable")
-    @commands.guild_only()
-    async def retrigger_guild_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Enable retrigger commands as slash commands in this server
-        """
-        data = await ctx.bot.http.upsert_guild_command(
-            ctx.guild.me.id, ctx.guild.id, payload=self.SLASH_COMMANDS
-        )
-        command_id = int(data.get("id"))
-        log.info(data)
-        if ctx.guild.id not in self.slash_commands["guilds"]:
-            self.slash_commands["guilds"][ctx.guild.id] = {}
-        self.slash_commands["guilds"][ctx.guild.id][command_id] = self.retrigger
-        async with self.config.guild(ctx.guild).commands() as commands:
-            commands["retrigger"] = command_id
-        await ctx.tick()
-
-    @retrigger_slash.command(name="disable")
-    @commands.guild_only()
-    async def retrigger_delete_slash(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Delete servers slash commands
-        """
-        commands = await self.config.guild(ctx.guild).commands()
-        command_id = commands.get("retrigger", None)
-        if not command_id:
-            await ctx.send(_("Slash commands are not enabled in this guild."))
-            return
-        await ctx.bot.http.delete_guild_command(ctx.guild.me.id, ctx.guild.id, command_id)
-        del self.slash_commands["guilds"][ctx.guild.id][command_id]
-        async with self.config.guild(ctx.guild).commands() as commands:
-            del commands["retrigger"]
-        await ctx.tick()
+        """Toggle this cog to register slash commands"""
+        current = await self.config.enable_slash()
+        await self.config.enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self, override=True)
+        else:
+            self.bot.tree.remove_command("re-trigger")
 
     @checks.is_owner()
     @retrigger.command()
@@ -432,34 +278,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "add": self.blacklist_add,
-                "remove": self.blacklist_remove,
-            }
-
-            options = ctx.data["options"][0]["options"]
-            option = options[0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options[0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @retrigger.group(name="allowlist", aliases=["whitelist"])
     @checks.mod_or_permissions(manage_messages=True)
@@ -473,34 +291,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "add": self.whitelist_add,
-                "remove": self.whitelist_remove,
-            }
-
-            options = ctx.data["options"][0]["options"]
-            option = options[0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options[0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @retrigger.group(name="modlog")
     @checks.mod_or_permissions(manage_channels=True)
@@ -512,36 +302,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "removeroles": self.modlog_removeroles,
-                "channel": self.modlog_channel,
-                "kicks": self.modlog_kicks,
-                "bans": self.modlog_bans,
-                "filter": self.modlog_filter,
-                "settings": self.modlog_settings,
-                "addroles": self.modlog_addroles,
-            }
-
-            options = ctx.data["options"][0]["options"]
-            option = options[0]["name"]
-            func = command_mapping[option]
-
-            try:
-                kwargs = {}
-                for option in options[0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @retrigger.group(name="edit")
     @checks.mod_or_permissions(manage_channels=True)
@@ -557,74 +317,6 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         See `[p]retrigger explain` or click the link below for more details.
         [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "disable": self.disable_trigger,
-                "text": self.edit_text,
-                "rolemention": self.set_role_mention,
-                "edited": self.toggle_check_edits,
-                "cooldown": self.cooldown,
-                "deleteafter": self.edit_delete_after,
-                "chance": self.edit_chance,
-                "command": self.edit_command,
-                "ignorecommands": self.edit_ignore_commands,
-                "react": self.edit_reactions,
-                "regex": self.edit_regex,
-                "role": self.edit_roles,
-                "everyonemention": self.set_everyone_mention,
-                "ocr": self.toggle_ocr_search,
-                "readfilenames": self.toggle_filename_search,
-                "usermention": self.set_user_mention,
-                "nsfw": self.toggle_nsfw,
-                "reply": self.set_reply,
-                "enable": self.enable_trigger,
-                "tts": self.set_tts,
-            }
-            options = ctx.data["options"][0]["options"]
-            option = options[0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            if ctx.type is InteractionType.autocomplete:
-                cur_value = options[0]["options"][0]["value"]
-                if ctx.guild.id in self.triggers:
-                    choices = [
-                        Choice(name=t.name, value=t.name)
-                        for t in self.triggers[ctx.guild.id].values()
-                        if cur_value in t.name
-                    ]
-                else:
-                    choices = []
-                await ctx.response.autocomplete(choices[:25])
-                log.debug("sending autocomplete response")
-                return
-
-            try:
-                kwargs = {}
-                for option in options[0].get("options", []):
-                    name = option["name"]
-                    if name == "trigger":
-                        kwargs[name] = self.triggers.get(ctx.guild.id, {}).get(
-                            option["value"], None
-                        )
-                    elif name == "emojis":
-                        good_emojis = await self._find_good_emojis(ctx, option)
-                        kwargs[name] = good_emojis
-                    else:
-                        kwargs[name] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @_modlog.command(name="settings", aliases=["list"])
     async def modlog_settings(self, ctx: commands.Context) -> None:
@@ -1226,7 +918,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
     ) -> None:
         """
-        Set whether or not to send this trigger will mention users in the reply
+        Set whether or not this trigger can mention users
 
         `<trigger>` is the name of the trigger.
         `[set_to]` either `true` or `false` on whether to allow this trigger
@@ -1259,7 +951,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
         self, ctx: commands.Context, trigger: TriggerExists, set_to: bool
     ) -> None:
         """
-        Set whether or not to send this trigger will allow everyone mentions
+        Set whether or not to send this trigger can mention everyone
 
         `<trigger>` is the name of the trigger.
         `[set_to]` either `true` or `false` on whether to allow this trigger
@@ -1622,6 +1314,8 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             return await self._not_authorized(ctx)
         if trigger.multi_payload:
             return await self._no_multi(ctx)
+        if not any([t for t in trigger.response_type if t in ["add_role", "remove_role"]]):
+            return await self._no_edit(ctx)
         for role in roles:
             if role >= ctx.me.top_role:
                 msg = _("I can't assign roles higher than my own.")
@@ -1639,10 +1333,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
                 else:
                     await ctx.send(msg)
                 return
-        role_ids = [r.id for r in roles]
-        if not any([t for t in trigger.response_type if t in ["add_role", "remove_role"]]):
-            return await self._no_edit(ctx)
-        trigger.text = role_ids
+        for role in roles:
+            if role.id in trigger.text:
+                trigger.text.remove(role.id)
+            else:
+                trigger.text.append(role.id)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
@@ -1682,7 +1377,11 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
             return await self._not_authorized(ctx)
         if "react" not in trigger.response_type:
             return await self._no_edit(ctx)
-        trigger.text = emojis
+        for emoji in emojis:
+            if emoji in trigger.text:
+                trigger.text.remove(emoji)
+            else:
+                trigger.text.append(emoji)
         async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
             trigger_list[trigger.name] = await trigger.to_json()
         # await self.remove_trigger_from_cache(ctx.guild.id, trigger)
@@ -1703,7 +1402,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @checks.mod_or_permissions(manage_messages=True)
     async def enable_trigger(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
-        Enable a trigger that has been disabled either by command or automatically
+        Enable a trigger
 
         `<trigger>` is the name of the trigger.
 
@@ -2344,7 +2043,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx: commands.Context, name: str, regex: str) -> None:
+    async def ban(self, ctx: commands.Context, name: str, regex: ValidRegex) -> None:
         """
         Add a trigger to ban users for saying specific things found with regex
         This respects hierarchy so ensure the bot role is lower in the list
@@ -2380,7 +2079,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, commands.Cog):
     @retrigger.command()
     @checks.mod_or_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx: commands.Context, name: str, regex: str) -> None:
+    async def kick(self, ctx: commands.Context, name: str, regex: ValidRegex) -> None:
         """
         Add a trigger to kick users for saying specific things found with regex
         This respects hierarchy so ensure the bot role is lower in the list
