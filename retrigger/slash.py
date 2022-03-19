@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 import discord
 from discord import app_commands
-from redbot.core import commands
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 
 try:
@@ -751,6 +751,11 @@ class ReTriggerSlash:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(
                 _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        if not interaction.guild:
+            await interaction.response.send_message(
+                _("This command is not available outside of a guild."), ephemeral=True
             )
             return False
         fake_ctx = discord.Object(id=interaction.id)

@@ -592,6 +592,11 @@ class RoleToolsSlash(RoleToolsMixin):
                 _("You are not allowed to run this command here."), ephemeral=True
             )
             return False
+        if not interaction.guild:
+            await interaction.response.send_message(
+                _("This command is not available outside of a guild."), ephemeral=True
+            )
+            return False
         fake_ctx = discord.Object(id=interaction.id)
         fake_ctx.author = interaction.user
         fake_ctx.guild = interaction.guild

@@ -27,6 +27,18 @@ class DateTransformer(app_commands.Transformer):
         return datetime.strptime(date_str, "%Y-%m-%d")
 
 
+def guild_only():
+    async def predicate(interaction: discord.Interaction) -> bool:
+        allowed = interaction.guild is not None
+        if not allowed:
+            await interaction.response.send_message(
+                _("This command is not available outside of a guild."), ephemeral=True
+            )
+        return allowed
+
+    return app_commands.check(predicate)
+
+
 class HockeySlash(MixinMeta):
 
     pickems_slash = app_commands.Group(
@@ -166,6 +178,7 @@ class HockeySlash(MixinMeta):
         await self.otherdiscords(interaction, team)
 
     @pickems_slash.command(name="settings")
+    @guild_only()
     async def pickems_settings_slash(self, interaction: discord.Interaction):
         """Show the servers current pickems settings"""
         func = self.pickems_settings
@@ -175,6 +188,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @pickems_slash.command(name="message")
+    @guild_only()
     async def set_pickems_message_slash(
         self, interaction: discord.Interaction, message: Optional[str]
     ):
@@ -186,6 +200,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, message=message)
 
     @pickems_slash.command(name="setup")
+    @guild_only()
     async def setup_auto_pickems_slash(
         self, interaction: discord.Interaction, channel: Optional[discord.TextChannel]
     ):
@@ -197,6 +212,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, channel)
 
     @pickems_slash.command(name="clear")
+    @guild_only()
     async def delete_auto_pickems_slash(self, interaction: discord.Interaction):
         """Stop posting new pickems threads and clear existing list of pickems threads"""
         func = self.delete_auto_pickems
@@ -206,6 +222,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @pickems_slash.command(name="page")
+    @guild_only()
     async def pickems_page_slash(
         self,
         interaction: discord.Interaction,
@@ -219,6 +236,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, date)
 
     @gdt_slash.command(name="settings")
+    @guild_only()
     async def gdt_settings_slash(self, interaction: discord.Interaction):
         """Shows the current Game Day Thread settings"""
         func = self.gdt_settings
@@ -228,6 +246,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @gdt_slash.command(name="delete")
+    @guild_only()
     async def gdt_delete_slash(self, interaction: discord.Interaction):
         """Delete all current game day threads for the server"""
         func = self.gdt_delete
@@ -237,6 +256,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @gdt_slash.command(name="stateupdates")
+    @guild_only()
     async def gdt_default_game_state_slash(
         self,
         interaction: discord.Interaction,
@@ -250,6 +270,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, state)
 
     @gdt_slash.command(name="updates")
+    @guild_only()
     async def gdt_update_start_slash(self, interaction: discord.Interaction, update_start: bool):
         """Set whether or not the starting thread message will update as the game progresses."""
         func = self.gdt_update_start
@@ -259,6 +280,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, update_start)
 
     @gdt_slash.command(name="create")
+    @guild_only()
     async def gdt_create_slash(self, interaction: discord.Interaction):
         """Creates the next gdt for the server"""
         func = self.gdt_create
@@ -268,6 +290,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @gdt_slash.command(name="toggle")
+    @guild_only()
     async def gdt_toggle_slash(self, interaction: discord.Interaction):
         """Toggles the game day channel creation on this server"""
         func = self.gdt_toggle
@@ -277,6 +300,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @gdt_slash.command(name="channel")
+    @guild_only()
     async def gdt_channel_slash(
         self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
@@ -288,6 +312,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, channel)
 
     @gdt_slash.command(name="setup")
+    @guild_only()
     async def gdt_setup_slash(
         self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
     ):
@@ -299,6 +324,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, team, channel)
 
     @set_slash.command(name="settings")
+    @guild_only()
     async def hockey_settings_slash(self, interaction: discord.Interaction):
         """Show hockey settings for this server"""
         func = self.hockey_settings
@@ -308,6 +334,7 @@ class HockeySlash(MixinMeta):
         await func(interaction)
 
     @set_slash.command(name="poststandings")
+    @guild_only()
     async def post_standings_slash(
         self,
         interaction: discord.Interaction,
@@ -322,6 +349,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, standings_type, channel)
 
     @set_slash.command(name="stateupdates")
+    @guild_only()
     async def set_game_state_updates(
         self, interaction: discord.Interaction, channel: discord.TextChannel, state: HOCKEY_STATES
     ):
@@ -333,6 +361,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, channel, state)
 
     @set_slash.command(name="add")
+    @guild_only()
     async def add_goals_slash(
         self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
     ):
@@ -344,6 +373,7 @@ class HockeySlash(MixinMeta):
         await func(interaction, team, channel)
 
     @set_slash.command(name="remove")
+    @guild_only()
     async def remove_goals_slash(
         self,
         interaction: discord.Interaction,
