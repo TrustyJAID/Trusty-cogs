@@ -97,7 +97,7 @@ class RoleToolsSlash(RoleToolsMixin):
             return
         if not await self.check_requires(func, interaction):
             return
-        await func(interaction, role)
+        await func(interaction, role=role)
 
     @exclude_slash.command(name="add")
     async def exclusive_add_slash(
