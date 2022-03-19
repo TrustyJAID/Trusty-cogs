@@ -57,8 +57,7 @@ class ReTriggerSlash:
     async def modlog_settings_slash(self, interaction: discord.Interaction):
         """Show retrigger's modlog settings for this server."""
         func = self.modlog_settings
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -67,8 +66,7 @@ class ReTriggerSlash:
     async def modlog_bans_slash(self, interaction: discord.Interaction):
         """Toggle custom ban messages in the modlog"""
         func = self.modlog_bans
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -77,8 +75,7 @@ class ReTriggerSlash:
     async def modlog_kicks_slash(self, interaction: discord.Interaction):
         """Toggle custom kick messages in the modlog"""
         func = self.modlog_kicks
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -87,8 +84,7 @@ class ReTriggerSlash:
     async def modlog_filter_slash(self, interaction: discord.Interaction):
         """Toggle custom filter messages in the modlog"""
         func = self.modlog_filter
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -97,8 +93,7 @@ class ReTriggerSlash:
     async def modlog_addroles_slash(self, interaction: discord.Interaction):
         """Toggle custom add role messages in the modlog"""
         func = self.modlog_addroles
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -107,8 +102,7 @@ class ReTriggerSlash:
     async def modlog_removeroles_slash(self, interaction: discord.Interaction):
         """Toggle custom remove role messages in the modlog"""
         func = self.modlog_removeroles
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -119,8 +113,7 @@ class ReTriggerSlash:
     ):
         """Set the modlog channel for filtered words"""
         func = self.modlog_channel
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel)
@@ -142,8 +135,7 @@ class ReTriggerSlash:
             )
             return
         func = self.whitelist_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -166,8 +158,7 @@ class ReTriggerSlash:
             )
             return
         func = self.whitelist_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -190,8 +181,7 @@ class ReTriggerSlash:
             )
             return
         func = self.blacklist_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -214,8 +204,7 @@ class ReTriggerSlash:
             )
             return
         func = self.blacklist_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -231,8 +220,7 @@ class ReTriggerSlash:
     ):
         """Set cooldown options for ReTrigger"""
         func = self.cooldown
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -242,8 +230,7 @@ class ReTriggerSlash:
     async def edit_regex_slash(self, interaction: discord.Interaction, trigger: str, regex: str):
         """Edit the regex of a saved trigger."""
         func = self.edit_regex
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -260,8 +247,7 @@ class ReTriggerSlash:
     async def toggle_ocr_search_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to use Optical Character Recognition"""
         func = self.toggle_ocr_search
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -271,8 +257,7 @@ class ReTriggerSlash:
     async def toggle_nsfw_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether a trigger is considered age-restricted."""
         func = self.toggle_nsfw
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -282,8 +267,7 @@ class ReTriggerSlash:
     async def toggle_filename_search_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to search message attachment filenames."""
         func = self.toggle_filename_search
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -298,8 +282,7 @@ class ReTriggerSlash:
     ):
         """Set whether or not to reply to the triggered message."""
         func = self.set_reply
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -309,8 +292,7 @@ class ReTriggerSlash:
     async def set_tts_slash(self, interaction: discord.Interaction, trigger: str, set_to: bool):
         """Set whether or not to send the message with text-to-speech."""
         func = self.set_tts
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -322,8 +304,7 @@ class ReTriggerSlash:
     ):
         """Set whether or not this trigger can mention users"""
         func = self.set_user_menion
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -335,8 +316,7 @@ class ReTriggerSlash:
     ):
         """Set whether or not this trigger can mention everyone"""
         func = self.set_everyone_mention
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -348,8 +328,7 @@ class ReTriggerSlash:
     ):
         """Set whether or not this trigger can mention roles"""
         func = self.set_role_mention
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -359,8 +338,7 @@ class ReTriggerSlash:
     async def toggle_check_edits_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to search message edits."""
         func = self.toggle_check_edits
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -370,8 +348,7 @@ class ReTriggerSlash:
     async def edit_ignore_commands_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether a trigger will ignore commands."""
         func = self.edit_ignore_commands
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -381,8 +358,7 @@ class ReTriggerSlash:
     async def edit_text_slash(self, interaction: discord.Interaction, trigger: str, text: str):
         """Edit the text of a saved trigger."""
         func = self.edit_text
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -392,8 +368,7 @@ class ReTriggerSlash:
     async def edit_chance_slash(self, interaction: discord.Interaction, trigger: str, chance: int):
         """Edit the chance a trigger will execute."""
         func = self.edit_chance
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -405,8 +380,7 @@ class ReTriggerSlash:
     ):
         """Edit the command a trigger runs."""
         func = self.edit_command
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -418,8 +392,7 @@ class ReTriggerSlash:
     ):
         """Edit the added or removed role of a saved trigger."""
         func = self.edit_roles
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -434,8 +407,7 @@ class ReTriggerSlash:
     ):
         """Edit the emoji reaction of a saved trigger."""
         func = self.edit_reactions
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -445,8 +417,7 @@ class ReTriggerSlash:
     async def enable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
         """Enable a trigger"""
         func = self.enable_trigger
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -456,8 +427,7 @@ class ReTriggerSlash:
     async def disable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
         """Disable a trigger"""
         func = self.disable_trigger
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -473,8 +443,7 @@ class ReTriggerSlash:
     ):
         """List information about a trigger"""
         func = self.list
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         if guild_id is None:
@@ -490,8 +459,7 @@ class ReTriggerSlash:
     async def remove_slash(self, interaction: discord.Interaction, trigger: str):
         """Remove a specified trigger"""
         func = self.remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
@@ -517,8 +485,7 @@ class ReTriggerSlash:
     ):
         """Add a text response trigger"""
         func = self.text
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -540,8 +507,7 @@ class ReTriggerSlash:
     ):
         """Add a dm response trigger"""
         func = self.dm
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -563,8 +529,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to dm yourself"""
         func = self.dmme
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -586,8 +551,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to rename users"""
         func = self.rename
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -608,8 +572,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to ban users"""
         func = self.ban
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -630,8 +593,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to kick users"""
         func = self.kick
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -653,8 +615,7 @@ class ReTriggerSlash:
     ):
         """Add a command trigger"""
         func = self.command
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -676,8 +637,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to filter messages"""
         func = self.filter
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -695,8 +655,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to add a role"""
         func = self.addrole
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -714,8 +673,7 @@ class ReTriggerSlash:
     ):
         """Add a trigger to remove a role"""
         func = self.removerole
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -789,7 +747,7 @@ class ReTriggerSlash:
             )
         return resp
 
-    async def pre_check_slash(self, interaction):
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(
                 _("You are not allowed to run this command here."), ephemeral=True

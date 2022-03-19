@@ -47,8 +47,7 @@ class RoleToolsSlash(RoleToolsMixin):
     async def selfrole_add_slash(self, interaction: discord.Interaction, role: discord.Role):
         """Give yourself a role"""
         func = self.selfrole_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role)
@@ -57,8 +56,7 @@ class RoleToolsSlash(RoleToolsMixin):
     async def selfrole_remove_slash(self, interaction: discord.Interaction, role: discord.Role):
         """Remove a role from yourself"""
         func = self.selfrole_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role)
@@ -69,8 +67,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Force a sticky role on a user"""
         func = self.forcerole
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, [user], role=role)
@@ -81,8 +78,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Force remove a sticky role on a user"""
         func = self.forceroleremove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, [user], role=role)
@@ -93,8 +89,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current roletools setup for each role in the server"""
         func = self.viewroles
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role=role)
@@ -105,8 +100,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role exclusion"""
         func = self.exclusive_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, exclude)
@@ -117,8 +111,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role exclusion"""
         func = self.exclusive_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, exclude)
@@ -129,8 +122,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role inclusion"""
         func = self.inclusive_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, include)
@@ -141,8 +133,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role inclusion"""
         func = self.inclusive_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, include)
@@ -153,8 +144,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role requirements"""
         func = self.required_add
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, required)
@@ -165,8 +155,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role requirements"""
         func = self.required_remove
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, role, required)
@@ -175,8 +164,7 @@ class RoleToolsSlash(RoleToolsMixin):
     async def cleanup_slash(self, interaction: discord.Interaction):
         """Cleanup old/missing reaction roles and settings."""
         func = self.cleanup
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -185,8 +173,7 @@ class RoleToolsSlash(RoleToolsMixin):
     async def reactroles_slash(self, interaction: discord.Interaction):
         """View current reaction roles in the server."""
         func = self.reactroles
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -200,8 +187,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Clear the reactions for reaction roles."""
         func = self.clearreact
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, message, [emoji] if emoji else None)
@@ -216,8 +202,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a reaction role."""
         func = self.react
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -237,8 +222,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove a reaction role."""
         func = self.remreact
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -258,8 +242,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a user can apply the role to themselves."""
         func = self.selfadd
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, true_or_false, role=role)
@@ -270,8 +253,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a user can remove a role form themselves."""
         func = self.selfrem
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, true_or_false, role=role)
@@ -282,8 +264,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a role will be re-applied when a user leaves and rejoins the server."""
         func = self.sticky
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, true_or_false, role=role)
@@ -294,8 +275,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set a role to be automatically applied when a user joins the server."""
         func = self.autorole
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, true_or_false, role=role)
@@ -306,8 +286,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set the cost to acquire a role."""
         func = self.cost
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, cost, role=role)
@@ -319,8 +298,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current buttons setup for role assign in this server."""
         func = self.button_roles_view
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -335,8 +313,7 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Send buttons to a specified channel with optional message."""
         func = self.send_buttons
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel, buttons, message=message)
@@ -365,8 +342,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a role button"""
         func = self.create_button
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         try:
@@ -380,8 +355,6 @@ class RoleToolsSlash(RoleToolsMixin):
     async def delete_button_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved button."""
         func = self.delete_button
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, name)
@@ -395,8 +368,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Edit a bots message to include Role Buttons"""
         func = self.edit_with_buttons
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, message, buttons)
@@ -413,8 +384,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a select menu"""
         func = self.create_select_menu
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, name, options, min_values, max_values, placeholder=placeholder)
@@ -426,8 +395,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current select menus setup for role assign in this server."""
         func = self.select_menus_view
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -436,8 +403,6 @@ class RoleToolsSlash(RoleToolsMixin):
     async def delete_select_menu_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved select menu."""
         func = self.delete_select_menu
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         _name = name.split(" ")[0]
@@ -452,8 +417,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Edit a bots message to include Role Buttons"""
         func = self.edit_with_select
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, message, menus)
@@ -468,8 +431,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Send a select menu to a specified channel for role assignment"""
         func = self.send_select
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel, menus, message=message)
@@ -481,8 +442,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current select menus setup for role assign in this server."""
         func = self.select_options_view
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -499,8 +458,6 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a select menu option"""
         func = self.create_select_option
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, name, role, label, description, emoji)
@@ -509,8 +466,6 @@ class RoleToolsSlash(RoleToolsMixin):
     async def delete_select_option_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved option."""
         func = self.delete_select_option
-        if not await self.pre_check_slash(interaction):
-            return
         if not await self.check_requires(func, interaction):
             return
         _name = name.split(" ")[0]
@@ -631,7 +586,7 @@ class RoleToolsSlash(RoleToolsMixin):
             return False
         return True
 
-    async def pre_check_slash(self, interaction):
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(
                 _("You are not allowed to run this command here."), ephemeral=True

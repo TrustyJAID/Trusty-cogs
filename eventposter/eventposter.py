@@ -27,13 +27,14 @@ EVENT_EMOJIS = [
 
 
 @cog_i18n(_)
-class EventPoster(EventPosterSlash, commands.Cog):
+class EventPoster(EventPosterSlash, discord.app_commands.Group, commands.Cog):
     """Create admin approved events/announcements"""
 
     __version__ = "2.1.0"
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
+        super().__init__(name="event")
         self.bot = bot
         self.config = Config.get_conf(self, identifier=144014746356678656)
         default_guild = {

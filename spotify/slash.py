@@ -688,3 +688,25 @@ class SpotifySlash:
         if not resp:
             await interaction.response.send_message(msg, ephemeral=True)
         return resp
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
+            await interaction.response.send_message(
+                _("You are not allowed to run this command here."), ephemeral=True
+            )
+            return False
+        fake_ctx = discord.Object(id=interaction.id)
+        fake_ctx.author = interaction.user
+        fake_ctx.guild = interaction.guild
+        if isinstance(interaction.channel, discord.channel.PartialMessageable):
+            channel = interaction.user.dm_channel or await interaction.user.create_dm()
+        else:
+            channel = interaction.channel
+
+        fake_ctx.channel = channel
+        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+            await interaction.response.send_message(
+                _("Commands are not allowed in this channel or guild."), ephemeral=True
+            )
+            return False
+        return True

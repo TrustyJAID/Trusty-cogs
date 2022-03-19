@@ -56,8 +56,7 @@ class HockeySlash(MixinMeta):
     @app_commands.command(name="standings")
     async def standings_slash(self, interaction: discord.Interaction, search: VALID_STANDINGS):
         """Display current standings"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         await self.standings(interaction, search=search)
 
     @app_commands.command(name="games")
@@ -69,8 +68,7 @@ class HockeySlash(MixinMeta):
         date: Optional[app_commands.Transform[str, DateTransformer]],
     ):
         """Gets all NHL games"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         teams_and_date = {"teams": team, "date": date}
         await self.games(interaction, teams_and_date=teams_and_date)
 
@@ -84,8 +82,7 @@ class HockeySlash(MixinMeta):
         date: Optional[app_commands.Transform[str, DateTransformer]],
     ):
         """Display game heatmaps."""
-        if not await self.pre_check_slash(interaction):
-            return
+
         teams_and_date = {"teams": team, "date": date}
         await self.heatmap(interaction, style, teams_and_date=teams_and_date)
 
@@ -100,8 +97,7 @@ class HockeySlash(MixinMeta):
         corsi: Optional[bool] = True,
     ):
         """Display games gameflow."""
-        if not await self.pre_check_slash(interaction):
-            return
+
         teams_and_date = {"teams": team, "date": date}
         await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
 
@@ -113,8 +109,7 @@ class HockeySlash(MixinMeta):
         date: Optional[app_commands.Transform[str, DateTransformer]],
     ):
         """Gets upcoming NHL games for the current season as a list"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         teams_and_date = {"teams": team, "date": date}
         await self.schedule(interaction, teams_and_date=teams_and_date)
 
@@ -124,8 +119,7 @@ class HockeySlash(MixinMeta):
         self, interaction: discord.Interaction, player: str, year: Optional[int]
     ):
         """Lookup information about a specific player"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         search = str(player)
         if year:
             search += f" {year}"
@@ -136,8 +130,7 @@ class HockeySlash(MixinMeta):
         self, interaction: discord.Interaction, team: str, season: Optional[int]
     ):
         """Get a team roster"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         await self.roster(season, search=team)
 
     @app_commands.command(name="leaderboard")
@@ -157,30 +150,26 @@ class HockeySlash(MixinMeta):
         ],
     ):
         """Shows the current server leaderboard"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         await self.leaderboard(interaction, leaderboard_type)
 
     @app_commands.command(name="pickemsvotes")
     async def pickemsvotes_slash(self, interaction: discord.Interaction):
         """View your current pickems votes for the server"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         await self.pickemsvotes(interaction)
 
     @app_commands.command(name="otherdiscords")
     async def otherdiscords_slash(self, interaction: discord.Interaction, team: str):
         """Get team specific discord links"""
-        if not await self.pre_check_slash(interaction):
-            return
+
         await self.otherdiscords(interaction, team)
 
     @pickems_slash.command(name="settings")
     async def pickems_settings_slash(self, interaction: discord.Interaction):
         """Show the servers current pickems settings"""
         func = self.pickems_settings
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -191,8 +180,7 @@ class HockeySlash(MixinMeta):
     ):
         """Customize the pickems message for this server"""
         func = self.set_pickems_message
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, message=message)
@@ -203,8 +191,7 @@ class HockeySlash(MixinMeta):
     ):
         """Sets up pickems threads created every day"""
         func = self.setup_auto_pickems
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel)
@@ -213,8 +200,7 @@ class HockeySlash(MixinMeta):
     async def delete_auto_pickems_slash(self, interaction: discord.Interaction):
         """Stop posting new pickems threads and clear existing list of pickems threads"""
         func = self.delete_auto_pickems
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -227,8 +213,7 @@ class HockeySlash(MixinMeta):
     ):
         """Generates a pickems page for voting on"""
         func = self.pickems_page
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, date)
@@ -237,8 +222,7 @@ class HockeySlash(MixinMeta):
     async def gdt_settings_slash(self, interaction: discord.Interaction):
         """Shows the current Game Day Thread settings"""
         func = self.gdt_settings
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -247,8 +231,7 @@ class HockeySlash(MixinMeta):
     async def gdt_delete_slash(self, interaction: discord.Interaction):
         """Delete all current game day threads for the server"""
         func = self.gdt_delete
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -261,8 +244,7 @@ class HockeySlash(MixinMeta):
     ):
         """Set specific state updates to use for game day threads"""
         func = self.gdt_default_game_state
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, state)
@@ -271,8 +253,7 @@ class HockeySlash(MixinMeta):
     async def gdt_update_start_slash(self, interaction: discord.Interaction, update_start: bool):
         """Set whether or not the starting thread message will update as the game progresses."""
         func = self.gdt_update_start
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, update_start)
@@ -281,8 +262,7 @@ class HockeySlash(MixinMeta):
     async def gdt_create_slash(self, interaction: discord.Interaction):
         """Creates the next gdt for the server"""
         func = self.gdt_create
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -291,8 +271,7 @@ class HockeySlash(MixinMeta):
     async def gdt_toggle_slash(self, interaction: discord.Interaction):
         """Toggles the game day channel creation on this server"""
         func = self.gdt_toggle
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -303,8 +282,7 @@ class HockeySlash(MixinMeta):
     ):
         """Change the channel used for game day threads."""
         func = self.gdt_channel
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel)
@@ -315,8 +293,7 @@ class HockeySlash(MixinMeta):
     ):
         """Setup game day threads for a single (or all) teams."""
         func = self.gdt_setup
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, team, channel)
@@ -325,8 +302,7 @@ class HockeySlash(MixinMeta):
     async def hockey_settings_slash(self, interaction: discord.Interaction):
         """Show hockey settings for this server"""
         func = self.hockey_settings
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction)
@@ -340,8 +316,7 @@ class HockeySlash(MixinMeta):
     ):
         """Post automatic standings when all games for the day are done"""
         func = self.post_standings
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, standings_type, channel)
@@ -352,8 +327,7 @@ class HockeySlash(MixinMeta):
     ):
         """Toggle specific updates in a designated channel"""
         func = self.set_game_state_updates
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, channel, state)
@@ -364,8 +338,7 @@ class HockeySlash(MixinMeta):
     ):
         """Add a teams goal updates to a channel"""
         func = self.add_goals
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, team, channel)
@@ -379,8 +352,7 @@ class HockeySlash(MixinMeta):
     ):
         """Removes a teams goal updates from a channel"""
         func = self.remove_goals
-        if not await self.pre_check_slash(interaction):
-            return
+
         if not await self.check_requires(func, interaction):
             return
         await func(interaction, team, channel)
@@ -454,7 +426,7 @@ class HockeySlash(MixinMeta):
             )
         return resp
 
-    async def pre_check_slash(self, interaction):
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(
                 _("You are not allowed to run this command here."), ephemeral=True
