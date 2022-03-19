@@ -83,7 +83,7 @@ class HockeySlash(MixinMeta):
 
         teams_and_date = {}
         if team:
-            teams_and_date["team"] = team
+            teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
         await self.games(interaction, teams_and_date=teams_and_date)
@@ -101,7 +101,7 @@ class HockeySlash(MixinMeta):
 
         teams_and_date = {}
         if team:
-            teams_and_date["team"] = team
+            teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
         await self.heatmap(interaction, style, teams_and_date=teams_and_date)
@@ -120,7 +120,7 @@ class HockeySlash(MixinMeta):
 
         teams_and_date = {}
         if team:
-            teams_and_date["team"] = team
+            teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
         await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
@@ -136,7 +136,7 @@ class HockeySlash(MixinMeta):
 
         teams_and_date = {}
         if team:
-            teams_and_date["team"] = team
+            teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
         await self.schedule(interaction, teams_and_date=teams_and_date)
