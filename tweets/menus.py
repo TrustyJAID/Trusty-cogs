@@ -271,6 +271,8 @@ class ForwardButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page + 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class BackButton(discord.ui.Button):
@@ -285,6 +287,8 @@ class BackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class LastItemButton(discord.ui.Button):
@@ -301,6 +305,8 @@ class LastItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(self.view._source.get_max_pages() - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class FirstItemButton(discord.ui.Button):
@@ -317,6 +323,8 @@ class FirstItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class SkipForwardkButton(discord.ui.Button):
@@ -333,6 +341,8 @@ class SkipForwardkButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0, skip_next=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class SkipBackButton(discord.ui.Button):
@@ -349,6 +359,8 @@ class SkipBackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0, skip_prev=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class TweetsMenu(discord.ui.View):

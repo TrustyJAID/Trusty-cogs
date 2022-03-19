@@ -48,6 +48,8 @@ class ForwardButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page + 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class BackButton(discord.ui.Button):
@@ -62,6 +64,8 @@ class BackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class LastItemButton(discord.ui.Button):
@@ -78,6 +82,8 @@ class LastItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(self.view._source.get_max_pages() - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class FirstItemButton(discord.ui.Button):
@@ -94,6 +100,8 @@ class FirstItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class SkipForwardButton(discord.ui.Button):
@@ -110,6 +118,8 @@ class SkipForwardButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0, skip_next=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class SkipBackButton(discord.ui.Button):
@@ -126,6 +136,8 @@ class SkipBackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0, skip_prev=True)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class PickTeamButton(discord.ui.Button):
@@ -169,6 +181,8 @@ class PickTeamButton(discord.ui.Button):
         except NoSchedule:
             return await self.view.ctx.send(self.format_error())
         await self.view.show_page(0)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class PickDateButton(discord.ui.Button):
@@ -201,6 +215,8 @@ class PickDateButton(discord.ui.Button):
             except NoSchedule:
                 return await self.ctx.send(self.format_error())
             await self.view.show_page(0)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
 
 class HeatmapButton(discord.ui.Button):
@@ -224,11 +240,15 @@ class HeatmapButton(discord.ui.Button):
             self.view.source.include_heatmap = True
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
             await self.view.show_page(0)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
             return
         else:
             self.view.source.style = mapping[self.view.source.style]
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
             await self.view.show_page(0)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
             return
 
 
@@ -257,6 +277,8 @@ class GameflowButton(discord.ui.Button):
             strength = self.view.source.strength
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
             await self.view.show_page(0)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
             return
         else:
             lookup = (self.view.source.corsi, self.view.source.strength)
@@ -266,6 +288,8 @@ class GameflowButton(discord.ui.Button):
             corsi = "Corsi" if corsi_bool else "Expected Goals"
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
             await self.view.show_page(0)
+            if not interaction.response.is_done():
+                await interaction.response.defer()
             return
 
 
@@ -276,6 +300,8 @@ class HockeySelectGame(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         game_id = int(self.values[0])
         await self.view.show_page(0, game_id=game_id)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class GamesMenu(discord.ui.View):
@@ -529,6 +555,8 @@ class HockeySelectPlayer(discord.ui.Select):
         player_id = int(self.values[0])
         index = self.view.source.pages.index(player_id)
         await self.view.show_page(index)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class SimplePages(menus.ListPageSource):

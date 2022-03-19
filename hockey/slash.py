@@ -110,7 +110,11 @@ class HockeySlash(MixinMeta):
     ):
         """Display games gameflow."""
 
-        teams_and_date = {"teams": team, "date": date}
+        teams_and_date = {}
+        if team:
+            teams_and_date["teams"] = team
+        if date:
+            teams_and_date["date"] = date
         await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
 
     @app_commands.command(name="schedule")

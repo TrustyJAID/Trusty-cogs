@@ -143,6 +143,8 @@ class JoinEventButton(discord.ui.Button):
         self.view.members.append(interaction.user.id)
         self.view.check_join_enabled()
         await self.view.update_event()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class LeaveEventButton(discord.ui.Button):
@@ -197,6 +199,8 @@ class LeaveEventButton(discord.ui.Button):
         self.view.check_join_enabled()
 
         await self.view.update_event()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class PlayerClassSelect(discord.ui.Select):
@@ -237,6 +241,8 @@ class PlayerClassSelect(discord.ui.Select):
                 except Exception:
                     log.exception("Error adding user to event thread")
         await self.view.update_event()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class MaybeJoinEventButton(discord.ui.Button):
@@ -273,6 +279,8 @@ class MaybeJoinEventButton(discord.ui.Button):
                     log.exception("Error adding user to event thread")
 
         await self.view.update_event()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class Event(discord.ui.View):
