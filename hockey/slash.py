@@ -81,7 +81,11 @@ class HockeySlash(MixinMeta):
     ):
         """Gets all NHL games"""
 
-        teams_and_date = {"teams": team, "date": date}
+        teams_and_date = {}
+        if team:
+            teams_and_date["team"] = team
+        if date:
+            teams_and_date["date"] = date
         await self.games(interaction, teams_and_date=teams_and_date)
 
     @app_commands.command(name="heatmap")
@@ -95,7 +99,11 @@ class HockeySlash(MixinMeta):
     ):
         """Display game heatmaps."""
 
-        teams_and_date = {"teams": team, "date": date}
+        teams_and_date = {}
+        if team:
+            teams_and_date["team"] = team
+        if date:
+            teams_and_date["date"] = date
         await self.heatmap(interaction, style, teams_and_date=teams_and_date)
 
     @app_commands.command(name="gameflow")
@@ -112,7 +120,7 @@ class HockeySlash(MixinMeta):
 
         teams_and_date = {}
         if team:
-            teams_and_date["teams"] = team
+            teams_and_date["team"] = team
         if date:
             teams_and_date["date"] = date
         await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
@@ -126,7 +134,11 @@ class HockeySlash(MixinMeta):
     ):
         """Gets upcoming NHL games for the current season as a list"""
 
-        teams_and_date = {"teams": team, "date": date}
+        teams_and_date = {}
+        if team:
+            teams_and_date["team"] = team
+        if date:
+            teams_and_date["date"] = date
         await self.schedule(interaction, teams_and_date=teams_and_date)
 
     @app_commands.command(name="player")
