@@ -50,13 +50,12 @@ class EventPoster(EventPosterSlash, commands.Cog):
             "required_roles": [],
             "playerclass_options": {},
             "make_thread": False,
-            "commands": {},
             "enable_slash": False,
         }
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_user)
-        self.config.register_global(commands={})
+        self.config.register_global(enable_slash=False)
         self.event_cache: Dict[int, Dict[int, Event]] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.cleanup_old_events.start()

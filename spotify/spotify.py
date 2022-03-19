@@ -40,7 +40,7 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
         self.config = Config.get_conf(self, identifier=218773382617890828)
         self.config.register_user(token={}, listen_for={}, show_private=False, default_device=None)
         self.config.register_guild(
-            clear_reactions_after=True, delete_message_after=False, menu_timeout=120, commands={}
+            clear_reactions_after=True, delete_message_after=False, menu_timeout=120
         )
         self.config.register_global(
             emojis={},
@@ -63,7 +63,6 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
                 "ugc-image-upload",
             ],
             version="0.0.0",
-            commands={},
             enable_slash=False,
             enable_context=False,
         )

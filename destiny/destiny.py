@@ -49,7 +49,6 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         default_global = {
             "api_token": {"api_key": "", "client_id": "", "client_secret": ""},
             "manifest_version": "",
-            "commands": {},
             "enable_slash": False,
         }
         default_user = {"oauth": {}, "account": {}}

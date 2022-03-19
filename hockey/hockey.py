@@ -70,7 +70,6 @@ class Hockey(
             "created_gdc": False,
             "print": False,
             "last_day": 0,
-            "commands": {},
             "enable_slash": False,
         }
         for team in TEAMS:
@@ -103,7 +102,6 @@ class Hockey(
             "ot_notifications": True,
             "so_notifications": True,
             "timezone": None,
-            "commands": {},
         }
         default_channel = {
             "team": [],
