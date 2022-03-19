@@ -16,7 +16,7 @@ log = logging.getLogger("red.trusty-cogs.spotify")
 
 SPOTIFY_RE = re.compile(
     r"(https?:\/\/open\.spotify\.com\/|spotify:?)"
-    r"(track|playlist|album|artist|episode|show)\/?:?([^?\(\)\s]+)"
+    r"(track|playlist|album|artist|episode|show)\/?:?([A-Za-z0-9]+)"
 )
 
 SPOTIFY_LOGO = "https://imgur.com/Ig4VuuJ.png"
