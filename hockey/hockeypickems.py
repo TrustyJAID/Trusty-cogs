@@ -48,21 +48,22 @@ class HockeyPickems(MixinMeta):
     async def pickems_loop(self) -> None:
         await self.save_pickems_data()
         log.debug("Saved pickems data.")
-        await self.refresh_pickems_threads()
-        log.debug("Refreshed Pickems Threads")
 
-    async def refresh_pickems_threads(self):
-        all_guilds = await self.pickems_config.all_guilds()
-        async for guild_id, data in AsyncIter(all_guilds.items(), steps=10):
-            guild = self.bot.get_guild(guild_id)
-            if not guild or not data["pickems_channels"]:
-                continue
-            for thread_id, timestamp in data["pickems_channels"].items():
-                thread = guild.get_thread(int(thread_id))
-                if not thread:
-                    continue
-                if thread.archived and thread.permissions_for(guild.me).manage_threads:
-                    await thread.edit(archived=False)
+    @commands.Cog.listener()
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
+        if before.archived == after.archived:
+            return
+        if after.locked:
+            # explicitly allow moderators to lock the channel still
+            return
+        guild = before.guild
+        pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
+        if str(before.id) in pickems_channels and before.permissions_for(guild.me).manage_threads:
+            await after.edit(archived=False)
+            log.debug("Unarchiving %r", after)
+        if before.id in await self.config.guild(guild).gdt():
+            await after.edit(archived=False)
+            log.debug("Unarchiving %r", after)
 
     async def save_pickems_data(self) -> None:
         try:
