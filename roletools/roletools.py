@@ -70,7 +70,6 @@ class RoleTools(
         self.config.register_global(
             version="0.0.0",
             atomic=True,
-            commands={},
             enable_slash=False,
         )
         self.config.register_guild(
@@ -80,7 +79,6 @@ class RoleTools(
             buttons={},
             select_options={},
             select_menus={},
-            commands={},
         )
         self.config.register_role(
             sticky=False,

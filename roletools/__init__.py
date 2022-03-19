@@ -10,3 +10,5 @@ with open(Path(__file__).parent / "info.json") as fp:
 async def setup(bot):
     cog = RoleTools(bot)
     await bot.add_cog(cog)
+    if not await cog.config.slash_enabled():
+        bot.tree.remove_command("role-tools")
