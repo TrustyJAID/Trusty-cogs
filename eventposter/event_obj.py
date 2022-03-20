@@ -180,7 +180,7 @@ class LeaveEventButton(discord.ui.Button):
                 view=new_view,
             )
             return
-        if interaction.user.id not in self.view.members:
+        if interaction.user.id not in self.view.members + self.view.maybe:
             await interaction.response.send_message(
                 _("You are not registered for this event."), ephemeral=True
             )
@@ -191,7 +191,7 @@ class LeaveEventButton(discord.ui.Button):
                 if not thread.archived:
                     await thread.remove_user(interaction.user)
             except Exception:
-                log.exception("Error removing user from event thread")
+                log.debug("Error removing user from event thread")
         if interaction.user.id in self.view.members:
             self.view.members.remove(interaction.user.id)
         if interaction.user.id in self.view.maybe:

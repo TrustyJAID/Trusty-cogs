@@ -340,7 +340,7 @@ class EventPoster(EventPosterSlash, discord.app_commands.Group, commands.Cog):
                         pass
         if author not in members:
             members.insert(0, author)
-        member_list = [m.id for m in members]
+        member_list = [m.id for m in members if m is not None]
         if not max_slots:
 
             max_slots = await self.config.guild(ctx.guild).default_max()
@@ -359,7 +359,11 @@ class EventPoster(EventPosterSlash, discord.app_commands.Group, commands.Cog):
         )
 
         if await self.config.guild(ctx.guild).bypass_admin():
-            await ctx.followup.send(_("Creating your event."))
+            msg = _("Creating your event.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
             return await self.post_event(ctx, event)
 
         new_view = discord.ui.View()

@@ -28,7 +28,7 @@ class Conversions(commands.Cog):
         self.coin_index: Dict[int, CoinBase] = {}
 
     async def cog_unload(self) -> None:
-        self.bot.loop.create_task(self.session.close())
+        await self.session.close()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """

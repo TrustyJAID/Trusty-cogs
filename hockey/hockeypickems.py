@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
@@ -158,7 +159,7 @@ class HockeyPickems(MixinMeta):
                 if not channel:
                     # log.debug("Game %r missing channel", game)
                     continue
-                self.bot.loop.create_task(
+                asyncio.create_task(
                     self.edit_pickems_message(channel, int(message_id), game, pickem)
                 )
 
@@ -198,7 +199,7 @@ class HockeyPickems(MixinMeta):
                 if not channel:
                     # log.debug("Game %r missing channel", game)
                     continue
-                self.bot.loop.create_task(
+                asyncio.create_task(
                     self.edit_pickems_message(channel, int(message_id), game, pickem)
                 )
 
@@ -270,7 +271,7 @@ class HockeyPickems(MixinMeta):
             # current_guild_pickem_channels = await self.pickems_config.guild(
             # guild
             # ).pickems_channels()
-            # self.bot.loop.create_task(
+            # self.asyncio.create_task(
             # self.delete_pickems_channels(guild, current_guild_pickem_channels)
             # )
             top_members: List[int] = []
@@ -292,7 +293,7 @@ class HockeyPickems(MixinMeta):
                     data["weekly"] = 0
                     data["playoffs_weekly"] = 0
                     data["pre-season_weekly"] = 0
-            self.bot.loop.create_task(self.add_weekly_pickems_credits(guild, top_members))
+            asyncio.create_task(self.add_weekly_pickems_credits(guild, top_members))
 
     async def add_weekly_pickems_credits(
         self, guild: discord.Guild, top_members: List[int]

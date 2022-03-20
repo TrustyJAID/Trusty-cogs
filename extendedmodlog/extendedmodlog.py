@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Union
 
@@ -30,7 +31,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.config.register_global(version="0.0.0")
         self.settings = {}
         self._ban_cache = {}
-        self.loop = bot.loop.create_task(self.invite_links_loop())
+        self.loop = asyncio.create_task(self.invite_links_loop())
 
     def format_help_for_context(self, ctx: commands.Context):
         """

@@ -71,7 +71,7 @@ class Welcome(Events, commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
         self.config.register_guild(**default_settings)
-        self.group_check = bot.loop.create_task(self.group_welcome())
+        self.group_check = asyncio.create_task(self.group_welcome())
         self.joined = {}
         self.today_count = {"now": datetime.now(timezone.utc)}
 

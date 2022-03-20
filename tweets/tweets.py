@@ -51,7 +51,6 @@ class Tweets(TweetsAPI, commands.Cog):
         self.run_stream = True
         self.twitter_loop = None
         self.accounts = {}
-        self.bot.loop.create_task(self.initialize())
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -83,7 +82,7 @@ class Tweets(TweetsAPI, commands.Cog):
         """
         return
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         if 218773382617890828 in self.bot.owner_ids:
             try:
                 self.bot.add_dev_env_value("tweets", lambda x: self)

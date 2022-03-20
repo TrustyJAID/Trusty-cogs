@@ -281,5 +281,5 @@ class Gabai(commands.Cog):
         )
         await ctx.send("API Tokens set!")
 
-    def __unload(self):
-        self.bot.loop.create_task(self.session.close())
+    async def cog_unload(self):
+        await self.session.close()

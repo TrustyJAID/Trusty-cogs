@@ -36,7 +36,6 @@ class Reddit(commands.Cog):
         default = {"subreddits": {}}
         self.config.register_global(**default)
         self._ready: asyncio.Event = asyncio.Event()
-        self.bot.loop.create_task(self.initialize())
         self.stream_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -58,14 +57,10 @@ class Reddit(commands.Cog):
             for sub, data in self.subreddits.items():
                 if sub not in self._streams:
                     subreddit = await self.login.subreddit(data["name"])
-                    self._streams[sub] = self.bot.loop.create_task(
-                        self._run_subreddit_stream(subreddit)
-                    )
+                    self._streams[sub] = asyncio.create_task(self._run_subreddit_stream(subreddit))
                 elif sub in self._streams and self._streams[sub].done():
                     subreddit = await self.login.subreddit(data["name"])
-                    self._streams[sub] = self.bot.loop.create_task(
-                        self._run_subreddit_stream(subreddit)
-                    )
+                    self._streams[sub] = asyncio.create_task(self._run_subreddit_stream(subreddit))
 
     @stream_loop.before_loop
     async def before_stream_loop(self):
@@ -90,8 +85,7 @@ class Reddit(commands.Cog):
             await self.initialize()
             self.stream_loop.restart()
 
-    async def initialize(self) -> None:
-        await self.bot.wait_until_red_ready()
+    async def cog_load(self) -> None:
         keys = await self.bot.get_shared_api_tokens("reddit")
         if not keys:
             return
@@ -125,7 +119,7 @@ class Reddit(commands.Cog):
         except aiohttp.ContentTypeError:
             log.debug("Stream recieved incorrect data type.")
             # attempt to create the stream again.
-            self._streams[subreddit.id] = self.bot.loop.create_task(
+            self._streams[subreddit.id] = asyncio.create_task(
                 self._run_subreddit_stream(subreddit)
             )
         except Exception:
@@ -203,7 +197,7 @@ class Reddit(commands.Cog):
     async def cog_unload(self) -> None:
         if self.login:
             try:
-                self.bot.loop.create_task(self.login.close())
+                await self.login.close()
                 log.debug("Closed the reddit login.")
             except Exception:
                 log.exception("Error closing the login.")
@@ -241,7 +235,7 @@ class Reddit(commands.Cog):
                 "name": subreddit.display_name,
                 "channels": [channel.id],
             }
-            self._streams[subreddit.id] = self.bot.loop.create_task(
+            self._streams[subreddit.id] = asyncio.create_task(
                 self._run_subreddit_stream(subreddit)
             )
             await self.config.subreddits.set_raw(subreddit.id, value=self.subreddits[subreddit.id])

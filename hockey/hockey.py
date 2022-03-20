@@ -164,7 +164,7 @@ class Hockey(
         if self.loop is not None:
             self.loop.cancel()
         self.pickems_loop.cancel()
-        self.bot.loop.create_task(self.session.close())
+        await self.session.close()
 
     async def red_delete_data_for_user(
         self,
@@ -424,12 +424,12 @@ class Hockey(
                         continue
                     if await self.pickems_config.guild(guild).pickems_channel():
                         guilds_to_make_new_pickems.append(guild)
-                self.bot.loop.create_task(self.create_next_pickems_day(guilds_to_make_new_pickems))
+                asyncio.create_task(self.create_next_pickems_day(guilds_to_make_new_pickems))
 
             except Exception:
                 log.error("Error creating new weekly pickems pages", exc_info=True)
             try:
-                self.bot.loop.create_task(Standings.post_automatic_standings(self.bot))
+                asyncio.create_task(Standings.post_automatic_standings(self.bot))
             except Exception:
                 log.error("Error updating standings", exc_info=True)
 

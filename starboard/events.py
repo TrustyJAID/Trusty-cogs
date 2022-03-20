@@ -418,7 +418,7 @@ class StarboardEvents:
             return True
         log.debug("Editing starboard")
         count_message = f"{starboard.emoji} **#{count}**"
-        self.bot.loop.create_task(starboard_msg.edit(star_channel, count_message))
+        asyncio.create_task(starboard_msg.edit(star_channel, count_message))
         # create a task because otherwise we could wait up to an hour to open the lock.
         # This is thanks to announcement channels and published messages.
         return True

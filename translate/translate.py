@@ -11,6 +11,7 @@ Support the developer                               https://goo.gl/Brchj4
 Invite the bot to your guild                       https://goo.gl/aQm2G7
 Join the official development guild                https://discord.gg/uekTNPj
 """
+import asyncio
 import logging
 from typing import Optional, Union
 
@@ -64,8 +65,8 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             "guild_whitelist": {},
         }
         self._key: Optional[str] = None
-        self._clear_cache = self.bot.loop.create_task(self.cleanup_cache())
-        self._save_loop = self.bot.loop.create_task(self.save_usage())
+        self._clear_cache = asyncio.create_task(self.cleanup_cache())
+        self._save_loop = asyncio.create_task(self.save_usage())
         self._guild_counter = {}
         self._global_counter = {}
 
@@ -456,4 +457,4 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     async def cog_unload(self):
         self._clear_cache.cancel()
         self._save_loop.cancel()
-        self.bot.loop.create_task(self._save_usage_stats())
+        await self._save_usage_stats()

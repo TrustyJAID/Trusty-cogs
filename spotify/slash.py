@@ -434,6 +434,13 @@ class SpotifySlash:
                     device = cur.device
 
                 if tracks:
+                    all_tracks = await user_spotify.tracks(tracks)
+                    track = all_tracks[0]
+                    track_name = track.name
+                    artists = getattr(track, "artists", [])
+                    artist = humanize_list([a.name for a in artists])
+                    track_artist = humanize_list([a.name for a in artists])
+                    em = await song_embed(track, False)
                     if queue:
                         await user_spotify.playback_queue_add(
                             all_tracks[0].uri, device_id=device.id
@@ -446,13 +453,6 @@ class SpotifySlash:
                         msg = _("Now playing {track} by {artist} on {device}.").format(
                             track=track_name, artist=artist, device=device.name
                         )
-                    all_tracks = await user_spotify.tracks(tracks)
-                    track = all_tracks[0]
-                    track_name = track.name
-                    artists = getattr(track, "artists", [])
-                    artist = humanize_list([a.name for a in artists])
-                    track_artist = humanize_list([a.name for a in artists])
-                    em = await song_embed(track, False)
                     await interaction.response.send_message(
                         msg,
                         embed=em,
@@ -461,7 +461,6 @@ class SpotifySlash:
                     return
                 elif new_uri:
                     log.debug("new uri is %s", new_uri)
-                    await user_spotify.playback_start_context(new_uri, device_id=device.id)
                     if uri_type == "playlist":
                         if queue:
                             await interaction.response.send_message(
@@ -513,6 +512,7 @@ class SpotifySlash:
                             ),
                             ephemeral=True,
                         )
+                    await user_spotify.playback_start_context(new_uri, device_id=device.id)
                     return
                 elif message.embeds:
                     em = message.embeds[0]

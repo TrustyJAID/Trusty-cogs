@@ -140,7 +140,7 @@ class TweetsAPI:
         if self.mystream is not None:
             self.mystream.disconnect()
         self.twitter_loop.cancel()
-        self.twitter_loop = self.bot.loop.create_task(self.start_stream())
+        self.twitter_loop = asyncio.create_task(self.start_stream())
 
     @commands.Cog.listener()
     async def on_tweet_error(self, error: str) -> None:

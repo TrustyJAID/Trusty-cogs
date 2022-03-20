@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import List, Optional, Tuple
@@ -215,7 +216,7 @@ class Standings:
                 else:
                     em = await Standings.all_standing_embed(standings)
                 if message is not None:
-                    bot.loop.create_task(
+                    asyncio.create_task(
                         Standings.edit_standings_message(em, guild, message, config)
                     )
 

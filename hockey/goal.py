@@ -353,7 +353,7 @@ class Goal:
             channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
             if channel is None:
                 continue
-            bot.loop.create_task(self.edit_goal(bot, channel, message_id, em))
+            asyncio.create_task(self.edit_goal(bot, channel, message_id, em))
             # This is to prevent endlessly waiting incase someone
             # decided to publish one of our messages we want to edit
             # if we did bounded_gather here the gather would wait until

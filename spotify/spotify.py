@@ -141,7 +141,7 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
         if DASHBOARD:
             self.rpc_extension.unload()
         if self._sender:
-            self.bot.loop.create_task(self._sender.client.aclose())
+            await self._sender.client.aclose()
 
     async def red_delete_data_for_user(
         self,

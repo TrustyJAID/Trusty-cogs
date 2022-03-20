@@ -38,7 +38,7 @@ class TrustyAvatar(commands.Cog):
         }
         self.config = Config.get_conf(self, 218773382617890828)
         self.config.register_global(**defaults)
-        self.loop = bot.loop.create_task(self.maybe_change_avatar())
+        self.loop = asyncio.create_task(self.maybe_change_avatar())
         self.statuses = {
             "neutral": {
                 "status": discord.Status.online,

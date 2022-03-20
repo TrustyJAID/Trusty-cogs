@@ -36,11 +36,10 @@ class Starboard(StarboardEvents, commands.Cog):
         self.config.register_global(purge_time=None)
         self.config.register_guild(starboards={})
         self.starboards: Dict[int, Dict[str, StarboardEntry]] = {}
-        self.init_task: asyncio.Task = self.bot.loop.create_task(self.initialize())
         self.ready = asyncio.Event()
         self.cleanup_loop: Optional[asyncio.Task] = None
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         log.debug("Started building starboards cache from config.")
         for guild_id in await self.config.all_guilds():
             self.starboards[guild_id] = {}

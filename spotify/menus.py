@@ -1308,7 +1308,6 @@ class SpotifyUserMenu(discord.ui.View):
         self.cog = cog
         self.ctx = kwargs.get("ctx", None)
         self._running = True
-        # self.loop = self.ctx.bot.loop.create_task(self.edit_menu_page_auto())
         self.previous_button = PreviousTrackButton(
             discord.ButtonStyle.grey, 0, cog, source, user_token
         )

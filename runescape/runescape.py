@@ -51,7 +51,7 @@ class Runescape(commands.Cog):
 
     async def cog_unload(self):
         self.check_new_metrics.cancel()
-        self.bot.loop.create_task(self.session.close())
+        await self.session.close()
 
     async def red_delete_data_for_user(
         self,

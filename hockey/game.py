@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional, Tuple, Union
@@ -628,7 +629,7 @@ class Game:
             should_post &= "Periodrecap" in await config.channel(channel).game_states()
             publish = "Periodrecap" in await config.channel(channel).publish_states()
             if should_post:
-                bot.loop.create_task(self.post_period_recap(channel, em, publish))
+                asyncio.create_task(self.post_period_recap(channel, em, publish))
 
     async def post_period_recap(
         self, channel: discord.TextChannel, embed: discord.Embed, publish: bool
@@ -658,7 +659,7 @@ class Game:
                 em = await self.make_game_embed(False, None)
                 parent = await get_channel_obj(bot, data["parent"], data)
                 msg = parent.get_partial_message(channel_id)
-                bot.loop.create_task(msg.edit(embed=em))
+                asyncio.create_task(msg.edit(embed=em))
             except Exception:
                 log.exception("Error editing thread start message.")
 
@@ -681,7 +682,7 @@ class Game:
                 continue
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             if should_post:
-                bot.loop.create_task(
+                asyncio.create_task(
                     self.actually_post_state(bot, channel, state_embed, state_text)
                 )
         # previews = await bounded_gather(*tasks)
@@ -901,7 +902,7 @@ class Game:
             should_post = await check_to_post(bot, channel, data, post_state, self.game_state)
             team_to_post = await bot.get_cog("Hockey").config.channel(channel).team()
             if should_post and "all" not in team_to_post:
-                bot.loop.create_task(self.post_game_start(channel, msg))
+                asyncio.create_task(self.post_game_start(channel, msg))
         # await bounded_gather(*tasks)
 
     async def post_game_start(self, channel: discord.TextChannel, msg: str) -> None:
