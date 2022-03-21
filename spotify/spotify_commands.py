@@ -2244,7 +2244,7 @@ class SpotifyCommands:
         Add 1 (or more) tracks to a spotify playlist
 
         `<name>` The name of playlist you want to add songs to
-        `<to_remove>` The song links or URI's you want to add
+        `<to_add>` The song links or URI's you want to add
         """
         user_token = await self.get_user_auth(ctx)
         if not user_token:

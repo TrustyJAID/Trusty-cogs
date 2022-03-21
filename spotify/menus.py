@@ -543,7 +543,7 @@ class SpotifyPages(menus.PageSource):
             f"Repeat: {REPEAT_STATES[state.repeat_state]} |" if state.repeat_state != "off" else ""
         )
         shuffle = "Shuffle: \N{TWISTED RIGHTWARDS ARROWS} |" if state.shuffle_state else ""
-        liked = "Liked: \N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}" if is_liked else ""
+        liked = "Liked: \N{GREEN HEART}" if is_liked else ""
         footer = f"{repeat}{shuffle}{liked}"
         em.set_footer(text=footer, icon_url=SPOTIFY_LOGO)
         em.description = f"[{artist_title}]({url})\n\n{album}\n{_draw_play(state)}"
@@ -1040,7 +1040,7 @@ class LikeButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("like")
+        self.emoji = "\N{GREEN HEART}"
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -1055,8 +1055,18 @@ class LikeButton(discord.ui.Button):
                 if not cur:
                     await self.cog.no_device(interaction)
                     return
-                await user_spotify.saved_tracks_add([self.view.source.current_track.id])
-                self.disabled = True
+                tracks = [self.view.source.current_track.id]
+                if (await user_spotify.saved_tracks_contains(tracks))[0]:
+                    await user_spotify.saved_tracks_delete(tracks)
+                    await interaction.response.send_message(
+                        _("Removed from your Liked Songs."), ephemeral=True
+                    )
+
+                else:
+                    await user_spotify.saved_tracks_add(tracks)
+                    await interaction.response.send_message(
+                        _("Added to your Liked Songs."), ephemeral=True
+                    )
         except tekore.Unauthorised:
             await self.cog.not_authorized(interaction)
         except tekore.NotFound:
@@ -1397,12 +1407,12 @@ class SpotifyUserMenu(discord.ui.View):
             if self.source.repeat_state == "context":
                 self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
                 self.repeat_button.style = discord.ButtonStyle.primary
-            log.debug(f"initial message before {self.like_button.disabled}")
+
             if self.source.is_liked:
-                self.like_button.disabled = True
+                self.like_button.emoji = "\N{GREEN HEART}"
             if not self.source.is_liked:
-                self.like_button.disabled = False
-            log.debug(f"initial message after {self.like_button.disabled}")
+                self.like_button.emoji = "\N{BLACK HEART}"
+
             if self.source.is_playing:
                 self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
             if not self.source.is_playing:
@@ -1435,9 +1445,9 @@ class SpotifyUserMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         if self._source.is_liked:
-            self.like_button.disabled = True
+            self.like_button.emoji = "\N{GREEN HEART}"
         if not self._source.is_liked:
-            self.like_button.disabled = False
+            self.like_button.emoji = "\N{BLACK HEART}"
         kwargs = await self._get_kwargs_from_page(page)
         if self.source.select_options:
             options = self.source.select_options[:25]
