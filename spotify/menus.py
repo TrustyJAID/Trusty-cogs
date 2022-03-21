@@ -1409,7 +1409,7 @@ class SpotifyUserMenu(discord.ui.View):
                 self.repeat_button.style = discord.ButtonStyle.primary
 
             if self.source.is_liked:
-                self.like_button.emoji = "\N{GREEN HEART}"
+                self.like_button.emoji = emoji_handler.get_emoji("like")
             if not self.source.is_liked:
                 self.like_button.emoji = "\N{BLACK HEART}"
 
@@ -1445,7 +1445,7 @@ class SpotifyUserMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         if self._source.is_liked:
-            self.like_button.emoji = "\N{GREEN HEART}"
+            self.like_button.emoji = emoji_handler.get_emoji("like")
         if not self._source.is_liked:
             self.like_button.emoji = "\N{BLACK HEART}"
         kwargs = await self._get_kwargs_from_page(page)
