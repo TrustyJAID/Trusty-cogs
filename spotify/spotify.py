@@ -544,4 +544,4 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
         self, service_name: str, api_tokens: Mapping[str, str]
     ) -> None:
         if service_name == "spotify":
-            await self.initialize()
+            await self.cog_load()

@@ -409,7 +409,7 @@ class SpotifyCommands:
            `repeatone` -> 🔂
            `next` -> ⏭
            `previous` -> ⏮
-           `like` -> ♥
+           `like` -> 💚
            `fastforward` -> ⏩
            `rewind` -> ⏪
            `volume_down` -> 🔉
