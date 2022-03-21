@@ -7,6 +7,7 @@ import tekore
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.views import SetApiView
 
 from .helpers import (
     SPOTIFY_RE,
@@ -525,7 +526,13 @@ class SpotifyCommands:
             "Note: The redirect URI Must be set in the Spotify Dashboard and must "
             "match either `https://localhost/` or the one you set with the `[p]set api` command"
         ).format(prefix=ctx.prefix)
-        await ctx.maybe_send_embed(message)
+        keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
+        view = SetApiView(self.bot, "spotify", keys)
+        if await ctx.embed_requested():
+            em = discord.Embed(description=message)
+            await ctx.send(embed=em, view=view)
+        else:
+            await ctx.send(message, view=view)
 
     @spotify_set.command(name="forgetme")
     async def spotify_forgetme(self, ctx: Union[commands.Context, discord.Interaction]):

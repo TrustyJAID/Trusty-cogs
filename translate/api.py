@@ -73,21 +73,13 @@ class GoogleTranslateAPI:
         self._global_counter: Dict[str, int]
 
     async def cleanup_cache(self) -> None:
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
-        while self is self.bot.get_cog("Translate"):
+        while True:
             # cleanup the cache every 10 minutes
             self.cache["translations"] = []
             await asyncio.sleep(600)
 
     async def save_usage(self) -> None:
-        if version_info >= VersionInfo.from_str("3.2.0"):
-            await self.bot.wait_until_red_ready()
-        else:
-            await self.bot.wait_until_ready()
-        while self is self.bot.get_cog("Translate"):
+        while True:
             # Save usage stats every couple minutes
             await self._save_usage_stats()
             await asyncio.sleep(120)
@@ -200,7 +192,7 @@ class GoogleTranslateAPI:
         requestor: Optional[Union[discord.Member, discord.User]] = None,
     ) -> discord.Embed:
         em = discord.Embed(colour=author.colour, description=translation[0])
-        em.set_author(name=author.display_name + _(" said:"), icon_url=str(author.avatar_url))
+        em.set_author(name=author.display_name + _(" said:"), icon_url=str(author.avatar.url))
         detail_string = _("{_from} to {_to} | Requested by ").format(
             _from=translation[1].upper(), _to=translation[2].upper()
         )
@@ -268,11 +260,7 @@ class GoogleTranslateAPI:
                 return
             else:
                 self.cache["guild_messages"].append(guild.id)
-        if not await self.local_perms(guild, author):
-            return
-        if not await self.global_perms(author):
-            return
-        if not await self.check_ignored_channel(message):
+        if not await self.bot.message_eligable_as_command(message):
             return
         flag = FLAG_REGEX.search(message.clean_content)
         if not flag:
@@ -308,6 +296,8 @@ class GoogleTranslateAPI:
             if await self.bot.cog_disabled_in_guild(self, guild):
                 return
         reacted_user = guild.get_member(payload.user_id)
+        if reacted_user is None:
+            return
         if reacted_user.bot:
             return
         if not await self.check_bw_list(guild, channel, reacted_user):
@@ -318,17 +308,12 @@ class GoogleTranslateAPI:
                 return
             else:
                 self.cache["guild_reactions"].append(guild.id)
-
-        if not await self.local_perms(guild, reacted_user):
-            return
-        if not await self.global_perms(reacted_user):
-            return
         try:
             message = await channel.fetch_message(id=payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
 
-        if not await self.check_ignored_channel(message, reacted_user):
+        if not await self.bot.message_eligable_as_command(message):
             return
         await self.translate_message(message, str(payload.emoji), reacted_user)
 
@@ -403,94 +388,16 @@ class GoogleTranslateAPI:
         cooldown["past_flags"].append(str(flag))
         self.cache["cooldown_translations"][message.id] = cooldown
 
-        if channel.permissions_for(guild.me).embed_links:
+        if await self.bot.embed_requested(channel):
             em = await self.translation_embed(author, translation, reacted_user)
-            if version_info >= VersionInfo.from_str("3.4.6"):
-                translated_msg = await channel.send(
-                    embed=em, reference=message, mention_author=False
-                )
-            else:
-                translated_msg = await channel.send(embed=em)
+            translated_msg = await channel.send(embed=em, reference=message, mention_author=False)
         else:
             msg = _("{author} said:\n{translated_text}").format(
                 author=author, translate_text=translated_text
             )
-            translated_msg = await channel.send(msg)
+            translated_msg = await channel.send(msg, reference=message, mention_author=False)
         if not cooldown["multiple"]:
             self.cache["translations"].append(translated_msg.id)
-
-    async def local_perms(self, guild: discord.Guild, author: discord.Member) -> bool:
-        """Check the user is/isn't locally whitelisted/blacklisted.
-        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
-        """
-        try:
-            return await self.bot.allowed_by_whitelist_blacklist(
-                author, who_id=author.id, guild=guild, role_ids=[r.id for r in author.roles]
-            )
-        except AttributeError:
-            if await self.bot.is_owner(author):
-                return True
-            elif guild is None:
-                return True
-            guild_settings = self.bot.db.guild(guild)
-            local_blacklist = await guild_settings.blacklist()
-            local_whitelist = await guild_settings.whitelist()
-
-            _ids = [r.id for r in author.roles if not r.is_default()]
-            _ids.append(author.id)
-            if local_whitelist:
-                return any(i in local_whitelist for i in _ids)
-
-            return not any(i in local_blacklist for i in _ids)
-
-    async def global_perms(self, author: discord.Member) -> bool:
-        """Check the user is/isn't globally whitelisted/blacklisted.
-        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
-        """
-        try:
-            return await self.bot.allowed_by_whitelist_blacklist(author)
-        except AttributeError:
-            if await self.bot.is_owner(author):
-                return True
-            whitelist = await self.bot.db.whitelist()
-            if whitelist:
-                return author.id in whitelist
-
-            return author.id not in await self.bot.db.blacklist()
-
-    async def check_ignored_channel(
-        self, message: discord.Message, reacting_user: Optional[discord.Member] = None
-    ) -> bool:
-        """
-        https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/cogs/mod/mod.py#L1273
-        """
-        if version_info >= VersionInfo.from_str("3.3.6"):
-            ctx = await self.bot.get_context(message)
-            if reacting_user:
-                ctx.author = reacting_user
-            return await self.bot.ignored_channel_or_guild(ctx)
-        # everything below this can be removed at a later date when support
-        # for previous versions are no longer required.
-        channel = cast(discord.TextChannel, message.channel)
-        guild = channel.guild
-        author = cast(discord.Member, message.author)
-        if reacting_user:
-            author = reacting_user
-        mod = self.bot.get_cog("Mod")
-        if mod is None:
-            return True
-        perms = channel.permissions_for(author)
-        surpass_ignore = (
-            isinstance(channel, discord.abc.PrivateChannel)
-            or perms.manage_guild
-            or await self.bot.is_owner(author)
-            or await self.bot.is_admin(author)
-        )
-        if surpass_ignore:
-            return True
-        guild_ignored = await mod.settings.guild(guild).ignored()
-        chann_ignored = await mod.settings.channel(channel).ignored()
-        return not (guild_ignored or chann_ignored and not perms.manage_channels)
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
