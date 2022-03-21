@@ -89,6 +89,8 @@ class ForwardButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page + 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class BackButton(discord.ui.Button):
@@ -103,6 +105,8 @@ class BackButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class LastItemButton(discord.ui.Button):
@@ -119,6 +123,8 @@ class LastItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(self.view._source.get_max_pages() - 1)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class FirstItemButton(discord.ui.Button):
@@ -135,6 +141,8 @@ class FirstItemButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class LeaveGuildButton(discord.ui.Button):
@@ -143,6 +151,8 @@ class LeaveGuildButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.cog.confirm_leave_guild(self.view.ctx, self.view.source.guild)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class JoinGuildButton(discord.ui.Button):
@@ -159,6 +169,8 @@ class JoinGuildButton(discord.ui.Button):
                     guild=self.source.guild.name
                 )
             )
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class BaseView(discord.ui.View):
@@ -205,6 +217,9 @@ class BaseView(discord.ui.View):
     @property
     def source(self):
         return self._source
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
         await self.send_initial_message(ctx, ctx.channel)

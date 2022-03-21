@@ -141,6 +141,9 @@ class BaseMenu(discord.ui.View):
     def source(self):
         return self._source
 
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         self.bot = ctx.bot
