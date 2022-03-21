@@ -1589,7 +1589,6 @@ class SpotifySearchMenu(discord.ui.View):
         )
         self.play_all = PlayAllButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.queue_track = QueueTrackButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
-        self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.stop_button = StopButton(discord.ButtonStyle.red, 1)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
@@ -1599,7 +1598,6 @@ class SpotifySearchMenu(discord.ui.View):
         self.add_item(self.play_all)
         self.add_item(self.queue_track)
 
-        self.add_item(self.like_button)
         self.add_item(self.stop_button)
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
