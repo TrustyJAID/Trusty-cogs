@@ -1858,6 +1858,3 @@ class SpotifyBaseMenu(discord.ui.View):
         """stops the pagination session."""
         self.stop()
         await interaction.message.delete()
-        """stops the pagination session."""
-        self.stop()
-        await interaction.message.delete()

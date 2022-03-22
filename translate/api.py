@@ -260,7 +260,7 @@ class GoogleTranslateAPI:
                 return
             else:
                 self.cache["guild_messages"].append(guild.id)
-        if not await self.bot.message_eligable_as_command(message):
+        if not await self.bot.message_eligible_as_command(message):
             return
         flag = FLAG_REGEX.search(message.clean_content)
         if not flag:
@@ -313,7 +313,7 @@ class GoogleTranslateAPI:
         except (discord.errors.NotFound, discord.Forbidden):
             return
 
-        if not await self.bot.message_eligable_as_command(message):
+        if not await self.bot.message_eligible_as_command(message):
             return
         await self.translate_message(message, str(payload.emoji), reacted_user)
 
