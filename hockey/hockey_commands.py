@@ -217,6 +217,7 @@ class HockeyCommands(MixinMeta):
         log.debug(teams_and_date)
         await GamesMenu(
             source=Schedule(**teams_and_date, session=self.session),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,
@@ -262,6 +263,7 @@ class HockeyCommands(MixinMeta):
                 include_heatmap=True,
                 style=style,
             ),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,
@@ -312,6 +314,7 @@ class HockeyCommands(MixinMeta):
                 corsi=corsi,
                 strength=strength,
             ),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,
@@ -341,6 +344,7 @@ class HockeyCommands(MixinMeta):
                 teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
         await GamesMenu(
             source=ScheduleList(**teams_and_date, session=self.session),
+            cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,

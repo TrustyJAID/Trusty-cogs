@@ -152,10 +152,10 @@ class PickTeamButton(discord.ui.Button):
         )
 
         def check(m: discord.Message):
-            return m.author == self.view.ctx.author
+            return m.author == self.view.author
 
         try:
-            msg = await self.view.ctx.bot.wait_for("message", check=check, timeout=30)
+            msg = await self.view.cog.bot.wait_for("message", check=check, timeout=30)
         except asyncio.TimeoutError:
             await send_msg.delete()
             return
@@ -197,10 +197,10 @@ class PickDateButton(discord.ui.Button):
         )
 
         def check(m: discord.Message):
-            return m.author == self.view.ctx.author and DATE_RE.search(m.clean_content)
+            return m.author == self.view.author and DATE_RE.search(m.clean_content)
 
         try:
-            msg = await self.view.ctx.bot.wait_for("message", check=check, timeout=30)
+            msg = await self.view.cog.bot.wait_for("message", check=check, timeout=30)
         except asyncio.TimeoutError:
             await send_msg.delete()
             return
@@ -357,6 +357,10 @@ class GamesMenu(discord.ui.View):
             self.select_view = HockeySelectGame(self.source.select_options[:25])
             self.add_item(self.select_view)
         self.ctx = ctx
+        if isinstance(ctx, discord.Interaction):
+            self.author = ctx.user
+        else:
+            self.author = ctx.author
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
     async def show_page(
