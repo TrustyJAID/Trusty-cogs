@@ -154,7 +154,7 @@ class GameDayThreads(MixinMeta):
         await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
         if cur_state:
             msg = _("GDT game updates set to {states}").format(
-                states=humanize_list(list(set(state)))
+                states=humanize_list(list(set(cur_state)))
             )
             if is_slash:
                 await ctx.followup.send(msg)

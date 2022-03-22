@@ -465,7 +465,7 @@ class HockeySlash(MixinMeta):
             channel = interaction.channel
 
         fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx)
+        resp = await func.can_run(fake_ctx)
         if not resp:
             await interaction.response.send_message(
                 _("You are not authorized to use this command."), ephemeral=True
