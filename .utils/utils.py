@@ -461,6 +461,10 @@ def makerequirements():
     Useful when setting up the bot in a new venv and requirements are missing.
     """
     requirements = set()
+    with open(ROOT / "requirements.txt", "r") as infile:
+        current_reqs = set()
+        for _req in infile.readlines():
+            current_reqs.add(_req.strip())
     for folder in os.listdir(ROOT):
         if folder.startswith(".") or folder.startswith("_"):
             continue
@@ -479,8 +483,13 @@ def makerequirements():
                         requirements.add(req)
                 except Exception:
                     log.exception(f"Error reading info.json {file}")
+    reqs = sorted(requirements)
+    if current_reqs == requirements:
+        log.info("Same requirements, ignoring")
+        return
+    requirements_txt = "{reqs}\n".format(reqs="\n".join(r for r in reqs))
     with open(ROOT / "requirements.txt", "w") as outfile:
-        outfile.write("\n".join(r for r in requirements))
+        outfile.write(requirements_txt)
 
 
 def run_cli():

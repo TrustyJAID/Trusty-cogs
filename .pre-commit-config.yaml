@@ -2,10 +2,40 @@ default_language_version:
     python: python3.8
 fail_fast: false
 ci:
-    skip: [readmegen]
+    skip: [readmegen, makerequirements]
     autoupdate_schedule: quarterly
 exclude: '^.+\.pot?$'
 repos:
+-   repo: local
+    hooks:
+      - id: readmegen
+        name: readmegen
+        description: >-
+          Script to automatically generate readme.md
+        entry: python ./.utils/utils.py makereadme
+        language: python
+        additional_dependencies:
+          - babel~=2.9.0
+          - tabulate~=0.8.9
+          - click
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+        verbose: true
+      - id: requirementsgen
+        name: requirementsgen
+        description: >-
+          Script to automatically generate requirements.txt
+        entry: python ./.utils/utils.py makerequirements
+        language: python
+        additional_dependencies:
+          - babel~=2.9.0
+          - tabulate~=0.8.9
+          - click
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+        verbose: true
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
@@ -39,19 +69,3 @@ repos:
     rev: '5.10.1'
     hooks:
       - id: isort
--   repo: local
-    hooks:
-      - id: readmegen
-        name: readmegen
-        description: >-
-          Script to automatically generate readme.md
-        entry: python ./.utils/utils.py makereadme
-        language: python
-        additional_dependencies:
-          - babel~=2.9.0
-          - tabulate~=0.8.9
-          - click
-        always_run: true
-        pass_filenames: false
-        require_serial: true
-        verbose: true
