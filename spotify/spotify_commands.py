@@ -7,7 +7,6 @@ import tekore
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
-from redbot.core.utils.views import SetApiView
 
 from .helpers import (
     SPOTIFY_RE,
@@ -40,6 +39,9 @@ from .menus import (
     SpotifyUserMenu,
     emoji_handler,
 )
+
+# from redbot.core.utils.views import SetApiView
+
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -527,12 +529,14 @@ class SpotifyCommands:
             "match either `https://localhost/` or the one you set with the `[p]set api` command"
         ).format(prefix=ctx.prefix)
         keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
-        view = SetApiView(self.bot, "spotify", keys)
+        # view = SetApiView(self.bot, "spotify", keys)
         if await ctx.embed_requested():
             em = discord.Embed(description=message)
-            await ctx.send(embed=em, view=view)
+            # await ctx.send(embed=em, view=view)
+            await ctx.send(embed=em)
         else:
-            await ctx.send(message, view=view)
+            # await ctx.send(message, view=view)
+            await ctx.send(message)
 
     @spotify_set.command(name="forgetme")
     async def spotify_forgetme(self, ctx: Union[commands.Context, discord.Interaction]):
