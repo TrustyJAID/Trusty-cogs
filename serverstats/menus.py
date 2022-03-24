@@ -16,13 +16,23 @@ _ = Translator("serverstats", __file__)
 class AvatarPages(menus.ListPageSource):
     def __init__(self, members: List[discord.Member]):
         super().__init__(members, per_page=1)
+        self.use_display_avatar: bool = True
 
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, member: discord.Member) -> discord.Embed:
+    async def format_page(self, menu: discord.ui.View, member: discord.Member) -> discord.Embed:
         em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
-        url = str(member.avatar.url)
+        if self.use_display_avatar:
+            url = str(member.display_avatar)
+            menu.avatar_swap.label = _("Show global avatar")
+        else:
+            url = str(member.avatar)
+            menu.avatar_swap.label = _("Show server avatar")
+        if not member.guild_avatar:
+            menu.avatar_swap.disabled = True
+        else:
+            menu.avatar_swap.disabled = False
         em.set_image(url=url)
         try:
             em.set_author(
@@ -34,6 +44,17 @@ class AvatarPages(menus.ListPageSource):
             em.set_author(name=f"{member}", icon_url=url, url=url)
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
+
+
+class SwapAvatarButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(style=discord.ButtonStyle.grey, label=_("Show global avatar"))
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.use_display_avatar = not self.view.source.use_display_avatar
+        await self.view.show_checked_page(self.view.current_page)
+        if not interaction.response.is_done():
+            await interaction.response.defer()
 
 
 class GuildPages(menus.ListPageSource):
@@ -213,6 +234,9 @@ class BaseView(discord.ui.View):
             self.join_guild_button = JoinGuildButton(discord.ButtonStyle.green, 1)
             self.add_item(self.leave_guild_button)
             self.add_item(self.join_guild_button)
+        if isinstance(source, AvatarPages):
+            self.avatar_swap = SwapAvatarButton()
+            self.add_item(self.avatar_swap)
 
     @property
     def source(self):
