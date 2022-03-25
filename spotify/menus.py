@@ -75,7 +75,7 @@ class SpotifyTrackPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, track: tekore.model.FullTrack
+        self, view: discord.ui.View, track: tekore.model.FullTrack
     ) -> discord.Embed:
         self.current_track = track
         em = discord.Embed(color=discord.Colour(0x1DB954))
@@ -93,15 +93,15 @@ class SpotifyTrackPages(menus.ListPageSource):
         if track.album.images:
             em.set_thumbnail(url=track.album.images[0].url)
         if self.detailed:
-            sp = tekore.Spotify(sender=menu.cog._sender)
-            with sp.token_as(menu.user_token):
+            sp = tekore.Spotify(sender=view.cog._sender)
+            with sp.token_as(view.user_token):
                 details = await sp.track_audio_features(track.id)
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
         try:
             em.set_footer(
-                text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+                text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
             )
         except AttributeError:
             pass
@@ -117,7 +117,7 @@ class SpotifyArtistPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, artist: tekore.model.FullArtist
+        self, view: discord.ui.View, artist: tekore.model.FullArtist
     ) -> discord.Embed:
         self.current_track = artist
         em = discord.Embed(color=discord.Colour(0x1DB954))
@@ -128,8 +128,8 @@ class SpotifyArtistPages(menus.ListPageSource):
             url=url,
             icon_url=SPOTIFY_LOGO,
         )
-        sp = tekore.Spotify(sender=menu.cog._sender)
-        with sp.token_as(menu.user_token):
+        sp = tekore.Spotify(sender=view.cog._sender)
+        with sp.token_as(view.user_token):
             cur = await sp.artist_top_tracks(artist.id, "from_token")
         msg = _("Top Tracks\n")
         for track in cur:
@@ -138,7 +138,7 @@ class SpotifyArtistPages(menus.ListPageSource):
         if artist.images:
             em.set_thumbnail(url=artist.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -164,7 +164,7 @@ class SpotifyAlbumPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, album: tekore.model.FullAlbum
+        self, view: discord.ui.View, album: tekore.model.FullAlbum
     ) -> discord.Embed:
         self.current_track = album
         em = discord.Embed(color=discord.Colour(0x1DB954))
@@ -178,8 +178,8 @@ class SpotifyAlbumPages(menus.ListPageSource):
             icon_url=SPOTIFY_LOGO,
         )
         msg = "Tracks:\n"
-        sp = tekore.Spotify(sender=menu.cog._sender)
-        with sp.token_as(menu.user_token):
+        sp = tekore.Spotify(sender=view.cog._sender)
+        with sp.token_as(view.user_token):
             cur = await sp.album(album.id)
         for track in cur.tracks.items:
             msg += f"[{track.name}](https://open.spotify.com/track/{track.id})\n"
@@ -187,7 +187,7 @@ class SpotifyAlbumPages(menus.ListPageSource):
         if album.images:
             em.set_thumbnail(url=album.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -210,7 +210,7 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist
+        self, view: discord.ui.View, playlist: tekore.model.SimplePlaylist
     ) -> discord.Embed:
         self.current_track = playlist
         em = None
@@ -223,9 +223,9 @@ class SpotifyPlaylistPages(menus.ListPageSource):
             url=url,
             icon_url=SPOTIFY_LOGO,
         )
-        user_spotify = tekore.Spotify(sender=menu.cog._sender)
+        user_spotify = tekore.Spotify(sender=view.cog._sender)
         description = ""
-        with user_spotify.token_as(menu.user_token):
+        with user_spotify.token_as(view.user_token):
             cur = await user_spotify.playlist_items(playlist.id)
             for track in cur.items[:10]:
                 description += (
@@ -236,7 +236,7 @@ class SpotifyPlaylistPages(menus.ListPageSource):
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -262,7 +262,7 @@ class SpotifyNewPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, playlist: tekore.model.SimplePlaylist
+        self, view: discord.ui.View, playlist: tekore.model.SimplePlaylist
     ) -> discord.Embed:
         self.current_track = playlist
         em = None
@@ -275,9 +275,9 @@ class SpotifyNewPages(menus.ListPageSource):
             url=url,
             icon_url=SPOTIFY_LOGO,
         )
-        user_spotify = tekore.Spotify(sender=menu.cog._sender)
+        user_spotify = tekore.Spotify(sender=view.cog._sender)
         description = ""
-        with user_spotify.token_as(menu.user_token):
+        with user_spotify.token_as(view.user_token):
             if playlist.type == "playlist":
                 cur = await user_spotify.playlist_items(playlist.id)
                 for track in cur.items[:10]:
@@ -292,7 +292,7 @@ class SpotifyNewPages(menus.ListPageSource):
         if playlist.images:
             em.set_thumbnail(url=playlist.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -307,7 +307,7 @@ class SpotifyEpisodePages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, episode: tekore.model.FullEpisode
+        self, view: discord.ui.View, episode: tekore.model.FullEpisode
     ) -> discord.Embed:
         self.current_track = episode
         show = episode.show
@@ -323,7 +323,7 @@ class SpotifyEpisodePages(menus.ListPageSource):
         if episode.images:
             em.set_thumbnail(url=episode.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -338,7 +338,7 @@ class SpotifyShowPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, show: tekore.model.FullShow
+        self, view: discord.ui.View, show: tekore.model.FullShow
     ) -> discord.Embed:
         self.current_track = show
         em = discord.Embed(color=discord.Colour(0x1DB954))
@@ -353,7 +353,7 @@ class SpotifyShowPages(menus.ListPageSource):
         if show.images:
             em.set_thumbnail(url=show.images[0].url)
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
         )
         return em
 
@@ -380,7 +380,7 @@ class SpotifyRecentSongPages(menus.ListPageSource):
         return True
 
     async def format_page(
-        self, menu: menus.MenuPages, history: tekore.model.PlayHistory
+        self, view: discord.ui.View, history: tekore.model.PlayHistory
     ) -> discord.Embed:
         track = history.track
         self.current_track = track
@@ -397,14 +397,14 @@ class SpotifyRecentSongPages(menus.ListPageSource):
         if track.album.images:
             em.set_thumbnail(url=track.album.images[0].url)
         if self.detailed:
-            sp = tekore.Spotify(sender=menu.cog._sender)
-            with sp.token_as(menu.user_token):
+            sp = tekore.Spotify(sender=view.cog._sender)
+            with sp.token_as(view.user_token):
                 details = await sp.track_audio_features(history.track.id)
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
         em.set_footer(
-            text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Played at",
+            text=f"Page {view.current_page + 1}/{self.get_max_pages()} | Played at",
         )
         return em
 
@@ -414,13 +414,13 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
         super().__init__(playlists, per_page=10)
 
     async def format_page(
-        self, menu: menus.MenuPages, playlists: List[tekore.model.SimplePlaylist]
+        self, view: discord.ui.View, playlists: List[tekore.model.SimplePlaylist]
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Spotify Playlists").format(user=menu.author.display_name),
-            icon_url=menu.author.avatar.url,
+            name=_("{user}'s Spotify Playlists").format(user=view.author.display_name),
+            icon_url=view.author.avatar.url,
         )
         msg = ""
         for playlist in playlists:
@@ -430,7 +430,7 @@ class SpotifyPlaylistsPages(menus.ListPageSource):
                 msg += f"{playlist.name}\n"
         em.description = msg
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
             icon_url=SPOTIFY_LOGO,
         )
         return em
@@ -441,13 +441,13 @@ class SpotifyTopTracksPages(menus.ListPageSource):
         super().__init__(playlists, per_page=10)
 
     async def format_page(
-        self, menu: menus.MenuPages, tracks: List[tekore.model.FullTrack]
+        self, view: discord.ui.View, tracks: List[tekore.model.FullTrack]
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Top Tracks").format(user=menu.author.display_name),
-            icon_url=menu.author.avatar.url,
+            name=_("{user}'s Top Tracks").format(user=view.author.display_name),
+            icon_url=view.author.avatar.url,
         )
         msg = ""
         for track in tracks:
@@ -455,7 +455,7 @@ class SpotifyTopTracksPages(menus.ListPageSource):
             msg += f"[{track.name} by {artist}](https://open.spotify.com/track/{track.id})\n"
         em.description = msg
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
             icon_url=SPOTIFY_LOGO,
         )
         return em
@@ -466,20 +466,20 @@ class SpotifyTopArtistsPages(menus.ListPageSource):
         super().__init__(playlists, per_page=10)
 
     async def format_page(
-        self, menu: menus.MenuPages, artists: List[tekore.model.FullArtist]
+        self, view: discord.ui.View, artists: List[tekore.model.FullArtist]
     ) -> discord.Embed:
         em = None
         em = discord.Embed(color=discord.Colour(0x1DB954))
         em.set_author(
-            name=_("{user}'s Top Artists").format(user=menu.author.display_name),
-            icon_url=menu.author.avatar.url,
+            name=_("{user}'s Top Artists").format(user=view.author.display_name),
+            icon_url=view.author.avatar.url,
         )
         msg = ""
         for artist in artists:
             msg += f"[{artist.name}](https://open.spotify.com/artist/{artist.id})\n"
         em.description = msg
         em.set_footer(
-            text=_("Page") + f" {menu.current_page + 1}/{self.get_max_pages()}",
+            text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
             icon_url=SPOTIFY_LOGO,
         )
         return em
@@ -497,12 +497,12 @@ class SpotifyPages(menus.PageSource):
         self.is_shuffle = False
         self.repeat_state = "off"
         self.context = None
-        self.select_options = []
+        self.select_options: List[SpotifyTrackOption] = []
         self.context_name = None
 
     async def format_page(
         self,
-        menu: menus.MenuPages,
+        view: discord.ui.View,
         cur_state: Tuple[tekore.model.CurrentlyPlayingContext, bool],
     ) -> discord.Embed:
 
@@ -535,8 +535,8 @@ class SpotifyPages(menus.PageSource):
         if album:
             album = f"[{album.name}](https://open.spotify.com/album/{album.id})"
         em.set_author(
-            name=f"{menu.author.display_name}" + _(" is currently listening to"),
-            icon_url=menu.author.avatar.url,
+            name=f"{view.author.display_name}" + _(" is currently listening to"),
+            icon_url=view.author.avatar.url,
             url=url,
         )
         repeat = (
@@ -897,9 +897,7 @@ class NextTrackButton(discord.ui.Button):
             )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(page, interaction)
 
 
 class ShuffleButton(discord.ui.Button):
@@ -967,9 +965,7 @@ class ShuffleButton(discord.ui.Button):
             )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(page, interaction)
 
 
 class RepeatButton(discord.ui.Button):
@@ -1024,9 +1020,7 @@ class RepeatButton(discord.ui.Button):
             )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(page, interaction)
 
 
 class LikeButton(discord.ui.Button):
@@ -1083,9 +1077,7 @@ class LikeButton(discord.ui.Button):
                 detailed=self.view.source.detailed,
             )
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(page, interaction)
 
 
 class PlayAllButton(discord.ui.Button):
@@ -1243,9 +1235,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = emoji_handler.get_emoji("play")
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page + 1, interaction)
 
 
 class BackButton(discord.ui.Button):
@@ -1259,9 +1249,7 @@ class BackButton(discord.ui.Button):
         self.emoji = emoji_handler.get_emoji("back_left")
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page - 1, interaction)
 
 
 class LastItemButton(discord.ui.Button):
@@ -1275,9 +1263,7 @@ class LastItemButton(discord.ui.Button):
         self.emoji = emoji_handler.get_emoji("next")
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
 
 
 class FirstItemButton(discord.ui.Button):
@@ -1291,9 +1277,7 @@ class FirstItemButton(discord.ui.Button):
         self.emoji = emoji_handler.get_emoji("previous")
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction)
 
 
 class SpotifyUserMenu(discord.ui.View):
@@ -1337,7 +1321,6 @@ class SpotifyUserMenu(discord.ui.View):
         self.add_item(self.like_button)
         self.add_item(self.stop_button)
         self.select_view: Optional[SpotifySelectTrack] = None
-        self.interaction = None
 
     @property
     def source(self):
@@ -1348,8 +1331,6 @@ class SpotifyUserMenu(discord.ui.View):
         # self.loop.cancel()
         if self.message is not None:
             await self.message.edit(view=None)
-        else:
-            await self.interaction.followup.edit(view=None)
 
     async def edit_menu_page_auto(self):
         """
@@ -1441,7 +1422,7 @@ class SpotifyUserMenu(discord.ui.View):
             self.message = await channel.send(**kwargs, view=self)
         return self.message
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         if self._source.is_liked:
@@ -1466,39 +1447,38 @@ class SpotifyUserMenu(discord.ui.View):
         if self.select_view and not self.source.select_options:
             self.remove_item(self.select_view)
             self.select_view = None
-        if self.message is not None:
-            await self.message.edit(**kwargs, view=self)
+        if not interaction.response.is_done():
+            await interaction.response.edit_message(**kwargs, view=self)
         else:
-            await self.interaction.response.edit_message(**kwargs, view=self)
+            await interaction.followup.edit(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
-    async def on_error(self, error, button: discord.ui.Button, interaction: discord.Interaction):
+    async def on_error(self, error, interaction: discord.Interaction, button: discord.ui.Button):
         log.debug(f"{error=} {button=} {interaction=}")
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
         log.debug("Checking interaction")
-        if interaction.user.id != self.author.id:
+        if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        self.interaction = interaction
         return True
 
 
@@ -1602,7 +1582,6 @@ class SpotifySearchMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
-        self.interaction = None
 
     @property
     def source(self):
@@ -1611,8 +1590,6 @@ class SpotifySearchMenu(discord.ui.View):
     async def on_timeout(self):
         if self.message:
             await self.message.edit(view=None)
-        else:
-            await self.interaction.followup.edit(view=None)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1645,7 +1622,7 @@ class SpotifySearchMenu(discord.ui.View):
             self.message = await channel.send(**kwargs, view=self)
         return self.message
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
@@ -1656,23 +1633,23 @@ class SpotifySearchMenu(discord.ui.View):
             log.debug(f"changing select {len(self.select_view.options)}")
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        if self.message is not None:
-            await self.message.edit(**kwargs, view=self)
+        if not interaction.response.is_done():
+            await interaction.response.edit_message(**kwargs, view=self)
         else:
-            await self.interaction.response.edit_message(**kwargs, view=self)
+            await interaction.followup.edit(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
@@ -1685,7 +1662,6 @@ class SpotifySearchMenu(discord.ui.View):
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        self.interaction = interaction
         return True
 
 
@@ -1714,7 +1690,6 @@ class SpotifyBaseMenu(discord.ui.View):
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
-        self.interaction = None
 
     @property
     def source(self):
@@ -1723,8 +1698,6 @@ class SpotifyBaseMenu(discord.ui.View):
     async def on_timeout(self):
         if self.message:
             await self.message.edit(view=None)
-        else:
-            await self.interaction.edit_original_message(view=None)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1735,7 +1708,7 @@ class SpotifyBaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context, channel: discord.TextChannel):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -1758,7 +1731,7 @@ class SpotifyBaseMenu(discord.ui.View):
             self.message = await channel.send(**kwargs, view=self)
         return self.message
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
@@ -1768,93 +1741,78 @@ class SpotifyBaseMenu(discord.ui.View):
             self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        if self.message is not None:
-            await self.message.edit(**kwargs)
+        if not interaction.response.is_done():
+            await interaction.response.edit_message(**kwargs, view=self)
         else:
-            await self.interaction.response.edit_message(**kwargs, view=self)
+            await interaction.followup.edit(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id != self.author.id:
+        if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
             return False
-        self.interaction = interaction
         return True
 
-    def _skip_single_arrows(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages == 1
-
-    def _skip_double_triangle_buttons(self):
-        max_pages = self._source.get_max_pages()
-        if max_pages is None:
-            return True
-        return max_pages <= 2
+    @discord.ui.button(
+        style=discord.ButtonStyle.red,
+        emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+    )
+    async def stop_pages(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        """stops the pagination session."""
+        self.stop()
+        await interaction.message.delete()
 
     @discord.ui.button(
         style=discord.ButtonStyle.grey,
         emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
     )
-    async def go_to_first_page(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def go_to_first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         """go to the first page"""
-        await self.show_page(0)
+        await self.show_page(0, interaction)
 
     @discord.ui.button(
         style=discord.ButtonStyle.grey,
         emoji="\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
     )
     async def go_to_previous_page(
-        self, button: discord.ui.Button, interaction: discord.Interaction
+        self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         """go to the previous page"""
-        await self.show_checked_page(self.current_page - 1)
+        await self.show_checked_page(self.current_page - 1, interaction)
 
     @discord.ui.button(
         style=discord.ButtonStyle.grey,
         emoji="\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
     )
-    async def go_to_next_page(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def go_to_next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         """go to the next page"""
-        log.debug(f"Changing to page {self.current_page + 1}")
-        await self.show_checked_page(self.current_page + 1)
+        await self.show_checked_page(self.current_page + 1, interaction)
 
     @discord.ui.button(
         style=discord.ButtonStyle.grey,
         emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
     )
-    async def go_to_last_page(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def go_to_last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         """go to the last page"""
         # The call here is safe because it's guarded by skip_if
-        await self.show_page(self._source.get_max_pages() - 1)
-
-    @discord.ui.button(
-        style=discord.ButtonStyle.red,
-        emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
-        row=1,
-    )
-    async def stop_pages(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ) -> None:
-        """stops the pagination session."""
-        self.stop()
-        await interaction.message.delete()
+        await self.show_page(self._source.get_max_pages() - 1, interaction)

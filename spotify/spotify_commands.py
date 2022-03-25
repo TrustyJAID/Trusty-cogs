@@ -975,7 +975,7 @@ class SpotifyCommands:
             timeout = await self.config.guild(ctx.guild).menu_timeout()
         else:
             delete_after, clear_after, timeout = False, True, 120
-            tracks = cur.items
+        tracks = cur.items
         x = SpotifyBaseMenu(
             source=SpotifyTopTracksPages(tracks),
             delete_message_after=delete_after,
