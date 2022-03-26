@@ -87,7 +87,7 @@ class Activities:
         self.last_id: str = kwargs.get("last_id")
         self.last_timestamp = kwargs.get("last_timestamp")
         self.username: str = kwargs.get("username")
-        self.posted_activities: deque = deque(kwargs.get("posted_activities", []), 20)
+        self.posted_activities: deque = deque(kwargs.get("posted_activities", []), 40)
 
     def to_json(self):
         return {

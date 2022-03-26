@@ -111,7 +111,13 @@ class Runescape(commands.Cog):
 
         for channel_id, guild_id in channels.items():
             guild = self.bot.get_guild(guild_id)
+            if not guild:
+                continue
             channel = guild.get_channel(int(channel_id))
+            if not channel:
+                continue
+            if not channel.permissions_for(guild.me).send_messages:
+                continue
             if channel.permissions_for(guild.me).embed_links:
                 em = discord.Embed(description=f"[{msg}]({url})")
                 if image_url:
@@ -513,12 +519,10 @@ class Runescape(commands.Cog):
             em.add_field(name="Activities", value=activities)
         if profile.logged_in:
             em.set_footer(
-                text="Online",
-                icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Green_pog.svg/64px-Green_pog.svg.png",
+                text="\N{LARGE GREEN CIRCLE} Online",
             )
         else:
             em.set_footer(
-                text="Offline",
-                icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/64px-Red_pog.svg.png",
+                text="\N{LARGE RED CIRCLE} Offline",
             )
         return em
