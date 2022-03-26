@@ -47,9 +47,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page + 1, interaction)
 
 
 class BackButton(discord.ui.Button):
@@ -63,9 +61,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page - 1, interaction)
 
 
 class LastItemButton(discord.ui.Button):
@@ -81,9 +77,7 @@ class LastItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
 
 
 class FirstItemButton(discord.ui.Button):
@@ -99,9 +93,7 @@ class FirstItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction)
 
 
 class SkipForwardButton(discord.ui.Button):
@@ -117,9 +109,7 @@ class SkipForwardButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_next=True)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, skip_next=True, interaction=interaction)
 
 
 class SkipBackButton(discord.ui.Button):
@@ -135,9 +125,7 @@ class SkipBackButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_prev=True)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, skip_prev=True, interaction=interaction)
 
 
 class PickTeamButton(discord.ui.Button):
@@ -180,9 +168,7 @@ class PickTeamButton(discord.ui.Button):
             await self.view.source.prepare()
         except NoSchedule:
             return await self.view.ctx.send(self.format_error())
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction)
 
 
 class PickDateButton(discord.ui.Button):
@@ -214,9 +200,7 @@ class PickDateButton(discord.ui.Button):
                 await self.view.source.prepare()
             except NoSchedule:
                 return await self.ctx.send(self.format_error())
-            await self.view.show_page(0)
-            if not interaction.response.is_done():
-                await interaction.response.defer()
+            await self.view.show_page(0, interaction)
 
 
 class HeatmapButton(discord.ui.Button):
@@ -239,16 +223,12 @@ class HeatmapButton(discord.ui.Button):
         if not self.view.source.include_heatmap:
             self.view.source.include_heatmap = True
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0)
-            if not interaction.response.is_done():
-                await interaction.response.defer()
+            await self.view.show_page(0, interaction)
             return
         else:
             self.view.source.style = mapping[self.view.source.style]
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0)
-            if not interaction.response.is_done():
-                await interaction.response.defer()
+            await self.view.show_page(0, interaction)
             return
 
 
@@ -276,9 +256,7 @@ class GameflowButton(discord.ui.Button):
             corsi = "Corsi" if self.view.source.corsi else "Expected Goals"
             strength = self.view.source.strength
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0)
-            if not interaction.response.is_done():
-                await interaction.response.defer()
+            await self.view.show_page(0, interaction)
             return
         else:
             lookup = (self.view.source.corsi, self.view.source.strength)
@@ -287,9 +265,7 @@ class GameflowButton(discord.ui.Button):
             self.view.source.strength = strength
             corsi = "Corsi" if corsi_bool else "Expected Goals"
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0)
-            if not interaction.response.is_done():
-                await interaction.response.defer()
+            await self.view.show_page(0, interaction)
             return
 
 
@@ -299,9 +275,7 @@ class HockeySelectGame(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         game_id = int(self.values[0])
-        await self.view.show_page(0, game_id=game_id)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, game_id=game_id, interaction=interaction)
 
 
 class GamesMenu(discord.ui.View):
@@ -345,7 +319,7 @@ class GamesMenu(discord.ui.View):
             )
             self.add_item(self.heatmap_button)
             self.add_item(self.gameflow_button)
-        self.select_view = None
+        self.select_view: Optional[HockeySelectGame] = None
         self.author = None
 
     async def on_timeout(self):
@@ -367,6 +341,7 @@ class GamesMenu(discord.ui.View):
         self,
         page_number: int,
         *,
+        interaction: discord.Interaction,
         skip_next: bool = False,
         skip_prev: bool = False,
         game_id: Optional[int] = None,
@@ -376,7 +351,12 @@ class GamesMenu(discord.ui.View):
                 page_number, skip_next=skip_next, skip_prev=skip_prev, game_id=game_id
             )
         except NoSchedule:
-            await self.message.edit(content=self.format_error(), embed=None)
+            if interaction.response.is_done():
+                await interaction.followup.edit(content=self.format_error(), embed=None, view=self)
+            else:
+                await interaction.response.edit_message(
+                    content=self.format_error(), embed=None, view=self
+                )
             return
         if hasattr(self.source, "select_options") and len(self.source.select_options) > 1:
             self.remove_item(self.select_view)
@@ -389,7 +369,10 @@ class GamesMenu(discord.ui.View):
             self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs, view=self)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
@@ -435,16 +418,16 @@ class GamesMenu(discord.ui.View):
         )
         return msg
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         try:
-            await self.show_page(page_number)
+            await self.show_page(page_number, interaction=interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id != self.author.id:
+        if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -558,9 +541,7 @@ class HockeySelectPlayer(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         player_id = int(self.values[0])
         index = self.view.source.pages.index(player_id)
-        await self.view.show_page(index)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(index, interaction)
 
 
 class SimplePages(menus.ListPageSource):
@@ -637,20 +618,21 @@ class BaseMenu(discord.ui.View):
             self.remove_item(self.select_view)
         if not hasattr(self.source, "select_options"):
             return
-        if len(self.source.select_options) < 25:
-            return
         options = self.source.select_options[:25]
         if page_number >= 12:
             options = self.source.select_options[page_number - 12 : page_number + 13]
         self.select_view = HockeySelectPlayer(options)
         self.add_item(self.select_view)
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         await self.update_select_view(page_number)
-        await self.message.edit(**kwargs, view=self)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
     async def send_initial_message(
         self, ctx: commands.Context, channel: discord.TextChannel
@@ -673,25 +655,25 @@ class BaseMenu(discord.ui.View):
             self.author = ctx.author
             return await channel.send(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id != self.author.id:
+        if self.author and interaction.user.id != self.author.id:
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
