@@ -443,7 +443,7 @@ class StandingsPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
         return await Standings.all_standing_embed(self.pages)
 
 
@@ -454,7 +454,7 @@ class TeamStandingsPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: Standings) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: Standings) -> discord.Embed:
         return await Standings.make_team_standings_embed(page)
 
 
@@ -465,7 +465,7 @@ class ConferenceStandingsPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
         return await Standings.make_conference_standings_embed(page)
 
 
@@ -476,7 +476,7 @@ class DivisionStandingsPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: List[Standings]) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
         return await Standings.make_division_standings_embed(page)
 
 
@@ -488,18 +488,18 @@ class LeaderboardPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: List[str]) -> discord.Embed:
+    async def format_page(self, view: discord.ui.View, page: List[str]) -> discord.Embed:
         em = discord.Embed(timestamp=datetime.now())
         description = ""
         for msg in page:
             description += msg
         em.description = description
         em.set_author(
-            name=menu.ctx.guild.name + _(" Pickems {style} Leaderboard").format(style=self.style),
-            icon_url=menu.ctx.guild.icon.url,
+            name=view.ctx.guild.name + _(" Pickems {style} Leaderboard").format(style=self.style),
+            icon_url=view.ctx.guild.icon.url,
         )
-        em.set_thumbnail(url=menu.ctx.guild.icon.url)
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_thumbnail(url=view.ctx.guild.icon.url)
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -523,12 +523,12 @@ class PlayerPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: int) -> discord.Embed:
-        player = await Player.from_id(page, session=menu.cog.session)
+    async def format_page(self, view: discord.ui.View, page: int) -> discord.Embed:
+        player = await Player.from_id(page, session=view.cog.session)
         log.debug(player)
-        player = await player.get_full_stats(self.season, session=menu.cog.session)
+        player = await player.get_full_stats(self.season, session=view.cog.session)
         em = player.get_embed()
-        em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -551,9 +551,9 @@ class SimplePages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page: Any) -> Union[discord.Embed, str]:
+    async def format_page(self, view: discord.ui.View, page: Any) -> Union[discord.Embed, str]:
         if isinstance(page, discord.Embed):
-            page.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            page.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return page
 
 
