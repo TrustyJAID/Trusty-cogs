@@ -102,6 +102,16 @@ class Game:
             if away_team in TEAMS
             else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
         )
+        now = utc_to_local(datetime.now())
+        if now.day == 1 and now.month == 4:
+            if "fake_logo" in TEAMS[home_team]:
+                self.home_logo = TEAMS[home_team]["fake_logo"]
+            if "fake_logo" in TEAMS[away_team]:
+                self.away_logo = TEAMS[away_team]["fake_logo"]
+            if "fake_emoji" in TEAMS[home_team]:
+                self.home_emoji = "<:{}>".format(TEAMS[home_team]["fake_emoji"])
+            if "fake_emoji" in TEAMS[away_team]:
+                self.away_emoji = "<:{}>".format(TEAMS[away_team]["fake_emoji"])
         self.first_star = kwargs.get("first_star")
         self.second_star = kwargs.get("second_star")
         self.third_star = kwargs.get("third_star")
@@ -319,7 +329,11 @@ class Game:
                             count = 0
                             goal_msg = ""
                         try:
-                            emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
+                            now = utc_to_local(datetime.now())
+                            if now.day == 1 and now.month == 4:
+                                emoji = f"<:{TEAMS[goal.team_name]['fake_emoji']}>"
+                            else:
+                                emoji = f"<:{TEAMS[goal.team_name]['emoji']}>"
                         except KeyError:
                             emoji = ""
                         if not goal.link:
@@ -719,8 +733,8 @@ class Game:
                     bot.dispatch("hockey_preview_message", channel, preview_msg, self)
                     if channel.permissions_for(guild.me).add_reactions:
                         try:
-                            await preview_msg.add_reaction(self.away_emoji[2:-1])
-                            await preview_msg.add_reaction(self.home_emoji[2:-1])
+                            await preview_msg.add_reaction(TEAMS[self.home_team]["emoji"])
+                            await preview_msg.add_reaction(TEAMS[self.away_team]["emoji"])
                         except Exception:
                             log.debug("Could not add reactions")
                         return channel, preview_msg
