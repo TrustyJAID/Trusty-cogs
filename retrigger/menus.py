@@ -22,7 +22,7 @@ _ = Translator("ReTrigger", __file__)
 
 
 class ExplainReTriggerPages(menus.ListPageSource):
-    def __init__(self, pages: list):
+    def __init__(self, pages: List[str]):
         super().__init__(pages, per_page=1)
         self.pages = pages
         self.select_options = []
@@ -32,12 +32,12 @@ class ExplainReTriggerPages(menus.ListPageSource):
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, page):
-        if menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links:
+    async def format_page(self, view: discord.ui.View, page: str):
+        if view.ctx.channel.permissions_for(view.ctx.guild.me).embed_links:
             em = discord.Embed(
-                description=page, colour=await menu.cog.bot.get_embed_colour(menu.ctx.channel)
+                description=page, colour=await view.cog.bot.get_embed_colour(view.ctx.channel)
             )
-            em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+            em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
             return em
         else:
             return page
@@ -57,10 +57,10 @@ class ReTriggerPages(menus.ListPageSource):
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, trigger: Trigger):
+    async def format_page(self, view: discord.ui.View, trigger: Trigger):
         self.selection = trigger
         msg_list = []
-        embeds = menu.ctx.channel.permissions_for(menu.ctx.guild.me).embed_links
+        embeds = view.ctx.channel.permissions_for(view.ctx.guild.me).embed_links
         good = "\N{WHITE HEAVY CHECK MARK}"
         bad = "\N{NEGATIVE SQUARED CROSS MARK}"
         # trigger = await Trigger.from_json(triggers)
@@ -68,7 +68,7 @@ class ReTriggerPages(menus.ListPageSource):
         author = self.guild.get_member(trigger.author)
         if not author:
             try:
-                author = await menu.cog.bot.fetch_user(trigger.author)
+                author = await view.cog.bot.fetch_user(trigger.author)
             except Exception:
                 author = discord.Object(id=trigger.author)
                 author.name = _("Unknown or Deleted User")
@@ -77,7 +77,7 @@ class ReTriggerPages(menus.ListPageSource):
         blacklist = []
         for y in trigger.blacklist:
             try:
-                blacklist.append(await ChannelUserRole().convert(menu.ctx, str(y)))
+                blacklist.append(await ChannelUserRole().convert(view.ctx, str(y)))
             except BadArgument:
                 continue
         if embeds:
@@ -87,7 +87,7 @@ class ReTriggerPages(menus.ListPageSource):
         whitelist = []
         for y in trigger.whitelist:
             try:
-                whitelist.append(await ChannelUserRole().convert(menu.ctx, str(y)))
+                whitelist.append(await ChannelUserRole().convert(view.ctx, str(y)))
             except BadArgument:
                 continue
         if embeds:
@@ -178,7 +178,7 @@ class ReTriggerPages(menus.ListPageSource):
                 ]
             else:
                 role_response = trigger.text
-            roles = [menu.ctx.guild.get_role(r) for r in role_response]
+            roles = [view.ctx.guild.get_role(r) for r in role_response]
             if embeds:
                 roles_list = [r.mention for r in roles if r is not None]
             else:
@@ -194,7 +194,7 @@ class ReTriggerPages(menus.ListPageSource):
                 ]
             else:
                 role_response = trigger.text
-            roles = [menu.ctx.guild.get_role(r) for r in role_response]
+            roles = [view.ctx.guild.get_role(r) for r in role_response]
             if embeds:
                 roles_list = [r.mention for r in roles if r is not None]
             else:
@@ -234,14 +234,14 @@ class ReTriggerPages(menus.ListPageSource):
         if embeds:
             # info += _("__Regex__: ") + box(trigger.regex.pattern, lang="bf")
             em = discord.Embed(
-                colour=await menu.cog.bot.get_embed_colour(menu.ctx.channel),
+                colour=await view.cog.bot.get_embed_colour(view.ctx.channel),
                 title=_("Triggers for {guild}").format(guild=self.guild.name),
             )
             em.set_author(name=author, icon_url=author.avatar.url)
             if trigger.created_at == 0:
-                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+                em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
             else:
-                em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} Created")
+                em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()} Created")
                 em.timestamp = trigger.created_at
 
             first = True
@@ -271,7 +271,7 @@ class ReTriggerPages(menus.ListPageSource):
             return em
         else:
             return info
-        # return await make_embed_from_submission(menu.ctx.channel, self._subreddit, submission)
+        # return await make_embed_from_submission(view.ctx.channel, self._subreddit, submission)
 
 
 class ReTriggerSelectOption(discord.ui.Select):
@@ -280,7 +280,7 @@ class ReTriggerSelectOption(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         index = int(self.values[0])
-        await self.view.show_checked_page(index)
+        await self.view.show_checked_page(index, interaction)
 
 
 class StopButton(discord.ui.Button):
@@ -309,9 +309,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page + 1, interaction)
 
 
 class BackButton(discord.ui.Button):
@@ -325,9 +323,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page - 1, interaction)
 
 
 class LastItemButton(discord.ui.Button):
@@ -343,9 +339,7 @@ class LastItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
 
 
 class FirstItemButton(discord.ui.Button):
@@ -361,9 +355,7 @@ class FirstItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction)
 
 
 class ToggleTriggerButton(discord.ui.Button):
@@ -397,9 +389,7 @@ class ToggleTriggerButton(discord.ui.Button):
             trigger.toggle()
             async with self.view.cog.config.guild(guild).trigger_list() as trigger_list:
                 trigger_list[trigger.name] = await trigger.to_json()
-            await self.view.show_checked_page(self.view.current_page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+            await self.view.show_checked_page(self.view.current_page, interaction)
 
 
 class ReTriggerEditModal(discord.ui.Modal):
@@ -441,7 +431,7 @@ class ReTriggerEditModal(discord.ui.Modal):
                 trigger_list[self.trigger.name] = await self.trigger.to_json()
         else:
             await interaction.response.send_message(_("None of the values have changed."))
-        await self.og_button.view.show_checked_page(self.og_button.view.current_page)
+        await self.og_button.view.show_checked_page(self.og_button.view.current_page, interaction)
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
@@ -574,7 +564,7 @@ class ReTriggerMenu(discord.ui.View):
         self.ctx = ctx
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context, channel: discord.TextChannel):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -614,16 +604,16 @@ class ReTriggerMenu(discord.ui.View):
             self.message = await channel.send(**kwargs, view=self)
         return self.message
 
-    async def _get_kwargs_from_page(self, page):
+    async def _get_kwargs_from_page(self, page: int):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
-            return {"content": value, "embed": None}
+            return {"content": value, "embeds": None}
         elif isinstance(value, discord.Embed):
-            return {"embed": value, "content": None}
+            return {"embeds": [value], "content": None}
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
@@ -642,27 +632,31 @@ class ReTriggerMenu(discord.ui.View):
                 options=options, placeholder=_("Pick a Trigger")
             )
             self.add_item(self.select_view)
-        await self.message.edit(**kwargs, view=self)
+        # await self.message.edit(**kwargs, view=self)
+        if interaction.response.is_done() and self.message is not None:
+            await interaction.followup.edit_message(self.message.id, **kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id not in (self.author.id, *self.cog.bot.owner_ids):
+        if self.author and interaction.user.id not in (self.author.id, *self.cog.bot.owner_ids):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -727,7 +721,7 @@ class BaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context, channel: discord.TextChannel):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -750,24 +744,28 @@ class BaseMenu(discord.ui.View):
             self.message = await channel.send(**kwargs, view=self)
         return self.message
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = self.source.pages.index(page)
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
+        # await self.message.edit(**kwargs)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
