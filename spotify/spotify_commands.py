@@ -91,6 +91,9 @@ class SpotifyCommands:
     @spotify_slash.command(name="enable")
     async def set_guild_slash_toggle(self, ctx: commands.Context):
         """Toggle this cog to register slash commands in this server"""
+        if await self.config.enable_slash():
+            await ctx.send(_("This cogs slash commands are already enabled globally."))
+            return
         current = await self.config.guild(ctx.guild).enable_slash()
         await self.config.guild(ctx.guild).enable_slash.set(not current)
         verb = _("enabled") if not current else _("disabled")
@@ -106,6 +109,9 @@ class SpotifyCommands:
         """
         Toggle right click play on spotify for messages
         """
+        if await self.config.enable_context():
+            await ctx.send(_("This cogs context commands are already enabled globally."))
+            return
         current = await self.config.guild(ctx.guild).enable_context()
         await self.config.guild(ctx.guild).enable_context.set(not current)
         verb = _("enabled") if not current else _("disabled")
