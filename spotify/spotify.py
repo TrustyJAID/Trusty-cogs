@@ -40,7 +40,11 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
         self.config = Config.get_conf(self, identifier=218773382617890828)
         self.config.register_user(token={}, listen_for={}, show_private=False, default_device=None)
         self.config.register_guild(
-            clear_reactions_after=True, delete_message_after=False, menu_timeout=120
+            clear_reactions_after=True,
+            delete_message_after=False,
+            menu_timeout=120,
+            enable_slash=False,
+            enable_context=False,
         )
         self.config.register_global(
             emojis={},

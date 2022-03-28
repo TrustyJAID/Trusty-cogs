@@ -88,6 +88,35 @@ class SpotifyCommands:
         Slash command toggling for Spotify
         """
 
+    @spotify_slash.command(name="enable")
+    async def set_guild_slash_toggle(self, ctx: commands.Context):
+        """Toggle this cog to register slash commands in this server"""
+        current = await self.config.guild(ctx.guild).enable_slash()
+        await self.config.guild(ctx.guild).enable_slash.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Slash commands are {verb} in this guild.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self, guild=ctx.guild)
+        else:
+            self.bot.tree.remove_command("spotify", guild=ctx.guild)
+
+    @spotify_slash.command(name="context")
+    @commands.is_owner()
+    async def spotify_guild_context(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Toggle right click play on spotify for messages
+        """
+        current = await self.config.guild(ctx.guild).enable_context()
+        await self.config.guild(ctx.guild).enable_context.set(not current)
+        verb = _("enabled") if not current else _("disabled")
+        await ctx.send(_("Context commands are {verb}.").format(verb=verb))
+        if not current:
+            self.bot.tree.add_command(self.play_from_message_ctx, guild=ctx.guild, override=True)
+            self.bot.tree.add_command(self.queue_from_message_ctx, guild=ctx.guild, override=True)
+        else:
+            self.bot.tree.remove_command("Play on Spotify", guild=ctx.guild)
+            self.bot.tree.remove_command("Queue on Spotify", guild=ctx.guild)
+
     @spotify_slash.command(name="global")
     @commands.is_owner()
     async def set_global_slash_toggle(self, ctx: commands.Context):
@@ -101,7 +130,7 @@ class SpotifyCommands:
         else:
             self.bot.tree.remove_command("spotify")
 
-    @spotify_slash.command(name="context")
+    @spotify_slash.command(name="globalcontext")
     @commands.is_owner()
     async def spotify_global_context(self, ctx: Union[commands.Context, discord.Interaction]):
         """
@@ -111,15 +140,12 @@ class SpotifyCommands:
         await self.config.enable_context.set(not current)
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Context commands are {verb}.").format(verb=verb))
-        # play = discord.app_commands.ContextMenu(name="Play on Spotify", callback=self.fake_method, type=discord.enums.AppCommandType.message)
-        # queue = discord.app_commands.ContextMenu(name="Queue on Spotify", callback=self.fake_method, type=discord.enums.AppCommandType.message)
         if not current:
             self.bot.tree.add_command(self.play_from_message_ctx, override=True)
             self.bot.tree.add_command(self.queue_from_message_ctx, override=True)
         else:
-            self.bot.tree.remove_command(self.play_from_message_ctx)
-            self.bot.tree.remove_command(self.queue_from_message_ctx)
-        await ctx.tick()
+            self.bot.tree.remove_command("Play on Spotify")
+            self.bot.tree.remove_command("Queue on Spotify")
 
     async def not_authorized(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
         """
