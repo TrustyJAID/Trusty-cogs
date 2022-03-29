@@ -26,7 +26,7 @@ class Schedule(menus.PageSource):
         self._last_page: int = 0
         self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
         self.limit: int = kwargs.get("limit", 10)
-        self.team: str = kwargs.get("team", None)
+        self.team: str = kwargs.get("team", [])
         self._last_searched: str = ""
         self._session: aiohttp.CLientSession = kwargs.get("session")
         self.select_options = []

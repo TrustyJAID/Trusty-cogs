@@ -128,79 +128,76 @@ class SkipBackButton(discord.ui.Button):
         await self.view.show_page(0, skip_prev=True, interaction=interaction)
 
 
-class PickTeamButton(discord.ui.Button):
-    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
-        super().__init__(style=style, row=row, label=_("Pick Team"))
-        self.style = style
-
-    async def callback(self, interaction: discord.Interaction):
-        """stops the pagination session."""
-        send_msg = await interaction.response.send_message(
-            _("Enter the team you would like to filter for.")
+class FilterModal(discord.ui.Modal):
+    def __init__(self, view: discord.ui.View):
+        super().__init__(title=_("Filter games"))
+        self.view = view
+        cur_date = self.view.source.date
+        self.teams = discord.ui.TextInput(
+            style=discord.TextStyle.paragraph,
+            label="Teams to filter",
+            placeholder="Edmonton Oilers\nCanucks\nHabs",
+            default="\n".join(t for t in self.view.source.team),
+            required=False,
         )
-
-        def check(m: discord.Message):
-            return m.author == self.view.author
-
-        try:
-            msg = await self.view.cog.bot.wait_for("message", check=check, timeout=30)
-        except asyncio.TimeoutError:
-            await send_msg.delete()
-            return
-        potential_teams = msg.clean_content.split()
-        teams: List[str] = []
-        for team, data in TEAMS.items():
-            if "Team" in teams:
-                continue
-            nick = data["nickname"]
-            short = data["tri_code"]
-            pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
-            if nick:
-                pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
-            # log.debug(pattern)
-            reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
-            for pot in potential_teams:
-                find = reg.findall(pot)
-                if find:
-                    teams.append(team)
-            self.view.source.team = teams
-        try:
-            await self.view.source.prepare()
-        except NoSchedule:
-            return await self.view.ctx.send(self.format_error())
-        await self.view.show_page(0, interaction)
-
-
-class PickDateButton(discord.ui.Button):
-    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
-        super().__init__(style=style, row=row, label=_("Change Date"))
-        self.style = style
-
-    async def callback(self, interaction: discord.Interaction):
-        """stops the pagination session."""
-        send_msg = await interaction.response.send_message(
-            _("Enter the date you would like to see `YYYY-MM-DD` format is accepted.")
+        self.date = discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            label="Dates to filter",
+            placeholder="YYYY-MM-DD",
+            default=f"{cur_date.year}-{cur_date.month}-{cur_date.day}",
+            min_length=8,
+            max_length=10,
+            required=False,
         )
+        self.add_item(self.date)
+        self.add_item(self.teams)
 
-        def check(m: discord.Message):
-            return m.author == self.view.author and DATE_RE.search(m.clean_content)
-
-        try:
-            msg = await self.view.cog.bot.wait_for("message", check=check, timeout=30)
-        except asyncio.TimeoutError:
-            await send_msg.delete()
-            return
-        search = DATE_RE.search(msg.clean_content)
-        if search:
-            date_str = f"{search.group(1)}-{search.group(3)}-{search.group(4)}"
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            # log.debug(date)
-            self.view.source.date = date
+    async def on_submit(self, interaction: discord.Interaction):
+        if self.date.value:
+            search = DATE_RE.search(self.date.value)
+            if search:
+                date_str = f"{search.group(1)}-{search.group(3)}-{search.group(4)}"
+                date = datetime.strptime(date_str, "%Y-%m-%d")
+                self.view.source.date = date
+                try:
+                    await self.view.source.prepare()
+                except NoSchedule:
+                    await interaction.response.send_message(self.view.format_error())
+                    return
+        if self.teams.value:
+            potential_teams = self.teams.value.split()
+            teams: List[str] = []
+            for team, data in TEAMS.items():
+                if "Team" in team:
+                    continue
+                nick = data["nickname"]
+                short = data["tri_code"]
+                pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
+                if nick:
+                    pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
+                # log.debug(pattern)
+                reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
+                for pot in potential_teams:
+                    find = reg.findall(pot)
+                    if find:
+                        teams.append(team)
+                self.view.source.team = teams
             try:
                 await self.view.source.prepare()
             except NoSchedule:
-                return await self.ctx.send(self.format_error())
-            await self.view.show_page(0, interaction)
+                return await self.view.ctx.send(self.view.format_error())
+        await self.view.show_page(0, interaction=interaction)
+
+
+class FilterButton(discord.ui.Button):
+    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
+        super().__init__(style=style, row=row, label=_("Filter"))
+        self.style = style
+
+    async def callback(self, interaction: discord.Interaction):
+        """stops the pagination session."""
+        modal = FilterModal(self.view)
+        await interaction.response.send_modal(modal)
 
 
 class HeatmapButton(discord.ui.Button):
@@ -300,17 +297,15 @@ class GamesMenu(discord.ui.View):
         self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
         self.last_item = SkipForwardButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
-        self.pick_team_button = PickTeamButton(discord.ButtonStyle.primary, 1)
-        self.change_date_button = PickDateButton(discord.ButtonStyle.primary, 1)
+        self.filter_button = FilterButton(discord.ButtonStyle.primary, 1)
         self.heatmap_button = HeatmapButton(discord.ButtonStyle.primary, 1)
         self.gameflow_button = GameflowButton(discord.ButtonStyle.primary, 1)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
-        self.add_item(self.pick_team_button)
-        self.add_item(self.change_date_button)
+        self.add_item(self.filter_button)
         if isinstance(self.source, Schedule):
             self.heatmap_button.label = _("Heatmap {style}").format(style=self.source.style)
             corsi = "Corsi" if self.source.corsi else "Expected Goals"
@@ -581,11 +576,11 @@ class BaseMenu(discord.ui.View):
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
         self.select_view = None
         if hasattr(self.source, "select_options"):
             self.select_view = HockeySelectPlayer(self.source.select_options[:25])
