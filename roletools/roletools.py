@@ -341,8 +341,7 @@ class RoleTools(
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
-        who: Union[discord.Role, discord.TextChannel, discord.Member, str],
+        *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
         """
         Gives a role to designated members.
@@ -370,7 +369,6 @@ class RoleTools(
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            author = ctx.user
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
@@ -379,7 +377,6 @@ class RoleTools(
             await ctx.response.defer()
         else:
             await ctx.trigger_typing()
-            author = ctx.author
 
         if len(who) == 0:
             await ctx.send_help()
@@ -447,8 +444,7 @@ class RoleTools(
         self,
         ctx: Union[Context, Interaction],
         role: RoleHierarchyConverter,
-        *,
-        who: Union[discord.Role, discord.TextChannel, discord.Member, str],
+        *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
         """
         Removes a role from the designated members.
@@ -476,7 +472,6 @@ class RoleTools(
         is_slash = False
         if isinstance(ctx, discord.Interaction):
             is_slash = True
-            author = ctx.user
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
@@ -485,7 +480,6 @@ class RoleTools(
             await ctx.response.defer()
         else:
             await ctx.trigger_typing()
-            author = ctx.author
 
         if len(who) == 0:
             return await ctx.send_help()
