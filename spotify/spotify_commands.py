@@ -8,6 +8,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
+from .abc import SpotifyMixin
 from .helpers import (
     SPOTIFY_RE,
     InvalidEmoji,
@@ -49,7 +50,7 @@ _ = Translator("Spotify", __file__)
 ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), delims=[" ", ",", ";"])
 
 
-class SpotifyCommands:
+class SpotifyCommands(SpotifyMixin):
     @commands.group(name="spotify", aliases=["sp"])
     async def spotify_com(self, ctx: Union[commands.Context, discord.Interaction]):
         """
@@ -672,9 +673,7 @@ class SpotifyCommands:
             is_slash = True
             if not ctx.response.is_done():
                 await ctx.response.defer(ephemeral=not public)
-            author = ctx.user
         else:
-            author = ctx.author
             await ctx.trigger_typing()
         if member and isinstance(member, discord.Member):
             if not [c for c in member.activities if c.type == discord.ActivityType.listening]:

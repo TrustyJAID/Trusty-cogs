@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import time
+from abc import ABC
 from typing import Literal, Mapping, Optional, Tuple, Union
 
 import discord
@@ -25,8 +26,23 @@ log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
+class CompositeMetaClass(type(commands.Cog), type(ABC)):
+    """
+    This allows the metaclass used for proper type detection to
+    coexist with discord.py's metaclass
+    """
+
+    pass
+
+
 @cog_i18n(_)
-class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, commands.Cog):
+class Spotify(
+    SpotifyCommands,
+    SpotifySlash,
+    discord.app_commands.Group,
+    commands.Cog,
+    metaclass=CompositeMetaClass,
+):
     """
     Display information from Spotify's API
     """
@@ -224,7 +240,9 @@ class Spotify(SpotifyCommands, SpotifySlash, discord.app_commands.Group, command
             else:
                 await ctx.response.send_message(msg, ephemeral=True)
 
-    async def ask_for_auth(self, ctx: commands.Context, author: discord.User):
+    async def ask_for_auth(
+        self, ctx: Union[commands.Context, discord.Interaction], author: discord.User
+    ):
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
         auth = tekore.UserAuth(self._credentials, scope=scope)

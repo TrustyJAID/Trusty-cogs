@@ -9,13 +9,14 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
+from .abc import SpotifyMixin
 from .helpers import SPOTIFY_RE, song_embed
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
-class SpotifySlash:
+class SpotifySlash(SpotifyMixin):
 
     artist = app_commands.Group(name="artist", description="View Spotify Artist info")
     playlist = app_commands.Group(name="playlist", description="View Spotify Playlists")
@@ -43,13 +44,13 @@ class SpotifySlash:
     @app_commands.command(name="now", description="Displays your currently played spotify song")
     async def spotify_now_slash(
         self,
-        ctx: discord.Interaction,
+        interaction: discord.Interaction,
         detailed: Optional[bool] = False,
         member: Optional[discord.Member] = None,
         public: bool = True,
     ):
         """Displays your currently played spotify song"""
-        await self.spotify_now(ctx, detailed, member, public)
+        await self.spotify_now(interaction, detailed, member, public)
 
     @app_commands.command(name="recommendations", description="Get Spotify Recommendations")
     @app_commands.choices(
