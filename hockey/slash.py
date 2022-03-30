@@ -1,12 +1,11 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Literal, Optional, Sequence, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import discord
 from discord import app_commands
 from discord.app_commands import Choice
-from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 
@@ -194,50 +193,43 @@ class HockeySlash(MixinMeta):
         await self.otherdiscords(interaction, team)
 
     @pickems_slash.command(name="settings")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def pickems_settings_slash(self, interaction: discord.Interaction):
         """Show the servers current pickems settings"""
         func = self.pickems_settings
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @pickems_slash.command(name="message")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def set_pickems_message_slash(
         self, interaction: discord.Interaction, message: Optional[str]
     ):
         """Customize the pickems message for this server"""
         func = self.set_pickems_message
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, message=message)
 
     @pickems_slash.command(name="setup")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def setup_auto_pickems_slash(
         self, interaction: discord.Interaction, channel: Optional[discord.TextChannel]
     ):
         """Sets up pickems threads created every day"""
         func = self.setup_auto_pickems
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, channel)
 
     @pickems_slash.command(name="clear")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def delete_auto_pickems_slash(self, interaction: discord.Interaction):
         """Stop posting new pickems threads and clear existing list of pickems threads"""
         func = self.delete_auto_pickems
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @pickems_slash.command(name="page")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def pickems_page_slash(
         self,
@@ -246,32 +238,26 @@ class HockeySlash(MixinMeta):
     ):
         """Generates a pickems page for voting on"""
         func = self.pickems_page
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, date)
 
     @gdt_slash.command(name="settings")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_settings_slash(self, interaction: discord.Interaction):
         """Shows the current Game Day Thread settings"""
         func = self.gdt_settings
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @gdt_slash.command(name="delete")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_delete_slash(self, interaction: discord.Interaction):
         """Delete all current game day threads for the server"""
         func = self.gdt_delete
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @gdt_slash.command(name="stateupdates")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_default_game_state_slash(
         self,
@@ -280,76 +266,62 @@ class HockeySlash(MixinMeta):
     ):
         """Set specific state updates to use for game day threads"""
         func = self.gdt_default_game_state
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, state)
 
     @gdt_slash.command(name="updates")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_update_start_slash(self, interaction: discord.Interaction, update_start: bool):
         """Set whether or not the starting thread message will update as the game progresses."""
         func = self.gdt_update_start
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, update_start)
 
     @gdt_slash.command(name="create")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_create_slash(self, interaction: discord.Interaction):
         """Creates the next gdt for the server"""
         func = self.gdt_create
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @gdt_slash.command(name="toggle")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_toggle_slash(self, interaction: discord.Interaction):
         """Toggles the game day channel creation on this server"""
         func = self.gdt_toggle
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @gdt_slash.command(name="channel")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_channel_slash(
         self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
         """Change the channel used for game day threads."""
         func = self.gdt_channel
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, channel)
 
     @gdt_slash.command(name="setup")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def gdt_setup_slash(
         self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
     ):
         """Setup game day threads for a single (or all) teams."""
         func = self.gdt_setup
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, team, channel)
 
     @set_slash.command(name="settings")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def hockey_settings_slash(self, interaction: discord.Interaction):
         """Show hockey settings for this server"""
         func = self.hockey_settings
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction)
 
     @set_slash.command(name="poststandings")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def post_standings_slash(
         self,
@@ -359,36 +331,30 @@ class HockeySlash(MixinMeta):
     ):
         """Post automatic standings when all games for the day are done"""
         func = self.post_standings
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, standings_type, channel)
 
     @set_slash.command(name="stateupdates")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def set_game_state_updates(
         self, interaction: discord.Interaction, channel: discord.TextChannel, state: HOCKEY_STATES
     ):
         """Toggle specific updates in a designated channel"""
         func = self.set_game_state_updates
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, channel, state)
 
     @set_slash.command(name="add")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def add_goals_slash(
         self, interaction: discord.Interaction, team: str, channel: Optional[discord.TextChannel]
     ):
         """Add a teams goal updates to a channel"""
         func = self.add_goals
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, team, channel)
 
     @set_slash.command(name="remove")
+    @app_commands.checks.has_permissions(manage_channels=True)
     @guild_only()
     async def remove_goals_slash(
         self,
@@ -398,9 +364,6 @@ class HockeySlash(MixinMeta):
     ):
         """Removes a teams goal updates from a channel"""
         func = self.remove_goals
-
-        if not await self.check_requires(func, interaction):
-            return
         await func(interaction, team, channel)
 
     @games_slash.autocomplete("team")
@@ -450,27 +413,14 @@ class HockeySlash(MixinMeta):
                     ret.append(Choice(name=player["fullName"], value=player["fullName"]))
         return ret[:25]
 
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.can_run(fake_ctx, check_all_parents=True)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
+    async def on_error(
+        self, interaction: discord.Interaction, command: discord.app_commands.Command, error
+    ):
+        if (
+            isinstance(error, discord.app_commands.CheckFailure)
+            and not interaction.response.is_done()
+        ):
+            await interaction.response.send_message(error, ephemeral=True)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):

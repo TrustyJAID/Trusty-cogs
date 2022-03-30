@@ -5,7 +5,7 @@ from typing import List, Optional
 import aiohttp
 import discord
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .constants import BASE_URL, TEAMS
@@ -26,7 +26,7 @@ class Schedule(menus.PageSource):
         self._last_page: int = 0
         self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
         self.limit: int = kwargs.get("limit", 10)
-        self.team: str = kwargs.get("team", [])
+        self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""
         self._session: aiohttp.CLientSession = kwargs.get("session")
         self.select_options = []
@@ -283,7 +283,7 @@ class ScheduleList(menus.PageSource):
             "Final": "\N{CHEQUERED FLAG}",
         }
         # log.debug(games)
-        msg = ""
+        msg = humanize_list(self.team) + "\n"
         day = None
         start_time = None
         for game in games:
@@ -335,7 +335,7 @@ class ScheduleList(menus.PageSource):
 
             count = 0
             em = discord.Embed()
-            if self.team != []:
+            if len(self.team) == 1:
                 # log.debug(self.team)
                 colour = (
                     int(TEAMS[self.team[0]]["home"].replace("#", ""), 16)
@@ -346,7 +346,7 @@ class ScheduleList(menus.PageSource):
                     em.colour = colour
                 if self.team[0] in TEAMS:
                     em.set_thumbnail(url=TEAMS[self.team[0]]["logo"])
-            if len(msg) > 2048:
+            if len(msg) > 4096:
                 for page in pagify(msg, ["Games", "\n"], page_length=1024, priority=True):
                     if count == 0:
                         em.description = page
