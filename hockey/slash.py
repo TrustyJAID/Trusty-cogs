@@ -416,11 +416,12 @@ class HockeySlash(MixinMeta):
     async def on_error(
         self, interaction: discord.Interaction, command: discord.app_commands.Command, error
     ):
-        if (
-            isinstance(error, discord.app_commands.CheckFailure)
-            and not interaction.response.is_done()
-        ):
-            await interaction.response.send_message(error, ephemeral=True)
+        if isinstance(error, discord.app_commands.CheckFailure):
+            if not interaction.response.is_done():
+                await interaction.response.send_message(error, ephemeral=True)
+                return
+        await interaction.client.tree.on_error(interaction, command, error)
+        log.exception(error)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):

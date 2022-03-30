@@ -40,6 +40,8 @@ class HockeySetCommands(MixinMeta):
         post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
         gdc_channels = await self.config.guild(guild).gdc()
         gdt_channels = await self.config.guild(guild).gdt()
+        standings_chn = "None"
+        standings_msg = "None"
         if gdc_channels is None:
             gdc_channels = []
         if standings_channel is not None:
@@ -65,55 +67,50 @@ class HockeySetCommands(MixinMeta):
                     standings_msg = (
                         _("Standings") + f" {post_standings}```{standings_msg.jump_url}"
                     )
-            else:
-                standings_chn = "None"
-                standings_msg = "None"
-            channels = ""
-            for channel in await self.config.all_channels():
-                chn = guild.get_channel_or_thread(channel)
-                if chn is not None:
-                    teams = humanize_list([t for t in await self.config.channel(chn).team()])
-                    is_gdc = "(GDC)" if chn.id in gdc_channels else ""
-                    is_gdt = "(GDT)" if chn.id in gdt_channels else ""
-                    game_states = await self.config.channel(chn).game_states()
-                    channels += f"{chn.mention}{is_gdc}{is_gdt}:\n"
-                    channels += _("Team(s): {teams}\n").format(teams=teams)
-                    if game_states:
-                        channels += _("Game States: {game_states}\n").format(
-                            game_states=humanize_list(game_states)
-                        )
+        channels = ""
+        for channel in await self.config.all_channels():
+            chn = guild.get_channel_or_thread(channel)
+            if chn is not None:
+                teams = humanize_list([t for t in await self.config.channel(chn).team()])
+                is_gdc = "(GDC)" if chn.id in gdc_channels else ""
+                is_gdt = "(GDT)" if chn.id in gdt_channels else ""
+                game_states = await self.config.channel(chn).game_states()
+                channels += f"{chn.mention}{is_gdc}{is_gdt}:\n"
+                channels += _("Team(s): {teams}\n").format(teams=teams)
+                if game_states:
+                    channels += _("Game States: {game_states}\n").format(
+                        game_states=humanize_list(game_states)
+                    )
 
-            notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
-                game_start=await self.config.guild(guild).game_state_notifications(),
-                goals=await self.config.guild(guild).goal_notifications(),
-            )
-            if ctx.channel.permissions_for(guild.me).embed_links:
-                em = discord.Embed(title=guild.name + _(" Hockey Settings"))
-                em.colour = await self.bot.get_embed_colour(ctx.channel)
-                em.description = channels
-                em.add_field(
-                    name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}"
-                )
-                em.add_field(name=_("Notifications"), value=notification_settings)
-                if is_slash:
-                    await ctx.followup.send(embed=em)
-                else:
-                    await ctx.send(embed=em)
+        notification_settings = _("Game Start: {game_start}\nGoals: {goals}\n").format(
+            game_start=await self.config.guild(guild).game_state_notifications(),
+            goals=await self.config.guild(guild).goal_notifications(),
+        )
+        if ctx.channel.permissions_for(guild.me).embed_links:
+            em = discord.Embed(title=guild.name + _(" Hockey Settings"))
+            em.colour = await self.bot.get_embed_colour(ctx.channel)
+            em.description = channels
+            em.add_field(name=_("Standings Settings"), value=f"{standings_chn}: {standings_msg}")
+            em.add_field(name=_("Notifications"), value=notification_settings)
+            if is_slash:
+                await ctx.followup.send(embed=em)
             else:
-                msg = _(
-                    "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
-                    "\nStandings Settings\n{standings_chn}: {standings}\n"
-                ).format(
-                    guild=guild.name,
-                    channels=channels,
-                    notifications=notification_settings,
-                    standings_chn=standings_chn,
-                    standings=standings_msg,
-                )
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(embed=em)
+        else:
+            msg = _(
+                "{guild} Hockey Settings\n {channels}\nNotifications\n{notifications}"
+                "\nStandings Settings\n{standings_chn}: {standings}\n"
+            ).format(
+                guild=guild.name,
+                channels=channels,
+                notifications=notification_settings,
+                standings_chn=standings_chn,
+                standings=standings_msg,
+            )
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
 
     #######################################################################
     # All Hockey setup commands                                           #
