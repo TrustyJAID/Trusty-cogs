@@ -54,71 +54,51 @@ class ReTriggerSlash:
         self.config: Config
 
     @modlog.command(name="settings")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_settings_slash(self, interaction: discord.Interaction):
         """Show retrigger's modlog settings for this server."""
-        func = self.modlog_settings
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_settings(interaction)
 
     @modlog.command(name="bans")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_bans_slash(self, interaction: discord.Interaction):
         """Toggle custom ban messages in the modlog"""
-        func = self.modlog_bans
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_bans(interaction)
 
     @modlog.command(name="kicks")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_kicks_slash(self, interaction: discord.Interaction):
         """Toggle custom kick messages in the modlog"""
-        func = self.modlog_kicks
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_kicks(interaction)
 
     @modlog.command(name="filter")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_filter_slash(self, interaction: discord.Interaction):
         """Toggle custom filter messages in the modlog"""
-        func = self.modlog_filter
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_filter(interaction)
 
     @modlog.command(name="addroles")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_addroles_slash(self, interaction: discord.Interaction):
         """Toggle custom add role messages in the modlog"""
-        func = self.modlog_addroles
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_addroles(interaction)
 
     @modlog.command(name="removeroles")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_removeroles_slash(self, interaction: discord.Interaction):
         """Toggle custom remove role messages in the modlog"""
-        func = self.modlog_removeroles
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction)
+        await self.modlog_removeroles(interaction)
 
     @modlog.command(name="channel")
+    @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_channel_slash(
         self, interaction: discord.Interaction, channel: Optional[discord.TextChannel]
     ):
         """Set the modlog channel for filtered words"""
-        func = self.modlog_channel
-
-        if not await self.check_requires(func, interaction):
-            return
-        await func(interaction, channel)
+        await self.modlog_channel(interaction, channel)
 
     @allowlist.command(name="add")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def whitelist_add_slash(
         self,
         interaction: discord.Interaction,
@@ -134,14 +114,13 @@ class ReTriggerSlash:
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        func = self.whitelist_add
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [i for i in channel_user_role if i is not None])
+        await self.whitelist_add(
+            interaction, _trigger, [i for i in channel_user_role if i is not None]
+        )
 
     @allowlist.command(name="remove")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def whitelist_remove_slash(
         self,
         interaction: discord.Interaction,
@@ -157,14 +136,13 @@ class ReTriggerSlash:
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        func = self.whitelist_remove
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [i for i in channel_user_role if i is not None])
+        await self.whitelist_remove(
+            interaction, _trigger, [i for i in channel_user_role if i is not None]
+        )
 
     @blocklist.command(name="add")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def blacklist_add_slash(
         self,
         interaction: discord.Interaction,
@@ -180,14 +158,13 @@ class ReTriggerSlash:
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        func = self.blacklist_add
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [i for i in channel_user_role if i is not None])
+        await self.blacklist_add(
+            interaction, _trigger, [i for i in channel_user_role if i is not None]
+        )
 
     @blocklist.command(name="remove")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def blacklist_remove_slash(
         self,
         interaction: discord.Interaction,
@@ -203,12 +180,10 @@ class ReTriggerSlash:
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        func = self.blacklist_remove
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [i for i in channel_user_role if i is not None])
+        await self.blacklist_remove(
+            interaction, _trigger, [i for i in channel_user_role if i is not None]
+        )
 
     @edit_slash.command(name="cooldown")
     async def cooldown_slash(
@@ -219,20 +194,13 @@ class ReTriggerSlash:
         style: Optional[Literal["guild", "channel", "member"]] = "guild",
     ):
         """Set cooldown options for ReTrigger"""
-        func = self.cooldown
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, time, style)
+        await self.cooldown(interaction, _trigger, time, style)
 
     @edit_slash.command(name="regex")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_regex_slash(self, interaction: discord.Interaction, trigger: str, regex: str):
         """Edit the regex of a saved trigger."""
-        func = self.edit_regex
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -241,162 +209,118 @@ class ReTriggerSlash:
             await interaction.response.send_message(err_msg)
             return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, regex=regex)
+        await self.edit_regex(interaction, _trigger, regex=regex)
 
     # @edit_slash.command(name="ocr")
     async def toggle_ocr_search_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to use Optical Character Recognition"""
-        func = self.toggle_ocr_search
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.toggle_ocr_search(interaction, _trigger)
 
     @edit_slash.command(name="nsfw")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def toggle_nsfw_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether a trigger is considered age-restricted."""
-        func = self.toggle_nsfw
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.toggle_nsfw(interaction, _trigger)
 
     @edit_slash.command(name="readfilenames")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def toggle_filename_search_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to search message attachment filenames."""
-        func = self.toggle_filename_search
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.toggle_filename_search(interaction, _trigger)
 
     @edit_slash.command(name="reply")
     @app_commands.describe(
         set_to="True will reply with mention, False will reply without mention, blank will not use a reply."
     )
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def set_reply_slash(
         self, interaction: discord.Interaction, trigger: str, set_to: Optional[bool]
     ):
         """Set whether or not to reply to the triggered message."""
-        func = self.set_reply
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, set_to)
+        await self.set_reply(interaction, _trigger, set_to)
 
     @edit_slash.command(name="tts")
     async def set_tts_slash(self, interaction: discord.Interaction, trigger: str, set_to: bool):
         """Set whether or not to send the message with text-to-speech."""
-        func = self.set_tts
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, set_to)
+        await self.set_tts(interaction, _trigger, set_to)
 
     @edit_slash.command(name="usermention")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def set_user_mention_slash(
         self, interaction: discord.Interaction, trigger: str, set_to: bool
     ):
         """Set whether or not this trigger can mention users"""
-        func = self.set_user_menion
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, set_to)
+        await self.set_user_menion(interaction, _trigger, set_to)
 
     @edit_slash.command(name="everyonemention")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def set_everyone_mention_slash(
         self, interaction: discord.Interaction, trigger: str, set_to: bool
     ):
         """Set whether or not this trigger can mention everyone"""
-        func = self.set_everyone_mention
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, set_to)
+        await self.set_everyone_mention(interaction, _trigger, set_to)
 
     @edit_slash.command(name="rolemention")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def set_role_mention_slash(
         self, interaction: discord.Interaction, trigger: str, set_to: bool
     ):
         """Set whether or not this trigger can mention roles"""
-        func = self.set_role_mention
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, set_to)
+        await self.set_role_mention(interaction, _trigger, set_to)
 
     @edit_slash.command(name="edited")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def toggle_check_edits_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether to search message edits."""
-        func = self.toggle_check_edits
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.toggle_check_edits(interaction, _trigger)
 
     @edit_slash.command(name="ignorecommands")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_ignore_commands_slash(self, interaction: discord.Interaction, trigger: str):
         """Toggle whether a trigger will ignore commands."""
-        func = self.edit_ignore_commands
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.edit_ignore_commands(interaction, _trigger)
 
     @edit_slash.command(name="text")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_text_slash(self, interaction: discord.Interaction, trigger: str, text: str):
         """Edit the text of a saved trigger."""
-        func = self.edit_text
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, text=text)
+        await self.edit_text(interaction, _trigger, text=text)
 
     @edit_slash.command(name="chance")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_chance_slash(self, interaction: discord.Interaction, trigger: str, chance: int):
         """Edit the chance a trigger will execute."""
-        func = self.edit_chance
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, chance)
+        await self.edit_chance(interaction, _trigger, chance)
 
     @edit_slash.command(name="command")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_command_slash(
         self, interaction: discord.Interaction, trigger: str, command: str
     ):
         """Edit the command a trigger runs."""
-        func = self.edit_command
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, command=command)
+        await self.edit_command(interaction, _trigger, command=command)
 
     @edit_slash.command(name="role")
+    @app_commands.checks.has_permissions(manage_roles=True)
     async def edit_roles_slash(
         self, interaction: discord.Interaction, trigger: str, role: discord.Role
     ):
         """Edit the added or removed role of a saved trigger."""
-        func = self.edit_roles
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [role])
+        await self.edit_roles(interaction, _trigger, [role])
 
     @edit_slash.command(name="reaction")
     async def edit_reactions_slash(
@@ -406,32 +330,22 @@ class ReTriggerSlash:
         emoji: app_commands.Transform[str, PartialEmojiTransformer],
     ):
         """Edit the emoji reaction of a saved trigger."""
-        func = self.edit_reactions
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger, [emoji])
+        await self.edit_reactions(interaction, _trigger, [emoji])
 
     @edit_slash.command(name="enable")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def enable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
         """Enable a trigger"""
-        func = self.enable_trigger
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.enable_trigger(interaction, _trigger)
 
     @edit_slash.command(name="disable")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def disable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
         """Disable a trigger"""
-        func = self.disable_trigger
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.disable_trigger(interaction, _trigger)
 
     @app_commands.command(name="list")
     @app_commands.describe(guild_id="Only available to bot owner")
@@ -442,10 +356,6 @@ class ReTriggerSlash:
         guild_id: Optional[app_commands.Transform[str, SnowflakeTransformer]],
     ):
         """List information about a trigger"""
-        func = self.list
-
-        if not await self.check_requires(func, interaction):
-            return
         if guild_id is None:
             guild_id = interaction.guild.id
 
@@ -453,17 +363,14 @@ class ReTriggerSlash:
             _trigger = self.triggers[guild_id][trigger]
         else:
             _trigger = None
-        await func(interaction, guild_id, _trigger)
+        await self.list(interaction, guild_id, _trigger)
 
     @app_commands.command(name="remove")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def remove_slash(self, interaction: discord.Interaction, trigger: str):
         """Remove a specified trigger"""
-        func = self.remove
-
-        if not await self.check_requires(func, interaction):
-            return
         _trigger = self.triggers[interaction.guild.id][trigger]
-        await func(interaction, _trigger)
+        await self.remove(interaction, _trigger)
 
     @app_commands.command(name="explain")
     async def explain_slash(
@@ -475,6 +382,7 @@ class ReTriggerSlash:
         await self.explain(interaction, page_num)
 
     @app_commands.command(name="text")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def text_slash(
         self,
         interaction: discord.Interaction,
@@ -484,10 +392,6 @@ class ReTriggerSlash:
         delete_after: Optional[app_commands.Transform[int, TimeDeltaTransformer]],
     ):
         """Add a text response trigger"""
-        func = self.text
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -495,9 +399,10 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, delete_after, text=text)
+        await self.text(interaction, name, regex, delete_after, text=text)
 
     @app_commands.command(name="dm")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def dm_slash(
         self,
         interaction: discord.Interaction,
@@ -506,10 +411,6 @@ class ReTriggerSlash:
         text: str,
     ):
         """Add a dm response trigger"""
-        func = self.dm
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -517,9 +418,10 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, text=text)
+        await self.dm(interaction, name, regex, text=text)
 
     @app_commands.command(name="dmme")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def dmme_slash(
         self,
         interaction: discord.Interaction,
@@ -528,10 +430,6 @@ class ReTriggerSlash:
         text: str,
     ):
         """Add a trigger to dm yourself"""
-        func = self.dmme
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -539,9 +437,11 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, text=text)
+        await self.dmme(interaction, name, regex, text=text)
 
     @app_commands.command(name="rename")
+    @app_commands.checks.has_permissions(manage_nicknames=True)
+    @app_commands.checks.bot_has_permissions(manage_nicknames=True)
     async def rename_slash(
         self,
         interaction: discord.Interaction,
@@ -550,10 +450,6 @@ class ReTriggerSlash:
         text: str,
     ):
         """Add a trigger to rename users"""
-        func = self.rename
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -561,9 +457,11 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, text=text)
+        await self.rename(interaction, name, regex, text=text)
 
     @app_commands.command(name="ban")
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.checks.bot_has_permissions(ban_members=True)
     async def ban_slash(
         self,
         interaction: discord.Interaction,
@@ -571,10 +469,6 @@ class ReTriggerSlash:
         regex: str,
     ):
         """Add a trigger to ban users"""
-        func = self.ban
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -582,9 +476,11 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex)
+        await self.ban(interaction, name, regex)
 
     @app_commands.command(name="kick")
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     async def kick_slash(
         self,
         interaction: discord.Interaction,
@@ -592,10 +488,6 @@ class ReTriggerSlash:
         regex: str,
     ):
         """Add a trigger to kick users"""
-        func = self.kick
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -603,9 +495,10 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex)
+        await self.kick(interaction, name, regex)
 
     @app_commands.command(name="command")
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def command_slash(
         self,
         interaction: discord.Interaction,
@@ -614,10 +507,6 @@ class ReTriggerSlash:
         command: str,
     ):
         """Add a command trigger"""
-        func = self.command
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -625,9 +514,11 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, command)
+        await self.command(interaction, name, regex, command)
 
     @app_commands.command(name="filter")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True)
     async def filter_slash(
         self,
         interaction: discord.Interaction,
@@ -636,10 +527,6 @@ class ReTriggerSlash:
         check_filenames: Optional[bool] = False,
     ):
         """Add a trigger to filter messages"""
-        func = self.filter
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -647,17 +534,15 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, check_filenames, regex=regex)
+        await self.filter(interaction, name, check_filenames, regex=regex)
 
     @app_commands.command(name="addrole")
+    @app_commands.checks.has_permissions(manage_roles=True)
+    @app_commands.checks.bot_has_permissions(manage_roles=True)
     async def addrole_slash(
         self, interaction: discord.Interaction, name: str, regex: str, role: discord.Role
     ):
         """Add a trigger to add a role"""
-        func = self.addrole
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -665,17 +550,15 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, [role])
+        await self.addrole(interaction, name, regex, [role])
 
     @app_commands.command(name="removerole")
+    @app_commands.checks.has_permissions(manage_roles=True)
+    @app_commands.checks.bot_has_permissions(manage_roles=True)
     async def removerole_slash(
         self, interaction: discord.Interaction, name: str, regex: str, role: discord.Role
     ):
         """Add a trigger to remove a role"""
-        func = self.removerole
-
-        if not await self.check_requires(func, interaction):
-            return
         try:
             re.compile(regex)
         except Exception as e:
@@ -683,7 +566,7 @@ class ReTriggerSlash:
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        await func(interaction, name, regex, [role])
+        await self.removerole(interaction, name, regex, [role])
 
     @cooldown_slash.autocomplete("trigger")
     @whitelist_add_slash.autocomplete("trigger")
@@ -725,27 +608,14 @@ class ReTriggerSlash:
             choices = [app_commands.Choice(name="No Triggers set", value="No Triggers set")]
         return choices[:25]
 
-    async def check_requires(self, func, interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.can_run(fake_ctx, check_all_parents=True)
-        if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
-        return resp
+    async def on_error(
+        self, interaction: discord.Interaction, command: discord.app_commands.Command, error
+    ):
+        if (
+            isinstance(error, discord.app_commands.CheckFailure)
+            and not interaction.response.is_done()
+        ):
+            await interaction.response.send_message(error, ephemeral=True)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):

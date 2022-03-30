@@ -439,7 +439,7 @@ class ReTriggerEditModal(discord.ui.Modal):
         if interaction.user.id not in (
             self.trigger.author,
             owner_id,
-            *self.og_button.view.cog.bot.owner_ids,
+            *interaction.client.owner_ids,
         ):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
@@ -537,17 +537,17 @@ class ReTriggerMenu(discord.ui.View):
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
-        self.edit_button = ReTriggerEditButton(discord.ButtonStyle.primary, 0)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.edit_button = ReTriggerEditButton(discord.ButtonStyle.primary, 1)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
         self.delete_button = DeleteTriggerButton(discord.ButtonStyle.red, 1)
         self.toggle_button = ToggleTriggerButton(discord.ButtonStyle.grey, 1)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.toggle_button)
         self.add_item(self.delete_button)
-        self.add_item(self.stop_button)
         self.add_item(self.edit_button)
         self.current_page = page_start
         self.select_view: Optional[ReTriggerSelectOption] = None
@@ -656,7 +656,10 @@ class ReTriggerMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if self.author and interaction.user.id not in (self.author.id, *self.cog.bot.owner_ids):
+        if self.author and interaction.user.id not in (
+            self.author.id,
+            *interaction.client.owner_ids,
+        ):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
@@ -772,7 +775,10 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id not in (self.author.id,):
+        if interaction.user.id not in (
+            *interaction.client.owner_ids,
+            self.author.id,
+        ):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
