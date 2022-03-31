@@ -4,8 +4,10 @@ from typing import Literal, Optional
 
 import discord
 from discord import app_commands
-from redbot.core import Config, commands
+from redbot.core import Config
 from redbot.core.i18n import Translator
+
+from .abc import ReTriggerMixin
 
 try:
     import regex as re
@@ -34,7 +36,7 @@ class SnowflakeTransformer(app_commands.Transformer):
         return int(value)
 
 
-class ReTriggerSlash:
+class ReTriggerSlash(ReTriggerMixin):
 
     modlog = app_commands.Group(
         name="modlog", description="Set which events to record in the modlog."
@@ -205,7 +207,7 @@ class ReTriggerSlash:
             re.compile(regex)
         except Exception as e:
             log.error("Retrigger conversion error")
-            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=argument, e=e)
+            err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
         _trigger = self.triggers[interaction.guild.id][trigger]

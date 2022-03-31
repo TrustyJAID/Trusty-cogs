@@ -20,6 +20,7 @@ from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import escape, humanize_list
 
+from .abc import ReTriggerMixin
 from .converters import Trigger
 from .message import ReTriggerMessage
 
@@ -58,7 +59,7 @@ IMAGE_REGEX: Pattern = re.compile(
 )
 
 
-class TriggerHandler:
+class TriggerHandler(ReTriggerMixin):
     """
     Handles all processing of triggers
     """

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from abc import ABC
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Dict, Optional, Union
@@ -36,8 +37,23 @@ except ImportError:
     import re
 
 
+class CompositeMetaClass(type(commands.Cog), type(ABC)):
+    """
+    This allows the metaclass used for proper type detection to
+    coexist with discord.py's metaclass
+    """
+
+    pass
+
+
 @cog_i18n(_)
-class ReTrigger(TriggerHandler, ReTriggerSlash, discord.app_commands.Group, commands.Cog):
+class ReTrigger(
+    TriggerHandler,
+    ReTriggerSlash,
+    discord.app_commands.Group,
+    commands.Cog,
+    metaclass=CompositeMetaClass,
+):
     """
     Trigger bot events using regular expressions
 
@@ -757,7 +773,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, discord.app_commands.Group, comm
             await ctx.send(msg)
 
     @_edit.command(name="ocr")
-    @commands.check(lambda ctx: TriggerHandler.ALLOW_OCR)
+    @commands.check(lambda ctx: ctx.command.cog.ALLOW_OCR)
     @checks.mod_or_permissions(manage_messages=True)
     async def toggle_ocr_search(self, ctx: commands.Context, trigger: TriggerExists) -> None:
         """
@@ -1985,7 +2001,7 @@ class ReTrigger(TriggerHandler, ReTriggerSlash, discord.app_commands.Group, comm
     @retrigger.command()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True)
-    @commands.check(lambda ctx: TriggerHandler.ALLOW_RESIZE)
+    @commands.check(lambda ctx: ctx.command.cog.ALLOW_RESIZE)
     async def resize(
         self, ctx: commands.Context, name: str, regex: ValidRegex, image_url: str = None
     ) -> None:
