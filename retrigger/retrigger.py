@@ -69,18 +69,17 @@ class ReTrigger(
         super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, 964565433247, force_registration=True)
-        default_guild = {
-            "trigger_list": {},
-            "allow_multiple": False,
-            "modlog": "default",
-            "ban_logs": False,
-            "kick_logs": False,
-            "add_role_logs": False,
-            "remove_role_logs": False,
-            "filter_logs": False,
-            "bypass": False,
-        }
-        self.config.register_guild(**default_guild)
+        self.config.register_guild(
+            trigger_list={},
+            allow_multiple=False,
+            modlog="default",
+            ban_logs=False,
+            kick_logs=False,
+            add_role_logs=False,
+            remove_role_logs=False,
+            filter_logs=False,
+            bypass=False,
+        )
         self.config.register_global(trigger_timeout=1, enable_slash=False)
         self.re_pool = Pool()
         self.triggers: Dict[int, Dict[str, Trigger]] = {}
@@ -102,7 +101,8 @@ class ReTrigger(
                 log.exception("Error removing retrigger from dev environment.")
         log.debug("Closing process pools.")
         self.re_pool.close()
-        self.bot.loop.run_in_executor(None, self.re_pool.join)
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, self.re_pool.join)
         self.save_loop.cancel()
 
     async def save_all_triggers(self):

@@ -366,7 +366,8 @@ class DestinyAPI:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
             task = functools.partial(self.get_entities, entity=entity, d1=d1)
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             data = await asyncio.wait_for(task, timeout=60)
         except Exception:
             log.info(_("No manifest found, getting response from API."))
@@ -406,7 +407,8 @@ class DestinyAPI:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
             task = functools.partial(self.get_entities, entity=entity)
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             data: dict = await asyncio.wait_for(task, timeout=60)
         except Exception:
             err_msg = _("This command requires the Manifest to be downloaded to work.")

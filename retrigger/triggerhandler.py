@@ -482,7 +482,8 @@ class TriggerHandler(ReTriggerMixin):
             temp = BytesIO()
             await attachment.save(temp)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
-            new_task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            new_task = loop.run_in_executor(None, task)
             try:
                 content += await asyncio.wait_for(new_task, timeout=5)
             except asyncio.TimeoutError:
@@ -496,7 +497,8 @@ class TriggerHandler(ReTriggerMixin):
                     temp.write(data)
                     temp.seek(0)
             task = functools.partial(pytesseract.image_to_string, Image.open(temp))
-            new_task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            new_task = loop.run_in_executor(None, task)
             try:
                 content += await asyncio.wait_for(new_task, timeout=5)
             except asyncio.TimeoutError:
@@ -520,7 +522,8 @@ class TriggerHandler(ReTriggerMixin):
         try:
             process = self.re_pool.apply_async(trigger.regex.findall, (content,))
             task = functools.partial(process.get, timeout=self.trigger_timeout)
-            new_task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            new_task = loop.run_in_executor(None, task)
             search = await asyncio.wait_for(new_task, timeout=self.trigger_timeout + 5)
         except mp.TimeoutError:
             error_msg = (
@@ -567,7 +570,8 @@ class TriggerHandler(ReTriggerMixin):
                 task = functools.partial(self.resize_gif, size=len(find[0]) - 3, image=path)
             else:
                 task = functools.partial(self.resize_image, size=len(find[0]) - 3, image=path)
-            new_task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            new_task = loop.run_in_executor(None, task)
             try:
                 file: discord.File = await asyncio.wait_for(new_task, timeout=60)
             except asyncio.TimeoutError:

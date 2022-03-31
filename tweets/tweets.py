@@ -161,7 +161,8 @@ class Tweets(TweetsAPI, commands.Cog):
             return
         try:
             fake_task = functools.partial(api.available_trends)
-            task = self.bot.loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             location_list = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
             await ctx.send(_("Timed out getting twitter trends."))
@@ -177,7 +178,8 @@ class Tweets(TweetsAPI, commands.Cog):
             return
         try:
             fake_task = functools.partial(api.get_place_trends, country_id["woeid"])
-            task = self.bot.loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             trends = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
             await ctx.send(_("Timed out getting twitter trends."))
@@ -214,7 +216,8 @@ class Tweets(TweetsAPI, commands.Cog):
         try:
             api = await self.authenticate()
             fake_task = functools.partial(api.get_user, screen_name=username)
-            task = self.bot.loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             user = await asyncio.wait_for(task, timeout=10)
         except asyncio.TimeoutError:
             raise
@@ -269,9 +272,10 @@ class Tweets(TweetsAPI, commands.Cog):
             except MissingTokenError as e:
                 await e.send_error(ctx)
                 return
-        await TweetsMenu(
-            source=TweetPages(api=api, username=username, loop=ctx.bot.loop), cog=self
-        ).start(ctx=ctx)
+        loop = asyncio.get_running_loop()
+        await TweetsMenu(source=TweetPages(api=api, username=username, loop=loop), cog=self).start(
+            ctx=ctx
+        )
 
     @commands.group(name="autotweet")
     @checks.admin_or_permissions(manage_channels=True)
@@ -643,7 +647,8 @@ class Tweets(TweetsAPI, commands.Cog):
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
             )
-            task = ctx.bot.loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             list_members = await asyncio.wait_for(task, timeout=30)
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")
@@ -723,7 +728,8 @@ class Tweets(TweetsAPI, commands.Cog):
             fake_task = functools.partial(
                 self.get_tweet_list, api=api, owner=owner, list_name=list_name
             )
-            task = ctx.bot.loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             list_members = await asyncio.wait_for(task, timeout=30)
         except asyncio.TimeoutError:
             msg = _("Adding that tweet list took too long.")

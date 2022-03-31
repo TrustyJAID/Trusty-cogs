@@ -313,10 +313,11 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
+            loop = asyncio.get_running_loop()
             if mime in self.gif_mimes:
-                task = self.bot.loop.run_in_executor(None, self.do_gmagik, b, 1)
+                task = loop.run_in_executor(None, self.do_gmagik, b, 1)
             else:
-                task = self.bot.loop.run_in_executor(None, self.do_magik, scale, b)
+                task = loop.run_in_executor(None, self.do_magik, scale, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, TypeError):
@@ -414,10 +415,11 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
+            loop = asyncio.get_running_loop()
             if mime in self.gif_mimes:
-                task = self.bot.loop.run_in_executor(None, self.do_gmagik, b, frame_delay)
+                task = loop.run_in_executor(None, self.do_gmagik, b, frame_delay)
             else:
-                task = self.bot.loop.run_in_executor(None, self.do_magik, 2, b)
+                task = loop.run_in_executor(None, self.do_magik, 2, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=120)
             except asyncio.TimeoutError:
@@ -510,7 +512,8 @@ class NotSoBot(commands.Cog):
                 final.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(
                 None, make_caption_image, b, text, color, font, x, y, is_gif
             )
             try:
@@ -582,7 +585,8 @@ class NotSoBot(commands.Cog):
                 await ctx.send(":warning: **Command download function failed...**")
                 return
             try:
-                task = ctx.bot.loop.run_in_executor(None, self.trigger_image, img, trig)
+                loop = asyncio.get_running_loop()
+                task = loop.run_in_executor(None, self.trigger_image, img, trig)
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
                 return await ctx.send("Error creating trigger image")
@@ -636,7 +640,8 @@ class NotSoBot(commands.Cog):
         if text == "donger" or text == "dong":
             text = "8====D"
         async with ctx.typing():
-            task = self.bot.loop.run_in_executor(None, self.do_ascii, text)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_ascii, text)
             try:
                 file, txt, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -716,7 +721,8 @@ class NotSoBot(commands.Cog):
                 await ctx.send(":warning: **Command download function failed...**")
                 return
             im = Image.open(b)
-            task = self.bot.loop.run_in_executor(None, self.generate_ascii, im)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.generate_ascii, im)
             try:
                 temp, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -771,7 +777,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            result = self.bot.loop.run_in_executor(None, self.do_gascii, b)
+            loop = asyncio.get_running_loop()
+            result = loop.run_in_executor(None, self.do_gascii, b)
             try:
                 file, file_size = await asyncio.wait_for(result, timeout=60)
             except asyncio.TimeoutError:
@@ -833,7 +840,8 @@ class NotSoBot(commands.Cog):
             b.close()
             return file, file_size
 
-        task = ctx.bot.loop.run_in_executor(None, make_rip, b, text)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, make_rip, b, text)
         try:
             file, file_size = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
@@ -897,7 +905,8 @@ class NotSoBot(commands.Cog):
 
             if len(list_im) < 2:
                 return await ctx.send("You need to supply more than 1 image.")
-            task = ctx.bot.loop.run_in_executor(None, make_merge, list_im)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, make_merge, list_im)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -964,7 +973,8 @@ class NotSoBot(commands.Cog):
                 img.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(None, make_jpeg, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, make_jpeg, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -1003,7 +1013,8 @@ class NotSoBot(commands.Cog):
             await ctx.send(":warning: **Command download function failed...**")
             return
         try:
-            task = self.bot.loop.run_in_executor(None, self.do_vw, b, txt)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_vw, b, txt)
             file, file_size = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return await ctx.send("That image is too large.")
@@ -1041,7 +1052,8 @@ class NotSoBot(commands.Cog):
             return file, file_size
 
         try:
-            task = self.bot.loop.run_in_executor(None, make_mc, b, txt)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, make_mc, b, txt)
             file, file_size = await asyncio.wait_for(task, timeout=60)
         except asyncio.TimeoutError:
             return await ctx.send("That image is too large.")
@@ -1188,7 +1200,8 @@ class NotSoBot(commands.Cog):
                 return file, size
 
             try:
-                task = ctx.bot.loop.run_in_executor(
+                loop = asyncio.get_running_loop()
+                task = loop.run_in_executor(
                     None, add_watermark, b, wmm, x, y, transparency, wm_gif
                 )
                 file, file_size = await asyncio.wait_for(task, timeout=120)
@@ -1263,7 +1276,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(None, self.do_glitch, b, amount, seed, iterations)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_glitch, b, amount, seed, iterations)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -1289,10 +1303,11 @@ class NotSoBot(commands.Cog):
                 if len(img_urls) > 1:
                     await ctx.send(":warning: **Command download function failed...**")
                     return
+            loop = asyncio.get_running_loop()
             if mime in self.gif_mimes:
-                task = ctx.bot.loop.run_in_executor(None, self.make_pixel_gif, b, pixels)
+                task = loop.run_in_executor(None, self.make_pixel_gif, b, pixels)
             else:
-                task = ctx.bot.loop.run_in_executor(None, self.make_pixel, b, pixels)
+                task = loop.run_in_executor(None, self.make_pixel, b, pixels)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -1405,7 +1420,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(None, self.do_waaw, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_waaw, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, wand.exceptions.MissingDelegateError):
@@ -1463,7 +1479,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(None, self.do_haah, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_haah, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, wand.exceptions.MissingDelegateError):
@@ -1522,7 +1539,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(None, self.do_woow, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_woow, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, wand.exceptions.MissingDelegateError):
@@ -1582,7 +1600,8 @@ class NotSoBot(commands.Cog):
             if b is False:
                 await ctx.send(":warning: **Command download function failed...**")
                 return
-            task = self.bot.loop.run_in_executor(None, self.do_hooh, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, self.do_hooh, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, wand.exceptions.MissingDelegateError):
@@ -1618,7 +1637,8 @@ class NotSoBot(commands.Cog):
                     final.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(None, flip_img, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, flip_img, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -1653,7 +1673,8 @@ class NotSoBot(commands.Cog):
                     image.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(None, flop_img, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, flop_img, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except asyncio.TimeoutError:
@@ -1686,7 +1707,8 @@ class NotSoBot(commands.Cog):
                     image.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(None, invert_img, b)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, invert_img, b)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):
@@ -1720,7 +1742,8 @@ class NotSoBot(commands.Cog):
                     image.close()
                 return file, file_size
 
-            task = ctx.bot.loop.run_in_executor(None, rotate_img, b, degrees)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, rotate_img, b, degrees)
             try:
                 file, file_size = await asyncio.wait_for(task, timeout=60)
             except (asyncio.TimeoutError, PIL.UnidentifiedImageError):

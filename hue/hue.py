@@ -120,7 +120,8 @@ class Hue(commands.Cog):
             )
         except asyncio.TimeoutError:
             return
-        await ctx.bot.loop.run_in_executor(None, token.__authorise__, msg.content)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, token.__authorise__, msg.content)
         await ctx.tick()
 
     @hue_set.command(name="ip")
@@ -167,7 +168,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.brightness = self.max_min_check(brightness, 254, 0)
 
-        await ctx.bot.loop.run_in_executor(None, _change, brightness, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, brightness, name)
         await ctx.tick()
 
     @_hue.command(name="temp", aliases=["ct", "colourtemp", "colortemp", "temperature"])
@@ -188,7 +190,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.colortemp = self.max_min_check(ct, 600, 154)
 
-        await ctx.bot.loop.run_in_executor(None, _change, ct, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, ct, name)
         await ctx.tick()
 
     @_hue.command(name="hue")
@@ -209,7 +212,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.hue = hue
 
-        await ctx.bot.loop.run_in_executor(None, _change, hue, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, hue, name)
         await ctx.tick()
 
     @_hue.command(name="saturation", aliases=["sat"])
@@ -230,7 +234,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.saturation = self.max_min_check(saturation, 254, 0)
 
-        await ctx.bot.loop.run_in_executor(None, _change, saturation, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, saturation, name)
         await ctx.tick()
 
     @_hue.command(name="random")
@@ -251,7 +256,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.xy = colours
 
-        await ctx.bot.loop.run_in_executor(None, _change, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
     @_hue.command(name="colourloop", aliases=["cl", "colorloop"])
@@ -274,7 +280,8 @@ class Hue(commands.Cog):
                         light.effect = "none"
                         continue
 
-        await ctx.bot.loop.run_in_executor(None, _change, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
     @_hue.group(name="colour", aliases=["color"])
@@ -323,7 +330,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.xy = [x, y]
 
-        await ctx.bot.loop.run_in_executor(None, _change, red, green, blue, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, red, green, blue, name)
         await ctx.tick()
 
     @_colour.command(name="xy", aliases=["xyz"])
@@ -350,7 +358,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.xy = [x, y]
 
-        await ctx.bot.loop.run_in_executor(None, _change, x, y, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, x, y, name)
         await ctx.tick()
 
     @_colour.command(name="hex")
@@ -374,7 +383,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower() and light.on:
                     light.xy = [x, y]
 
-        await ctx.bot.loop.run_in_executor(None, _change, hex_code, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, hex_code, name)
         await ctx.tick()
 
     @_hue.command(name="test", hidden=True)
@@ -405,7 +415,8 @@ class Hue(commands.Cog):
                         light.on = True
                         continue
 
-        await ctx.bot.loop.run_in_executor(None, _change, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
     @_hue.command(name="off")
@@ -423,7 +434,8 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower():
                     light.on = False
 
-        await ctx.bot.loop.run_in_executor(None, _change, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, name)
         await ctx.tick()
 
     @_hue.command(name="on")
@@ -441,5 +453,6 @@ class Hue(commands.Cog):
                 if name is None or light.name.lower() == name.lower():
                     light.on = True
 
-        await ctx.bot.loop.run_in_executor(None, _change, name)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _change, name)
         await ctx.tick()

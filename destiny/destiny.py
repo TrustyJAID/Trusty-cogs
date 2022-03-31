@@ -1141,7 +1141,8 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
             task = functools.partial(self.get_entities, entity="DestinyLoreDefinition")
-            task = self.bot.loop.run_in_executor(None, task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, task)
             data: dict = await asyncio.wait_for(task, timeout=60)
         except Exception:
             msg = _("The manifest needs to be downloaded for this to work.")
