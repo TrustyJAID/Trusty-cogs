@@ -158,7 +158,7 @@ class HockeySlash(MixinMeta):
     ):
         """Get a team roster"""
 
-        await self.roster(season, search=team)
+        await self.roster(interaction, season, search=team)
 
     @app_commands.command(name="leaderboard")
     async def leaderboard_slash(
