@@ -467,6 +467,16 @@ class StandingsMenu(discord.ui.View):
         else:
             self.pages = [await embeds_mapping[self.context]()]
         self._source = StandingsPages(self.pages)
+        if len(self.pages) == 1:
+            self.forward_button.disabled = True
+            self.back_button.disabled = True
+            self.first_item.disabled = True
+            self.last_item.disabled = True
+        else:
+            self.forward_button.disabled = False
+            self.back_button.disabled = False
+            self.first_item.disabled = False
+            self.last_item.disabled = False
 
     @property
     def source(self):
