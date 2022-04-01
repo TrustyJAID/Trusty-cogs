@@ -219,8 +219,8 @@ class PlayerPages(menus.ListPageSource):
             player_name = self.players[player_id]["fullName"]
             self.select_options.append(
                 discord.SelectOption(
-                    label=f"Page {count + 1}",
-                    description=player_name[:50],
+                    label=player_name[:50],
+                    description=f"Page {count + 1}",
                     value=player_id,
                 )
             )
