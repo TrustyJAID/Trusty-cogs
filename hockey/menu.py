@@ -1,8 +1,6 @@
-import asyncio
 import logging
-import re
 from datetime import datetime
-from typing import Any, List, Optional, Pattern, Union
+from typing import Any, List, Optional, Union
 
 import discord
 from redbot.core import commands
@@ -10,269 +8,26 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.vendored.discord.ext import menus
 
-from .constants import TEAMS
+from .components import (
+    BackButton,
+    FilterButton,
+    FirstItemButton,
+    ForwardButton,
+    GameflowButton,
+    HeatmapButton,
+    HockeySelectGame,
+    HockeySelectPlayer,
+    LastItemButton,
+    SkipBackButton,
+    SkipForwardButton,
+    StopButton,
+)
 from .errors import NoSchedule
-from .helper import DATE_RE
 from .player import Player
 from .schedule import Schedule
-from .standings import Standings
 
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.hockey")
-
-
-class StopButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
-
-    async def callback(self, interaction: discord.Interaction):
-        self.view.stop()
-        await self.view.message.delete()
-
-
-class ForwardButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1, interaction)
-
-
-class BackButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1, interaction)
-
-
-class LastItemButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = (
-            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
-
-
-class FirstItemButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = (
-            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, interaction)
-
-
-class SkipForwardButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = (
-            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_next=True, interaction=interaction)
-
-
-class SkipBackButton(discord.ui.Button):
-    def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
-    ):
-        super().__init__(style=style, row=row)
-        self.style = style
-        self.emoji = (
-            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}"
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_prev=True, interaction=interaction)
-
-
-class FilterModal(discord.ui.Modal):
-    def __init__(self, view: discord.ui.View):
-        super().__init__(title=_("Filter games"))
-        self.view = view
-        cur_date = self.view.source.date
-        self.teams = discord.ui.TextInput(
-            style=discord.TextStyle.paragraph,
-            label="Teams to filter",
-            placeholder="Edmonton Oilers\nCanucks\nHabs",
-            default="\n".join(t for t in self.view.source.team),
-            required=False,
-        )
-        self.date = discord.ui.TextInput(
-            style=discord.TextStyle.short,
-            label="Dates to filter",
-            placeholder="YYYY-MM-DD",
-            default=f"{cur_date.year}-{cur_date.month}-{cur_date.day}",
-            min_length=8,
-            max_length=10,
-            required=False,
-        )
-        self.add_item(self.date)
-        self.add_item(self.teams)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        if self.date.value:
-            search = DATE_RE.search(self.date.value)
-            if search:
-                date_str = f"{search.group(1)}-{search.group(3)}-{search.group(4)}"
-                date = datetime.strptime(date_str, "%Y-%m-%d")
-                self.view.source.date = date
-                try:
-                    await self.view.source.prepare()
-                except NoSchedule:
-                    await interaction.response.send_message(self.view.format_error())
-                    return
-        if self.teams.value:
-            potential_teams = self.teams.value.split()
-            teams: List[str] = []
-            for team, data in TEAMS.items():
-                if "Team" in team:
-                    continue
-                nick = data["nickname"]
-                short = data["tri_code"]
-                pattern = fr"{short}\b|" + r"|".join(fr"\b{i}\b" for i in team.split())
-                if nick:
-                    pattern += r"|" + r"|".join(fr"\b{i}\b" for i in nick)
-                # log.debug(pattern)
-                reg: Pattern = re.compile(fr"\b{pattern}", flags=re.I)
-                for pot in potential_teams:
-                    find = reg.findall(pot)
-                    if find:
-                        teams.append(team)
-                self.view.source.team = teams
-            try:
-                await self.view.source.prepare()
-            except NoSchedule:
-                return await self.view.ctx.send(self.view.format_error())
-        await self.view.show_page(0, interaction=interaction)
-
-
-class FilterButton(discord.ui.Button):
-    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
-        super().__init__(style=style, row=row, label=_("Filter"))
-        self.style = style
-
-    async def callback(self, interaction: discord.Interaction):
-        """stops the pagination session."""
-        modal = FilterModal(self.view)
-        await interaction.response.send_modal(modal)
-
-
-class HeatmapButton(discord.ui.Button):
-    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
-        super().__init__(style=style, row=row, label=_("Heatmap"))
-        self.style = style
-
-    async def callback(self, interaction: discord.Interaction):
-        """stops the pagination session."""
-        mapping = {
-            "all": "ev",
-            "ev": "5v5",
-            "5v5": "sva",
-            "sva": "home5v4",
-            "home5v4": "away5v4",
-            "away5v4": "all",
-        }
-        if self.view.source.include_gameflow:
-            self.view.source.include_gameflow = False
-        if not self.view.source.include_heatmap:
-            self.view.source.include_heatmap = True
-            self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0, interaction=interaction)
-            return
-        else:
-            self.view.source.style = mapping[self.view.source.style]
-            self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0, interaction=interaction)
-            return
-
-
-class GameflowButton(discord.ui.Button):
-    def __init__(self, style: discord.ButtonStyle, row: Optional[int]):
-        super().__init__(style=style, row=row, label=_("Gameflow"))
-        self.style = style
-
-    async def callback(self, interaction: discord.Interaction):
-        """stops the pagination session."""
-        mapping = {
-            (True, "all"): (True, "ev"),
-            (True, "ev"): (True, "5v5"),
-            (True, "5v5"): (True, "sva"),
-            (True, "sva"): (False, "all"),
-            (False, "all"): (False, "ev"),
-            (False, "ev"): (False, "5v5"),
-            (False, "5v5"): (False, "sva"),
-            (False, "sva"): (True, "all"),
-        }
-        if self.view.source.include_heatmap:
-            self.view.source.include_heatmap = False
-        if not self.view.source.include_gameflow:
-            self.view.source.include_gameflow = True
-            corsi = "Corsi" if self.view.source.corsi else "Expected Goals"
-            strength = self.view.source.strength
-            self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0, interaction=interaction)
-            return
-        else:
-            lookup = (self.view.source.corsi, self.view.source.strength)
-            corsi_bool, strength = mapping[lookup]
-            self.view.source.corsi = corsi_bool
-            self.view.source.strength = strength
-            corsi = "Corsi" if corsi_bool else "Expected Goals"
-            self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0, interaction=interaction)
-            return
-
-
-class HockeySelectGame(discord.ui.Select):
-    def __init__(self, options: List[discord.SelectOption]):
-        super().__init__(min_values=1, max_values=1, options=options, placeholder=_("Pick a game"))
-
-    async def callback(self, interaction: discord.Interaction):
-        game_id = int(self.values[0])
-        await self.view.show_page(0, game_id=game_id, interaction=interaction)
 
 
 class GamesMenu(discord.ui.View):
@@ -430,51 +185,6 @@ class GamesMenu(discord.ui.View):
         return True
 
 
-class StandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-        self.pages = pages
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
-        return await Standings.all_standing_embed(self.pages)
-
-
-class TeamStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, view: discord.ui.View, page: Standings) -> discord.Embed:
-        return await Standings.make_team_standings_embed(page)
-
-
-class ConferenceStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
-        return await Standings.make_conference_standings_embed(page)
-
-
-class DivisionStandingsPages(menus.ListPageSource):
-    def __init__(self, pages: list):
-        super().__init__(pages, per_page=1)
-
-    def is_paginating(self) -> bool:
-        return True
-
-    async def format_page(self, view: discord.ui.View, page: List[Standings]) -> discord.Embed:
-        return await Standings.make_division_standings_embed(page)
-
-
 class LeaderboardPages(menus.ListPageSource):
     def __init__(self, pages: list, style: str):
         super().__init__(pages, per_page=1)
@@ -525,18 +235,6 @@ class PlayerPages(menus.ListPageSource):
         em = player.get_embed()
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
-
-
-class HockeySelectPlayer(discord.ui.Select):
-    def __init__(self, options: List[discord.SelectOption]):
-        super().__init__(
-            min_values=1, max_values=1, options=options, placeholder=_("Pick a Player")
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        player_id = int(self.values[0])
-        index = self.view.source.pages.index(player_id)
-        await self.view.show_page(index, interaction)
 
 
 class SimplePages(menus.ListPageSource):

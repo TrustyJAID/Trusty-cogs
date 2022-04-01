@@ -6,7 +6,6 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 from urllib.parse import quote
 
 import discord
-from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
@@ -15,27 +14,10 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
-from .helper import (
-    YEAR_RE,
-    HockeyStandings,
-    HockeyTeams,
-    TeamDateFinder,
-    YearFinder,
-    utc_to_local,
-)
-from .menu import (
-    BaseMenu,
-    ConferenceStandingsPages,
-    DivisionStandingsPages,
-    GamesMenu,
-    LeaderboardPages,
-    PlayerPages,
-    SimplePages,
-    StandingsPages,
-    TeamStandingsPages,
-)
+from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearFinder
+from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .schedule import Schedule, ScheduleList
-from .standings import Standings
+from .standings import Standings, StandingsMenu
 
 _ = Translator("Hockey", __file__)
 
@@ -163,34 +145,11 @@ class HockeyCommands(MixinMeta):
         by searching for team or get all standings at once
         separated by division
         """
+        log.debug(search)
         if isinstance(ctx, discord.Interaction):
             await ctx.response.defer()
-        source = {
-            "all": StandingsPages,
-            "conference": ConferenceStandingsPages,
-            "western": ConferenceStandingsPages,
-            "eastern": ConferenceStandingsPages,
-            "division": DivisionStandingsPages,
-            "central": DivisionStandingsPages,
-            "metropolitan": DivisionStandingsPages,
-            "atlantic": DivisionStandingsPages,
-            "pacific": DivisionStandingsPages,
-        }
-        if search is None:
-            search = "all"
-        standings, page = await Standings.get_team_standings(search.lower(), session=self.session)
-        for team in TEAMS:
-            if "Team" in team:
-                source[team.replace("Team ", "").lower()] = DivisionStandingsPages
-            else:
-                source[team] = TeamStandingsPages
-        await BaseMenu(
-            source=source[search](pages=standings),
-            page_start=page,
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=180,
-        ).start(ctx=ctx)
+        standings = await Standings.get_team_standings(session=self.session)
+        await StandingsMenu(standings=standings, start=search).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -891,6 +850,7 @@ class HockeyCommands(MixinMeta):
                 "Not following the above rules will result in "
                 "appropriate punishments ranging from a warning "
                 "to a ban. ```\n\nhttps://discord.gg/reddithockey\n"
+                "https://discord.gg/rishockey\n"
                 "https://discord.gg/sdpn\nhttps://discord.gg/thehockeyguy"
             )
             eastern_conference = "https://i.imgur.com/CtXvcCs.png"

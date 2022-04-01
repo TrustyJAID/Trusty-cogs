@@ -34,6 +34,13 @@ YEAR_RE = re.compile(r"((19|20)\d\d)-?\/?((19|20)\d\d)?")
 
 TIMEZONE_RE = re.compile(r"|".join(re.escape(zone) for zone in pytz.common_timezones), flags=re.I)
 
+ACTIVE_TEAM_RE_STR = r"|".join(
+    rf"{team}|{data['tri_code']}|{'|'.join(n for n in data['nickname'])}"
+    for team, data in TEAMS.items()
+    if data["active"]
+)
+ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
+
 
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)

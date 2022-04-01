@@ -272,10 +272,7 @@ class Tweets(TweetsAPI, commands.Cog):
             except MissingTokenError as e:
                 await e.send_error(ctx)
                 return
-        loop = asyncio.get_running_loop()
-        await TweetsMenu(source=TweetPages(api=api, username=username, loop=loop), cog=self).start(
-            ctx=ctx
-        )
+        await TweetsMenu(source=TweetPages(api=api, username=username), cog=self).start(ctx=ctx)
 
     @commands.group(name="autotweet")
     @checks.admin_or_permissions(manage_channels=True)

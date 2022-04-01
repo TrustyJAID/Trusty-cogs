@@ -44,7 +44,6 @@ class TweetPages(menus.PageSource):
         self._checks: int = 0
         self._last_page: int = 0
         self._api = kwargs.get("api")
-        self._loop = kwargs.get("loop")
         self._username: str = kwargs.get("username")
         self._last_searched: str = ""
 
@@ -163,7 +162,8 @@ class TweetPages(menus.PageSource):
             fake_task = functools.partial(
                 self._get_twitter_statuses,
             )
-            task = self._loop.run_in_executor(None, fake_task)
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, fake_task)
             msg_list = await asyncio.wait_for(task, timeout=60)
             # log.debug(next(self._listing))
         except asyncio.TimeoutError:
@@ -218,9 +218,8 @@ class TweetPages(menus.PageSource):
                 text = await menu.cog.replace_short_url(status)
         if status.in_reply_to_screen_name:
             try:
-                task = self._loop.run_in_executor(
-                    None, self._get_reply, [status.in_reply_to_status_id]
-                )
+                loop = asyncio.get_running_loop()
+                task = loop.run_in_executor(None, self._get_reply, [status.in_reply_to_status_id])
                 msg_list = await asyncio.wait_for(task, timeout=60)
                 if msg_list:
                     # log.debug(reply)
