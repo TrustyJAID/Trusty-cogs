@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from datetime import timedelta
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import discord
 from discord import app_commands
@@ -13,6 +15,9 @@ try:
     import regex as re
 except ImportError:
     import re
+
+if TYPE_CHECKING:
+    from .converters import Trigger
 
 _ = Translator("ReTrigger", __file__)
 log = logging.getLogger("red.trusty-cogs.ReTrigger")
@@ -34,6 +39,30 @@ class SnowflakeTransformer(app_commands.Transformer):
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> int:
         return int(value)
+
+
+class TriggerTransformer(app_commands.Transformer):
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Trigger:
+        return interaction.command.parent.triggers[interaction.guild.id][value]
+
+    @classmethod
+    async def autocomplete(cls, interaction: discord.Interaction, value: str):
+        guild_id = interaction.guild.id
+        if getattr(interaction.namespace, "guild_id") and await interaction.client.is_owner(
+            interaction.user
+        ):
+            guild_id = int(interaction.namespace.guild_id)
+        triggers = interaction.command.parent.triggers
+        if guild_id in triggers:
+            choices = [
+                app_commands.Choice(name=t.name, value=t.name)
+                for t in triggers[guild_id].values()
+                if value in t.name
+            ]
+        else:
+            choices = [app_commands.Choice(name="No Triggers set", value="No Triggers set")]
+        return choices[:25]
 
 
 class ReTriggerSlash(ReTriggerMixin):
@@ -104,7 +133,7 @@ class ReTriggerSlash(ReTriggerMixin):
     async def whitelist_add_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         channel: Optional[discord.TextChannel],
         user: Optional[discord.User],
         role: Optional[discord.Role],
@@ -116,9 +145,8 @@ class ReTriggerSlash(ReTriggerMixin):
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
         await self.whitelist_add(
-            interaction, _trigger, [i for i in channel_user_role if i is not None]
+            interaction, trigger, [i for i in channel_user_role if i is not None]
         )
 
     @allowlist.command(name="remove")
@@ -126,7 +154,7 @@ class ReTriggerSlash(ReTriggerMixin):
     async def whitelist_remove_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         channel: Optional[discord.TextChannel],
         user: Optional[discord.User],
         role: Optional[discord.Role],
@@ -138,9 +166,8 @@ class ReTriggerSlash(ReTriggerMixin):
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
         await self.whitelist_remove(
-            interaction, _trigger, [i for i in channel_user_role if i is not None]
+            interaction, trigger, [i for i in channel_user_role if i is not None]
         )
 
     @blocklist.command(name="add")
@@ -148,7 +175,7 @@ class ReTriggerSlash(ReTriggerMixin):
     async def blacklist_add_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         channel: Optional[discord.TextChannel],
         user: Optional[discord.User],
         role: Optional[discord.Role],
@@ -160,9 +187,9 @@ class ReTriggerSlash(ReTriggerMixin):
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
+        trigger = self.triggers[interaction.guild.id][trigger]
         await self.blacklist_add(
-            interaction, _trigger, [i for i in channel_user_role if i is not None]
+            interaction, trigger, [i for i in channel_user_role if i is not None]
         )
 
     @blocklist.command(name="remove")
@@ -170,7 +197,7 @@ class ReTriggerSlash(ReTriggerMixin):
     async def blacklist_remove_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         channel: Optional[discord.TextChannel],
         user: Optional[discord.User],
         role: Optional[discord.Role],
@@ -182,26 +209,31 @@ class ReTriggerSlash(ReTriggerMixin):
                 _("You must provide at least one of either channel, user, or role.")
             )
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
+        trigger = self.triggers[interaction.guild.id][trigger]
         await self.blacklist_remove(
-            interaction, _trigger, [i for i in channel_user_role if i is not None]
+            interaction, trigger, [i for i in channel_user_role if i is not None]
         )
 
     @edit_slash.command(name="cooldown")
     async def cooldown_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         time: int,
         style: Optional[Literal["guild", "channel", "member"]] = "guild",
     ):
         """Set cooldown options for ReTrigger"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.cooldown(interaction, _trigger, time, style)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.cooldown(interaction, trigger, time, style)
 
     @edit_slash.command(name="regex")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def edit_regex_slash(self, interaction: discord.Interaction, trigger: str, regex: str):
+    async def edit_regex_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        regex: str,
+    ):
         """Edit the regex of a saved trigger."""
         try:
             re.compile(regex)
@@ -210,28 +242,40 @@ class ReTriggerSlash(ReTriggerMixin):
             err_msg = _("`{arg}` is not a valid regex pattern. {e}").format(arg=regex, e=e)
             await interaction.response.send_message(err_msg)
             return
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_regex(interaction, _trigger, regex=regex)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.edit_regex(interaction, trigger, regex=regex)
 
     # @edit_slash.command(name="ocr")
-    async def toggle_ocr_search_slash(self, interaction: discord.Interaction, trigger: str):
+    async def toggle_ocr_search_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Toggle whether to use Optical Character Recognition"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.toggle_ocr_search(interaction, _trigger)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.toggle_ocr_search(interaction, trigger)
 
     @edit_slash.command(name="nsfw")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def toggle_nsfw_slash(self, interaction: discord.Interaction, trigger: str):
+    async def toggle_nsfw_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Toggle whether a trigger is considered age-restricted."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.toggle_nsfw(interaction, _trigger)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.toggle_nsfw(interaction, trigger)
 
     @edit_slash.command(name="readfilenames")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def toggle_filename_search_slash(self, interaction: discord.Interaction, trigger: str):
+    async def toggle_filename_search_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Toggle whether to search message attachment filenames."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.toggle_filename_search(interaction, _trigger)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.toggle_filename_search(interaction, trigger)
 
     @edit_slash.command(name="reply")
     @app_commands.describe(
@@ -239,140 +283,174 @@ class ReTriggerSlash(ReTriggerMixin):
     )
     @app_commands.checks.has_permissions(manage_messages=True)
     async def set_reply_slash(
-        self, interaction: discord.Interaction, trigger: str, set_to: Optional[bool]
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        set_to: Optional[bool],
     ):
         """Set whether or not to reply to the triggered message."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.set_reply(interaction, _trigger, set_to)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.set_reply(interaction, trigger, set_to)
 
     @edit_slash.command(name="tts")
-    async def set_tts_slash(self, interaction: discord.Interaction, trigger: str, set_to: bool):
+    async def set_tts_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        set_to: bool,
+    ):
         """Set whether or not to send the message with text-to-speech."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.set_tts(interaction, _trigger, set_to)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.set_tts(interaction, trigger, set_to)
 
     @edit_slash.command(name="usermention")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def set_user_mention_slash(
-        self, interaction: discord.Interaction, trigger: str, set_to: bool
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        set_to: bool,
     ):
         """Set whether or not this trigger can mention users"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.set_user_menion(interaction, _trigger, set_to)
+        trigger = self.triggers[interaction.guild.id][trigger]
+        await self.set_user_menion(interaction, trigger, set_to)
 
     @edit_slash.command(name="everyonemention")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def set_everyone_mention_slash(
-        self, interaction: discord.Interaction, trigger: str, set_to: bool
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        set_to: bool,
     ):
         """Set whether or not this trigger can mention everyone"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.set_everyone_mention(interaction, _trigger, set_to)
+        await self.set_everyone_mention(interaction, trigger, set_to)
 
     @edit_slash.command(name="rolemention")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def set_role_mention_slash(
-        self, interaction: discord.Interaction, trigger: str, set_to: bool
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        set_to: bool,
     ):
         """Set whether or not this trigger can mention roles"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.set_role_mention(interaction, _trigger, set_to)
+        await self.set_role_mention(interaction, trigger, set_to)
 
     @edit_slash.command(name="edited")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def toggle_check_edits_slash(self, interaction: discord.Interaction, trigger: str):
+    async def toggle_check_edits_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Toggle whether to search message edits."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.toggle_check_edits(interaction, _trigger)
+        await self.toggle_check_edits(interaction, trigger)
 
     @edit_slash.command(name="ignorecommands")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def edit_ignore_commands_slash(self, interaction: discord.Interaction, trigger: str):
+    async def edit_ignore_commands_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Toggle whether a trigger will ignore commands."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_ignore_commands(interaction, _trigger)
+        await self.edit_ignore_commands(interaction, trigger)
 
     @edit_slash.command(name="text")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def edit_text_slash(self, interaction: discord.Interaction, trigger: str, text: str):
+    async def edit_text_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        text: str,
+    ):
         """Edit the text of a saved trigger."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_text(interaction, _trigger, text=text)
+        await self.edit_text(interaction, trigger, text=text)
 
     @edit_slash.command(name="chance")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def edit_chance_slash(self, interaction: discord.Interaction, trigger: str, chance: int):
+    async def edit_chance_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        chance: int,
+    ):
         """Edit the chance a trigger will execute."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_chance(interaction, _trigger, chance)
+        await self.edit_chance(interaction, trigger, chance)
 
     @edit_slash.command(name="command")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def edit_command_slash(
-        self, interaction: discord.Interaction, trigger: str, command: str
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        command: str,
     ):
         """Edit the command a trigger runs."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_command(interaction, _trigger, command=command)
+        await self.edit_command(interaction, trigger, command=command)
 
     @edit_slash.command(name="role")
     @app_commands.checks.has_permissions(manage_roles=True)
     async def edit_roles_slash(
-        self, interaction: discord.Interaction, trigger: str, role: discord.Role
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+        role: discord.Role,
     ):
         """Edit the added or removed role of a saved trigger."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_roles(interaction, _trigger, [role])
+        await self.edit_roles(interaction, trigger, [role])
 
     @edit_slash.command(name="reaction")
     async def edit_reactions_slash(
         self,
         interaction: discord.Interaction,
-        trigger: str,
+        trigger: app_commands.Transform[str, TriggerTransformer],
         emoji: app_commands.Transform[str, PartialEmojiTransformer],
     ):
         """Edit the emoji reaction of a saved trigger."""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.edit_reactions(interaction, _trigger, [emoji])
+        await self.edit_reactions(interaction, trigger, [emoji])
 
     @edit_slash.command(name="enable")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def enable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
+    async def enable_trigger_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Enable a trigger"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.enable_trigger(interaction, _trigger)
+        await self.enable_trigger(interaction, trigger)
 
     @edit_slash.command(name="disable")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def disable_trigger_slash(self, interaction: discord.Interaction, trigger: str):
+    async def disable_trigger_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Disable a trigger"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.disable_trigger(interaction, _trigger)
+        await self.disable_trigger(interaction, trigger)
 
     @app_commands.command(name="list")
     @app_commands.describe(guild_id="Only available to bot owner")
     async def list_slash(
         self,
         interaction: discord.Interaction,
-        trigger: Optional[str],
+        trigger: Optional[app_commands.Transform[str, TriggerTransformer]],
         guild_id: Optional[app_commands.Transform[str, SnowflakeTransformer]],
     ):
         """List information about a trigger"""
-        if guild_id is None:
-            guild_id = interaction.guild.id
-
-        if trigger is not None:
-            _trigger = self.triggers[guild_id][trigger]
-        else:
-            _trigger = None
-        await self.list(interaction, guild_id, _trigger)
+        await self.list(interaction, guild_id, trigger)
 
     @app_commands.command(name="remove")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def remove_slash(self, interaction: discord.Interaction, trigger: str):
+    async def remove_slash(
+        self,
+        interaction: discord.Interaction,
+        trigger: app_commands.Transform[str, TriggerTransformer],
+    ):
         """Remove a specified trigger"""
-        _trigger = self.triggers[interaction.guild.id][trigger]
-        await self.remove(interaction, _trigger)
+        await self.remove(interaction, trigger)
 
     @app_commands.command(name="explain")
     async def explain_slash(
@@ -569,46 +647,6 @@ class ReTriggerSlash(ReTriggerMixin):
             await interaction.response.send_message(err_msg)
             return
         await self.removerole(interaction, name, regex, [role])
-
-    @cooldown_slash.autocomplete("trigger")
-    @whitelist_add_slash.autocomplete("trigger")
-    @whitelist_remove_slash.autocomplete("trigger")
-    @blacklist_add_slash.autocomplete("trigger")
-    @blacklist_remove_slash.autocomplete("trigger")
-    @toggle_nsfw_slash.autocomplete("trigger")
-    @edit_regex_slash.autocomplete("trigger")
-    @toggle_filename_search_slash.autocomplete("trigger")
-    @set_reply_slash.autocomplete("trigger")
-    @set_tts_slash.autocomplete("trigger")
-    @set_user_mention_slash.autocomplete("trigger")
-    @set_everyone_mention_slash.autocomplete("trigger")
-    @set_role_mention_slash.autocomplete("trigger")
-    @toggle_check_edits_slash.autocomplete("trigger")
-    @edit_ignore_commands_slash.autocomplete("trigger")
-    @edit_text_slash.autocomplete("trigger")
-    @edit_chance_slash.autocomplete("trigger")
-    @edit_command_slash.autocomplete("trigger")
-    @edit_roles_slash.autocomplete("trigger")
-    @edit_reactions_slash.autocomplete("trigger")
-    @enable_trigger_slash.autocomplete("trigger")
-    @disable_trigger_slash.autocomplete("trigger")
-    @list_slash.autocomplete("trigger")
-    @remove_slash.autocomplete("trigger")
-    async def trigger_autocomplete(self, interaction: discord.Interaction, current: str):
-        guild_id = interaction.guild.id
-        if getattr(interaction.namespace, "guild_id") and await self.bot.is_owner(
-            interaction.user
-        ):
-            guild_id = int(interaction.namespace.guild_id)
-        if guild_id in self.triggers:
-            choices = [
-                app_commands.Choice(name=t.name, value=t.name)
-                for t in self.triggers[guild_id].values()
-                if current in t.name
-            ]
-        else:
-            choices = [app_commands.Choice(name="No Triggers set", value="No Triggers set")]
-        return choices[:25]
 
     async def on_error(
         self, interaction: discord.Interaction, command: discord.app_commands.Command, error
