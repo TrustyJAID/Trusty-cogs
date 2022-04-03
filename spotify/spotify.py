@@ -168,6 +168,8 @@ class Spotify(
             self.rpc_extension.unload()
         if self._sender:
             await self._sender.client.aclose()
+        self.bot.tree.remove_command(self.play_ctx.name, type=self.play_ctx.type)
+        self.bot.tree.remove_command(self.queue_ctx.name, type=self.queue_ctx.type)
 
     async def red_delete_data_for_user(
         self,
