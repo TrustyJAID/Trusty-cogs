@@ -25,5 +25,5 @@ async def setup(bot):
     if not global_slash:
         bot.tree.remove_command("spotify")
     if global_context:
-        bot.tree.add_command(cog.play_from_message_ctx)
-        bot.tree.add_command(cog.queue_from_message_ctx)
+        bot.tree.add_command(cog.play_ctx)
+        bot.tree.add_command(cog.queue_ctx)

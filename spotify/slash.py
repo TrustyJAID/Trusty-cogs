@@ -351,34 +351,8 @@ class SpotifySlash(SpotifyMixin):
         """View an artists albums on Spotify"""
         await self.spotify_artist_albums(interaction, to_follow=to_follow)
 
-    @app_commands.context_menu(name="Play on Spotify")
-    async def play_from_message_ctx(interaction: discord.Interaction, message: discord.Message):
-        pass
-
-    @app_commands.context_menu(name="Queue on Spotify")
-    async def queue_from_message_ctx(interaction: discord.Interaction, message: discord.Message):
-        pass
-
-    @commands.Cog.listener()
-    async def on_interaction(self, interaction: discord.Interaction):
-        # borrow most of this from d.py so that this can work within the context
-        # of a cog so I have the rest of my methods available
-        name = interaction.data.get("name")
-        data = interaction.data
-        resolved = app_commands.Namespace._get_resolved_items(
-            interaction, data.get("resolved", {})
-        )
-        target_id = data.get("target_id")
-        key = app_commands.namespace.ResolveKey.any_with(target_id)
-        value = resolved.get(key)
-        if name == "Play on Spotify":
-            await self.play_from_message(interaction, value, False)
-        if name == "Queue on Spotify":
-            await self.play_from_message(interaction, value, True)
-
-    async def play_from_message(
-        self, interaction: discord.Interaction, message: discord.Message, queue: bool = False
-    ):
+    async def play_from_message(self, interaction: discord.Interaction, message: discord.Message):
+        queue = interaction.command.name == "Queue on Spotify"
         user = interaction.user
         ctx = await self.bot.get_context(message)
         user_token = await self.get_user_auth(ctx, user)

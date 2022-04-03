@@ -105,6 +105,12 @@ class Spotify(
             self.rpc_extension = DashboardRPC_Spotify(self)
         self.slash_commands = {"guilds": {}}
         self._temp_user_devices = {}
+        self.play_ctx = discord.app_commands.ContextMenu(
+            name="Play on Spotify", callback=self.play_from_message
+        )
+        self.queue_ctx = discord.app_commands.ContextMenu(
+            name="Queue on Spotify", callback=self.play_from_message
+        )
 
     async def migrate_settings(self):
         if await self.config.version() < "1.4.9":
