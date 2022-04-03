@@ -280,8 +280,8 @@ class Standings:
         new_dict = {}
         nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         latest_timestamp = self.last_timestamp()
-        for division in DIVISIONS:
-            if division == "Division":
+        for division in self.divisions:
+            if division == "division":
                 continue
             if table:
                 new_dict[division] = f"```\n{self.get_division_table(division)}\n```"
