@@ -288,7 +288,7 @@ class Standings:
             else:
                 new_dict[division] = self.get_division_str(division)
         for div in new_dict:
-            em.add_field(name=f"{div} Division", value=new_dict[div], inline=False)
+            em.add_field(name=f"{div.title()} Division", value=new_dict[div], inline=False)
         em.set_author(
             name="NHL Standings",
             url="https://www.nhl.com/standings",
