@@ -12,6 +12,7 @@ import discord
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.vendored.discord.ext import menus
+from tabulate import tabulate
 
 from .components import (
     BackButton,
@@ -33,12 +34,11 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 
 DIVISIONS: List[str] = ["division", "metropolitan", "atlantic", "central", "pacific"]
 
-DIVISIONS_TYPE = Literal["division", "metropolitan", "atlantic", "central", "pacific"]
+DIVISIONS_TYPE = Literal["Division", "Metropolitan", "Atlantic", "Central", "Pacific"]
 
 CONFERENCES: List[str] = ["eastern", "western", "conference"]
 
-CONFERENCES_TYPE = Literal["eastern", "western", "conference"]
-# The NHL removed conferences from the standings in the 2021 season
+CONFERENCES_TYPE = Literal["Eastern", "Western", "Conference"]
 
 
 @dataclass
@@ -108,6 +108,18 @@ class TeamRecord:
     pp_division_rank: int
     pp_conference_rank: int
     last_updated: datetime
+
+    def __str__(self) -> str:
+        wildcard = f"(WC{self.wildcard_rank})" if self.wildcard_rank else ""
+        just = 4
+        return (
+            f"GP: {str(self.games_played).ljust(just)} "
+            f"W: {str(self.league_record.wins).ljust(just)} "
+            f"L: {str(self.league_record.losses).ljust(just)} "
+            f"OT: {str(self.league_record.ot).ljust(just)} "
+            f"PTS: {str(self.points).ljust(just)} "
+            f"{wildcard}\n"
+        )
 
     @classmethod
     def from_json(cls, data: dict, division: Division, conference: Conference) -> TeamRecord:
@@ -260,7 +272,7 @@ class Standings:
         except Exception:
             log.exception(f"Error editing standings message in {repr(guild)}")
 
-    async def all_standing_embed(self) -> discord.Embed:
+    async def all_standing_embed(self, table: bool = True) -> discord.Embed:
         """
         Builds the standing embed when all TEAMS are selected
         """
@@ -268,25 +280,40 @@ class Standings:
         new_dict = {}
         nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         latest_timestamp = self.last_timestamp()
-        for team_name, team in self.all_records.items():
-            if team.division.name not in new_dict:
-                new_dict[team.division.name] = ""
-            emoji = TEAMS[team.team.name]["emoji"]
-            wildcard = f"(WC{team.wildcard_rank})" if team.wildcard_rank in ["1", "2"] else ""
-            new_dict[team.division.name] += (
-                f"{team.division_rank}. <:{emoji}> GP: **{team.games_played}** "
-                f"W: **{team.league_record.wins}** L: **{team.league_record.losses}** OT: "
-                f"**{team.league_record.ot}** PTS: **{team.points}** {wildcard}\n"
-            )
+        for division in DIVISIONS:
+            if division == "Division":
+                continue
+            if table:
+                new_dict[division] = f"```\n{self.get_division_table(division)}\n```"
+            else:
+                new_dict[division] = self.get_division_str(division)
         for div in new_dict:
             em.add_field(name=f"{div} Division", value=new_dict[div], inline=False)
         em.set_author(
             name="NHL Standings",
             url="https://www.nhl.com/standings",
-            icon_url="https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png",
+            icon_url=nhl_icon,
         )
         em.set_thumbnail(url=nhl_icon)
         em.timestamp = utc_to_local(latest_timestamp, "UTC")
+        em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
+        return em
+
+    async def league_standing_embed(self, table: bool = True) -> discord.Embed:
+        em = discord.Embed()
+        msg = ""
+        nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
+        if table:
+            msg = f"```\n{self.get_all_table()}\n```"
+        else:
+            msg = self.get_all_str()
+        em.description = msg
+        em.set_author(
+            name="NHL League Standings",
+            url="https://www.nhl.com/standings",
+            icon_url=nhl_icon,
+        )
+        em.timestamp = utc_to_local(self.last_timestamp(), "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
         return em
 
@@ -296,22 +323,109 @@ class Standings:
             ret.append(await self.make_division_standings_embed(division))
         return ret
 
-    async def make_division_standings_embed(self, division: DIVISIONS_TYPE) -> discord.Embed:
-        em = discord.Embed()
+    def get_division_table(self, division: DIVISIONS_TYPE) -> str:
+        headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
+        # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
+        post_data = []
+        for name, record in self.all_records.items():
+            if record.division.name.lower() != division.lower():
+                continue
+            tri_code = TEAMS[name]["tri_code"]
+            post_data.append(
+                [
+                    record.division_rank,
+                    tri_code,
+                    record.games_played,
+                    record.league_record.wins,
+                    record.league_record.losses,
+                    record.league_record.ot,
+                    record.points,
+                ]
+            )
+        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+
+    def get_conference_table(self, conference: CONFERENCES_TYPE) -> str:
+        headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
+        # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
+        post_data = []
+        for name, record in self.all_records.items():
+            if record.conference.name.lower() != conference.lower():
+                continue
+            tri_code = TEAMS[name]["tri_code"]
+            post_data.append(
+                [
+                    record.conference_rank,
+                    tri_code,
+                    record.games_played,
+                    record.league_record.wins,
+                    record.league_record.losses,
+                    record.league_record.ot,
+                    record.points,
+                ]
+            )
+        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+
+    def get_all_table(self):
+        headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
+        # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
+        post_data = []
+        for name, record in self.all_records.items():
+            tri_code = TEAMS[name]["tri_code"]
+            post_data.append(
+                [
+                    record.league_rank,
+                    tri_code,
+                    record.games_played,
+                    record.league_record.wins,
+                    record.league_record.losses,
+                    record.league_record.ot,
+                    record.points,
+                ]
+            )
+        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+
+    def get_division_str(self, division: DIVISIONS_TYPE) -> str:
         msg = ""
+        for name, record in self.all_records.items():
+            if record.division.name.lower() != division.lower():
+                continue
+            emoji = discord.PartialEmoji.from_str(TEAMS.get(name, {"emoji": ""})["emoji"])
+            msg += f"{record.division_rank}. {emoji} {record}"
+        return msg
+
+    def get_conference_str(self, conference: CONFERENCES_TYPE) -> str:
+        team_str = []
+        for name, record in self.all_records.items():
+            if record.conference.name.lower() != conference.lower():
+                continue
+            team_str.append(
+                (
+                    record.conference_rank,
+                    (f"{record.conference_rank}. {record}"),
+                )
+            )
+        return "".join(i[1] for i in sorted(team_str, key=lambda x: x[0]))
+
+    def get_all_str(self):
+        msg = ""
+        records = [(r.league_rank, r) for name, r in self.all_records.items()]
+        for rank, record in sorted(records, key=lambda x: x[0]):
+            emoji = discord.PartialEmoji.from_str(
+                TEAMS.get(record.team.name, {"emoji": ""})["emoji"]
+            )
+            msg += f"{record.league_rank}. {emoji} {record}"
+        return msg
+
+    async def make_division_standings_embed(
+        self, division: DIVISIONS_TYPE, table: bool = True
+    ) -> discord.Embed:
+        em = discord.Embed()
         # timestamp = datetime.strptime(record[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
         em.timestamp = self.last_timestamp(division=division)
-
-        for name, team in self.all_records.items():
-            if team.division.name.lower() != division.lower():
-                continue
-            emoji = TEAMS[team.team.name]["emoji"]
-            wildcard = f"(WC{team.wildcard_rank})" if team.wildcard_rank in ["1", "2"] else ""
-            msg += (
-                f"{team.division_rank}. <:{emoji}> GP: **{team.games_played}** "
-                f"W: **{team.league_record.wins}** L: **{team.league_record.losses}** OT: "
-                f"**{team.league_record.ot}** PTS: **{team.points}** {wildcard}\n"
-            )
+        if table:
+            msg = f"```\n{self.get_division_table(division)}\n```"
+        else:
+            msg = self.get_division_str(division)
         em.description = msg
         division_logo = TEAMS["Team {}".format(division.title())]["logo"]
         em.colour = int(TEAMS["Team {}".format(division.title())]["home"].replace("#", ""), 16)
@@ -330,25 +444,16 @@ class Standings:
             ret.append(await self.make_conference_standings_embed(conference))
         return ret
 
-    async def make_conference_standings_embed(self, conference: CONFERENCES_TYPE) -> discord.Embed:
+    async def make_conference_standings_embed(
+        self, conference: CONFERENCES_TYPE, table: bool = True
+    ) -> discord.Embed:
         conference = conference.title()
         em = discord.Embed()
-        team_str = []
-        for name, team in self.all_records.items():
-            if team.conference.name.lower() != conference.lower():
-                continue
-            emoji = TEAMS[team.team.name]["emoji"]
-            team_str.append(
-                (
-                    team.conference_rank,
-                    (
-                        f"{team.conference_rank}. <:{emoji}> GP: **{team.games_played}** "
-                        f"W: **{team.league_record.wins}** L: **{team.league_record.losses}** OT: "
-                        f"**{team.league_record.ot}** PTS: **{team.points}**\n"
-                    ),
-                )
-            )
-        msg = "".join(i[1] for i in sorted(team_str, key=lambda x: x[0]))
+        em.timestamp = utc_to_local(self.last_timestamp(conference=conference), "UTC")
+        if table:
+            msg = f"```\n{self.get_conference_table(conference)}\n```"
+        else:
+            msg = self.get_conference_str(conference)
         em.description = msg
         em.colour = int("c41230", 16) if conference == "Eastern" else int("003e7e", 16)
         logo = {
@@ -461,8 +566,9 @@ class StandingsMenu(discord.ui.View):
             "division": self.standings.make_division_standings_embeds,
             "conference": self.standings.make_conference_standings_embeds,
             "all": self.standings.all_standing_embed,
+            "league": self.standings.league_standing_embed,
         }
-        if self.context != "all":
+        if self.context not in ["all", "league"]:
             self.pages = await embeds_mapping[self.context]()
         else:
             self.pages = [await embeds_mapping[self.context]()]
@@ -563,6 +669,12 @@ class StandingsMenu(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.grey, label="All", row=1)
     async def all_teams(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.context = "all"
+        await self.prepare()
+        await self.show_page(0, interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="League", row=1)
+    async def leagues(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.context = "league"
         await self.prepare()
         await self.show_page(0, interaction)
 
