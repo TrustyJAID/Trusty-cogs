@@ -1032,7 +1032,6 @@ class EventMixin:
         if type(before) == discord.VoiceChannel:
             voice_updates = {
                 "name": _("Name:"),
-                "position": _("Position:"),
                 "category": _("Category:"),
                 "bitrate": _("Bitrate:"),
                 "user_limit": _("User limit:"),
