@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
-from .converters import ChannelUserRole, Trigger
+from .converters import ChannelUserRole, Trigger, TriggerResponse
 
 try:
     import regex as re
@@ -95,17 +95,16 @@ class ReTriggerPages(menus.ListPageSource):
         else:
             whitelist_s = ", ".join(x.name for x in whitelist)
         if trigger.response_type:
-            responses = humanize_list(trigger.response_type)
+            responses = humanize_list([t.name for t in trigger.response_type])
         else:
             responses = _("This trigger has no actions and should be removed.")
-        timestamp = int(trigger.timestamp)
 
         info = _(
             "__Name__: **{name}** \n"
             "__Active__: **{enabled}**\n"
             "__Author__: {author}\n"
             "__Count__: **{count}**\n"
-            "__Created__: **<t:{created}:R>**\n"
+            "__Created__: **{created}**\n"
             "__Response__: **{response}**\n"
             "__NSFW__: **{nsfw}**\n"
         )
@@ -114,7 +113,7 @@ class ReTriggerPages(menus.ListPageSource):
                 name=trigger.name,
                 enabled=good if trigger.enabled else bad,
                 author=author.mention,
-                created=timestamp,
+                created=discord.utils.format_dt(trigger.created_at, style="R"),
                 count=trigger.count,
                 response=responses,
                 nsfw=trigger.nsfw,
@@ -124,7 +123,7 @@ class ReTriggerPages(menus.ListPageSource):
                 name=trigger.name,
                 enabled=good if trigger.enabled else bad,
                 author=author.name,
-                created=timestamp,
+                created=discord.utils.format_dt(trigger.created_at, style="R"),
                 count=trigger.count,
                 response=responses,
                 nsfw=trigger.nsfw,
@@ -132,7 +131,7 @@ class ReTriggerPages(menus.ListPageSource):
         text_response = ""
         if trigger.ignore_commands:
             info += _("__Ignore commands__: **{ignore}**\n").format(ignore=trigger.ignore_commands)
-        if "text" in trigger.response_type:
+        if TriggerResponse.text in trigger.response_type:
             if trigger.multi_payload:
                 text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
@@ -143,25 +142,25 @@ class ReTriggerPages(menus.ListPageSource):
             info += _("__Replies with Notification__:") + "**{response}**\n".format(
                 response=trigger.reply
             )
-        if "rename" in trigger.response_type:
+        if TriggerResponse.rename in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "rename")
             else:
                 response = trigger.text
             info += _("__Rename__: ") + "**{response}**\n".format(response=response)
-        if "dm" in trigger.response_type:
+        if TriggerResponse.dm in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "dm")
             else:
                 response = trigger.text
             info += _("__DM__: ") + "**{response}**\n".format(response=response)
-        if "command" in trigger.response_type:
+        if TriggerResponse.command in trigger.response_type:
             if trigger.multi_payload:
                 response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "command")
             else:
                 response = trigger.text
             info += _("__Command__: ") + "**{response}**\n".format(response=response)
-        if "react" in trigger.response_type:
+        if TriggerResponse.react in trigger.response_type:
             if trigger.multi_payload:
                 emoji_response = [
                     r for t in trigger.multi_payload for r in t[1:] if t[0] == "react"
@@ -171,7 +170,7 @@ class ReTriggerPages(menus.ListPageSource):
             server_emojis = "".join(f"<{e}>" for e in emoji_response if len(e) > 5)
             unicode_emojis = "".join(e for e in emoji_response if len(e) < 5)
             info += _("__Emojis__: ") + server_emojis + unicode_emojis + "\n"
-        if "add_role" in trigger.response_type:
+        if TriggerResponse.add_role in trigger.response_type:
             if trigger.multi_payload:
                 role_response = [
                     r for t in trigger.multi_payload for r in t[1:] if t[0] == "add_role"
@@ -187,7 +186,7 @@ class ReTriggerPages(menus.ListPageSource):
                 info += _("__Roles Added__: ") + humanize_list(roles_list) + "\n"
             else:
                 info += _("Roles Added: Deleted Roles\n")
-        if "remove_role" in trigger.response_type:
+        if TriggerResponse.remove_role in trigger.response_type:
             if trigger.multi_payload:
                 role_response = [
                     r for t in trigger.multi_payload for r in t[1:] if t[0] == "remove_role"

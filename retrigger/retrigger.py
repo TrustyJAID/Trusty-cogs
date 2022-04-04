@@ -590,9 +590,8 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         if len(channel_user_role) < 1:
-            return await ctx.send(
-                _("You must supply 1 or more channels users or roles to be allowed")
-            )
+            await ctx.send(_("You must supply 1 or more channels users or roles to be allowed"))
+            return
         for obj in channel_user_role:
             if obj.id not in trigger.whitelist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -633,12 +632,13 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _(
                     "You must supply 1 or more channels users "
                     "or roles to be removed from the allowlist."
                 )
             )
+            return
         for obj in channel_user_role:
             if obj.id in trigger.whitelist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -678,9 +678,8 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         if len(channel_user_role) < 1:
-            return await ctx.send(
-                _("You must supply 1 or more channels users or roles to be blocked.")
-            )
+            await ctx.send(_("You must supply 1 or more channels users or roles to be blocked."))
+            return
         for obj in channel_user_role:
             if obj.id not in trigger.blacklist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -720,12 +719,13 @@ class ReTrigger(
         if type(trigger) is str:
             return await self._no_trigger(ctx, trigger)
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _(
                     "You must supply 1 or more channels users or "
                     "roles to be removed from the blocklist."
                 )
             )
+            return
         for obj in channel_user_role:
             if obj.id in trigger.blacklist:
                 async with self.config.guild(ctx.guild).trigger_list() as trigger_list:
@@ -1487,7 +1487,8 @@ class ReTrigger(
             try:
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
             except asyncio.TimeoutError:
-                return await ctx.send(_("Not changing regex timeout time."))
+                await ctx.send(_("Not changing regex timeout time."))
+                return
             if pred.result:
                 await self.config.trigger_timeout.set(timeout)
                 self.trigger_timeout = timeout
@@ -1495,11 +1496,12 @@ class ReTrigger(
             else:
                 await ctx.send(_("Not changing regex timeout time."))
         elif timeout > 10:
-            return await ctx.send(
+            await ctx.send(
                 _(
                     "{timeout} seconds is too long, you may want to look at `{prefix}retrigger bypass`"
                 ).format(timeout=timeout, prefix=ctx.clean_prefix)
             )
+            return
         else:
             if timeout < 1:
                 timeout = 1
@@ -1535,7 +1537,8 @@ class ReTrigger(
             try:
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
             except asyncio.TimeoutError:
-                return await ctx.send(_("Not bypassing safe Regex search."))
+                await ctx.send(_("Not bypassing safe Regex search."))
+                return
             if pred.result:
                 await self.config.guild(ctx.guild).bypass.set(bypass)
                 await ctx.tick()
@@ -1685,7 +1688,8 @@ class ReTrigger(
             if delete_after.total_seconds() > 0:
                 delete_after_seconds = delete_after.total_seconds()
             if delete_after.total_seconds() < 1:
-                return await ctx.send(_("`delete_after` must be greater than 1 second."))
+                await ctx.send(_("`delete_after` must be greater than 1 second."))
+                return
         else:
             delete_after_seconds = None
         new_trigger = Trigger(
@@ -1874,11 +1878,13 @@ class ReTrigger(
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         elif image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -1886,7 +1892,8 @@ class ReTrigger(
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         new_trigger = Trigger(
             name,
             regex,
@@ -1972,7 +1979,8 @@ class ReTrigger(
         if image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -1980,7 +1988,8 @@ class ReTrigger(
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         new_trigger = Trigger(
             name,
             regex,
@@ -2025,11 +2034,13 @@ class ReTrigger(
             attachment_url = ctx.message.attachments[0].url
             filename = await self.save_image_location(attachment_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         elif image_url is not None:
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         else:
             msg = await self.wait_for_image(ctx)
             if not msg or not msg.attachments:
@@ -2037,7 +2048,8 @@ class ReTrigger(
             image_url = msg.attachments[0].url
             filename = await self.save_image_location(image_url, guild)
             if not filename:
-                return await ctx.send(_("That is not a valid file link."))
+                await ctx.send(_("That is not a valid file link."))
+                return
         new_trigger = Trigger(
             name,
             regex,
@@ -2270,9 +2282,11 @@ class ReTrigger(
         try:
             await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
         except asyncio.TimeoutError:
-            return await ctx.send(_("Not creating trigger."))
+            await ctx.send(_("Not creating trigger."))
+            return
         if not pred.result:
-            return await ctx.send(_("Not creating trigger."))
+            await ctx.send(_("Not creating trigger."))
+            return
         if ctx.guild.id in self.triggers and name in self.triggers[ctx.guild.id]:
             return await self._already_exists(ctx, name)
         cmd_list = command.split(" ")
@@ -2365,13 +2379,13 @@ class ReTrigger(
             return await self._already_exists(ctx, name)
         for role in roles:
             if role >= ctx.me.top_role:
-                return await ctx.send(_("I can't assign roles higher than my own."))
+                await ctx.send(_("I can't assign roles higher than my own."))
+                return
             if ctx.author.id == ctx.guild.owner_id:
                 continue
             if role >= ctx.author.top_role:
-                return await ctx.send(
-                    _("I can't assign roles higher than you are able to assign.")
-                )
+                await ctx.send(_("I can't assign roles higher than you are able to assign."))
+                return
         role_ids = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
@@ -2416,13 +2430,13 @@ class ReTrigger(
             return await self._already_exists(ctx, name)
         for role in roles:
             if role >= ctx.me.top_role:
-                return await ctx.send(_("I can't remove roles higher than my own."))
+                await ctx.send(_("I can't remove roles higher than my own."))
+                return
             if ctx.author.id == ctx.guild.owner_id:
                 continue
             if role >= ctx.author.top_role:
-                return await ctx.send(
-                    _("I can't remove roles higher than you are able to remove.")
-                )
+                await ctx.send(_("I can't remove roles higher than you are able to remove."))
+                return
         role_ids = [r.id for r in roles]
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
@@ -2491,7 +2505,8 @@ class ReTrigger(
         guild = ctx.guild
         author = ctx.author.id if isinstance(ctx, commands.Context) else ctx.user.id
         if not [i[0] for i in multi_response]:
-            return await ctx.send(_("You have no actions provided for this trigger."))
+            await ctx.send(_("You have no actions provided for this trigger."))
+            return
         new_trigger = Trigger(
             name,
             regex,

@@ -21,7 +21,28 @@ except ImportError:
     import re
 
 
-TRIGGER_RESPONSE = [
+class TriggerResponse(Enum):
+    dm = "dm"
+    dmme = "dmme"
+    remove_role = "remove_role"
+    add_role = "add_role"
+    ban = "ban"
+    kick = "kick"
+    text = "text"
+    filter = "delete"
+    delete = "delete"
+    publish = "publish"
+    react = "react"
+    rename = "rename"
+    command = "command"
+    mock = "mock"
+    resize = "resize"
+    randtext = "randtext"
+    image = "image"
+    randimage = "randimage"
+
+
+MULTI_RESPONSES = [
     "dm",
     "dmme",
     "remove_role",
@@ -51,9 +72,9 @@ class MultiResponse(Converter):
 
         log.debug(match)
         my_perms = ctx.channel.permissions_for(ctx.me)
-        if match[0] not in TRIGGER_RESPONSE:
+        if match[0].lower() not in MULTI_RESPONSES:
             raise BadArgument(
-                _("`{response}` is not a valid reaction type.").format(response=match[0])
+                _("`{response}` is not a valid response type.").format(response=match[0])
             )
         for m in match:
             if m == ";":
@@ -161,7 +182,7 @@ class Trigger:
         self,
         name: str,
         regex: str,
-        response_type: List[Literal[TRIGGER_RESPONSE]],
+        response_type: List[TriggerResponse],
         author: int,
         **kwargs,
     ):
@@ -170,7 +191,7 @@ class Trigger:
             self.regex: Pattern = re.compile(regex)
         except Exception:
             raise
-        self.response_type: List[Literal[TRIGGER_RESPONSE]] = response_type
+        self.response_type: List[TriggerResponse] = response_type
         self.author: int = author
         self.enabled: bool = kwargs.get("enabled", True)
         self.count: int = kwargs.get("count", 0)
@@ -207,6 +228,74 @@ class Trigger:
     def toggle(self):
         """Toggle whether or not this trigger is enabled."""
         self.enabled = not self.enabled
+
+    async def check_cooldown(self, message: discord.Message) -> bool:
+        now = message.created_at.timestamp()
+        if self.cooldown:
+            if self.cooldown["style"] in ["guild", "server"]:
+                last = self.cooldown["last"]
+                time = self.cooldown["time"]
+                if (now - last) > time:
+                    self.cooldown["last"] = now
+                    return False
+                else:
+                    return True
+            else:
+                style: str = self.cooldown["style"]
+                snowflake = getattr(message, style)
+                if snowflake.id not in [x["id"] for x in self.cooldown["last"]]:
+                    self.cooldown["last"].append({"id": snowflake.id, "last": now})
+                    return False
+                else:
+                    entity_list = self.cooldown["last"]
+                    for entity in entity_list:
+                        if entity["id"] == snowflake.id:
+                            last = entity["last"]
+                            time = self.cooldown["time"]
+                            if (now - last) > time:
+                                self.cooldown["last"].remove({"id": snowflake.id, "last": last})
+                                self.cooldown["last"].append({"id": snowflake.id, "last": now})
+                                return False
+                            else:
+                                return True
+        return False
+
+    async def check_bw_list(self, message: discord.Message) -> bool:
+        can_run = True
+        author: discord.Member = message.author
+        channel: discord.TextChannel = message.channel
+        if self.whitelist:
+            can_run = False
+            if channel.id in self.whitelist:
+                can_run = True
+            if channel.category_id and channel.category_id in self.whitelist:
+                can_run = True
+            if getattr(channel, "parent", None) and channel.parent in self.whitelist:
+                # this is a thread
+                can_run = True
+            if message.author.id in self.whitelist:
+                can_run = True
+            for role in author.roles:
+                if role.is_default():
+                    continue
+                if role.id in self.whitelist:
+                    can_run = True
+            return can_run
+        else:
+            if channel.id in self.blacklist:
+                can_run = False
+            if channel.category_id and channel.category_id in self.blacklist:
+                can_run = False
+            if getattr(channel, "parent", None) and channel.parent in self.blacklist:
+                can_run = False
+            if message.author.id in self.blacklist:
+                can_run = False
+            for role in author.roles:
+                if role.is_default():
+                    continue
+                if role.id in self.blacklist:
+                    can_run = False
+        return can_run
 
     @property
     def created_at(self):
@@ -256,7 +345,7 @@ class Trigger:
         return {
             "name": self.name,
             "regex": self.regex.pattern,
-            "response_type": self.response_type,
+            "response_type": [t.value for t in self.response_type],
             "author": self.author,
             "enabled": self.enabled,
             "count": self.count,
@@ -291,13 +380,16 @@ class Trigger:
         response_type = data.pop("response_type", [])
         if isinstance(response_type, str):
             response_type = [data["response_type"]]
+        response_type = [TriggerResponse(t) for t in response_type]
         if "delete" in response_type and isinstance(data["text"], bool):
             # replace old setting with new flag
             data["read_filenames"] = data["text"]
             data["text"] = None
         ignore_edits = data.get("ignore_edits", False)
         check_edits = data.get("check_edits")
-        if check_edits is None and any(t in ["ban", "kick", "delete"] for t in response_type):
+        if check_edits is None and any(
+            t.value in ["ban", "kick", "delete"] for t in response_type
+        ):
             data["check_edits"] = not ignore_edits
         return cls(name, regex, response_type, author, **data)
 
