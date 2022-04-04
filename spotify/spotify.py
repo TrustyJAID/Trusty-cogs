@@ -112,22 +112,7 @@ class Spotify(
             name="Queue on Spotify", callback=self.play_from_message
         )
 
-    async def migrate_settings(self):
-        if await self.config.version() < "1.4.9":
-            all_users = await self.config.all_users()
-            for user_id, data in all_users.items():
-                if not data["listen_for"]:
-                    continue
-                if isinstance(data["listen_for"], list):
-                    new_data = {}
-                else:
-                    new_data = {v: k for k, v in data["listen_for"].items()}
-                await self.config.user_from_id(user_id).listen_for.set(new_data)
-            await self.config.version.set(self.__version__)
-
     async def cog_load(self):
-        await self.migrate_settings()
-
         tokens = await self.bot.get_shared_api_tokens("spotify")
         if not tokens:
             self._ready.set()
