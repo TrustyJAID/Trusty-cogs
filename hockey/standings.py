@@ -5,6 +5,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from typing import TYPE_CHECKING, List, Literal, Optional
 
 import aiohttp
@@ -32,13 +33,17 @@ _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
-DIVISIONS: List[str] = ["division", "metropolitan", "atlantic", "central", "pacific"]
 
-DIVISIONS_TYPE = Literal["Division", "Metropolitan", "Atlantic", "Central", "Pacific"]
+class Divisions(Enum):
+    Atlantic = "Atlantic"
+    Central = "Central"
+    Metropolitan = "Metropolitan"
+    Pacific = "Pacific"
 
-CONFERENCES: List[str] = ["eastern", "western", "conference"]
 
-CONFERENCES_TYPE = Literal["Eastern", "Western", "Conference"]
+class Conferences(Enum):
+    Eastern = "Eastern"
+    Western = "Western"
 
 
 @dataclass
@@ -158,14 +163,12 @@ class Standings:
     def __init__(self, records: dict = {}):
         super().__init__()
         self.all_records = records
-        self.conferences = ["Eastern", "Western"]
-        self.divisions = ["Metropolitan", "Atlantic", "Central", "Pacific"]
 
     def last_timestamp(
         self,
         *,
-        division: Optional[DIVISIONS_TYPE] = None,
-        conference: Optional[CONFERENCES_TYPE] = None,
+        division: Optional[Divisions] = None,
+        conference: Optional[Conferences] = None,
     ) -> datetime:
         """Get the last updated time for the total number of teams provided"""
         latest = None
@@ -246,10 +249,10 @@ class Standings:
                     await config.guild(guild).standings_msg.clear()
                     continue
 
-                if search in DIVISIONS:
+                if search in [i.name.lower() for i in Divisions]:
                     em = await standings.make_division_standings_embed(search)
 
-                elif search in CONFERENCES:
+                elif search in [i.name.lower() for i in Conferences]:
                     em = await standings.make_conference_standings_embed(search)
                 else:
                     em = await standings.all_standing_embed()
@@ -280,15 +283,13 @@ class Standings:
         new_dict = {}
         nhl_icon = "https://cdn.bleacherreport.net/images/team_logos/328x328/nhl.png"
         latest_timestamp = self.last_timestamp()
-        for division in self.divisions:
-            if division == "division":
-                continue
+        for division in Divisions:
             if table:
-                new_dict[division] = f"```\n{self.get_division_table(division)}\n```"
+                new_dict[division.name] = f"```\n{self.get_division_table(division)}\n```"
             else:
-                new_dict[division] = self.get_division_str(division)
+                new_dict[division.name] = self.get_division_str(division)
         for div in new_dict:
-            em.add_field(name=f"{div.title()} Division", value=new_dict[div], inline=False)
+            em.add_field(name=f"{div} Division", value=new_dict[div], inline=False)
         em.set_author(
             name="NHL Standings",
             url="https://www.nhl.com/standings",
@@ -319,16 +320,16 @@ class Standings:
 
     async def make_division_standings_embeds(self) -> List[discord.Embed]:
         ret = []
-        for division in self.divisions:
+        for division in Divisions:
             ret.append(await self.make_division_standings_embed(division))
         return ret
 
-    def get_division_table(self, division: DIVISIONS_TYPE) -> str:
+    def get_division_table(self, division: Divisions) -> str:
         headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
         # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
         post_data = []
         for name, record in self.all_records.items():
-            if record.division.name.lower() != division.lower():
+            if record.division.name != division.name:
                 continue
             tri_code = TEAMS[name]["tri_code"]
             post_data.append(
@@ -344,12 +345,12 @@ class Standings:
             )
         return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
 
-    def get_conference_table(self, conference: CONFERENCES_TYPE) -> str:
+    def get_conference_table(self, conference: Conferences) -> str:
         headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
         # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
         post_data = []
         for name, record in self.all_records.items():
-            if record.conference.name.lower() != conference.lower():
+            if record.conference.name != conference.name:
                 continue
             tri_code = TEAMS[name]["tri_code"]
             post_data.append(
@@ -384,19 +385,19 @@ class Standings:
             )
         return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
 
-    def get_division_str(self, division: DIVISIONS_TYPE) -> str:
+    def get_division_str(self, division: Divisions) -> str:
         msg = ""
         for name, record in self.all_records.items():
-            if record.division.name.lower() != division.lower():
+            if record.division.name.lower() != division.name.lower():
                 continue
             emoji = discord.PartialEmoji.from_str(TEAMS.get(name, {"emoji": ""})["emoji"])
             msg += f"{record.division_rank}. {emoji} {record}"
         return msg
 
-    def get_conference_str(self, conference: CONFERENCES_TYPE) -> str:
+    def get_conference_str(self, conference: Conferences) -> str:
         team_str = []
         for name, record in self.all_records.items():
-            if record.conference.name.lower() != conference.lower():
+            if record.conference.name.lower() != conference.name.lower():
                 continue
             team_str.append(
                 (
@@ -417,7 +418,7 @@ class Standings:
         return msg
 
     async def make_division_standings_embed(
-        self, division: DIVISIONS_TYPE, table: bool = True
+        self, division: Divisions, table: bool = True
     ) -> discord.Embed:
         em = discord.Embed()
         # timestamp = datetime.strptime(record[0].last_updated, "%Y-%m-%dT%H:%M:%SZ")
@@ -427,10 +428,10 @@ class Standings:
         else:
             msg = self.get_division_str(division)
         em.description = msg
-        division_logo = TEAMS["Team {}".format(division.title())]["logo"]
-        em.colour = int(TEAMS["Team {}".format(division.title())]["home"].replace("#", ""), 16)
+        division_logo = TEAMS["Team {}".format(division.name)]["logo"]
+        em.colour = int(TEAMS["Team {}".format(division.name)]["home"].replace("#", ""), 16)
         em.set_author(
-            name=division.title() + " Division",
+            name=division.name + " Division",
             url="https://www.nhl.com/standings",
             icon_url=division_logo,
         )
@@ -440,14 +441,13 @@ class Standings:
 
     async def make_conference_standings_embeds(self) -> List[discord.Embed]:
         ret = []
-        for conference in self.conferences:
+        for conference in Conferences:
             ret.append(await self.make_conference_standings_embed(conference))
         return ret
 
     async def make_conference_standings_embed(
-        self, conference: CONFERENCES_TYPE, table: bool = True
+        self, conference: Conferences, table: bool = True
     ) -> discord.Embed:
-        conference = conference.title()
         em = discord.Embed()
         em.timestamp = utc_to_local(self.last_timestamp(conference=conference), "UTC")
         if table:
@@ -467,12 +467,12 @@ class Standings:
             ),
         }
         em.set_author(
-            name=conference + " Conference",
+            name=conference.name + " Conference",
             url="https://www.nhl.com/standings",
-            icon_url=logo[conference],
+            icon_url=logo[conference.name],
         )
-        em.set_thumbnail(url=logo[conference])
-        em.set_footer(text="Stats last Updated", icon_url=logo[conference])
+        em.set_thumbnail(url=logo[conference.name])
+        em.set_footer(text="Stats last Updated", icon_url=logo[conference.name])
         return em
 
     async def make_team_standings_embeds(self) -> List[discord.Embed]:

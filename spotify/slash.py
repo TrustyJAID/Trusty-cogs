@@ -553,31 +553,6 @@ class SpotifySlash(SpotifyMixin):
         except Exception:
             log.exception("Error grabbing genres.")
 
-    async def check_requires(self, func, interaction) -> bool:
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        msg = _("You are not authorized to use this command.")
-        try:
-            resp = await func.requires.verify(fake_ctx)
-        except Exception:
-            await interaction.response.send_message(msg, ephemeral=True)
-            return False
-        if not resp:
-            await interaction.response.send_message(msg, ephemeral=True)
-        return resp
-
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(

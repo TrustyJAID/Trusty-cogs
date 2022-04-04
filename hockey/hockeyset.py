@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 from .abc import MixinMeta
 from .constants import TEAMS
 from .helper import HockeyStates, HockeyTeams
-from .standings import CONFERENCES, DIVISIONS, Standings
+from .standings import Conferences, Divisions, Standings
 
 _ = Translator("Hockey", __file__)
 
@@ -468,10 +468,12 @@ class HockeySetCommands(MixinMeta):
             else:
                 await ctx.send(msg)
             return
-
-        if standings_type.lower() not in DIVISIONS + CONFERENCES + ["all"]:
+        valid_types = (
+            ["all"] + [i.name.lower() for i in Divisions] + [i.name.lower() for i in Conferences]
+        )
+        if standings_type.lower() not in valid_types:
             msg = _("You must choose from: {standings_types}.").format(
-                standings_types=humanize_list(DIVISIONS + CONFERENCES + ["all"])
+                standings_types=humanize_list(valid_types)
             )
             if is_slash:
                 await ctx.followup.send(msg)
