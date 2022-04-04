@@ -1918,7 +1918,7 @@ class EventMixin:
             await channel.send(escape(msg, mass_mentions=True))
 
     @commands.Cog.listener()
-    async def on_thread_join(self, thread: discord.Thread) -> None:
+    async def on_thread_create(self, thread: discord.Thread) -> None:
         guild = thread.guild
         if guild.id not in self.settings:
             return
