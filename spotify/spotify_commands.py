@@ -90,6 +90,7 @@ class SpotifyCommands(SpotifyMixin):
         """
 
     @spotify_slash.command(name="enable")
+    @commands.guild_only()
     async def set_guild_slash_toggle(self, ctx: commands.Context):
         """Toggle this cog to register slash commands in this server"""
         if await self.config.enable_slash():
@@ -106,7 +107,7 @@ class SpotifyCommands(SpotifyMixin):
 
     @spotify_slash.command(name="context")
     @commands.is_owner()
-    async def spotify_guild_context(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def spotify_guild_context(self, ctx: commands.Context):
         """
         Toggle right click play on spotify for messages
         """
@@ -118,8 +119,8 @@ class SpotifyCommands(SpotifyMixin):
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Context commands are {verb}.").format(verb=verb))
         if not current:
-            self.bot.tree.add_command(self.play_from_message_ctx, guild=ctx.guild, override=True)
-            self.bot.tree.add_command(self.queue_from_message_ctx, guild=ctx.guild, override=True)
+            self.bot.tree.add_command(self.play_ctx, guild=ctx.guild, override=True)
+            self.bot.tree.add_command(self.queue_ctx, guild=ctx.guild, override=True)
         else:
             self.bot.tree.remove_command("Play on Spotify", guild=ctx.guild)
             self.bot.tree.remove_command("Queue on Spotify", guild=ctx.guild)
@@ -139,7 +140,7 @@ class SpotifyCommands(SpotifyMixin):
 
     @spotify_slash.command(name="globalcontext")
     @commands.is_owner()
-    async def spotify_global_context(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def spotify_global_context(self, ctx: commands.Context):
         """
         Toggle right click play on spotify for messages
         """
@@ -148,8 +149,8 @@ class SpotifyCommands(SpotifyMixin):
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Context commands are {verb}.").format(verb=verb))
         if not current:
-            self.bot.tree.add_command(self.play_from_message_ctx, override=True)
-            self.bot.tree.add_command(self.queue_from_message_ctx, override=True)
+            self.bot.tree.add_command(self.play_ctx, override=True)
+            self.bot.tree.add_command(self.queue_ctx, override=True)
         else:
             self.bot.tree.remove_command("Play on Spotify")
             self.bot.tree.remove_command("Queue on Spotify")
@@ -237,99 +238,6 @@ class SpotifyCommands(SpotifyMixin):
                 await ctx.response.send_message(msg, ephemeral=True)
         else:
             await ctx.reply(msg, mention_author=False)
-
-    @spotify_set.command(name="listen")
-    async def set_reaction_listen(
-        self, ctx: Union[commands.Context, discord.Interaction], *, listen_for: ActionConverter
-    ):
-        """
-        Set the bot to listen for specific emoji reactions on messages
-
-        If the message being reacted to has somthing valid to search
-        for the bot will attempt to play the found search on spotify for you.
-
-        `<listen_for>` Must be one of the following action names followed by an emoji:
-        `pause` - Pauses your current Spotify player.
-        `repeat` - Changes your current Spotify player to repeat current playlist.
-        `repeatone` - Changes your current spotify player to repeat the track.
-        `next` - Skips to the next track in queue.
-        `previous` - Skips to the previous track in queue.
-        `like` - Likes a song link or URI if it is inside the message reacted to.
-        `volume_down` - Adjusts the volume of your Spotify player down 10%.
-        `volume_up`- Adjusts the volume of your Spotify player up 10%.
-        `volume_mute` - Mutes your Spotify player.
-        `shuffle` - Shuffles your current Spotify player.
-        `play` - Plays a song link or URI if it is inside the message reacted to.
-        """
-        added = {}
-        async with self.config.user(ctx.author).listen_for() as current:
-            for action, raw_emoji in listen_for.items():
-                if action not in emoji_handler.emojis.keys():
-                    continue
-                emoji = discord.PartialEmoji.from_str(raw_emoji)
-                if emoji.is_custom_emoji():
-                    animated = "a" if emoji.animated else ""
-                    emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
-                    current[emoji_str] = action
-                    added[emoji_str] = action
-                else:
-                    try:
-                        await ctx.message.add_reaction(str(emoji))
-                        current[str(emoji)] = action
-                        added[str(emoji)] = action
-                    except discord.errors.HTTPException:
-                        pass
-        msg = _("I will now listen for the following emojis from you:\n")
-        for emoji, action in added.items():
-            msg += f"{emoji} -> {action}\n"
-        await ctx.maybe_send_embed(msg)
-
-    @spotify_set.command(name="remlisten")
-    async def set_reaction_remove_listen(
-        self, ctx: Union[commands.Context, discord.Interaction], *emoji_or_name: str
-    ):
-        """
-        Set the bot to listen for specific emoji reactions on messages
-
-        If the message being reacted to has somthing valid to search
-        for the bot will attempt to play the found search on spotify for you.
-
-        `<listen_for>` Must be one of the following action names:
-        `pause` - Pauses your current Spotify player.
-        `repeat` - Changes your current Spotify player to repeat current playlist.
-        `repeatone` - Changes your current spotify player to repeat the track.
-        `next` - Skips to the next track in queue.
-        `previous` - Skips to the previous track in queue.
-        `like` - Likes a song link or URI if it is inside the message reacted to.
-        `volume_down` - Adjusts the volume of your Spotify player down 10%.
-        `volume_up`- Adjusts the volume of your Spotify player up 10%.
-        `volume_mute` - Mutes your Spotify player.
-        `shuffle` - Shuffles your current Spotify player.
-        `play` - Plays a song link or URI if it is inside the message reacted to.
-        """
-        removed = []
-        async with self.config.user(ctx.author).listen_for() as current:
-            for name in emoji_or_name:
-                if name in current:
-                    action = current[name]
-                    del current[name]
-                    removed.append(f"{name} -> {action}")
-                else:
-                    to_rem = []
-                    for emoji, action in current.items():
-                        if name == action:
-                            to_rem.append(emoji)
-                            removed.append(f"{emoji} -> {action}")
-                    if to_rem:
-                        for emoji in to_rem:
-                            del current[emoji]
-
-        if not removed:
-            return await ctx.send(_("None of the listed events were being listened for."))
-        msg = _("I will no longer listen for emojis for the following events:\n{listen}").format(
-            listen="\n".join(i for i in removed)
-        )
-        await ctx.maybe_send_embed(msg)
 
     @spotify_set.command(name="showsettings", aliases=["settings"])
     @commands.mod_or_permissions(manage_messages=True)
@@ -609,13 +517,7 @@ class SpotifyCommands(SpotifyMixin):
         em.set_author(name=author.display_name + _(" Spotify Profile"), icon_url=author.avatar.url)
         msg = ""
         cog_settings = await self.config.user(author).all()
-        listen_emojis = "\n".join(
-            f"{emoji} -> {action}" for emoji, action in cog_settings["listen_for"].items()
-        )
-        if not listen_emojis:
-            listen_emojis = "Nothing"
         show_private = cog_settings["show_private"]
-        msg += _("Watching for Emojis:\n{listen_emojis}\n").format(listen_emojis=listen_emojis)
         msg += _("Show Private Playlists: {show_private}\n").format(show_private=show_private)
         if not cog_settings["token"]:
             em.description = msg
@@ -710,7 +612,7 @@ class SpotifyCommands(SpotifyMixin):
             x = SpotifyUserMenu(
                 source=page_source,
                 delete_message_after=delete_after,
-                clear_reactions_after=clear_after,
+                clear_buttons_after=clear_after,
                 timeout=timeout,
                 cog=self,
                 user_token=user_token,
@@ -821,7 +723,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=search_types[search_type](items=items, detailed=detailed),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -930,7 +832,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyTrackPages(items=items, detailed=detailed),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -948,9 +850,7 @@ class SpotifyCommands(SpotifyMixin):
         user_token = await self.get_user_auth(ctx)
         if not user_token:
             return await self.no_user_token(ctx)
-        is_slash = False
         if isinstance(ctx, discord.Interaction):
-            is_slash = True
             if not ctx.response.is_done():
                 await ctx.response.defer()
         else:
@@ -971,7 +871,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -1010,7 +910,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifyBaseMenu(
             source=SpotifyTopTracksPages(tracks),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -1049,7 +949,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifyBaseMenu(
             source=SpotifyTopArtistsPages(artists),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -1085,7 +985,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -2090,7 +1990,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -2153,7 +2053,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifyBaseMenu(
             source=SpotifyPlaylistsPages(playlist_list),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -2219,7 +2119,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyPlaylistPages(playlist_list, False),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,
@@ -2573,7 +2473,7 @@ class SpotifyCommands(SpotifyMixin):
         x = SpotifySearchMenu(
             source=SpotifyAlbumPages(tracks, False),
             delete_message_after=delete_after,
-            clear_reactions_after=clear_after,
+            clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
             user_token=user_token,

@@ -5,7 +5,6 @@ from typing import Literal, Optional
 import discord
 import tekore
 from discord import app_commands
-from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 

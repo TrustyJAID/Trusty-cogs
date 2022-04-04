@@ -1286,7 +1286,7 @@ class SpotifyUserMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        clear_reactions_after: bool = True,
+        clear_buttons_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 180,
         message: discord.Message = None,
@@ -1301,6 +1301,8 @@ class SpotifyUserMenu(discord.ui.View):
         self.user_token = user_token
         self.cog = cog
         self.ctx = kwargs.get("ctx", None)
+        self.delete_message_after = delete_message_after
+        self.clear_buttons_after = clear_buttons_after
         self._running = True
         self.previous_button = PreviousTrackButton(
             discord.ButtonStyle.grey, 0, cog, source, user_token
@@ -1329,8 +1331,12 @@ class SpotifyUserMenu(discord.ui.View):
     async def on_timeout(self):
         self._running = False
         # self.loop.cancel()
-        if self.message is not None:
+        if self.message is None:
+            return
+        if self.clear_buttons_after:
             await self.message.edit(view=None)
+        elif self.delete_message_after:
+            await self.message.delete()
 
     async def edit_menu_page_auto(self):
         """
@@ -1543,7 +1549,7 @@ class SpotifySearchMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        clear_reactions_after: bool = True,
+        clear_buttons_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
         message: discord.Message = None,
@@ -1558,6 +1564,8 @@ class SpotifySearchMenu(discord.ui.View):
         self.user_token = user_token
         self.cog = cog
         self.ctx = None
+        self.clear_buttons_after = clear_buttons_after
+        self.delete_message_after = delete_message_after
         self.current_page = kwargs.get("page_start", 0)
         self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
         self.back_button = BackButton(discord.ButtonStyle.grey, 0)
@@ -1588,8 +1596,12 @@ class SpotifySearchMenu(discord.ui.View):
         return self._source
 
     async def on_timeout(self):
-        if self.message:
+        if self.message is None:
+            return
+        if self.clear_buttons_after:
             await self.message.edit(view=None)
+        elif self.delete_message_after:
+            await self.message.delete()
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -1671,7 +1683,7 @@ class SpotifyBaseMenu(discord.ui.View):
         source: menus.PageSource,
         cog: commands.Cog,
         user_token: tekore.Token,
-        clear_reactions_after: bool = True,
+        clear_buttons_after: bool = True,
         delete_message_after: bool = False,
         timeout: int = 60,
         message: discord.Message = None,
@@ -1684,6 +1696,8 @@ class SpotifyBaseMenu(discord.ui.View):
         self.user_token = user_token
         self.cog = cog
         self.message = message
+        self.clear_buttons_after = clear_buttons_after
+        self.delete_message_after = delete_message_after
         self._source = source
         self.ctx = None
         self.current_page = kwargs.get("page_start", 0)
@@ -1696,8 +1710,12 @@ class SpotifyBaseMenu(discord.ui.View):
         return self._source
 
     async def on_timeout(self):
-        if self.message:
+        if self.message is None:
+            return
+        if self.clear_buttons_after:
             await self.message.edit(view=None)
+        elif self.delete_message_after:
+            await self.message.delete()
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
