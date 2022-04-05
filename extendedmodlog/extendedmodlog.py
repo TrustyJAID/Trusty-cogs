@@ -31,7 +31,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         self.config.register_global(version="0.0.0")
         self.settings = {}
         self._ban_cache = {}
-        self.loop = asyncio.create_task(self.invite_links_loop())
+        self.invite_links_loop.start()
 
     def format_help_for_context(self, ctx: commands.Context):
         """
@@ -41,7 +41,7 @@ class ExtendedModLog(EventMixin, commands.Cog):
         return f"{pre_processed}\n\nCog Version: {self.__version__}"
 
     async def cog_unload(self):
-        self.loop.cancel()
+        self.invite_links_loop.stop()
 
     async def red_delete_data_for_user(self, **kwargs):
         """
@@ -196,10 +196,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
@@ -251,10 +250,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
@@ -306,10 +304,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
@@ -366,10 +363,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
@@ -420,10 +416,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
@@ -471,10 +466,9 @@ class ExtendedModLog(EventMixin, commands.Cog):
             `voice_change`   - Voice channel join/leave
             `member_join`
             `member_left`
-
-            **Requires Red 3.3+ and discord.py 1.3+**
             `invite_created`
             `invite_deleted`
+
             **Requires Red 3.5+ and discord.py 2.0+**
             `thread_created`
             `thread_deleted`
