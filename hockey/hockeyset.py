@@ -481,13 +481,14 @@ class HockeySetCommands(MixinMeta):
                 await ctx.send(msg)
             return
 
-        standings, page = await Standings.get_team_standings(
-            standings_type.lower(), session=self.session
-        )
-        if standings_type.lower() != "all":
-            em = await Standings.build_standing_embed(standings, page)
+        standings = await Standings.get_team_standings(session=self.session)
+        if standings_type in [i.name.lower() for i in Divisions]:
+            em = await standings.make_division_standings_embed(standings_type)
+
+        elif standings_type in [i.name.lower() for i in Conferences]:
+            em = await standings.make_conference_standings_embed(standings_type)
         else:
-            em = await Standings.all_standing_embed(standings)
+            em = await standings.all_standing_embed()
         await self.config.guild(guild).standings_type.set(standings_type)
         await self.config.guild(guild).standings_channel.set(channel.id)
         msg = _("Sending standings to {channel}").format(channel=channel.mention)

@@ -46,6 +46,12 @@ class Conferences(Enum):
     Western = "Western"
 
 
+class StreakType(Enum):
+    ot = "ot"
+    wins = "wins"
+    losses = "losses"
+
+
 @dataclass
 class Team:
     id: int
@@ -63,9 +69,19 @@ class LeagueRecord:
 
 @dataclass
 class Streak:
-    streakType: Literal["ot", "wins", "losses"]
+    streakType: StreakType
     streakNumber: int
     streakCode: str
+
+    def __str__(self):
+        if self.streakType is StreakType.wins:
+            return f"{self.streakNumber} W"
+        elif self.streakType is StreakType.ot:
+            return f"{self.streakNumber} OT"
+        elif self.streakType is StreakType.losses:
+            return f"{self.streakNumber} L"
+        else:
+            return f"{self.streakNumber}"
 
 
 @dataclass

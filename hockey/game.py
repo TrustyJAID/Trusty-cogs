@@ -480,37 +480,28 @@ class Game:
         returns team stats on the season from standings object
         """
         msg = "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
-        streak_types = {"wins": "W", "losses": "L", "ot": "OT"}
         home_str = "GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n"
         away_str = "GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n"
         try:
-            stats, home_i = await Standings.get_team_standings(self.home_team)
-            for team in stats:
-                if team.name == self.away_team:
-                    try:
-                        streak = "{} {}".format(team.streak, streak_types[team.streak_type])
-                    except KeyError:
-                        streak = "**0**"
+            standings = await Standings.get_team_standings()
+            for name, record in standings.items():
+                if record.team.name == self.away_team:
                     away_str = msg.format(
-                        wins=team.wins,
-                        losses=team.losses,
-                        ot=team.ot,
-                        pts=team.pts,
-                        gp=team.gp,
-                        streak=streak,
+                        wins=record.league_record.wins,
+                        losses=record.league_record.losses,
+                        ot=record.league_record.ot,
+                        pts=record.points,
+                        gp=record.games_played,
+                        streak=record.streak,
                     )
-                if team.name == self.home_team:
-                    try:
-                        streak = "{} {}".format(team.streak, streak_types[team.streak_type])
-                    except KeyError:
-                        streak = "**0**"
+                if record.team.name == self.home_team:
                     home_str = msg.format(
-                        wins=team.wins,
-                        losses=team.losses,
-                        ot=team.ot,
-                        pts=team.pts,
-                        gp=team.gp,
-                        streak=streak,
+                        wins=record.league_record.wins,
+                        losses=record.league_record.losses,
+                        ot=record.league_record.ot,
+                        pts=record.points,
+                        gp=record.games_played,
+                        streak=record.streak,
                     )
         except Exception:
             log.exception("Error pulling stats")

@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Sequence, Union
+from typing import Any, Dict, List, Literal, Optional
 
 import aiohttp
 import discord
