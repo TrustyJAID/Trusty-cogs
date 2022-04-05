@@ -73,15 +73,13 @@ class Streak:
     streakNumber: int
     streakCode: str
 
+    def __init__(self, *args, **kwargs):
+        self.streakType = StreakType(kwargs["streakType"])
+        self.streakNumber = int(kwargs["streakNumber"])
+        self.streakCode = kwargs["streakCode"]
+
     def __str__(self):
-        if self.streakType is StreakType.wins:
-            return f"{self.streakNumber} W"
-        elif self.streakType is StreakType.ot:
-            return f"{self.streakNumber} OT"
-        elif self.streakType is StreakType.losses:
-            return f"{self.streakNumber} L"
-        else:
-            return f"{self.streakNumber}"
+        return self.streakCode
 
 
 @dataclass
@@ -121,6 +119,7 @@ class TeamRecord:
     league_rank: int
     league_l10_rank: int
     league_road_rank: int
+    league_home_rank: int
     wildcard_rank: int
     row: int
     games_played: int
@@ -128,6 +127,7 @@ class TeamRecord:
     points_percentage: float
     pp_division_rank: int
     pp_conference_rank: int
+    pp_league_rank: int
     last_updated: datetime
 
     def __str__(self) -> str:
@@ -141,6 +141,14 @@ class TeamRecord:
             f"PTS: {str(self.points).ljust(just)} "
             f"{wildcard}\n"
         )
+
+    @property
+    def gaa(self):
+        return self.goals_against / self.games_played
+
+    @property
+    def gpg(self):
+        return self.goals_scored / self.games_played
 
     @classmethod
     def from_json(cls, data: dict, division: Division, conference: Conference) -> TeamRecord:
@@ -164,6 +172,7 @@ class TeamRecord:
             league_rank=int(data["leagueRank"]),
             league_l10_rank=int(data["leagueL10Rank"]),
             league_road_rank=int(data["leagueRoadRank"]),
+            league_home_rank=int(data["leagueHomeRank"]),
             wildcard_rank=int(data["wildCardRank"]),
             row=int(data["row"]),
             games_played=int(data["gamesPlayed"]),
@@ -171,6 +180,7 @@ class TeamRecord:
             points_percentage=float(data["pointsPercentage"]),
             pp_division_rank=int(data["ppDivisionRank"]),
             pp_conference_rank=int(data["ppConferenceRank"]),
+            pp_league_rank=int(data["ppLeagueRank"]),
             last_updated=datetime.strptime(data["lastUpdated"], "%Y-%m-%dT%H:%M:%SZ"),
         )
 
@@ -330,6 +340,7 @@ class Standings:
             url="https://www.nhl.com/standings",
             icon_url=nhl_icon,
         )
+        em.set_thumbnail(url=nhl_icon)
         em.timestamp = utc_to_local(self.last_timestamp(), "UTC")
         em.set_footer(text="Stats Last Updated", icon_url=nhl_icon)
         return em
@@ -510,20 +521,55 @@ class Standings:
             url="https://www.nhl.com/standings",
             icon_url=TEAMS[record.team.name]["logo"],
         )
+        headers = ("Stat", "Rank")
+        conference_data = [
+            [_("Rank"), record.conference_rank],
+            [_("Home"), record.conference_home_rank],
+            [_("Road"), record.conference_road_rank],
+            [_("PP"), record.pp_conference_rank],
+            [_("L10"), record.conference_l10_rank],
+        ]
+        division_data = [
+            [_("Rank"), record.division_rank],
+            [_("Home"), record.division_home_rank],
+            [_("Road"), record.division_road_rank],
+            [_("PP"), record.pp_division_rank],
+            [_("L10"), record.division_l10_rank],
+        ]
+        league_data = [
+            [_("Rank"), record.league_rank],
+            [_("Home"), record.league_home_rank],
+            [_("Road"), record.league_road_rank],
+            [_("PP"), record.pp_league_rank],
+            [_("L10"), record.league_l10_rank],
+        ]
+        conference_table = tabulate(conference_data, headers=headers)
+        division_table = tabulate(division_data, headers=headers)
+        league_table = tabulate(league_data, headers=headers)
         em.colour = int(TEAMS[record.team.name]["home"].replace("#", ""), 16)
         em.set_thumbnail(url=TEAMS[record.team.name]["logo"])
-        em.add_field(name="Division", value=f"# {record.division_rank}")
-        em.add_field(name="Conference", value=f"# {record.conference_rank}")
-        em.add_field(name="Wins", value=str(record.league_record.wins))
+        em.add_field(name=record.division.name + " Division", value=f"```\n{division_table}\n```")
+        em.add_field(
+            name=record.conference.name + " Conference", value=f"```\n{conference_table}\n```"
+        )
+        em.add_field(name="League", value=f"```\n{league_table}\n```")
+        em.add_field(
+            name="Wins (Regulation)",
+            value=f"{record.league_record.wins} ({record.regulation_wins})",
+        )
         em.add_field(name="Losses", value=str(record.league_record.losses))
         em.add_field(name="OT", value=str(record.league_record.ot))
-        em.add_field(name="Points", value=str(record.points))
         em.add_field(name="Games Played", value=str(record.games_played))
+        em.add_field(name="Points", value=str(record.points))
+        em.add_field(name="Points %", value=f"{record.points_percentage:.3}")
         em.add_field(name="Goals Scored", value=str(record.goals_scored))
         em.add_field(name="Goals Against", value=str(record.goals_against))
+        em.add_field(name="Goals Diff.", value=str(record.goals_scored - record.goals_against))
+        em.add_field(name="G/G", value=f"{record.gpg:.3}")
+        em.add_field(name="GA/G", value=f"{record.gaa:.3}")
         em.add_field(
             name="Current Streak",
-            value="{} {}".format(record.streak.streakNumber, record.streak.streakType),
+            value=str(record.streak),
         )
         # timestamp = datetime.strptime(record.last_updated, "%Y-%m-%dT%H:%M:%SZ")
         em.timestamp = utc_to_local(record.last_updated, "UTC")
