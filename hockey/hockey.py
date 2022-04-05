@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from abc import ABC
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Sequence, Union
 
@@ -322,18 +322,17 @@ class Hockey(
             while self.current_games != {}:
                 self.games_playing = True
                 to_delete = []
-                for link in self.current_games:
-                    if not self.TEST_LOOP:
-                        try:
-                            async with self.session.get(BASE_URL + link) as resp:
-                                data = await resp.json()
-                        except Exception:
-                            log.exception("Error grabbing game data: ")
-                            continue
-                    else:
-                        self.games_playing = False
-                        with open(str(__file__)[:-9] + "testgame.json", "r") as infile:
-                            data = json.loads(infile.read())
+                for link, data in self.current_games.items():
+                    if data["game"] is not None and (
+                        data["game"].game_start - timedelta(hours=1)
+                    ) > datetime.now(timezone.utc):
+                        log.debug(
+                            "Skipping game %r checks until closer to game start.", data["game"]
+                        )
+                        continue
+                    data = await self.get_game_data(link)
+                    if data is None:
+                        continue
                     try:
                         game = await Game.from_json(data)
                         self.current_games[link]["game"] = game
@@ -407,6 +406,20 @@ class Hockey(
                     team["period"] = 0
 
             await asyncio.sleep(300)
+
+    async def get_game_data(self, link: str) -> Optional[Dict[str, Any]]:
+        if not self.TEST_LOOP:
+            try:
+                async with self.session.get(BASE_URL + link) as resp:
+                    data = await resp.json()
+            except Exception:
+                log.exception("Error grabbing game data: ")
+                return None
+        else:
+            self.games_playing = False
+            with open(str(__file__)[:-9] + "testgame.json", "r") as infile:
+                data = json.loads(infile.read())
+        return data
 
     async def check_new_day(self) -> None:
         now = utc_to_local(datetime.now(timezone.utc))
