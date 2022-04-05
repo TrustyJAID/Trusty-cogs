@@ -711,7 +711,7 @@ class SpotifySelectTrack(discord.ui.Select):
             await self.cog.unknown_error(interaction)
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
+        await self.view.show_checked_page(page, interaction)
 
 
 class PlayPauseButton(discord.ui.Button):
@@ -811,7 +811,7 @@ class PlayPauseButton(discord.ui.Button):
             )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
+        await self.view.show_checked_page(page, interaction)
 
 
 class PreviousTrackButton(discord.ui.Button):
@@ -853,9 +853,7 @@ class PreviousTrackButton(discord.ui.Button):
             )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
-        await self.view.show_checked_page(page)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(page, interaction)
 
 
 class NextTrackButton(discord.ui.Button):
@@ -1494,7 +1492,7 @@ class SpotifySelectOption(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         index = int(self.values[0])
-        await self.view.show_checked_page(index)
+        await self.view.show_checked_page(index, interaction)
 
 
 class SpotifyDeviceView(discord.ui.View):

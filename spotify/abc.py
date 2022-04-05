@@ -45,10 +45,6 @@ class SpotifyMixin(ABC):
     #######################################################################
 
     @abstractmethod
-    async def migrate_settings(self):
-        raise NotImplementedError()
-
-    @abstractmethod
     async def cog_load(self):
         raise NotImplementedError()
 
