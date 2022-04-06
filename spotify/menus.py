@@ -1364,9 +1364,9 @@ class SpotifyUserMenu(discord.ui.View):
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
-            return {"content": value, "embed": None}
+            return {"content": value, "embeds": None}
         elif isinstance(value, discord.Embed):
-            return {"embed": value, "content": None}
+            return {"embeds": [value], "content": None}
 
     async def send_initial_message(self, ctx, channel):
         """|coro|
@@ -1453,8 +1453,8 @@ class SpotifyUserMenu(discord.ui.View):
             self.select_view = None
         if not interaction.response.is_done():
             await interaction.response.edit_message(**kwargs, view=self)
-        else:
-            await interaction.followup.edit(**kwargs, view=self)
+        elif self.message is not None:
+            await self.message.edit(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
@@ -1606,9 +1606,9 @@ class SpotifySearchMenu(discord.ui.View):
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
-            return {"content": value, "embed": None}
+            return {"content": value, "embeds": None}
         elif isinstance(value, discord.Embed):
-            return {"embed": value, "content": None}
+            return {"embeds": [value], "content": None}
 
     async def send_initial_message(self, ctx, channel):
         """|coro|
@@ -1720,9 +1720,9 @@ class SpotifyBaseMenu(discord.ui.View):
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):
-            return {"content": value, "embed": None}
+            return {"content": value, "embeds": None}
         elif isinstance(value, discord.Embed):
-            return {"embed": value, "content": None}
+            return {"embeds": [value], "content": None}
 
     async def send_initial_message(self, ctx: commands.Context, channel: discord.TextChannel):
         """|coro|
