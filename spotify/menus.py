@@ -1338,7 +1338,7 @@ class StopButton(discord.ui.Button):
         self.view.stop()
         log.debug(interaction.message.flags)
         if interaction.message.flags.ephemeral:
-            await interaction.message.edit(view=None)
+            await interaction.response.edit_message(view=None)
             return
         await interaction.message.delete()
 
