@@ -499,6 +499,7 @@ class SpotifyPages(menus.PageSource):
         self.context = None
         self.select_options: List[SpotifyTrackOption] = []
         self.context_name = None
+        self.cur_volume = 1
 
     async def format_page(
         self,
@@ -606,6 +607,7 @@ class SpotifyPages(menus.PageSource):
                 cur_state = await user_spotify.playback()
                 if not cur_state:
                     raise NotPlaying
+                self.cur_volume = cur_state.device.volume_percent
                 is_liked = False
                 if not getattr(cur_state.item, "is_local", False):
                     song = cur_state.item.id
@@ -1021,6 +1023,121 @@ class RepeatButton(discord.ui.Button):
         await self.view.show_checked_page(page, interaction)
 
 
+class VolumeModal(discord.ui.Modal):
+    def __init__(
+        self,
+        cog: commands.Cog,
+        button: discord.ui.Button,
+        user_token: tekore.Token,
+        cur_volume: Optional[int],
+    ):
+        super().__init__(title="Volume")
+        self.text = discord.ui.TextInput(
+            style=discord.TextStyle.short,
+            label="Volume",
+            placeholder="0-100",
+            default=str(cur_volume),
+            min_length=1,
+            max_length=3,
+        )
+        self.add_item(self.text)
+        self.og_button = button
+        self.user_token = user_token
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        volume = max(min(100, int(self.text.value)), 0)  # constrains volume to be within 100
+        try:
+            user_spotify = tekore.Spotify(sender=self.cog._sender)
+            with user_spotify.token_as(self.user_token):
+                cur = await user_spotify.playback()
+                if not cur:
+                    device_id = await self.cog.config.user(interaction.user).default_device()
+                    devices = await user_spotify.playback_devices()
+                    device = None
+                    for d in devices:
+                        if d.id == device_id:
+                            device = d
+                    if not device:
+                        return await self.cog.no_device(interaction)
+                else:
+                    device = cur.device
+                await user_spotify.playback_volume(volume)
+                if volume == 0:
+                    emoji = emoji_handler.get_emoji("volume_mute", True)
+                elif cur and volume in range(1, 50):
+                    emoji = emoji_handler.get_emoji("volume_down", True)
+                else:
+                    emoji = emoji_handler.get_emoji(
+                        "volume_up",
+                        True,
+                    )
+            self.og_button.emoji = emoji
+
+            await interaction.response.send_message(
+                _("Setting {device}'s volume to {volume}.").format(
+                    volume=volume, device=device.name
+                ),
+                ephemeral=True,
+            )
+            await self.og_button.view.show_checked_page(0, interaction)
+
+        except tekore.Unauthorised:
+            await self.cog.not_authorized(interaction)
+        except tekore.NotFound:
+            await self.cog.no_device(interaction)
+        except tekore.Forbidden as e:
+            await self.cog.forbidden_action(interaction, str(e))
+        except tekore.HTTPError:
+            log.exception("Error grabing user info from spotify")
+            await self.cog.unknown_error(interaction)
+
+
+class VolumeButton(discord.ui.Button):
+    def __init__(
+        self,
+        style: discord.ButtonStyle,
+        row: Optional[int],
+        cog: commands.Cog,
+        source: menus.PageSource,
+        user_token: tekore.Token,
+    ):
+        super().__init__(style=style, row=row)
+        self.source = source
+        volume = getattr(self.source, "cur_volume", 1)
+        if volume == 0:
+            self.emoji = emoji_handler.get_emoji("volume_mute")
+        elif volume in range(1, 50):
+            self.emoji = emoji_handler.get_emoji("volume_down")
+        else:
+            self.emoji = emoji_handler.get_emoji("volume_up")
+        self.cog = cog
+
+        self.user_token = user_token
+        self.disabled = False
+
+    async def callback(self, interaction: discord.Interaction):
+        user_spotify = tekore.Spotify(sender=self.cog._sender)
+        with user_spotify.token_as(self.user_token):
+            cur = await user_spotify.playback()
+            if not cur:
+                device_id = await self.cog.config.user(interaction.user).default_device()
+                devices = await user_spotify.playback_devices()
+                device = None
+                for d in devices:
+                    if d.id == device_id:
+                        device = d
+                if not device:
+                    return await self.cog.no_device(interaction)
+            else:
+                device = cur.device
+        cur_volume = None
+        if cur:
+            cur_volume = cur.device.volume_percent
+        modal = VolumeModal(self.cog, self, self.user_token, cur_volume)
+        await interaction.response.send_modal(modal)
+
+
 class LikeButton(discord.ui.Button):
     def __init__(
         self,
@@ -1312,14 +1429,16 @@ class SpotifyUserMenu(discord.ui.View):
         self.shuffle_button = ShuffleButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.repeat_button = RepeatButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.like_button = LikeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.volume_button = VolumeButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.previous_button)
         self.add_item(self.play_pause_button)
         self.add_item(self.next_button)
+        self.add_item(self.volume_button)
         self.add_item(self.repeat_button)
         self.add_item(self.shuffle_button)
         self.add_item(self.like_button)
-        self.add_item(self.stop_button)
         self.select_view: Optional[SpotifySelectTrack] = None
 
     @property
@@ -1575,7 +1694,8 @@ class SpotifySearchMenu(discord.ui.View):
         )
         self.play_all = PlayAllButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
         self.queue_track = QueueTrackButton(discord.ButtonStyle.grey, 1, cog, source, user_token)
-        self.stop_button = StopButton(discord.ButtonStyle.red, 1)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
@@ -1584,7 +1704,6 @@ class SpotifySearchMenu(discord.ui.View):
         self.add_item(self.play_all)
         self.add_item(self.queue_track)
 
-        self.add_item(self.stop_button)
         if hasattr(self.source, "select_options"):
             self.select_view = SpotifySelectOption(self.source.select_options[:25])
             self.add_item(self.select_view)
