@@ -16,7 +16,7 @@ from redbot.core.utils import AsyncIter
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
 from .errors import InvalidFileError
-from .game import Game
+from .game import Game, ScheduleGame
 from .gamedaychannels import GameDayChannels
 from .gamedaythreads import GameDayThreads
 from .helper import utc_to_local
@@ -300,12 +300,22 @@ class Hockey(
                 await asyncio.sleep(60)
                 continue
             if data["dates"] != []:
-                self.current_games = {
-                    game["link"]: {"count": 0, "game": None, "disabled_buttons": False}
-                    for game in data["dates"][0]["games"]
-                    if game["status"]["abstractGameState"] != "Final"
-                    and game["status"]["detailedState"] != "Postponed"
-                }
+                for game in data["dates"][0]["games"]:
+                    try:
+                        schedule_game = ScheduleGame.from_json(game)
+                    except Exception:
+                        log.exception("Error creating ScheduleGame")
+                        continue
+                    if schedule_game.status.abstractGameState == "Final":
+                        continue
+                    if schedule_game.status.detailedState == "Postponed":
+                        continue
+                    self.current_games[game["link"]] = {
+                        "count": 0,
+                        "game": None,
+                        "disabled_buttons": False,
+                        "schedule_game": schedule_game,
+                    }
             else:
                 # Only try to create game day channels if there's no games for the day
                 # Otherwise make the game day channels once we see
@@ -317,17 +327,20 @@ class Hockey(
                         "count": 0,
                         "game": None,
                         "disabled_buttons": False,
+                        "schedule_game": ScheduleGame.sim(),
                     }
                 }
             while self.current_games != {}:
                 self.games_playing = True
                 to_delete = []
                 for link, data in self.current_games.items():
-                    if data["game"] is not None and (
-                        data["game"].game_start - timedelta(hours=1)
-                    ) > datetime.now(timezone.utc):
+                    if (data["schedule_game"].gameDate - timedelta(hours=1)) >= datetime.now(
+                        timezone.utc
+                    ):
                         log.debug(
-                            "Skipping game %r checks until closer to game start.", data["game"]
+                            "Skipping %s @ %s checks until closer to game start.",
+                            data["schedule_game"].teams.away.team.name,
+                            data["schedule_game"].teams.home.team.name,
                         )
                         continue
                     data = await self.get_game_data(link)
@@ -355,10 +368,12 @@ class Hockey(
                         self.current_games[link]["disabled_buttons"] = True
 
                     log.debug(
-                        (
-                            f"{game.away_team} @ {game.home_team} "
-                            f"{game.game_state} {game.away_score} - {game.home_score}"
-                        )
+                        "%s @ %s %s %s - %s",
+                        game.away_team,
+                        game.home_team,
+                        game.game_state,
+                        game.away_score,
+                        game.home_score,
                     )
 
                     if game.game_state in ["Final", "Postponed"]:

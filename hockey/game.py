@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
@@ -21,11 +22,129 @@ from .helper import (
     get_team_role,
     utc_to_local,
 )
-from .standings import Standings
+from .standings import LeagueRecord, Standings
 
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
+
+
+@dataclass
+class GameStatus:
+    abstractGameState: str
+    codedGameState: int
+    detailedState: str
+    statusCode: int
+    startTimeTBD: bool
+
+    @classmethod
+    def sim(cls):
+        return cls(
+            abstractGameState="Preview",
+            codedGameState="1",
+            detailedState="Scheduled",
+            statusCode="1",
+            startTimeTBD=False,
+        )
+
+
+@dataclass
+class Team:
+    id: int
+    name: str
+    link: str
+
+
+@dataclass
+class GameTeam:
+    leagueRecord: LeagueRecord
+    score: int
+    team: Team
+
+    @classmethod
+    def sim(cls):
+        return cls(
+            leagueRecord=LeagueRecord(wins=0, losses=0, ot=0, type="league"),
+            score=0,
+            team=Team(id=22, name="Edmonton Oilers", link="/api/v1/teams/22"),
+        )
+
+    @classmethod
+    def from_json(cls, data: dict) -> GameTeam:
+        return cls(
+            leagueRecord=LeagueRecord(**data["leagueRecord"]),
+            score=int(data["score"]),
+            team=Team(**data["team"]),
+        )
+
+
+@dataclass
+class GameTeams:
+    away: GameTeam
+    home: GameTeam
+
+    @classmethod
+    def sim(cls):
+        return cls(
+            away=GameTeam.sim(),
+            home=GameTeam.sim(),
+        )
+
+    @classmethod
+    def from_json(cls, data: dict) -> GameTeams:
+        return cls(away=GameTeam.from_json(data["away"]), home=GameTeam.from_json(data["home"]))
+
+
+@dataclass
+class Venue:
+    id: int
+    name: str
+    link: str
+
+    @classmethod
+    def sim(cls):
+        return cls(id=999999, name="Trusty's Bagel Barn", link="/api/v1/venues/99999999")
+
+
+@dataclass
+class ScheduleGame:
+    gamePk: int
+    link: str
+    gameType: str
+    gameDate: datetime
+    status: GameStatus
+    teams: GameTeams
+    venue: Venue
+    content: Dict[str, str]
+
+    @classmethod
+    def sim(cls):
+        return cls(
+            gamePk=2020020474,
+            link="/v1/game/2020020474/feed/live",
+            gameType="R",
+            gameDate=datetime.now(timezone.utc),
+            status=GameStatus.sim(),
+            teams=GameTeams.sim(),
+            venue=Venue.sim(),
+            content={"links": "/v1/game/2020020474/content"},
+        )
+
+    @classmethod
+    def from_json(cls, data: dict) -> ScheduleGame:
+        game_start_str = data.get("gameDate", "")
+        game_start = datetime.strptime(game_start_str, "%Y-%m-%dT%H:%M:%SZ")
+        game_start = game_start.replace(tzinfo=timezone.utc)
+        return cls(
+            gamePk=data["gamePk"],
+            link=data["link"],
+            gameType=data["gameType"],
+            gameDate=game_start,
+            status=GameStatus(**data["status"]),
+            teams=GameTeams.from_json(data["teams"]),
+            venue=Venue(**data["venue"]),
+            content=data["content"],
+        )
 
 
 class Game:
@@ -484,7 +603,7 @@ class Game:
         away_str = "GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n"
         try:
             standings = await Standings.get_team_standings()
-            for name, record in standings.items():
+            for name, record in standings.all_records.items():
                 if record.team.name == self.away_team:
                     away_str = msg.format(
                         wins=record.league_record.wins,
