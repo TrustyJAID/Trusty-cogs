@@ -19,8 +19,8 @@ from .helpers import (
     ScopeConverter,
     SearchTypes,
     SpotifyURIConverter,
-    emoji_handler,
     song_embed,
+    spotify_emoji_handler,
     time_convert,
 )
 from .menus import (
@@ -48,7 +48,9 @@ from .menus import (
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
-ActionConverter = commands.get_dict_converter(*emoji_handler.emojis.keys(), delims=[" ", ",", ";"])
+ActionConverter = commands.get_dict_converter(
+    *spotify_emoji_handler.emojis.keys(), delims=[" ", ",", ";"]
+)
 
 
 class SpotifyCommands(SpotifyMixin):
@@ -332,7 +334,7 @@ class SpotifyCommands(SpotifyMixin):
         Resets the bot to use the default emojis
         """
         await self.config.emojis.clear()
-        emoji_handler.reload_emojis()
+        spotify_emoji_handler.reload_emojis()
         await ctx.send(_("I will now use the default emojis."))
 
     @spotify_set.command(name="emojis")
@@ -398,7 +400,7 @@ class SpotifyCommands(SpotifyMixin):
                 if emoji.is_unicode_emoji():
                     try:
                         await ctx.message.add_reaction(str(emoji))
-                        emoji_handler.replace_emoji(name, str(emoji))
+                        spotify_emoji_handler.replace_emoji(name, str(emoji))
                         emojis[name] = str(emoji)
                         emojis_changed[name] = str(emoji)
                     except (InvalidEmoji, discord.errors.HTTPException):
@@ -406,7 +408,7 @@ class SpotifyCommands(SpotifyMixin):
                 else:
                     animated = "a" if emoji.animated else ""
                     emoji_str = f"<{animated}:{emoji.name}:{emoji.id}>"
-                    emoji_handler.replace_emoji(name, emoji_str)
+                    spotify_emoji_handler.replace_emoji(name, emoji_str)
                     emojis[name] = emoji_str
                     emojis_changed[name] = str(emoji)
 
@@ -414,7 +416,7 @@ class SpotifyCommands(SpotifyMixin):
             return await ctx.send(_("No emojis have been changed."))
         msg = _("The following emojis have been replaced:\n")
         for name, emoji in emojis_changed.items():
-            original = emoji_handler.default[name]
+            original = spotify_emoji_handler.default[name]
             msg += f"{original} -> {emoji}\n"
         await ctx.maybe_send_embed(msg)
 
@@ -1044,7 +1046,7 @@ class SpotifyCommands(SpotifyMixin):
                 await ctx.followup.send(_("Pausing playback."), ephemeral=True)
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "pause", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1104,7 +1106,7 @@ class SpotifyCommands(SpotifyMixin):
                 await ctx.followup.send(_("Resuming playback."))
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "play", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1140,7 +1142,7 @@ class SpotifyCommands(SpotifyMixin):
                 await ctx.followup.send(_("Skipping to next track."), ephemeral=True)
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1176,7 +1178,7 @@ class SpotifyCommands(SpotifyMixin):
                 await ctx.followup.send(_("Skipping to previous track."), ephemeral=True)
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "previous", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1258,7 +1260,7 @@ class SpotifyCommands(SpotifyMixin):
                         )
                     else:
                         await ctx.react_quietly(
-                            emoji_handler.get_emoji(
+                            spotify_emoji_handler.get_emoji(
                                 "next",
                                 ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                             )
@@ -1297,7 +1299,7 @@ class SpotifyCommands(SpotifyMixin):
                             )
                     else:
                         await ctx.react_quietly(
-                            emoji_handler.get_emoji(
+                            spotify_emoji_handler.get_emoji(
                                 "next",
                                 ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                             )
@@ -1324,7 +1326,7 @@ class SpotifyCommands(SpotifyMixin):
                                 )
                             else:
                                 await ctx.react_quietly(
-                                    emoji_handler.get_emoji(
+                                    spotify_emoji_handler.get_emoji(
                                         "next",
                                         ctx.channel.permissions_for(
                                             ctx.guild.me
@@ -1357,7 +1359,7 @@ class SpotifyCommands(SpotifyMixin):
                                 )
                             else:
                                 await ctx.react_quietly(
-                                    emoji_handler.get_emoji(
+                                    spotify_emoji_handler.get_emoji(
                                         "next",
                                         ctx.channel.permissions_for(
                                             ctx.guild.me
@@ -1371,7 +1373,7 @@ class SpotifyCommands(SpotifyMixin):
                         [t.track.id for t in cur.items], device_id=device_id
                     )
                     await ctx.react_quietly(
-                        emoji_handler.get_emoji(
+                        spotify_emoji_handler.get_emoji(
                             "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
                     )
@@ -1446,7 +1448,7 @@ class SpotifyCommands(SpotifyMixin):
                 )
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1498,7 +1500,7 @@ class SpotifyCommands(SpotifyMixin):
                         "context": "repeat",
                         "track": "repeatone",
                     }
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         lookup[state.lower()],
                         ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                     )
@@ -1519,23 +1521,23 @@ class SpotifyCommands(SpotifyMixin):
                         device_id = device.id
                     if cur and cur.repeat_state == "off":
                         state = "context"
-                        emoji = emoji_handler.get_emoji(
+                        emoji = spotify_emoji_handler.get_emoji(
                             "repeat", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
                     if cur and cur.repeat_state == "context":
                         state = "track"
-                        emoji = emoji_handler.get_emoji(
+                        emoji = spotify_emoji_handler.get_emoji(
                             "repeatone",
                             ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                         )
                     if cur and cur.repeat_state == "track":
                         state = "off"
-                        emoji = emoji_handler.get_emoji(
+                        emoji = spotify_emoji_handler.get_emoji(
                             "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
                     if state is None:
                         state = "off"
-                        emoji = emoji_handler.get_emoji(
+                        emoji = spotify_emoji_handler.get_emoji(
                             "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                         )
                 await user_spotify.playback_repeat(str(state).lower(), device_id=device_id)
@@ -1606,7 +1608,7 @@ class SpotifyCommands(SpotifyMixin):
                     await ctx.followup.send(_("Turning off shuffle on Spotify."), ephemeral=True)
             else:
                 await ctx.react_quietly(
-                    emoji_handler.get_emoji(
+                    spotify_emoji_handler.get_emoji(
                         "shuffle", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 )
@@ -1651,7 +1653,7 @@ class SpotifyCommands(SpotifyMixin):
                 cur = await user_spotify.playback()
                 now = cur.progress_ms
                 total = cur.item.duration_ms
-                emoji = emoji_handler.get_emoji(
+                emoji = spotify_emoji_handler.get_emoji(
                     "fastforward", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                 )
                 log.debug(seconds)
@@ -1660,11 +1662,11 @@ class SpotifyCommands(SpotifyMixin):
                 else:
                     to_seek = seconds * 1000 + now
                 if to_seek < now:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "rewind", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 if to_seek > total:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
                     )
                 await user_spotify.playback_seek(to_seek)
@@ -1723,17 +1725,17 @@ class SpotifyCommands(SpotifyMixin):
                     device = cur.device
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "volume_mute",
                         ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                     )
                 elif cur and volume > cur.device.volume_percent:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "volume_up",
                         ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                     )
                 else:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "volume_down",
                         ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                     )
@@ -1963,7 +1965,7 @@ class SpotifyCommands(SpotifyMixin):
                 devices_msg += f"{c+1}. `{d.name}` - {d.type} - {d.volume_percent}% "
                 if d.is_active:
                     devices_msg += str(
-                        emoji_handler.get_emoji(
+                        spotify_emoji_handler.get_emoji(
                             "playpause",
                             ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
                         )

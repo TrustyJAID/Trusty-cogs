@@ -9,7 +9,7 @@ import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .helpers import InvalidEmoji, emoji_handler
+from .helpers import InvalidEmoji, spotify_emoji_handler
 from .slash import SpotifySlash
 from .spotify_commands import SpotifyCommands
 
@@ -131,7 +131,7 @@ class Spotify(
         emojis = await self.config.emojis()
         for name, emoji in emojis.items():
             try:
-                emoji_handler.replace_emoji(name, emoji)
+                spotify_emoji_handler.replace_emoji(name, emoji)
             except InvalidEmoji:
                 pass
         self._ready.set()

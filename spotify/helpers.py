@@ -77,10 +77,29 @@ VALID_RECOMMENDATIONS = {
 
 class EmojiHandler:
     def __init__(self):
-        from .emojis import emojis
-
         # with open(Path(__file__).parent / "emojis.json", "r", encoding="utf8") as infile:
-        self.emojis = emojis
+        self.emojis = {
+            "playpause": "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "pause": "\N{DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "repeat": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
+            "repeatone": "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}",
+            "next": "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "previous": "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "like": "\N{GREEN HEART}",
+            "fastforward": "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "rewind": "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "volume_down": "\N{SPEAKER WITH ONE SOUND WAVE}",
+            "volume_up": "\N{SPEAKER WITH THREE SOUND WAVES}",
+            "volume_mute": "\N{SPEAKER WITH CANCELLATION STROKE}",
+            "off": "\N{NEGATIVE SQUARED CROSS MARK}",
+            "playall": "\N{EJECT SYMBOL}\N{VARIATION SELECTOR-16}",
+            "shuffle": "\N{TWISTED RIGHTWARDS ARROWS}",
+            "back_left": "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "forward_right": "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "play": "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "queue": "🇶",
+        }
+
         self.default = copy(self.emojis)
 
     def get_emoji(self, name: str, use_external: bool = True) -> discord.PartialEmoji:
@@ -100,7 +119,9 @@ class EmojiHandler:
         self.emojis[name] = to
 
 
-emoji_handler = EmojiHandler()  # initialize here so when it's changed other objects use this one
+spotify_emoji_handler = (
+    EmojiHandler()
+)  # initialize here so when it's changed other objects use this one
 
 
 class SpotifyError(Exception):

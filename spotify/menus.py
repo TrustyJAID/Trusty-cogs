@@ -35,8 +35,8 @@ from .helpers import (
     SPOTIFY_LOGO,
     NotPlaying,
     _draw_play,
-    emoji_handler,
     make_details,
+    spotify_emoji_handler,
 )
 
 log = logging.getLogger("red.Trusty-cogs.spotify")
@@ -747,21 +747,21 @@ class SpotifyUserMenu(discord.ui.View):
         kwargs = await self._get_kwargs_from_page(page)
         if isinstance(self.source, SpotifyPages):
             if self.source.repeat_state == "track":
-                self.repeat_button.emoji = emoji_handler.get_emoji("repeatone")
+                self.repeat_button.emoji = spotify_emoji_handler.get_emoji("repeatone")
                 self.repeat_button.style = discord.ButtonStyle.primary
             if self.source.repeat_state == "context":
-                self.repeat_button.emoji = emoji_handler.get_emoji("repeat")
+                self.repeat_button.emoji = spotify_emoji_handler.get_emoji("repeat")
                 self.repeat_button.style = discord.ButtonStyle.primary
 
             if self.source.is_liked:
-                self.like_button.emoji = emoji_handler.get_emoji("like")
+                self.like_button.emoji = spotify_emoji_handler.get_emoji("like")
             if not self.source.is_liked:
                 self.like_button.emoji = "\N{BLACK HEART}"
 
             if self.source.is_playing:
-                self.play_pause_button.emoji = emoji_handler.get_emoji("pause")
+                self.play_pause_button.emoji = spotify_emoji_handler.get_emoji("pause")
             if not self.source.is_playing:
-                self.play_pause_button.emoji = emoji_handler.get_emoji("play")
+                self.play_pause_button.emoji = spotify_emoji_handler.get_emoji("play")
             if self.source.is_shuffle:
                 self.shuffle_button.style = discord.ButtonStyle.primary
 
@@ -790,7 +790,7 @@ class SpotifyUserMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         if self._source.is_liked:
-            self.like_button.emoji = emoji_handler.get_emoji("like")
+            self.like_button.emoji = spotify_emoji_handler.get_emoji("like")
         if not self._source.is_liked:
             self.like_button.emoji = "\N{BLACK HEART}"
         kwargs = await self._get_kwargs_from_page(page)

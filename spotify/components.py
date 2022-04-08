@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 from redbot.vendored.discord.ext import menus
 
-from .helpers import emoji_handler
+from .helpers import spotify_emoji_handler
 
 log = logging.getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -98,7 +98,7 @@ class PlayPauseButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("playpause")
+        self.emoji = spotify_emoji_handler.get_emoji("playpause")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -130,14 +130,14 @@ class PlayPauseButton(discord.ui.Button):
                             ephemeral=True,
                         )
                         await user_spotify.playback_pause(device_id=device_id)
-                        self.emoji = emoji_handler.get_emoji("play")
+                        self.emoji = spotify_emoji_handler.get_emoji("play")
                     else:
                         await interaction.response.send_message(
                             _("Resuming Spotify playback on {device}.").format(device=device.name),
                             ephemeral=True,
                         )
                         await user_spotify.playback_resume(device_id=device_id)
-                        self.emoji = emoji_handler.get_emoji("pause")
+                        self.emoji = spotify_emoji_handler.get_emoji("pause")
                 else:
                     if self.view.source.current_track.type == "track":
                         track_name = self.view.source.current_track.name
@@ -192,7 +192,7 @@ class PreviousTrackButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("previous")
+        self.emoji = spotify_emoji_handler.get_emoji("previous")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -228,7 +228,7 @@ class NextTrackButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("next")
+        self.emoji = spotify_emoji_handler.get_emoji("next")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -264,7 +264,7 @@ class ShuffleButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("shuffle")
+        self.emoji = spotify_emoji_handler.get_emoji("shuffle")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -326,7 +326,7 @@ class RepeatButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("repeat")
+        self.emoji = spotify_emoji_handler.get_emoji("repeat")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -339,15 +339,15 @@ class RepeatButton(discord.ui.Button):
                 cur = await user_spotify.playback()
                 if cur.repeat_state == "off":
                     self.style = discord.ButtonStyle.primary
-                    self.emoji = emoji_handler.get_emoji("repeat")
+                    self.emoji = spotify_emoji_handler.get_emoji("repeat")
                     state = "context"
                 if cur.repeat_state == "context":
                     self.style = discord.ButtonStyle.primary
-                    self.emoji = emoji_handler.get_emoji("repeatone")
+                    self.emoji = spotify_emoji_handler.get_emoji("repeatone")
                     state = "track"
                 if cur.repeat_state == "track":
                     self.style = discord.ButtonStyle.grey
-                    self.emoji = emoji_handler.get_emoji("repeat")
+                    self.emoji = spotify_emoji_handler.get_emoji("repeat")
                     state = "off"
                 await user_spotify.playback_repeat(state)
         except tekore.Unauthorised:
@@ -405,11 +405,11 @@ class VolumeModal(discord.ui.Modal):
                     device = cur.device
                 await user_spotify.playback_volume(volume)
                 if volume == 0:
-                    emoji = emoji_handler.get_emoji("volume_mute", True)
+                    emoji = spotify_emoji_handler.get_emoji("volume_mute", True)
                 elif cur and volume in range(1, 50):
-                    emoji = emoji_handler.get_emoji("volume_down", True)
+                    emoji = spotify_emoji_handler.get_emoji("volume_down", True)
                 else:
-                    emoji = emoji_handler.get_emoji(
+                    emoji = spotify_emoji_handler.get_emoji(
                         "volume_up",
                         True,
                     )
@@ -447,11 +447,11 @@ class VolumeButton(discord.ui.Button):
         self.source = source
         volume = getattr(self.source, "cur_volume", 1)
         if volume == 0:
-            self.emoji = emoji_handler.get_emoji("volume_mute")
+            self.emoji = spotify_emoji_handler.get_emoji("volume_mute")
         elif volume in range(1, 50):
-            self.emoji = emoji_handler.get_emoji("volume_down")
+            self.emoji = spotify_emoji_handler.get_emoji("volume_down")
         else:
-            self.emoji = emoji_handler.get_emoji("volume_up")
+            self.emoji = spotify_emoji_handler.get_emoji("volume_up")
         self.cog = cog
 
         self.user_token = user_token
@@ -541,7 +541,7 @@ class PlayAllButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row, label=_("Play All"))
         self.style = style
-        self.emoji = emoji_handler.get_emoji("playall")
+        self.emoji = spotify_emoji_handler.get_emoji("playall")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -603,7 +603,7 @@ class QueueTrackButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row, label=_("Queue"))
         self.style = style
-        self.emoji = emoji_handler.get_emoji("queue")
+        self.emoji = spotify_emoji_handler.get_emoji("queue")
         self.cog = cog
         self.source = source
         self.user_token = user_token
@@ -686,7 +686,7 @@ class ForwardButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("play")
+        self.emoji = spotify_emoji_handler.get_emoji("forward_right")
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page + 1, interaction)
@@ -700,7 +700,7 @@ class BackButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("back_left")
+        self.emoji = spotify_emoji_handler.get_emoji("back_left")
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_checked_page(self.view.current_page - 1, interaction)
@@ -714,7 +714,7 @@ class LastItemButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("next")
+        self.emoji = spotify_emoji_handler.get_emoji("next")
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
@@ -728,7 +728,7 @@ class FirstItemButton(discord.ui.Button):
     ):
         super().__init__(style=style, row=row)
         self.style = style
-        self.emoji = emoji_handler.get_emoji("previous")
+        self.emoji = spotify_emoji_handler.get_emoji("previous")
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.show_page(0, interaction)
