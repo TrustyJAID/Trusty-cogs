@@ -176,12 +176,6 @@ class PlayPauseButton(discord.ui.Button):
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.cog.unknown_error(interaction)
-        if isinstance(self.source, SpotifyTrackPages):
-            self.source = SpotifyPages(
-                user_token=self.user_token,
-                sender=self.cog._sender,
-                detailed=self.view.source.detailed,
-            )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page, interaction)
@@ -218,12 +212,6 @@ class PreviousTrackButton(discord.ui.Button):
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.cog.unknown_error(interaction)
-        if isinstance(self.source, SpotifyTrackPages):
-            self.source = SpotifyPages(
-                user_token=self.user_token,
-                sender=self.cog._sender,
-                detailed=self.view.source.detailed,
-            )
         await asyncio.sleep(1)
         page = getattr(self.view, "current_page", 0)
         await self.view.show_checked_page(page, interaction)
