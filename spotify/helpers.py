@@ -1,6 +1,7 @@
 import datetime
 import logging
 import re
+from copy import copy
 from typing import Final, List, Pattern, Union
 
 import discord
@@ -72,6 +73,34 @@ VALID_RECOMMENDATIONS = {
     "time_signature": lambda x: int(x),
     "valence": lambda x: max(min(1.0, x / 100), 0.0),
 }
+
+
+class EmojiHandler:
+    def __init__(self):
+        from .emojis import emojis
+
+        # with open(Path(__file__).parent / "emojis.json", "r", encoding="utf8") as infile:
+        self.emojis = emojis
+        self.default = copy(self.emojis)
+
+    def get_emoji(self, name: str, use_external: bool = True) -> discord.PartialEmoji:
+        if use_external and name in self.emojis:
+            return discord.PartialEmoji.from_str(self.emojis[name])
+        return discord.PartialEmoji.from_str(self.default[name])
+        # we shouldn't have anyone deleting emoji keys
+
+    def reload_emojis(self):
+        # we could just copy default but we can also just
+        # reload the emojis from disk
+        self.emojis = copy(self.default)
+
+    def replace_emoji(self, name: str, to: str):
+        if name not in self.emojis:
+            raise InvalidEmoji
+        self.emojis[name] = to
+
+
+emoji_handler = EmojiHandler()  # initialize here so when it's changed other objects use this one
 
 
 class SpotifyError(Exception):

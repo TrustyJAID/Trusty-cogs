@@ -10,6 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import SpotifyMixin
+from .components import SpotifySelectDevice
 from .helpers import (
     SPOTIFY_RE,
     InvalidEmoji,
@@ -18,6 +19,7 @@ from .helpers import (
     ScopeConverter,
     SearchTypes,
     SpotifyURIConverter,
+    emoji_handler,
     song_embed,
     time_convert,
 )
@@ -33,13 +35,11 @@ from .menus import (
     SpotifyPlaylistsPages,
     SpotifyRecentSongPages,
     SpotifySearchMenu,
-    SpotifySelectDevice,
     SpotifyShowPages,
     SpotifyTopArtistsPages,
     SpotifyTopTracksPages,
     SpotifyTrackPages,
     SpotifyUserMenu,
-    emoji_handler,
 )
 
 # from redbot.core.utils.views import SetApiView
@@ -338,34 +338,59 @@ class SpotifyCommands(SpotifyMixin):
     @spotify_set.command(name="emojis")
     @commands.is_owner()
     async def spotify_emojis(
-        self, ctx: Union[commands.Context, discord.Interaction], *, new_emojis: ActionConverter
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        *,
+        new_emojis: Optional[ActionConverter],
     ):
         """
         Change the emojis used by the bot for various actions
 
-        `<new_emojis>` Is a space or comma separated list of name followed by emoji
+        `[new_emojis]` Is a space or comma separated list of name followed by emoji
         for example `[p]spotify set emojis playpause 😃` will then replace ⏯
         usage with the 😃 emoji.
 
-        Available name replacements:
-           `playpause` -> ⏯
-           `pause` -> ⏸
-           `repeat` -> 🔁
-           `repeatone` -> 🔂
-           `next` -> ⏭
-           `previous` -> ⏮
-           `like` -> 💚
-           `fastforward` -> ⏩
-           `rewind` -> ⏪
-           `volume_down` -> 🔉
-           `volume_up` -> 🔊
-           `volume_mute` -> 🔇
-           `playall` -> ⏏
-           `shuffle` -> 🔀
-           `back_left` -> ◀
-           `play` -> ▶
-           `queue` -> 🇶
+        This command also accepts a .yaml file containing emojis
+        if using custom emojis they must be in the format
+        `a:name:12345` or `:name:12345`
+
+        Example: ```yaml
+        playpause: ⏯
+        pause: ⏸
+        repeat: 🔁
+        repeatone: 🔂
+        next: ⏭
+        previous: ⏮
+        like: 💚
+        fastforward: ⏩
+        rewind: ⏪
+        volume_down: 🔉
+        volume_up: 🔊
+        volume_mute: 🔇
+        playall: ⏏
+        shuffle: 🔀
+        back_left: ◀
+        play: ▶
+        queue: 🇶
+        ```
         """
+        if new_emojis is None:
+            yaml_error = _("There was an error reading your yaml file.")
+            if not ctx.message.attachments:
+                await ctx.send_help()
+                return
+            if not ctx.message.attachments[0].filename.endswith(".yaml"):
+                await ctx.send(_("You must provide a `.yaml` file to use this command."))
+                return
+            try:
+                new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
+            except yaml.error.YAMLError:
+                await ctx.send(yaml_error)
+                return
+            if isinstance(new_emojis, str):
+                await ctx.send(yaml_error)
+                return
+
         emojis_changed = {}
         async with self.config.emojis() as emojis:
             for name, raw_emoji in new_emojis.items():
@@ -392,49 +417,6 @@ class SpotifyCommands(SpotifyMixin):
             original = emoji_handler.default[name]
             msg += f"{original} -> {emoji}\n"
         await ctx.maybe_send_embed(msg)
-
-    @spotify_set.command(name="setemojis")
-    @commands.is_owner()
-    async def spotify_setemojis(self, ctx: Union[commands.Context, discord.Interaction]):
-        """
-        Change the emojis used by the bot for various actions
-
-        This command accepts a .yaml file containing emojis
-        if using custom emojis they must be in the format
-        `a:name:12345` or `:name:12345`
-
-        Example: ```yaml
-        playpause: ⏯
-        pause: ⏸
-        repeat: 🔁
-        repeatone: 🔂
-        next: ⏭
-        previous: ⏮
-        like: 💚
-        fastforward: ⏩
-        rewind: ⏪
-        volume_down: 🔉
-        volume_up: 🔊
-        volume_mute: 🔇
-        playall: ⏏
-        shuffle: 🔀
-        back_left: ◀
-        play: ▶
-        queue: 🇶
-        ```
-        """
-        if not ctx.message.attachments:
-            await ctx.send_help()
-            return
-        if not ctx.message.attachments[0].filename.endswith(".yaml"):
-            await ctx.send(_("You must provide a `.yaml` file to use this command."))
-            return
-        try:
-            new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
-        except yaml.error.YAMLError:
-            await ctx.send(_("There was an error reading your yaml file."))
-            return
-        await self.spotify_emojis(ctx, new_emojis=new_emojis)
 
     @spotify_set.command(name="scope", aliases=["scopes"])
     @commands.is_owner()
@@ -645,22 +627,27 @@ class SpotifyCommands(SpotifyMixin):
             delete_after, clear_after, timeout = False, True, 120
         try:
             if member is None:
-                page_source = SpotifyPages(
-                    user_token=user_token, sender=self._sender, detailed=detailed
+                x = SpotifyUserMenu(
+                    source=SpotifyPages(
+                        user_token=user_token, sender=self._sender, detailed=detailed
+                    ),
+                    delete_message_after=delete_after,
+                    clear_buttons_after=clear_after,
+                    timeout=timeout,
+                    cog=self,
+                    user_token=user_token,
+                    ctx=ctx,
                 )
             else:
-                page_source = SpotifyTrackPages(
-                    items=[track], detailed=detailed, cur_track=track.id
+                x = SpotifySearchMenu(
+                    source=SpotifyTrackPages(items=[track], detailed=detailed),
+                    delete_message_after=delete_after,
+                    clear_buttons_after=clear_after,
+                    timeout=timeout,
+                    cog=self,
+                    user_token=user_token,
                 )
-            x = SpotifyUserMenu(
-                source=page_source,
-                delete_message_after=delete_after,
-                clear_buttons_after=clear_after,
-                timeout=timeout,
-                cog=self,
-                user_token=user_token,
-                ctx=ctx,
-            )
+
             await x.send_initial_message(ctx, ctx.channel)
         except NotPlaying:
             await self.not_playing(ctx)

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 import time
 from abc import ABC
 from typing import Literal, Mapping, Optional, Tuple, Union
@@ -10,8 +9,7 @@ import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .helpers import SPOTIFY_RE, InvalidEmoji
-from .menus import emoji_handler
+from .helpers import InvalidEmoji, emoji_handler
 from .slash import SpotifySlash
 from .spotify_commands import SpotifyCommands
 
