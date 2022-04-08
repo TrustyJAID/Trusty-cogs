@@ -1,7 +1,9 @@
 import logging
 from copy import copy
+from io import BytesIO
 from typing import Optional, Tuple, Union
 
+import aiohttp
 import discord
 import tekore
 import yaml
@@ -349,6 +351,7 @@ class SpotifyCommands(SpotifyMixin):
 
     @spotify_set.command(name="showemojis")
     @commands.is_owner()
+    @commands.bot_has_permissions(attach_files=True)
     async def spotify_show_emojis(self, ctx: commands.Context):
         """
         Show information about the currently set emoji pack
@@ -358,7 +361,8 @@ class SpotifyCommands(SpotifyMixin):
         yaml_str = f"author: {emojis_author}\n"
         for name, emoji in emojis.items():
             yaml_str += f"{name}: {emoji}\n"
-        await ctx.send(f"```yaml\n{yaml_str}\n```")
+        file = discord.File(BytesIO(yaml_str.encode("utf8")), filename="spotify_emojis.yaml")
+        await ctx.send(files=[file])
 
     @spotify_set.command(name="emojis")
     @commands.is_owner()
@@ -366,7 +370,7 @@ class SpotifyCommands(SpotifyMixin):
         self,
         ctx: Union[commands.Context, discord.Interaction],
         *,
-        new_emojis: Optional[ActionConverter],
+        new_emojis: Optional[Union[ActionConverter, str]],
     ):
         """
         Change the emojis used by the bot for various actions
@@ -399,19 +403,25 @@ class SpotifyCommands(SpotifyMixin):
         queue: 🇶
         ```
         """
-        if new_emojis is None:
+        if new_emojis is None or isinstance(new_emojis, str):
             yaml_error = _("There was an error reading your yaml file.")
-            if not ctx.message.attachments:
-                await ctx.send_help()
-                return
-            if not ctx.message.attachments[0].filename.endswith(".yaml"):
-                await ctx.send(_("You must provide a `.yaml` file to use this command."))
-                return
-            try:
-                new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
-            except yaml.error.YAMLError:
-                await ctx.send(yaml_error)
-                return
+            if ctx.message.attachments:
+                if not ctx.message.attachments[0].filename.endswith(".yaml"):
+                    await ctx.send(_("You must provide a `.yaml` file to use this command."))
+                    return
+                try:
+                    new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
+                except yaml.error.YAMLError:
+                    await ctx.send(yaml_error)
+                    return
+            else:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(new_emojis) as resp:
+                        try:
+                            new_emojis = yaml.safe_load(await resp.read())
+                        except yaml.error.YAMLError:
+                            await ctx.send(yaml_error)
+                            return
             if isinstance(new_emojis, str):
                 await ctx.send(yaml_error)
                 return
