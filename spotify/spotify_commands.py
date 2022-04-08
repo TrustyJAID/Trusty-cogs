@@ -415,13 +415,18 @@ class SpotifyCommands(SpotifyMixin):
                     await ctx.send(yaml_error)
                     return
             else:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(new_emojis) as resp:
-                        try:
-                            new_emojis = yaml.safe_load(await resp.read())
-                        except yaml.error.YAMLError:
-                            await ctx.send(yaml_error)
-                            return
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(new_emojis) as resp:
+                            try:
+                                new_emojis = yaml.safe_load(await resp.read())
+                            except yaml.error.YAMLError:
+                                await ctx.send(yaml_error)
+                                return
+                except Exception:
+                    log.info("There was an error reading the url.", exec_info=True)
+                    await ctx.send(yaml_error)
+                    return
             if isinstance(new_emojis, str):
                 await ctx.send(yaml_error)
                 return
