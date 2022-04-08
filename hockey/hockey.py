@@ -301,20 +301,14 @@ class Hockey(
                 continue
             if data["dates"] != []:
                 for game in data["dates"][0]["games"]:
-                    try:
-                        schedule_game = ScheduleGame.from_json(game)
-                    except Exception:
-                        log.exception("Error creating ScheduleGame")
+                    if game["status"]["abstractGameState"] == "Final":
                         continue
-                    if schedule_game.status.abstractGameState == "Final":
-                        continue
-                    if schedule_game.status.detailedState == "Postponed":
+                    if game["status"]["detailedState"] == "Postponed":
                         continue
                     self.current_games[game["link"]] = {
                         "count": 0,
                         "game": None,
                         "disabled_buttons": False,
-                        "schedule_game": schedule_game,
                     }
             else:
                 # Only try to create game day channels if there's no games for the day
@@ -327,20 +321,19 @@ class Hockey(
                         "count": 0,
                         "game": None,
                         "disabled_buttons": False,
-                        "schedule_game": ScheduleGame.sim(),
                     }
                 }
             while self.current_games != {}:
                 self.games_playing = True
                 to_delete = []
                 for link, data in self.current_games.items():
-                    if (data["schedule_game"].gameDate - timedelta(hours=1)) >= datetime.now(
-                        timezone.utc
-                    ):
+                    if data["game"] is not None and data["game"].game_start - timedelta(
+                        hours=1
+                    ) >= datetime.now(timezone.utc):
                         log.debug(
                             "Skipping %s @ %s checks until closer to game start.",
-                            data["schedule_game"].teams.away.team.name,
-                            data["schedule_game"].teams.home.team.name,
+                            data["game"].away_team,
+                            data["game"].home_team,
                         )
                         continue
                     data = await self.get_game_data(link)

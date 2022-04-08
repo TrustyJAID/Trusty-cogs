@@ -97,7 +97,7 @@ class GameTeams:
 
 @dataclass
 class Venue:
-    id: int
+    id: Optional[int]
     name: str
     link: str
 
@@ -142,7 +142,7 @@ class ScheduleGame:
             gameDate=game_start,
             status=GameStatus(**data["status"]),
             teams=GameTeams.from_json(data["teams"]),
-            venue=Venue(**data["venue"]),
+            venue=Venue(id=data["venue"].pop("id", None), **data["venue"]),
             content=data["content"],
         )
 

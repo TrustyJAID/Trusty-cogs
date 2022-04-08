@@ -58,8 +58,9 @@ class HockeyPickems(MixinMeta):
             # explicitly allow moderators to lock the channel still
             return
         guild = before.guild
-        pickems_channels = await self.pickems_config.guild(guild).pickems_channels()
-        if str(before.id) in pickems_channels and before.permissions_for(guild.me).manage_threads:
+        if not before.permissions_for(guild.me).manage_threads:
+            return
+        if str(before.id) in await self.pickems_config.guild(guild).pickems_channels():
             await after.edit(archived=False)
             log.debug("Unarchiving %r", after)
         if before.id in await self.config.guild(guild).gdt():
@@ -195,7 +196,7 @@ class HockeyPickems(MixinMeta):
                 except ValueError:
                     # log.debug("Game %r missing message %s", game, message)
                     continue
-                channel = guild.get_thread(int(channel_id))
+                channel = guild.get_channel_or_thread(int(channel_id))
                 if not channel:
                     # log.debug("Game %r missing channel", game)
                     continue
@@ -229,7 +230,6 @@ class HockeyPickems(MixinMeta):
         Checks to see if a pickem object is already created for the game
         if not it creates one or adds the message, channel to the current ones
         """
-        pickems = self.all_pickems.get(str(guild.id), {})
         new_name = self.pickems_name(game)
         if str(guild.id) not in self.all_pickems:
             self.all_pickems[str((guild.id))] = {}
@@ -1020,6 +1020,13 @@ class HockeyPickems(MixinMeta):
 
         if channel is None:
             channel = ctx.channel
+        if isinstance(channel, discord.Thread):
+            msg = _("You cannot create threads within threads.")
+            if is_slash:
+                await ctx.followup.send(msg)
+            else:
+                await ctx.send(msg)
+            return
 
         if not channel.permissions_for(guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads!")
