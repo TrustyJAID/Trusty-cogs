@@ -1510,10 +1510,10 @@ class SpotifyUserMenu(discord.ui.View):
         kwargs = await self._get_kwargs_from_page(page)
         if isinstance(self.source, SpotifyPages):
             if self.source.repeat_state == "track":
-                self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+                self.repeat_button.emoji = emoji_handler.get_emoji("repeatone")
                 self.repeat_button.style = discord.ButtonStyle.primary
             if self.source.repeat_state == "context":
-                self.repeat_button.emoji = REPEAT_STATES[self.source.repeat_state]
+                self.repeat_button.emoji = emoji_handler.get_emoji("repeat")
                 self.repeat_button.style = discord.ButtonStyle.primary
 
             if self.source.is_liked:

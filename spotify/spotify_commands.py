@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 import discord
 import tekore
+import yaml
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
@@ -359,7 +360,6 @@ class SpotifyCommands(SpotifyMixin):
            `volume_down` -> 🔉
            `volume_up` -> 🔊
            `volume_mute` -> 🔇
-           `off` -> ❎
            `playall` -> ⏏
            `shuffle` -> 🔀
            `back_left` -> ◀
@@ -392,6 +392,49 @@ class SpotifyCommands(SpotifyMixin):
             original = emoji_handler.default[name]
             msg += f"{original} -> {emoji}\n"
         await ctx.maybe_send_embed(msg)
+
+    @spotify_set.command(name="setemojis")
+    @commands.is_owner()
+    async def spotify_setemojis(self, ctx: Union[commands.Context, discord.Interaction]):
+        """
+        Change the emojis used by the bot for various actions
+
+        This command accepts a .yaml file containing emojis
+        if using custom emojis they must be in the format
+        `a:name:12345` or `:name:12345`
+
+        Example: ```yaml
+        playpause: ⏯
+        pause: ⏸
+        repeat: 🔁
+        repeatone: 🔂
+        next: ⏭
+        previous: ⏮
+        like: 💚
+        fastforward: ⏩
+        rewind: ⏪
+        volume_down: 🔉
+        volume_up: 🔊
+        volume_mute: 🔇
+        playall: ⏏
+        shuffle: 🔀
+        back_left: ◀
+        play: ▶
+        queue: 🇶
+        ```
+        """
+        if not ctx.message.attachments:
+            await ctx.send_help()
+            return
+        if not ctx.message.attachments[0].filename.endswith(".yaml"):
+            await ctx.send(_("You must provide a `.yaml` file to use this command."))
+            return
+        try:
+            new_emojis = yaml.safe_load(await ctx.message.attachments[0].read())
+        except yaml.error.YAMLError:
+            await ctx.send(_("There was an error reading your yaml file."))
+            return
+        await self.spotify_emojis(ctx, new_emojis=new_emojis)
 
     @spotify_set.command(name="scope", aliases=["scopes"])
     @commands.is_owner()
