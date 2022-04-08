@@ -461,6 +461,7 @@ class SpotifyCommands(SpotifyMixin):
             await ctx.send(_("Emojis were reset as there was an error with one of them."))
             await self.config.emojis.clear()
             await self.config.emojis_author.clear()
+            spotify_emoji_handler.reload_emojis()
             return
 
     @spotify_set.command(name="scope", aliases=["scopes"])
