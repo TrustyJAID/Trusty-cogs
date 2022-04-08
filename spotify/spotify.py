@@ -62,6 +62,7 @@ class Spotify(
         )
         self.config.register_global(
             emojis={},
+            emojis_author="",
             scopes=[
                 "user-read-private",
                 "user-top-read",

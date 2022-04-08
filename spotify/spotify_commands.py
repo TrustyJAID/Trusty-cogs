@@ -1,6 +1,6 @@
 import logging
 from copy import copy
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import discord
 import tekore
@@ -79,7 +79,7 @@ class SpotifyCommands(SpotifyMixin):
         """
 
     @spotify_com.group(name="device")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_device(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Spotify device commands
@@ -242,15 +242,24 @@ class SpotifyCommands(SpotifyMixin):
         else:
             await ctx.reply(msg, mention_author=False)
 
+    async def get_menu_settings(
+        self, guild: Optional[discord.Guild] = None
+    ) -> Tuple[bool, bool, int]:
+        delete_after, clear_after, timeout = False, True, 120
+        if guild:
+            delete_after = await self.config.guild(guild).delete_message_after()
+            clear_after = await self.config.guild(guild).clear_reactions_after()
+            timeout = await self.config.guild(guild).menu_timeout()
+
+        return delete_after, clear_after, timeout
+
     @spotify_set.command(name="showsettings", aliases=["settings"])
     @commands.mod_or_permissions(manage_messages=True)
     async def show_settings(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Show settings for menu timeouts
         """
-        delete_after = await self.config.guild(ctx.guild).delete_message_after()
-        clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-        timeout = await self.config.guild(ctx.guild).menu_timeout()
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         msg = _(
             "Delete After: {delete_after}\nClear After: {clear_after}\nTimeout: {timeout}"
         ).format(delete_after=delete_after, clear_after=clear_after, timeout=timeout)
@@ -334,8 +343,22 @@ class SpotifyCommands(SpotifyMixin):
         Resets the bot to use the default emojis
         """
         await self.config.emojis.clear()
+        await self.config.emojis_author.clear()
         spotify_emoji_handler.reload_emojis()
         await ctx.send(_("I will now use the default emojis."))
+
+    @spotify_set.command(name="showemojis")
+    @commands.is_owner()
+    async def spotify_show_emojis(self, ctx: commands.Context):
+        """
+        Show information about the currently set emoji pack
+        """
+        emojis = await self.config.emojis()
+        emojis_author = await self.config.emojis_author()
+        yaml_str = f"author: {emojis_author}\n"
+        for name, emoji in emojis.items():
+            yaml_str += f"{name}: {emoji}\n"
+        await ctx.send(f"```yaml\n{yaml_str}\n```")
 
     @spotify_set.command(name="emojis")
     @commands.is_owner()
@@ -396,6 +419,9 @@ class SpotifyCommands(SpotifyMixin):
         emojis_changed = {}
         async with self.config.emojis() as emojis:
             for name, raw_emoji in new_emojis.items():
+                if name.lower() == "author":
+                    await self.config.emojis_author.set(raw_emoji)
+                    continue
                 emoji = discord.PartialEmoji.from_str(raw_emoji)
                 if emoji.is_unicode_emoji():
                     try:
@@ -411,14 +437,21 @@ class SpotifyCommands(SpotifyMixin):
                     spotify_emoji_handler.replace_emoji(name, emoji_str)
                     emojis[name] = emoji_str
                     emojis_changed[name] = str(emoji)
-
-        if not emojis_changed:
-            return await ctx.send(_("No emojis have been changed."))
+        view = discord.ui.View()
+        select = discord.ui.Select(placeholder=_("New Emojis"))
         msg = _("The following emojis have been replaced:\n")
         for name, emoji in emojis_changed.items():
             original = spotify_emoji_handler.default[name]
             msg += f"{original} -> {emoji}\n"
-        await ctx.maybe_send_embed(msg)
+            select.add_option(label=name, emoji=discord.PartialEmoji.from_str(emoji))
+        view.add_item(select)
+        try:
+            await ctx.send(msg, view=view)
+        except Exception:
+            await ctx.send(_("Emojis were reset as there was an error with one of them."))
+            await self.config.emojis.clear()
+            await self.config.emojis_author.clear()
+            return
 
     @spotify_set.command(name="scope", aliases=["scopes"])
     @commands.is_owner()
@@ -528,7 +561,7 @@ class SpotifyCommands(SpotifyMixin):
             await ctx.send(msg)
 
     @spotify_com.command(name="me")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_me(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Shows your current Spotify Settings
@@ -621,12 +654,7 @@ class SpotifyCommands(SpotifyMixin):
                     track = await user_spotify.track(activity.track_id)
         else:
             member = None
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         try:
             if member is None:
                 x = SpotifyUserMenu(
@@ -657,7 +685,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.not_authorized(ctx)
 
     @spotify_com.command(name="share")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_share(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Tell the bot to play the users current song in their current voice channel
@@ -693,7 +721,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="search")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_search(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -746,12 +774,7 @@ class SpotifyCommands(SpotifyMixin):
             else:
                 await ctx.send(msg)
             return
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         x = SpotifySearchMenu(
             source=search_types[search_type](items=items, detailed=detailed),
             delete_message_after=delete_after,
@@ -797,7 +820,7 @@ class SpotifyCommands(SpotifyMixin):
             await ctx.maybe_send_embed(msg)
 
     @spotify_com.command(name="recommendations", aliases=["recommend", "recommendation"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_recommendations(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -855,12 +878,7 @@ class SpotifyCommands(SpotifyMixin):
             items = search.tracks
         if not items:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         x = SpotifySearchMenu(
             source=SpotifyTrackPages(items=items, detailed=detailed),
             delete_message_after=delete_after,
@@ -872,7 +890,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="recent")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_recently_played(
         self, ctx: Union[commands.Context, discord.Interaction], detailed: Optional[bool] = False
     ):
@@ -894,12 +912,7 @@ class SpotifyCommands(SpotifyMixin):
                 tracks = search.items
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         x = SpotifySearchMenu(
             source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
             delete_message_after=delete_after,
@@ -911,7 +924,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="toptracks")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def top_tracks(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List your top tracks on spotify
@@ -932,12 +945,7 @@ class SpotifyCommands(SpotifyMixin):
                 cur = await user_spotify.current_user_top_tracks(limit=50)
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         tracks = cur.items
         x = SpotifyBaseMenu(
             source=SpotifyTopTracksPages(tracks),
@@ -950,7 +958,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="topartists")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def top_artists(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List your top artists on spotify
@@ -971,12 +979,7 @@ class SpotifyCommands(SpotifyMixin):
                 cur = await user_spotify.current_user_top_artists(limit=50)
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         artists = cur.items
         x = SpotifyBaseMenu(
             source=SpotifyTopArtistsPages(artists),
@@ -989,7 +992,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="new")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_new(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List new releases on Spotify
@@ -1007,13 +1010,8 @@ class SpotifyCommands(SpotifyMixin):
         user_spotify = tekore.Spotify(sender=self._sender)
         with user_spotify.token_as(user_token):
             playlists = await user_spotify.new_releases(limit=50)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
-            playlist_list = playlists.items
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+        playlist_list = playlists.items
         x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
             delete_message_after=delete_after,
@@ -1025,7 +1023,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_com.command(name="pause")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_pause(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Pauses spotify for you
@@ -1045,11 +1043,7 @@ class SpotifyCommands(SpotifyMixin):
             if is_slash:
                 await ctx.followup.send(_("Pausing playback."), ephemeral=True)
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "pause", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("pause", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1061,7 +1055,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="resume")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_resume(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Resumes spotify for you
@@ -1105,11 +1099,7 @@ class SpotifyCommands(SpotifyMixin):
             if is_slash:
                 await ctx.followup.send(_("Resuming playback."))
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "play", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("play", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1121,7 +1111,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="next", aliases=["skip"])
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_next(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Skips to the next track in queue on Spotify
@@ -1141,11 +1131,7 @@ class SpotifyCommands(SpotifyMixin):
             if is_slash:
                 await ctx.followup.send(_("Skipping to next track."), ephemeral=True)
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1157,7 +1143,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="previous", aliases=["prev"])
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_previous(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         Skips to the previous track in queue on Spotify
@@ -1177,11 +1163,7 @@ class SpotifyCommands(SpotifyMixin):
             if is_slash:
                 await ctx.followup.send(_("Skipping to previous track."), ephemeral=True)
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "previous", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("previous", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1193,7 +1175,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="play")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_play(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -1262,7 +1244,7 @@ class SpotifyCommands(SpotifyMixin):
                         await ctx.react_quietly(
                             spotify_emoji_handler.get_emoji(
                                 "next",
-                                ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                                True,
                             )
                         )
                     return
@@ -1301,7 +1283,7 @@ class SpotifyCommands(SpotifyMixin):
                         await ctx.react_quietly(
                             spotify_emoji_handler.get_emoji(
                                 "next",
-                                ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                                True,
                             )
                         )
                     return
@@ -1372,11 +1354,7 @@ class SpotifyCommands(SpotifyMixin):
                     await user_spotify.playback_start_tracks(
                         [t.track.id for t in cur.items], device_id=device_id
                     )
-                    await ctx.react_quietly(
-                        spotify_emoji_handler.get_emoji(
-                            "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                        )
-                    )
+                    await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
                     return
                 msg = _("I could not find any URL's or matching playlist names.")
                 if is_slash:
@@ -1395,7 +1373,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="queue")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_queue_add(
         self, ctx: Union[commands.Context, discord.Interaction], *, songs: SpotifyURIConverter
     ):
@@ -1447,11 +1425,7 @@ class SpotifyCommands(SpotifyMixin):
                     ephemeral=True,
                 )
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1463,7 +1437,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="repeat")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_repeat(
         self, ctx: Union[commands.Context, discord.Interaction], state: Optional[str]
     ):
@@ -1502,7 +1476,7 @@ class SpotifyCommands(SpotifyMixin):
                     }
                     emoji = spotify_emoji_handler.get_emoji(
                         lookup[state.lower()],
-                        ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        True,
                     )
                 else:
                     cur = await user_spotify.playback()
@@ -1521,25 +1495,19 @@ class SpotifyCommands(SpotifyMixin):
                         device_id = device.id
                     if cur and cur.repeat_state == "off":
                         state = "context"
-                        emoji = spotify_emoji_handler.get_emoji(
-                            "repeat", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                        )
+                        emoji = spotify_emoji_handler.get_emoji("repeat", True)
                     if cur and cur.repeat_state == "context":
                         state = "track"
                         emoji = spotify_emoji_handler.get_emoji(
                             "repeatone",
-                            ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                            True,
                         )
                     if cur and cur.repeat_state == "track":
                         state = "off"
-                        emoji = spotify_emoji_handler.get_emoji(
-                            "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                        )
+                        emoji = spotify_emoji_handler.get_emoji("off", True)
                     if state is None:
                         state = "off"
-                        emoji = spotify_emoji_handler.get_emoji(
-                            "off", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                        )
+                        emoji = spotify_emoji_handler.get_emoji("off", True)
                 await user_spotify.playback_repeat(str(state).lower(), device_id=device_id)
             if is_slash:
                 await ctx.followup.send(
@@ -1561,7 +1529,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="shuffle")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_shuffle(
         self, ctx: Union[commands.Context, discord.Interaction], state: Optional[bool] = None
     ):
@@ -1607,11 +1575,7 @@ class SpotifyCommands(SpotifyMixin):
                 else:
                     await ctx.followup.send(_("Turning off shuffle on Spotify."), ephemeral=True)
             else:
-                await ctx.react_quietly(
-                    spotify_emoji_handler.get_emoji(
-                        "shuffle", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
-                )
+                await ctx.react_quietly(spotify_emoji_handler.get_emoji("shuffle", True))
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
@@ -1623,7 +1587,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="seek")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_seek(
         self, ctx: Union[commands.Context, discord.Interaction], seconds: Union[int, str]
     ):
@@ -1653,22 +1617,16 @@ class SpotifyCommands(SpotifyMixin):
                 cur = await user_spotify.playback()
                 now = cur.progress_ms
                 total = cur.item.duration_ms
-                emoji = spotify_emoji_handler.get_emoji(
-                    "fastforward", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                )
+                emoji = spotify_emoji_handler.get_emoji("fastforward", True)
                 log.debug(seconds)
                 if abs_position:
                     to_seek = seconds * 1000
                 else:
                     to_seek = seconds * 1000 + now
                 if to_seek < now:
-                    emoji = spotify_emoji_handler.get_emoji(
-                        "rewind", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
+                    emoji = spotify_emoji_handler.get_emoji("rewind", True)
                 if to_seek > total:
-                    emoji = spotify_emoji_handler.get_emoji(
-                        "next", ctx.channel.permissions_for(ctx.guild.me).use_external_emojis
-                    )
+                    emoji = spotify_emoji_handler.get_emoji("next", True)
                 await user_spotify.playback_seek(to_seek)
             if is_slash:
                 await ctx.followup.send(
@@ -1687,7 +1645,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_com.command(name="volume", aliases=["vol"])
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_volume(
         self, ctx: Union[commands.Context, discord.Interaction], volume: Union[int, str]
     ):
@@ -1727,17 +1685,17 @@ class SpotifyCommands(SpotifyMixin):
                 if volume == 0:
                     emoji = spotify_emoji_handler.get_emoji(
                         "volume_mute",
-                        ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        True,
                     )
                 elif cur and volume > cur.device.volume_percent:
                     emoji = spotify_emoji_handler.get_emoji(
                         "volume_up",
-                        ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        True,
                     )
                 else:
                     emoji = spotify_emoji_handler.get_emoji(
                         "volume_down",
-                        ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        True,
                     )
 
             if is_slash:
@@ -1761,7 +1719,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_device.command(name="transfer")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_device_transfer(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -1837,7 +1795,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_device.command(name="default")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_device_default(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -1936,7 +1894,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_device.command(name="list")
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_device_list(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List all available devices for Spotify
@@ -1967,7 +1925,7 @@ class SpotifyCommands(SpotifyMixin):
                     devices_msg += str(
                         spotify_emoji_handler.get_emoji(
                             "playpause",
-                            ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                            True,
                         )
                     )
                 devices_msg += "\n"
@@ -1991,7 +1949,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="featured")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_featured(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List your Spotify featured Playlists
@@ -2012,12 +1970,7 @@ class SpotifyCommands(SpotifyMixin):
                 playlists = await user_spotify.featured_playlists(limit=50)
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         playlist_list = playlists[1].items
         x = SpotifySearchMenu(
             source=SpotifyNewPages(playlist_list),
@@ -2030,7 +1983,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="list", aliases=["ls"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_list(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         List your Spotify Playlists
@@ -2062,12 +2015,7 @@ class SpotifyCommands(SpotifyMixin):
                         playlists.append(p)
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         show_private = await self.config.user(author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
@@ -2093,7 +2041,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="view")
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_view(self, ctx: Union[commands.Context, discord.Interaction]):
         """
         View details about your spotify playlists
@@ -2125,12 +2073,7 @@ class SpotifyCommands(SpotifyMixin):
                         playlists.append(p)
         except tekore.Unauthorised:
             return await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         show_private = await self.config.user(author).show_private() or isinstance(
             ctx.channel, discord.DMChannel
         )
@@ -2159,7 +2102,7 @@ class SpotifyCommands(SpotifyMixin):
         await x.send_initial_message(ctx, ctx.channel)
 
     @spotify_playlist.command(name="create")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_create(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2206,7 +2149,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="add")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_add(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2276,7 +2219,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="remove")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_remove(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2345,7 +2288,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_playlist.command(name="follow")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_playlist_follow(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2399,7 +2342,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_artist.command(name="follow")
-    @commands.bot_has_permissions(embed_links=True, add_reactions=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_artist_follow(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2449,7 +2392,7 @@ class SpotifyCommands(SpotifyMixin):
             await self.unknown_error(ctx)
 
     @spotify_artist.command(name="albums", aliases=["album"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def spotify_artist_albums(
         self,
         ctx: Union[commands.Context, discord.Interaction],
@@ -2496,12 +2439,7 @@ class SpotifyCommands(SpotifyMixin):
                 tracks = search.items
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
-        if ctx.guild:
-            delete_after = await self.config.guild(ctx.guild).delete_message_after()
-            clear_after = await self.config.guild(ctx.guild).clear_reactions_after()
-            timeout = await self.config.guild(ctx.guild).menu_timeout()
-        else:
-            delete_after, clear_after, timeout = False, True, 120
+        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         x = SpotifySearchMenu(
             source=SpotifyAlbumPages(tracks, False),
             delete_message_after=delete_after,
