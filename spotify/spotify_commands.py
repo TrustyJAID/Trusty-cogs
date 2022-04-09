@@ -399,6 +399,7 @@ class SpotifyCommands(SpotifyMixin):
         playall: ⏏
         shuffle: 🔀
         back_left: ◀
+        forward_right: ▶
         play: ▶
         queue: 🇶
         ```
@@ -414,6 +415,9 @@ class SpotifyCommands(SpotifyMixin):
                 except yaml.error.YAMLError:
                     await ctx.send(yaml_error)
                     return
+            elif not new_emojis:
+                await ctx.send_help()
+                return
             else:
                 try:
                     async with aiohttp.ClientSession() as session:
