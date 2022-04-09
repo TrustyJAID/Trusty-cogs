@@ -26,7 +26,6 @@ from .components import (
     ShuffleButton,
     SpotifySelectOption,
     SpotifySelectTrack,
-    SpotifyTrackOption,
     StopButton,
     VolumeButton,
 )
@@ -487,7 +486,7 @@ class SpotifyPages(menus.PageSource):
         self.is_shuffle = False
         self.repeat_state = "off"
         self.context = None
-        self.select_options: List[SpotifyTrackOption] = []
+        self.select_options: List[tekore.FullTrack] = []
         self.context_name = None
         self.cur_volume = 1
 
@@ -628,7 +627,7 @@ class SpotifyPages(menus.PageSource):
                         self.context_name = cur_tracks.name
                     for track in tracks:
                         if track.id is not None:
-                            self.select_options.append(SpotifyTrackOption(track))
+                            self.select_options.append(track)
                 if self.select_options and cur_state.context is None:
                     self.select_options = []
         except tekore.Unauthorised:
@@ -766,18 +765,12 @@ class SpotifyUserMenu(discord.ui.View):
                 self.shuffle_button.style = discord.ButtonStyle.primary
 
             if self.source.select_options:
-                for op in self.source.select_options:
-                    if self.source.current_track and self.source.current_track.id == op.value:
-                        op.emoji = discord.PartialEmoji.from_str(
-                            "\N{SPEAKER WITH THREE SOUND WAVES}"
-                        )
-                    else:
-                        op.emoji = None
                 self.select_view = SpotifySelectTrack(
                     self.source.select_options[:25],
                     self.cog,
                     self.user_token,
                     self.source.context_name,
+                    self.source.current_track,
                 )
                 self.add_item(self.select_view)
         if is_slash:
@@ -795,19 +788,19 @@ class SpotifyUserMenu(discord.ui.View):
             self.like_button.emoji = "\N{BLACK HEART}"
         kwargs = await self._get_kwargs_from_page(page)
         if self.source.select_options:
+            self.remove_item(self.select_view)
             options = self.source.select_options[:25]
-            for op in self.source.select_options:
-                if self.source.current_track and self.source.current_track.id == op.value:
-                    op.emoji = discord.PartialEmoji.from_str("\N{SPEAKER WITH THREE SOUND WAVES}")
-                else:
-                    op.emoji = None
             if len(self.source.select_options) > 25 and page_number > 12:
-                self.remove_item(self.select_view)
                 options = self.source.select_options[page_number - 12 : page_number + 13]
-                self.select_view = SpotifySelectTrack(
-                    options, self.cog, self.user_token, self.source.context_name
-                )
-                self.add_item(self.select_view)
+
+            self.select_view = SpotifySelectTrack(
+                options,
+                self.cog,
+                self.user_token,
+                self.source.context_name,
+                self.source.current_track,
+            )
+            self.add_item(self.select_view)
         if self.select_view and not self.source.select_options:
             self.remove_item(self.select_view)
             self.select_view = None

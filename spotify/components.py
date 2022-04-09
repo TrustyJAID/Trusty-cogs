@@ -17,28 +17,29 @@ log = logging.getLogger("red.Trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
 
 
-class SpotifyTrackOption(discord.SelectOption):
-    def __init__(self, track: tekore.FullTrack):
-        super().__init__(
-            label=track.name[:100],
-            description=humanize_list([i.name for i in track.artists])[:100],
-            value=track.id,
-        )
-        self.track = track
-
-
 class SpotifySelectTrack(discord.ui.Select):
     def __init__(
         self,
-        options: List[discord.SelectOption],
+        tracks: List[tekore.FullTrack],
         cog: commands.Cog,
         user_token: tekore.Token,
         placeholder: str,
+        current_track: Optional[tekore.FullTrack],
     ):
-        super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
+        super().__init__(min_values=1, max_values=1, placeholder=placeholder)
+        for track in tracks:
+            emoji = None
+            if current_track and track.id == current_track.id:
+                emoji = spotify_emoji_handler.get_emoji("volume_up")
+            self.add_option(
+                label=track.name[:100],
+                description=humanize_list([i.name for i in track.artists])[:100],
+                value=track.id,
+                emoji=emoji,
+            )
         self.cog = cog
         self.user_token = user_token
-        self.tracks = {t.value: t.track for t in options}
+        self.tracks = {t.id: t for t in tracks}
 
     async def callback(self, interaction: discord.Interaction):
         track_id = self.values[0]
