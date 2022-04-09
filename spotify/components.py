@@ -38,13 +38,12 @@ class SpotifySelectTrack(discord.ui.Select):
         super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
         self.cog = cog
         self.user_token = user_token
+        self.tracks = {t.value: t.track for t in options}
 
     async def callback(self, interaction: discord.Interaction):
         track_id = self.values[0]
         track = None
-        for track_ in self.options:
-            if track_id == track_.track.id:
-                track = track_.track
+        track = self.tracks.get(track_id, None)
         device_id = None
         try:
             user_spotify = tekore.Spotify(sender=self.cog._sender)
@@ -65,6 +64,8 @@ class SpotifySelectTrack(discord.ui.Select):
                 await user_spotify.playback_start_context(
                     self.view.source.context.uri, offset=track_id, device_id=device_id
                 )
+                if track is None:
+                    track = await user_spotify.track(track_id, market="from_token")
                 track_name = track.name
                 artists = humanize_list([i.name for i in track.artists])
                 await interaction.response.send_message(
