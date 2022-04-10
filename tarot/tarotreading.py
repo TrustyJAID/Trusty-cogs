@@ -94,7 +94,7 @@ class TarotReading(commands.Cog):
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         number = 0
         for card in cards:
             embed.add_field(
@@ -125,7 +125,7 @@ class TarotReading(commands.Cog):
         )
         embed.set_thumbnail(url=TAROT_CARDS[str(cards[-1])].card_img)
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         number = 0
         for card in cards:
             embed.add_field(
@@ -162,6 +162,6 @@ class TarotReading(commands.Cog):
             url=card.card_url,
         )
         embed.timestamp = ctx.message.created_at
-        embed.set_author(name=user.name, icon_url=user.avatar_url)
+        embed.set_author(name=user.name, icon_url=user.display_avatar)
         embed.set_image(url=card.card_img)
         await ctx.send(embed=embed)
