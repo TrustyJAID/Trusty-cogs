@@ -243,10 +243,15 @@ class TweetsAPI:
         if status.in_reply_to_screen_name:
             api = await self.authenticate()
             try:
-                reply = api.lookup_statuses(id=[status.in_reply_to_status_id])[0]
+                fake_task = functools.partial(
+                    api.lookup_statuses, id=[status.in_reply_to_status_id]
+                )
+                loop = asyncio.get_running_loop()
+                task = loop.run_in_executor(None, fake_task)
+                reply = await asyncio.wait_for(task, timeout=10)
                 # log.debug(reply)
                 in_reply_to = _("In reply to {name} (@{screen_name})").format(
-                    name=reply.user.name, screen_name=reply.user.screen_name
+                    name=reply[0].user.name, screen_name=reply[0].user.screen_name
                 )
                 reply_text = unescape(await self.replace_short_url(reply))
                 if hasattr(reply, "extended_tweet"):
@@ -256,6 +261,10 @@ class TweetsAPI:
                 em.add_field(name=in_reply_to, value=reply_text)
             except IndexError:
                 log.debug("Error grabbing in reply to tweet.", exc_info=True)
+            except asyncio.TimeoutError:
+                pass
+            except Exception:
+                log.exception("Error grabbing tweet reply.")
 
         em.description = escape(unescape(text), formatting=True)
 
