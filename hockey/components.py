@@ -33,9 +33,11 @@ __all__ = (
 class StopButton(discord.ui.Button):
     def __init__(
         self,
-        style: discord.ButtonStyle,
-        row: Optional[int],
+        style: Optional[discord.ButtonStyle] = None,
+        row: Optional[int] = None,
     ):
+        if style is None:
+            style = discord.ButtonStyle.red
         super().__init__(style=style, row=row)
         self.style = style
         self.emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"

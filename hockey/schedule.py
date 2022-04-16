@@ -38,6 +38,9 @@ class Schedule(menus.PageSource):
         self.style = kwargs.get("style", "all")
         self.corsi = kwargs.get("corsi", True)
         self.strength = kwargs.get("strength", "all")
+        self.vs = False
+        if kwargs.get("vs", False) and len(self.team) == 2:
+            self.vs = True
 
     @property
     def index(self) -> int:
@@ -202,10 +205,13 @@ class Schedule(menus.PageSource):
         self.select_options = []
         # log.debug(games)
         for count, game in enumerate(games):
+
             home_team = game["teams"]["home"]["team"]["name"]
             home_abr = TEAMS[home_team]["tri_code"]
             away_team = game["teams"]["away"]["team"]["name"]
             away_abr = TEAMS[away_team]["tri_code"]
+            if self.vs and (home_team not in self.team or away_team not in self.team):
+                continue
             date = utc_to_local(datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ"))
             label = f"{away_abr}@{home_abr}-{date.year}-{date.month}-{date.day}"
             description = f"{away_team} @ {home_team}"

@@ -18,6 +18,7 @@ from .helper import (
     YearFinder,
 )
 from .pickems import Pickems
+from .stats import LeaderCategories
 
 
 class MixinMeta(ABC):
@@ -113,6 +114,16 @@ class MixinMeta(ABC):
         *,
         search: HockeyTeams,
     ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def hockey_stats(
+        self,
+        ctx: commands.Context,
+        category: Optional[LeaderCategories],
+        season: Optional[str],
+        limit: Optional[int] = 10,
+    ):
         raise NotImplementedError()
 
     @abstractmethod

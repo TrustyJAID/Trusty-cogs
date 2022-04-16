@@ -18,6 +18,7 @@ from .helper import YEAR_RE, HockeyStandings, HockeyTeams, TeamDateFinder, YearF
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .schedule import Schedule, ScheduleList
 from .standings import Standings, StandingsMenu
+from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
 
@@ -532,6 +533,20 @@ class HockeyCommands(MixinMeta):
             await ctx.send(
                 _("I could not find a roster for the {team}{year}.").format(team=team, year=year)
             )
+
+    @hockey_commands.command(name="stats")
+    async def hockey_stats(
+        self,
+        ctx: commands.Context,
+        category: Optional[LeaderCategories],
+        season: Optional[str],
+        limit: Optional[int] = 10,
+    ):
+        """Display Leader categories"""
+        if category is None:
+            category = LeaderCategories("goals")
+        view = LeaderView(category, season, limit, self.session)
+        await view.start(ctx)
 
     @hockey_commands.command(hidden=True)
     @commands.mod_or_permissions(manage_messages=True)

@@ -41,6 +41,8 @@ ACTIVE_TEAM_RE_STR = r"|".join(
 )
 ACTIVE_TEAM_RE = re.compile(ACTIVE_TEAM_RE_STR, flags=re.I)
 
+VERSUS_RE = re.compile(r"vs\.?|versus", flags=re.I)
+
 
 def utc_to_local(utc_dt: datetime, new_timezone: str = "US/Pacific") -> datetime:
     eastern = pytz.timezone(new_timezone)
@@ -115,9 +117,10 @@ class TeamDateFinder(Converter):
     async def convert(
         self, ctx: Context, argument: str
     ) -> Dict[str, Optional[Union[datetime, List[str], str]]]:
-        result: Dict[str, Optional[Union[datetime, List[str], str]]] = {"team": []}
+        result: Dict[str, Optional[Union[datetime, List[str], str, bool]]] = {"team": []}
         find = DATE_RE.search(argument)
         day_ref = DAY_REF_RE.search(argument)
+        result["vs"] = VERSUS_RE.search(argument) is not None
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
             result["date"] = datetime.strptime(date_str, "%Y-%m-%d")

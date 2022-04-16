@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator
 from .abc import MixinMeta
 from .constants import TEAMS
 from .helper import DATE_RE
+from .stats import LeaderCategories
 
 _ = Translator("Hockey", __file__)
 
@@ -160,6 +161,17 @@ class HockeySlash(MixinMeta):
 
         await self.roster(interaction, season, search=team)
 
+    @app_commands.command(name="stats")
+    async def hockey_stats_slash(
+        self,
+        interaction: discord.Interaction,
+        category: Optional[LeaderCategories],
+        season: Optional[str],
+        limit: Optional[int] = 10,
+    ):
+        ctx = await interaction.client.get_context(interaction)
+        await self.hockey_stats(ctx, category, season, limit)
+
     @app_commands.command(name="leaderboard")
     async def leaderboard_slash(
         self,
@@ -178,7 +190,7 @@ class HockeySlash(MixinMeta):
     ):
         """Shows the current server leaderboard"""
 
-        await self.leaderboard(interaction, leaderboard_type)
+        await self.leaderboard(interaction, leaderboard_type=leaderboard_type)
 
     @app_commands.command(name="pickemsvotes")
     async def pickemsvotes_slash(self, interaction: discord.Interaction):
@@ -429,16 +441,8 @@ class HockeySlash(MixinMeta):
                 _("You are not allowed to run this command here."), ephemeral=True
             )
             return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+        ctx = await self.bot.get_context(interaction)
+        if not await self.bot.ignored_channel_or_guild(ctx):
             await interaction.response.send_message(
                 _("Commands are not allowed in this channel or guild."), ephemeral=True
             )
