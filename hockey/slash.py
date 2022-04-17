@@ -68,8 +68,8 @@ class HockeySlash(MixinMeta):
     @app_commands.command(name="standings")
     async def standings_slash(self, interaction: discord.Interaction, search: VALID_STANDINGS):
         """Display current standings"""
-
-        await self.standings(interaction, search=search)
+        ctx = await interaction.client.get_context(interaction)
+        await self.standings(ctx, search=search)
 
     @app_commands.command(name="games")
     @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
@@ -86,7 +86,8 @@ class HockeySlash(MixinMeta):
             teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
-        await self.games(interaction, teams_and_date=teams_and_date)
+        ctx = await interaction.client.get_context(interaction)
+        await self.games(ctx, teams_and_date=teams_and_date)
 
     @app_commands.command(name="heatmap")
     @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
@@ -104,7 +105,8 @@ class HockeySlash(MixinMeta):
             teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
-        await self.heatmap(interaction, style, teams_and_date=teams_and_date)
+        ctx = await interaction.client.get_context(interaction)
+        await self.heatmap(ctx, style, teams_and_date=teams_and_date)
 
     @app_commands.command(name="gameflow")
     @app_commands.describe(team="A valid NHL team", date="YYYY-MM-DD format")
@@ -123,7 +125,8 @@ class HockeySlash(MixinMeta):
             teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
-        await self.gameflow(interaction, strength, corsi, teams_and_date=teams_and_date)
+        ctx = await interaction.client.get_context(interaction)
+        await self.gameflow(ctx, strength, corsi, teams_and_date=teams_and_date)
 
     @app_commands.command(name="schedule")
     async def schedule_slash(
@@ -139,7 +142,8 @@ class HockeySlash(MixinMeta):
             teams_and_date["team"] = [team]
         if date:
             teams_and_date["date"] = date
-        await self.schedule(interaction, teams_and_date=teams_and_date)
+        ctx = await interaction.client.get_context(interaction)
+        await self.schedule(ctx, teams_and_date=teams_and_date)
 
     @app_commands.command(name="player")
     @app_commands.describe(player="The name of the player", year="YYYY or YYYYYYYY formatted date")
@@ -151,15 +155,16 @@ class HockeySlash(MixinMeta):
         search = str(player)
         if year:
             search += f" {year}"
-        await self.player(interaction, search=search)
+        ctx = await interaction.client.get_context(interaction)
+        await self.player(ctx, search=search)
 
     @app_commands.command(name="roster")
     async def roster_slash(
         self, interaction: discord.Interaction, team: str, season: Optional[int]
     ):
         """Get a team roster"""
-
-        await self.roster(interaction, season, search=team)
+        ctx = await interaction.client.get_context(interaction)
+        await self.roster(ctx, season, search=team)
 
     @app_commands.command(name="stats")
     async def hockey_stats_slash(
@@ -189,20 +194,20 @@ class HockeySlash(MixinMeta):
         ],
     ):
         """Shows the current server leaderboard"""
-
-        await self.leaderboard(interaction, leaderboard_type=leaderboard_type)
+        ctx = await interaction.client.get_context(interaction)
+        await self.leaderboard(ctx, leaderboard_type=leaderboard_type)
 
     @app_commands.command(name="pickemsvotes")
     async def pickemsvotes_slash(self, interaction: discord.Interaction):
         """View your current pickems votes for the server"""
-
-        await self.pickemsvotes(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.pickemsvotes(ctx)
 
     @app_commands.command(name="otherdiscords")
     async def otherdiscords_slash(self, interaction: discord.Interaction, team: str):
         """Get team specific discord links"""
-
-        await self.otherdiscords(interaction, team)
+        ctx = await interaction.client.get_context(interaction)
+        await self.otherdiscords(ctx, team)
 
     @pickems_slash.command(name="settings")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -210,7 +215,8 @@ class HockeySlash(MixinMeta):
     async def pickems_settings_slash(self, interaction: discord.Interaction):
         """Show the servers current pickems settings"""
         func = self.pickems_settings
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @pickems_slash.command(name="message")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -220,7 +226,8 @@ class HockeySlash(MixinMeta):
     ):
         """Customize the pickems message for this server"""
         func = self.set_pickems_message
-        await func(interaction, message=message)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, message=message)
 
     @pickems_slash.command(name="setup")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -230,7 +237,8 @@ class HockeySlash(MixinMeta):
     ):
         """Sets up pickems threads created every day"""
         func = self.setup_auto_pickems
-        await func(interaction, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, channel)
 
     @pickems_slash.command(name="clear")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -238,7 +246,8 @@ class HockeySlash(MixinMeta):
     async def delete_auto_pickems_slash(self, interaction: discord.Interaction):
         """Stop posting new pickems threads and clear existing list of pickems threads"""
         func = self.delete_auto_pickems
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @pickems_slash.command(name="page")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -250,7 +259,8 @@ class HockeySlash(MixinMeta):
     ):
         """Generates a pickems page for voting on"""
         func = self.pickems_page
-        await func(interaction, date)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, date)
 
     @gdt_slash.command(name="settings")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -258,7 +268,8 @@ class HockeySlash(MixinMeta):
     async def gdt_settings_slash(self, interaction: discord.Interaction):
         """Shows the current Game Day Thread settings"""
         func = self.gdt_settings
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @gdt_slash.command(name="delete")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -266,7 +277,8 @@ class HockeySlash(MixinMeta):
     async def gdt_delete_slash(self, interaction: discord.Interaction):
         """Delete all current game day threads for the server"""
         func = self.gdt_delete
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @gdt_slash.command(name="stateupdates")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -278,7 +290,8 @@ class HockeySlash(MixinMeta):
     ):
         """Set specific state updates to use for game day threads"""
         func = self.gdt_default_game_state
-        await func(interaction, state)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, state)
 
     @gdt_slash.command(name="updates")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -286,7 +299,8 @@ class HockeySlash(MixinMeta):
     async def gdt_update_start_slash(self, interaction: discord.Interaction, update_start: bool):
         """Set whether or not the starting thread message will update as the game progresses."""
         func = self.gdt_update_start
-        await func(interaction, update_start)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, update_start)
 
     @gdt_slash.command(name="create")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -294,7 +308,8 @@ class HockeySlash(MixinMeta):
     async def gdt_create_slash(self, interaction: discord.Interaction):
         """Creates the next gdt for the server"""
         func = self.gdt_create
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @gdt_slash.command(name="toggle")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -302,7 +317,8 @@ class HockeySlash(MixinMeta):
     async def gdt_toggle_slash(self, interaction: discord.Interaction):
         """Toggles the game day channel creation on this server"""
         func = self.gdt_toggle
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @gdt_slash.command(name="channel")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -312,7 +328,8 @@ class HockeySlash(MixinMeta):
     ):
         """Change the channel used for game day threads."""
         func = self.gdt_channel
-        await func(interaction, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, channel)
 
     @gdt_slash.command(name="setup")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -322,7 +339,8 @@ class HockeySlash(MixinMeta):
     ):
         """Setup game day threads for a single (or all) teams."""
         func = self.gdt_setup
-        await func(interaction, team, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, team, channel)
 
     @set_slash.command(name="settings")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -330,7 +348,8 @@ class HockeySlash(MixinMeta):
     async def hockey_settings_slash(self, interaction: discord.Interaction):
         """Show hockey settings for this server"""
         func = self.hockey_settings
-        await func(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx)
 
     @set_slash.command(name="poststandings")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -343,7 +362,8 @@ class HockeySlash(MixinMeta):
     ):
         """Post automatic standings when all games for the day are done"""
         func = self.post_standings
-        await func(interaction, standings_type, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, standings_type, channel)
 
     @set_slash.command(name="stateupdates")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -353,7 +373,8 @@ class HockeySlash(MixinMeta):
     ):
         """Toggle specific updates in a designated channel"""
         func = self.set_game_state_updates
-        await func(interaction, channel, state)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, channel, state)
 
     @set_slash.command(name="add")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -363,7 +384,8 @@ class HockeySlash(MixinMeta):
     ):
         """Add a teams goal updates to a channel"""
         func = self.add_goals
-        await func(interaction, team, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, team, channel)
 
     @set_slash.command(name="remove")
     @app_commands.checks.has_permissions(manage_channels=True)
@@ -376,7 +398,8 @@ class HockeySlash(MixinMeta):
     ):
         """Removes a teams goal updates from a channel"""
         func = self.remove_goals
-        await func(interaction, team, channel)
+        ctx = await interaction.client.get_context(interaction)
+        await func(ctx, team, channel)
 
     @games_slash.autocomplete("team")
     @heatmap_slash.autocomplete("team")

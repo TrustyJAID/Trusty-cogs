@@ -8,11 +8,10 @@ from discord.ext import tasks
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import pagify
 
 from .abc import MixinMeta
 from .game import Game
-from .helper import TimezoneFinder
 from .pickems import Pickems
 
 _ = Translator("Hockey", __file__)
@@ -727,14 +726,14 @@ class HockeyPickems(MixinMeta):
 
     @hockeyset_commands.group(name="pickems")
     @commands.admin_or_permissions(manage_channels=True)
-    async def pickems_commands(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_commands(self, ctx: commands.Context) -> None:
         """
         Commands for managing pickems
         """
         pass
 
     @pickems_commands.command(name="settings")
-    async def pickems_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_settings(self, ctx: commands.Context) -> None:
         """
         Show the servers current pickems settings
         """
@@ -774,7 +773,7 @@ class HockeyPickems(MixinMeta):
             await ctx.maybe_send_embed(msg)
 
     @pickems_commands.group(name="credits")
-    async def pickems_credits(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_credits(self, ctx: commands.Context) -> None:
         """
         Settings for awarding credits on correct pickems votes
         """
@@ -782,7 +781,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_credits.command(name="base")
     async def pickems_credits_base(
-        self, ctx: Union[commands.Context, discord.Interaction], amount: Optional[int] = None
+        self, ctx: commands.Context, amount: Optional[int] = None
     ) -> None:
         """
         Set the base awarded credits for correct pickems votes.
@@ -795,21 +794,10 @@ class HockeyPickems(MixinMeta):
             amount = None
         global_bank = await bank.is_global()
         set_credits = False
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            author = ctx.user
-            await ctx.response.defer()
-        else:
-            author = ctx.author
-
-        if global_bank and not await self.bot.is_owner(author):
+        if global_bank and not await self.bot.is_owner(ctx.author):
             msg = _("This command is restricted to bot owner while the bank is global.")
-            if is_slash:
-                await ctx.followup.send(msg, ephemeral=True)
-            else:
-                await ctx.send(msg)
-        elif global_bank and await self.bot.is_owner(author):
+            await ctx.send(msg, ephemeral=True)
+        elif global_bank and await self.bot.is_owner(ctx.author):
             if amount is not None:
                 set_credits = True
                 await self.pickems_config.base_credits.set(int(amount))
@@ -826,20 +814,14 @@ class HockeyPickems(MixinMeta):
                 credits=amount,
                 credits_name=await bank.get_currency_name(ctx.guild),
             )
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
         else:
             msg = _("Base credits for correct pickems votes have been removed.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
 
     @pickems_credits.command(name="top")
     async def pickems_credits_top(
-        self, ctx: Union[commands.Context, discord.Interaction], amount: Optional[int] = None
+        self, ctx: commands.Context, amount: Optional[int] = None
     ) -> None:
         """
         Set the amount of credits awarded for the top x winners of pickems.
@@ -850,20 +832,10 @@ class HockeyPickems(MixinMeta):
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            author = ctx.user
-            await ctx.response.defer()
-        else:
-            author = ctx.author
 
         if global_bank and not await self.bot.is_owner(author):
             msg = _("This command is restricted to bot owner while the bank is global.")
-            if is_slash:
-                await ctx.followup.send(msg, ephemeral=True)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
 
         elif global_bank and await self.bot.is_owner(ctx.author):
             if amount is not None:
@@ -886,14 +858,11 @@ class HockeyPickems(MixinMeta):
             pickems_credits=amount,
             currency_name=await bank.get_currency_name(ctx.guild),
         )
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @pickems_credits.command(name="amount")
     async def pickems_credits_amount(
-        self, ctx: Union[commands.Context, discord.Interaction], amount: Optional[int] = None
+        self, ctx: commands.Context, amount: Optional[int] = None
     ) -> None:
         """
         Set the number of top winners to receive the top weekly award credits.
@@ -903,21 +872,10 @@ class HockeyPickems(MixinMeta):
         if amount and amount <= 0:
             amount = None
         global_bank = await bank.is_global()
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
 
-            is_slash = True
-            author = ctx.user
-            await ctx.response.defer()
-        else:
-            author = ctx.author
-
-        if global_bank and not await self.bot.is_owner(author):
+        if global_bank and not await self.bot.is_owner(ctx.author):
             msg = _("This command is restricted to bot owner while the bank is global.")
-            if is_slash:
-                await ctx.followup.send(msg, ephemeral=True)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
 
         elif global_bank and await self.bot.is_owner(ctx.author):
             if amount is not None:
@@ -940,14 +898,11 @@ class HockeyPickems(MixinMeta):
             pickems_credits=pickems_credits,
             currency_name=await bank.get_currency_name(ctx.guild),
         )
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @pickems_commands.command(name="message")
     async def set_pickems_message(
-        self, ctx: Union[commands.Context, discord.Interaction], *, message: Optional[str] = ""
+        self, ctx: commands.Context, *, message: Optional[str] = ""
     ) -> None:
         """
         Customize the pickems message for this server
@@ -965,12 +920,6 @@ class HockeyPickems(MixinMeta):
         users per week to earn the weekly reward.
 
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-
-            is_slash = True
-            await ctx.response.defer()
-
         global_bank = await bank.is_global()
         currency_name = await bank.get_currency_name(ctx.guild)
         if global_bank:
@@ -991,10 +940,7 @@ class HockeyPickems(MixinMeta):
         )
         await self.pickems_config.guild(ctx.guild).pickems_message.set(message)
         start_msg = _("Pickems pages will now start with:")
-        if is_slash:
-            await ctx.followup.send(start_msg)
-        else:
-            await ctx.send(start_msg)
+        await ctx.send(start_msg)
         for page in pagify(msg):
             await ctx.channel.send(page)
 
@@ -1002,7 +948,7 @@ class HockeyPickems(MixinMeta):
     @commands.admin_or_permissions(manage_channels=True)
     async def setup_auto_pickems(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
@@ -1011,29 +957,16 @@ class HockeyPickems(MixinMeta):
         `[channel]` the channel where pickems threads will be created.
         If not provided this will use the current channel.
         """
-        guild = ctx.guild
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-
-            is_slash = True
-            await ctx.response.defer()
-
         if channel is None:
             channel = ctx.channel
         if isinstance(channel, discord.Thread):
             msg = _("You cannot create threads within threads.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
 
         if not channel.permissions_for(guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads!")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
 
         await self.pickems_config.guild(ctx.guild).pickems_channel.set(channel.id)
@@ -1042,22 +975,14 @@ class HockeyPickems(MixinMeta):
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
         await self.create_weekly_pickems_pages([ctx.guild])
         msg = _("I will now automatically create pickems pages every day.")
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @pickems_commands.command(name="clear")
     @commands.admin_or_permissions(manage_channels=True)
-    async def delete_auto_pickems(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def delete_auto_pickems(self, ctx: commands.Context) -> None:
         """
         Stop posting new pickems threads and clear existing list of pickems threads.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-
-            is_slash = True
-            await ctx.response.defer()
         existing_channels = await self.pickems_config.guild(ctx.guild).pickems_channels()
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
@@ -1073,11 +998,6 @@ class HockeyPickems(MixinMeta):
         `[date]` is a specified day in the format "YYYY-MM-DD"
         if `date` is not provided the current day is used instead.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-
-            is_slash = True
-            await ctx.response.defer()
         if date is None:
             new_date = datetime.now()
         else:
@@ -1085,10 +1005,7 @@ class HockeyPickems(MixinMeta):
                 new_date = datetime.strptime(date, "%Y-%m-%d")
             except ValueError:
                 msg = _("`date` must be in the format `YYYY-MM-DD`.")
-                if is_slash:
-                    await ctx.followup.send(msg, ephemeral=True)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         games_list = await Game.get_games(None, new_date, new_date, session=self.session)
@@ -1098,9 +1015,7 @@ class HockeyPickems(MixinMeta):
             await self.create_pickems_game_message(ctx.channel, game)
 
     @pickems_commands.command(name="remove")
-    async def rempickem(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def rempickem(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the servers current pickems object list
 
@@ -1118,18 +1033,14 @@ class HockeyPickems(MixinMeta):
 
     @pickems_commands.group(name="leaderboard")
     @commands.admin_or_permissions(administrator=True)
-    async def pickems_leaderboard_commands(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def pickems_leaderboard_commands(self, ctx: commands.Context) -> None:
         """
         Settings for clearing/resetting pickems leaderboards
         """
         pass
 
     @pickems_leaderboard_commands.command(name="clear")
-    async def clear_server_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the entire pickems leaderboard in the server.
 
@@ -1142,9 +1053,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not reset the pickems leaderboard in this server."))
 
     @pickems_leaderboard_commands.command(name="tally")
-    async def tally_server_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Manually tallies this servers pickems leaderboard incase votes
         aren't working properly.
@@ -1158,9 +1067,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not tally this servers pickems leaderboard."))
 
     @pickems_leaderboard_commands.command(name="clearweekly")
-    async def clear_weekly_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the weekly tracker on the current servers pickems
 
@@ -1177,9 +1084,7 @@ class HockeyPickems(MixinMeta):
             await ctx.send(_("I will not reset the pickems weekly leaderboard in this server."))
 
     @pickems_leaderboard_commands.command(name="clearseason")
-    async def clear_seasonal_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the weekly tracker on the current servers pickems
 
@@ -1198,7 +1103,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_leaderboard_commands.command(name="clearweeklyplayoffs")
     async def clear_weekly_playoffs_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         """
         Clears the weekly tracker on the current servers pickems
@@ -1218,9 +1123,7 @@ class HockeyPickems(MixinMeta):
             )
 
     @pickems_leaderboard_commands.command(name="clearplayoffs")
-    async def clear_playoffs_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_playoffs_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the weekly tracker on the current servers pickems
 
@@ -1239,7 +1142,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_leaderboard_commands.command(name="clearweeklypreseason")
     async def clear_weekly_preseason_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         """
         Clears the weekly tracker on the current servers pickems
@@ -1260,7 +1163,7 @@ class HockeyPickems(MixinMeta):
 
     @pickems_leaderboard_commands.command(name="clearpresesason")
     async def clear_preseason_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         """
         Clears the pre-season tracker on the current servers pickems
@@ -1283,7 +1186,7 @@ class HockeyPickems(MixinMeta):
     @pickems_leaderboard_commands.command(name="setuser")
     async def leaderboardset(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         user: discord.Member,
         season: int,
         weekly: int = 0,

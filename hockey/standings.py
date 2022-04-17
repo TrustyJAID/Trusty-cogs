@@ -35,9 +35,9 @@ log = logging.getLogger("red.trusty-cogs.Hockey")
 
 
 class Divisions(Enum):
+    Metropolitan = "Metropolitan"
     Atlantic = "Atlantic"
     Central = "Central"
-    Metropolitan = "Metropolitan"
     Pacific = "Pacific"
 
 

@@ -9,9 +9,11 @@ import aiohttp
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import pagify
 
 from .components import StopButton
 from .constants import BASE_URL
+from .errors import NoStats
 from .game import Team
 
 _ = Translator("Hockey", __file__)
@@ -49,6 +51,14 @@ class LeaderCategories(Enum):
     shots = "shots"
     powerPlayAssists = "powerPlayAssists"
     gameWinningGoals = "gameWinningGoals"
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> LeaderCategories:
+        try:
+            ret = cls(argument)
+        except ValueError:
+            raise commands.BadArgument("`{argument}` is not a valid category.")
+        return ret
 
 
 @dataclass
@@ -136,15 +146,19 @@ class LeagueLeaders:
         url = f"{BASE_URL}/api/v1/stats/leaders?leaderCategories={category.value}&limit={limit}"
         if season is not None:
             url += f"&season={season}"
-        return await cls.from_url(url, session=session)
+        try:
+            return await cls.from_url(url, session=session)
+        except (KeyError, IndexError):
+            raise NoStats(f"`{category.name}` has no stats available for season `{season}`.")
 
     def embed(self) -> discord.Embed:
-        title = f"Top {self.leader_category.value} for {self.season}"
+        title = f"Top {_fix_camel_case(self.leader_category.value)} for {self.season}"
         em = discord.Embed(title=title)
         msg = ""
         for player in self.leaders:
             msg += f"{player.rank}. {player.person.full_name} - {player.value}\n"
-        em.description = msg
+
+        em.description = list(pagify(msg, delims=["\n"], page_length=4096))[0]
         return em
 
 
@@ -183,7 +197,7 @@ class SeasonModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         if self.date.value:
             new_season = self.date.value.replace("-", "")
-            if not new_season.isdigit():
+            if not new_season.isdigit() and len(new_season) != 8:
                 await interaction.response.send_message(
                     "That is not a valid season.", ephemeral=True
                 )
@@ -213,7 +227,7 @@ class LeaderView(discord.ui.View):
         session: Optional[aiohttp.ClientSession] = None,
     ):
         super().__init__()
-        self.season = season
+        self.season = season.replace("-", "") if season is not None else season
         self.category = category
         self.limit = limit
         self.leaders: Optional[LeagueLeaders] = None
@@ -226,12 +240,17 @@ class LeaderView(discord.ui.View):
         self.select_menu = LeaderCategorySelect()
         self.add_item(self.select_menu)
 
-        self.author = None
+    async def on_timeout(self):
+        await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         self.author = ctx.author
-        em = await self.get_page()
+        try:
+            em = await self.get_page()
+        except NoStats as e:
+            await ctx.send(e, ephemeral=True)
+            return
         self.message = await ctx.send(embed=em, view=self)
 
     async def get_page(self) -> discord.Embed:
@@ -251,7 +270,7 @@ class LeaderView(discord.ui.View):
         await interaction.response.edit_message(embed=em)
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if self.author and self.author.id != interaction.user.id:
+        if self.author.id != interaction.user.id:
             await interaction.response.send_message(
                 _("You are not authorized to interact with this."), ephemeral=True
             )
