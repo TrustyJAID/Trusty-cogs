@@ -125,7 +125,7 @@ class PlayPauseButton(discord.ui.Button):
                 else:
                     device = cur.device
                     device_id = device.id
-                if cur.item.id == self.view.source.current_track.id:
+                if cur and cur.item.id == self.view.source.current_track.id:
                     if cur.is_playing:
                         await interaction.response.send_message(
                             _("Pausing Spotify on {device}.").format(device=device.name),

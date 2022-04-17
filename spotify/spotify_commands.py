@@ -662,7 +662,7 @@ class SpotifyCommands(SpotifyMixin):
                     user_token=user_token,
                 )
 
-            await x.send_initial_message(ctx, ctx.channel)
+            await x.send_initial_message(ctx)
         except NotPlaying:
             await self.not_playing(ctx)
         except tekore.Unauthorised:
@@ -758,7 +758,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="genres", aliases=["genre"])
     @commands.bot_has_permissions(embed_links=True)
@@ -841,7 +841,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="recent")
     @commands.bot_has_permissions(embed_links=True)
@@ -871,7 +871,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="toptracks")
     @commands.bot_has_permissions(embed_links=True)
@@ -899,7 +899,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="topartists")
     @commands.bot_has_permissions(embed_links=True)
@@ -927,7 +927,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="new")
     @commands.bot_has_permissions(embed_links=True)
@@ -952,7 +952,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_com.command(name="pause")
     @commands.bot_has_permissions(embed_links=True)
@@ -1789,7 +1789,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="list", aliases=["ls"])
     @commands.bot_has_permissions(embed_links=True)
@@ -1836,7 +1836,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="view")
     @commands.bot_has_permissions(embed_links=True)
@@ -1886,7 +1886,7 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="create")
     @commands.bot_has_permissions(embed_links=True)
@@ -2193,4 +2193,4 @@ class SpotifyCommands(SpotifyMixin):
             cog=self,
             user_token=user_token,
         )
-        await x.send_initial_message(ctx, ctx.channel)
+        await x.send_initial_message(ctx)

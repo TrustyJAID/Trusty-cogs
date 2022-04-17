@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Literal, Optional
@@ -10,6 +11,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import SpotifyMixin
 from .helpers import SPOTIFY_RE, song_embed
+from .menus import SpotifyPages, SpotifySearchMenu, SpotifyTrackPages, SpotifyUserMenu
 
 log = logging.getLogger("red.trusty-cogs.spotify")
 _ = Translator("Spotify", __file__)
@@ -384,7 +386,8 @@ class SpotifySlash(SpotifyMixin):
     async def play_from_message(self, interaction: discord.Interaction, message: discord.Message):
         queue = interaction.command.name == "Queue on Spotify"
         user = interaction.user
-        ctx = await self.bot.get_context(message)
+        ctx = await self.bot.get_context(interaction)
+        await ctx.defer(ephemeral=True)
         user_token = await self.get_user_auth(ctx, user)
         if not user_token:
             return
@@ -420,7 +423,32 @@ class SpotifySlash(SpotifyMixin):
                     playlists.append(match.group(3))
 
         user_spotify = tekore.Spotify(sender=self._sender)
+        if not any(tracks + albums + playlists):
+            with user_spotify.token_as(user_token):
+                search = await user_spotify.search(
+                    message.content, ("track",), "from_token", limit=50
+                )
+                items = search[0].items
+            if len(items) > 1:
+                x = SpotifySearchMenu(
+                    source=SpotifyTrackPages(items=items, detailed=False),
+                    cog=self,
+                    user_token=user_token,
+                )
+                await x.send_initial_message(ctx, ephemeral=True)
+                return
+            elif len(items) < 1:
+                await ctx.send(_("No tracks found from that search."))
+                return
+            else:
+                tracks.append(items[0].id)
         # play the song if it exists
+        user_menu = SpotifyUserMenu(
+            source=SpotifyPages(user_token=user_token, sender=self._sender, detailed=False),
+            cog=self,
+            user_token=user_token,
+            ctx=ctx,
+        )
 
         try:
             with user_spotify.token_as(user_token):
@@ -458,11 +486,8 @@ class SpotifySlash(SpotifyMixin):
                         msg = _("Now playing {track} by {artist} on {device}.").format(
                             track=track_name, artist=artist, device=device.name
                         )
-                    await interaction.response.send_message(
-                        msg,
-                        embed=em,
-                        ephemeral=True,
-                    )
+                    await asyncio.sleep(1)
+                    await user_menu.send_initial_message(ctx, content=msg, ephemeral=True)
                     return
                 elif new_uri:
                     log.debug("new uri is %s", new_uri)
@@ -476,11 +501,8 @@ class SpotifySlash(SpotifyMixin):
                         playlist_id = new_uri.split(":")[-1]
                         cur_tracks = await user_spotify.playlist(playlist_id)
                         track_name = cur_tracks.name
-                        await interaction.response.send_message(
-                            _("Now playing {track} on {device}.").format(
-                                track=track_name, device=device.name
-                            ),
-                            ephemeral=True,
+                        msg = _("Now playing {track} on {device}.").format(
+                            track=track_name, device=device.name
                         )
                     if uri_type == "artist":
                         if queue:
@@ -492,11 +514,8 @@ class SpotifySlash(SpotifyMixin):
                         artist_id = new_uri.split(":")[-1]
                         cur_tracks = await user_spotify.artist(artist_id)
                         track_name = cur_tracks.name
-                        await interaction.response.send_message(
-                            _("Now playing top tracks by {track} on {device}.").format(
-                                track=track_name, device=device.name
-                            ),
-                            ephemeral=True,
+                        msg = _("Now playing top tracks by {track} on {device}.").format(
+                            track=track_name, device=device.name
                         )
                     if uri_type == "album":
                         if queue:
@@ -511,13 +530,12 @@ class SpotifySlash(SpotifyMixin):
                         artists = getattr(cur_tracks, "artists", [])
                         artist = humanize_list([a.name for a in artists])
                         track_artist = humanize_list([a.name for a in artists])
-                        await interaction.response.send_message(
-                            _("Now playing {track} by {artist} on {device}.").format(
-                                track=track_name, artist=track_artist, device=device.name
-                            ),
-                            ephemeral=True,
+                        msg = _("Now playing {track} by {artist} on {device}.").format(
+                            track=track_name, artist=track_artist, device=device.name
                         )
                     await user_spotify.playback_start_context(new_uri, device_id=device.id)
+                    await asyncio.sleep(1)
+                    await user_menu.send_initial_message(ctx, content=msg, ephemeral=True)
                     return
                 elif message.embeds:
                     em = message.embeds[0]
@@ -541,24 +559,17 @@ class SpotifySlash(SpotifyMixin):
                         em = await song_embed(tracks[0], False)
                         if queue:
                             await user_spotify.playback_queue_add(tracks[0].id)
-                            await interaction.response.send_message(
-                                _("Queueing {track} by {artist} on {device}.").format(
-                                    track=track_name, artist=track_artist, device=device.name
-                                ),
-                                embed=em,
-                                ephemeral=True,
+                            msg = _("Queueing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=track_artist, device=device.name
                             )
                         else:
                             await user_spotify.playback_start_tracks(
                                 [t.id for t in tracks], device_id=device.id
                             )
-                            await interaction.response.send_message(
-                                _("Now playing {track} by {artist} on {device}.").format(
-                                    track=track_name, artist=track_artist, device=device.name
-                                ),
-                                embed=em,
-                                ephemeral=True,
+                            msg = _("Now playing {track} by {artist} on {device}.").format(
+                                track=track_name, artist=track_artist, device=device.name
                             )
+                        await user_menu.send_initial_message(ctx, content=msg, ephemeral=True)
                     else:
                         await interaction.response.send_message(
                             _("No Spotify track could be found on that message."), ephemeral=True

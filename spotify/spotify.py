@@ -189,10 +189,7 @@ class Spotify(
                 "before this command can be used. "
                 "See `{prefix}spotify set creds` for more details."
             ).format(prefix=ctx.clean_prefix)
-            if not is_slash:
-                await ctx.send(msg)
-            else:
-                await ctx.response.send_message(msg, ephemeral=True)
+            await ctx.send(msg, ephemeral=True)
             return
         user_tokens = await self.config.user(author).token()
         if user_tokens:
@@ -216,10 +213,7 @@ class Spotify(
                 "I've already sent you a link for authorization, "
                 "please complete that first before trying a new command."
             )
-            if not is_slash:
-                await ctx.send(msg)
-            else:
-                await ctx.response.send_message(msg)
+            await ctx.send(msg)
             return
         try:
             return await self.ask_for_auth(ctx, author)
@@ -227,10 +221,7 @@ class Spotify(
             msg = _(
                 "You have blocked direct messages, please enable them to authorize spotify commands."
             )
-            if not is_slash:
-                await ctx.send(msg)
-            else:
-                await ctx.response.send_message(msg, ephemeral=True)
+            await ctx.send(msg, ephemeral=True)
 
     async def ask_for_auth(
         self, ctx: Union[commands.Context, discord.Interaction], author: discord.User
@@ -240,7 +231,7 @@ class Spotify(
         auth = tekore.UserAuth(self._credentials, scope=scope)
         self.temp_cache[author.id] = auth
         is_slash = False
-        if isinstance(ctx, discord.Interaction):
+        if ctx.interaction:
             is_slash = True
             msg = _(
                 "Please accept the authorization [here]({auth}) and **DM "

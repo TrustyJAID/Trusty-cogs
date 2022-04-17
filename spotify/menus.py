@@ -727,7 +727,9 @@ class SpotifyUserMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embeds": [value], "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(
+        self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
+    ):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -768,7 +770,9 @@ class SpotifyUserMenu(discord.ui.View):
                     self.source.current_track,
                 )
                 self.add_item(self.select_view)
-        self.message = await ctx.send(**kwargs, view=self)
+        if content and not kwargs.get("content", None):
+            kwargs["content"] = content
+        self.message = await ctx.send(**kwargs, view=self, ephemeral=ephemeral)
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
@@ -900,7 +904,9 @@ class SpotifySearchMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embeds": [value], "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(
+        self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
+    ):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -911,7 +917,9 @@ class SpotifySearchMenu(discord.ui.View):
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await ctx.send(**kwargs, view=self)
+        if content and not kwargs.get("content", None):
+            kwargs["content"] = content
+        self.message = await ctx.send(**kwargs, view=self, ephemeral=ephemeral)
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
@@ -1025,7 +1033,9 @@ class SpotifyBaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embeds": [value], "content": None}
 
-    async def send_initial_message(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def send_initial_message(
+        self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
+    ):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -1036,7 +1046,9 @@ class SpotifyBaseMenu(discord.ui.View):
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await ctx.send(**kwargs, view=self)
+        if content and not kwargs.get("content", None):
+            kwargs["content"] = content
+        self.message = await ctx.send(**kwargs, view=self, ephemeral=ephemeral)
         return self.message
 
     async def show_page(self, page_number, interaction: discord.Interaction):
