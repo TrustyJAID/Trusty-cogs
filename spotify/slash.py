@@ -49,7 +49,8 @@ class SpotifySlash(SpotifyMixin):
         public: bool = True,
     ):
         """Displays your currently played spotify song"""
-        await self.spotify_now(interaction, detailed, member, public)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_now(ctx, detailed, member, public)
 
     @app_commands.command(name="recommendations", description="Get Spotify Recommendations")
     @app_commands.choices(
@@ -116,7 +117,8 @@ class SpotifySlash(SpotifyMixin):
             "target_time_signature": time_signature,
             "target_valence": valence,
         }
-        await self.spotify_recommendations(interaction, detailed, recommendations=recs)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_recommendations(ctx, detailed, recommendations=recs)
 
     @spotify_recommendations_slash.autocomplete("genres")
     async def genres_autocomplete(
@@ -148,7 +150,8 @@ class SpotifySlash(SpotifyMixin):
         self, interaction: discord.Interaction, device_name: str
     ):
         """Change the currently playing spotify device"""
-        await self.spotify_device_transfer(interaction, device_name=device_name)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_device_transfer(ctx, device_name=device_name)
 
     @device.command(name="default")
     async def spotify_device_default_slash(
@@ -158,12 +161,14 @@ class SpotifySlash(SpotifyMixin):
         Set your default device to attempt to start playing new tracks on
         if you aren't currently listening to Spotify.
         """
-        await self.spotify_device_default(interaction, device_name)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_device_default(ctx, device_name=device_name)
 
     @device.command(name="list")
     async def spotify_device_list_slash(self, interaction: discord.Interaction):
         """List all available devices for Spotify"""
-        await self.spotify_device_list(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_device_list(ctx)
 
     @spotify_device_transfer_slash.autocomplete("device_name")
     @spotify_device_default_slash.autocomplete("device_name")
@@ -202,111 +207,131 @@ class SpotifySlash(SpotifyMixin):
     @app_commands.command(name="forgetme")
     async def spotify_forgetme_slash(self, interaction: discord.Interaction):
         """Forget all your spotify settings and credentials on the bot"""
-        await self.spotify_forgetme(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_forgetme(ctx)
 
     @app_commands.command(name="me")
     async def spotify_me_slash(self, interaction: discord.Interaction):
         """Shows your current Spotify Settings"""
-        await self.spotify_me(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_me(ctx)
 
     @app_commands.command(name="genres")
     async def spotify_genres_slash(self, interaction: discord.Interaction):
         """Display all available genres for recommendations"""
-        await self.spotify_genres(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_genres(ctx)
 
     @app_commands.command(name="recent")
     async def spotify_recently_played_slash(
         self, interaction: discord.Interaction, detailed: Optional[bool]
     ):
         """Display your most recently played songs on Spotify"""
-        await self.spotify_recently_played(interaction, detailed)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_recently_played(ctx, detailed)
 
     @app_commands.command(name="toptracks")
     async def top_tracks_slash(self, interaction: discord.Interaction):
         """List your top tracks on Spotify"""
-        await self.top_tracks(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.top_tracks(ctx)
 
     @app_commands.command(name="topartists")
     async def top_artsist_slash(self, interaction: discord.Interaction):
         """List your top artists on Spotify"""
-        await self.top_artists(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.top_artists(ctx)
 
     @app_commands.command(name="new")
     async def spotify_new_slash(self, interaction: discord.Interaction):
         """List new releases on Spotify"""
-        await self.spotify_new(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_new(ctx)
 
     @app_commands.command(name="pause")
     async def spotify_pause_slash(self, interaction: discord.Interaction):
         """Pauses Spotify for you"""
-        await self.spotify_pause(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_pause(ctx)
 
     @app_commands.command(name="resume")
     async def spotify_resume_slash(self, interaction: discord.Interaction):
         """Resumes Spotify for you"""
-        await self.spotify_resume(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_resume(ctx)
 
     @app_commands.command(name="next")
     async def spotify_next_slash(self, interaction: discord.Interaction):
         """Skips to the next track in queue on Spotify"""
-        await self.spotify_next(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_next(ctx)
 
     @app_commands.command(name="previous")
     async def spotify_previous_slash(self, interaction: discord.Interaction):
         """Skip to the previous track in queue on Spotify"""
-        await self.spotify_previous(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_previous(ctx)
 
     @app_commands.command(name="play")
     async def spotify_play_slash(
         self, interaction: discord.Interaction, url_or_playlist_name: Optional[str]
     ):
         """Play a track, playlist, or album on Spotify"""
-        await self.spotify_play(interaction, url_or_playlist_name)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_play(ctx, url_or_playlist_name)
 
     @app_commands.command(name="queue")
     async def spotify_queue_add_slash(self, interaction: discord.Interaction, songs: str):
         """Queue a song to play next on Spotify"""
-        await self.spotify_queue_add(interaction, songs=songs)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_queue_add(ctx, songs=songs)
 
     @app_commands.command(name="repeat")
     async def spotify_repeat_slash(
         self, interaction: discord.Interaction, state: Optional[Literal["off", "track", "context"]]
     ):
         """Set your Spotify players repeat state"""
-        await self.spotify_repeat(interaction, state)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_repeat(ctx, state)
 
     @app_commands.command(name="shuffle")
     async def spotify_shuffle_slash(self, interaction: discord.Interaction, state: Optional[bool]):
         """Set your Spotify players shuffle state"""
-        await self.spotify_shuffle(interaction, state)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_shuffle(ctx, state)
 
     @app_commands.command(name="seek")
     @app_commands.describe(seconds="Seconds or a value formatted like 00:00:00 (hh:mm:ss)")
     async def spotify_seek_slash(self, interaction: discord.Interaction, seconds: str):
         """Seek to a specific point in the current song."""
-        await self.spotify_seek(interaction, seconds)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_seek(ctx, seconds)
 
     @app_commands.command(name="volume")
     async def spotify_volume_slash(
         self, interaction: discord.Interaction, volume: app_commands.Range[int, 0, 100]
     ):
         """Set your Spotify players volume percentage"""
-        await self.spotify_volume(interaction, volume)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_volume(ctx, volume)
 
     @playlist.command(name="featured")
     async def spotify_playlist_featured_slash(self, interaction: discord.Interaction):
         """List your Spotify featured Playlists"""
-        await self.spotify_playlist_featured(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_featured(ctx)
 
     @playlist.command(name="list")
     async def spotify_playlist_list_slash(self, interaction: discord.Interaction):
         """List your Spotify Playlists"""
-        await self.spotify_playlist_list(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_list(ctx)
 
     @playlist.command(name="view")
     async def spotify_playlist_view_slash(self, interaction: discord.Interaction):
         """View details about your Spotify playlists"""
-        await self.spotify_playlist_view(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_view(ctx)
 
     @playlist.command(name="create")
     async def spotify_playlist_create_slash(
@@ -317,38 +342,44 @@ class SpotifySlash(SpotifyMixin):
         description: Optional[str] = "",
     ):
         """Create a Spotify Playlist"""
-        await self.spotify_playlist_create(interaction, name, public, description=description)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_create(ctx, name, public, description=description)
 
     @playlist.command(name="add")
     async def spotify_playlist_add_slash(
         self, interaction: discord.Interaction, name: str, to_add: str
     ):
         """Add a track to a Spotify Playlist"""
-        await self.spotify_playlist_add(interaction, name, to_add=to_add)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_add(ctx, name, to_add=to_add)
 
     @playlist.command(name="remove")
     async def spotify_playlist_remove_slash(
         self, interaction: discord.Interaction, name: str, to_remove: str
     ):
         """Add a track to a Spotify Playlist"""
-        await self.spotify_playlist_add(interaction, name, to_remove=to_remove)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_add(ctx, name, to_remove=to_remove)
 
     @playlist.command(name="follow")
     async def spotify_playlist_follow_slash(
         self, interaction: discord.Interaction, to_follow: str, public: Optional[bool] = False
     ):
         """Add a playlist to your Spotify library"""
-        await self.spotify_playlist_follow(interaction, public, to_follow=to_follow)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_playlist_follow(ctx, public, to_follow=to_follow)
 
     @artist.command(name="follow")
     async def spotify_artist_follow_slash(self, interaction: discord.Interaction, to_follow: str):
         """Add an artist to your Spotify Library"""
-        await self.spotify_artist_follow(interaction, to_follow=to_follow)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_artist_follow(ctx, to_follow=to_follow)
 
     @artist.command(name="albums")
     async def spotify_artist_albums_slash(self, interaction: discord.Interaction, to_follow: str):
         """View an artists albums on Spotify"""
-        await self.spotify_artist_albums(interaction, to_follow=to_follow)
+        ctx = await interaction.client.get_context(interaction)
+        await self.spotify_artist_albums(ctx, to_follow=to_follow)
 
     async def play_from_message(self, interaction: discord.Interaction, message: discord.Message):
         queue = interaction.command.name == "Queue on Spotify"
@@ -402,7 +433,7 @@ class SpotifySlash(SpotifyMixin):
                         if d.id == device_id:
                             device = d
                     if device is None:
-                        await self.no_device(interaction)
+                        await self.no_device(ctx)
                         return
                 else:
                     device = cur.device
@@ -537,14 +568,14 @@ class SpotifySlash(SpotifyMixin):
                         _("No Spotify track could be found on that message."), ephemeral=True
                     )
         except tekore.Unauthorised:
-            await self.not_authorized(interaction)
+            await self.not_authorized(ctx)
         except tekore.NotFound:
-            await self.no_device(interaction)
+            await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(interaction, str(e))
+            await self.forbidden_action(ctx, str(e))
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
-            await self.unknown_error(interaction)
+            await self.unknown_error(ctx)
 
     async def set_genres(self):
         try:
@@ -558,16 +589,8 @@ class SpotifySlash(SpotifyMixin):
                 _("You are not allowed to run this command here."), ephemeral=True
             )
             return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+        ctx = await self.bot.get_context(interaction)
+        if not await self.bot.ignored_channel_or_guild(ctx):
             await interaction.response.send_message(
                 _("Commands are not allowed in this channel or guild."), ephemeral=True
             )

@@ -733,13 +733,8 @@ class SpotifyUserMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
 
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            self.author = ctx.user
-        else:
-            self.author = ctx.author
+        self.author = ctx.author
         if self.ctx is None:
             self.ctx = ctx
         page = await self._source.get_page(0)
@@ -773,10 +768,7 @@ class SpotifyUserMenu(discord.ui.View):
                     self.source.current_track,
                 )
                 self.add_item(self.select_view)
-        if is_slash:
-            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
-        else:
-            self.message = await channel.send(**kwargs, view=self)
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
@@ -914,20 +906,12 @@ class SpotifySearchMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            self.author = ctx.user
-        else:
-            self.author = ctx.author
+        self.author = ctx.author
 
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            self.message = await ctx.followup.send(**kwargs, view=self, wait=True)
-        else:
-            self.message = await channel.send(**kwargs, view=self)
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
@@ -1047,21 +1031,12 @@ class SpotifyBaseMenu(discord.ui.View):
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            self.author = ctx.user
-        else:
-            self.author = ctx.author
+        self.author = ctx.author
 
         self.ctx = ctx
         page = await self._source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            await ctx.followup.send(**kwargs, view=self)
-            self.message = await ctx.original_message()
-        else:
-            self.message = await channel.send(**kwargs, view=self)
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number, interaction: discord.Interaction):

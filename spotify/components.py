@@ -763,7 +763,9 @@ class SpotifySelectDevice(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         self.view.device_id = self.values[0]
+        self.device_id = self.values[0]
         if not self.send_callback:
+            await interaction.response.edit_message(view=None)
             self.view.stop()
             return
         user_spotify = tekore.Spotify(sender=self._sender)
