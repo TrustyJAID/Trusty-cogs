@@ -1,0 +1,115 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2019-02-09 00:37+0100\n"
+"PO-Revision-Date: 2022-04-18 21:11\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/translate/locales/messages.pot\n"
+"X-Crowdin-File-ID: 400\n"
+"Language: sv_SE\n"
+
+#: translate.py:62
+#, docstring
+msgid "\n"
+"        Translate messages using google translate\n"
+"    "
+msgstr ""
+
+#: translate.py:90
+msgid " said:"
+msgstr ""
+
+#: translate.py:91
+msgid " to "
+msgstr ""
+
+#: translate.py:91
+msgid "Requested by "
+msgstr ""
+
+#: translate.py:185
+msgid "said:"
+msgstr ""
+
+#: translate.py:305
+#, docstring
+msgid "\n"
+"            Translate messages with google translate\n\n"
+"            `to_language` is the language you would like to translate\n"
+"            `message` is the message to translate\n"
+"        "
+msgstr ""
+
+#: translate.py:313
+msgid "The bot owner needs to set an api key first!"
+msgstr ""
+
+#: translate.py:340
+#, docstring
+msgid "\n"
+"            Toggle the bot auto translating\n"
+"        "
+msgstr ""
+
+#: translate.py:349
+#, docstring
+msgid "\n"
+"            Toggle translations to flag emoji reactions\n"
+"        "
+msgstr ""
+
+#: translate.py:355 translate.py:372
+msgid "on"
+msgstr ""
+
+#: translate.py:357 translate.py:374
+msgid "off"
+msgstr ""
+
+#: translate.py:359
+msgid "Reaction translations have been turned "
+msgstr ""
+
+#: translate.py:366
+#, docstring
+msgid "\n"
+"            Toggle translations with flag emojis in text\n"
+"        "
+msgstr ""
+
+#: translate.py:376
+msgid "Flag emoji translations have been turned "
+msgstr ""
+
+#: translate.py:382
+#, docstring
+msgid "\n"
+"            You must get an API key from google to set this up\n\n"
+"            Note: Using this cog costs money, current rates are $20 per 1 million characters.\n\n"
+"            1. Go to Google Developers Console and log in with your Google account. \n"
+"            (https://console.developers.google.com/)\n"
+"            2. You should be prompted to create a new project (name does not matter).\n"
+"            3. Click on Enable APIs and Services at the top.\n"
+"            4. In the list of APIs choose or search for Cloud Translate API and click on it. \n"
+"            Choose Enable.\n"
+"            5. Click on Credentials on the left navigation bar.\n"
+"            6. Click on Create Credential at the top.\n"
+"            7. At the top click the link for \"API key\".\n"
+"            8. No application restrictions are needed. Click Create at the bottom.\n"
+"            9. You now have a key to add to `[p]translateset`\n"
+"        "
+msgstr ""
+
+#: translate.py:400
+msgid "API key set."
+msgstr ""
+
