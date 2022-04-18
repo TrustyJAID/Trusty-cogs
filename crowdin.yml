@@ -3,5 +3,5 @@ project_identifier_env: CROWDIN_PROJECT_ID
 base_path: .
 preserve_hierarchy: true
 files:
-  - source: "*/locales/messages.pot"
+  - source: '*/locales/messages.pot'
     translation: /%original_path%/%locale%.po
