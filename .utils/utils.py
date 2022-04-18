@@ -6,7 +6,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional
+from typing import List, Mapping, Optional
 
 import click
 import tabulate
@@ -28,7 +28,9 @@ logging.basicConfig(filename="scripts.log", level=logging.INFO)
 log = logging.getLogger(__file__)
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
-    "[{asctime}] [{levelname}] {name}: {message}", datefmt="%Y-%m-%d %H:%M:%S", style="{"
+    "[{asctime}] [{levelname}] {name}: {message}",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    style="{",
 )
 handler.setFormatter(formatter)
 log.addHandler(handler)
@@ -40,27 +42,21 @@ VER_REG = re.compile(r"\_\_version\_\_ = \"(\d+\.\d+\.\d+)", flags=re.I)
 DEFAULT_AUTHOR = ["TrustyJAID"]
 
 
-HEADER = """# Trusty-cogs V3
-[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot)
-[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)
-[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)
-[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)
-[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)
-
-
-TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop).
-To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`
-
-## About Cogs
-
-{body}
-
-Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).
-
-## Credits
-
-Thank you to everyone who has pushed me to think about new ideas and implement them.
-"""
+HEADER = (
+    "# Trusty-cogs V3"
+    "[![Red-DiscordBot](https://img.shields.io/badge/Red--DiscordBot-V3-red.svg)](https://github.com/Cog-Creators/Red-DiscordBot)"
+    "[![Discord.py](https://img.shields.io/badge/Discord.py-rewrite-blue.svg)](https://github.com/Rapptz/discord.py/tree/rewrite)"
+    "[![TrustyJAID](https://cdn.discordapp.com/attachments/371817142854746112/528059607705321482/Follow_me-TrustyJAID-yellow.svg)](https://trustyjaid.com/)"
+    "[![Donate to help support more cog creation](https://img.shields.io/badge/Paypal-Donate-blue.svg)](https://paypal.me/TrustyJAID)"
+    "[![Subscribe on Patreon](https://img.shields.io/badge/Patreon-Follow-orange.svg)](https://www.patreon.com/TrustyJAID)\n\n"
+    "TrustyJAID's Cogs for  [Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop)."
+    "To add the cogs to your instance please do: `[p]repo add Trusty-cogs https://github.com/TrustyJAID/Trusty-cogs/`\n"
+    "## About Cogs\n"
+    "{body}\n\n"
+    "Any questions you can find [TrustyBot](https://discordapp.com/api/oauth2/authorize?client_id=268562382173765643&permissions=2146958583&scope=bot) and myself over on [my server](https://discord.gg/wVVrqej) or on the [Redbot Cog Support server](https://discord.gg/GET4DVk).\n"
+    "## Credits\n"
+    "Thank you to everyone who has pushed me to think about new ideas and implement them.\n"
+)
 
 
 @dataclass
@@ -194,8 +190,35 @@ def mass_fix():
 
 
 @cli.command()
+@click.option(
+    "--key",
+    prompt="Enter the json key you want to edit.",
+    help="Name of the key being edited",
+)
+@click.option(
+    "--value",
+    prompt="Enter the value for the key you want changed.",
+    help="The value you want the key edited to.",
+)
+def edit(key, value):
+    for folder in os.listdir(f"{ROOT}/"):
+        if folder.startswith("."):
+            continue
+        try:
+            with open(f"{ROOT}/{folder}/info.json", "r") as infile:
+                info = InfoJson.from_json(json.load(infile))
+            setattr(info, key, value)
+            save_json(f"{ROOT}/{folder}/info.json", info.__dict__)
+        except Exception:
+            log.exception(f"Error reading info.json in {folder}")
+            continue
+
+
+@cli.command()
 @click.option("--author", default=DEFAULT_AUTHOR, help="Author of the cog", prompt=True)
-@click.option("--name", prompt="Enter the name of the cog", help="Name of the cog being added")
+@click.option(
+    "--name", prompt="Enter the name of the cog", help="Name of the cog being added"
+)
 @click.option(
     "--description",
     prompt="Enter a longer description for the cog.",
@@ -238,12 +261,21 @@ def mass_fix():
     prompt=True,
     type=bool,
 )
-@click.option("--required-cogs", default={}, help="Required cogs for this cog to function.")
-@click.option("--requirements", prompt=True, default=[], help="Requirements for the cog.")
 @click.option(
-    "--tags", default=[], prompt=True, help="Any tags to help people find the cog better."
+    "--required-cogs", default={}, help="Required cogs for this cog to function."
 )
-@click.option("--permissions", prompt=True, default=[], help="Any permissions the cog requires.")
+@click.option(
+    "--requirements", prompt=True, default=[], help="Requirements for the cog."
+)
+@click.option(
+    "--tags",
+    default=[],
+    prompt=True,
+    help="Any tags to help people find the cog better.",
+)
+@click.option(
+    "--permissions", prompt=True, default=[], help="Any permissions the cog requires."
+)
 @click.option(
     "--min-python-version",
     default=[3, 8, 0],
@@ -308,26 +340,6 @@ def make(
     save_json(f"{ROOT}/{name}/info.json", data_obj.__dict__)
 
 
-"""
-author: List[str]
-description: Optional[str] = ""
-install_msg: Optional[str] = "Thanks for installing"
-short: Optional[str] = ""
-name: Optional[str] = ""
-min_bot_version: Optional[str] = "3.3.0"
-max_bot_version: Optional[str] = "0.0.0"
-hidden: Optional[bool] = False
-disabled: Optional[bool] = False
-required_cogs: Mapping = field(default_factory=dict)
-requirements: List[str] = field(default_factory=list)
-tags: List[str] = field(default_factory=list)
-type: Optional[str] = "COG"
-permissions: List[str] = field(default_factory=list)
-min_python_version: Optional[List[int]] = field(default_factory=lambda: [3, 8, 0])
-end_user_data_statement: str = "This cog does not persistently store data or metadata about users."
-"""
-
-
 @cli.command()
 @click.option("--include-hidden", default=False)
 @click.option("--include-disabled", default=False)
@@ -369,11 +381,9 @@ def countlines(include_hidden: bool = False, include_disabled: bool = False):
                     total += lines
                 except Exception:
                     log.exception(f"Error opening {file_path}")
-                    pass
             totals.append((folder, cog))
         except Exception:
             log.exception(f"Error reading {folder}")
-            pass
     totals = sorted(totals, key=lambda x: x[1], reverse=True)
     totals.insert(0, ("Total", total))
     print(tabulate.tabulate(totals, headers=["Cog", "# of Lines"], tablefmt="pretty"))
@@ -439,21 +449,28 @@ def makereadme():
                 except Exception:
                     log.exception(f"Error reading info.json {file}")
             if _version == "":
-                with open(file) as infile:
+                with open(file, "r", encoding="utf-8") as infile:
                     data = infile.read()
                     maybe_version = VER_REG.search(data)
                     if maybe_version:
                         _version = maybe_version.group(1)
         if info and not (info.disabled or info.hidden):
             to_append = [info.name, _version]
-            description = f"<details><summary>{info.short}</summary>{info.description}</details>"
+            description = (
+                f"<details><summary>{info.short}</summary>{info.description}</details>"
+            )
             to_append.append(description)
-            to_append.append(babel_list(info.author, style="standard"))
+            to_append.append(babel_list(info.author, style="standard", locale="en"))
             table_data.append(to_append)
 
     body = tabulate.tabulate(
         table_data,
-        headers=["Name", "Status/Version", "Description (Click to see full status)", "Authors"],
+        headers=[
+            "Name",
+            "Status/Version",
+            "Description (Click to see full status)",
+            "Authors",
+        ],
         tablefmt="github",
     )
     with open(f"{ROOT}/README.md", "w") as outfile:
@@ -466,6 +483,10 @@ def makerequirements():
     Useful when setting up the bot in a new venv and requirements are missing.
     """
     requirements = set()
+    with open(ROOT / "requirements.txt", "r") as infile:
+        current_reqs = set()
+        for _req in infile.readlines():
+            current_reqs.add(_req.strip())
     for folder in os.listdir(ROOT):
         if folder.startswith(".") or folder.startswith("_"):
             continue
@@ -484,8 +505,13 @@ def makerequirements():
                         requirements.add(req)
                 except Exception:
                     log.exception(f"Error reading info.json {file}")
+    reqs = sorted(requirements)
+    if current_reqs == requirements:
+        log.info("Same requirements, ignoring")
+        return
+    requirements_txt = "{reqs}\n".format(reqs="\n".join(r for r in reqs))
     with open(ROOT / "requirements.txt", "w") as outfile:
-        outfile.write("\n".join(r for r in requirements))
+        outfile.write(requirements_txt)
 
 
 def run_cli():

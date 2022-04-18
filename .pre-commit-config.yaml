@@ -1,0 +1,71 @@
+default_language_version:
+    python: python3.8
+fail_fast: false
+ci:
+    skip: [readmegen, makerequirements]
+    autoupdate_schedule: quarterly
+exclude: '^.+\.pot?$'
+repos:
+-   repo: local
+    hooks:
+      - id: readmegen
+        name: readmegen
+        description: >-
+          Script to automatically generate readme.md
+        entry: python ./.utils/utils.py makereadme
+        language: python
+        additional_dependencies:
+          - babel~=2.9.0
+          - tabulate~=0.8.9
+          - click
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+        verbose: true
+      - id: requirementsgen
+        name: requirementsgen
+        description: >-
+          Script to automatically generate requirements.txt
+        entry: python ./.utils/utils.py makerequirements
+        language: python
+        additional_dependencies:
+          - babel~=2.9.0
+          - tabulate~=0.8.9
+          - click
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+        verbose: true
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-builtin-literals
+    -   id: check-ast
+    -   id: check-docstring-first
+    -   id: check-json
+    -   id: detect-private-key
+    -   id: check-toml
+    -   id: pretty-format-json
+        args:
+          - "--autofix"
+          - "--indent=4"
+          - "--no-sort-keys"
+    -   id: requirements-txt-fixer
+    -   id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+-   repo: https://github.com/psf/black
+    rev: '21.12b0'
+    hooks:
+      - id: black
+-   repo: https://github.com/Pierre-Sassoulas/black-disable-checker
+    rev: '1.0.1'
+    hooks:
+      - id: black-disable-checker
+-   repo: https://github.com/pycqa/isort
+    rev: '5.10.1'
+    hooks:
+      - id: isort
