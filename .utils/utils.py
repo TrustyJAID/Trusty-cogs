@@ -28,7 +28,9 @@ logging.basicConfig(filename="scripts.log", level=logging.INFO)
 log = logging.getLogger(__file__)
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
-    "[{asctime}] [{levelname}] {name}: {message}", datefmt="%Y-%m-%d %H:%M:%S", style="{"
+    "[{asctime}] [{levelname}] {name}: {message}",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    style="{",
 )
 handler.setFormatter(formatter)
 log.addHandler(handler)
@@ -189,7 +191,9 @@ def mass_fix():
 
 @cli.command()
 @click.option(
-    "--key", prompt="Enter the json key you want to edit.", help="Name of the key being edited"
+    "--key",
+    prompt="Enter the json key you want to edit.",
+    help="Name of the key being edited",
 )
 @click.option(
     "--value",
@@ -258,7 +262,10 @@ def edit(key, value):
 @click.option("--required-cogs", default={}, help="Required cogs for this cog to function.")
 @click.option("--requirements", prompt=True, default=[], help="Requirements for the cog.")
 @click.option(
-    "--tags", default=[], prompt=True, help="Any tags to help people find the cog better."
+    "--tags",
+    default=[],
+    prompt=True,
+    help="Any tags to help people find the cog better.",
 )
 @click.option("--permissions", prompt=True, default=[], help="Any permissions the cog requires.")
 @click.option(
@@ -448,7 +455,12 @@ def makereadme():
 
     body = tabulate.tabulate(
         table_data,
-        headers=["Name", "Status/Version", "Description (Click to see full status)", "Authors"],
+        headers=[
+            "Name",
+            "Status/Version",
+            "Description (Click to see full status)",
+            "Authors",
+        ],
         tablefmt="github",
     )
     with open(f"{ROOT}/README.md", "w") as outfile:
