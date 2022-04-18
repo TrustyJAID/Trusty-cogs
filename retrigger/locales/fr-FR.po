@@ -1,0 +1,627 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2019-01-26 00:56-0700\n"
+"PO-Revision-Date: 2022-04-18 21:11\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/retrigger/locales/messages.pot\n"
+"X-Crowdin-File-ID: 394\n"
+"Language: fr_FR\n"
+
+#: retrigger/converters.py:124
+msgid "`{arg}` is not a valid regex pattern. {e}"
+msgstr ""
+
+#: retrigger/converters.py:149
+msgid "`{response}` is not a valid reaction type."
+msgstr ""
+
+#: retrigger/converters.py:156
+msgid "The provided multi response pattern is not valid."
+msgstr ""
+
+#: retrigger/converters.py:158
+msgid "I require \"Manage Roles\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:160
+msgid "I require \"Manage Messages\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:162
+msgid "I require \"Ban Members\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:164
+msgid "I require \"Kick Members\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:166
+msgid "I require \"Add Reactions\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:239
+msgid "`{}` is not an emoji I can use."
+msgstr ""
+
+#: retrigger/converters.py:286
+msgid "{arg} is not a valid channel, user or role."
+msgstr ""
+
+#: retrigger/retrigger.py:16
+#, docstring
+msgid "\n"
+"        Trigger bot events using regular expressions\n"
+"    "
+msgstr ""
+
+#: retrigger/retrigger.py:34
+#, docstring
+msgid "\n"
+"            Setup automatic triggers based on regular expressions\n\n"
+"            https://regex101.com/ is a good place to test regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:44
+#, docstring
+msgid "\n"
+"            Set blacklist options for retrigger\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:52
+#, docstring
+msgid "\n"
+"            Set whitelist options for retrigger\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:60
+#, docstring
+msgid "\n"
+"            Toggle multiple triggers to respond at once\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:65
+msgid "Multiple responses disabled, only the first trigger will happen."
+msgstr ""
+
+#: retrigger/retrigger.py:70
+msgid "Multiple responses enabled, all triggers will occur."
+msgstr ""
+
+#: retrigger/retrigger.py:77
+#, docstring
+msgid "\n"
+"            Set the modlog channel for filtered words\n\n"
+"            `channel` The channel you would like filtered word notifications to go\n"
+"            Use `none` or `clear` to not show any modlogs\n"
+"            User `default` to use the built in modlog channel\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:90
+msgid "Channel \"{channel}\" not found."
+msgstr ""
+
+#: retrigger/retrigger.py:95
+msgid "Modlog set to {channel}"
+msgstr ""
+
+#: retrigger/retrigger.py:100
+#, docstring
+msgid "\n"
+"            Set cooldown options for retrigger\n\n"
+"            `trigger` is the name of the trigger\n"
+"            `time` is a time in seconds until the trigger will run again\n"
+"            set a time of 0 or less to remove the cooldown\n"
+"            `style` must be either `guild`, `server`, `channel`, `user`, or `member`\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:109 retrigger/retrigger.py:141
+#: retrigger/retrigger.py:163 retrigger/retrigger.py:185
+#: retrigger/retrigger.py:207 retrigger/retrigger.py:228
+msgid "Trigger `{name}` doesn't exist."
+msgstr ""
+
+#: retrigger/retrigger.py:111
+msgid "Style must be either `guild`, `server`, `channel`, `user`, or `member`."
+msgstr ""
+
+#: retrigger/retrigger.py:115
+msgid "Cooldown of {time}s per {style} set for Trigger `{name}`."
+msgstr ""
+
+#: retrigger/retrigger.py:124
+msgid "Cooldown for Trigger `"
+msgstr ""
+
+#: retrigger/retrigger.py:124
+msgid "` reset."
+msgstr ""
+
+#: retrigger/retrigger.py:134
+#, docstring
+msgid "\n"
+"            Add channel to triggers whitelist\n\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to whitelist\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:147
+msgid "Trigger {name} added `{list_type}` to its whitelist."
+msgstr ""
+
+#: retrigger/retrigger.py:149
+msgid "Trigger `{name}` already has {list_type} whitelisted."
+msgstr ""
+
+#: retrigger/retrigger.py:156
+#, docstring
+msgid "\n"
+"            Remove channel from triggers whitelist\n\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to remove from the whitelist\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:169
+msgid "Trigger {name} removed `{list_type}` from its whitelist."
+msgstr ""
+
+#: retrigger/retrigger.py:171
+msgid "Trigger `{name}` does not have {list_type} whitelisted."
+msgstr ""
+
+#: retrigger/retrigger.py:178
+#, docstring
+msgid "\n"
+"            Add channel to triggers blacklist\n\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to blacklist\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:191
+msgid "Trigger {name} added `{list_type}` to its blacklist."
+msgstr ""
+
+#: retrigger/retrigger.py:193
+msgid "Trigger `{name}` already has {list_type} blacklisted."
+msgstr ""
+
+#: retrigger/retrigger.py:200
+#, docstring
+msgid "\n"
+"            Remove channel from triggers blacklist\n\n"
+"            `trigger` is the name of the trigger\n"
+"            `channel_user_role` is the channel, user or role to remove from the blacklist\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:213
+msgid "Trigger {name} removed `{list_type}` from its blacklist."
+msgstr ""
+
+#: retrigger/retrigger.py:215
+msgid "Trigger `{name}` does not have {list_type} blacklisted."
+msgstr ""
+
+#: retrigger/retrigger.py:221
+#, docstring
+msgid "\n"
+"            List information about triggers\n\n"
+"            `trigger` if supplied provides information about named trigger\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:234
+msgid "There are no triggers setup on this server."
+msgstr ""
+
+#: retrigger/retrigger.py:243
+#, docstring
+msgid "\n"
+"            Remove a specified trigger\n\n"
+"            `trigger` is the name of the trigger\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:250 retrigger/retrigger.py:252
+msgid "Trigger `"
+msgstr ""
+
+#: retrigger/retrigger.py:250
+msgid "` removed."
+msgstr ""
+
+#: retrigger/retrigger.py:252
+msgid "` doesn't exist."
+msgstr ""
+
+#: retrigger/retrigger.py:258
+#, docstring
+msgid "\n"
+"            Add a text response trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `text` response of the trigger\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:269 retrigger/retrigger.py:294
+#: retrigger/retrigger.py:320 retrigger/retrigger.py:359
+#: retrigger/retrigger.py:398 retrigger/retrigger.py:437
+#: retrigger/retrigger.py:464 retrigger/retrigger.py:490
+#: retrigger/retrigger.py:515 retrigger/retrigger.py:545
+#: retrigger/retrigger.py:575 retrigger/retrigger.py:601
+#: retrigger/retrigger.py:632 retrigger/retrigger.py:668
+msgid "{name} is already a trigger name"
+msgstr ""
+
+#: retrigger/retrigger.py:278 retrigger/retrigger.py:303
+#: retrigger/retrigger.py:341 retrigger/retrigger.py:380
+#: retrigger/retrigger.py:419 retrigger/retrigger.py:446
+#: retrigger/retrigger.py:473 retrigger/retrigger.py:499
+#: retrigger/retrigger.py:529 retrigger/retrigger.py:559
+#: retrigger/retrigger.py:584 retrigger/retrigger.py:615
+#: retrigger/retrigger.py:646 retrigger/retrigger.py:677
+msgid "Trigger `{name}` set."
+msgstr ""
+
+#: retrigger/retrigger.py:283
+#, docstring
+msgid "\n"
+"            Add a dm response trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `text` response of the trigger\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:309
+#, docstring
+msgid "\n"
+"            Add an image/file response trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `image_url` optional image_url if none is provided the bot will ask to upload an image\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:347
+#, docstring
+msgid "\n"
+"            Add an image/file response with text trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `text` the triggered text response\n"
+"            `image_url` optional image_url if none is provided the bot will ask to upload an image\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:386
+#, docstring
+msgid "\n"
+"            Add an image to resize in response to a trigger\n"
+"            this will attempt to resize the image based on length of matching regex\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `image_url` optional image_url if none is provided the bot will ask to upload an image\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:425
+#, docstring
+msgid "\n"
+"            Add a trigger to ban users for saying specific things found with regex\n"
+"            This respects hierarchy so ensure the bot role is lower in the list\n"
+"            than mods and admin so they don't get banned by accident\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:452
+#, docstring
+msgid "\n"
+"            Add a trigger to kick users for saying specific things found with regex\n"
+"            This respects hierarchy so ensure the bot role is lower in the list\n"
+"            than mods and admin so they don't get kicked by accident\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:479
+#, docstring
+msgid "\n"
+"            Add a reaction trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `emojis` the emojis to react with when triggered separated by spaces\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:504
+#, docstring
+msgid "\n"
+"            Add a command trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `command` the command that will be triggered, do add [p] prefix\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:520 retrigger/retrigger.py:550
+msgid " doesn't seem to be an available command."
+msgstr ""
+
+#: retrigger/retrigger.py:534
+#, docstring
+msgid "\n"
+"            Add a trigger for command as if you used the command\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `command` the command that will be triggered, do add [p] prefix\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:565
+#, docstring
+msgid "\n"
+"            Add a trigger to delete a message\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:590
+#, docstring
+msgid "\n"
+"            Add a trigger to add a role\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `role` the role applied when the regex pattern matches\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:605
+msgid "I can't assign roles higher than my own."
+msgstr ""
+
+#: retrigger/retrigger.py:621
+#, docstring
+msgid "\n"
+"            Add a trigger to remove a role\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `role` the role applied when the regex pattern matches\n"
+"            See https://regex101.com/ for help building a regex pattern\n"
+"            Example for simple search: `\"\\bthis matches\"` the whole phrase only\n"
+"            For case insensitive searches add `(?i)` at the start of the regex\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:636
+msgid "I can't remove roles higher than my own."
+msgstr ""
+
+#: retrigger/retrigger.py:651
+#, docstring
+msgid "\n"
+"            Add a multiple response trigger\n\n"
+"            `name` name of the trigger\n"
+"            `regex` the regex that will determine when to respond\n"
+"            `multi_response` the actions to perform when the trigger matches\n"
+"            multiple responses start with the name of the action which must be one of:\n"
+"            dm, text, filter, add_role, remove_role, ban, or kick\n"
+"            followed by a `;` if there is a followup response and a space for the next \n"
+"            trigger response. If you want to add or remove multiple roles those may be\n"
+"            followed up with additional `;` separations.\n"
+"            e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\" filter`\n"
+"            Will attempt to DM the user and delete their message simultaneously.\n"
+"        "
+msgstr ""
+
+#: retrigger/triggerhandler.py:145
+msgid "Upload an image for me to use! Type `exit` to cancel."
+msgstr ""
+
+#: retrigger/triggerhandler.py:152
+msgid "Image adding timed out."
+msgstr ""
+
+#: retrigger/triggerhandler.py:155
+msgid "Image adding cancelled."
+msgstr ""
+
+#: retrigger/triggerhandler.py:190
+msgid "__Name__:"
+msgstr ""
+
+#: retrigger/triggerhandler.py:191
+msgid "__Author__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:192
+msgid "__Count__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:193
+msgid "__Response__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:200
+msgid "__Text__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:206
+msgid "__DM__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:212
+msgid "__Command__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:220
+msgid "__Emojis__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:227
+msgid "__Roles Added__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:234
+msgid "__Roles Removed__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:236
+msgid "__Whitelist__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:240
+msgid "__Cooldown__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:244 retrigger/triggerhandler.py:247
+msgid "__Regex__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:249
+msgid "__Blacklist__: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:256
+msgid "Page "
+msgstr ""
+
+#: retrigger/triggerhandler.py:258
+msgid "I need embed_links permission to use this command."
+msgstr ""
+
+#: retrigger/triggerhandler.py:377
+msgid "I don't have permission to read channel history"
+msgstr ""
+
+#: retrigger/triggerhandler.py:431
+msgid "ReTrigger: {author} is immune from automated actions "
+msgstr ""
+
+#: retrigger/triggerhandler.py:437
+msgid "ReTrigger: Delete is ignored because {author} has manage messages permission "
+msgstr ""
+
+#: retrigger/triggerhandler.py:443
+msgid "ReTrigger: Kick is ignored because {author} has kick permissions "
+msgstr ""
+
+#: retrigger/triggerhandler.py:449
+msgid "ReTrigger: Ban is ignored because {author} has ban permissions "
+msgstr ""
+
+#: retrigger/triggerhandler.py:455
+msgid "ReTrigger: role change is ignored because {author} has mange roles permissions "
+msgstr ""
+
+#: retrigger/triggerhandler.py:460
+msgid "ReTrigger: Channel is ignored or{author} is blacklisted "
+msgstr ""
+
+#: retrigger/triggerhandler.py:478
+msgid "Trigger response: {trigger}"
+msgstr ""
+
+#: retrigger/triggerhandler.py:490 retrigger/triggerhandler.py:500
+#: retrigger/triggerhandler.py:510 retrigger/triggerhandler.py:520
+#: retrigger/triggerhandler.py:530 retrigger/triggerhandler.py:540
+#: retrigger/triggerhandler.py:550 retrigger/triggerhandler.py:576
+#: retrigger/triggerhandler.py:587 retrigger/triggerhandler.py:592
+msgid "Retrigger encountered an error in "
+msgstr ""
+
+#: retrigger/triggerhandler.py:690
+msgid "A message from "
+msgstr ""
+
+#: retrigger/triggerhandler.py:691
+msgid " was deleted in "
+msgstr ""
+
+#: retrigger/triggerhandler.py:696
+msgid "Channel"
+msgstr ""
+
+#: retrigger/triggerhandler.py:697
+msgid "Trigger Name"
+msgstr ""
+
+#: retrigger/triggerhandler.py:699
+msgid "Found Triggers"
+msgstr ""
+
+#: retrigger/triggerhandler.py:702
+msgid "Attachments"
+msgstr ""
+
+#: retrigger/triggerhandler.py:703
+msgid "User ID: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:704
+msgid " - Deleted Message"
+msgstr ""
+
+#: retrigger/triggerhandler.py:725
+msgid "Error deleting saved image in {guild}"
+msgstr ""
+
