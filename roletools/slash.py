@@ -47,19 +47,19 @@ class RoleToolsSlash(RoleToolsMixin):
     async def selfrole_add_slash(self, interaction: discord.Interaction, role: discord.Role):
         """Give yourself a role"""
         func = self.selfrole_add
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role)
+        await func(ctx, role)
 
     @selfrole_slash.command(name="remove")
     async def selfrole_remove_slash(self, interaction: discord.Interaction, role: discord.Role):
         """Remove a role from yourself"""
         func = self.selfrole_remove
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role)
+        await func(ctx, role)
 
     @app_commands.command(name="forcerole")
     async def forcerole_slash(
@@ -67,10 +67,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Force a sticky role on a user"""
         func = self.forcerole
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, [user], role=role)
+        await func(ctx, [user], role=role)
 
     @app_commands.command(name="forceroleremove")
     async def forceroleremove_slash(
@@ -78,10 +78,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Force remove a sticky role on a user"""
         func = self.forceroleremove
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, [user], role=role)
+        await func(ctx, [user], role=role)
 
     @app_commands.command(name="view")
     async def viewroles_slash(
@@ -89,10 +89,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current roletools setup for each role in the server"""
         func = self.viewroles
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role=role)
+        await func(ctx, role=role)
 
     @exclude_slash.command(name="add")
     async def exclusive_add_slash(
@@ -100,10 +100,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role exclusion"""
         func = self.exclusive_add
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, exclude)
+        await func(ctx, role, exclude)
 
     @exclude_slash.command(name="remove")
     async def exclusive_remove_slash(
@@ -111,10 +111,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role exclusion"""
         func = self.exclusive_remove
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, exclude)
+        await func(ctx, role, exclude)
 
     @include_slash.command(name="add")
     async def inclusive_add_slash(
@@ -122,10 +122,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role inclusion"""
         func = self.inclusive_add
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, include)
+        await func(ctx, role, include)
 
     @include_slash.command(name="remove")
     async def inclusive_remove_slash(
@@ -133,10 +133,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role inclusion"""
         func = self.inclusive_remove
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, include)
+        await func(ctx, role, include)
 
     @required_slash.command(name="add")
     async def required_add_slash(
@@ -144,10 +144,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Add role requirements"""
         func = self.required_add
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, required)
+        await func(ctx, role, required)
 
     @required_slash.command(name="remove")
     async def required_remove_slash(
@@ -155,28 +155,28 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove role requirements"""
         func = self.required_remove
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, role, required)
+        await func(ctx, role, required)
 
     @app_commands.command(name="cleanup")
     async def cleanup_slash(self, interaction: discord.Interaction):
         """Cleanup old/missing reaction roles and settings."""
         func = self.cleanup
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction)
+        await func(ctx)
 
     @app_commands.command(name="reactroles")
     async def reactroles_slash(self, interaction: discord.Interaction):
         """View current reaction roles in the server."""
         func = self.reactroles
 
-        if not await self.check_requires(func, interaction):
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction)
+        await func(ctx)
 
     @app_commands.command(name="clearreact")
     async def clearreact_slash(
@@ -187,10 +187,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Clear the reactions for reaction roles."""
         func = self.clearreact
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, message, [emoji] if emoji else None)
+        await func(ctx, message, [emoji] if emoji else None)
 
     @app_commands.command(name="react")
     async def react_slash(
@@ -202,15 +202,15 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a reaction role."""
         func = self.react
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
         try:
             await RoleHierarchyConverter().convert(interaction, role.mention)
         except Exception as e:
             await interaction.response.send_message(e, ephemeral=True)
             return
-        await func(interaction, message, [emoji] if emoji else None, role=role)
+        await func(ctx, message, [emoji] if emoji else None, role=role)
 
     @app_commands.command(name="remreact")
     async def remreact_slash(
@@ -222,8 +222,8 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Remove a reaction role."""
         func = self.remreact
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
         try:
             await RoleHierarchyConverter().convert(interaction, role.mention)
@@ -234,7 +234,7 @@ class RoleToolsSlash(RoleToolsMixin):
             role_or_emoji = emoji
         if role:
             role_or_emoji = role
-        await func(interaction, message, role_or_emoji=role_or_emoji)
+        await func(ctx, message, role_or_emoji=role_or_emoji)
 
     @app_commands.command(name="selfadd")
     async def selfadd_slash(
@@ -242,10 +242,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a user can apply the role to themselves."""
         func = self.selfadd
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, true_or_false, role=role)
+        await func(ctx, true_or_false, role=role)
 
     @app_commands.command(name="selfrem")
     async def selfrem_slash(
@@ -253,10 +253,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a user can remove a role form themselves."""
         func = self.selfrem
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, true_or_false, role=role)
+        await func(ctx, true_or_false, role=role)
 
     @app_commands.command(name="sticky")
     async def sticky_slash(
@@ -264,10 +264,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set whether or not a role will be re-applied when a user leaves and rejoins the server."""
         func = self.sticky
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, true_or_false, role=role)
+        await func(ctx, true_or_false, role=role)
 
     @app_commands.command(name="autorole")
     async def autorole_slash(
@@ -275,10 +275,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set a role to be automatically applied when a user joins the server."""
         func = self.autorole
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, true_or_false, role=role)
+        await func(ctx, true_or_false, role=role)
 
     @app_commands.command(name="cost")
     async def cost_slash(
@@ -286,10 +286,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Set the cost to acquire a role."""
         func = self.cost
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, cost, role=role)
+        await func(ctx, cost, role=role)
 
     @buttons_slash.command(name="view")
     async def button_roles_view_slash(
@@ -298,10 +298,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current buttons setup for role assign in this server."""
         func = self.button_roles_view
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction)
+        await func(ctx)
 
     @buttons_slash.command(name="send")
     async def send_buttons_slash(
@@ -313,10 +313,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Send buttons to a specified channel with optional message."""
         func = self.send_buttons
-
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, channel, buttons, message=message)
+        await func(ctx, channel, buttons, message=message)
 
     @buttons_slash.command(name="create")
     @app_commands.choices(
@@ -342,22 +342,24 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a role button"""
         func = self.create_button
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
         try:
-            await RoleHierarchyConverter().convert(interaction, role.mention)
+            await RoleHierarchyConverter().convert(ctx, role.mention)
         except Exception as e:
             await interaction.response.send_message(e, ephemeral=True)
             return
-        await func(interaction, name, role, label, emoji, style)
+        await func(ctx, name, role, label, emoji, style)
 
     @buttons_slash.command(name="delete")
     async def delete_button_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved button."""
         func = self.delete_button
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, name)
+        await func(ctx, name)
 
     @buttons_slash.command(name="edit")
     async def edit_with_buttons_slash(
@@ -368,9 +370,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Edit a bots message to include Role Buttons"""
         func = self.edit_with_buttons
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, message, buttons)
+        await func(ctx, message, buttons)
 
     @select_slash.command(name="create")
     async def create_select_menu_slash(
@@ -384,9 +387,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a select menu"""
         func = self.create_select_menu
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, name, options, min_values, max_values, placeholder=placeholder)
+        await func(ctx, name, options, min_values, max_values, placeholder=placeholder)
 
     @select_slash.command(name="view")
     async def select_menu_views_slash(
@@ -395,18 +399,20 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current select menus setup for role assign in this server."""
         func = self.select_menus_view
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction)
+        await func(ctx)
 
     @select_slash.command(name="delete")
     async def delete_select_menu_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved select menu."""
         func = self.delete_select_menu
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
         _name = name.split(" ")[0]
-        await func(interaction, _name)
+        await func(ctx, _name)
 
     @select_slash.command(name="edit")
     async def edit_with_select_slash(
@@ -417,9 +423,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Edit a bots message to include Role Buttons"""
         func = self.edit_with_select
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, message, menus)
+        await func(ctx, message, menus)
 
     @select_slash.command(name="send")
     async def send_select_slash(
@@ -431,9 +438,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Send a select menu to a specified channel for role assignment"""
         func = self.send_select
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, channel, menus, message=message)
+        await func(ctx, channel, menus, message=message)
 
     @select_slash.command(name="viewoptions")
     async def select_options_view_slash(
@@ -442,9 +450,10 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """View current select menus setup for role assign in this server."""
         func = self.select_options_view
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction)
+        await func(ctx)
 
     @select_slash.command(name="createoption")
     async def create_select_option_slash(
@@ -458,18 +467,20 @@ class RoleToolsSlash(RoleToolsMixin):
     ):
         """Create a select menu option"""
         func = self.create_select_option
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
-        await func(interaction, name, role, label, description, emoji)
+        await func(ctx, name, role, label, description, emoji)
 
     @select_slash.command(name="deleteoption")
     async def delete_select_option_slash(self, interaction: discord.Interaction, name: str):
         """Delete a saved option."""
         func = self.delete_select_option
-        if not await self.check_requires(func, interaction):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
             return
         _name = name.split(" ")[0]
-        await func(interaction, _name)
+        await func(ctx, _name)
 
     @send_buttons_slash.autocomplete("buttons")
     @edit_with_buttons_slash.autocomplete("buttons")
@@ -542,43 +553,17 @@ class RoleToolsSlash(RoleToolsMixin):
             ret.insert(0, app_commands.Choice(name=supplied_options, value=supplied_options))
         return ret
 
-    async def check_requires(self, func, interaction: discord.Interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        resp = await func.requires.verify(fake_ctx, check_all_parents=True)
+    async def check_requires(self, func, ctx: commands.Context):
+        resp = await func.requires.verify(ctx, check_all_parents=True)
         if not resp:
-            await interaction.response.send_message(
-                _("You are not authorized to use this command."), ephemeral=True
-            )
+            await ctx.send(_("You are not authorized to use this command."), ephemeral=True)
         return resp
 
-    async def check_cooldowns(self, func, interaction: discord.Interaction):
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        fake_ctx.bot = self.bot
-        fake_ctx.cog = self
-        fake_ctx.command = func
-        fake_ctx.permission_state = commands.requires.PermState.NORMAL
-        fake_message = discord.Object(id=interaction.id)
-        fake_message.edited_at = None
-        fake_ctx.message = fake_message
+    async def check_cooldowns(self, func, ctx: commands.Context):
         try:
-            func._prepare_cooldowns(fake_ctx)
+            func._prepare_cooldowns(ctx)
         except commands.CommandOnCooldown as e:
-            await interaction.response.send_message(
+            await ctx.send(
                 _("This command is still on cooldown. Try again in {time}.").format(
                     time=humanize_timedelta(seconds=e.retry_after)
                 )
@@ -597,16 +582,8 @@ class RoleToolsSlash(RoleToolsMixin):
                 _("This command is not available outside of a guild."), ephemeral=True
             )
             return False
-        fake_ctx = discord.Object(id=interaction.id)
-        fake_ctx.author = interaction.user
-        fake_ctx.guild = interaction.guild
-        if isinstance(interaction.channel, discord.channel.PartialMessageable):
-            channel = interaction.user.dm_channel or await interaction.user.create_dm()
-        else:
-            channel = interaction.channel
-
-        fake_ctx.channel = channel
-        if not await self.bot.ignored_channel_or_guild(fake_ctx):
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.bot.ignored_channel_or_guild(ctx):
             await interaction.response.send_message(
                 _("Commands are not allowed in this channel or guild."), ephemeral=True
             )

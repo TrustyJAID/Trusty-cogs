@@ -1,8 +1,5 @@
 import logging
-from typing import Union
 
-import discord
-from discord import Interaction
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -21,7 +18,7 @@ class RoleToolsInclusive(RoleToolsMixin):
     """This class handles setting inclusive roles."""
 
     @roletools.group(name="include", aliases=["inclusive"])
-    async def inclusive(self, ctx: Union[Context, Interaction]) -> None:
+    async def inclusive(self, ctx: Context) -> None:
         """
         Set role inclusion
         """
@@ -30,7 +27,7 @@ class RoleToolsInclusive(RoleToolsMixin):
     @commands.admin_or_permissions(manage_roles=True)
     async def inclusive_add(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         role: RoleHierarchyConverter,
         include: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
@@ -44,16 +41,13 @@ class RoleToolsInclusive(RoleToolsMixin):
 
         Note: This will only work for reaction roles and automatic roles from this cog.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
                 include = [await RoleHierarchyConverter().convert(ctx, include.mention)]
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -62,10 +56,7 @@ class RoleToolsInclusive(RoleToolsMixin):
         for included_role in include:
             if included_role.id in exclusive:
                 msg = _("You cannot include a role that is already considered exclusive.")
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
                 return
             if included_role.id not in cur_setting:
                 cur_setting.append(included_role.id)
@@ -76,10 +67,7 @@ class RoleToolsInclusive(RoleToolsMixin):
             "The {role} role will now add the following roles if it "
             "is acquired through roletools.\n{included_roles}."
         ).format(role=role.mention, included_roles=role_names)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @inclusive.command(name="mutual")
     @commands.admin_or_permissions(manage_roles=True)
@@ -118,7 +106,7 @@ class RoleToolsInclusive(RoleToolsMixin):
     @commands.admin_or_permissions(manage_roles=True)
     async def inclusive_remove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         role: RoleHierarchyConverter,
         include: commands.Greedy[RoleHierarchyConverter],
     ) -> None:
@@ -128,16 +116,13 @@ class RoleToolsInclusive(RoleToolsMixin):
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) currently inclusive you no longer wish to have included
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
                 include = [await RoleHierarchyConverter().convert(ctx, include.mention)]
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -153,15 +138,9 @@ class RoleToolsInclusive(RoleToolsMixin):
                 "The {role} role will now add the following roles if it "
                 "is acquired through roletools.\n{included_roles}."
             ).format(role=role.mention, included_roles=role_names)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
         else:
             msg = _("The {role} role will no longer have included roles.").format(
                 role=role.mention
             )
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)

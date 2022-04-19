@@ -41,16 +41,13 @@ class RoleToolsRequires(RoleToolsMixin):
 
         Note: This will only work for reaction roles from this cog.
         """
-        is_slash = False
-        if isinstance(ctx, Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
                 required = [await RoleHierarchyConverter().convert(ctx, required.mention)]
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -65,10 +62,7 @@ class RoleToolsRequires(RoleToolsMixin):
             "The {role} role will now only be given if the following roles "
             "are already owned.\n{included_roles}."
         ).format(role=role.mention, included_roles=role_names)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @required_roles.command(name="remove")
     @commands.admin_or_permissions(manage_roles=True)
@@ -86,16 +80,13 @@ class RoleToolsRequires(RoleToolsMixin):
 
         Note: This will only work for reaction roles from this cog.
         """
-        is_slash = False
-        if isinstance(ctx, Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
                 required = [await RoleHierarchyConverter().convert(ctx, required.mention)]
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -111,15 +102,9 @@ class RoleToolsRequires(RoleToolsMixin):
                 "The {role} role will now only be given if the following roles "
                 "are already owned.\n{included_roles}."
             ).format(role=role.mention, included_roles=role_names)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
         else:
             msg = _("The {role} role will no longer require any other roles to be added.").format(
                 role=role.mention
             )
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)

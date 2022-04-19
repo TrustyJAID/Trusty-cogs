@@ -4,7 +4,6 @@ from abc import ABC
 from typing import Any, Dict, Optional, Union
 
 import discord
-from discord import Interaction
 from redbot.core import Config, bank, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -14,7 +13,6 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import RoleToolsMixin
 from .buttons import RoleToolsButtons
-from .command_structure import SLASH_COMMANDS
 from .converter import RawUserIds, RoleHierarchyConverter, SelfRoleConverter
 from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
@@ -196,11 +194,11 @@ class RoleTools(
 
     @roletools.group(invoke_without_command=True)
     @commands.bot_has_permissions(manage_roles=True)
-    async def selfrole(self, ctx: Union[Context, Interaction]) -> None:
+    async def selfrole(self, ctx: Context) -> None:
         """
         Add or remove a defined selfrole
         """
-        if isinstance(ctx, discord.Interaction):
+        if ctx.interaction:
             command_mapping = {"remove": self.selfrole_remove, "add": self.selfrole_add}
             options = ctx.data["options"][0]["options"][0]["options"]
             option = ctx.data["options"][0]["options"][0]["name"]
@@ -219,7 +217,7 @@ class RoleTools(
                 pass
             except AttributeError:
                 log.exception("Error converting args")
-                await ctx.response.send_message(
+                await ctx.send(
                     ("One or more options you have provided are not available in DM's."),
                     ephemeral=True,
                 )
@@ -227,23 +225,18 @@ class RoleTools(
             await func(ctx, **kwargs)
 
     @selfrole.command(name="add")
-    async def selfrole_add(
-        self, ctx: Union[Context, Interaction], *, role: SelfRoleConverter
-    ) -> None:
+    async def selfrole_add(self, ctx: Context, *, role: SelfRoleConverter) -> None:
         """
         Give yourself a role
 
         `<role>` The role you want to give yourself
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await SelfRoleConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
             author = ctx.user
         else:
             await ctx.trigger_typing()
@@ -251,10 +244,7 @@ class RoleTools(
 
         if not await self.config.role(role).selfassignable():
             msg = _("The {role} role is not currently selfassignable.").format(role=role.mention)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         if required := await self.config.role(role).required():
             has_required = True
@@ -271,10 +261,7 @@ class RoleTools(
                     "I cannot grant you the {role} role because you "
                     "are missing a required role."
                 ).format(role=role.mention)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
                 return
         if cost := await self.config.role(role).cost():
             currency_name = await bank.get_currency_name(ctx.guild)
@@ -283,36 +270,25 @@ class RoleTools(
                     "You do not have enough {currency_name} to acquire "
                     "this role. You need {cost} {currency_name}."
                 ).format(currency_name=currency_name, cost=cost)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
                 return
         await self.give_roles(author, [role], _("Selfrole command."))
         msg = _("You have been given the {role} role.").format(role=role.mention)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @selfrole.command(name="remove")
-    async def selfrole_remove(
-        self, ctx: Union[Context, Interaction], *, role: SelfRoleConverter
-    ) -> None:
+    async def selfrole_remove(self, ctx: Context, *, role: SelfRoleConverter) -> None:
         """
         Remove a role from yourself
 
         `<role>` The role you want to remove.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await SelfRoleConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
             author = ctx.user
         else:
             await ctx.trigger_typing()
@@ -320,17 +296,11 @@ class RoleTools(
 
         if not await self.config.role(role).selfremovable():
             msg = _("The {role} role is not currently self removable.").format(role=role.mention)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         await self.remove_roles(author, [role], _("Selfrole command."))
         msg = _("The {role} role has been removed from you.").format(role=role.mention)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @roletools.command(cooldown_after_parsing=True)
     @commands.bot_has_permissions(manage_roles=True)
@@ -339,7 +309,7 @@ class RoleTools(
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def giverole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         role: RoleHierarchyConverter,
         *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
@@ -366,15 +336,12 @@ class RoleTools(
         **This command is on a cooldown of 10 seconds per member who receives
         a role up to a maximum of 1 hour.**
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -430,10 +397,7 @@ class RoleTools(
         self.update_cooldown(ctx, 1, min(len(tasks) * 10, 3600), commands.BucketType.guild)
         added_to = humanize_list([getattr(en, "name", en) for en in who])
         msg = _("Added {role} to {added}.").format(role=role.mention, added=added_to)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @roletools.command()
     @commands.bot_has_permissions(manage_roles=True)
@@ -442,7 +406,7 @@ class RoleTools(
     @commands.cooldown(1, 10, commands.BucketType.guild)
     async def removerole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         role: RoleHierarchyConverter,
         *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
@@ -469,15 +433,12 @@ class RoleTools(
         **This command is on a cooldown of 10 seconds per member who receives
         a role up to a maximum of 1 hour.**
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
         else:
             await ctx.trigger_typing()
 
@@ -493,11 +454,8 @@ class RoleTools(
                 else:
                     if entity not in ["everyone", "here", "bots", "humans"]:
                         msg = _("`{who}` cannot have roles removed from them.").format(who=entity)
-                        if is_slash:
-                            await ctx.followup.send(msg)
-                        else:
-                            await ctx.send(msg)
-                            ctx.command.reset_cooldown(ctx)
+                        await ctx.send(msg)
+                        ctx.command.reset_cooldown(ctx)
                         return
                     elif entity == "everyone":
                         members = ctx.guild.members
@@ -531,16 +489,13 @@ class RoleTools(
         msg = _("Removed the {role} from {removed}.").format(
             role=role.mention, removed=removed_from
         )
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @roletools.command()
     @commands.admin_or_permissions(manage_roles=True)
     async def forcerole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         users: commands.Greedy[Union[discord.Member, RawUserIds]],
         *,
         role: RoleHierarchyConverter,
@@ -554,21 +509,15 @@ class RoleTools(
         Note: The only way to remove this would be to manually remove the role from
         the user.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            author = ctx.user
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
             users = [users]
         else:
             await ctx.trigger_typing()
-            author = ctx.author
-
         errors = []
         for user in users:
             if isinstance(user, int):
@@ -592,10 +541,7 @@ class RoleTools(
         msg = _("{users} will have the role {role} force applied to them.").format(
             users=humanize_list(users), role=role.name
         )
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
         if errors:
             await ctx.channel.send("".join([e for e in errors]))
 
@@ -603,7 +549,7 @@ class RoleTools(
     @commands.admin_or_permissions(manage_roles=True)
     async def forceroleremove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         users: commands.Greedy[Union[discord.Member, RawUserIds]],
         *,
         role: RoleHierarchyConverter,
@@ -616,20 +562,15 @@ class RoleTools(
 
         Note: This is generally only useful for users who have left the server.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            author = ctx.user
+        if ctx.interaction:
             try:
                 role = await RoleHierarchyConverter().convert(ctx, role.mention)
             except commands.BadArgument as e:
-                await ctx.response.send_message(e, ephemeral=True)
+                await ctx.send(e, ephemeral=True)
                 return
-            await ctx.response.defer()
             users = [users]
         else:
             await ctx.trigger_typing()
-            author = ctx.author
 
         errors = []
         for user in users:
@@ -654,18 +595,13 @@ class RoleTools(
         msg = _("{users} will have the role {role} force removed from them.").format(
             users=humanize_list(users), role=role.name
         )
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
         if errors:
             await ctx.channel.send("".join([e for e in errors]))
 
     @roletools.command(aliases=["viewrole"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def viewroles(
-        self, ctx: Union[Context, Interaction], *, role: Optional[discord.Role] = None
-    ) -> None:
+    async def viewroles(self, ctx: Context, *, role: Optional[discord.Role] = None) -> None:
         """
         View current roletools setup for each role in the server
 

@@ -4,7 +4,6 @@ import logging
 from typing import Optional, Union
 
 import discord
-from discord import Interaction
 from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
@@ -65,7 +64,7 @@ class ButtonRole(discord.ui.Button):
             if interaction.user.bot:
                 return
             log.debug(f"Removing role from {interaction.user.name} in {guild}")
-            await self.view.cog.remove_roles(interaction.user, [role], _("Reaction Role"))
+            await self.view.cog.remove_roles(interaction.user, [role], _("Button Role"))
             await interaction.response.send_message(
                 _("I have removed the {role} role from you.").format(role=role.mention),
                 ephemeral=True,
@@ -133,7 +132,7 @@ class RoleToolsButtons(RoleToolsMixin):
 
     @roletools.group(name="buttons", aliases=["button"])
     @commands.admin_or_permissions(manage_roles=True)
-    async def buttons(self, ctx: Union[Context, Interaction]) -> None:
+    async def buttons(self, ctx: Context) -> None:
         """
         Setup role buttons
         """
@@ -141,7 +140,7 @@ class RoleToolsButtons(RoleToolsMixin):
     @buttons.command(name="send")
     async def send_buttons(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         channel: discord.TextChannel,
         buttons: commands.Greedy[ButtonRoleConverter],
         *,
@@ -155,10 +154,8 @@ class RoleToolsButtons(RoleToolsMixin):
         message up to a maximum of 25.
         `<message>` - The message to be included with the buttons.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
+        if ctx.interaction:
+
             _buttons = []
             for menu in buttons.split(" "):
                 if menu:
@@ -178,13 +175,12 @@ class RoleToolsButtons(RoleToolsMixin):
                 self.settings[ctx.guild.id]["buttons"][button.name.lower()]["messages"].append(
                     message_key
                 )
-        if is_slash:
-            await ctx.followup.send(_("Message sent."))
+        await ctx.send(_("Message sent."))
 
     @buttons.command(name="edit")
     async def edit_with_buttons(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         message: discord.Message,
         buttons: commands.Greedy[ButtonRoleConverter],
     ) -> None:
@@ -194,34 +190,23 @@ class RoleToolsButtons(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-
+        if ctx.interaction:
             try:
-                fake_ctx = discord.Object(ctx.id)
-                fake_ctx.bot = self.bot
-                fake_ctx.channel = ctx.channel
-                fake_ctx.guild = ctx.guild
-                fake_ctx.cog = self
-                message = await commands.MessageConverter().convert(fake_ctx, message)
+                message = await commands.MessageConverter().convert(ctx, message)
             except Exception:
                 log.exception("Cannot find message to edit")
                 await ctx.response.send_message(_("That message could not be found."))
                 return
-            await ctx.response.defer()
+
             _buttons = []
             for menu in buttons.split(" "):
                 if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(fake_ctx, menu))
+                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
             buttons = _buttons
 
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         view = ButtonRoleView(self)
         for button in buttons:
@@ -235,13 +220,12 @@ class RoleToolsButtons(RoleToolsMixin):
                 self.settings[ctx.guild.id]["buttons"][button.name.lower()]["messages"].append(
                     message_key
                 )
-        if is_slash:
-            await ctx.followup.send(_("Message edited."))
+        await ctx.send(_("Message edited."))
 
     @buttons.command(name="create")
     async def create_button(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: Context,
         name: str,
         role: RoleHierarchyConverter,
         label: Optional[str] = None,
@@ -327,17 +311,12 @@ class RoleToolsButtons(RoleToolsMixin):
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
     @buttons.command(name="delete", aliases=["del", "remove"])
-    async def delete_button(self, ctx: Union[Context, Interaction], *, name: str) -> None:
+    async def delete_button(self, ctx: Context, *, name: str) -> None:
         """
         Delete a saved button.
 
         `<name>` - the name of the button you want to delete.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-
         async with self.config.guild(ctx.guild).buttons() as buttons:
             if name in buttons:
                 role_id = buttons[name]["role_id"]
@@ -346,35 +325,21 @@ class RoleToolsButtons(RoleToolsMixin):
                     if name in role_buttons:
                         role_buttons.remove(name)
                 msg = _("Button `{name}` has been deleted.").format(name=name)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
             else:
                 msg = _("Button `{name}` doesn't appear to exist.").format(name=name)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
 
     @buttons.command(name="view")
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def button_roles_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def button_roles_view(self, ctx: Context) -> None:
         """
         View current buttons setup for role assign in this server.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-
         if ctx.guild.id not in self.settings:
             msg = _("There are no button roles in this server.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         pages = []
         colour_index = {
