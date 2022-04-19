@@ -38,6 +38,9 @@ class RoleToolsSlash(RoleToolsMixin):
     selfrole_slash = app_commands.Group(
         name="selfrole", description="Add or remove a defined selfrole"
     )
+    messages_slash = app_commands.Group(
+        name="message", description="Commands for sending/editing messages for roletools"
+    )
 
     def __init__(self, *args):
         super().__init__()
@@ -303,21 +306,6 @@ class RoleToolsSlash(RoleToolsMixin):
             return
         await func(ctx)
 
-    @buttons_slash.command(name="send")
-    async def send_buttons_slash(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel,
-        buttons: str,
-        message: str,
-    ):
-        """Send buttons to a specified channel with optional message."""
-        func = self.send_buttons
-        ctx = await interaction.client.get_context(interaction)
-        if not await self.check_requires(func, ctx):
-            return
-        await func(ctx, channel, buttons, message=message)
-
     @buttons_slash.command(name="create")
     @app_commands.choices(
         style=[
@@ -361,20 +349,6 @@ class RoleToolsSlash(RoleToolsMixin):
             return
         await func(ctx, name)
 
-    @buttons_slash.command(name="edit")
-    async def edit_with_buttons_slash(
-        self,
-        interaction: discord.Interaction,
-        message: app_commands.Transform[str, MessageTransformer],
-        buttons: str,
-    ):
-        """Edit a bots message to include Role Buttons"""
-        func = self.edit_with_buttons
-        ctx = await interaction.client.get_context(interaction)
-        if not await self.check_requires(func, ctx):
-            return
-        await func(ctx, message, buttons)
-
     @select_slash.command(name="create")
     async def create_select_menu_slash(
         self,
@@ -413,35 +387,6 @@ class RoleToolsSlash(RoleToolsMixin):
             return
         _name = name.split(" ")[0]
         await func(ctx, _name)
-
-    @select_slash.command(name="edit")
-    async def edit_with_select_slash(
-        self,
-        interaction: discord.Interaction,
-        message: app_commands.Transform[str, MessageTransformer],
-        menus: str,
-    ):
-        """Edit a bots message to include Role Buttons"""
-        func = self.edit_with_select
-        ctx = await interaction.client.get_context(interaction)
-        if not await self.check_requires(func, ctx):
-            return
-        await func(ctx, message, menus)
-
-    @select_slash.command(name="send")
-    async def send_select_slash(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel,
-        menus: str,
-        message: str,
-    ):
-        """Send a select menu to a specified channel for role assignment"""
-        func = self.send_select
-        ctx = await interaction.client.get_context(interaction)
-        if not await self.check_requires(func, ctx):
-            return
-        await func(ctx, channel, menus, message=message)
 
     @select_slash.command(name="viewoptions")
     async def select_options_view_slash(
@@ -482,7 +427,98 @@ class RoleToolsSlash(RoleToolsMixin):
         _name = name.split(" ")[0]
         await func(ctx, _name)
 
+    @messages_slash.command(name="sendbuttons")
+    async def send_buttons_slash(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        buttons: str,
+        message: str,
+    ):
+        """Send buttons to a specified channel with optional message."""
+        func = self.send_buttons
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, channel, buttons, message=message)
+
+    @messages_slash.command(name="editbuttons")
+    async def edit_with_buttons_slash(
+        self,
+        interaction: discord.Interaction,
+        message: app_commands.Transform[str, MessageTransformer],
+        buttons: str,
+    ):
+        """Edit a bots message to include Role Buttons"""
+        func = self.edit_with_buttons
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, message, buttons)
+
+    @messages_slash.command(name="editselect")
+    async def edit_with_select_slash(
+        self,
+        interaction: discord.Interaction,
+        message: app_commands.Transform[str, MessageTransformer],
+        menus: str,
+    ):
+        """Edit a bots message to include Role Buttons"""
+        func = self.edit_with_select
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, message, menus)
+
+    @messages_slash.command(name="sendselect")
+    async def send_select_slash(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        menus: str,
+        message: str,
+    ):
+        """Send a select menu to a specified channel for role assignment"""
+        func = self.send_select
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, channel, menus, message=message)
+
+    @messages_slash.command(name="edit")
+    async def edit_message_slash(
+        self,
+        interaction: discord.Interaction,
+        message: app_commands.Transform[str, MessageTransformer],
+        buttons: str,
+        menus: str,
+    ):
+        """Edit a bots message to include Role Buttons"""
+        func = self.edit_message
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, message, buttons, menus)
+
+    @messages_slash.command(name="send")
+    async def send_message_slash(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        buttons: str,
+        menus: str,
+        message: str,
+    ):
+        """Send a select menu to a specified channel for role assignment"""
+        func = self.send_message
+        ctx = await interaction.client.get_context(interaction)
+        if not await self.check_requires(func, ctx):
+            return
+        await func(ctx, channel, buttons, menus, message=message)
+
     @send_buttons_slash.autocomplete("buttons")
+    @send_message_slash.autocomplete("buttons")
+    @edit_message_slash.autocomplete("buttons")
     @edit_with_buttons_slash.autocomplete("buttons")
     @delete_button_slash.autocomplete("name")
     async def button_autocomplete(self, interaction: discord.Interaction, current: str) -> None:
@@ -530,6 +566,8 @@ class RoleToolsSlash(RoleToolsMixin):
         return ret
 
     @delete_select_menu_slash.autocomplete("name")
+    @send_message_slash.autocomplete("menus")
+    @edit_message_slash.autocomplete("menus")
     @send_select_slash.autocomplete("menus")
     async def select_menu_autocomplete(
         self, interaction: discord.Interaction, current: str

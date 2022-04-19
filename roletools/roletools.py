@@ -18,6 +18,7 @@ from .events import RoleToolsEvents
 from .exclusive import RoleToolsExclusive
 from .inclusive import RoleToolsInclusive
 from .menus import BaseMenu, RolePages
+from .messages import RoleToolsMessages
 from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
 from .select import RoleToolsSelect
@@ -45,6 +46,7 @@ class RoleTools(
     RoleToolsButtons,
     RoleToolsExclusive,
     RoleToolsInclusive,
+    RoleToolsMessages,
     RoleToolsReactions,
     RoleToolsRequires,
     RoleToolsSettings,

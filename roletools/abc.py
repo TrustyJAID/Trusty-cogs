@@ -402,26 +402,6 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_buttons(
-        self,
-        ctx: Union[Context, Interaction],
-        channel: discord.TextChannel,
-        buttons: commands.Greedy[ButtonRoleConverter],
-        *,
-        message: str,
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def edit_with_buttons(
-        self,
-        ctx: Union[Context, Interaction],
-        message: discord.Message,
-        buttons: commands.Greedy[ButtonRoleConverter],
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def create_button(
         self,
         ctx: Union[Context, Interaction],
@@ -487,6 +467,40 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def select_menus_view(self, ctx: Union[Context, Interaction]) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def select_options_view(self, ctx: Union[Context, Interaction]) -> None:
+        raise NotImplementedError()
+
+    #######################################################################
+    # messages.py                                                         #
+    #######################################################################
+
+    @abstractmethod
+    async def send_message(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel,
+        buttons: commands.Greedy[ButtonRoleConverter],
+        menus: commands.Greedy[SelectRoleConverter],
+        *,
+        message: str,
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def edit_message(
+        self,
+        ctx: Context,
+        message: discord.Message,
+        buttons: commands.Greedy[ButtonRoleConverter],
+        menus: commands.Greedy[SelectRoleConverter],
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def send_select(
         self,
         ctx: Union[Context, Interaction],
@@ -507,13 +521,21 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def select_menus_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def send_buttons(
+        self,
+        ctx: Union[Context, Interaction],
+        channel: discord.TextChannel,
+        buttons: commands.Greedy[ButtonRoleConverter],
+        *,
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def select_options_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def edit_with_buttons(
+        self,
+        ctx: Union[Context, Interaction],
+        message: discord.Message,
+        buttons: commands.Greedy[ButtonRoleConverter],
+    ) -> None:
         raise NotImplementedError()
-
-    #######################################################################
-    # slash.py                                                            #
-    #######################################################################
