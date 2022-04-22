@@ -85,7 +85,7 @@ class GamesMenu(discord.ui.View):
             self.author = ctx.user
         else:
             self.author = ctx.author
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx)
 
     async def show_page(
         self,
@@ -133,30 +133,20 @@ class GamesMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
-    ) -> discord.Message:
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            self.author = ctx.user
-        else:
-            self.author = ctx.author
+        self.author = ctx.author
 
         try:
             page = await self.source.get_page(0)
         except (IndexError, NoSchedule):
-            return await channel.send(self.format_error(), view=self)
+            return await ctx.send(self.format_error(), view=self)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            self.message = await ctx.followup.send(**kwargs, view=self)
-        else:
-            self.message = await channel.send(**kwargs, view=self)
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     def format_error(self):
@@ -292,10 +282,12 @@ class BaseMenu(discord.ui.View):
     async def on_timeout(self):
         await self.message.edit(view=None)
 
-    async def start(self, ctx: commands.Context):
+    async def start(
+        self, ctx: commands.Context, content: Optional[str] = None, ephemeral: bool = False
+    ):
         await self.source._prepare_once()
         self.ctx = ctx
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx, content, ephemeral)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
@@ -328,25 +320,19 @@ class BaseMenu(discord.ui.View):
             await interaction.response.edit_message(**kwargs, view=self)
 
     async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
+        self, ctx: commands.Context, content: Optional[str], ephemeral: bool
     ) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
-
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            self.author = ctx.user
-            return await ctx.followup.send(**kwargs, view=self, wait=True)
-        else:
-            self.author = ctx.author
-            return await channel.send(**kwargs, view=self)
+        if content and not kwargs.get("content", None):
+            kwargs["content"] = content
+        self.author = ctx.author
+        return await ctx.send(**kwargs, view=self, ephemeral=ephemeral)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()

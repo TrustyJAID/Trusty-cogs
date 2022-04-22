@@ -605,6 +605,7 @@ class HockeyCommands(MixinMeta):
             "pre-season",
             "pre-season_weekly",
         ],
+        ephemeral: bool = False,
     ) -> None:
         """
         Posts the leaderboard based on specific style
@@ -702,14 +703,12 @@ class HockeyCommands(MixinMeta):
             em.set_thumbnail(url=ctx.guild.icon_url)
             await ctx.send(embed=em)
             return
-        if position:
-            await ctx.send(position)
         await BaseMenu(
             source=LeaderboardPages(pages=leaderboard_list, style=leaderboard_type_str),
             delete_message_after=False,
             clear_reactions_after=True,
             timeout=180,
-        ).start(ctx=ctx)
+        ).start(ctx=ctx, content=position, ephemeral=ephemeral)
 
     @hockey_commands.command()
     @commands.guild_only()
@@ -808,6 +807,7 @@ class HockeyCommands(MixinMeta):
         else:
             if not ctx.channel.permissions_for(ctx.author).manage_messages:
                 # Don't need everyone spamming this command
+                await ctx.send(_("You are not authorized to use this command."), ephemeral=True)
                 return
             atlantic = [
                 team

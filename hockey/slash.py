@@ -192,10 +192,13 @@ class HockeySlash(MixinMeta):
                 "worst",
             ]
         ],
+        public: Optional[bool] = True,
     ):
         """Shows the current server leaderboard"""
+        if leaderboard_type is None:
+            leaderboard_type = "season"
         ctx = await interaction.client.get_context(interaction)
-        await self.leaderboard(ctx, leaderboard_type=leaderboard_type)
+        await self.post_leaderboard(ctx, leaderboard_type, not public)
 
     @app_commands.command(name="pickemsvotes")
     async def pickemsvotes_slash(self, interaction: discord.Interaction):
@@ -448,14 +451,12 @@ class HockeySlash(MixinMeta):
                     ret.append(Choice(name=player["fullName"], value=player["fullName"]))
         return ret[:25]
 
-    async def on_error(
-        self, interaction: discord.Interaction, command: discord.app_commands.Command, error
-    ):
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
         if isinstance(error, discord.app_commands.CheckFailure):
             if not interaction.response.is_done():
                 await interaction.response.send_message(error, ephemeral=True)
                 return
-        await interaction.client.tree.on_error(interaction, command, error)
+        await interaction.client.tree.on_error(interaction, error)
         log.exception(error)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:

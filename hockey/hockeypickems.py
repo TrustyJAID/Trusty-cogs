@@ -959,12 +959,13 @@ class HockeyPickems(MixinMeta):
         """
         if channel is None:
             channel = ctx.channel
+        await ctx.defer()
         if isinstance(channel, discord.Thread):
             msg = _("You cannot create threads within threads.")
             await ctx.send(msg)
             return
 
-        if not channel.permissions_for(guild.me).create_public_threads:
+        if not channel.permissions_for(ctx.guild.me).create_public_threads:
             msg = _("I don't have permission to create public threads!")
             await ctx.send(msg)
             return
@@ -1006,6 +1007,7 @@ class HockeyPickems(MixinMeta):
             except ValueError:
                 msg = _("`date` must be in the format `YYYY-MM-DD`.")
                 await ctx.send(msg)
+        await ctx.defer()
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         games_list = await Game.get_games(None, new_date, new_date, session=self.session)
