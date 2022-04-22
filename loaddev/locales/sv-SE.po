@@ -1,0 +1,82 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/loaddev/locales/messages.pot\n"
+"X-Crowdin-File-ID: 572\n"
+"Language: sv_SE\n"
+
+#: loaddev/loaddev.py:64
+#, docstring
+msgid "\n"
+"        Settings for automatically loading/unloading cores dev\n"
+"        using this cog\n"
+"        "
+msgstr ""
+
+#: loaddev/loaddev.py:71
+#, docstring
+msgid "\n"
+"        Whether or not to automatically load dev when this cog is loaded.\n\n"
+"        Note: This does not affect the CLI flag `--dev`\n"
+"        "
+msgstr ""
+
+#: loaddev/loaddev.py:78
+msgid "I will automatically load dev when this cog is loaded."
+msgstr ""
+
+#: loaddev/loaddev.py:80
+msgid "I will not automatically load dev when this cog is loaded."
+msgstr ""
+
+#: loaddev/loaddev.py:84
+#, docstring
+msgid "\n"
+"        Set an automatic replacement for `[p]mock` when auto loading dev.\n"
+"        "
+msgstr ""
+
+#: loaddev/loaddev.py:90
+msgid "I will replace the `[p]mock` command with `[p]{replacement}`."
+msgstr ""
+
+#: loaddev/loaddev.py:95
+msgid "I will not replace the `[p]mock` command."
+msgstr ""
+
+#: loaddev/loaddev.py:100
+#, docstring
+msgid "\n"
+"        Dynamically loads dev cog\n\n"
+"        `[replace_mock]` the replacement command name for `[p]mock`\n"
+"        If nothing is provided this will not replace `[p]mock`.\n"
+"        "
+msgstr ""
+
+#: loaddev/loaddev.py:121
+msgid "The following package was loaded: `{pack}`"
+msgstr ""
+
+#: loaddev/loaddev.py:126
+#, docstring
+msgid "\n"
+"        Unload Dev\n"
+"        "
+msgstr ""
+
+#: loaddev/loaddev.py:130
+msgid "The following package was unloaded: `{pack}`"
+msgstr ""
+

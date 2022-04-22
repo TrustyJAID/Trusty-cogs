@@ -1,0 +1,88 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/badges/locales/messages.pot\n"
+"X-Crowdin-File-ID: 476\n"
+"Language: fr_FR\n"
+
+#: badges/badges.py:25
+#, docstring
+msgid "\n"
+"    Create fun fake badges based on your discord profile\n"
+"    "
+msgstr ""
+
+#: badges/badges.py:96 badges/badges.py:103
+msgid "GENERAL SUPPORT"
+msgstr ""
+
+#: badges/badges.py:107
+msgid "ACTIVE"
+msgstr ""
+
+#: badges/badges.py:109
+msgid "COMPLETING TASK"
+msgstr ""
+
+#: badges/badges.py:111
+msgid "AWAITING INSTRUCTIONS"
+msgstr ""
+
+#: badges/badges.py:113
+msgid "MIA"
+msgstr ""
+
+#: badges/badges.py:151
+msgid "LEVEL "
+msgstr ""
+
+#: badges/badges.py:247
+#, docstring
+msgid "\n"
+"        Creates a fun fake badge based on your discord profile\n\n"
+"        `badge` is the name of the badges\n"
+"        do `[p]listbadges` to see available badges\n"
+"        "
+msgstr ""
+
+#: badges/badges.py:260 badges/badges.py:289
+msgid "`{}` is not an available badge."
+msgstr ""
+
+#: badges/badges.py:265 badges/badges.py:294
+msgid "Something went wrong sorry!"
+msgstr ""
+
+#: badges/badges.py:275
+#, docstring
+msgid "\n"
+"        Creates a fun fake gif badge based on your discord profile\n"
+"        this only works if you have a gif avatar\n\n"
+"        `badge` is the name of the badges\n"
+"        do `[p]listbadges` to see available badges\n"
+"        "
+msgstr ""
+
+#: badges/badges.py:302
+#, docstring
+msgid "\n"
+"        List the available badges that can be created\n"
+"        "
+msgstr ""
+
+#: badges/badges.py:308
+msgid "__Global Badges__\n"
+msgstr ""
+

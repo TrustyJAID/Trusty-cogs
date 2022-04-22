@@ -1,0 +1,572 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/adventurealert/locales/messages.pot\n"
+"X-Crowdin-File-ID: 566\n"
+"Language: fr_FR\n"
+
+#: adventurealert/adventurealert.py:45
+#, docstring
+msgid "Alert when a dragon appears in adventure"
+msgstr ""
+
+#: adventurealert/adventurealert.py:145
+#, docstring
+msgid "Set notifications for all adventures"
+msgstr ""
+
+#: adventurealert/adventurealert.py:150
+#, docstring
+msgid "Remove all adventurealert settings in all guilds"
+msgstr ""
+
+#: adventurealert/adventurealert.py:152
+msgid "Your Adventure Alerts have all been removed."
+msgstr ""
+
+#: adventurealert/adventurealert.py:157
+#, docstring
+msgid "Remove A specified user from adventurealert across the bot"
+msgstr ""
+
+#: adventurealert/adventurealert.py:159
+msgid "Adventure Alerts have all been removed for that user."
+msgstr ""
+
+#: adventurealert/adventurealert.py:163
+#, docstring
+msgid "\n"
+"        Shows a list of servers you have alerts\n"
+"        "
+msgstr ""
+
+#: adventurealert/adventurealert.py:169
+msgid "__**Global Notifications**__: {g_set}\n\n"
+msgstr ""
+
+#: adventurealert/adventurealert.py:173
+msgid "Cart Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:174
+msgid "Adventure Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:175
+msgid "Dragon Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:176
+msgid "Miniboss Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:177
+msgid "Ascended Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:178
+msgid "Transcended Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:179
+msgid "Immortal Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:180
+msgid "Possessed Notifications"
+msgstr ""
+
+#: adventurealert/adventurealert.py:210
+msgid "You do not have any adventure notifications set."
+msgstr ""
+
+#: adventurealert/adventurealert.py:215 adventurealert/bossalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when a dragon appears"
+msgstr ""
+
+#: adventurealert/adventurealert.py:220
+msgid "{role} will no longer receive notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:228
+msgid "{role} will now receive notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:234
+#, docstring
+msgid "Toggle adventure notifications in this server"
+msgstr ""
+
+#: adventurealert/adventurealert.py:238
+msgid "You will no longer receive notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:242
+msgid "You will now receive notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:246
+#, docstring
+msgid "Toggle adventure notifications in all shared servers"
+msgstr ""
+
+#: adventurealert/adventurealert.py:250
+msgid "Removed from adventure alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/adventurealert.py:252
+msgid "Added to adventure alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/adventurealert.py:257
+#, docstring
+msgid "Remove a specific user ID from adventure alerts"
+msgstr ""
+
+#: adventurealert/adventurealert.py:262
+msgid "{user_id} will no longer receive notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:268
+msgid "{user_id} is not receiving notifications on adventures."
+msgstr ""
+
+#: adventurealert/adventurealert.py:290
+msgid "An adventure has started, come join!"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:17
+#, docstring
+msgid "Set notifications for ascendeds appearing in adventure"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when an ascended appears"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:28
+msgid "{role} will no longer receive notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:36
+msgid "{role} will now receive notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:42
+#, docstring
+msgid "Toggle ascended notifications on this server"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:46
+msgid "You will no longer receive notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:50
+msgid "You will now receive notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:54
+#, docstring
+msgid "Toggle ascended notifications across all shared servers"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:58
+msgid "Removed from ascended alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:60
+msgid "Added to ascended alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:65
+#, docstring
+msgid "Remove a specific user ID from ascended alerts"
+msgstr ""
+
+#: adventurealert/ascendedalert.py:70
+msgid "{user_id} will no longer receive notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:76
+msgid "{user_id} is not receiving notifications on ascendeds."
+msgstr ""
+
+#: adventurealert/ascendedalert.py:96
+msgid "An Ascended has appeared!"
+msgstr ""
+
+#: adventurealert/bossalert.py:17
+#, docstring
+msgid "Set notifications for dragons appearing in adventure"
+msgstr ""
+
+#: adventurealert/bossalert.py:28
+msgid "{role} will no longer receive notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:34
+msgid "{role} will now receive notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:40
+#, docstring
+msgid "Toggle dragon notifications on this server"
+msgstr ""
+
+#: adventurealert/bossalert.py:44
+msgid "You will no longer receive notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:48
+msgid "You will now receive notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:52
+#, docstring
+msgid "Toggle dragon notifications across all shared servers"
+msgstr ""
+
+#: adventurealert/bossalert.py:56
+msgid "Removed from dragon alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/bossalert.py:58
+msgid "Added to dragon alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/bossalert.py:63
+#, docstring
+msgid "Remove a specific user ID from dragon alerts"
+msgstr ""
+
+#: adventurealert/bossalert.py:68
+msgid "{user_id} will no longer receive notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:74
+msgid "{user_id} is not receiving notifications on dragons."
+msgstr ""
+
+#: adventurealert/bossalert.py:94
+msgid "A Dragon has appeared!"
+msgstr ""
+
+#: adventurealert/cartalert.py:17
+#, docstring
+msgid "Set notifications for carts appearning"
+msgstr ""
+
+#: adventurealert/cartalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when the cart appears"
+msgstr ""
+
+#: adventurealert/cartalert.py:28
+msgid "{role} will no longer receive notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:34
+msgid "{role} will now receive notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:40
+#, docstring
+msgid "Toggle cart notifications on this server"
+msgstr ""
+
+#: adventurealert/cartalert.py:44
+msgid "You will no longer receive notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:48
+msgid "You will now receive notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:52
+#, docstring
+msgid "Toggle cart notifications in all shared servers"
+msgstr ""
+
+#: adventurealert/cartalert.py:56
+msgid "Removed from cart alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/cartalert.py:58
+msgid "Added to cart alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/cartalert.py:63
+#, docstring
+msgid "Remove a specific user ID from cart alerts"
+msgstr ""
+
+#: adventurealert/cartalert.py:68
+msgid "{user_id} will no longer receive notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:74
+msgid "{user_id} is not receiving notifications on carts."
+msgstr ""
+
+#: adventurealert/cartalert.py:94
+msgid "A cart has arrived, come buy something!"
+msgstr ""
+
+#: adventurealert/immortalalert.py:17
+#, docstring
+msgid "Set notifications for immortals appearing in adventure"
+msgstr ""
+
+#: adventurealert/immortalalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when an immortal appears"
+msgstr ""
+
+#: adventurealert/immortalalert.py:28
+msgid "{role} will no longer receive notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:36
+msgid "{role} will now receive notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:42
+#, docstring
+msgid "Toggle immortal notifications on this server"
+msgstr ""
+
+#: adventurealert/immortalalert.py:46
+msgid "You will no longer receive notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:50
+msgid "You will now receive notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:54
+#, docstring
+msgid "Toggle immortal notifications across all shared servers"
+msgstr ""
+
+#: adventurealert/immortalalert.py:58
+msgid "Removed from immortal alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/immortalalert.py:60
+msgid "Added to immortal alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/immortalalert.py:65
+#, docstring
+msgid "Remove a specific user ID from immortal alerts"
+msgstr ""
+
+#: adventurealert/immortalalert.py:70
+msgid "{user_id} will no longer receive notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:76
+msgid "{user_id} is not receiving notifications on immortals."
+msgstr ""
+
+#: adventurealert/immortalalert.py:96
+msgid "An immortal has appeared!"
+msgstr ""
+
+#: adventurealert/minibossalert.py:17
+#, docstring
+msgid "Set notifications for minibosses appearing in adventure"
+msgstr ""
+
+#: adventurealert/minibossalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when the miniboss appears"
+msgstr ""
+
+#: adventurealert/minibossalert.py:28
+msgid "{role} will no longer receive notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:36
+msgid "{role} will now receive notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:42
+#, docstring
+msgid "Toggle miniboss notifications in this server"
+msgstr ""
+
+#: adventurealert/minibossalert.py:46
+msgid "You will no longer receive notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:50
+msgid "You will now receive notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:54
+#, docstring
+msgid "Toggle miniboss notifications in all shared servers"
+msgstr ""
+
+#: adventurealert/minibossalert.py:58
+msgid "Removed from miniboss alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/minibossalert.py:60
+msgid "Added to miniboss alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/minibossalert.py:65
+#, docstring
+msgid "Remove a specific user ID from miniboss alerts"
+msgstr ""
+
+#: adventurealert/minibossalert.py:70
+msgid "{user_id} will no longer receive notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:76
+msgid "{user_id} is not receiving notifications on minibosses."
+msgstr ""
+
+#: adventurealert/minibossalert.py:98
+msgid "A miniboss has appeared, come join!"
+msgstr ""
+
+#: adventurealert/possessedalert.py:17
+#, docstring
+msgid "Set notifications for possesseds appearing in adventure"
+msgstr ""
+
+#: adventurealert/possessedalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when a possessed appears"
+msgstr ""
+
+#: adventurealert/possessedalert.py:28
+msgid "{role} will no longer receive notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:36
+msgid "{role} will now receive notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:42
+#, docstring
+msgid "Toggle possessed notifications on this server"
+msgstr ""
+
+#: adventurealert/possessedalert.py:46
+msgid "You will no longer receive notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:50
+msgid "You will now receive notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:54
+#, docstring
+msgid "Toggle possessed notifications across all shared servers"
+msgstr ""
+
+#: adventurealert/possessedalert.py:58
+msgid "Removed from possessed alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/possessedalert.py:60
+msgid "Added to possessed alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/possessedalert.py:65
+#, docstring
+msgid "Remove a specific user ID from possessed alerts"
+msgstr ""
+
+#: adventurealert/possessedalert.py:70
+msgid "{user_id} will no longer receive notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:76
+msgid "{user_id} is not receiving notifications on possesseds."
+msgstr ""
+
+#: adventurealert/possessedalert.py:98
+msgid "A possessed has appeared!"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:17
+#, docstring
+msgid "Set notifications for transcendeds appearing in adventure"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:23
+#, docstring
+msgid "Add or remove a role to be pinged when a transcended appears"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:28
+msgid "{role} will no longer receive notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:36
+msgid "{role} will now receive notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:42
+#, docstring
+msgid "Toggle transcended notifications on this server"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:46
+msgid "You will no longer receive notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:50
+msgid "You will now receive notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:54
+#, docstring
+msgid "Toggle transcended notifications across all shared servers"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:58
+msgid "Removed from transcended alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:60
+msgid "Added to transcended alerts across all shared servers."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:65
+#, docstring
+msgid "Remove a specific user ID from transcended alerts"
+msgstr ""
+
+#: adventurealert/transcendedalert.py:70
+msgid "{user_id} will no longer receive notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:76
+msgid "{user_id} is not receiving notifications on transcendeds."
+msgstr ""
+
+#: adventurealert/transcendedalert.py:98
+msgid "A transcended has appeared!"
+msgstr ""
+

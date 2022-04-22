@@ -1,0 +1,209 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/inviteblocklist/locales/messages.pot\n"
+"X-Crowdin-File-ID: 482\n"
+"Language: sv_SE\n"
+
+#: inviteblocklist/inviteblocklist.py:178
+#: inviteblocklist/inviteblocklist.py:194
+#: inviteblocklist/inviteblocklist.py:211
+msgid "I tried to delete an invite link posted in {guild} but lacked the permission to do so"
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:222
+#, docstring
+msgid "\n"
+"        Settings for managing invite link blocking\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:229
+#: inviteblocklist/inviteblocklist.py:236
+#, docstring
+msgid "\n"
+"        Commands for setting the blocklist\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:243
+#, docstring
+msgid "\n"
+"        Commands for fine tuning allowed channels, users, or roles\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:255
+#, docstring
+msgid "\n"
+"        Automatically remove all invites regardless of their destination\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:260
+msgid "Okay, I will delete all invite links posted."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:263
+msgid "Okay I will only delete invites if the server destination is in my blocklist or allowlist."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:273
+#, docstring
+msgid "\n"
+"        Add a guild ID to the blocklist, providing an invite link will also work\n\n"
+"        `[invite_or_guild_id]` The guild ID or invite to the guild you want to have\n"
+"        invite links blocked from.\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:296
+msgid "Now blocking invites from {guild}."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:299
+msgid "None of the provided invite links or guild ID's are new."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:307
+#, docstring
+msgid "\n"
+"        Add a guild ID to the blocklist, providing an invite link will also work\n\n"
+"        `[invite_or_guild_id]` The guild ID or invite to the guild you not longer want to have\n"
+"        invite links blocked from.\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:330
+msgid "Removed {guild} from blocklist."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:333
+msgid "None of the provided invite links or guild ID's are being blocked."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:337
+#, docstring
+msgid "\n"
+"        Show what guild ID's are in the invite link blocklist\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:341
+msgid "__Guild ID's Blocked__:\n"
+"{guilds}"
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:346
+msgid "__Blocked Channels, Users, and Roles:__\n"
+"{chan_user_roel}"
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:362
+#, docstring
+msgid "\n"
+"        Add a guild ID to the allowlist, providing an invite link will also work\n\n"
+"        `[invite_or_guild_id]` The guild ID or invite to the guild you want to have\n"
+"        invites allowed from.\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:381
+msgid "Now Allowing invites from {guild}."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:384
+msgid "None of the provided invite links or ID's are new."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:390
+#, docstring
+msgid "\n"
+"        Add a guild ID to the allowlist, providing an invite link will also work\n\n"
+"        `[invite_or_guild_id]` The guild ID or invite to the guild you not longer want to have\n"
+"        invites allowed from.\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:409
+msgid "Removed {guild} from allowlist."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:413
+msgid "None of the provided invite links or guild ID's are currently allowed."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:418
+#, docstring
+msgid "\n"
+"        Show what guild ID's are in the invite link allowlist\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:422
+msgid "__Guild ID's Allowed__:\n"
+"{guilds}"
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:427
+msgid "__Allowed Channels, Users, and Roles:__\n"
+"{chan_user_roel}"
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:443
+#, docstring
+msgid "\n"
+"        Add a guild ID to the allowlist, providing an invite link will also work\n\n"
+"        `[channel_user_role...]` is the channel, user or role to whitelist\n"
+"        (You can supply more than one of any at a time)\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:451
+msgid "You must supply 1 or more channels users or roles to be allowed."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:457
+msgid "`{list_type}` added to the whitelist."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:465
+#, docstring
+msgid "\n"
+"        Add a guild ID to the allowlist, providing an invite link will also work\n\n"
+"        `[channel_user_role...]` is the channel, user or role to remove from the whitelist\n"
+"        (You can supply more than one of any at a time)\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:473
+msgid "You must supply 1 or more channels users or roles to be whitelisted."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:479
+msgid "`{list_type}` removed from the whitelist."
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:485
+#, docstring
+msgid "\n"
+"        Show what channels, users, and roles are in the invite link allowlist\n"
+"        "
+msgstr ""
+
+#: inviteblocklist/inviteblocklist.py:488
+msgid "Invite immunity list for {guild}:\n"
+msgstr ""
+

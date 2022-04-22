@@ -1,0 +1,171 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/notsobot/locales/messages.pot\n"
+"X-Crowdin-File-ID: 434\n"
+"Language: fr_FR\n"
+
+#: notsobot/notsobot.py:302
+#, docstring
+msgid "\n"
+"        Apply magik to an image.\n"
+"        "
+msgstr ""
+
+#: notsobot/notsobot.py:404
+#, docstring
+msgid "Attempt to do magik on a gif"
+msgstr ""
+
+#: notsobot/notsobot.py:450
+#, docstring
+msgid "\n"
+"        Add caption to an image\n\n"
+"        `[urls]` are the image urls or users or previous images in chat to add a caption to.\n"
+"        `[text=Caption]` is the text to caption on the image.\n"
+"        `[color=white]` is the color of the text.\n"
+"        `[size=40]` is the size of the text\n"
+"        `[x=0]` is the height the text starts at between 0 and 100% where 0 is the top and 100 is the bottom of the image.\n"
+"        `[y=0]` is the width the text starts at between 0 and 100% where 0 is the left and 100 is the right of the image.\n"
+"        "
+msgstr ""
+
+#: notsobot/notsobot.py:577
+#, docstring
+msgid "Generate a Triggered GIF for a user or image"
+msgstr ""
+
+#: notsobot/notsobot.py:599
+#, docstring
+msgid "Returns inputed text in aesthetics"
+msgstr ""
+
+#: notsobot/notsobot.py:636
+#, docstring
+msgid "Convert text into ASCII"
+msgstr ""
+
+#: notsobot/notsobot.py:708
+#, docstring
+msgid "Generate an ascii art image of last image in chat or from URL"
+msgstr ""
+
+#: notsobot/notsobot.py:767
+#, docstring
+msgid "Gif to ASCII"
+msgstr ""
+
+#: notsobot/notsobot.py:794
+#, docstring
+msgid "Generate tombstone image with name and optional text"
+msgstr ""
+
+#: notsobot/notsobot.py:855
+#, docstring
+msgid "\n"
+"        Merge/Combine Two Photos\n\n"
+"        `[vertical=True]` `true` or `false` to merge vertically.\n"
+"        `[urls]` The Image URL's you want to merge together. If not supplied\n"
+"        images are searched from message history.\n"
+"        "
+msgstr ""
+
+#: notsobot/notsobot.py:921
+#, docstring
+msgid "Replace characters in text with emojis"
+msgstr ""
+
+#: notsobot/notsobot.py:944
+#, docstring
+msgid "\n"
+"        Add more JPEG to an Image\n\n"
+"        Needs More JPEG!\n"
+"        `[urls]` is optional, if not provided will search chat for a valid image.\n"
+"        `[quality]` is the quality of the new jpeg image to make\n"
+"        "
+msgstr ""
+
+#: notsobot/notsobot.py:1005
+#, docstring
+msgid "Add vaporwave flavours to an image"
+msgstr ""
+
+#: notsobot/notsobot.py:1030
+#, docstring
+msgid "Generate a Minecraft Achievement"
+msgstr ""
+
+#: notsobot/notsobot.py:1076
+#, docstring
+msgid "\n"
+"        Add a watermark to an image\n\n"
+"        `[urls]` are the image urls or users or previous images in chat to add a watermark to.\n"
+"        `[mark]` is the image to use as the watermark. By default the brazzers icon is used.\n"
+"        `[x=0]` is the height the watermark will be at between 0 and 100% where 0 is the top and 100 is the bottom of the image.\n"
+"        `[y=0]` is the width the watermark will be at between 0 and 100% where 0 is the left and 100 is the right of the image.\n"
+"        `[transparency=0]` is a value from 0 to 100 which determines the percentage the watermark will be transparent.\n"
+"        "
+msgstr ""
+
+#: notsobot/notsobot.py:1262
+#, docstring
+msgid "Glitch a gif or png"
+msgstr ""
+
+#: notsobot/notsobot.py:1295
+#, docstring
+msgid "Pixelate an image"
+msgstr ""
+
+#: notsobot/notsobot.py:1414
+#, docstring
+msgid "Mirror an image vertically right to left"
+msgstr ""
+
+#: notsobot/notsobot.py:1473
+#, docstring
+msgid "Mirror an image vertically left to right"
+msgstr ""
+
+#: notsobot/notsobot.py:1533
+#, docstring
+msgid "Mirror an image horizontally top to bottom"
+msgstr ""
+
+#: notsobot/notsobot.py:1594
+#, docstring
+msgid "Mirror an image horizontally bottom to top"
+msgstr ""
+
+#: notsobot/notsobot.py:1617
+#, docstring
+msgid "Rotate an image 180 degrees"
+msgstr ""
+
+#: notsobot/notsobot.py:1654
+#, docstring
+msgid "Flip an image horizontally"
+msgstr ""
+
+#: notsobot/notsobot.py:1688
+#, docstring
+msgid "Invert the colours of an image"
+msgstr ""
+
+#: notsobot/notsobot.py:1724
+#, docstring
+msgid "Rotate image X degrees"
+msgstr ""
+

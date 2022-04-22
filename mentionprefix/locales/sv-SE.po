@@ -1,0 +1,51 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/mentionprefix/locales/messages.pot\n"
+"X-Crowdin-File-ID: 590\n"
+"Language: sv_SE\n"
+
+#: mentionprefix/mentionprefix.py:61
+#, docstring
+msgid "Toggle whether mentioning the bot will send a help message."
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:64
+msgid "Mentioning the bot will trigger it to send a help message."
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:67
+msgid "Mentioning the bot will no longer cause it to send a help message."
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:125
+msgid "my prefix here is"
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:125
+msgid "my prefixes here are"
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:131 mentionprefix/mentionprefix.py:149
+msgid "Hey there, {verb} the following:\n"
+"{p_list}"
+msgstr ""
+
+#: mentionprefix/mentionprefix.py:137
+msgid "Hey there, {verb} the following:\n"
+"{p_list}\n"
+"Why don't you try `{p}{command}` to see everything I can do."
+msgstr ""
+

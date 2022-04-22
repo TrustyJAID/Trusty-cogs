@@ -1,0 +1,131 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/reddit/locales/messages.pot\n"
+"X-Crowdin-File-ID: 554\n"
+"Language: sv_SE\n"
+
+#: reddit/helpers.py:28
+msgid "The bot owner has not added credentials to utilize this cog.\n"
+"Have them see `{prefix}redditset creds` for more information"
+msgstr ""
+
+#: reddit/helpers.py:43 reddit/helpers.py:47
+msgid "`{argument}` does not look like a valid subreddit."
+msgstr ""
+
+#: reddit/helpers.py:50
+msgid "I cannot post contents from this sub in non-NSFW channels."
+msgstr ""
+
+#: reddit/helpers.py:96 reddit/helpers.py:97
+msgid "Unknown or Deleted User"
+msgstr ""
+
+#: reddit/menus.py:201 reddit/menus.py:206
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: reddit/reddit.py:23
+#, docstring
+msgid "\n"
+"    A cog to get information from the Reddit API\n"
+"    "
+msgstr ""
+
+#: reddit/reddit.py:212
+#, docstring
+msgid "\n"
+"        Commands for setting up the reddit cog\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:224
+#, docstring
+msgid "\n"
+"        Setup a channel for automatically posting new subreddit submissions\n\n"
+"        `<subreddit>` is the name of the subreddit you want to get updates on.\n"
+"        `<channel>` is the channel where you want new subreddit posts to be put.\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:250
+msgid "{sub} is already posting in {channel}."
+msgstr ""
+
+#: reddit/reddit.py:268
+#, docstring
+msgid "\n"
+"        Remove a channel from automatically posting new subreddit submissions\n\n"
+"        `<subreddit>` is the name of the subreddit you want to get updates on.\n"
+"        `<channel>` is the channel where you want new subreddit posts to be put.\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:296
+msgid "{sub} is not posting in {channel}."
+msgstr ""
+
+#: reddit/reddit.py:309
+#, docstring
+msgid "\n"
+"        How to setup login information for reddit.\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:312
+msgid "1. Go to https://www.reddit.com/prefs/apps and select create another app...\n"
+"2. Give the app a name and description, specify that it's a script\n"
+"3. In the developed apps section under the apps name you provided before below `personal use script` copy that into `<client_id>` Use `https://127.0.0.1` or `https://localhost` for the redirect url.\n"
+"4. In the app box where it says `secret` copy the code after into `<client_secret>` if you don't see this click the edit button\n"
+"5. Fill out the rest of the following command with your accounts username and password\n"
+"NOTE: If you have 2FA enabled on your account this will not work, I'd recommend creating a new reddit account specifically for the bot if that's the case.\n"
+"`{prefix}set api reddit username <username> password <password> client_id <client_id> client_secret <client_secret>`"
+msgstr ""
+
+#: reddit/reddit.py:327
+#, docstring
+msgid "reddit"
+msgstr ""
+
+#: reddit/reddit.py:332
+#, docstring
+msgid "\n"
+"        Show 25 hotest posts on the desired subreddit\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:347 reddit/reddit.py:362 reddit/reddit.py:377
+#, docstring
+msgid "\n"
+"        Show 25 newest posts on the desired subreddit\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:391
+#, docstring
+msgid "\n"
+"        Pull a radom submission from the desired subreddit\n"
+"        "
+msgstr ""
+
+#: reddit/reddit.py:403
+msgid "I tried to pull a random submission but couldn't find one not designated NSFW I can display in this channel."
+msgstr ""
+
+#: reddit/reddit.py:416
+msgid "I could not find a suitable random post on that subreddit."
+msgstr ""
+

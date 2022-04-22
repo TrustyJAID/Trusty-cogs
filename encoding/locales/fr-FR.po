@@ -1,0 +1,230 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/encoding/locales/messages.pot\n"
+"X-Crowdin-File-ID: 596\n"
+"Language: fr_FR\n"
+
+#: encoding/encoding.py:71
+#, docstring
+msgid "Various hashing commands"
+msgstr "Diverses commandes de hachage"
+
+#: encoding/encoding.py:76
+#, docstring
+msgid "\n"
+"        MD5 Hash some Text\n"
+"        "
+msgstr "\n"
+"        Hash MD5 un peu de texte\n"
+"        "
+
+#: encoding/encoding.py:84
+#, docstring
+msgid "\n"
+"        SHA1 Hash some Text\n"
+"        "
+msgstr "\n"
+"        SHA1 Hash un peu de texte\n"
+"        "
+
+#: encoding/encoding.py:92
+#, docstring
+msgid "\n"
+"        SHA256 Hash some Text\n"
+"        "
+msgstr "\n"
+"        SHA256 Hash un peu de texte\n"
+"        "
+
+#: encoding/encoding.py:100
+#, docstring
+msgid "\n"
+"        SHA512 Hash some Text\n"
+"        "
+msgstr "\n"
+"        SHA512 Hash un peu de texte\n"
+"        "
+
+#: encoding/encoding.py:108
+#, docstring
+msgid "Encode a string."
+msgstr "Encoder une chaîne."
+
+#: encoding/encoding.py:113
+#, docstring
+msgid "Decode a string."
+msgstr "Décoder une chaîne."
+
+#: encoding/encoding.py:118
+#, docstring
+msgid "\n"
+"        Encode text into binary sequences of 8\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en séquences binaires de 8\n"
+"        "
+
+#: encoding/encoding.py:126
+#, docstring
+msgid "\n"
+"        Decode binary sequences of 8\n"
+"        "
+msgstr "\n"
+"        Décoder des séquences binaires de 8\n"
+"        "
+
+#: encoding/encoding.py:140
+#, docstring
+msgid "\n"
+"        Encode text into hexadecimal\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en hexadécimale\n"
+"        "
+
+#: encoding/encoding.py:148
+#, docstring
+msgid "\n"
+"        Decode a hexadecimal sequence to text\n"
+"        "
+msgstr "\n"
+"        Décoder une séquence hexadécimale au texte\n"
+"        "
+
+#: encoding/encoding.py:162
+#, docstring
+msgid "\n"
+"        Encode text into base 16\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en base 16\n"
+"        "
+
+#: encoding/encoding.py:169
+#, docstring
+msgid "\n"
+"        Decode base16 text\n"
+"        "
+msgstr "\n"
+"        Décoder le texte de base16\n"
+"        "
+
+#: encoding/encoding.py:179
+#, docstring
+msgid "\n"
+"        Encode text into base 32\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en base 32\n"
+"        "
+
+#: encoding/encoding.py:186
+#, docstring
+msgid "\n"
+"        Decode base32 text\n"
+"        "
+msgstr "\n"
+"        Décoder le texte base32\n"
+"        "
+
+#: encoding/encoding.py:196
+#, docstring
+msgid "\n"
+"        Encode text into base 64\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en base 64\n"
+"        "
+
+#: encoding/encoding.py:203
+#, docstring
+msgid "\n"
+"        Decode base 64 text\n"
+"        "
+msgstr "\n"
+"        Décoder le texte de base 64\n"
+"        "
+
+#: encoding/encoding.py:213
+#, docstring
+msgid "\n"
+"        Encode message into character numbers\n"
+"        "
+msgstr "\n"
+"        Encoder le message en numéros de caractères\n"
+"        "
+
+#: encoding/encoding.py:220
+#, docstring
+msgid "\n"
+"        Decode character numbers to a message\n"
+"        "
+msgstr "\n"
+"        Décoder les numéros de caractères vers un message\n"
+"        "
+
+#: encoding/encoding.py:230
+#, docstring
+msgid "\n"
+"        Encode text into braille unicode characters\n"
+"        "
+msgstr "\n"
+"        Encoder du texte en caractères unicode braille\n"
+"        "
+
+#: encoding/encoding.py:249
+#, docstring
+msgid "\n"
+"        Decide braille unicode characters to ascii\n"
+"        "
+msgstr "\n"
+"        Décide les caractères braille unicode à ascii\n"
+"        "
+
+#: encoding/encoding.py:290
+#, docstring
+msgid "\n"
+"        Encode a caeser cipher message with specified key\n"
+"        "
+msgstr "\n"
+"        Encoder un message de chiffrement de caeser avec la clé spécifiée\n"
+"        "
+
+#: encoding/encoding.py:301
+#, docstring
+msgid "\n"
+"        Decode a caeser cipher message with specified key\n"
+"        "
+msgstr ""
+
+#: encoding/encoding.py:310
+#, docstring
+msgid "\n"
+"        Encodes a string into DNA 4 byte ACGT format\n"
+"        "
+msgstr "\n"
+"        Encode une chaîne au format ACGT de 4 octets\n"
+"        "
+
+#: encoding/encoding.py:329
+#, docstring
+msgid "\n"
+"        Decodes a string of DNA in 4 byte ACGT format.\n"
+"        "
+msgstr "\n"
+"        Décode une chaîne d'ADN au format ACGT de 4 octets.\n"
+"        "
+

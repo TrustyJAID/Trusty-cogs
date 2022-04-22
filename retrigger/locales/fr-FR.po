@@ -1,0 +1,1676 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /dpy-2.0/retrigger/locales/messages.pot\n"
+"X-Crowdin-File-ID: 446\n"
+"Language: fr_FR\n"
+
+#: retrigger/converters.py:77
+msgid "`{response}` is not a valid response type."
+msgstr ""
+
+#: retrigger/converters.py:87
+msgid "The provided multi response pattern is not valid."
+msgstr ""
+
+#: retrigger/converters.py:89
+msgid "I require \"Manage Roles\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:91 retrigger/converters.py:93
+msgid "I require \"Manage Messages\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:95
+msgid "I require \"Ban Members\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:97
+msgid "I require \"Kick Members\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:99
+msgid "I require \"Add Reactions\" permission to use that."
+msgstr ""
+
+#: retrigger/converters.py:102 retrigger/retrigger.py:2275
+msgid "Mock commands can allow any user to run a command as if you did, are you sure you want to add this?"
+msgstr ""
+
+#: retrigger/converters.py:112 retrigger/converters.py:114
+#: retrigger/retrigger.py:2285 retrigger/retrigger.py:2288
+msgid "Not creating trigger."
+msgstr ""
+
+#: retrigger/converters.py:329
+msgid "__Name__: **{name}** \n"
+"__Active__: **{enabled}**\n"
+"__Author__: {author}\n"
+"__Count__: **{count}**\n"
+"__Response__: **{response}**\n"
+msgstr ""
+
+#: retrigger/converters.py:402 retrigger/retrigger.py:1581
+msgid "There are no triggers setup on this server."
+msgstr ""
+
+#: retrigger/converters.py:425 retrigger/slash.py:242 retrigger/slash.py:479
+#: retrigger/slash.py:498 retrigger/slash.py:517 retrigger/slash.py:537
+#: retrigger/slash.py:556 retrigger/slash.py:575 retrigger/slash.py:594
+#: retrigger/slash.py:614 retrigger/slash.py:630 retrigger/slash.py:646
+msgid "`{arg}` is not a valid regex pattern. {e}"
+msgstr ""
+
+#: retrigger/converters.py:483
+msgid "`{}` is not an emoji I can use."
+msgstr ""
+
+#: retrigger/converters.py:531
+msgid "{arg} is not a valid channel, user or role."
+msgstr ""
+
+#: retrigger/menus.py:74 retrigger/menus.py:75
+msgid "Unknown or Deleted User"
+msgstr ""
+
+#: retrigger/menus.py:100
+msgid "This trigger has no actions and should be removed."
+msgstr ""
+
+#: retrigger/menus.py:102
+msgid "__Name__: **{name}** \n"
+"__Active__: **{enabled}**\n"
+"__Author__: {author}\n"
+"__Count__: **{count}**\n"
+"__Created__: **{created}**\n"
+"__Response__: **{response}**\n"
+"__NSFW__: **{nsfw}**\n"
+msgstr ""
+
+#: retrigger/menus.py:133
+msgid "__Ignore commands__: **{ignore}**\n"
+msgstr ""
+
+#: retrigger/menus.py:140
+msgid "__Text__: "
+msgstr ""
+
+#: retrigger/menus.py:142
+msgid "__Replies with Notification__:"
+msgstr ""
+
+#: retrigger/menus.py:150
+msgid "__Rename__: "
+msgstr ""
+
+#: retrigger/menus.py:156
+msgid "__DM__: "
+msgstr ""
+
+#: retrigger/menus.py:162
+msgid "__Command__: "
+msgstr ""
+
+#: retrigger/menus.py:172
+msgid "__Emojis__: "
+msgstr ""
+
+#: retrigger/menus.py:186
+msgid "__Roles Added__: "
+msgstr ""
+
+#: retrigger/menus.py:188
+msgid "Roles Added: Deleted Roles\n"
+msgstr ""
+
+#: retrigger/menus.py:202
+msgid "__Roles Removed__: "
+msgstr ""
+
+#: retrigger/menus.py:204
+msgid "__Roles Added__: Deleted Roles\n"
+msgstr ""
+
+#: retrigger/menus.py:206
+msgid "__Allowlist__: "
+msgstr ""
+
+#: retrigger/menus.py:208
+msgid "__Blocklist__: "
+msgstr ""
+
+#: retrigger/menus.py:212
+msgid "__Cooldown__: "
+msgstr ""
+
+#: retrigger/menus.py:214
+msgid "__OCR__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:216
+msgid "__Checking edits__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:218
+msgid "__Message deleted after__: {time} seconds.\n"
+msgstr ""
+
+#: retrigger/menus.py:222
+msgid "__Read filenames__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:224
+msgid "__User Mentions__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:226
+msgid "__Everyone Mentions__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:228
+msgid "__Role Mentions__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:230
+msgid "__TTS__: **Enabled**\n"
+msgstr ""
+
+#: retrigger/menus.py:232
+msgid "__Chance__: **1 in {number}**\n"
+msgstr ""
+
+#: retrigger/menus.py:237
+msgid "Triggers for {guild}"
+msgstr ""
+
+#: retrigger/menus.py:252
+msgid "Trigger info continued"
+msgstr ""
+
+#: retrigger/menus.py:260 retrigger/menus.py:263
+msgid "__Text__"
+msgstr ""
+
+#: retrigger/menus.py:265
+msgid "__Regex__"
+msgstr ""
+
+#: retrigger/menus.py:268
+msgid "Regex: "
+msgstr ""
+
+#: retrigger/menus.py:369 retrigger/menus.py:380
+msgid "Disable Trigger"
+msgstr ""
+
+#: retrigger/menus.py:380
+msgid "Enable Trigger"
+msgstr ""
+
+#: retrigger/menus.py:411
+msgid "Editing Trigger {trigger}:\n"
+msgstr ""
+
+#: retrigger/menus.py:416
+msgid "Text: `{text}`\n"
+msgstr ""
+
+#: retrigger/menus.py:422
+msgid "The provided regex pattern is not valid: {e}"
+msgstr ""
+
+#: retrigger/menus.py:426
+msgid "Regex: `{regex}`\n"
+msgstr ""
+
+#: retrigger/menus.py:432
+msgid "None of the values have changed."
+msgstr ""
+
+#: retrigger/menus.py:444 retrigger/menus.py:663 retrigger/menus.py:782
+msgid "You are not authorized to interact with this."
+msgstr ""
+
+#: retrigger/menus.py:459
+msgid "Edit Trigger"
+msgstr ""
+
+#: retrigger/menus.py:472
+msgid "Delete Trigger"
+msgstr ""
+
+#: retrigger/menus.py:478
+msgid "Okay this trigger will not be deleted."
+msgstr ""
+
+#: retrigger/menus.py:490
+msgid "This trigger has been deleted."
+msgstr ""
+
+#: retrigger/menus.py:498
+msgid "Yes"
+msgstr ""
+
+#: retrigger/menus.py:500
+msgid "No"
+msgstr ""
+
+#: retrigger/menus.py:505
+msgid "Are you sure you want to delete trigger {name}?"
+msgstr ""
+
+#: retrigger/menus.py:597 retrigger/menus.py:631
+msgid "Pick a Trigger"
+msgstr ""
+
+#: retrigger/menus.py:700
+msgid "Pick a page"
+msgstr ""
+
+#: retrigger/retrigger.py:57
+#, docstring
+msgid "\n"
+"    Trigger bot events using regular expressions\n\n"
+"    See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"    "
+msgstr ""
+
+#: retrigger/retrigger.py:153
+msgid "You are not authorized to edit this trigger."
+msgstr ""
+
+#: retrigger/retrigger.py:164
+msgid "You cannot edit multi triggers response."
+msgstr ""
+
+#: retrigger/retrigger.py:174
+msgid "That trigger cannot be edited this way."
+msgstr ""
+
+#: retrigger/retrigger.py:184
+msgid "Trigger `{name}` doesn't exist."
+msgstr ""
+
+#: retrigger/retrigger.py:194
+msgid "{name} is already a trigger name."
+msgstr ""
+
+#: retrigger/retrigger.py:204
+msgid "Trigger `{name}` set."
+msgstr ""
+
+#: retrigger/retrigger.py:242
+#, docstring
+msgid "\n"
+"        Setup automatic triggers based on regular expressions\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:253
+#, docstring
+msgid "\n"
+"        Slash command toggling for retrigger\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:260
+#, docstring
+msgid "Toggle this cog to register slash commands"
+msgstr ""
+
+#: retrigger/retrigger.py:263
+msgid "enabled"
+msgstr ""
+
+#: retrigger/retrigger.py:263
+msgid "disabled"
+msgstr ""
+
+#: retrigger/retrigger.py:264
+msgid "Slash commands are {verb}."
+msgstr ""
+
+#: retrigger/retrigger.py:273
+#, docstring
+msgid "\n"
+"        Delete all triggers created by a specified user ID.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:286
+#, docstring
+msgid "\n"
+"        Set blocklist options for retrigger\n\n"
+"        blocklisting supports channels, users, or roles\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:299
+#, docstring
+msgid "\n"
+"        Set allowlist options for retrigger\n\n"
+"        allowlisting supports channels, users, or roles\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:312
+#, docstring
+msgid "\n"
+"        Set which events to record in the modlog.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:323
+#, docstring
+msgid "\n"
+"        Edit various settings in a set trigger.\n\n"
+"        Note: Only the server owner, Bot owner, or original\n"
+"        author can edit a saved trigger. Multi triggers\n"
+"        cannot be edited.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:337
+#, docstring
+msgid "\n"
+"        Show the current modlog settings for this server.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:352
+msgid "Bans"
+msgstr ""
+
+#: retrigger/retrigger.py:353
+msgid "Kicks"
+msgstr ""
+
+#: retrigger/retrigger.py:354
+msgid "Add Roles"
+msgstr ""
+
+#: retrigger/retrigger.py:355
+msgid "Remove Roles"
+msgstr ""
+
+#: retrigger/retrigger.py:356
+msgid "Filtered Messages"
+msgstr ""
+
+#: retrigger/retrigger.py:357 retrigger/triggerhandler.py:1036
+msgid "Channel"
+msgstr ""
+
+#: retrigger/retrigger.py:370
+#, docstring
+msgid "\n"
+"        Toggle custom ban messages in the modlog\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:380
+msgid "Custom ban events disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:384
+msgid "Custom ban events will now appear in the modlog if it's setup."
+msgstr ""
+
+#: retrigger/retrigger.py:393
+#, docstring
+msgid "\n"
+"        Toggle custom kick messages in the modlog\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:403
+msgid "Custom kick events disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:407
+msgid "Custom kick events will now appear in the modlog if it's setup."
+msgstr ""
+
+#: retrigger/retrigger.py:416
+#, docstring
+msgid "\n"
+"        Toggle custom filter messages in the modlog\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:425
+msgid "Custom filter events disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:429
+msgid "Custom filter events will now appear in the modlog if it's setup."
+msgstr ""
+
+#: retrigger/retrigger.py:438 retrigger/retrigger.py:460
+#, docstring
+msgid "\n"
+"        Toggle custom add role messages in the modlog\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:447
+msgid "Custom add role events disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:451
+msgid "Custom add role events will now appear in the modlog if it's setup."
+msgstr ""
+
+#: retrigger/retrigger.py:469
+msgid "Custom remove role events disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:473
+msgid "Custom remove role events will now appear in the modlog if it's setup."
+msgstr ""
+
+#: retrigger/retrigger.py:484
+#, docstring
+msgid "\n"
+"        Set the modlog channel for filtered words\n\n"
+"        `<channel>` The channel you would like filtered word notifications to go\n"
+"        Use `none` or `clear` to not show any modlogs\n"
+"        User `default` to use the built in modlog channel\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:505
+msgid "No modlog channel has been setup yet. Do `[p]modlogset modlog #channel` to setup the default modlog channel"
+msgstr ""
+
+#: retrigger/retrigger.py:515
+msgid "Channel \"{channel}\" not found."
+msgstr ""
+
+#: retrigger/retrigger.py:518
+msgid "Modlog set to {channel}"
+msgstr ""
+
+#: retrigger/retrigger.py:529
+#, docstring
+msgid "\n"
+"        Set cooldown options for retrigger\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<time>` is a time in seconds until the trigger will run again\n"
+"        set a time of 0 or less to remove the cooldown\n"
+"        `[style=guild]` must be either `guild`, `server`, `channel`, `user`, or `member`\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:544
+msgid "Style must be either `guild`, `server`, `channel`, `user`, or `member`."
+msgstr ""
+
+#: retrigger/retrigger.py:547
+msgid "Cooldown of {time}s per {style} set for Trigger `{name}`."
+msgstr ""
+
+#: retrigger/retrigger.py:556
+msgid "Cooldown for Trigger `{name}` reset."
+msgstr ""
+
+#: retrigger/retrigger.py:577
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to triggers allowlist\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[channel_user_role...]` is the channel, user or role to allowlist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:593
+msgid "You must supply 1 or more channels users or roles to be allowed"
+msgstr ""
+
+#: retrigger/retrigger.py:602
+msgid "Trigger {name} added `{list_type}` to its allowlist."
+msgstr ""
+
+#: retrigger/retrigger.py:619
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from triggers allowlist\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[channel_user_role...]` is the channel, user or role to remove from the allowlist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:636
+msgid "You must supply 1 or more channels users or roles to be removed from the allowlist."
+msgstr ""
+
+#: retrigger/retrigger.py:649
+msgid "Trigger {name} removed `{list_type}` from its allowlist."
+msgstr ""
+
+#: retrigger/retrigger.py:665
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to triggers blocklist\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[channel_user_role...]` is the channel, user or role to blocklist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:681
+msgid "You must supply 1 or more channels users or roles to be blocked."
+msgstr ""
+
+#: retrigger/retrigger.py:690
+msgid "Trigger {name} added `{list_type}` to its blocklist."
+msgstr ""
+
+#: retrigger/retrigger.py:706
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from triggers blocklist\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[channel_user_role...]` is the channel, user or role to remove from the blocklist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:723
+msgid "You must supply 1 or more channels users or roles to be removed from the blocklist."
+msgstr ""
+
+#: retrigger/retrigger.py:736
+msgid "Trigger {name} removed `{list_type}` from its blocklist."
+msgstr ""
+
+#: retrigger/retrigger.py:749
+#, docstring
+msgid "\n"
+"        Edit the regex of a saved trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<regex>` The new regex pattern to use.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:768
+msgid "Trigger {name} regex changed to ```bf\n"
+"{regex}\n"
+"```"
+msgstr ""
+
+#: retrigger/retrigger.py:779
+#, docstring
+msgid "\n"
+"        Toggle whether to use Optical Character Recognition to search for text within images.\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:796
+msgid "Trigger {name} OCR Search set to: {ocr_search}"
+msgstr ""
+
+#: retrigger/retrigger.py:807
+#, docstring
+msgid "\n"
+"        Toggle whether a trigger is considered NSFW.\n"
+"        This will prevent the trigger from activating in non-NSFW channels.\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:825
+msgid "Trigger {name} NSFW set to: {nsfw}"
+msgstr ""
+
+#: retrigger/retrigger.py:834
+#, docstring
+msgid "\n"
+"        Toggle whether to search message attachment filenames.\n\n"
+"        Note: This will append all attachments in a message to the message content. This **will not**\n"
+"        download and read file content using regex.\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:855
+msgid "Trigger {name} read filenames set to: {read_filenames}"
+msgstr ""
+
+#: retrigger/retrigger.py:868
+#, docstring
+msgid "\n"
+"        Set whether or not to reply to the triggered message\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[set_to]` `True` will reply with a notificaiton, `False` will reply without a notification,\n"
+"        leaving this blank will clear replies entirely.\n\n"
+"        Note: This is only availabe for Red 3.4.6/discord.py 1.6.0 or greater.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:890
+msgid "Trigger {name} replies set to: {set_to}"
+msgstr ""
+
+#: retrigger/retrigger.py:901
+#, docstring
+msgid "\n"
+"        Set whether or not to send the message with text-to-speech\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[set_to]` either `true` or `false` on whether to send the text\n"
+"        reply with text-to-speech enabled.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:921
+msgid "Trigger {name} text-to-speech set to: {set_to}"
+msgstr ""
+
+#: retrigger/retrigger.py:934
+#, docstring
+msgid "\n"
+"        Set whether or not this trigger can mention users\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[set_to]` either `true` or `false` on whether to allow this trigger\n"
+"        to actually ping the users in the message.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:954
+msgid "Trigger {name} user mentions set to: {set_to}"
+msgstr ""
+
+#: retrigger/retrigger.py:967
+#, docstring
+msgid "\n"
+"        Set whether or not to send this trigger can mention everyone\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[set_to]` either `true` or `false` on whether to allow this trigger\n"
+"        to actually ping everyone if the bot has correct permissions.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:993
+msgid "Trigger {name} everyone mentions set to: {set_to}"
+msgstr ""
+
+#: retrigger/retrigger.py:1006
+#, docstring
+msgid "\n"
+"        Set whether or not to send this trigger will allow role mentions\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `[set_to]` either `true` or `false` on whether to allow this trigger\n"
+"        to actually ping roles if the bot has correct permissions.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1032
+msgid "Trigger {name} role mentions set to: {set_to}"
+msgstr ""
+
+#: retrigger/retrigger.py:1043
+#, docstring
+msgid "\n"
+"        Toggle whether the bot will listen to edited messages as well as on_message for\n"
+"        the specified trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1068
+msgid "Trigger {name} check edits set to: {ignore_edits}"
+msgstr ""
+
+#: retrigger/retrigger.py:1079
+#, docstring
+msgid "\n"
+"        Edit the text of a saved trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<text>` The new text to respond with.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1108
+msgid "Trigger {name} text changed to `{text}`"
+msgstr ""
+
+#: retrigger/retrigger.py:1119
+#, docstring
+msgid "\n"
+"        Edit the chance a trigger will execute.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<chance>` The chance the trigger will execute in form of 1 in chance.\n\n"
+"        Set the `chance` to 0 to remove the chance and always perform the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1149
+msgid "Trigger {name} chance changed to `1 in {chance}`"
+msgstr ""
+
+#: retrigger/retrigger.py:1153
+msgid "Trigger {name} chance changed to always."
+msgstr ""
+
+#: retrigger/retrigger.py:1168
+#, docstring
+msgid "\n"
+"        Edit the delete_after parameter of a saved text trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<delete_after>` The time until the message is deleted must include units.\n"
+"        Example: `[p]retrigger edit deleteafter trigger 2 minutes`\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1195 retrigger/retrigger.py:1691
+msgid "`delete_after` must be greater than 1 second."
+msgstr ""
+
+#: retrigger/retrigger.py:1208
+msgid "Trigger {name} will now delete after `{time}` seconds."
+msgstr ""
+
+#: retrigger/retrigger.py:1219
+#, docstring
+msgid "\n"
+"        Toggle the trigger ignoring command messages entirely.\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1243
+msgid "Trigger {name} ignoring commands set to `{text}`"
+msgstr ""
+
+#: retrigger/retrigger.py:1256
+#, docstring
+msgid "\n"
+"        Edit the text of a saved trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<command>` The new command for the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1281
+msgid "`{command}` doesn't seem to be an available command."
+msgstr ""
+
+#: retrigger/retrigger.py:1294
+msgid "Trigger {name} command changed to `{command}`"
+msgstr ""
+
+#: retrigger/retrigger.py:1307
+#, docstring
+msgid "\n"
+"        Edit the added or removed roles of a saved trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<roles>` space separated list of roles or ID's to edit on the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1335 retrigger/retrigger.py:2382
+msgid "I can't assign roles higher than my own."
+msgstr ""
+
+#: retrigger/retrigger.py:1344 retrigger/retrigger.py:2387
+msgid "I can't assign roles higher than you are able to assign."
+msgstr ""
+
+#: retrigger/retrigger.py:1359
+msgid "Trigger {name} role edits changed to `{roles}`"
+msgstr ""
+
+#: retrigger/retrigger.py:1372
+#, docstring
+msgid "\n"
+"        Edit the emoji reactions of a saved trigger.\n\n"
+"        `<trigger>` is the name of the trigger.\n"
+"        `<emojis>` The new emojis to be used in the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1404
+msgid "Trigger {name} reactions changed to {emojis}"
+msgstr ""
+
+#: retrigger/retrigger.py:1418
+#, docstring
+msgid "\n"
+"        Enable a trigger\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1434
+msgid "Trigger {name} has been enabled."
+msgstr ""
+
+#: retrigger/retrigger.py:1443
+#, docstring
+msgid "\n"
+"        Disable a trigger\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1459
+msgid "Trigger {name} has been disabled."
+msgstr ""
+
+#: retrigger/retrigger.py:1468
+#, docstring
+msgid "\n"
+"        Set the timeout period for searching triggers\n\n"
+"        `<timeout>` is number of seconds until regex searching is kicked out.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1479
+msgid "Increasing this could cause the bot to become unstable or allow bad regex patterns to continue to exist causing slow downs and even fatal crashes on the bot. Do you wish to continue?"
+msgstr ""
+
+#: retrigger/retrigger.py:1490 retrigger/retrigger.py:1497
+msgid "Not changing regex timeout time."
+msgstr ""
+
+#: retrigger/retrigger.py:1500
+msgid "{timeout} seconds is too long, you may want to look at `{prefix}retrigger bypass`"
+msgstr ""
+
+#: retrigger/retrigger.py:1510
+msgid "Regex search timeout set to {timeout}"
+msgstr ""
+
+#: retrigger/retrigger.py:1515
+#, docstring
+msgid "\n"
+"        Bypass patterns being kicked from memory until reload\n\n"
+"        **Warning:** Enabling this can allow mods and admins to create triggers\n"
+"        that cause catastrophic backtracking which can lead to the bot crashing\n"
+"        unexpectedly. Only enable in servers where you trust the admins not to\n"
+"        mess with the bot.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1529
+msgid "Bypassing this could cause the bot to become unstable or allow bad regex patterns to continue to exist causing slow downs and even fatal crashes on the bot. Do you wish to continue?"
+msgstr ""
+
+#: retrigger/retrigger.py:1540 retrigger/retrigger.py:1546
+msgid "Not bypassing safe Regex search."
+msgstr ""
+
+#: retrigger/retrigger.py:1549
+msgid "Safe Regex search re-enabled."
+msgstr ""
+
+#: retrigger/retrigger.py:1556
+#, docstring
+msgid "\n"
+"        List information about triggers.\n\n"
+"        `[trigger]` if supplied provides information about named trigger.\n"
+"        ⏯️ will toggle the displayed triggers active setting\n"
+"        ❎ will toggle the displayed trigger to be not active\n"
+"        ✅ will toggle the displayed trigger to be active\n"
+"        🚮 will delete the displayed trigger\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1608
+#, docstring
+msgid "\n"
+"        Remove a specified trigger\n\n"
+"        `<trigger>` is the name of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1620
+msgid "Trigger `{trigger}` removed."
+msgstr ""
+
+#: retrigger/retrigger.py:1630
+#, docstring
+msgid "\n"
+"        Explain how to use retrigger\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1671
+#, docstring
+msgid "\n"
+"        Add a text response trigger\n\n"
+"        `<name>` name of the trigger.\n"
+"        `<regex>` the regex that will determine when to respond.\n"
+"        `[delete_after]` Optionally have the text autodelete must include units e.g. 2m.\n"
+"        `<text>` response of the trigger.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1715
+#, docstring
+msgid "\n"
+"        Add a random text response trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1729
+msgid "No responses supplied"
+msgstr ""
+
+#: retrigger/retrigger.py:1752
+#, docstring
+msgid "\n"
+"        Add a dm response trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `<text>` response of the trigger\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1788
+#, docstring
+msgid "\n"
+"        Add trigger to DM yourself\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `<text>` response of the trigger\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1825
+#, docstring
+msgid "\n"
+"        Add trigger to rename users\n\n"
+"        `<name>` name of the trigger.\n"
+"        `<regex>` the regex that will determine when to respond.\n"
+"        `<text>` new users nickanme.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1862
+#, docstring
+msgid "\n"
+"        Add an image/file response trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `image_url` optional image_url if none is provided the bot will ask to upload an image\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1881 retrigger/retrigger.py:1886
+#: retrigger/retrigger.py:1895 retrigger/retrigger.py:1982
+#: retrigger/retrigger.py:1991 retrigger/retrigger.py:2037
+#: retrigger/retrigger.py:2042 retrigger/retrigger.py:2051
+msgid "That is not a valid file link."
+msgstr ""
+
+#: retrigger/retrigger.py:1917
+#, docstring
+msgid "\n"
+"        Add a random image/file response trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:1960
+#, docstring
+msgid "\n"
+"        Add an image/file response with text trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `<text>` the triggered text response\n"
+"        `[image_url]` optional image_url if none is provided the bot will ask to upload an image\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2017
+#, docstring
+msgid "\n"
+"        Add an image to resize in response to a trigger\n"
+"        this will attempt to resize the image based on length of matching regex\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `[image_url]` optional image_url if none is provided the bot will ask to upload an image\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2073
+#, docstring
+msgid "\n"
+"        Add a trigger to ban users for saying specific things found with regex\n"
+"        This respects hierarchy so ensure the bot role is lower in the list\n"
+"        than mods and admin so they don't get banned by accident\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2109
+#, docstring
+msgid "\n"
+"        Add a trigger to kick users for saying specific things found with regex\n"
+"        This respects hierarchy so ensure the bot role is lower in the list\n"
+"        than mods and admin so they don't get kicked by accident\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2151
+#, docstring
+msgid "\n"
+"        Add a reaction trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `emojis` the emojis to react with when triggered separated by spaces\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2186
+#, docstring
+msgid "\n"
+"        Add a trigger to automatically publish content in news channels.\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2220
+#, docstring
+msgid "\n"
+"        Add a command trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `<command>` the command that will be triggered, do not add [p] prefix\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2236 retrigger/retrigger.py:2295
+msgid " doesn't seem to be an available command."
+msgstr ""
+
+#: retrigger/retrigger.py:2261
+#, docstring
+msgid "\n"
+"        Add a trigger for command as if you used the command\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `<command>` the command that will be triggered, do not add [p] prefix\n"
+"        **Warning:** This function can let other users run a command on your behalf,\n"
+"        use with caution.\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2326
+#, docstring
+msgid "\n"
+"        Add a trigger to delete a message\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2367
+#, docstring
+msgid "\n"
+"        Add a trigger to add a role\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `[role...]` the roles applied when the regex pattern matches space separated\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2418
+#, docstring
+msgid "\n"
+"        Add a trigger to remove a role\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `[role...]` the roles applied when the regex pattern matches space separated\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2433
+msgid "I can't remove roles higher than my own."
+msgstr ""
+
+#: retrigger/retrigger.py:2438
+msgid "I can't remove roles higher than you are able to remove."
+msgstr ""
+
+#: retrigger/retrigger.py:2468
+#, docstring
+msgid "\n"
+"        Add a multiple response trigger\n\n"
+"        `<name>` name of the trigger\n"
+"        `<regex>` the regex that will determine when to respond\n"
+"        `[multi_response...]` the list of actions the bot will perform\n\n"
+"        Multiple responses start with the name of the action which\n"
+"        must be one of the listed options below, followed by a `;`\n"
+"        if there is a followup response add a space for the next trigger response.\n"
+"        If you want to add or remove multiple roles those may be\n"
+"        followed up with additional `;` separations.\n"
+"        e.g. `[p]retrigger multi test \\btest\\b \"dm;You said a bad word!\"\n"
+"        filter \"remove_role;Regular Member\" add_role;Timeout`\n"
+"        Will attempt to DM the user, delete their message, remove their\n"
+"        `@Regular Member` role and add the `@Timeout` role simultaneously.\n\n"
+"        Available options:\n"
+"        dm\n"
+"        dmme\n"
+"        remove_role\n"
+"        add_role\n"
+"        ban\n"
+"        kick\n"
+"        text\n"
+"        filter or delete\n"
+"        react\n"
+"        rename\n"
+"        command\n\n"
+"        See https://regex101.com/ for help building a regex pattern.\n"
+"        See `[p]retrigger explain` or click the link below for more details.\n"
+"        "
+msgstr ""
+
+#: retrigger/retrigger.py:2508
+msgid "You have no actions provided for this trigger."
+msgstr ""
+
+#: retrigger/slash.py:90
+#, docstring
+msgid "Show retrigger's modlog settings for this server."
+msgstr ""
+
+#: retrigger/slash.py:96
+#, docstring
+msgid "Toggle custom ban messages in the modlog"
+msgstr ""
+
+#: retrigger/slash.py:102
+#, docstring
+msgid "Toggle custom kick messages in the modlog"
+msgstr ""
+
+#: retrigger/slash.py:108
+#, docstring
+msgid "Toggle custom filter messages in the modlog"
+msgstr ""
+
+#: retrigger/slash.py:114
+#, docstring
+msgid "Toggle custom add role messages in the modlog"
+msgstr ""
+
+#: retrigger/slash.py:120
+#, docstring
+msgid "Toggle custom remove role messages in the modlog"
+msgstr ""
+
+#: retrigger/slash.py:128
+#, docstring
+msgid "Set the modlog channel for filtered words"
+msgstr ""
+
+#: retrigger/slash.py:141
+#, docstring
+msgid "Add a channel, user, or role to a triggers allowlist"
+msgstr ""
+
+#: retrigger/slash.py:145 retrigger/slash.py:166 retrigger/slash.py:187
+#: retrigger/slash.py:209
+msgid "You must provide at least one of either channel, user, or role."
+msgstr ""
+
+#: retrigger/slash.py:162
+#, docstring
+msgid "Remove a channel, user, or role from a triggers allowlist"
+msgstr ""
+
+#: retrigger/slash.py:183
+#, docstring
+msgid "Add a channel, user, or role to a triggers blocklist"
+msgstr ""
+
+#: retrigger/slash.py:205
+#, docstring
+msgid "Remove a channel, user, or role from a triggers blocklist"
+msgstr ""
+
+#: retrigger/slash.py:225
+#, docstring
+msgid "Set cooldown options for ReTrigger"
+msgstr ""
+
+#: retrigger/slash.py:237
+#, docstring
+msgid "Edit the regex of a saved trigger."
+msgstr ""
+
+#: retrigger/slash.py:265
+#, docstring
+msgid "Toggle whether a trigger is considered age-restricted."
+msgstr ""
+
+#: retrigger/slash.py:276
+#, docstring
+msgid "Toggle whether to search message attachment filenames."
+msgstr ""
+
+#: retrigger/slash.py:291
+#, docstring
+msgid "Set whether or not to reply to the triggered message."
+msgstr ""
+
+#: retrigger/slash.py:302
+#, docstring
+msgid "Set whether or not to send the message with text-to-speech."
+msgstr ""
+
+#: retrigger/slash.py:314
+#, docstring
+msgid "Set whether or not this trigger can mention users"
+msgstr ""
+
+#: retrigger/slash.py:326
+#, docstring
+msgid "Set whether or not this trigger can mention everyone"
+msgstr ""
+
+#: retrigger/slash.py:337
+#, docstring
+msgid "Set whether or not this trigger can mention roles"
+msgstr ""
+
+#: retrigger/slash.py:347
+#, docstring
+msgid "Toggle whether to search message edits."
+msgstr ""
+
+#: retrigger/slash.py:357
+#, docstring
+msgid "Toggle whether a trigger will ignore commands."
+msgstr ""
+
+#: retrigger/slash.py:368
+#, docstring
+msgid "Edit the text of a saved trigger."
+msgstr ""
+
+#: retrigger/slash.py:379
+#, docstring
+msgid "Edit the chance a trigger will execute."
+msgstr ""
+
+#: retrigger/slash.py:390
+#, docstring
+msgid "Edit the command a trigger runs."
+msgstr ""
+
+#: retrigger/slash.py:401
+#, docstring
+msgid "Edit the added or removed role of a saved trigger."
+msgstr ""
+
+#: retrigger/slash.py:411
+#, docstring
+msgid "Edit the emoji reaction of a saved trigger."
+msgstr ""
+
+#: retrigger/slash.py:421
+#, docstring
+msgid "Enable a trigger"
+msgstr ""
+
+#: retrigger/slash.py:431
+#, docstring
+msgid "Disable a trigger"
+msgstr ""
+
+#: retrigger/slash.py:442
+#, docstring
+msgid "List information about a trigger"
+msgstr ""
+
+#: retrigger/slash.py:452
+#, docstring
+msgid "Remove a specified trigger"
+msgstr ""
+
+#: retrigger/slash.py:461
+#, docstring
+msgid "Explain how to use retrigger"
+msgstr ""
+
+#: retrigger/slash.py:474
+#, docstring
+msgid "Add a text response trigger"
+msgstr ""
+
+#: retrigger/slash.py:493
+#, docstring
+msgid "Add a dm response trigger"
+msgstr ""
+
+#: retrigger/slash.py:512
+#, docstring
+msgid "Add a trigger to dm yourself"
+msgstr ""
+
+#: retrigger/slash.py:532
+#, docstring
+msgid "Add a trigger to rename users"
+msgstr ""
+
+#: retrigger/slash.py:551
+#, docstring
+msgid "Add a trigger to ban users"
+msgstr ""
+
+#: retrigger/slash.py:570
+#, docstring
+msgid "Add a trigger to kick users"
+msgstr ""
+
+#: retrigger/slash.py:589
+#, docstring
+msgid "Add a command trigger"
+msgstr ""
+
+#: retrigger/slash.py:609
+#, docstring
+msgid "Add a trigger to filter messages"
+msgstr ""
+
+#: retrigger/slash.py:625
+#, docstring
+msgid "Add a trigger to add a role"
+msgstr ""
+
+#: retrigger/slash.py:641
+#, docstring
+msgid "Add a trigger to remove a role"
+msgstr ""
+
+#: retrigger/slash.py:663
+msgid "You are not allowed to run this command here."
+msgstr ""
+
+#: retrigger/slash.py:668
+msgid "This command is not available outside of a guild."
+msgstr ""
+
+#: retrigger/slash.py:682
+msgid "Commands are not allowed in this channel or guild."
+msgstr ""
+
+#: retrigger/triggerhandler.py:137 retrigger/triggerhandler.py:155
+msgid "Upload an image for me to use! Type `exit` to cancel."
+msgstr ""
+
+#: retrigger/triggerhandler.py:147
+msgid "Image adding timed out."
+msgstr ""
+
+#: retrigger/triggerhandler.py:150
+msgid "Image adding cancelled."
+msgstr ""
+
+#: retrigger/triggerhandler.py:187
+msgid "Please enter your desired phrase to be used for this trigger.Type `exit` to stop adding responses."
+msgstr ""
+
+#: retrigger/triggerhandler.py:288
+msgid "I don't have permission to read channel history or cannot find the message."
+msgstr ""
+
+#: retrigger/triggerhandler.py:498
+msgid "Trigger response: {trigger}"
+msgstr ""
+
+#: retrigger/triggerhandler.py:811
+msgid "Added Role"
+msgstr ""
+
+#: retrigger/triggerhandler.py:836
+msgid "Removed Role"
+msgstr ""
+
+#: retrigger/triggerhandler.py:855
+msgid "Kicked"
+msgstr ""
+
+#: retrigger/triggerhandler.py:874
+msgid "Banned"
+msgstr ""
+
+#: retrigger/triggerhandler.py:929
+msgid "Deleted Message"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1037
+msgid "Trigger Name"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1039
+msgid "Found Triggers"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1040
+msgid "Trigger author"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1043
+msgid "Attachments"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1044
+msgid "User ID: "
+msgstr ""
+
+#: retrigger/triggerhandler.py:1050
+msgid "Channel: {channel}\n"
+"Trigger Name: {trigger}\n"
+"Trigger author: {t_author}\n"
+"Found Triggers: {found_triggers}\n"
+msgstr ""
+
+#: retrigger/triggerhandler.py:1097 retrigger/triggerhandler.py:1106
+msgid "Error deleting saved image in {guild}"
+msgstr ""
+

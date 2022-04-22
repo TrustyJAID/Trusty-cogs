@@ -1,0 +1,279 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: trusty-cogs\n"
+"POT-Creation-Date: 2022-04-18 21:23+0000\n"
+"PO-Revision-Date: 2022-04-22 20:47\n"
+"Last-Translator: \n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: trusty-cogs\n"
+"X-Crowdin-Project-ID: 510866\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /dpy-2.0/cleverbot/locales/messages.pot\n"
+"X-Crowdin-File-ID: 578\n"
+"Language: sv_SE\n"
+
+#: cleverbot/api.py:109
+msgid "The owner needs to set the credentials first.\n"
+"See: [p]cleverbotset apikey"
+msgstr ""
+
+#: cleverbot/api.py:116
+msgid "The token that has been set is not valid.\n"
+"See: [p]cleverbotset"
+msgstr ""
+
+#: cleverbot/api.py:119
+msgid "You have ran out of requests for this month. The free tier has a 5000 requests a month limit."
+msgstr ""
+
+#: cleverbot/cleverbot.py:18
+#, docstring
+msgid "\n"
+"    Cleverbot rewritten for V3 from\n"
+"    https://github.com/Twentysix26/26-Cogs/tree/master/cleverbot\n\n"
+"    "
+msgstr ""
+
+#: cleverbot/cleverbot.py:69
+#, docstring
+msgid "Talk with cleverbot"
+msgstr ""
+
+#: cleverbot/cleverbot.py:75
+#, docstring
+msgid "\n"
+"        Settings for cleverbot\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:83
+#, docstring
+msgid "\n"
+"        Blacklist settings for cleverbot\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:91
+#, docstring
+msgid "\n"
+"        Whitelist settings for cleverbot\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:101
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to cleverbots whitelist\n\n"
+"        `[channel_user_role...]` is the channel, user or role to whitelist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:110
+msgid "You must supply 1 or more channels users or roles to be whitelisted."
+msgstr ""
+
+#: cleverbot/cleverbot.py:116
+msgid "`{list_type}` added to the whitelist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:125
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from cleverbots whitelist\n\n"
+"        `[channel_user_role...]` is the channel, user or role to remove from the whitelist\n"
+"        (You can supply more than one of any at a time)\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:133
+msgid "You must supply 1 or more channels users or roles to be removed from the whitelist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:141
+msgid "`{list_type}` removed from the whitelist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:148
+#, docstring
+msgid "\n"
+"        Show what's currently in cleverbots whitelist\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:151
+msgid "Cleverbot allowlist for {guild}:\n"
+msgstr ""
+
+#: cleverbot/cleverbot.py:172
+#, docstring
+msgid "\n"
+"        Add a channel, user, or role to cleverbots blacklist\n\n"
+"        `[channel_user_role...]` is the channel, user or role to blacklist\n"
+"        (You can supply more than one of any at a time)\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:180
+msgid "You must supply 1 or more channels users or roles to be blacklisted."
+msgstr ""
+
+#: cleverbot/cleverbot.py:186
+msgid "`{list_type}` added to the blacklist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:195
+#, docstring
+msgid "\n"
+"        Remove a channel, user, or role from cleverbots blacklist\n\n"
+"        `[channel_user_role...]` is the channel, user or role to remove from the blacklist\n"
+"        (You can supply more than one of any at a time)\n\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:204
+msgid "You must supply 1 or more channels users or roles to remove from the blacklist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:212
+msgid "`{list_type}` removed from the blacklist."
+msgstr ""
+
+#: cleverbot/cleverbot.py:219
+#, docstring
+msgid "\n"
+"        Show what's currently in cleverbots blacklist\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:222
+msgid "Cleverbot blocklist for {guild}:\n"
+msgstr ""
+
+#: cleverbot/cleverbot.py:244
+#, docstring
+msgid "\n"
+"        Set the response tweaks from cleverbot\n\n"
+"        `<tweak1>` a number from 0-100 varies replies from sensible to wacky\n"
+"        `<tweak2>` a number from 0-100 varies replies from shy to talkative\n"
+"        `<tweak3>` a number from 0-100 varies replies from self-centered to attentive\n\n"
+"        Setting any tweak to -1 will default to the bots global tweaks.\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:262
+#, docstring
+msgid "\n"
+"        Show the current cleverbot tweaks in this server\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:273
+#, docstring
+msgid "\n"
+"        Set the response tweaks from cleverbot\n\n"
+"        `<tweak1>` a number from 0-100 varies replies from sensible to wacky\n"
+"        `<tweak2>` a number from 0-100 varies replies from shy to talkative\n"
+"        `<tweak3>` a number from 0-100 varies replies from self-centered to attentive\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:290
+#, docstring
+msgid "Toggles reply when the bot is mentioned"
+msgstr ""
+
+#: cleverbot/cleverbot.py:294
+msgid "I will reply when I am mentioned."
+msgstr ""
+
+#: cleverbot/cleverbot.py:297
+msgid "I won't reply when I am mentioned anymore."
+msgstr ""
+
+#: cleverbot/cleverbot.py:303
+#, docstring
+msgid "Toggles mention on reply"
+msgstr ""
+
+#: cleverbot/cleverbot.py:307
+msgid "I will mention on reply."
+msgstr ""
+
+#: cleverbot/cleverbot.py:310
+msgid "I won't mention on reply."
+msgstr ""
+
+#: cleverbot/cleverbot.py:316
+#, docstring
+msgid "Toggles reply messages\n\n"
+"        Note: This is only available for Red 3.4.6 and discord.py 1.6.0\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:323
+msgid "I will use replies in cleverbot responses."
+msgstr ""
+
+#: cleverbot/cleverbot.py:326
+msgid "I won't use replies on cleverbot responses anymore."
+msgstr ""
+
+#: cleverbot/cleverbot.py:331
+#, docstring
+msgid "Toggles reply in DM"
+msgstr ""
+
+#: cleverbot/cleverbot.py:334
+msgid "I will reply directly to DM's."
+msgstr ""
+
+#: cleverbot/cleverbot.py:337
+msgid "I won't reply directly to DM's."
+msgstr ""
+
+#: cleverbot/cleverbot.py:345
+#, docstring
+msgid "\n"
+"        Toggles channel for automatic replies\n\n"
+"        do `[p]cleverbot channel` after a channel is set to disable.\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:357
+msgid "I will automaticall reply to all messages in {channel}"
+msgstr ""
+
+#: cleverbot/cleverbot.py:363
+msgid "Automatic replies turned off."
+msgstr ""
+
+#: cleverbot/cleverbot.py:368
+#, docstring
+msgid "\n"
+"        Sets token to be used with cleverbot.com\n"
+"        You can get it from https://www.cleverbot.com/api/\n"
+"        Use this command in direct message to keep your\n"
+"        token secret\n"
+"        "
+msgstr ""
+
+#: cleverbot/cleverbot.py:375 cleverbot/cleverbot.py:392
+msgid "Credentials set."
+msgstr ""
+
+#: cleverbot/cleverbot.py:384
+#, docstring
+msgid "\n"
+"        Sets token to be used with cleverbot.io\n"
+"        You can get it from https://www.cleverbot.io/\n"
+"        Use this command in direct message to keep your\n"
+"        token secret\n"
+"        "
+msgstr ""
+
