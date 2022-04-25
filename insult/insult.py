@@ -222,7 +222,6 @@ insults: List[str] = [
     _("Brains aren’t everything. In fact, in your case they’re nothing."),
     _("If I had a face like yours I’d sue my parents."),
     _("Don’t think, it might sprain your brain."),
-    _("Fellows like you don’t grow from trees, they swing from them."),
     _("Are you always so stupid or is today a special occasion?"),
     _("You are the living proof that man can live without a brain."),
     _("I don’t know what it is that makes you so stupid but it really works."),
