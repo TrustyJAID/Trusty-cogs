@@ -145,6 +145,23 @@ class HockeySlash(MixinMeta):
         ctx = await interaction.client.get_context(interaction)
         await self.schedule(ctx, teams_and_date=teams_and_date)
 
+    @app_commands.command(name="recap")
+    async def recap_slash(
+        self,
+        interaction: discord.Interaction,
+        team: Optional[str],
+        date: Optional[app_commands.Transform[str, DateTransformer]],
+    ):
+        """Gets upcoming NHL games for the current season as a list"""
+
+        teams_and_date = {}
+        if team:
+            teams_and_date["team"] = [team]
+        if date:
+            teams_and_date["date"] = date
+        ctx = await interaction.client.get_context(interaction)
+        await self.recap(ctx, teams_and_date=teams_and_date)
+
     @app_commands.command(name="player")
     @app_commands.describe(player="The name of the player", year="YYYY or YYYYYYYY formatted date")
     async def player_slash(

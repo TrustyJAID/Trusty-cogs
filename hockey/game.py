@@ -230,6 +230,7 @@ class Game:
         self.game_type = kwargs.get("game_type")
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
+        self._recap_url: Optional[str] = kwargs.get("recap_url", None)
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -243,6 +244,10 @@ class Game:
     @property
     def away_goals(self):
         return [g for g in self.goals if g.team_name == self.away_team]
+
+    @property
+    def recap_url(self):
+        return self._recap_url
 
     @property
     def timestamp(self) -> int:
@@ -318,6 +323,46 @@ class Game:
                     log.error("Error grabbing game data:", exc_info=True)
                     continue
         return return_games_list
+
+    @staticmethod
+    async def get_game_content(
+        game_id: int, session: Optional[aiohttp.ClientSession] = None
+    ) -> dict:
+        data = {}
+        if session is None:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(CONTENT_URL.format(game_id)) as resp:
+                        data = await resp.json()
+            except Exception:
+                log.exception("error pulling game content")
+                pass
+        else:
+            try:
+                async with session.get(CONTENT_URL.format(game_id)) as resp:
+                    data = await resp.json()
+            except Exception:
+                log.exception("error pulling game content")
+                pass
+        return data
+
+    @staticmethod
+    async def get_game_recap_from_content(content: dict) -> Optional[str]:
+        recap_url = None
+        for _item in (
+            content.get("editorial", {"recap": {}}).get("recap", {"items": []}).get("items", [])
+        ):
+            for _playback in _item["media"]["playbacks"]:
+                if _playback["name"] == "FLASH_1800K_896x504":
+                    recap_url = _playback["url"]
+        return recap_url
+
+    @staticmethod
+    async def get_game_recap(
+        game_id: int, session: Optional[aiohttp.ClientSession] = None
+    ) -> Optional[str]:
+        content = await Game.get_game_content(game_id)
+        return await Game.get_game_recap_from_content(content)
 
     @staticmethod
     async def get_games_list(
@@ -519,6 +564,8 @@ class Game:
                     em.add_field(
                         name=_("{team} Shootout").format(team=self.away_team), value=away_msg
                     )
+                if self.recap_url is not None:
+                    em.description = f"[Recap]({self.recap_url})"
             if self.first_star is not None:
                 stars = f"⭐ {self.first_star}\n⭐⭐ {self.second_star}\n⭐⭐⭐ {self.third_star}"
                 em.add_field(name=_("Stars of the game"), value=stars, inline=False)
@@ -576,6 +623,8 @@ class Game:
         em.set_author(name=title, url=home_url, icon_url=self.home_logo)
         em.set_thumbnail(url=self.home_logo)
         em.set_footer(text=_("Game start "), icon_url=self.away_logo)
+        if self.recap_url is not None:
+            em.description = f"[Recap]({self.recap_url})"
         return em
 
     async def game_state_text(self) -> str:
@@ -1063,14 +1112,9 @@ class Game:
                 dt = datetime.strptime(play["about"]["dateTime"], "%Y-%m-%dT%H:%M:%SZ")
                 dt = dt.replace(tzinfo=timezone.utc)
                 period_starts[play["about"]["ordinalNum"]] = dt
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(CONTENT_URL.format(game_id)) as resp:
-                    content = await resp.json()
-            # log.debug(CONTENT_URL.format(game_id))
-        except Exception:
-            log.debug("Error getting content")
-            content = {}
+
+        content = await Game.get_game_content(game_id)
+        recap_url = await Game.get_game_recap_from_content(content)
         goals = [
             await Goal.from_json(goal, players, content)
             for goal in event
@@ -1125,4 +1169,5 @@ class Game:
             link=link,
             game_type=game_type,
             season=season,
+            recap_url=recap_url,
         )

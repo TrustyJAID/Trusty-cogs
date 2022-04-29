@@ -94,6 +94,15 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def recap(
+        self,
+        ctx: Union[commands.Context, discord.Interaction],
+        *,
+        teams_and_date: Optional[TeamDateFinder] = {},
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def player_id_lookup(self, name: str) -> None:
         raise NotImplementedError()
 

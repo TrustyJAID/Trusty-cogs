@@ -25,7 +25,7 @@ PICKEMS_MESSAGE = _(
     "  Vote for who you think will win!  You get one point for each correct prediction. "
     "Votes are weighted based on total number of votes you have made. So the more "
     "you play and guess correctly the higher you will be on the leaderboard.**\n\n"
-    "- Click the reaction for the team you think will win the day's match-up.\n"
+    "- Click the button for the team you think will win the day's match-up.\n"
     "{guild_message}"
 )
 

@@ -294,6 +294,36 @@ class HockeyCommands(MixinMeta):
             timeout=180,
         ).start(ctx=ctx)
 
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    async def recap(
+        self,
+        ctx: commands.Context,
+        *,
+        teams_and_date: Optional[TeamDateFinder] = {},
+    ) -> None:
+        """
+        Gets NHL games and their game recap links
+
+        If team is provided it will grab that teams schedule
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        if isinstance(ctx, discord.Interaction):
+            await ctx.response.defer()
+            if teams_and_date:
+                teams_and_date = await TeamDateFinder().convert(ctx, teams_and_date)
+        await GamesMenu(
+            source=ScheduleList(**teams_and_date, session=self.session, get_recap=True),
+            cog=self,
+            delete_message_after=False,
+            clear_reactions_after=True,
+            timeout=180,
+        ).start(ctx=ctx)
+
     @hockey_commands.command(hidden=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def season(
