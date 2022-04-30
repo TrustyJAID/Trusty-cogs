@@ -140,12 +140,12 @@ class Runescape(commands.Cog):
                 for username, activities in self.metrics.items():
                     metrics[username] = activities.to_json()
 
-    @commands.group(name="runescape", aliases=["rs"])
+    @commands.hybrid_group(name="runescape", aliases=["rs"])
     async def runescape(self, ctx: commands.Context):
         """Search for a user account or profile"""
         pass
 
-    @commands.group(name="osrs")
+    @runescape.group(name="osrs")
     async def osrs(self, ctx: commands.Context) -> None:
         """Search for OSRS highscores"""
         pass
@@ -218,8 +218,7 @@ class Runescape(commands.Cog):
         if not details:
             return await ctx.send("I can't find username `{}`".format(runescape_name))
         msg = await self.osrs_stats_page(details, runescape_name)
-        for page in pagify(msg):
-            await ctx.send(box(page, lang="css"))
+        await ctx.maybe_send_embed(box(msg, lang="css"))
 
     @osrs.command(name="set")
     async def osrs_set(
