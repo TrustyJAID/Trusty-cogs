@@ -365,7 +365,7 @@ class BaseMenu(discord.ui.View):
         self.ctx = ctx
         self.bot = self.cog.bot
         # await self.source._prepare_once()
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -376,26 +376,16 @@ class BaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
         self.ctx = ctx
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
         page = await self._source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            if not ctx.response.is_done():
-                await ctx.response.defer()
-            self.message = await ctx.followup.send(**kwargs, view=self)
-            self.author = ctx.user
-        else:
-            self.message = await channel.send(**kwargs, view=self)
-            self.author = ctx.author
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
@@ -431,7 +421,10 @@ class BaseMenu(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id not in (*self.bot.owner_ids, self.author.id):
+        if interaction.user.id not in (
+            *interaction.client.owner_ids,
+            getattr(self.author, "id", None),
+        ):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
             )
