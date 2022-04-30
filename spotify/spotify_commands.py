@@ -1608,7 +1608,11 @@ class SpotifyCommands(SpotifyMixin):
                 new_view = SpotifyDeviceView(ctx)
                 options = []
                 for device in devices[:25]:
-                    options.append(discord.SelectOption(label=device.name[:25], value=device.id))
+                    options.append(
+                        discord.SelectOption(
+                            label=device.name[:100], description=str(device.type), value=device.id
+                        )
+                    )
                 select_view = SpotifySelectDevice(options, user_token, self._sender)
                 new_view.add_item(select_view)
                 msg = _("Pick the device you want to transfer playback to")
