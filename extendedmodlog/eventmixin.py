@@ -181,6 +181,19 @@ class EventMixin:
         can_x = _("**See:** {can_see}\n**Run:** {can_run}").format(
             can_run=can_run, can_see=can_see
         )
+        parent = " ".join(c for c in ctx.invoked_parents)
+        if ctx.interaction:
+            parents = []
+            com = ctx.command
+            while com.parent is not None:
+                parents.append(com.parent.name)
+                com = com.parent
+            parent = " ".join(c for c in parents)
+        kwargs = " ".join(str(v) for v in ctx.kwargs.values() if v is not None)
+        args = " ".join(
+            str(v) for v in ctx.args if v and not isinstance(v, (commands.Cog, commands.Context))
+        )
+        com_str = f"{ctx.clean_prefix}{parent} {ctx.invoked_with} {args} {kwargs}"
         try:
             privs = ctx.command.requires.privilege_level
             user_perms = ctx.command.requires.user_perms
@@ -217,7 +230,7 @@ class EventMixin:
 
         if embed_links:
             embed = discord.Embed(
-                description=f"{ctx.author.mention} {message.content}",
+                description=f"{ctx.author.mention} {com_str}",
                 colour=await self.get_event_colour(guild, "commands_used"),
                 timestamp=time,
             )
@@ -240,7 +253,7 @@ class EventMixin:
                 author=message.author,
                 a_id=message.author.id,
                 channel=message.channel.mention,
-                com=message.content,
+                com=com_str,
             )
             await channel.send(infomessage[:2000])
 
