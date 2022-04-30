@@ -21,6 +21,7 @@ from .converters import (
     MultiResponse,
     Trigger,
     TriggerExists,
+    TriggerResponse,
     ValidEmoji,
     ValidRegex,
 )
@@ -1695,7 +1696,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["text"],
+            [TriggerResponse.text],
             author,
             text=text,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1733,7 +1734,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["randtext"],
+            [TriggerResponse.randtext],
             author,
             text=text,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1767,7 +1768,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["dm"],
+            [TriggerResponse.dm],
             author,
             text=text,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1803,7 +1804,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["dmme"],
+            [TriggerResponse.dmme],
             author,
             text=text,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1840,7 +1841,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["rename"],
+            [TriggerResponse.rename],
             author,
             text=text,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1897,7 +1898,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["image"],
+            [TriggerResponse.image],
             author,
             image=filename,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1933,7 +1934,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["randimage"],
+            [TriggerResponse.randimage],
             author,
             image=filename,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -1993,7 +1994,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["image"],
+            [TriggerResponse.image],
             author,
             image=filename,
             text=text,
@@ -2053,7 +2054,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["resize"],
+            [TriggerResponse.resize],
             author,
             image=filename,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2089,7 +2090,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["ban"],
+            [TriggerResponse.ban],
             author,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
             check_edits=True,
@@ -2125,7 +2126,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["kick"],
+            [TriggerResponse.kick],
             author,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
             check_edits=True,
@@ -2166,7 +2167,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["react"],
+            [TriggerResponse.react],
             author,
             text=emojis,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2200,7 +2201,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["publish"],
+            [TriggerResponse.publish],
             author,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
         )
@@ -2240,7 +2241,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["command"],
+            [TriggerResponse.command],
             author,
             text=command,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2299,7 +2300,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["mock"],
+            [TriggerResponse.mock],
             author,
             text=command,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2340,7 +2341,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["delete"],
+            [TriggerResponse.delete],
             author,
             read_filenames=check_filenames,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2392,7 +2393,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["add_role"],
+            [TriggerResponse.add_role],
             author,
             text=role_ids,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
@@ -2443,7 +2444,7 @@ class ReTrigger(
         new_trigger = Trigger(
             name,
             regex,
-            ["remove_role"],
+            [TriggerResponse.remove_role],
             author,
             text=role_ids,
             created_at=ctx.message.id if isinstance(ctx, commands.Context) else ctx.id,
