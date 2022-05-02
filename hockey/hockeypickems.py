@@ -342,11 +342,7 @@ class HockeyPickems(MixinMeta):
         timestamp = int(day.replace(tzinfo=None).timestamp())
         message = await channel.send(_("Pickems <t:{date}:D>").format(date=timestamp))
         name = _("Pickems-{month}-{day}").format(month=day.month, day=day.day)
-        auto_archive_duration = 1440
-        if "THREE_DAY_THREAD_ARCHIVE" in guild.features:
-            auto_archive_duration = 4320
-        if "SEVEN_DAY_THREAD_ARCHIVE" in guild.features:
-            auto_archive_duration = 10080
+        auto_archive_duration = 10080
 
         try:
             new_chn = await channel.create_thread(
