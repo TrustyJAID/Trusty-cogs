@@ -121,7 +121,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Remove your authorization to the destiny API on the bot
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
         msg = _("Your authorization has been reset.")
         await ctx.send(msg)
@@ -146,7 +149,10 @@ class Destiny(DestinyAPI, commands.Cog):
         using `details`, `true`, or `stats` will show the weapons stat bars
         using `lore` here will instead display the weapons lore card instead if it exists.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         show_lore = True if details_or_lore is False else False
         if search.startswith("lore "):
             search = search.replace("lore ", "")
@@ -279,7 +285,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Get your Steam ID to give people to join your in-game fireteam
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         bungie_id = await self.config.user(ctx.author).oauth.membership_id()
@@ -305,7 +314,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Display basic information about the clan set in this server
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         if clan_id:
@@ -385,7 +397,10 @@ class Destiny(DestinyAPI, commands.Cog):
         example link: `https://www.bungie.net/en/ClanV2?groupid=1234567`
         the numbers after `groupid=` is the clan ID.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         clan_re = re.compile(r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I)
@@ -452,7 +467,10 @@ class Destiny(DestinyAPI, commands.Cog):
         Clan admin can further approve specified clan members
         by reacting to the resulting message.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
@@ -508,7 +526,10 @@ class Destiny(DestinyAPI, commands.Cog):
         `[output_format]` if `csv` is provided this will upload a csv file of
         the clan roster instead of displaying the output.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
@@ -638,7 +659,10 @@ class Destiny(DestinyAPI, commands.Cog):
         Display a menu of your basic character's info
         `[user]` A member on the server who has setup their account on this bot.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx, user):
             return
         if not user:
@@ -752,7 +776,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Find Destiny Lore
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         try:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
@@ -814,7 +841,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Display Xûr's current location
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         try:
@@ -867,7 +897,10 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "2190858386")
@@ -938,9 +971,10 @@ class Destiny(DestinyAPI, commands.Cog):
             description=f"{location}\n{description}\n"
             + _("Next Refresh {date}").format(date=date_str),
         )
-        embed.set_thumbnail(
-            url=IMAGE_URL + vendor_def["displayProperties"]["largeTransparentIcon"]
-        )
+        if "largeTransparentIcon" in vendor_def["displayProperties"]:
+            embed.set_thumbnail(
+                url=IMAGE_URL + vendor_def["displayProperties"]["largeTransparentIcon"]
+            )
         # embed.set_author(name=_("Xûr's current wares"))
         # location = xur_def["locations"][0]["destinationHash"]
         # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
@@ -1075,7 +1109,10 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
 
@@ -1091,7 +1128,10 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "2255782930")
@@ -1106,7 +1146,10 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "672118013")
@@ -1121,7 +1164,10 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "350061650")
@@ -1136,10 +1182,52 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "765357505")
+
+    @destiny.command(name="vendor")
+    @commands.bot_has_permissions(embed_links=True)
+    async def vendor(
+        self,
+        ctx: commands.Context,
+        vendor: str,
+        character_class: Optional[DestinyClassType] = None,
+    ) -> None:
+        """
+        Display any vendors wares.
+
+        `<vendor>` - The vendor whose inventory you want to see.
+        """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
+        if not await self.has_oauth(ctx):
+            return
+        if not vendor.isdigit():
+            possible_options = await self.search_definition("DestinyVendorDefinition", vendor)
+            vendor = list(possible_options.keys())[0]
+        await self.vendor_menus(ctx, character_class, vendor)
+
+    @vendor.autocomplete("vendor")
+    async def find_vendor(self, interaction: discord.Interaction, current: str):
+
+        possible_options = await self.search_definition("DestinyVendorDefinition", current)
+        choices = []
+        for key, choice in possible_options.items():
+            name = choice["displayProperties"]["name"]
+            if not name:
+                continue
+            if not choice["enabled"]:
+                continue
+            if current.lower() in name.lower():
+                choices.append(app_commands.Choice(name=name, value=key))
+        return choices[:25]
 
     @destiny.command()
     @commands.bot_has_permissions(
@@ -1154,7 +1242,10 @@ class Destiny(DestinyAPI, commands.Cog):
         `[full=False]` Display full information about weapons equipped.
         `[user]` A member on the server who has setup their account on this bot.
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not user:
             user = ctx.author
         if not await self.has_oauth(ctx, user):
@@ -1345,7 +1436,10 @@ class Destiny(DestinyAPI, commands.Cog):
         reckoning, menagerie, vexoffensive, nightmarehunt, elimination, momentum,
         dungeon, sundial, trialsofosiris
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         if not activity.isdigit():
@@ -1681,7 +1775,10 @@ class Destiny(DestinyAPI, commands.Cog):
         `<stat_type>` The type of stats to display, available options are:
         `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         user = ctx.author
@@ -1715,7 +1812,10 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         See the current manifest version and optionally re-download it
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not d1:
             try:
                 headers = await self.build_headers()
@@ -1785,7 +1885,10 @@ class Destiny(DestinyAPI, commands.Cog):
         Set the redirect URL to https://localhost/
         NOTE: It is strongly recommended to use this command in DM
         """
-        await ctx.defer()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         await self.config.api_token.api_key.set(api_key)
         await self.config.api_token.client_id.set(client_id)
         await self.config.api_token.client_secret.set(client_secret)
