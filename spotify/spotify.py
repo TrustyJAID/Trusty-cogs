@@ -37,8 +37,7 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 class Spotify(
     SpotifyCommands,
     SpotifySlash,
-    discord.app_commands.Group,
-    commands.Cog,
+    commands.GroupCog,
     metaclass=CompositeMetaClass,
 ):
     """
