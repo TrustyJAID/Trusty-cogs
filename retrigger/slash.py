@@ -80,10 +80,6 @@ class ReTriggerSlash(ReTriggerMixin):
         name="edit", description="Edit various settings in a set trigger."
     )
 
-    def __init__(self, *args):
-        super().__init__()
-        self.config: Config
-
     @modlog.command(name="settings")
     @app_commands.checks.has_permissions(manage_channels=True)
     async def modlog_settings_slash(self, interaction: discord.Interaction):

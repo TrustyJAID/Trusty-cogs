@@ -64,24 +64,6 @@ class TriggerHandler(ReTriggerMixin):
     Handles all processing of triggers
     """
 
-    config: Config
-    bot: Red
-    re_pool: Pool
-    triggers: Dict[int, List[Trigger]]
-    trigger_timeout: int
-    ALLOW_RESIZE: bool = ALLOW_RESIZE
-    ALLOW_OCR: bool = ALLOW_OCR
-
-    def __init__(self, *args):
-        super().__init__()
-        self.config: Config
-        self.bot: Red
-        self.re_pool: Pool
-        self.triggers: Dict[int, Dict[str, Trigger]]
-        self.trigger_timeout: int
-        self.ALLOW_RESIZE = ALLOW_RESIZE
-        self.ALLOW_OCR = ALLOW_OCR
-
     async def remove_trigger_from_cache(self, guild_id: int, trigger: Trigger) -> None:
         try:
             del self.triggers[guild_id][trigger.name]

@@ -48,11 +48,12 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 
 @cog_i18n(_)
+@discord.app_commands.default_permissions(manage_messages=True)
+@discord.app_commands.guild_only()
 class ReTrigger(
     TriggerHandler,
     ReTriggerSlash,
-    discord.app_commands.Group,
-    commands.Cog,
+    commands.GroupCog,
     metaclass=CompositeMetaClass,
 ):
     """
