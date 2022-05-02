@@ -201,13 +201,14 @@ class BaseMenu(discord.ui.View):
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
+
         if hasattr(self.source, "select_options"):
-            self.select_view = DestinySelect(self.source.select_options[:25])
+            self.select_view = self._get_select_menu()
             self.add_item(self.select_view)
         self.author = None
 
@@ -222,6 +223,27 @@ class BaseMenu(discord.ui.View):
         self.ctx = ctx
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx)
+
+    def _get_select_menu(self) -> Optional[DestinySelect]:
+        # handles modifying the select menu if more than 25 pages are provided
+        # this will show the previous 12 and next 13 pages in the select menu
+        # based on the currently displayed page. Once you reach close to the max
+        # pages it will display the last 25 pages.
+        if not hasattr(self.source, "select_options"):
+            return None
+        if len(self.source.select_options) > 25:
+            minus_diff = None
+            plus_diff = 25
+            if 12 < self.current_page < len(self.source.select_options) - 25:
+                minus_diff = self.current_page - 12
+                plus_diff = self.current_page + 13
+            elif self.current_page >= len(self.source.select_options) - 25:
+                minus_diff = len(self.source.select_options) - 25
+                plus_diff = None
+            options = self.source.select_options[minus_diff:plus_diff]
+        else:
+            options = self.source.select_options[:25]
+        return DestinySelect(options)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
@@ -249,9 +271,7 @@ class BaseMenu(discord.ui.View):
         page = await self._source.get_page(page_number)
         if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
-            self.select_view = DestinySelect(
-                self.source.select_options[page_number - 12 : page_number + 13]
-            )
+            self.select_view = self._get_select_menu()
             self.add_item(self.select_view)
         self.current_page = self.source.pages.index(page)
         kwargs = await self._get_kwargs_from_page(page)
