@@ -58,10 +58,6 @@ class ReTrigger(
 ):
     """
     Trigger bot events using regular expressions
-
-    See https://regex101.com/ for help building a regex pattern.
-        See `[p]retrigger explain` or click the link below for more details.
-        [For more details click here.](https://github.com/TrustyJAID/Trusty-cogs/blob/master/retrigger/README.md)
     """
 
     __author__ = ["TrustyJAID"]
