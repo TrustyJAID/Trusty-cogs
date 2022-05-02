@@ -41,6 +41,8 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 
 @cog_i18n(_)
+@discord.app_commands.default_permissions(manage_roles=True)
+@discord.app_commands.guild_only()
 class RoleTools(
     RoleToolsEvents,
     RoleToolsButtons,
@@ -52,8 +54,7 @@ class RoleTools(
     RoleToolsSettings,
     RoleToolsSelect,
     RoleToolsSlash,
-    discord.app_commands.Group,
-    commands.Cog,
+    commands.GroupCog,
     metaclass=CompositeMetaClass,
 ):
     """
@@ -64,7 +65,6 @@ class RoleTools(
     __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
-        super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, identifier=218773382617890828, force_registration=True)
         self.config.register_global(
