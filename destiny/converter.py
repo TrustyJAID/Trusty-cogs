@@ -1,11 +1,12 @@
 import logging
 import re
+from enum import Enum
 from typing import List, Optional
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 _ = Translator("Destiny", __file__)
@@ -13,7 +14,13 @@ _ = Translator("Destiny", __file__)
 log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
-@cog_i18n(_)
+class DestinyClassType(Enum):
+    titan = 0
+    hunter = 1
+    warlock = 2
+    unknown = 3
+
+
 class DestinyActivity(Converter):
     """Returns the correct history code if provided a named one"""
 
@@ -174,7 +181,6 @@ class DestinyActivity(Converter):
         return result
 
 
-@cog_i18n(_)
 class StatsPage(Converter):
     """Returns a tuple of strings of the correct stats page type to use"""
 
@@ -205,7 +211,6 @@ class StatsPage(Converter):
         return result
 
 
-@cog_i18n(_)
 class SearchInfo(Converter):
     """Returns specific type of information to display with search
     By default we want to list the available perks on the weapon
@@ -238,7 +243,6 @@ class SearchInfo(Converter):
         return result
 
 
-@cog_i18n(_)
 class DestinyItemType(Converter):
     """Returns the correct item type code if provided a named one
     This is essentially the enum for item type as a converter
@@ -322,7 +326,6 @@ class DestinyItemType(Converter):
         return result
 
 
-@cog_i18n(_)
 class DestinyEververseItemType(Converter):
     """Returns the correct item type code if provided a named one"""
 

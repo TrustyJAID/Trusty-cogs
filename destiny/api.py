@@ -917,3 +917,106 @@ class DestinyAPI:
         b = character["emblemColor"]["blue"]
         embed.colour = discord.Colour.from_rgb(r, g, b)
         return embed
+
+    async def check_gilded_title(self, chars: dict, title: dict) -> bool:
+        """
+        Checks a players records for a completed gilded title
+        """
+        gilding_hash = title["titleInfo"].get("gildingTrackingRecordHash", None)
+        records = chars["profileRecords"]["data"]["records"]
+        if str(gilding_hash) in records:
+            for objective in records[str(gilding_hash)]["objectives"]:
+                if objective["complete"]:
+                    return True
+        return False
+
+    async def get_weapon_possible_perks(self, weapon: dict) -> dict:
+        perks = {}
+        slot_counter = 1
+        count = 2
+        for socket in weapon["sockets"]["socketEntries"]:
+            if socket["singleInitialItemHash"] in [
+                4248210736,
+                2323986101,
+                0,
+                2285418970,
+                1282012138,
+                2993594586,
+            ]:
+                continue
+            if socket["socketTypeHash"] in [2218962841, 1282012138, 1456031260]:
+                continue
+            if "randomizedPlugSetHash" in socket:
+                pool = (
+                    await self.get_definition(
+                        "DestinyPlugSetDefinition", [socket["randomizedPlugSetHash"]]
+                    )
+                )[str(socket["randomizedPlugSetHash"])]
+                pool_perks = [v["plugItemHash"] for v in pool["reusablePlugItems"]]
+                all_perks = await self.get_definition(
+                    "DestinyInventoryItemLiteDefinition", pool_perks
+                )
+                try:
+                    # https://stackoverflow.com/questions/44914727/get-first-and-second-values-in-dictionary-in-cpython-3-6
+                    it = iter(all_perks.values())
+                    key_hash = next(it)["itemCategoryHashes"][0]
+                    key_data = (
+                        await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
+                    )[str(key_hash)]
+                    key = key_data["displayProperties"]["name"]
+                    if key in perks:
+                        key = f"{key} {count}"
+                        count += 1
+                except IndexError:
+                    key = _("Perk {count}").format(count=slot_counter)
+                perks[key] = "\n".join(
+                    [p["displayProperties"]["name"] for h, p in all_perks.items()]
+                )
+                slot_counter += 1
+                continue
+            if "reusablePlugSetHash" in socket:
+                pool = (
+                    await self.get_definition(
+                        "DestinyPlugSetDefinition", [socket["reusablePlugSetHash"]]
+                    )
+                )[str(socket["reusablePlugSetHash"])]
+                pool_perks = [v["plugItemHash"] for v in pool["reusablePlugItems"]]
+                all_perks = await self.get_definition(
+                    "DestinyInventoryItemLiteDefinition", pool_perks
+                )
+                try:
+                    it = iter(all_perks.values())
+                    key_hash = next(it)["itemCategoryHashes"][0]
+                    key_data = (
+                        await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
+                    )[str(key_hash)]
+                    key = key_data["displayProperties"]["name"]
+                    if key in perks:
+                        key = f"{key} {count}"
+                        count += 1
+                except IndexError:
+                    key = _("Perk {count}").format(count=slot_counter)
+                perks[key] = "\n".join(
+                    [p["displayProperties"]["name"] for h, p in all_perks.items()]
+                )
+                slot_counter += 1
+                continue
+            perk_hash = socket["singleInitialItemHash"]
+            perk = (await self.get_definition("DestinyInventoryItemLiteDefinition", [perk_hash]))[
+                str(perk_hash)
+            ]
+            try:
+                it = iter(all_perks.values())
+                key_hash = next(it)["itemCategoryHashes"][0]
+                key_data = (
+                    await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
+                )[str(key_hash)]
+                key = key_data[0]["displayProperties"]["name"]
+                if key in perks:
+                    key = f"{key} {count}"
+                    count += 1
+            except (IndexError, KeyError):
+                key = _("Perk {count}").format(count=slot_counter)
+            perks[key] = perk["displayProperties"]["name"]
+            slot_counter += 1
+        return perks

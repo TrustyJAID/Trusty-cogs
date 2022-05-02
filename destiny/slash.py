@@ -153,27 +153,6 @@ class DestinySlash:
                 choices.append(app_commands.Choice(name=choice.name, value=choice.value))
         return choices[:25]
 
-    @items_slash.autocomplete("search")
-    async def parse_search_items(self, interaction: discord.Interaction, current: str):
-        possible_options = await self.search_definition("simpleitems", current)
-        choices = []
-        for hash_key, data in possible_options.items():
-            name = data["displayProperties"]["name"]
-            if name:
-                choices.append(app_commands.Choice(name=name, value=hash_key))
-        return choices[:25]
-
-    @lore_slash.autocomplete("entry")
-    async def parse_search_lore(self, interaction: discord.Interaction, current: str):
-        possible_options = self.get_entities("DestinyLoreDefinition")
-        choices = []
-        for hash_key, data in possible_options.items():
-            name = data["displayProperties"]["name"]
-            if current.lower() in name.lower():
-                choices.append(app_commands.Choice(name=name, value=name))
-        log.debug(len(choices))
-        return choices[:25]
-
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await self.bot.allowed_by_whitelist_blacklist(interaction.user):
             await interaction.response.send_message(

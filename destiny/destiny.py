@@ -5,10 +5,11 @@ import functools
 import logging
 import re
 from io import BytesIO, StringIO
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
 
 import discord
-from redbot.core import Config, checks, commands
+from discord import app_commands
+from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 from redbot.core.utils.menus import start_adding_reactions
@@ -16,10 +17,15 @@ from redbot.core.utils.predicates import ReactionPredicate
 from tabulate import tabulate
 
 from .api import DestinyAPI
-from .converter import DestinyActivity, DestinyEververseItemType, SearchInfo, StatsPage
+from .converter import (
+    DestinyActivity,
+    DestinyClassType,
+    DestinyEververseItemType,
+    SearchInfo,
+    StatsPage,
+)
 from .errors import Destiny2APIError, Destiny2MissingManifest
 from .menus import BaseMenu, BasePages, VaultPages
-from .slash import DestinySlash
 
 DEV_BOTS = (552261846951002112,)
 # If you want parsing the manifest data to be easier add your
@@ -35,7 +41,7 @@ log = logging.getLogger("red.trusty-cogs.Destiny")
 
 
 @cog_i18n(_)
-class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog):
+class Destiny(DestinyAPI, commands.Cog):
     """
     Get information from the Destiny 2 API
     """
@@ -44,7 +50,6 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
     __author__ = "TrustyJAID"
 
     def __init__(self, bot):
-        super().__init__()
         self.bot = bot
         default_global = {
             "api_token": {"api_key": "", "client_id": "", "client_secret": ""},
@@ -76,11 +81,11 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         await self.config.user_from_id(user_id).clear()
 
-    @commands.group()
+    @commands.hybrid_group(name="destiny")
     async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
 
-    async def missing_profile(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def missing_profile(self, ctx: commands.Context):
         msg = _("I can't seem to find your Destiny profile.")
         if isinstance(ctx, discord.Interaction):
             if ctx.response.is_done():
@@ -90,9 +95,9 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         else:
             await ctx.send(msg)
 
-    @destiny.group(name="slash")
+    @commands.group(name="destinyslash")
     @commands.admin_or_permissions(manage_guild=True)
-    async def destiny_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def destiny_slash(self, ctx: commands.Context):
         """
         Slash command toggling for destiny
         """
@@ -100,7 +105,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
 
     @destiny_slash.command(name="global")
     @commands.is_owner()
-    async def destiny_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def destiny_global_slash(self, ctx: commands.Context):
         """Toggle this cog to register slash commands"""
         current = await self.config.enable_slash()
         await self.config.enable_slash.set(not current)
@@ -116,115 +121,16 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Remove your authorization to the destiny API on the bot
         """
-        if isinstance(ctx, discord.Interaction):
-            author = ctx.user
-            is_slash = True
-        else:
-            author = ctx.author
-            is_slash = False
-        await self.red_delete_data_for_user(requester="user", user_id=author.id)
+        await ctx.defer()
+        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
         msg = _("Your authorization has been reset.")
-        if is_slash:
-            await ctx.response.send_message(msg, ephemeral=True)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @destiny.group(aliases=["s"])
     async def search(self, ctx: commands.Context) -> None:
         """
         Search for a destiny item, vendor, record, etc.
         """
-
-    async def get_weapon_possible_perks(self, weapon: dict) -> dict:
-        perks = {}
-        slot_counter = 1
-        count = 2
-        for socket in weapon["sockets"]["socketEntries"]:
-            if socket["singleInitialItemHash"] in [
-                4248210736,
-                2323986101,
-                0,
-                2285418970,
-                1282012138,
-                2993594586,
-            ]:
-                continue
-            if socket["socketTypeHash"] in [2218962841, 1282012138, 1456031260]:
-                continue
-            if "randomizedPlugSetHash" in socket:
-                pool = (
-                    await self.get_definition(
-                        "DestinyPlugSetDefinition", [socket["randomizedPlugSetHash"]]
-                    )
-                )[str(socket["randomizedPlugSetHash"])]
-                pool_perks = [v["plugItemHash"] for v in pool["reusablePlugItems"]]
-                all_perks = await self.get_definition(
-                    "DestinyInventoryItemLiteDefinition", pool_perks
-                )
-                try:
-                    # https://stackoverflow.com/questions/44914727/get-first-and-second-values-in-dictionary-in-cpython-3-6
-                    it = iter(all_perks.values())
-                    key_hash = next(it)["itemCategoryHashes"][0]
-                    key_data = (
-                        await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
-                    )[str(key_hash)]
-                    key = key_data["displayProperties"]["name"]
-                    if key in perks:
-                        key = f"{key} {count}"
-                        count += 1
-                except IndexError:
-                    key = _("Perk {count}").format(count=slot_counter)
-                perks[key] = "\n".join(
-                    [p["displayProperties"]["name"] for h, p in all_perks.items()]
-                )
-                slot_counter += 1
-                continue
-            if "reusablePlugSetHash" in socket:
-                pool = (
-                    await self.get_definition(
-                        "DestinyPlugSetDefinition", [socket["reusablePlugSetHash"]]
-                    )
-                )[str(socket["reusablePlugSetHash"])]
-                pool_perks = [v["plugItemHash"] for v in pool["reusablePlugItems"]]
-                all_perks = await self.get_definition(
-                    "DestinyInventoryItemLiteDefinition", pool_perks
-                )
-                try:
-                    it = iter(all_perks.values())
-                    key_hash = next(it)["itemCategoryHashes"][0]
-                    key_data = (
-                        await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
-                    )[str(key_hash)]
-                    key = key_data["displayProperties"]["name"]
-                    if key in perks:
-                        key = f"{key} {count}"
-                        count += 1
-                except IndexError:
-                    key = _("Perk {count}").format(count=slot_counter)
-                perks[key] = "\n".join(
-                    [p["displayProperties"]["name"] for h, p in all_perks.items()]
-                )
-                slot_counter += 1
-                continue
-            perk_hash = socket["singleInitialItemHash"]
-            perk = (await self.get_definition("DestinyInventoryItemLiteDefinition", [perk_hash]))[
-                str(perk_hash)
-            ]
-            try:
-                it = iter(all_perks.values())
-                key_hash = next(it)["itemCategoryHashes"][0]
-                key_data = (
-                    await self.get_definition("DestinyItemCategoryDefinition", [key_hash])
-                )[str(key_hash)]
-                key = key_data[0]["displayProperties"]["name"]
-                if key in perks:
-                    key = f"{key} {count}"
-                    count += 1
-            except (IndexError, KeyError):
-                key = _("Perk {count}").format(count=slot_counter)
-            perks[key] = perk["displayProperties"]["name"]
-            slot_counter += 1
-        return perks
 
     @search.command(aliases=["item"])
     @commands.bot_has_permissions(embed_links=True)
@@ -240,13 +146,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         using `details`, `true`, or `stats` will show the weapons stat bars
         using `lore` here will instead display the weapons lore card instead if it exists.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-        else:
-            await ctx.trigger_typing()
-
+        await ctx.defer()
         show_lore = True if details_or_lore is False else False
         if search.startswith("lore "):
             search = search.replace("lore ", "")
@@ -262,12 +162,9 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             else:
                 items = await self.search_definition("DestinyInventoryItemDefinition", search)
         except Destiny2MissingManifest as e:
-            if is_slash:
-                await ctx.send(e)
-            else:
-                await ctx.followup.send(e, ephemeral=True)
+            await ctx.send(e)
             return
-        if not items and not is_slash:
+        if not items:
             await ctx.send(_("`{search}` could not be found.").format(search=search))
             return
         embeds = []
@@ -366,17 +263,15 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             page_start=0,
         ).start(ctx=ctx)
 
-    async def check_gilded_title(self, chars: dict, title: dict) -> bool:
-        """
-        Checks a players records for a completed gilded title
-        """
-        gilding_hash = title["titleInfo"].get("gildingTrackingRecordHash", None)
-        records = chars["profileRecords"]["data"]["records"]
-        if str(gilding_hash) in records:
-            for objective in records[str(gilding_hash)]["objectives"]:
-                if objective["complete"]:
-                    return True
-        return False
+    @items.autocomplete("search")
+    async def parse_search_items(self, interaction: discord.Interaction, current: str):
+        possible_options = await self.search_definition("simpleitems", current)
+        choices = []
+        for hash_key, data in possible_options.items():
+            name = data["displayProperties"]["name"]
+            if name:
+                choices.append(app_commands.Choice(name=name, value=hash_key))
+        return choices[:25]
 
     @destiny.command(name="joinme")
     @commands.bot_has_permissions(embed_links=True)
@@ -384,14 +279,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Get your Steam ID to give people to join your in-game fireteam
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         bungie_id = await self.config.user(author).oauth.membership_id()
@@ -402,10 +290,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             author=author.display_name, join_code=join_code
         )
         join_code = f"\n```css\n/join {bungie_name}\n```"
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @destiny.group()
     @commands.bot_has_permissions(embed_links=True)
@@ -413,31 +298,6 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Clan settings
         """
-        if isinstance(ctx, discord.Interaction):
-            command_mapping = {
-                "info": self.show_clan_info,
-                "set": self.set_clan_id,
-                "pending": self.clan_pending,
-                "roster": self.get_clan_roster,
-            }
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-
-            try:
-                kwargs = {}
-                for option in ctx.data["options"][0].get("options", []):
-                    kwargs[option["name"]] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting interaction arguments")
-                await ctx.response.send_message(
-                    _("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
 
     @clan.command(name="info")
     @commands.bot_has_permissions(embed_links=True)
@@ -445,15 +305,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Display basic information about the clan set in this server
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         if clan_id:
@@ -466,32 +318,23 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         else:
             clan_id = await self.config.guild(ctx.guild).clan_id()
         if not clan_id:
-            prefix = "/" if is_slash else ctx.clean_prefix
+            prefix = ctx.clean_prefix
             msg = _(
                 "No clan ID has been setup for this server. "
                 "Use `{prefix}destiny clan set` to set one."
             ).format(prefix=prefix)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         try:
-            clan_info = await self.get_clan_info(author, clan_id)
+            clan_info = await self.get_clan_info(ctx.author, clan_id)
             embed = await self.make_clan_embed(clan_info)
         except Exception:
             log.exception("Error getting clan info")
             msg = _("I could not find any information about this servers clan.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         else:
-            if is_slash:
-                await ctx.followup.send(embed=embed)
-            else:
-                await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
 
     async def make_clan_embed(self, clan_info: dict) -> discord.Embed:
         clan_id = clan_info["detail"]["groupId"]
@@ -542,14 +385,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         example link: `https://www.bungie.net/en/ClanV2?groupid=1234567`
         the numbers after `groupid=` is the clan ID.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         clan_re = re.compile(r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I)
@@ -557,22 +393,16 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         if clan_invite:
             clan_id = clan_invite.group(4)
         try:
-            clan_info = await self.get_clan_info(author, clan_id)
+            clan_info = await self.get_clan_info(ctx.author, clan_id)
             embed = await self.make_clan_embed(clan_info)
         except Exception:
             log.exception("Error getting clan info")
             msg = _("I could not find a clan with that ID.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
         else:
             await self.config.guild(ctx.guild).clan_id.set(clan_id)
             msg = {"content": _("Server's clan set to"), "embed": embed}
-            if is_slash:
-                await ctx.followup.send(**msg)
-            else:
-                await ctx.send(**msg)
+            await ctx.send(**msg)
 
     async def destiny_pick_profile(
         self, ctx: commands.Context, pending_users: dict
@@ -622,39 +452,26 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         Clan admin can further approve specified clan members
         by reacting to the resulting message.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
         if not clan_id:
-            prefix = "/" if is_slash else ctx.clean_prefix
+            prefix = ctx.clean_prefix
             msg = _(
                 "No clan ID has been setup for this server. "
                 "Use `{prefix}destiny clan set` to set one."
             ).format(prefix=prefix)
-            if is_slash:
-                await ctx.followup.send(msg, ephemeral=True)
-            else:
-                await ctx.send(msg)
-        clan_pending = await self.get_clan_pending(author, clan_id)
+            await ctx.send(msg)
+        clan_pending = await self.get_clan_pending(ctx.author, clan_id)
         if not clan_pending["results"]:
             msg = _("There is no one pending clan approval.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         approved = await self.destiny_pick_profile(ctx, clan_pending)
         if not approved:
-            return await ctx.send(_("No one will be approved into the clan."))
+            await ctx.send(_("No one will be approved into the clan."))
+            return
         try:
             destiny_name = ""
             destiny_info = approved.get("destinyUserInfo", "")
@@ -667,7 +484,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             membership_id = approved["destinyUserInfo"]["membershipId"]
             membership_type = approved["destinyUserInfo"]["membershipType"]
             await self.approve_clan_pending(
-                author, clan_id, membership_type, membership_id, approved
+                ctx.author, clan_id, membership_type, membership_id, approved
             )
         except Destiny2APIError as e:
             log.exception("error approving clan member.")
@@ -691,30 +508,19 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         `[output_format]` if `csv` is provided this will upload a csv file of
         the clan roster instead of displaying the output.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
         if not clan_id:
-            prefix = "/" if is_slash else ctx.clean_prefix
+            prefix = ctx.clean_prefix
             msg = _(
                 "No clan ID has been setup for this server. "
                 "Use `{prefix}destiny clan set` to set one."
             ).format(prefix=prefix)
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
-        clan = await self.get_clan_members(author, clan_id)
+        clan = await self.get_clan_members(ctx.author, clan_id)
         headers = [
             "Discord Name",
             "Discord ID",
@@ -747,7 +553,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             try:
                 bungie_id = member["bungieNetUserInfo"]["membershipId"]
                 # bungie_name = member["bungieNetUserInfo"]["displayName"]
-                creds = await self.get_bnet_user_credentials(author, bungie_id)
+                creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
                 steam_id = ""
                 for cred in creds:
                     if "credentialAsString" in cred:
@@ -783,20 +589,13 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
                 employee_writer.writerow(row)
             outfile.seek(0)
             file = discord.File(outfile, filename="clan_roster.csv")
-            if is_slash:
-                await ctx.followup.send(file=file)
-            else:
-                await ctx.send(file=file)
+            await ctx.send(file=file)
         elif output_format == "md":
             data = tabulate(rows, headers=headers, tablefmt="github")
             file = discord.File(BytesIO(data.encode()), filename="clan_roster.md")
-            if is_slash:
-                await ctx.followup.send(file=file)
-            else:
-                await ctx.send(file=file)
+            await ctx.send(file=file)
         else:
-            if is_slash:
-                await ctx.followup.send(_("Displaying member roster for the servers clan."))
+            await ctx.send(_("Displaying member roster for the servers clan."))
             data = tabulate(rows, headers=headers, tablefmt="pretty")
             for page in pagify(data, page_length=1990):
                 await ctx.channel.send(box(page, lang="css"))
@@ -808,49 +607,45 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         Display a menu of your basic character's info
         `[user]` A member on the server who has setup their account on this bot.
         """
-        async with ctx.typing():
-            if not await self.has_oauth(ctx, user):
-                return
-            if not user:
-                user = ctx.author
+        await ctx.defer()
+        if not await self.has_oauth(ctx, user):
+            return
+        if not user:
+            user = ctx.author
+        try:
+            milestones = await self.get_milestones(user)
+            await self.save(milestones, "milestones.json")
+        except Destiny2APIError as e:
+            log.error(e, exc_info=True)
+            await self.missing_profile(ctx)
+            return
+        msg = ""
+        for milestone_hash, content in milestones.items():
             try:
-                milestones = await self.get_milestones(user)
-                await self.save(milestones, "milestones.json")
-            except Destiny2APIError as e:
-                log.error(e, exc_info=True)
-                await self.missing_profile(ctx)
-                return
-            msg = ""
-            for milestone_hash, content in milestones.items():
-                try:
-                    milestone_def = await self.get_definition(
-                        "DestinyMilestoneDefinition", [milestone_hash]
-                    )
-                except Exception:
-                    log.exception("Error pulling definition")
-                    continue
-                name = (
-                    milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
+                milestone_def = await self.get_definition(
+                    "DestinyMilestoneDefinition", [milestone_hash]
                 )
-                description = (
-                    milestone_def[str(milestone_hash)]
-                    .get("displayProperties", {})
-                    .get("description", "")
-                )
-                extras = ""
-                if "activities" in content:
-                    activities = [a["activityHash"] for a in content["activities"]]
-                    activity_data = await self.get_definition(
-                        "DestinyActivityDefinition", activities
+            except Exception:
+                log.exception("Error pulling definition")
+                continue
+            name = milestone_def[str(milestone_hash)].get("displayProperties", {}).get("name", "")
+            description = (
+                milestone_def[str(milestone_hash)]
+                .get("displayProperties", {})
+                .get("description", "")
+            )
+            extras = ""
+            if "activities" in content:
+                activities = [a["activityHash"] for a in content["activities"]]
+                activity_data = await self.get_definition("DestinyActivityDefinition", activities)
+                for activity_key, activity_info in activity_data.items():
+                    activity_name = activity_info.get("displayProperties", {}).get("name", "")
+                    activity_description = activity_info.get("displayProperties", {}).get(
+                        "description", ""
                     )
-                    for activity_key, activity_info in activity_data.items():
-                        activity_name = activity_info.get("displayProperties", {}).get("name", "")
-                        activity_description = activity_info.get("displayProperties", {}).get(
-                            "description", ""
-                        )
-                        extras += f"**{activity_name}:** {activity_description}\n"
+                    extras += f"**{activity_name}:** {activity_description}\n"
 
-                msg += f"**{name}:** {description}\n{extras}\n"
+            msg += f"**{name}:** {description}\n{extras}\n"
         await ctx.send_interactive(pagify(msg))
 
     @destiny.command(name="reset")
@@ -859,9 +654,6 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Show exactly when Weekyl and Daily reset is
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
         today = datetime.datetime.now(datetime.timezone.utc)
         tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
         weekly = datetime.datetime(
@@ -885,10 +677,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
             "Daily Reset is <t:{daily}:R> (<t:{daily}>)."
         ).format(weekly=weekly_reset_str, daily=daily_reset_str)
-        if is_slash:
-            await ctx.response.send_message(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @destiny.command(name="vault", hidden=True)
     @commands.bot_has_permissions(embed_links=True)
@@ -897,6 +686,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         Allows you to interact with your vault through discord
         """
         user = ctx.author
+        await ctx.defer()
         if not await self.has_oauth(ctx, user):
             return
 
@@ -918,8 +708,8 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             page_start=0,
         ).start(ctx=ctx)
 
-    @destiny.command(hidden=True)
-    @commands.bot_has_permissions(embed_links=True)
+    # @destiny.command(hidden=True)
+    # @commands.bot_has_permissions(embed_links=True)
     async def test(self, ctx: commands.Context, user: discord.Member = None) -> None:
         """
         Display a menu of your basic character's info
@@ -1008,19 +798,11 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         Display a menu of your basic character's info
         `[user]` A member on the server who has setup their account on this bot.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx, user):
             return
         if not user:
-            user = author
+            user = ctx.author
         try:
             chars = await self.get_characters(user)
             await self.save(chars, "character.json")
@@ -1130,13 +912,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Find Destiny Lore
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-        else:
-            await ctx.trigger_typing()
-
+        await ctx.defer()
         try:
             # the below is to prevent blocking reading the large
             # ~130mb manifest files and save on API calls
@@ -1146,10 +922,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             data: dict = await asyncio.wait_for(task, timeout=60)
         except Exception:
             msg = _("The manifest needs to be downloaded for this to work.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         lore = []
         for entry_hash, entries in data.items():
@@ -1184,25 +957,28 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             page_start=0,
         ).start(ctx=ctx)
 
+    @lore.autocomplete("entry")
+    async def parse_search_lore(self, interaction: discord.Interaction, current: str):
+        possible_options = self.get_entities("DestinyLoreDefinition")
+        choices = []
+        for hash_key, data in possible_options.items():
+            name = data["displayProperties"]["name"]
+            if current.lower() in name.lower():
+                choices.append(app_commands.Choice(name=name, value=name))
+        log.debug(len(choices))
+        return choices[:25]
+
     @destiny.command(aliases=["whereisxûr"])
     @commands.bot_has_permissions(embed_links=True)
     async def whereisxur(self, ctx: commands.Context) -> None:
         """
         Display Xûr's current location
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         try:
-            chars = await self.get_characters(author)
+            chars = await self.get_characters(ctx.author)
             # await self.save(chars, "characters.json")
         except Destiny2APIError:
             # log.debug(e)
@@ -1211,7 +987,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
             try:
-                xur = await self.get_vendor(author, char_id, "2190858386")
+                xur = await self.get_vendor(ctx.author, char_id, "2190858386")
                 xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
                     "2190858386"
                 ]
@@ -1223,10 +999,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
                 )
                 next_xur = f"<t:{int(friday.timestamp())}:R>"
                 msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
+                await ctx.send(msg)
                 return
             break
         try:
@@ -1240,161 +1013,196 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
             log.exception("Cannot get xur's location")
             location_name = _("Unknown")
         msg = _("Xûr's current location is {location}.").format(location=location_name)
-        if is_slash:
-            await ctx.followup.send(msg)
-        else:
-            await ctx.send(msg)
+        await ctx.send(msg)
 
     @destiny.command(aliases=["xûr"])
     @commands.bot_has_permissions(embed_links=True)
-    async def xur(self, ctx: commands.Context, full: bool = False) -> None:
+    async def xur(
+        self,
+        ctx: commands.Context,
+        character_class: Optional[DestinyClassType] = None,
+    ) -> None:
         """
         Display a menu of Xûr's current wares
 
         `[full=False]` Show perk definition on Xûr's current wares
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
+        await self.vendor_menus(ctx, character_class, "2190858386")
+
+    async def vendor_menus(
+        self,
+        ctx: commands.Context,
+        character_class: Optional[DestinyClassType],
+        vendor_id: str,
+    ):
         try:
-            chars = await self.get_characters(author)
-            # await self.save(chars, "characters.json")
+            chars = await self.get_characters(ctx.author)
+            await self.save(chars, "characters.json")
         except Destiny2APIError:
             # log.debug(e)
             await self.missing_profile(ctx)
             return
-        for char_id, char in chars["characters"]["data"].items():
-            # log.debug(char)
-            try:
-                xur = await self.get_vendor(author, char_id, "2190858386")
-                xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
-                    "2190858386"
-                ]
-            except Destiny2APIError:
+        char_id = None
+        if character_class is not None:
+            for character_id, data in chars["characters"]["data"].items():
+                if DestinyClassType(data["classType"]) == character_class:
+                    char_id = character_id
+        if char_id is None:
+            char_id = list(chars["characters"]["data"].keys())[0]
+        try:
+            vendor = await self.get_vendor(ctx.author, char_id, vendor_id)
+            vendor_def = (await self.get_definition("DestinyVendorDefinition", [vendor_id]))[
+                vendor_id
+            ]
+            await self.save(vendor, "vendor.json")
+            await self.save(vendor_def, "vendor_def.json")
+        except Destiny2APIError:
+            if vendor_id == "2190858386":
                 log.error("I can't seem to see Xûr at the moment")
                 today = datetime.datetime.now(tz=datetime.timezone.utc)
                 friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
                     (4 - today.weekday()) % 7
                 )
-                next_xur = f"<t:{int(friday.timestamp())}:R>"
+                next_xur = discord.utils.format_dt(friday, style="R")
                 msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
-                return
-            break
+                await ctx.send(msg)
+            else:
+                await ctx.send(_("I can't seem to find that vendors inventory."))
+            return
         try:
-            loc_index = xur["vendor"]["data"]["vendorLocationIndex"]
-            loc = xur_def["locations"][loc_index].get("destinationHash")
+            loc_index = vendor["vendor"]["data"]["vendorLocationIndex"]
+            loc = vendor_def["locations"][loc_index].get("destinationHash")
             location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
                 str(loc), None
             )
             location = location_data.get("displayProperties", {}).get("name", "")
         except Exception:
-            log.exception("Cannot get xur's location")
+            log.exception("Cannot get vendors location")
             location = _("Unknown")
+        date = datetime.datetime.strptime(
+            vendor["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+        )
+        date = date.replace(tzinfo=datetime.timezone.utc)
+        date_str = discord.utils.format_dt(date, style="R")
         # items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
         embeds: List[discord.Embed] = []
         # data = await self.get_definition("DestinyInventoryItemDefinition", items)
-        description = xur_def["displayProperties"]["description"]
+        description = vendor_def["displayProperties"]["description"]
+        name = vendor_def["displayProperties"]["name"]
         embed = discord.Embed(
-            title=_("Xûr's current wares"),
+            title=_("{name}'s current wares").format(name=name),
             colour=discord.Colour.red(),
-            description=f"{location}\n{description}",
+            description=f"{location}\n{description}\n"
+            + _("Next Refresh {date}").format(date=date_str),
         )
-        embed.set_thumbnail(url=IMAGE_URL + xur_def["displayProperties"]["largeTransparentIcon"])
+        embed.set_thumbnail(
+            url=IMAGE_URL + vendor_def["displayProperties"]["largeTransparentIcon"]
+        )
         # embed.set_author(name=_("Xûr's current wares"))
         # location = xur_def["locations"][0]["destinationHash"]
         # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
-        all_hashes = [i["itemHash"] for i in xur["sales"]["data"].values()]
+        all_hashes = [i["itemHash"] for i in vendor["sales"]["data"].values()]
         all_items = await self.get_definition("DestinyInventoryItemDefinition", all_hashes)
+        item_costs = [
+            c["itemHash"] for k, i in vendor["sales"]["data"].items() for c in i["costs"]
+        ]
+        item_cost_defs = await self.get_definition(
+            "DestinyInventoryItemLiteDefinition", item_costs
+        )
         stat_hashes = []
         perk_hashes = []
-        for item_index in xur["sales"]["data"]:
-            if item_index in xur["itemComponents"]["stats"]["data"]:
-                for stat_hash in xur["itemComponents"]["stats"]["data"][item_index]["stats"]:
+        for item_index in vendor["sales"]["data"]:
+            if item_index in vendor["itemComponents"]["stats"]["data"]:
+                for stat_hash in vendor["itemComponents"]["stats"]["data"][item_index]["stats"]:
                     stat_hashes.append(stat_hash)
-            if item_index in xur["itemComponents"]["reusablePlugs"]["data"]:
-                for __, plugs in xur["itemComponents"]["reusablePlugs"]["data"][item_index][
+            if item_index in vendor["itemComponents"]["reusablePlugs"]["data"]:
+                for __, plugs in vendor["itemComponents"]["reusablePlugs"]["data"][item_index][
                     "plugs"
                 ].items():
                     for plug in plugs:
                         perk_hashes.append(plug["plugItemHash"])
         all_perks = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
         all_stats = await self.get_definition("DestinyStatDefinition", stat_hashes)
-        for index, item_base in xur["sales"]["data"].items():
+        for index, item_base in vendor["sales"]["data"].items():
             item = all_items[str(item_base["itemHash"])]
-            if not (item["equippable"]):
-                continue
             perks = ""
             item_embed = discord.Embed(title=item["displayProperties"]["name"])
             item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
-            item_embed.set_image(url=IMAGE_URL + item["screenshot"])
-            for perk_index in xur["itemComponents"]["reusablePlugs"]["data"].get(
+            if "screenshot" in item:
+                item_embed.set_image(url=IMAGE_URL + item["screenshot"])
+            for perk_index in vendor["itemComponents"]["reusablePlugs"]["data"].get(
                 index, {"plugs": []}
             )["plugs"]:
-                for perk_hash in xur["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][
+                for perk_hash in vendor["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][
                     perk_index
                 ]:
                     perk = all_perks.get(str(perk_hash["plugItemHash"]), None)
                     if perk is None:
                         continue
                     properties = perk["displayProperties"]
-                    if "Common" in perk["itemTypeAndTierDisplayName"]:
-                        continue
                     if (
                         properties["name"] == "Empty Mod Socket"
                         or properties["name"] == "Default Ornament"
                         or properties["name"] == "Change Energy Type"
                         or properties["name"] == "Empty Catalyst Socket"
+                        or properties["name"] == "Upgrade Armor"
+                        or properties["name"] == "Default Shader"
+                        or properties["name"] == "Tier 2 Weapon"
                     ):
                         continue
                     if "name" in properties and "description" in properties:
                         if not properties["name"]:
                             continue
                         # await self.save(perk, properties["name"] + ".json")
-                        if full:
-                            perks += "**{0}** - {1}\n".format(
-                                properties["name"], properties["description"]
-                            )
-                        else:
-                            perks += "- **{0}**\n".format(properties["name"])
+                        perks += "- **{0}**\n".format(properties["name"])
             stats_str = ""
-            slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
-            if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
-                total = 0
-                for stat_hash, stat_data in xur["itemComponents"]["stats"]["data"][index][
-                    "stats"
-                ].items():
-                    stat_info = all_stats[str(stat_hash)]
-                    stat_name = stat_info["displayProperties"]["name"]
-                    stat_value = stat_data["value"]
-                    prog = "█" * int(stat_value / 6)
-                    empty = "░" * int((42 - stat_value) / 6)
-                    bar = f"{prog}{empty}"
-                    stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
-                    total += stat_value
-                stats_str += _("Total: **{total}**\n").format(total=total)
+            if "equippingBlock" in item:
+                slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
+                if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
+                    total = 0
+                    for stat_hash, stat_data in vendor["itemComponents"]["stats"]["data"][index][
+                        "stats"
+                    ].items():
+                        stat_info = all_stats[str(stat_hash)]
+                        stat_name = stat_info["displayProperties"]["name"]
+                        stat_value = stat_data["value"]
+                        prog = "█" * int(stat_value / 6)
+                        empty = "░" * int((42 - stat_value) / 6)
+                        bar = f"{prog}{empty}"
+                        stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
+                        total += stat_value
+                    stats_str += _("Total: **{total}**\n").format(total=total)
 
             msg = (
                 item["itemTypeAndTierDisplayName"]
                 + "\n"
                 + stats_str
-                + (item["displayProperties"]["description"] + "\n" if full else "")
+                # + (item["displayProperties"]["description"] + "\n" if full else "")
                 + perks
             )
-            item_embed.description = msg
+            refresh_str = ""
+            if "overrideNextRefreshDate" in item_base:
+                date = datetime.datetime.strptime(
+                    item_base["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                )
+                date = date.replace(tzinfo=datetime.timezone.utc)
+                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
+            try:
+                costs = item_base["costs"][0]
+                cost = item_cost_defs[str(costs["itemHash"])]
+                cost_str = (
+                    str(costs["quantity"]) + " " + cost["displayProperties"]["name"] + refresh_str
+                )
+            except IndexError:
+                cost_str = "None" + refresh_str
+            item_embed.description = f"{msg}\n{cost_str}"
             embed.insert_field_at(
-                0, name="**__" + item["displayProperties"]["name"] + "__**\n", value=msg
+                0,
+                name="**__" + item["displayProperties"]["name"] + "__**\n",
+                value=f"{msg}\n{cost_str}",
             )
             embeds.insert(0, item_embed)
         embeds.insert(0, embed)
@@ -1414,7 +1222,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
     async def eververse(
-        self, ctx: commands.Context, *, item_types: Optional[DestinyEververseItemType]
+        self, ctx: commands.Context, character_class: Optional[DestinyClassType] = None
     ) -> None:
         """
         Display items currently available on the Eververse in a menu
@@ -1422,414 +1230,42 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         `[item_types]` can be one of `ghosts`, `ships`, `sparrows`,
         `shaders`, `ornaments` and `finishers` to filter specific items.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        if isinstance(item_types, int):
-            item_types = {"item_types": [item_types], "item_sub_types": []}
-        if not item_types:
-            item_types = {"item_types": [9, 19, 21, 22, 24, 29], "item_sub_types": [21, 20]}
-        try:
-            chars = await self.get_characters(author)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        embeds: List[discord.Embed] = []
-        eververse_sales = {}
-        for char_id, char in chars["characters"]["data"].items():
-            try:
-                ev = await self.get_vendor(author, char_id, "3361454721")
-                eververse_sales.update(ev["sales"]["data"])
 
-            except Destiny2APIError:
-                log.error("I can't seem to see the eververse at the moment", exc_info=True)
-                await ctx.send(_("I can't access the eververse at the moment."))
-                return
-        await self.save(eververse_sales, "eververse.json")
-        embeds = []
-        item_hashes = [i["itemHash"] for k, i in eververse_sales.items()]
-        item_defs = await self.get_definition("DestinyInventoryItemDefinition", item_hashes)
-        item_costs = [c["itemHash"] for k, i in eververse_sales.items() for c in i["costs"]]
-        item_cost_defs = await self.get_definition("DestinyInventoryItemDefinition", item_costs)
-        for item_hash, vendor_item in eververse_sales.items():
-            item = item_defs[str(vendor_item["itemHash"])]
-            if item["itemType"] not in item_types["item_types"] and item_types["item_types"] != []:
-                # log.debug("ignoring item from type %s" % item["itemType"])
-                continue
-            if (
-                item["itemSubType"] not in item_types["item_sub_types"]
-                and item_types["item_sub_types"] != []
-            ):
-                # log.debug("ignoring item from sub type %s" % item["itemSubType"])
-                continue
-            embed = discord.Embed()
-            embed.description = (
-                item["itemTypeAndTierDisplayName"]
-                + "\n\n"
-                + item["displayProperties"]["description"]
-            )
-
-            name = item["displayProperties"]["name"]
-            embed.title = name
-            icon_url = IMAGE_URL + item["displayProperties"]["icon"]
-            embed.set_author(name=name, icon_url=icon_url)
-            embed.set_thumbnail(url=icon_url)
-            cost_str = ""
-            for costs in vendor_item["costs"]:
-                cost = costs["quantity"]
-                cost_name = item_cost_defs[str(costs["itemHash"])]["displayProperties"]["name"]
-                cost_str += f"{cost_name}: **{cost}**\n"
-            embed.add_field(name=_("Cost"), value=cost_str)
-            if "screenshot" in item:
-                embed.set_image(url=IMAGE_URL + item["screenshot"])
-            embeds.append(embed)
-        if embeds == []:
-            msg = _("I can't access the eververse at the moment.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
-        # await ctx.tick()
-        await BaseMenu(
-            source=BasePages(
-                pages=embeds,
-            ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
-            cog=self,
-            page_start=0,
-        ).start(ctx=ctx)
+        await self.vendor_menus(ctx, character_class, "3361454721")
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
-    async def spider(self, ctx: commands.Context) -> None:
-        """
-        Display Spiders wares
-        """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
-        if not await self.has_oauth(ctx):
-            return
-        try:
-            chars = await self.get_characters(author)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        for char_id, char in chars["characters"]["data"].items():
-            try:
-                spider = await self.get_vendor(author, char_id, "863940356")
-                await self.save(spider, "spider.json")
-                spider_def = (await self.get_definition("DestinyVendorDefinition", ["863940356"]))[
-                    "863940356"
-                ]
-            except Destiny2APIError:
-                log.error("I can't seem to see the Spider at the moment", exc_info=True)
-                msg = _("I can't access the Spider at the moment.")
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
-                return
-            break
-
-        # await self.save(spider, "spider.json")
-        currency_datas = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition",
-            [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
-        )
-        date = datetime.datetime.strptime(
-            spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        date = date.replace(tzinfo=datetime.timezone.utc)
-        date_str = f"<t:{int(date.timestamp())}:R>"
-        # await self.save(spider, "spider.json")
-        description = spider_def["displayProperties"]["description"]
-        description += f"\n\n**Refreshes {date_str}**"
-        embed = discord.Embed(description=description)
-        embed.set_thumbnail(
-            url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
-        )
-        embed.set_author(
-            name=spider_def["displayProperties"]["name"]
-            + ", "
-            + spider_def["displayProperties"]["subtitle"]
-        )
-        item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
-        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
-        item_costs = [
-            c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
-        ]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_costs
-        )
-        for key, data in spider["sales"]["data"].items():
-            item_hash = data["itemHash"]
-            refresh_str = ""
-            if "overrideNextRefreshDate" in data:
-                date = datetime.datetime.strptime(
-                    data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                date = date.replace(tzinfo=datetime.timezone.utc)
-                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
-
-            item = item_defs[str(item_hash)]
-            if item["itemType"] in [0, 26]:
-                continue
-            try:
-                costs = data["costs"][0]
-                cost = item_cost_defs[str(costs["itemHash"])]
-                cost_str = (
-                    str(costs["quantity"]) + " " + cost["displayProperties"]["name"] + refresh_str
-                )
-            except IndexError:
-                cost_str = "None" + refresh_str
-            embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
-
-            await asyncio.sleep(0)
-        player_currency = ""
-        for item in chars["profileCurrencies"]["data"]["items"]:
-            quantity = item["quantity"]
-            name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
-            player_currency += f"{name}: **{quantity}**\n"
-        embed.add_field(name=_("Current Currencies"), value=player_currency)
-        if is_slash:
-            await ctx.followup.send(embed=embed)
-        else:
-            await ctx.send(embed=embed)
-
-    @destiny.command()
-    @commands.bot_has_permissions(embed_links=True)
-    async def rahool(self, ctx: commands.Context) -> None:
+    async def rahool(
+        self, ctx: commands.Context, character_class: Optional[DestinyClassType] = None
+    ) -> None:
         """
         Display Rahool's wares
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        try:
-            chars = await self.get_characters(author)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        for char_id, char in chars["characters"]["data"].items():
-            try:
-                spider = await self.get_vendor(author, char_id, "2255782930")
-                await self.save(spider, "rahool.json")
-                spider_def = (
-                    await self.get_definition("DestinyVendorDefinition", ["2255782930"])
-                )["2255782930"]
-            except Destiny2APIError:
-                log.error("I can't seem to see the Master Rahool at the moment", exc_info=True)
-                msg = _("I can't access the Master Rahool at the moment.")
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
-                return
-            break
-
-        # await self.save(spider, "spider.json")
-        currency_datas = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition",
-            [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
-        )
-        date = datetime.datetime.strptime(
-            spider["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        date = date.replace(tzinfo=datetime.timezone.utc)
-        date_str = f"<t:{int(date.timestamp())}:R>"
-        # await self.save(spider, "spider.json")
-        description = spider_def["displayProperties"]["description"]
-        description += f"\n\n**Refreshes {date_str}**"
-        embed = discord.Embed(description=description)
-        embed.set_thumbnail(
-            url=IMAGE_URL + spider_def["displayProperties"]["largeTransparentIcon"]
-        )
-        embed.set_author(
-            name=spider_def["displayProperties"]["name"]
-            + ", "
-            + spider_def["displayProperties"]["subtitle"]
-        )
-        item_hashes = [i["itemHash"] for k, i in spider["sales"]["data"].items()]
-        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
-        item_costs = [
-            c["itemHash"] for k, i in spider["sales"]["data"].items() for c in i["costs"]
-        ]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_costs
-        )
-        for key, data in spider["sales"]["data"].items():
-            item_hash = data["itemHash"]
-            refresh_str = ""
-            if "overrideNextRefreshDate" in data:
-                date = datetime.datetime.strptime(
-                    data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                date = date.replace(tzinfo=datetime.timezone.utc)
-                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
-
-            item = item_defs[str(item_hash)]
-            if item["itemType"] in [0, 26]:
-                continue
-            try:
-                costs = data["costs"][0]
-                cost = item_cost_defs[str(costs["itemHash"])]
-                cost_str = (
-                    str(costs["quantity"]) + " " + cost["displayProperties"]["name"] + refresh_str
-                )
-            except IndexError:
-                cost_str = "None" + refresh_str
-            embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
-
-            await asyncio.sleep(0)
-        player_currency = ""
-        for item in chars["profileCurrencies"]["data"]["items"]:
-            quantity = item["quantity"]
-            name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
-            player_currency += f"{name}: **{quantity}**\n"
-        embed.add_field(name=_("Current Currencies"), value=player_currency)
-        if is_slash:
-            await ctx.followup.send(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        await self.vendor_menus(ctx, character_class, "2255782930")
 
     @destiny.command(aliases=["banshee-44"])
     @commands.bot_has_permissions(embed_links=True)
-    async def banshee(self, ctx: commands.Context) -> None:
+    async def banshee(
+        self, ctx: commands.Context, character_class: Optional[DestinyClassType] = None
+    ) -> None:
         """
         Display Banshee-44's wares
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        try:
-            chars = await self.get_characters(author)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-
-        for char_id, char in chars["characters"]["data"].items():
-            try:
-                banshee = await self.get_vendor(author, char_id, "672118013")
-                banshee_def = (
-                    await self.get_definition("DestinyVendorDefinition", ["672118013"])
-                )["672118013"]
-                await self.save(banshee, "banshee.json")
-            except Destiny2APIError:
-                log.error(
-                    "I can't seem to see the Banshee-44's wares at the moment", exc_info=True
-                )
-                msg = _("I can't access the Banshee-44 at the moment.")
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
-                return
-            break
-        date = datetime.datetime.strptime(
-            banshee["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        date = date.replace(tzinfo=datetime.timezone.utc)
-        date_str = f"<t:{int(date.timestamp())}:R>"
-        # await self.save(spider, "spider.json")
-        description = banshee_def["displayProperties"]["description"]
-        description += f"\n\n**Refreshes {date_str}**"
-        embed = discord.Embed(description=description)
-        embed.set_thumbnail(
-            url=IMAGE_URL + banshee_def["displayProperties"]["largeTransparentIcon"]
-        )
-        embed.set_author(
-            name=banshee_def["displayProperties"]["name"]
-            + ", "
-            + banshee_def["displayProperties"]["subtitle"]
-        )
-        item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
-        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
-        item_costs = [
-            c["itemHash"] for k, i in banshee["sales"]["data"].items() for c in i["costs"]
-        ]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_costs
-        )
-        for key, data in banshee["sales"]["data"].items():
-            item_hash = data["itemHash"]
-            refresh_str = ""
-            if "overrideNextRefreshDate" in data:
-                date = datetime.datetime.strptime(
-                    data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                date = date.replace(tzinfo=datetime.timezone.utc)
-                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
-
-            item = item_defs[str(item_hash)]
-            if item["itemType"] in [0]:
-                continue
-            perk_str = ""
-            if str(key) in banshee["itemComponents"]["sockets"]["data"]:
-                perk_hashes = []
-                for perk_hash in banshee["itemComponents"]["sockets"]["data"][str(key)]["sockets"]:
-                    if "plugHash" in perk_hash:
-                        perk_hashes.append(str(perk_hash["plugHash"]))
-                perks = await self.get_definition(
-                    "DestinyInventoryItemLiteDefinition", perk_hashes
-                )
-                perk_str = "\n".join(p["displayProperties"]["name"] for k, p in perks.items())
-            try:
-                costs = data["costs"][0]
-                cost = item_cost_defs[str(costs["itemHash"])]
-                cost_str = str(costs["quantity"]) + " " + cost["displayProperties"]["name"]
-                cost_str += f"\n{perk_str}{refresh_str}"
-            except IndexError:
-                cost_str = "None" + refresh_str
-
-            embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
-
-            await asyncio.sleep(0)
-        if is_slash:
-            await ctx.followup.send(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        await self.vendor_menus(ctx, character_class, "672118013")
 
     @destiny.command(name="ada", aliases=["ada-1"])
     @commands.bot_has_permissions(embed_links=True)
     async def ada_1_inventory(
-        self, ctx: commands.Context, *, character: Optional[str] = None
+        self, ctx: commands.Context, character_class: Optional[DestinyClassType] = None
     ) -> None:
         """
         Display Ada-1's wares
@@ -1837,138 +1273,10 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         `[character]` Show inventory specific to a character class. Must be either
         Hunter, Warlock, or Titan. Default is whichever is the first character found.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        try:
-            chars = await self.get_characters(author)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        classes = {"hunter": 671679327, "titan": 3655393761, "warlock": 2271682572}
-        class_id = classes.get(str(character).lower(), None)
-
-        for char_id, char in chars["characters"]["data"].items():
-            if class_id and char["classHash"] != class_id:
-                continue
-            try:
-                banshee = await self.get_vendor(author, char_id, "350061650")
-                banshee_def = (
-                    await self.get_definition("DestinyVendorDefinition", ["350061650"])
-                )["350061650"]
-                await self.save(banshee, "ada-1.json")
-            except Destiny2APIError:
-                log.error("I can't seem to see the Ada-1's wares at the moment", exc_info=True)
-                msg = _("I can't access the Ada-1 at the moment.")
-                if is_slash:
-                    await ctx.followup.send(msg)
-                else:
-                    await ctx.send(msg)
-                return
-            char_class = (
-                await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-            )[str(char["classHash"])]
-            char_class = char_class["displayProperties"]["name"]
-            break
-        if not banshee:
-            await ctx.send(
-                _("I cannot find an inventory for character class {character}.").format(
-                    character=character
-                )
-            )
-            return
-        # await self.save(spider, "spider.json")
-        date = datetime.datetime.strptime(
-            banshee["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        date = date.replace(tzinfo=datetime.timezone.utc)
-        date_str = f"<t:{int(date.timestamp())}:R>"
-        # await self.save(spider, "spider.json")
-        description = banshee_def["displayProperties"]["description"]
-        description += f"\n\n**Refreshes {date_str}**"
-        embed = discord.Embed(description=description)
-        embed.set_thumbnail(
-            url=IMAGE_URL + banshee_def["displayProperties"]["largeTransparentIcon"]
-        )
-        embed.set_author(
-            name=banshee_def["displayProperties"]["name"]
-            + ", "
-            + banshee_def["displayProperties"]["subtitle"]
-            + f" ({char_class})"
-        )
-        item_hashes = [i["itemHash"] for k, i in banshee["sales"]["data"].items()]
-        item_defs = await self.get_definition("DestinyInventoryItemLiteDefinition", item_hashes)
-        item_costs = [
-            c["itemHash"] for k, i in banshee["sales"]["data"].items() for c in i["costs"]
-        ]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_costs
-        )
-        for key, data in banshee["sales"]["data"].items():
-            item_hash = data["itemHash"]
-            refresh_str = ""
-            if "overrideNextRefreshDate" in data:
-                date = datetime.datetime.strptime(
-                    data["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                date = date.replace(tzinfo=datetime.timezone.utc)
-                refresh_str = f"\n**Refreshes <t:{int(date.timestamp())}:R>**"
-
-            item = item_defs[str(item_hash)]
-
-            if item["itemType"] in [0]:
-                continue
-            item_data = (await self.get_definition("DestinyInventoryItemDefinition", [item_hash]))[
-                str(item_hash)
-            ]
-            stats_str = ""
-            slot_hash = item_data.get("equippingBlock", {}).get("equipmentSlotTypeHash", {})
-            if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
-                total = 0
-                for stat_hash, stat_data in banshee["itemComponents"]["stats"]["data"][key][
-                    "stats"
-                ].items():
-                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                        str(stat_hash)
-                    ]
-                    stat_name = stat_info["displayProperties"]["name"]
-                    stat_value = stat_data["value"]
-                    prog = "█" * int(stat_value / 6)
-                    empty = "░" * int((42 - stat_value) / 6)
-                    bar = f"{prog}{empty}"
-                    stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
-                    total += stat_value
-                stats_str += _("Total: **{total}**\n").format(total=total)
-            try:
-                costs = data["costs"][0]
-                cost = item_cost_defs[str(costs["itemHash"])]
-                cost_str = (
-                    str(costs["quantity"])
-                    + " "
-                    + cost["displayProperties"]["name"]
-                    + "\n"
-                    + stats_str
-                    + refresh_str
-                )
-            except IndexError:
-                cost_str = "None" + refresh_str
-
-            embed.add_field(name=item["displayProperties"]["name"], value=cost_str)
-
-            await asyncio.sleep(0)
-        if is_slash:
-            await ctx.followup.send(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        await self.vendor_menus(ctx, character_class, "350061650")
 
     @destiny.command()
     @commands.bot_has_permissions(
@@ -1983,19 +1291,11 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         `[full=False]` Display full information about weapons equipped.
         `[user]` A member on the server who has setup their account on this bot.
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
+        if not user:
+            user = ctx.author
         if not await self.has_oauth(ctx, user):
             return
-        if not user:
-            user = author
         try:
             chars = await self.get_characters(user)
         except Destiny2APIError:
@@ -2127,10 +1427,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Display a menu of each characters gambit stats
         """
-        if isinstance(ctx, commands.Context):
-            await ctx.invoke(self.stats, "allPvECompetitive")
-        else:
-            await self.stats(ctx, "allPvECompetitive")
+        await self.stats(ctx, "allPvECompetitive")
 
     @destiny.command()
     @commands.bot_has_permissions(
@@ -2140,10 +1437,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Display a menu of each character's pvp stats
         """
-        if isinstance(ctx, commands.Context):
-            await ctx.invoke(self.stats, "allPvP")
-        else:
-            await self.stats(ctx, "allPvP")
+        await self.stats(ctx, "allPvP")
 
     @destiny.command(aliases=["raids"])
     @commands.bot_has_permissions(
@@ -2153,10 +1447,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Display a menu for each character's RAID stats
         """
-        if isinstance(ctx, commands.Context):
-            await ctx.invoke(self.stats, "raid")
-        else:
-            await self.stats(ctx, "raid")
+        await self.stats(ctx, "raid")
 
     @destiny.command(aliases=["qp"])
     @commands.bot_has_permissions(
@@ -2166,10 +1457,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         """
         Display a menu of past quickplay matches
         """
-        if isinstance(ctx, commands.Context):
-            await ctx.invoke(self.history, 70)
-        else:
-            await self.history(ctx, 70)
+        await self.history(ctx, 70)
 
     @destiny.command()
     @commands.bot_has_permissions(
@@ -2194,18 +1482,10 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         reckoning, menagerie, vexoffensive, nightmarehunt, elimination, momentum,
         dungeon, sundial, trialsofosiris
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        user = author
+        user = ctx.author
         try:
             chars = await self.get_characters(user)
         except Destiny2APIError:
@@ -2521,18 +1801,10 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         `<stat_type>` The type of stats to display, available options are:
         `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            await ctx.response.defer()
-            author = ctx.user
-        else:
-            await ctx.trigger_typing()
-            author = ctx.author
-
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
-        user = author
+        user = ctx.author
         try:
             chars = await self.get_characters(user)
         except Destiny2APIError:
@@ -2544,10 +1816,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
 
         if not embeds:
             msg = _("No stats could be found for that activity and character.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         await BaseMenu(
             source=BasePages(
@@ -2561,20 +1830,22 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         ).start(ctx=ctx)
 
     @destiny.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def manifest(self, ctx: commands.Context, d1: bool = False) -> None:
         """
         See the current manifest version and optionally re-download it
         """
+        await ctx.defer()
         if not d1:
             try:
                 headers = await self.build_headers()
             except Exception:
-                return await ctx.send(
+                await ctx.send(
                     _(
                         "You need to set your API authentication tokens with `[p]destiny token` first."
                     )
                 )
+                return
             manifest_data = await self.request_url(
                 f"{BASE_URL}/Destiny2/Manifest/", headers=headers
             )
@@ -2604,7 +1875,8 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
                     version = await self.get_manifest()
                 except Exception:
                     log.exception("Error getting destiny manifest")
-                    return await ctx.send(_("There was an issue downloading the manifest."))
+                    await ctx.send(_("There was an issue downloading the manifest."))
+                    return
                 await msg.delete()
                 await ctx.send(f"Manifest {version} was downloaded.")
             else:
@@ -2614,10 +1886,11 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
                 version = await self.get_manifest(d1)
             except Exception:
                 log.exception("Error getting D1 manifest")
-                return await ctx.send(_("There was an issue downloading the manifest."))
+                await ctx.send(_("There was an issue downloading the manifest."))
+                return
 
     @destiny.command()
-    @checks.is_owner()
+    @commands.is_owner()
     async def token(
         self, ctx: commands.Context, api_key: str, client_id: str, client_secret: str
     ) -> None:
@@ -2632,6 +1905,7 @@ class Destiny(DestinyAPI, DestinySlash, discord.app_commands.Group, commands.Cog
         Set the redirect URL to https://localhost/
         NOTE: It is strongly recommended to use this command in DM
         """
+        await ctx.defer()
         await self.config.api_token.api_key.set(api_key)
         await self.config.api_token.client_id.set(client_id)
         await self.config.api_token.client_secret.set(client_secret)
