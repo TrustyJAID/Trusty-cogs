@@ -344,7 +344,7 @@ class ReTrigger(
             is_slash = True
             await ctx.response.defer()
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
         guild_data = await self.config.guild(ctx.guild).all()
         variables = {
             "ban_logs": _("Bans"),

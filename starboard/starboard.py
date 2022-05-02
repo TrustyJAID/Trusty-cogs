@@ -111,7 +111,7 @@ class Starboard(StarboardEvents, commands.Cog):
         Display info on starboards setup on the server.
         """
         guild = ctx.guild
-        await ctx.trigger_typing()
+        await ctx.typing()
         if guild.id in self.starboards:
             await BaseMenu(source=StarboardPages(list(self.starboards[guild.id].values()))).start(
                 ctx=ctx

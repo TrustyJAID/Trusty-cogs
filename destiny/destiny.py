@@ -1860,7 +1860,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 )
                 redownload = _("download")
             await ctx.send(msg)
-            await ctx.trigger_typing()
+            await ctx.typing()
             msg = await ctx.send(
                 _("Would you like to {redownload} the manifest?").format(redownload=redownload)
             )

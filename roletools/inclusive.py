@@ -49,7 +49,7 @@ class RoleToolsInclusive(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).inclusive_with()
         exclusive = await self.config.role(role).exclusive_to()
@@ -124,7 +124,7 @@ class RoleToolsInclusive(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).inclusive_with()
         for included_role in include:

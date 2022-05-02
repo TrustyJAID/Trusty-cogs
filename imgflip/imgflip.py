@@ -109,7 +109,7 @@ class Imgflip(commands.Cog):
     @commands.command(alias=["listmemes"])
     async def getmemes(self, ctx: commands.Context) -> None:
         """List memes with names that can be used"""
-        await ctx.trigger_typing()
+        await ctx.typing()
         await self.get_memes(ctx)
 
     async def get_memes(self, ctx):
@@ -141,7 +141,7 @@ class Imgflip(commands.Cog):
                 "You need to set a username and password first with "
                 f"`{ctx.prefix}imgflipset <username> <password>`"
             )
-        await ctx.trigger_typing()
+        await ctx.typing()
         text = "".join(
             ctx.message.clean_content.replace(f"{ctx.prefix}{ctx.invoked_with} {meme[1]}", "")
         )

@@ -332,7 +332,7 @@ class Reddit(commands.Cog):
         """
         Show 25 hotest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.hot()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -347,7 +347,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.new()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -362,7 +362,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.top()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -377,7 +377,7 @@ class Reddit(commands.Cog):
         """
         Show 25 newest posts on the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submissions = subreddit.rising()
         await BaseMenu(
             source=RedditMenu(subreddit=subreddit, submissions=submissions),
@@ -391,7 +391,7 @@ class Reddit(commands.Cog):
         """
         Pull a radom submission from the desired subreddit
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         submission = await subreddit.random()
         if submission.over_18 and not ctx.channel.is_nsfw():
             for i in range(0, 10):

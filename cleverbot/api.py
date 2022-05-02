@@ -102,7 +102,7 @@ class CleverbotAPI:
         """
         This is called when we actually want to send a reply
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
         try:
             response = await self.get_response(author, message)
         except NoCredentials:

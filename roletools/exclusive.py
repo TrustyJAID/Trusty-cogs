@@ -49,7 +49,7 @@ class RoleToolsExclusive(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         log.debug(exclude)
 
@@ -126,7 +126,7 @@ class RoleToolsExclusive(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).exclusive_to()
         for excluded_role in exclude:

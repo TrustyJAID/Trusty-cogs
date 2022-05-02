@@ -58,7 +58,7 @@ class Weather(commands.Cog):
         example: `[p]weather New York,US`
         """
         if not ctx.interaction:
-            await ctx.trigger_typing()
+            await ctx.typing()
         await self.get_weather(ctx, location=location)
 
     @weather.command(name="zip")
@@ -71,7 +71,7 @@ class Weather(commands.Cog):
         example: `[p]weather zip 20500`
         """
         if not ctx.interaction:
-            await ctx.trigger_typing()
+            await ctx.typing()
         await self.get_weather(ctx, zipcode=zipcode)
 
     @weather.command(name="cityid")
@@ -85,7 +85,7 @@ class Weather(commands.Cog):
         example: `[p]weather cityid 2172797`
         """
         if not ctx.interaction:
-            await ctx.trigger_typing()
+            await ctx.typing()
         await self.get_weather(ctx, cityid=cityid)
 
     @weather.command(name="coords", aliases=["co", "coordinates"])
@@ -99,7 +99,7 @@ class Weather(commands.Cog):
         example: `[p]weather coordinates 35 139`
         """
         if not ctx.interaction:
-            await ctx.trigger_typing()
+            await ctx.typing()
         await self.get_weather(ctx, lat=lat, lon=lon)
 
     @weather.group(name="set")

@@ -241,7 +241,7 @@ class RoleTools(
                 return
             author = ctx.user
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
             author = ctx.author
 
         if not await self.config.role(role).selfassignable():
@@ -293,7 +293,7 @@ class RoleTools(
                 return
             author = ctx.user
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
             author = ctx.author
 
         if not await self.config.role(role).selfremovable():
@@ -345,7 +345,7 @@ class RoleTools(
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         if len(who) == 0:
             await ctx.send_help()
@@ -442,7 +442,7 @@ class RoleTools(
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         if len(who) == 0:
             return await ctx.send_help()
@@ -519,7 +519,7 @@ class RoleTools(
                 return
             users = [users]
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
         errors = []
         for user in users:
             if isinstance(user, int):
@@ -572,7 +572,7 @@ class RoleTools(
                 return
             users = [users]
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         errors = []
         for user in users:

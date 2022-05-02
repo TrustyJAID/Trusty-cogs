@@ -40,7 +40,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).selfassignable()
         if true_or_false is None:
@@ -87,7 +87,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).selfremovable()
         if true_or_false is None:
@@ -212,7 +212,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         if await bank.is_global() and not await self.bot.is_owner(ctx.author):
             msg = _("This command is locked to bot owner only while the bank is set to global.")
@@ -277,7 +277,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).sticky()
         if true_or_false is None:
@@ -323,7 +323,7 @@ class RoleToolsSettings(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).auto()
         if true_or_false is None:

@@ -371,7 +371,7 @@ class Tweets(TweetsAPI, commands.Cog):
     @_autotweet.command(name="restart")
     async def restart_stream(self, ctx: commands.context) -> None:
         """Restarts the twitter stream if any issues occur."""
-        await ctx.channel.trigger_typing()
+        await ctx.channel.typing()
         await self.autotweet_restart()
         await ctx.send(_("Restarting the twitter stream."))
 

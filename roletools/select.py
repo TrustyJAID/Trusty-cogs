@@ -272,7 +272,7 @@ class RoleToolsSelect(RoleToolsMixin):
                     _options.append(await SelectOptionRoleConverter().convert(ctx, option))
             options = _options
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         if " " in name:
             msg = _("There cannot be a space in the name of a select menu.")

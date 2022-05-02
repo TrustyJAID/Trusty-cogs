@@ -49,7 +49,7 @@ class RoleToolsRequires(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).required()
         for included_role in required:
@@ -88,7 +88,7 @@ class RoleToolsRequires(RoleToolsMixin):
                 await ctx.send(e, ephemeral=True)
                 return
         else:
-            await ctx.trigger_typing()
+            await ctx.typing()
 
         cur_setting = await self.config.role(role).required()
         for included_role in required:

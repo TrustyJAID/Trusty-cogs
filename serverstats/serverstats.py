@@ -353,7 +353,7 @@ class ServerStats(commands.Cog):
         """
         Post a large size emojis in chat
         """
-        await ctx.channel.trigger_typing()
+        await ctx.channel.typing()
         if type(emoji) in [discord.PartialEmoji, discord.Emoji]:
             d_emoji = cast(discord.Emoji, emoji)
             ext = "gif" if d_emoji.animated else "png"

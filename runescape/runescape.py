@@ -207,7 +207,7 @@ class Runescape(commands.Cog):
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
         """Display a players stats in oldschool Runescape."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).osrsn()
             if runescape_name is None:
@@ -392,7 +392,7 @@ class Runescape(commands.Cog):
         self, ctx: commands.Context, runescape_name: str = None, activity: int = 10
     ) -> None:
         """Display a players profile in Runescape"""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:
@@ -411,7 +411,7 @@ class Runescape(commands.Cog):
     @runescape.command()
     async def stats(self, ctx: commands.Context, *, runescape_name: str = None) -> None:
         """Display a players stats in Runescape"""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:

@@ -485,7 +485,7 @@ class TriggerHandler(ReTriggerMixin):
             and own_permissions.attach_files
             and ALLOW_RESIZE
         ):
-            await channel.trigger_typing()
+            await channel.typing()
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             if path.lower().endswith(".gif"):
                 task = functools.partial(self.resize_gif, size=len(find[0]) - 3, image=path)
@@ -543,7 +543,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.text in trigger.response_type and own_permissions.send_messages:
-            await channel.trigger_typing()
+            await channel.typing()
             if trigger.multi_payload:
                 text_response = "\n".join(t[1] for t in trigger.multi_payload if t[0] == "text")
             else:
@@ -586,7 +586,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.randtext in trigger.response_type and own_permissions.send_messages:
-            await channel.trigger_typing()
+            await channel.typing()
             rand_text_response: str = random.choice(trigger.text)
             crand_text_response = await self.convert_parms(
                 message, rand_text_response, trigger, find
@@ -626,7 +626,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.image in trigger.response_type and own_permissions.attach_files:
-            await channel.trigger_typing()
+            await channel.typing()
             path = str(cog_data_path(self)) + f"/{guild.id}/{trigger.image}"
             file = discord.File(path)
             image_text_response = trigger.text
@@ -671,7 +671,7 @@ class TriggerHandler(ReTriggerMixin):
                     )
 
         if TriggerResponse.randimage in trigger.response_type and own_permissions.attach_files:
-            await channel.trigger_typing()
+            await channel.typing()
             image = random.choice(trigger.image)
             path = str(cog_data_path(self)) + f"/{guild.id}/{image}"
             file = discord.File(path)

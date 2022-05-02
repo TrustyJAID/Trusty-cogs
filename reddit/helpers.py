@@ -30,7 +30,7 @@ class SubredditConverter(Converter):
                     "Have them see `{prefix}redditset creds` for more information"
                 ).format(prefix=ctx.clean_prefix)
             )
-        await ctx.trigger_typing()
+        await ctx.typing()
         subr = REDDIT_RE.search(argument)
         if subr:
             subreddit = subr.group(1)
