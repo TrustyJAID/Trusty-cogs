@@ -1076,6 +1076,8 @@ class Destiny(DestinyAPI, commands.Cog):
             except IndexError:
                 cost_str = ""
             msg = f"{tier_type_url}{stats_str}{perks}{cost_str}{refresh_str}"
+            if not msg:
+                msg = item["displayProperties"]["description"]
             item_embed.description = msg[:4096]
             if item_type.value not in main_page:
                 main_page[item_type.value] = {}
@@ -1084,6 +1086,8 @@ class Destiny(DestinyAPI, commands.Cog):
             embeds.insert(0, item_embed)
         for _item_type in sorted(main_page):
             for name, msg in main_page[_item_type].items():
+                if not msg:
+                    continue
                 embed.insert_field_at(0, name=name, value=msg)
         embeds.insert(0, embed)
         # await ctx.send(embed=embed)
