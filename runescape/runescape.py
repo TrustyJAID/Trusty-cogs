@@ -162,6 +162,10 @@ class Runescape(commands.Cog):
             "format": "json",
         }
         headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         async with self.session.get(wiki_url, headers=headers, params=params) as r:
             if r.status == 200:
                 data = await r.json()
@@ -189,6 +193,10 @@ class Runescape(commands.Cog):
             "format": "json",
         }
         headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         async with self.session.get(wiki_url, headers=headers, params=params) as r:
             if r.status == 200:
                 data = await r.json()
@@ -207,7 +215,10 @@ class Runescape(commands.Cog):
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
         """Display a players stats in oldschool Runescape."""
-        await ctx.typing()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).osrsn()
             if runescape_name is None:
@@ -229,6 +240,10 @@ class Runescape(commands.Cog):
 
         Use this command without a name to clear your settings.
         """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not runescape_name:
             await self.config.user(ctx.author).clear()
             await ctx.send("Your Runescape name has been cleared.")
@@ -254,6 +269,10 @@ class Runescape(commands.Cog):
         `<runescape_name>` The Runescape Name of the account you want to follow
         `<channel>` The channel where updates should be posted
         """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         data = await self.get_profile(runescape_name, 20)
         if data == "NO PROFILE":
             await ctx.send("The account {} doesn't appear to exist!".format(runescape_name))
@@ -286,6 +305,10 @@ class Runescape(commands.Cog):
         `<runescape_name>` The Runescape Name of the account you are following
         `<channel>` The channel where updates should stop being posted
         """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         data = await self.get_profile(runescape_name, 20)
         if data == "NO PROFILE":
             await ctx.send("The account {} doesn't appear to exist!".format(runescape_name))
@@ -324,6 +347,10 @@ class Runescape(commands.Cog):
 
         Use this command without a name to clear your settings.
         """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if not runescape_name:
             await self.config.user(ctx.author).clear()
             await ctx.send("Your Runescape name has been cleared.")
@@ -392,7 +419,10 @@ class Runescape(commands.Cog):
         self, ctx: commands.Context, runescape_name: str = None, activity: int = 10
     ) -> None:
         """Display a players profile in Runescape"""
-        await ctx.typing()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:
@@ -411,7 +441,10 @@ class Runescape(commands.Cog):
     @runescape.command()
     async def stats(self, ctx: commands.Context, *, runescape_name: str = None) -> None:
         """Display a players stats in Runescape"""
-        await ctx.typing()
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         if runescape_name is None:
             runescape_name = await self.config.user(ctx.author).rsn()
             if runescape_name is None:
@@ -428,6 +461,10 @@ class Runescape(commands.Cog):
     @runescape.command()
     async def reset(self, ctx: commands.Context) -> None:
         """Show Runescapes Daily, Weekly, and Monthly reset times."""
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
         today = datetime.now(timezone.utc).replace(minute=0)
         daily = today + timedelta(hours=((0 - today.hour) % 24))
         weekly = daily + timedelta(days=((2 - daily.weekday()) % 7))
