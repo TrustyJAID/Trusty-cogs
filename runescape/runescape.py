@@ -258,7 +258,7 @@ class Runescape(commands.Cog):
         """
         pass
 
-    @runescape_set.command(name="metrics")
+    @runescape_set.command(name="metrics", with_app_command=False)
     @commands.mod_or_permissions(manage_channels=True)
     async def runescape_set_metrics(
         self, ctx: commands.Context, runescape_name: str, channel: discord.TextChannel
@@ -294,7 +294,7 @@ class Runescape(commands.Cog):
             f"{runescape_name} will now have RuneMetrics updates posted in {channel.mention}"
         )
 
-    @runescape_set.command(name="remove", aliases=["delete", "del", "rem"])
+    @runescape_set.command(name="remove", aliases=["delete", "del", "rem"], with_app_command=False)
     @commands.mod_or_permissions(manage_channels=True)
     async def runescape_remove_metrics(
         self, ctx: commands.Context, runescape_name: str, channel: discord.TextChannel
