@@ -1,10 +1,8 @@
 import logging
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, NamedTuple, Optional, Union
 
 import discord
 import mendeleev
-from discord.ext.commands.converter import Converter
-from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
 from redbot.vendored.discord.ext import menus
 
@@ -13,48 +11,121 @@ from .data import IMAGES, LATTICES, UNITS
 log = logging.getLogger("red.trusty-cogs.elements")
 
 
-class ElementConverter(Converter):
+class ElementConverter(discord.app_commands.Transformer):
     """Converts a given argument to an element object"""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> mendeleev.models.Element:
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> mendeleev.models.Element:
         result = None
         if argument.isdigit():
             try:
                 result = mendeleev.element(int(argument))
             except Exception:
-                raise BadArgument("`{}` is not a valid element!".format(argument))
+                raise commands.BadArgument("`{}` is not a valid element!".format(argument))
         else:
             try:
                 result = mendeleev.element(argument.title())
             except Exception:
-                raise BadArgument("`{}` is not a valid element!".format(argument))
+                raise commands.BadArgument("`{}` is not a valid element!".format(argument))
         if not result:
-            raise BadArgument("`{}` is not a valid element!".format(argument))
+            raise commands.BadArgument("`{}` is not a valid element!".format(argument))
         return result
 
+    @classmethod
+    async def transform(
+        cls, interaction: discord.Interaction, value: str
+    ) -> mendeleev.models.Element:
+        result = None
+        if value.isdigit():
+            try:
+                result = mendeleev.element(int(value))
+            except Exception:
+                raise commands.BadArgument("`{}` is not a valid element!".format(value))
+        else:
+            try:
+                result = mendeleev.element(value.title())
+            except Exception:
+                raise commands.BadArgument("`{}` is not a valid element!".format(value))
+        if not result:
+            raise commands.BadArgument("`{}` is not a valid element!".format(value))
+        return result
 
-class MeasurementConverter(Converter):
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        all_choices = [
+            discord.app_commands.Choice(name=element.name, value=element.name)
+            for element in mendeleev.get_all_elements()
+        ]
+        choices = [i for i in all_choices if current.lower() in i.name.lower()]
+        return choices[:25]
+
+
+class Measurements(NamedTuple):
+    name: str
+    units: str
+    key: str
+
+
+class MeasurementConverter(discord.app_commands.Transformer):
     """Converts a given measurement type into usable strings"""
 
-    async def convert(self, ctx: commands.Context, argument: str) -> List[Tuple[str, str, str]]:
-        result = []
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> Optional[Measurements]:
+        log.debug("this converter is being hit")
+        result = None
         if argument.lower() in UNITS:
-            result.append(
-                (
-                    argument.lower(),
-                    UNITS[argument.lower()]["name"],
-                    UNITS[argument.lower()]["units"],
-                )
-            )
+            value = argument.lower()
+            name = UNITS[value]["name"]
+            units = UNITS[value]["units"]
+            result = Measurements(key=value, name=name, units=units)
+        elif argument.replace(" ", "_").lower() in UNITS:
+            value = argument.replace(" ", "_").lower()
+            name = UNITS[value]["name"]
+            units = UNITS[value]["units"]
+            result = Measurements(key=value, name=name, units=units)
         else:
             for k, v in UNITS.items():
                 if argument.lower() in v["name"].lower():
-                    result.append((k, v["name"], v["units"]))
+                    result = Measurements(key=k, name=v["name"], units=v["units"])
                 elif argument.lower() in k:
-                    result.append((k, v["name"], v["units"]))
+                    result = Measurements(key=k, name=v["name"], units=v["units"])
         if not result:
-            raise BadArgument("`{}` is not a valid measurement!".format(argument))
+            raise commands.BadArgument("`{}` is not a valid measurement!".format(argument))
         return result
+
+    @classmethod
+    async def transform(cls, ctx: commands.Context, argument: str) -> Optional[Measurements]:
+        result = None
+        if argument.lower() in UNITS:
+            value = argument.lower()
+            name = UNITS[value]["name"]
+            units = UNITS[value]["units"]
+            result = Measurements(key=value, name=name, units=units)
+        elif argument.replace(" ", "_").lower() in UNITS:
+            value = argument.replace(" ", "_").lower()
+            name = UNITS[value]["name"]
+            units = UNITS[value]["units"]
+            result = Measurements(key=value, name=name, units=units)
+        else:
+            for k, v in UNITS.items():
+                if argument.lower() in v["name"].lower():
+                    result = Measurements(key=k, name=v["name"], units=v["units"])
+                elif argument.lower() in k:
+                    result = Measurements(key=k, name=v["name"], units=v["units"])
+        if not result:
+            raise commands.BadArgument("`{}` is not a valid measurement!".format(argument))
+        return result
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        choices = [
+            discord.app_commands.Choice(name=d["name"], value=k)
+            for k, d in UNITS.items()
+            if current.lower() in d["name"].lower()
+        ]
+        return choices[:25]
 
 
 def get_xray_wavelength(element: mendeleev.models.Element) -> str:
@@ -353,14 +424,22 @@ class Elements(commands.Cog):
         """
         return
 
-    @discord.app_commands.command(name="element")
-    async def element_slash(
-        self, interaction: discord.Interaction, element: str, measurement: Optional[str] = None
+    @commands.hybrid_command(name="element", aliases=["ptable", "elements"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def element(
+        self,
+        ctx: commands.Context,
+        element: Optional[ElementConverter] = None,
+        measurement: Optional[MeasurementConverter] = None,
     ) -> None:
-        """Display information about an element"""
-        ctx = await interaction.client.get_context(interaction)
-        element = mendeleev.element(element)
-        if measurement is None:
+        """
+        Display information about an element
+
+        `element` can be the name, symbol or atomic number of the element
+        `measurement` can be any of the Elements data listed here
+        https://mendeleev.readthedocs.io/en/stable/data.html#electronegativities
+        """
+        if measurement is None or element is None:
             elements = mendeleev.get_all_elements()
             page_start = 0
             if element is not None:
@@ -376,77 +455,13 @@ class Elements(commands.Cog):
         else:
             extra_1 = ""
             extra_2 = ""
-            name = UNITS[measurement]["name"]
-            units = UNITS[measurement]["units"]
-            data = getattr(element, measurement, "")
-            if measurement == "lattice_structure":
+            name = measurement.name
+            units = measurement.units
+            data = getattr(element, measurement.key, "")
+            if measurement.key == "lattice_structure":
                 extra_1, extra_2 = LATTICES[element.lattice_structure]
-            if measurement == "xrf":
+            if measurement.key == "xrf":
                 extra_2 = get_xray_wavelength(element)
 
             msg = f" {element.name}:{name} {data} {extra_1} {extra_2} {units}\n"
-            await ctx.send(msg)
-
-    @element_slash.autocomplete("element")
-    async def element_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        all_choices = [
-            discord.app_commands.Choice(name=element.name, value=element.name)
-            for element in mendeleev.get_all_elements()
-        ]
-        choices = [i for i in all_choices if current.lower() in i.name.lower()]
-        return choices[:25]
-
-    @element_slash.autocomplete("measurement")
-    async def measurement_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        choices = [
-            discord.app_commands.Choice(name=d["name"], value=k)
-            for k, d in UNITS.items()
-            if current.lower() in d["name"].lower()
-        ]
-        return choices[:25]
-
-    @commands.command(aliases=["ptable", "elements"])
-    @commands.bot_has_permissions(embed_links=True)
-    async def element(
-        self,
-        ctx: commands.Context,
-        element: ElementConverter,
-        measurement: MeasurementConverter = None,
-    ) -> None:
-        """
-        Display information about an element
-
-        `element` can be the name, symbol or atomic number of the element
-        `measurement` can be any of the Elements data listed here
-        https://mendeleev.readthedocs.io/en/stable/data.html#electronegativities
-        """
-        if measurement is None:
-            elements = mendeleev.get_all_elements()
-            page_start = 0
-            if element is not None:
-                page_start = element.atomic_number - 1
-
-            source = ElementPages(elements)
-            await BaseView(
-                source=source,
-                cog=self,
-                page_start=page_start,
-            ).start(ctx)
-            return
-        else:
-            msg = f"{element.name}: "
-            for m in measurement:
-                extra_1 = ""
-                extra_2 = ""
-                data = getattr(element, m[0], "")
-                if m[0] == "lattice_structure":
-                    extra_1, extra_2 = LATTICES[element.lattice_structure]
-                if m[0] == "xrf":
-                    extra_2 = get_xray_wavelength(element)
-
-                msg += f"{m[1]} {data} {extra_1} {extra_2} {m[2]}\n"
             await ctx.send(msg)
