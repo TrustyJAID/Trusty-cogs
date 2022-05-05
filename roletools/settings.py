@@ -111,7 +111,7 @@ class RoleToolsSettings(RoleToolsMixin):
             msg = _("The {role} role is no longer self removeable.").format(role=role.mention)
             await ctx.send(msg)
 
-    @roletools.command()
+    @roletools.command(with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def atomic(self, ctx: Context, true_or_false: Optional[Union[bool, str]] = None) -> None:
         """
@@ -153,7 +153,7 @@ class RoleToolsSettings(RoleToolsMixin):
             msg = _("RoleTools will now default to the global atomic setting.")
         await ctx.send(msg)
 
-    @roletools.command()
+    @roletools.command(with_app_command=False)
     @commands.is_owner()
     async def globalatomic(self, ctx: Context, true_or_false: Optional[bool] = None) -> None:
         """

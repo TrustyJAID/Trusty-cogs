@@ -18,12 +18,12 @@ _ = Translator("RoleTools", __file__)
 
 
 class RoleToolsMessages(RoleToolsMixin):
-    @roletools.group(name="message")
+    @roletools.group(name="message", with_app_command=False)
     async def roletools_message(self, ctx: commands.Context):
         """Commands for sending/editing messages for roletools"""
         pass
 
-    @roletools_message.command(name="send")
+    @roletools_message.command(name="send", with_app_command=False)
     async def send_message(
         self,
         ctx: Context,
@@ -87,7 +87,7 @@ class RoleToolsMessages(RoleToolsMixin):
                 )
         await ctx.send(_("Message sent."))
 
-    @roletools_message.command(name="edit")
+    @roletools_message.command(name="edit", with_app_command=False)
     async def edit_message(
         self,
         ctx: Context,
@@ -155,7 +155,7 @@ class RoleToolsMessages(RoleToolsMixin):
                 )
         await ctx.send(_("Message edited."))
 
-    @roletools_message.command(name="sendselect")
+    @roletools_message.command(name="sendselect", with_app_command=False)
     async def send_select(
         self,
         ctx: Context,
@@ -200,7 +200,7 @@ class RoleToolsMessages(RoleToolsMixin):
                 ].append(message_key)
         await ctx.send(_("Message sent."))
 
-    @roletools_message.command(name="editselect")
+    @roletools_message.command(name="editselect", with_app_command=False)
     async def edit_with_select(
         self,
         ctx: Context,
@@ -249,7 +249,7 @@ class RoleToolsMessages(RoleToolsMixin):
                     ].append(message_key)
         await ctx.send(_("Message edited."))
 
-    @roletools_message.command(name="sendbutton")
+    @roletools_message.command(name="sendbutton", with_app_command=False)
     async def send_buttons(
         self,
         ctx: Context,
@@ -289,7 +289,7 @@ class RoleToolsMessages(RoleToolsMixin):
                 )
         await ctx.send(_("Message sent."))
 
-    @roletools_message.command(name="editbutton")
+    @roletools_message.command(name="editbutton", with_app_command=False)
     async def edit_with_buttons(
         self,
         ctx: Context,

@@ -46,6 +46,8 @@ class RoleToolsMixin(ABC):
 
     @commands.group()
     @commands.guild_only()
+    @discord.app_commands.default_permissions(manage_roles=True)
+    @discord.app_commands.guild_only()
     async def roletools(self: commands.Cog, ctx: Context) -> None:
         """
         Commands for creating custom role settings
@@ -62,19 +64,17 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def selfrole(self, ctx: Union[Context, Interaction], *, role: SelfRoleConverter) -> None:
+    async def selfrole(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def selfrole_remove(
-        self, ctx: Union[Context, Interaction], *, role: SelfRoleConverter
-    ) -> None:
+    async def selfrole_remove(self, ctx: commands.Context, *, role: SelfRoleConverter) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def giverole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
@@ -83,7 +83,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def removerole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *who: Union[discord.Role, discord.TextChannel, discord.Member, str],
     ) -> None:
@@ -92,7 +92,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def forcerole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         users: commands.Greedy[Union[discord.Member, RawUserIds]],
         *,
         role: RoleHierarchyConverter,
@@ -102,7 +102,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def forceroleremove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         users: commands.Greedy[Union[discord.Member, RawUserIds]],
         *,
         role: RoleHierarchyConverter,
@@ -110,9 +110,7 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def viewroles(
-        self, ctx: Union[Context, Interaction], *, role: Optional[discord.Role]
-    ) -> None:
+    async def viewroles(self, ctx: commands.Context, *, role: Optional[discord.Role]) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -128,13 +126,13 @@ class RoleToolsMixin(ABC):
     #######################################################################
 
     @abstractmethod
-    async def inclusive(self, ctx: Union[Context, Interaction]) -> None:
+    async def inclusive(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def inclusive_add(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         include: commands.Greedy[RoleHierarchyConverter],
@@ -148,7 +146,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def inclusive_remove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         include: commands.Greedy[RoleHierarchyConverter],
@@ -160,13 +158,13 @@ class RoleToolsMixin(ABC):
     #######################################################################
 
     @abstractmethod
-    async def exclusive(self, ctx: Union[Context, Interaction]) -> None:
+    async def exclusive(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def exclusive_add(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         exclude: commands.Greedy[RoleHierarchyConverter],
@@ -180,7 +178,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def exclusive_remove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         exclude: commands.Greedy[RoleHierarchyConverter],
@@ -192,13 +190,13 @@ class RoleToolsMixin(ABC):
     #######################################################################
 
     @abstractmethod
-    async def required_roles(self, ctx: Union[Context, Interaction]) -> None:
+    async def required_roles(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def required_add(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         required: commands.Greedy[RoleHierarchyConverter],
@@ -208,7 +206,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def required_remove(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         role: RoleHierarchyConverter,
         *,
         required: commands.Greedy[RoleHierarchyConverter],
@@ -222,7 +220,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def selfadd(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         true_or_false: Optional[bool] = None,
         *,
         role: RoleHierarchyConverter,
@@ -232,7 +230,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def selfrem(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         true_or_false: Optional[bool] = None,
         *,
         role: RoleHierarchyConverter,
@@ -241,7 +239,7 @@ class RoleToolsMixin(ABC):
 
     @abstractmethod
     async def atomic(
-        self, ctx: Union[Context, Interaction], true_or_false: Optional[Union[bool, str]] = None
+        self, ctx: commands.Context, true_or_false: Optional[Union[bool, str]] = None
     ) -> None:
         raise NotImplementedError()
 
@@ -252,7 +250,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def cost(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         cost: Optional[int] = None,
         *,
         role: RoleHierarchyConverter,
@@ -262,7 +260,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def sticky(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         true_or_false: Optional[bool] = None,
         *,
         role: RoleHierarchyConverter,
@@ -272,7 +270,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def autorole(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         true_or_false: Optional[bool] = None,
         *,
         role: RoleHierarchyConverter,
@@ -284,7 +282,11 @@ class RoleToolsMixin(ABC):
     #######################################################################
 
     @abstractmethod
-    async def cleanup(self, ctx: Union[Context, Interaction]) -> None:
+    async def react_coms(self, ctx: Context) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def cleanup(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -292,22 +294,22 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def reactroles(self, ctx: Union[Context, Interaction]) -> None:
+    async def reactroles(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def clearreact(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         message: discord.Message,
         *emojis: Optional[Union[discord.Emoji, str]],
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def react(
+    async def make_react(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         message: discord.Message,
         emoji: Union[discord.Emoji, str],
         *,
@@ -318,7 +320,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def remreact(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         message: discord.Message,
         *,
         role_or_emoji: Union[RoleHierarchyConverter, discord.Emoji, str],
@@ -398,13 +400,13 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def buttons(self, ctx: Union[Context, Interaction]) -> None:
+    async def buttons(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def create_button(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         name: str,
         role: RoleHierarchyConverter,
         label: Optional[str] = None,
@@ -414,11 +416,11 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_button(self, ctx: Union[Context, Interaction], *, name: str) -> None:
+    async def delete_button(self, ctx: commands.Context, *, name: str) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def button_roles_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def button_roles_view(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     #######################################################################
@@ -430,13 +432,13 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def select(self, ctx: Union[Context, Interaction]) -> None:
+    async def select(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def create_select_menu(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         name: str,
         options: commands.Greedy[SelectOptionRoleConverter],
         min_values: Optional[int] = None,
@@ -447,13 +449,13 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_select_menu(self, ctx: Union[Context, Interaction], *, name: str) -> None:
+    async def delete_select_menu(self, ctx: commands.Context, *, name: str) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def create_select_option(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         name: str,
         role: RoleHierarchyConverter,
         label: Optional[str] = None,
@@ -463,15 +465,15 @@ class RoleToolsMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_select_option(self, ctx: Union[Context, Interaction], *, name: str) -> None:
+    async def delete_select_option(self, ctx: commands.Context, *, name: str) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def select_menus_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def select_menus_view(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def select_options_view(self, ctx: Union[Context, Interaction]) -> None:
+    async def select_options_view(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     #######################################################################
@@ -503,7 +505,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def send_select(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         menus: commands.Greedy[SelectRoleConverter],
         *,
@@ -514,7 +516,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def edit_with_select(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         message: discord.Message,
         menus: commands.Greedy[SelectRoleConverter],
     ) -> None:
@@ -523,7 +525,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def send_buttons(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         buttons: commands.Greedy[ButtonRoleConverter],
         *,
@@ -534,7 +536,7 @@ class RoleToolsMixin(ABC):
     @abstractmethod
     async def edit_with_buttons(
         self,
-        ctx: Union[Context, Interaction],
+        ctx: commands.Context,
         message: discord.Message,
         buttons: commands.Greedy[ButtonRoleConverter],
     ) -> None:

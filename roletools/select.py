@@ -236,7 +236,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
-    @roletools.group(name="select")
+    @roletools.group(name="select", with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def select(self, ctx: Context) -> None:
         """
@@ -356,7 +356,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 msg = _("Select Option `{name}` doesn't appear to exist.").format(name=name)
                 await ctx.send(msg)
 
-    @select.command(name="createoption", aliases=["addoption"])
+    @select.command(name="createoption", aliases=["addoption"], with_app_command=False)
     async def create_select_option(
         self,
         ctx: Context,
@@ -524,6 +524,61 @@ class RoleToolsSelect(RoleToolsMixin):
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
+
+    # @create_select_menu.autocomplete(name="options")
+    # @delete_select_option.autocomplete("name")
+    async def select_option_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).select_options()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
+
+    # @delete_select_menu.autocomplete("name")
+    async def select_menu_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).select_menus()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
 
     @select.command(name="viewoptions", aliases=["listoptions", "viewoption", "listoption"])
     @commands.admin_or_permissions(manage_roles=True)

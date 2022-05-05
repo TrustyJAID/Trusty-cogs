@@ -23,7 +23,6 @@ from .reactions import RoleToolsReactions
 from .requires import RoleToolsRequires
 from .select import RoleToolsSelect
 from .settings import RoleToolsSettings
-from .slash import RoleToolsSlash
 
 roletools = RoleToolsMixin.roletools
 
@@ -41,8 +40,6 @@ class CompositeMetaClass(type(commands.Cog), type(ABC)):
 
 
 @cog_i18n(_)
-@discord.app_commands.default_permissions(manage_roles=True)
-@discord.app_commands.guild_only()
 class RoleTools(
     RoleToolsEvents,
     RoleToolsButtons,
@@ -53,8 +50,7 @@ class RoleTools(
     RoleToolsRequires,
     RoleToolsSettings,
     RoleToolsSelect,
-    RoleToolsSlash,
-    commands.GroupCog,
+    commands.Cog,
     metaclass=CompositeMetaClass,
 ):
     """
@@ -304,7 +300,7 @@ class RoleTools(
         msg = _("The {role} role has been removed from you.").format(role=role.mention)
         await ctx.send(msg)
 
-    @roletools.command(cooldown_after_parsing=True)
+    @roletools.command(cooldown_after_parsing=True, with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -401,7 +397,7 @@ class RoleTools(
         msg = _("Added {role} to {added}.").format(role=role.mention, added=added_to)
         await ctx.send(msg)
 
-    @roletools.command()
+    @roletools.command(with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.max_concurrency(1, commands.BucketType.guild)

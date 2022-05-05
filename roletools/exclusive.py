@@ -71,7 +71,7 @@ class RoleToolsExclusive(RoleToolsMixin):
         ).format(role=role.mention, excluded_roles=role_names)
         await ctx.send(msg)
 
-    @exclusive.command(name="mutual")
+    @exclusive.command(name="mutual", with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def mutual_exclusive_add(self, ctx: Context, *roles: RoleHierarchyConverter) -> None:
         """

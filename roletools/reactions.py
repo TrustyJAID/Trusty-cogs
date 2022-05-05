@@ -23,7 +23,12 @@ _ = Translator("RoleTools", __file__)
 class RoleToolsReactions(RoleToolsMixin):
     """This class contains commands related to reaction roles."""
 
-    @roletools.command()
+    @roletools.group(name="react")
+    async def react_coms(self, ctx: Context) -> None:
+        """Reaction role settings"""
+        pass
+
+    @react_coms.command(with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def cleanup(self, ctx: Context) -> None:
         """
@@ -65,7 +70,7 @@ class RoleToolsReactions(RoleToolsMixin):
         msg = _("I am finished deleting old settings.")
         await ctx.send(msg)
 
-    @roletools.command(hidden=True)
+    @react_coms.command(hidden=True, with_app_command=False)
     @commands.is_owner()
     @commands.cooldown(1, 86400, commands.BucketType.default)
     async def ownercleanup(self, ctx: Context) -> None:
@@ -113,7 +118,7 @@ class RoleToolsReactions(RoleToolsMixin):
                             reactions.remove(key)
         await ctx.send(_("I am finished deleting old settings."))
 
-    @roletools.command(aliases=["reactionroles", "reactrole"])
+    @react_coms.command(aliases=["reactionroles", "reactrole"])
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def reactroles(self, ctx: Context) -> None:
@@ -158,7 +163,7 @@ class RoleToolsReactions(RoleToolsMixin):
             page_start=0,
         ).start(ctx=ctx)
 
-    @roletools.command(aliases=["clearreacts"])
+    @react_coms.command(aliases=["clearreacts"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_messages=True)
     async def clearreact(
@@ -224,9 +229,9 @@ class RoleToolsReactions(RoleToolsMixin):
                         pass
         await ctx.send(_("Finished clearing reactions on that message."))
 
-    @roletools.command(aliases=["reacts"])
+    @react_coms.command(name="create", aliases=["make", "setup"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
-    async def react(
+    async def make_react(
         self,
         ctx: Context,
         message: discord.Message,
@@ -308,7 +313,7 @@ class RoleToolsReactions(RoleToolsMixin):
                     )
                 )
 
-    @roletools.command(aliases=["remreacts"])
+    @react_coms.command(name="remove", aliases=["rem"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def remreact(
         self,
@@ -390,7 +395,7 @@ class RoleToolsReactions(RoleToolsMixin):
             )
             await ctx.send(msg)
 
-    @roletools.command(aliases=["bulksreacts"])
+    @react_coms.command(name="bulk", aliases=["bulkcreate", "bulkmake"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def bulkreact(
         self,

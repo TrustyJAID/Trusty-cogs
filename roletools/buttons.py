@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import discord
 from discord.ext.commands import BadArgument, Converter
@@ -130,14 +130,14 @@ class RoleToolsButtons(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
-    @roletools.group(name="buttons", aliases=["button"])
+    @roletools.group(name="buttons", aliases=["button"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def buttons(self, ctx: Context) -> None:
         """
         Setup role buttons
         """
 
-    @buttons.command(name="create")
+    @buttons.command(name="create", with_app_command=False)
     async def create_button(
         self,
         ctx: Context,
@@ -225,7 +225,7 @@ class RoleToolsButtons(RoleToolsMixin):
         async with self.config.guild(ctx.guild).buttons() as buttons:
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
-    @buttons.command(name="delete", aliases=["del", "remove"])
+    # @buttons.command(name="delete", aliases=["del", "remove"])
     async def delete_button(self, ctx: Context, *, name: str) -> None:
         """
         Delete a saved button.
@@ -244,6 +244,33 @@ class RoleToolsButtons(RoleToolsMixin):
             else:
                 msg = _("Button `{name}` doesn't appear to exist.").format(name=name)
                 await ctx.send(msg)
+
+    # @delete_button.autocomplete("name")
+    async def button_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).buttons()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
 
     @buttons.command(name="view")
     @commands.admin_or_permissions(manage_roles=True)

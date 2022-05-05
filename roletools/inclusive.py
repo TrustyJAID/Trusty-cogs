@@ -69,7 +69,7 @@ class RoleToolsInclusive(RoleToolsMixin):
         ).format(role=role.mention, included_roles=role_names)
         await ctx.send(msg)
 
-    @inclusive.command(name="mutual")
+    @inclusive.command(name="mutual", with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def mutual_inclusive_add(self, ctx: Context, *roles: RoleHierarchyConverter) -> None:
         """
