@@ -4,15 +4,12 @@ import logging
 from typing import Any, List, Optional
 
 import discord
-
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.i18n import Translator
-
-from redbot.core.utils.chat_formatting import pagify, humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, pagify
 from redbot.vendored.discord.ext import menus
 
 from .starboard_entry import StarboardEntry
-
 
 log = logging.getLogger("red.Trusty-cogs.starboard")
 _ = Translator("RoleTools", __file__)
@@ -25,9 +22,13 @@ class StarboardPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, menu: menus.MenuPages, starboard: StarboardEntry) -> discord.Embed:
+    async def format_page(
+        self, menu: menus.MenuPages, starboard: StarboardEntry
+    ) -> discord.Embed:
         guild = menu.ctx.guild
-        embed = discord.Embed(colour=await menu.ctx.bot.get_embed_colour(menu.ctx.channel))
+        embed = discord.Embed(
+            colour=await menu.ctx.bot.get_embed_colour(menu.ctx.channel)
+        )
         embed.title = _("Starboard settings for {guild}").format(guild=guild.name)
         channel = guild.get_channel(starboard.channel)
         s_channel = channel.mention if channel else "deleted_channel"
@@ -71,6 +72,7 @@ class StarboardPages(menus.ListPageSource):
                 embed.description += msg
             else:
                 embed.add_field(name=_("Starboard info continued"), value=page)
+            count += 1
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return embed
 
