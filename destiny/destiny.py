@@ -95,7 +95,7 @@ class Destiny(DestinyAPI, commands.Cog):
         else:
             await ctx.send(msg)
 
-    @commands.group(name="destinyslash")
+    @destiny.group(name="slash", with_app_command=False)
     @commands.admin_or_permissions(manage_guild=True)
     async def destiny_slash(self, ctx: commands.Context):
         """
@@ -1810,7 +1810,7 @@ class Destiny(DestinyAPI, commands.Cog):
             page_start=0,
         ).start(ctx=ctx)
 
-    @destiny.command()
+    @destiny.command(with_app_command=False)
     @commands.is_owner()
     async def manifest(self, ctx: commands.Context, d1: bool = False) -> None:
         """
@@ -1873,7 +1873,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await ctx.send(_("There was an issue downloading the manifest."))
                 return
 
-    @destiny.command()
+    @destiny.command(with_app_command=False)
     @commands.is_owner()
     async def token(
         self, ctx: commands.Context, api_key: str, client_id: str, client_secret: str
