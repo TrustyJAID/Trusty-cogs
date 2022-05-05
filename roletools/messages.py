@@ -45,19 +45,6 @@ class RoleToolsMessages(RoleToolsMixin):
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
-        if ctx.interaction:
-            _menus = []
-            for menu in menus.split(" "):
-                if menu:
-                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
-            menus = _menus
-
-            _buttons = []
-            for menu in buttons.split(" "):
-                if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
-            buttons = _buttons
-
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
@@ -105,25 +92,6 @@ class RoleToolsMessages(RoleToolsMixin):
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.send(_("That message could not be found."))
-                return
-            _menus = []
-            for menu in menus.split(" "):
-                if menu:
-                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
-            menus = _menus
-
-            _buttons = []
-            for menu in buttons.split(" "):
-                if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
-            buttons = _buttons
-
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
@@ -172,13 +140,6 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 5.
         `<message>` - The message to be included with the select menu.
         """
-        if ctx.interaction:
-            _menus = []
-            for menu in menus.split(" "):
-                if menu:
-                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
-            menus = _menus
-
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
@@ -213,19 +174,6 @@ class RoleToolsMessages(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.send(_("That message could not be found."))
-                return
-            _menus = []
-            for menu in menus.split(" "):
-                if menu:
-                    _menus.append(await SelectRoleConverter().convert(ctx, menu))
-            menus = _menus
-
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
@@ -266,14 +214,6 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 25.
         `<message>` - The message to be included with the buttons.
         """
-        if ctx.interaction:
-
-            _buttons = []
-            for menu in buttons.split(" "):
-                if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
-            buttons = _buttons
-
         new_view = ButtonRoleView(self)
         log.info(buttons)
         for button in buttons:
@@ -302,20 +242,6 @@ class RoleToolsMessages(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.response.send_message(_("That message could not be found."))
-                return
-
-            _buttons = []
-            for menu in buttons.split(" "):
-                if menu:
-                    _buttons.append(await ButtonRoleConverter().convert(ctx, menu))
-            buttons = _buttons
-
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)

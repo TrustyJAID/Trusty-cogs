@@ -4,7 +4,6 @@ import logging
 from typing import List, Optional, Union
 
 import discord
-from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -119,8 +118,9 @@ class SelectRoleView(discord.ui.View):
         pass
 
 
-class SelectOptionRoleConverter(Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> SelectRoleOption:
+class SelectOptionRoleConverter(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> SelectRoleOption:
         async with ctx.cog.config.guild(ctx.guild).select_options() as select_options:
             log.debug(argument)
             if argument.lower() in select_options:
@@ -142,15 +142,42 @@ class SelectOptionRoleConverter(Converter):
                 )
                 return select_role
             else:
-                raise BadArgument(
+                raise commands.BadArgument(
                     _("Select Option with name `{name}` does not seem to exist.").format(
                         name=argument.lower()
                     )
                 )
 
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        select_options = await self.config.guild(guild).select_options()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
 
-class SelectRoleConverter(Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> SelectRole:
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
+
+
+class SelectRoleConverter(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> SelectRole:
         async with ctx.cog.config.guild(ctx.guild).select_menus() as select_menus:
             log.debug(argument)
             if argument.lower() in select_menus:
@@ -187,11 +214,38 @@ class SelectRoleConverter(Converter):
                     options=options,
                 )
             else:
-                raise BadArgument(
+                raise commands.BadArgument(
                     _("Select Option with name `{name}` does not seem to exist.").format(
                         name=argument.lower()
                     )
                 )
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        cog = interaction.client.get_cog("RoleTools")
+        select_options = await cog.config.guild(guild).select_menus()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
 
 
 class RoleToolsSelect(RoleToolsMixin):
@@ -265,14 +319,7 @@ class RoleToolsSelect(RoleToolsMixin):
         `[placeholder]` - This is the default text on the menu when no option has been
         chosen yet.
         """
-        if ctx.interaction:
-            _options = []
-            for option in options.split(" "):
-                if option:
-                    _options.append(await SelectOptionRoleConverter().convert(ctx, option))
-            options = _options
-        else:
-            await ctx.typing()
+        await ctx.typing()
 
         if " " in name:
             msg = _("There cannot be a space in the name of a select menu.")
@@ -378,13 +425,6 @@ class RoleToolsSelect(RoleToolsMixin):
         Note: If no label and no emoji are provided the roles name will be used instead.
         This name will not update if the role name is changed.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-
         if " " in name:
             msg = _("There cannot be a space in the name of a select option.")
             await ctx.send(msg)
@@ -524,61 +564,6 @@ class RoleToolsSelect(RoleToolsMixin):
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
-
-    # @create_select_menu.autocomplete(name="options")
-    # @delete_select_option.autocomplete("name")
-    async def select_option_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).select_options()
-        supplied_options = ""
-        new_option = ""
-        for sup in current.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            discord.app_commands.Choice(
-                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
-            )
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(
-                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
-            )
-        return ret
-
-    # @delete_select_menu.autocomplete("name")
-    async def select_menu_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).select_menus()
-        supplied_options = ""
-        new_option = ""
-        for sup in current.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            discord.app_commands.Choice(
-                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
-            )
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(
-                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
-            )
-        return ret
 
     @select.command(name="viewoptions", aliases=["listoptions", "viewoption", "listoption"])
     @commands.admin_or_permissions(manage_roles=True)

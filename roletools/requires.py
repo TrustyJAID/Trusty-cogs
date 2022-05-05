@@ -41,16 +41,7 @@ class RoleToolsRequires(RoleToolsMixin):
 
         Note: This will only work for reaction roles from this cog.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-                required = [await RoleHierarchyConverter().convert(ctx, required.mention)]
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
-
+        await ctx.typing()
         cur_setting = await self.config.role(role).required()
         for included_role in required:
             if included_role.id not in cur_setting:
@@ -80,16 +71,7 @@ class RoleToolsRequires(RoleToolsMixin):
 
         Note: This will only work for reaction roles from this cog.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-                required = [await RoleHierarchyConverter().convert(ctx, required.mention)]
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
-
+        await ctx.typing()
         cur_setting = await self.config.role(role).required()
         for included_role in required:
             if included_role.id in cur_setting:

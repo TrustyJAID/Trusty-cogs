@@ -196,31 +196,7 @@ class RoleTools(
         """
         Add or remove a defined selfrole
         """
-        if ctx.interaction:
-            command_mapping = {"remove": self.selfrole_remove, "add": self.selfrole_add}
-            options = ctx.data["options"][0]["options"][0]["options"]
-            option = ctx.data["options"][0]["options"][0]["name"]
-            func = command_mapping[option]
-            if getattr(func, "requires", None):
-                if not await self.check_requires(func, ctx):
-                    return
-
-            try:
-                kwargs = {}
-                for option in options:
-                    name = option["name"]
-                    kwargs[name] = self.convert_slash_args(ctx, option)
-            except KeyError:
-                kwargs = {}
-                pass
-            except AttributeError:
-                log.exception("Error converting args")
-                await ctx.send(
-                    ("One or more options you have provided are not available in DM's."),
-                    ephemeral=True,
-                )
-                return
-            await func(ctx, **kwargs)
+        pass
 
     @selfrole.command(name="add")
     async def selfrole_add(self, ctx: Context, *, role: SelfRoleConverter) -> None:
@@ -229,16 +205,8 @@ class RoleTools(
 
         `<role>` The role you want to give yourself
         """
-        if ctx.interaction:
-            try:
-                role = await SelfRoleConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-            author = ctx.user
-        else:
-            await ctx.typing()
-            author = ctx.author
+        await ctx.typing()
+        author = ctx.author
 
         if not await self.config.role(role).selfassignable():
             msg = _("The {role} role is not currently selfassignable.").format(role=role.mention)
@@ -281,16 +249,8 @@ class RoleTools(
 
         `<role>` The role you want to remove.
         """
-        if ctx.interaction:
-            try:
-                role = await SelfRoleConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-            author = ctx.user
-        else:
-            await ctx.typing()
-            author = ctx.author
+        await ctx.typing()
+        author = ctx.author
 
         if not await self.config.role(role).selfremovable():
             msg = _("The {role} role is not currently self removable.").format(role=role.mention)
@@ -334,14 +294,7 @@ class RoleTools(
         **This command is on a cooldown of 10 seconds per member who receives
         a role up to a maximum of 1 hour.**
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
+        await ctx.typing()
 
         if len(who) == 0:
             await ctx.send_help()
@@ -431,14 +384,7 @@ class RoleTools(
         **This command is on a cooldown of 10 seconds per member who receives
         a role up to a maximum of 1 hour.**
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
+        await ctx.typing()
 
         if len(who) == 0:
             return await ctx.send_help()
@@ -507,15 +453,7 @@ class RoleTools(
         Note: The only way to remove this would be to manually remove the role from
         the user.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-            users = [users]
-        else:
-            await ctx.typing()
+        await ctx.typing()
         errors = []
         for user in users:
             if isinstance(user, int):
@@ -560,15 +498,7 @@ class RoleTools(
 
         Note: This is generally only useful for users who have left the server.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-            users = [users]
-        else:
-            await ctx.typing()
+        await ctx.typing()
 
         errors = []
         for user in users:
@@ -619,16 +549,16 @@ class RoleTools(
             page_start=page_start,
         ).start(ctx=ctx)
 
-    @roletools.group(name="slash")
-    @commands.admin_or_permissions(manage_guild=True)
+    # @roletools.group(name="slash")
+    # @commands.admin_or_permissions(manage_guild=True)
     async def roletools_slash(self, ctx: Context) -> None:
         """
         Slash command toggling for roletools
         """
         pass
 
-    @roletools_slash.command(name="global")
-    @commands.is_owner()
+    # @roletools_slash.command(name="global")
+    # @commands.is_owner()
     async def roletools_global_slash(self, ctx: Context) -> None:
         """Toggle this cog to register slash commands"""
         current = await self.config.enable_slash()

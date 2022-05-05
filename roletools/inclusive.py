@@ -41,16 +41,7 @@ class RoleToolsInclusive(RoleToolsMixin):
 
         Note: This will only work for reaction roles and automatic roles from this cog.
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-                include = [await RoleHierarchyConverter().convert(ctx, include.mention)]
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
-
+        await ctx.typing()
         cur_setting = await self.config.role(role).inclusive_with()
         exclusive = await self.config.role(role).exclusive_to()
         for included_role in include:
@@ -116,16 +107,7 @@ class RoleToolsInclusive(RoleToolsMixin):
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) currently inclusive you no longer wish to have included
         """
-        if ctx.interaction:
-            try:
-                role = await RoleHierarchyConverter().convert(ctx, role.mention)
-                include = [await RoleHierarchyConverter().convert(ctx, include.mention)]
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
-        else:
-            await ctx.typing()
-
+        await ctx.typing()
         cur_setting = await self.config.role(role).inclusive_with()
         for included_role in include:
             if included_role.id in cur_setting:

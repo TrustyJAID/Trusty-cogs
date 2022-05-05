@@ -4,7 +4,6 @@ import logging
 from typing import List, Optional, Union
 
 import discord
-from discord.ext.commands import BadArgument, Converter
 from redbot.core import commands
 from redbot.core.commands import Context
 from redbot.core.i18n import Translator
@@ -71,8 +70,9 @@ class ButtonRole(discord.ui.Button):
             )
 
 
-class ButtonRoleConverter(Converter):
-    async def convert(self, ctx: commands.Context, argument: str) -> ButtonRole:
+class ButtonRoleConverter(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> ButtonRole:
         async with ctx.cog.config.guild(ctx.guild).buttons() as buttons:
             log.debug(argument)
             if argument.lower() in buttons:
@@ -92,11 +92,38 @@ class ButtonRoleConverter(Converter):
                 )
                 return button
             else:
-                raise BadArgument(
+                raise commands.BadArgument(
                     _("Button with name `{name}` does not seem to exist.").format(
                         name=argument.lower()
                     )
                 )
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        guild = interaction.guild
+        cog = interaction.client.get_cog("RoleTools")
+        select_options = await cog.config.guild(guild).buttons()
+        supplied_options = ""
+        new_option = ""
+        for sup in current.split(" "):
+            if sup in list(select_options.keys()):
+                supplied_options += f"{sup} "
+            else:
+                new_option = sup
+
+        ret = [
+            discord.app_commands.Choice(
+                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
+            )
+            for g in list(select_options.keys())
+            if new_option in g
+        ]
+        if supplied_options:
+            ret.insert(
+                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
+            )
+        return ret
 
 
 class ButtonRoleView(discord.ui.View):
@@ -244,33 +271,6 @@ class RoleToolsButtons(RoleToolsMixin):
             else:
                 msg = _("Button `{name}` doesn't appear to exist.").format(name=name)
                 await ctx.send(msg)
-
-    # @delete_button.autocomplete("name")
-    async def button_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[discord.app_commands.Choice]:
-        guild = interaction.guild
-        select_options = await self.config.guild(guild).buttons()
-        supplied_options = ""
-        new_option = ""
-        for sup in current.split(" "):
-            if sup in list(select_options.keys()):
-                supplied_options += f"{sup} "
-            else:
-                new_option = sup
-
-        ret = [
-            discord.app_commands.Choice(
-                name=f"{supplied_options} {g}", value=f"{supplied_options} {g}"
-            )
-            for g in list(select_options.keys())
-            if new_option in g
-        ]
-        if supplied_options:
-            ret.insert(
-                0, discord.app_commands.Choice(name=supplied_options, value=supplied_options)
-            )
-        return ret
 
     @buttons.command(name="view")
     @commands.admin_or_permissions(manage_roles=True)

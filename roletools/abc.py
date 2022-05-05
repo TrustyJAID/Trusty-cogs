@@ -20,8 +20,6 @@ from .converter import (
 )
 
 if TYPE_CHECKING:
-    from discord import Interaction
-
     from .buttons import ButtonRoleConverter
     from .select import SelectOptionRoleConverter, SelectRoleConverter
 

@@ -184,14 +184,6 @@ class RoleToolsReactions(RoleToolsMixin):
         Note: This will only clear reactions which have a corresponding
         reaction role on it.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.send(_("That message could not be found."))
-                return
-
         if not message.channel.permissions_for(ctx.guild.me).manage_messages:
             msg = _("I require manage messages in order to clear other people's reactions.")
             await ctx.send(msg)
@@ -247,14 +239,6 @@ class RoleToolsReactions(RoleToolsMixin):
         `<emoji>` The emoji you want people to react with to get the role.
         `<role>` The role you want people to receive for reacting.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.send(_("That message could not be found."))
-                return
-
         if not message.guild or message.guild.id != ctx.guild.id:
             msg = _("You cannot add a Reaction Role to a message not in this guild.")
             await ctx.send(msg)
@@ -332,14 +316,6 @@ class RoleToolsReactions(RoleToolsMixin):
 
         Note: This will not remove the emoji reactions on the message.
         """
-        if ctx.interaction:
-            try:
-                message = await commands.MessageConverter().convert(ctx, message)
-            except Exception:
-                log.exception("Cannot find message to edit")
-                await ctx.send(_("That message could not be found."))
-                return
-
         if not message.guild or message.guild.id != ctx.guild.id:
             msg = _("You cannot remove a Reaction Role from a message not in this guild.")
             await ctx.send(msg)
