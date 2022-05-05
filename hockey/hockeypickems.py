@@ -17,7 +17,7 @@ from .pickems import Pickems
 _ = Translator("Hockey", __file__)
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
-hockeyset_commands = MixinMeta.hockeyset_commands
+hockey_commands = MixinMeta.hockey_commands
 # defined in abc.py allowing this to be inherited by multiple files
 
 PICKEMS_MESSAGE = _(
@@ -720,7 +720,7 @@ class HockeyPickems(MixinMeta):
     # All pickems related commands for setup, etc.                        #
     #######################################################################
 
-    @hockeyset_commands.group(name="pickems")
+    @hockey_commands.group(name="pickems")
     @commands.admin_or_permissions(manage_channels=True)
     async def pickems_commands(self, ctx: commands.Context) -> None:
         """
@@ -763,12 +763,9 @@ class HockeyPickems(MixinMeta):
             top_credits=top_credits,
             base_credits=base_credits,
         )
-        if isinstance(ctx, discord.Interaction):
-            await ctx.response.send_message(embed=discord.Embed(description=msg))
-        else:
-            await ctx.maybe_send_embed(msg)
+        await ctx.maybe_send_embed(msg)
 
-    @pickems_commands.group(name="credits")
+    @commands.group(name="pickemscredits")
     async def pickems_credits(self, ctx: commands.Context) -> None:
         """
         Settings for awarding credits on correct pickems votes
@@ -953,6 +950,7 @@ class HockeyPickems(MixinMeta):
         `[channel]` the channel where pickems threads will be created.
         If not provided this will use the current channel.
         """
+        await ctx.defer()
         if channel is None:
             channel = ctx.channel
         await ctx.defer()
@@ -995,6 +993,7 @@ class HockeyPickems(MixinMeta):
         `[date]` is a specified day in the format "YYYY-MM-DD"
         if `date` is not provided the current day is used instead.
         """
+        await ctx.defer()
         if date is None:
             new_date = datetime.now()
         else:
@@ -1029,7 +1028,7 @@ class HockeyPickems(MixinMeta):
         else:
             await ctx.send(_("I will not remove the current pickems on this server."))
 
-    @pickems_commands.group(name="leaderboard")
+    @commands.group(name="pickemsleaderboard")
     @commands.admin_or_permissions(administrator=True)
     async def pickems_leaderboard_commands(self, ctx: commands.Context) -> None:
         """

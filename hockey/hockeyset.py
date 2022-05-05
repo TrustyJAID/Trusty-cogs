@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 from redbot.core import commands
@@ -8,7 +8,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .constants import TEAMS
-from .helper import HockeyStates, HockeyTeams
+from .helper import StandingsFinder, StateFinder, TeamFinder
 from .standings import Conferences, Divisions, Standings
 
 _ = Translator("Hockey", __file__)
@@ -24,10 +24,11 @@ class HockeySetCommands(MixinMeta):
     """
 
     @hockeyset_commands.command(name="settings")
-    async def hockey_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def hockey_settings(self, ctx: commands.Context) -> None:
         """
         Show hockey settings for this server
         """
+        await ctx.defer()
         guild = ctx.guild
         standings_channel = guild.get_channel(await self.config.guild(guild).standings_channel())
         post_standings = _("On") if await self.config.guild(guild).post_standings() else _("Off")
@@ -103,7 +104,7 @@ class HockeySetCommands(MixinMeta):
     # All Hockey setup commands                                           #
     #######################################################################
 
-    @hockeyset_commands.group(name="slash")
+    @commands.group(name="hockeyslash")
     async def hockey_slash(self, ctx: commands.Context):
         """
         commands for enabling/disabling slash commands
@@ -112,7 +113,7 @@ class HockeySetCommands(MixinMeta):
 
     @hockey_slash.command(name="global")
     @commands.is_owner()
-    async def hockey_global_slash(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def hockey_global_slash(self, ctx: commands.Context):
         """Toggle this cog to register slash commands"""
         current = await self.config.enable_slash()
         await self.config.enable_slash.set(not current)
@@ -152,19 +153,17 @@ class HockeySetCommands(MixinMeta):
             )
         return reply
 
-    @hockeyset_commands.group(name="notifications")
-    async def hockey_notifications(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    @commands.group(name="hockeynotifications", with_app_command=False)
+    async def hockey_notifications(self, ctx: commands.Context) -> None:
         """
         Settings related to role notifications
         """
         pass
 
-    @hockey_notifications.command(name="goal")
+    @hockey_notifications.command(name="goal", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_goal_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers goal notification style. Options are:
@@ -201,10 +200,10 @@ class HockeySetCommands(MixinMeta):
             # Default is False
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
 
-    @hockey_notifications.command(name="otnotifications")
+    @hockey_notifications.command(name="otnotifications", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_ot_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers Regular Season OT notification style. Options are:
@@ -243,10 +242,10 @@ class HockeySetCommands(MixinMeta):
                 _("Okay, I will not mention OT Period start in this server.")
             )
 
-    @hockey_notifications.command(name="sonotifications")
+    @hockey_notifications.command(name="sonotifications", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_so_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers Shootout notification style. Options are:
@@ -285,10 +284,10 @@ class HockeySetCommands(MixinMeta):
                 _("Okay, I will not notify SO Period start in this server.")
             )
 
-    @hockey_notifications.command(name="game")
+    @hockey_notifications.command(name="game", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_game_start_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         """
         Set the servers game start notification style. Options are:
@@ -323,11 +322,11 @@ class HockeySetCommands(MixinMeta):
         else:
             await ctx.maybe_send_embed(_("Okay, I will not mention any goals in this server."))
 
-    @hockey_notifications.command(name="goalchannel")
+    @hockey_notifications.command(name="goalchannel", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_goal_notification_style(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         on_off: Optional[bool] = None,
     ) -> None:
@@ -369,11 +368,11 @@ class HockeySetCommands(MixinMeta):
                 ).format(channel=channel.mention)
             )
 
-    @hockey_notifications.command(name="gamechannel")
+    @hockey_notifications.command(name="gamechannel", with_app_command=False)
     @commands.mod_or_permissions(manage_roles=True)
     async def set_channel_game_start_notification_style(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         on_off: Optional[bool] = None,
     ) -> None:
@@ -419,8 +418,8 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
     async def post_standings(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        standings_type: str,
+        ctx: commands.Context,
+        standings_type: StandingsFinder,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
@@ -430,6 +429,7 @@ class HockeySetCommands(MixinMeta):
         `[channel]` The channel you want standings to be posted into, if not provided
         this will use the current channel.
         """
+        await ctx.defer()
         guild = ctx.guild
         if channel is None:
             channel = ctx.channel
@@ -476,7 +476,7 @@ class HockeySetCommands(MixinMeta):
         await self.config.guild(guild).post_standings.set(True)
 
     @hockeyset_commands.command()
-    async def togglestandings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def togglestandings(self, ctx: commands.Context) -> None:
         """
         Toggles automatic standings updates
 
@@ -492,9 +492,9 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="stateupdates")
     async def set_game_state_updates(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
-        state: HockeyStates,
+        state: StateFinder,
     ) -> None:
         """
         Toggle specific updates from a designated channel
@@ -513,10 +513,10 @@ class HockeySetCommands(MixinMeta):
         """
         cur_states = []
         async with self.config.channel(channel).game_states() as game_states:
-            if state in game_states:
-                game_states.remove(state)
+            if state.value in game_states:
+                game_states.remove(state.value)
             else:
-                game_states.append(state)
+                game_states.append(state.value)
             cur_states = game_states
         msg = _("{channel} game updates set to {states}").format(
             channel=channel.mention, states=humanize_list(cur_states) if cur_states else _("None")
@@ -533,8 +533,8 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
     async def add_goals(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: HockeyTeams,
+        ctx: commands.Context,
+        team: TeamFinder,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
@@ -571,14 +571,15 @@ class HockeySetCommands(MixinMeta):
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
     async def remove_goals(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: Optional[HockeyTeams] = None,
+        ctx: commands.Context,
+        team: Optional[TeamFinder] = None,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
         Removes a teams goal updates from a channel
         defaults to the current channel
         """
+        await ctx.defer()
         if team is None:
             await ctx.send(_("You must provide a valid current team."))
             return

@@ -16,7 +16,7 @@ from redbot.core.utils import AsyncIter
 from .constants import BASE_URL, CONFIG_ID, CONTENT_URL, HEADSHOT_URL, TEAMS
 from .dev import HockeyDev
 from .errors import InvalidFileError
-from .game import Game, ScheduleGame
+from .game import Game
 from .gamedaychannels import GameDayChannels
 from .gamedaythreads import GameDayThreads
 from .helper import utc_to_local
@@ -24,7 +24,6 @@ from .hockey_commands import HockeyCommands
 from .hockeypickems import HockeyPickems
 from .hockeyset import HockeySetCommands
 from .pickems import Pickems
-from .slash import HockeySlash
 from .standings import Standings
 from .teamentry import TeamEntry
 
@@ -50,8 +49,7 @@ class Hockey(
     GameDayThreads,
     HockeyDev,
     HockeyPickems,
-    HockeySlash,
-    commands.GroupCog,
+    commands.Cog,
     metaclass=CompositeMetaClass,
 ):
     """

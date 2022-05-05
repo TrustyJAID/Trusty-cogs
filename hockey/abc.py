@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional
 
 import aiohttp
 import discord
@@ -10,11 +10,12 @@ from redbot.core.bot import Red
 
 from .game import Game
 from .helper import (
-    HockeyStandings,
-    HockeyStates,
-    HockeyTeams,
-    TeamDateFinder,
-    TimezoneFinder,
+    DateFinder,
+    LeaderboardFinder,
+    PlayerFinder,
+    StandingsFinder,
+    StateFinder,
+    TeamFinder,
     YearFinder,
 )
 from .pickems import Pickems
@@ -43,62 +44,83 @@ class MixinMeta(ABC):
     # hockey_commands.py                                                  #
     #######################################################################
 
+    @commands.hybrid_group(name="hockey", aliases=["nhl"])
+    async def hockey_commands(self, ctx: commands.Context) -> None:
+        """
+        Get information from NHL.com
+        """
+        pass
+
     @abstractmethod
-    async def hockey_commands(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def version(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def version(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def hockeyhub(self, ctx: commands.Context, *, search: str) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def hockeyhub(
-        self, ctx: Union[commands.Context, discord.Interaction], *, search: str
-    ) -> None:
+    async def team_role(self, ctx: commands.Context, *, team: TeamFinder) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def team_role(
-        self, ctx: Union[commands.Context, discord.Interaction], *, team: HockeyTeams
-    ) -> None:
+    async def team_goals(self, ctx: commands.Context, *, team: TeamFinder = None) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def team_goals(
-        self, ctx: Union[commands.Context, discord.Interaction], *, team: HockeyTeams = None
-    ) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def standings(
-        self, ctx: Union[commands.Context, discord.Interaction], *, search: HockeyStandings = None
-    ) -> None:
+    async def standings(self, ctx: commands.Context, *, search: StandingsFinder = None) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def games(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         *,
-        teams_and_date: Optional[TeamDateFinder] = {},
+        team: Optional[TeamFinder],
+        date: Optional[DateFinder],
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def heatmap(
+        self,
+        ctx: commands.Context,
+        style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all",
+        *,
+        team: Optional[TeamFinder],
+        date: Optional[DateFinder],
+    ) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def gameflow(
+        self,
+        ctx: commands.Context,
+        strength: Literal["all", "ev", "5v5", "sva"] = "all",
+        corsi: bool = True,
+        *,
+        team: Optional[TeamFinder],
+        date: Optional[DateFinder],
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def schedule(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         *,
-        teams_and_date: Optional[TeamDateFinder] = {},
+        team: Optional[TeamFinder],
+        date: Optional[DateFinder],
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def recap(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         *,
-        teams_and_date: Optional[TeamDateFinder] = {},
+        team: Optional[TeamFinder],
+        date: Optional[DateFinder],
     ) -> None:
         raise NotImplementedError()
 
@@ -109,19 +131,20 @@ class MixinMeta(ABC):
     @abstractmethod
     async def player(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
+        season: Optional[YearFinder],
         *,
-        search: str,
+        player: PlayerFinder,
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def roster(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        season: Optional[YearFinder] = None,
+        ctx: commands.Context,
+        season: Optional[YearFinder],
         *,
-        search: HockeyTeams,
+        team: TeamFinder,
     ) -> None:
         raise NotImplementedError()
 
@@ -136,33 +159,37 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def rules(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def rules(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def post_leaderboard(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        leaderboard_type: Literal["season", "weekly", "worst"],
+        ctx: commands.Context,
+        leaderboard_type: Literal[
+            "season",
+            "weekly",
+            "worst",
+            "playoffs",
+            "playoffs_weekly",
+            "pre-season",
+            "pre-season_weekly",
+        ],
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], leaderboard_type: str = "seasonal"
+        self, ctx: commands.Context, leaderboard_type: Optional[LeaderboardFinder]
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def setrules(
-        self, ctx: Union[commands.Context, discord.Interaction], team: HockeyTeams, *, rules
-    ) -> None:
+    async def setrules(self, ctx: commands.Context, team: TeamFinder, *, rules) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def otherdiscords(
-        self, ctx: Union[commands.Context, discord.Interaction], team: HockeyTeams
-    ) -> None:
+    async def otherdiscords(self, ctx: commands.Context, team: TeamFinder) -> None:
         raise NotImplementedError()
 
     #######################################################################
@@ -170,50 +197,46 @@ class MixinMeta(ABC):
     #######################################################################
 
     @abstractmethod
-    async def gdc(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc_settings(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_delete(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc_delete(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_default_game_state(
-        self, ctx: Union[commands.Context, discord.Interaction], *state: HockeyStates
-    ) -> None:
+    async def gdc_default_game_state(self, ctx: commands.Context, *state: StateFinder) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_create(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc_create(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_toggle(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc_toggle(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_category(
-        self, ctx: Union[commands.Context, discord.Interaction], category: discord.CategoryChannel
-    ) -> None:
+    async def gdc_category(self, ctx: commands.Context, category: discord.CategoryChannel) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdc_autodelete(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdc_autodelete(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def test_gdc(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def test_gdc(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def gdc_setup(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: HockeyTeams,
+        ctx: commands.Context,
+        team: TeamFinder,
         category: discord.CategoryChannel = None,
         delete_gdc: bool = True,
     ) -> None:
@@ -236,46 +259,42 @@ class MixinMeta(ABC):
     #######################################################################
 
     @abstractmethod
-    async def gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_settings(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_delete(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_delete(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_default_game_state(
-        self, ctx: Union[commands.Context, discord.Interaction], *state: HockeyStates
-    ) -> None:
+    async def gdt_default_game_state(self, ctx: commands.Context, *state: StateFinder) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_create(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_create(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_toggle(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_toggle(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def gdt_channel(
-        self, ctx: Union[commands.Context, discord.Interaction], category: discord.CategoryChannel
-    ) -> None:
+    async def gdt_channel(self, ctx: commands.Context, category: discord.CategoryChannel) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def test_gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def test_gdt(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def gdt_setup(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: HockeyTeams,
+        ctx: commands.Context,
+        team: TeamFinder,
         category: discord.CategoryChannel = None,
     ) -> None:
         raise NotImplementedError()
@@ -296,23 +315,23 @@ class MixinMeta(ABC):
     # hockeyset.py                                                        #
     #######################################################################
 
-    @commands.group(name="hockeyset", aliases=["nhlset"])
+    @hockey_commands.group(name="set")
     @commands.guild_only()
     @commands.mod_or_permissions(manage_channels=True)
-    async def hockeyset_commands(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def hockeyset_commands(self, ctx: commands.Context) -> None:
         """
         Setup Hockey commands for the server
         """
         pass
 
     @abstractmethod
-    async def hockey_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def hockey_settings(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def leaderboardset(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         user: discord.Member,
         season: int,
         weekly: int = None,
@@ -325,39 +344,37 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def hockey_notifications(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def hockey_notifications(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_goal_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_ot_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_so_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_game_start_notification_style(
-        self, ctx: Union[commands.Context, discord.Interaction], on_off: Optional[bool] = None
+        self, ctx: commands.Context, on_off: Optional[bool] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_channel_goal_notification_style(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         on_off: Optional[bool] = None,
     ) -> None:
@@ -366,7 +383,7 @@ class MixinMeta(ABC):
     @abstractmethod
     async def set_channel_game_start_notification_style(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
         on_off: Optional[bool] = None,
     ) -> None:
@@ -375,30 +392,30 @@ class MixinMeta(ABC):
     @abstractmethod
     async def post_standings(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         standings_type: str,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def togglestandings(self, ctx: Union[commands.Context, discord.Interaction]):
+    async def togglestandings(self, ctx: commands.Context):
         raise NotImplementedError()
 
     @abstractmethod
     async def set_game_state_updates(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         channel: discord.TextChannel,
-        *state: HockeyStates,
+        *state: StateFinder,
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def add_goals(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: HockeyTeams,
+        ctx: commands.Context,
+        team: TeamFinder,
         channel: Optional[discord.TextChannel],
     ) -> None:
         raise NotImplementedError()
@@ -406,8 +423,8 @@ class MixinMeta(ABC):
     @abstractmethod
     async def remove_goals(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: Optional[HockeyTeams] = None,
+        ctx: commands.Context,
+        team: Optional[TeamFinder] = None,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         raise NotImplementedError()
@@ -513,51 +530,51 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def pickems_commands(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_commands(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def pickems_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_settings(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def pickems_credits(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_credits(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def pickems_credits_base(
-        self, ctx: Union[commands.Context, discord.Interaction], credits: Optional[int] = None
+        self, ctx: commands.Context, credits: Optional[int] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def pickems_credits_top(
-        self, ctx: Union[commands.Context, discord.Interaction], credits: Optional[int] = None
+        self, ctx: commands.Context, credits: Optional[int] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def pickems_credits_amount(
-        self, ctx: Union[commands.Context, discord.Interaction], amount: Optional[int] = None
+        self, ctx: commands.Context, amount: Optional[int] = None
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def set_pickems_message(
-        self, ctx: Union[commands.Context, discord.Interaction], *, message: Optional[str] = ""
+        self, ctx: commands.Context, *, message: Optional[str] = ""
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def setup_auto_pickems(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
+        ctx: commands.Context,
         category: Optional[discord.CategoryChannel] = None,
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_auto_pickems(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def delete_auto_pickems(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -565,62 +582,48 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def rempickem(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def rempickem(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def pickems_leaderboard_commands(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def pickems_leaderboard_commands(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_server_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def tally_server_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def tally_server_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_weekly_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_weekly_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_seasonal_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_seasonal_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def clear_weekly_playoffs_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_playoffs_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
-    ) -> None:
+    async def clear_playoffs_leaderboard(self, ctx: commands.Context, true_or_false: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def clear_weekly_preseason_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def clear_preseason_leaderboard(
-        self, ctx: Union[commands.Context, discord.Interaction], true_or_false: bool
+        self, ctx: commands.Context, true_or_false: bool
     ) -> None:
         raise NotImplementedError()
 
@@ -629,85 +632,75 @@ class MixinMeta(ABC):
     #######################################################################
 
     @abstractmethod
-    async def hockeydev(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def hockeydev(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def reset_weekly_pickems_data(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def reset_weekly_pickems_data(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def getgoals(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def getgoals(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def pickems_tally(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def pickems_tally(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
     async def remove_old_pickems(
-        self, ctx: Union[commands.Context, discord.Interaction], year: int, month: int, day: int
+        self, ctx: commands.Context, year: int, month: int, day: int
     ) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def check_pickem_winner(
-        self, ctx: Union[commands.Context, discord.Interaction], days: int = 1
-    ) -> None:
+    async def check_pickem_winner(self, ctx: commands.Context, days: int = 1) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def fix_all_pickems(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def fix_all_pickems(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def teststandings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def teststandings(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def cogstats(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def cogstats(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def customemoji(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def customemoji(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def resetgames(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def resetgames(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def setcreated(
-        self, ctx: Union[commands.Context, discord.Interaction], created: bool
-    ) -> None:
+    async def setcreated(self, ctx: commands.Context, created: bool) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def cleargdc(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def cleargdc(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_broken_channels(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def clear_broken_channels(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def remove_broken_guild(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def remove_broken_guild(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def lights(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def lights(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def testloop(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def testloop(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def clear_seasonal_leaderboard_all(
-        self, ctx: Union[commands.Context, discord.Interaction]
-    ) -> None:
+    async def clear_seasonal_leaderboard_all(self, ctx: commands.Context) -> None:
         raise NotImplementedError()

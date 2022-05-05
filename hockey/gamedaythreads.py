@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 from redbot.core import commands
@@ -9,11 +9,13 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .game import Game
-from .helper import HockeyStates, HockeyTeams, get_chn_name, utc_to_local
+from .helper import StateFinder, TeamFinder, get_chn_name
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
+
+hockey_commands = MixinMeta.hockey_commands
 
 
 class GameDayThreads(MixinMeta):
@@ -25,10 +27,10 @@ class GameDayThreads(MixinMeta):
     # GDC Commands                                                        #
     #######################################################################
 
-    @commands.group()
+    @hockey_commands.group()
     @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
-    async def gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt(self, ctx: commands.Context) -> None:
         """
         Game Day Thread setup for the server
 
@@ -38,7 +40,7 @@ class GameDayThreads(MixinMeta):
         """
 
     @gdt.command(name="settings")
-    async def gdt_settings(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_settings(self, ctx: commands.Context) -> None:
         """
         Show the current Game Day Thread Settings
         """
@@ -46,10 +48,7 @@ class GameDayThreads(MixinMeta):
         create_threads = await self.config.guild(guild).create_threads()
         if create_threads is None:
             msg = _("Game Day Threads are not setup on this server.")
-            if is_slash:
-                await ctx.followup.send(msg)
-            else:
-                await ctx.send(msg)
+            await ctx.send(msg)
             return
         team = await self.config.guild(guild).gdt_team()
         if team is None:
@@ -99,18 +98,17 @@ class GameDayThreads(MixinMeta):
             await ctx.send(embed=em)
 
     @gdt.command(name="delete")
-    async def gdt_delete(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_delete(self, ctx: commands.Context) -> None:
         """
         Delete all current game day threads for the server
         """
+        await ctx.defer()
         await self.delete_gdt(ctx.guild)
         msg = _("Game day channels deleted.")
         await ctx.send(msg)
 
     @gdt.command(name="defaultstate")
-    async def gdt_default_game_state(
-        self, ctx: Union[commands.Context, discord.Interaction], state: HockeyStates
-    ) -> None:
+    async def gdt_default_game_state(self, ctx: commands.Context, state: StateFinder) -> None:
         """
         Set the default game state updates for Game Day Channels.
 
@@ -137,9 +135,7 @@ class GameDayThreads(MixinMeta):
             await ctx.send(msg)
 
     @gdt.command(name="updates")
-    async def gdt_update_start(
-        self, ctx: Union[commands.Context, discord.Interaction], update_start: bool
-    ) -> None:
+    async def gdt_update_start(self, ctx: commands.Context, update_start: bool) -> None:
         """
         Set whether or not the starting thread message will update as the game progresses.
 
@@ -153,11 +149,11 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="create")
-    async def gdt_create(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_create(self, ctx: commands.Context) -> None:
         """
         Creates the next gdt for the server
         """
-
+        await ctx.defer()
         if not await self.config.guild(ctx.guild).gdt_team():
             msg = _("No team was setup for game day channels in this server.")
             await ctx.send(msg)
@@ -173,7 +169,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="toggle")
-    async def gdt_toggle(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def gdt_toggle(self, ctx: commands.Context) -> None:
         """
         Toggles the game day channel creation on this server
         """
@@ -192,9 +188,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="channel")
-    async def gdt_channel(
-        self, ctx: Union[commands.Context, discord.Interaction], channel: discord.TextChannel
-    ) -> None:
+    async def gdt_channel(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.
         """
@@ -202,9 +196,9 @@ class GameDayThreads(MixinMeta):
         await self.config.guild(ctx.guild).gdt_channel.set(channel.id)
         await ctx.send(msg)
 
-    @gdt.command(name="test")
+    @gdt.command(name="test", with_app_command=False)
     @commands.is_owner()
-    async def test_gdt(self, ctx: Union[commands.Context, discord.Interaction]) -> None:
+    async def test_gdt(self, ctx: commands.Context) -> None:
         """
         Test checking for new game day channels
         """
@@ -215,8 +209,8 @@ class GameDayThreads(MixinMeta):
     @commands.guild_only()
     async def gdt_setup(
         self,
-        ctx: Union[commands.Context, discord.Interaction],
-        team: HockeyTeams,
+        ctx: commands.Context,
+        team: TeamFinder,
         channel: Optional[discord.TextChannel] = None,
     ) -> None:
         """
@@ -229,6 +223,7 @@ class GameDayThreads(MixinMeta):
         `[channel]` The channel that game day threads will be created in. If not provided will default
         to the current text channel.
         """
+        await ctx.defer()
         guild = ctx.guild
         if await self.config.guild(guild).create_channels():
             msg = _(

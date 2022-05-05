@@ -9,11 +9,13 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import MixinMeta
 from .game import Game
-from .helper import HockeyStates, HockeyTeams, get_chn_name, utc_to_local
+from .helper import StateFinder, TeamFinder, get_chn_name
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
 
 _ = Translator("Hockey", __file__)
+
+hockey_commands = MixinMeta.hockey_commands
 
 
 class GameDayChannels(MixinMeta):
@@ -25,7 +27,7 @@ class GameDayChannels(MixinMeta):
     # GDC Commands                                                        #
     #######################################################################
 
-    @commands.group()
+    @hockey_commands.group(with_app_command=False)
     @commands.mod_or_permissions(manage_channels=True)
     @commands.guild_only()
     async def gdc(self, ctx: commands.Context) -> None:
@@ -104,7 +106,7 @@ class GameDayChannels(MixinMeta):
         await ctx.send(_("Game day channels deleted."))
 
     @gdc.command(name="defaultstate")
-    async def gdc_default_game_state(self, ctx: commands.Context, *state: HockeyStates) -> None:
+    async def gdc_default_game_state(self, ctx: commands.Context, state: StateFinder) -> None:
         """
         Set the default game state updates for Game Day Channels.
 
@@ -115,15 +117,20 @@ class GameDayChannels(MixinMeta):
         `final` is the final game update including 3 stars.
         `goal` is all the goal updates.
         """
-        await self.config.guild(ctx.guild).gdc_state_updates.set(list(set(state)))
-        if state:
-            await ctx.send(
-                _("GDC game updates set to {states}").format(
-                    states=humanize_list(list(set(state)))
-                )
-            )
+        cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
+        if state in cur_state:
+            cur_state.remove(state)
         else:
-            await ctx.send(_("GDC game updates not set"))
+            cur_state.append(state)
+        await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
+        if cur_state:
+            msg = _("GDT game updates set to {states}").format(
+                states=humanize_list(list(set(cur_state)))
+            )
+            await ctx.send(msg)
+        else:
+            msg = _("GDT game updates not set")
+            await ctx.send(msg)
 
     @gdc.command(name="create")
     async def gdc_create(self, ctx: commands.Context) -> None:
@@ -131,15 +138,17 @@ class GameDayChannels(MixinMeta):
         Creates the next gdc for the server
         """
         if not await self.config.guild(ctx.guild).gdc_team():
-            return await ctx.send(_("No team was setup for game day channels in this server."))
+            await ctx.send(_("No team was setup for game day channels in this server."))
+            return
         if await self.config.guild(ctx.guild).create_channels():
             await self.create_gdc(ctx.guild)
         else:
-            return await ctx.send(
+            await ctx.send(
                 _("You need to first toggle channel creation with `{prefix}gdc toggle`.").format(
                     prefix=ctx.clean_prefix
                 )
             )
+            return
         await ctx.send(_("Game day channels created."))
 
     @gdc.command(name="toggle")
@@ -191,7 +200,7 @@ class GameDayChannels(MixinMeta):
         await self.config.guild(guild).delete_gdc.set(not cur_setting)
         await ctx.send(msg)
 
-    @gdc.command(name="test")
+    @gdc.command(name="test", with_app_command=False)
     @commands.is_owner()
     async def test_gdc(self, ctx: commands.Context) -> None:
         """
@@ -205,7 +214,7 @@ class GameDayChannels(MixinMeta):
     async def gdc_setup(
         self,
         ctx: commands.Context,
-        team: HockeyTeams,
+        team: TeamFinder,
         category: discord.CategoryChannel = None,
         delete_gdc: bool = True,
     ) -> None:
@@ -232,13 +241,15 @@ class GameDayChannels(MixinMeta):
             )
             return
         if team is None:
-            return await ctx.send(_("You must provide a valid current team."))
+            await ctx.send(_("You must provide a valid current team."))
+            return
         if category is None and ctx.channel.category is not None:
             category = guild.get_channel(ctx.channel.category_id)
         else:
-            return await ctx.send(
+            await ctx.send(
                 _("You must specify a channel category for game day channels to be created under.")
             )
+            return
         if not category.permissions_for(guild.me).manage_channels:
             await ctx.send(_("I don't have manage channels permission!"))
             return

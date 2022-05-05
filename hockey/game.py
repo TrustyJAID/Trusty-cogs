@@ -993,10 +993,14 @@ class Game:
                     await bot.get_cog("Hockey").config.teams.set(team_list)
                     await goal.edit_team_goal(bot, self, old_msgs)
         # attempts to delete the goal if it was called back
-        for goal_str in home_goal_list:
-            await Goal.remove_goal_post(bot, goal_str, self.home_team, self)
-        for goal_str in away_goal_list:
-            await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
+        home_diff = abs(len(home_goal_list) - len(self.home_goals))
+        away_diff = abs(len(away_goal_list) - len(self.away_goals))
+        if 1 < home_diff <= 2:
+            for goal_str in home_goal_list:
+                await Goal.remove_goal_post(bot, goal_str, self.home_team, self)
+        if 1 < away_diff <= 2:
+            for goal_str in away_goal_list:
+                await Goal.remove_goal_post(bot, goal_str, self.away_team, self)
 
     async def save_game_state(self, bot: Red, time_to_game_start: str = "0") -> None:
         """

@@ -24,7 +24,7 @@ from .components import (
     TeamButton,
 )
 from .constants import BASE_URL, TEAMS
-from .helper import ACTIVE_TEAM_RE, utc_to_local
+from .helper import ACTIVE_TEAM_RE, Conferences, Divisions, utc_to_local
 
 if TYPE_CHECKING:
     from redbot.core import Config, commands
@@ -32,18 +32,6 @@ if TYPE_CHECKING:
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
-
-
-class Divisions(Enum):
-    Metropolitan = "Metropolitan"
-    Atlantic = "Atlantic"
-    Central = "Central"
-    Pacific = "Pacific"
-
-
-class Conferences(Enum):
-    Eastern = "Eastern"
-    Western = "Western"
 
 
 class StreakType(Enum):
@@ -614,6 +602,7 @@ class StandingsMenu(discord.ui.View):
                 r"division|metro(?=politan)?|pacific|atlantic|central", flags=re.I
             ),
             "all": re.compile(r"all", flags=re.I),
+            "league": re.compile(r"league", flags=re.I),
             "team": ACTIVE_TEAM_RE,
         }
         if search is None:
@@ -658,7 +647,7 @@ class StandingsMenu(discord.ui.View):
         await self.prepare()
         await self.source._prepare_once()
         self.ctx = ctx
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
@@ -678,30 +667,19 @@ class StandingsMenu(discord.ui.View):
         else:
             await interaction.response.edit_message(**kwargs, view=self)
 
-    async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
-    ) -> discord.Message:
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        is_slash = False
-
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
         if self.search is not None:
             for page in self.pages:
                 if self.search.lower() in page.author.name.lower():
                     self.current_page = self.pages.index(page)
         page = await self.source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
-        if is_slash:
-            self.author = ctx.user
-            return await ctx.followup.send(**kwargs, view=self, wait=True)
-        else:
-            self.author = ctx.author
-            return await channel.send(**kwargs, view=self)
+        return await ctx.send(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self.source.get_max_pages()

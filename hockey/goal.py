@@ -67,6 +67,7 @@ class Goal:
         self.empty_net = kwargs.get("empty_net")
         self.event = kwargs.get("event")
         self.link = kwargs.get("link", None)
+        self.image = kwargs.get("image", None)
         self.tasks: List[asyncio.Task] = []
         self.home_shots: int = kwargs.get("home_shots", 0)
         self.away_shots: int = kwargs.get("away_shots", 0)
@@ -91,6 +92,7 @@ class Goal:
             "empty_net": self.empty_net,
             "event": self.event,
             "link": self.link,
+            "image": self.image,
             "home_shots": self.home_shots,
             "away_shots": self.away_shots,
         }
@@ -123,6 +125,7 @@ class Goal:
         else:
             jersey_no = ""
         link = None
+        image = None
         if media_content:
             event_id = data["about"]["eventId"]
             try:
@@ -131,6 +134,13 @@ class Goal:
                         for playback in highlight["highlight"]["playbacks"]:
                             if playback["name"] == "FLASH_1800K_896x504":
                                 link = playback["url"]
+                        image = (
+                            highlight["highlight"]
+                            .get("image", {})
+                            .get("cuts", {})
+                            .get("1136x640", {})
+                            .get("src", None)
+                        )
             except KeyError:
                 pass
 
@@ -152,6 +162,7 @@ class Goal:
             empty_net=empty_net,
             event=data["result"]["event"],
             link=link,
+            image=image,
             home_shots=data.get("home_shots", 0),
             away_shots=data.get("away_shots", 0),
         )
@@ -481,6 +492,8 @@ class Goal:
                 icon_url=logo,
             )
             em.timestamp = self.time
+            if self.image is not None:
+                em.set_image(url=self.image)
         else:
             if "missed" in self.event.lower():
                 em = discord.Embed(description=self.description, colour=colour)

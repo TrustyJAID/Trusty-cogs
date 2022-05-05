@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Dict, List, Optional, Pattern, Tuple, Union
+from enum import Enum
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 import discord
 import pytz
@@ -11,7 +23,9 @@ from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core.bot import Red
 from redbot.core.commands import Context
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter
 
 from .constants import TEAMS
 from .teamentry import TeamEntry
@@ -67,7 +81,8 @@ class YearFinder(Converter):
     for use in the `[p]nhl games` command to pull up specific dates
     """
 
-    async def convert(self, ctx: Context, argument: str) -> re.Match:
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> re.Match:
         find = YEAR_RE.search(argument)
         if find:
             return find
@@ -75,68 +90,47 @@ class YearFinder(Converter):
             raise BadArgument(_("`{arg}` is not a valid year.").format(arg=argument))
 
 
-class DateFinder(Converter):
+class DateFinder(discord.app_commands.Transformer):
     """
     Converter for `YYYY-MM-DD` date formats
 
     for use in the `[p]nhl games` command to pull up specific dates
     """
 
-    async def convert(self, ctx: Context, argument: str) -> Optional[datetime]:
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> datetime:
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-            return datetime.strptime(date_str, "%Y-%m-%d")
+            return datetime.strptime(date_str, "%Y-%m-%d").astimezone(timezone.utc)
         else:
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
 
-
-class TimezoneFinder(Converter):
-    """
-    Converts user input into valid timezones for pytz to use
-    """
-
-    async def convert(self, ctx: Context, argument: str) -> str:
-        find = TIMEZONE_RE.search(argument)
-        if find:
-            return find.group(0)
-        else:
-            raise BadArgument(
-                _(
-                    "`{argument}` is not a valid timezone. Please see "
-                    "`{prefix}hockeyset timezone list`."
-                ).format(argument=argument, prefix=ctx.clean_prefix)
-            )
-
-
-class TeamDateFinder(Converter):
-    """
-    Converter to get both a team and a date from a string
-    """
-
-    async def convert(
-        self, ctx: Context, argument: str
-    ) -> Dict[str, Optional[Union[datetime, List[str], str]]]:
-        result: Dict[str, Optional[Union[datetime, List[str], str, bool]]] = {"team": []}
-        find = DATE_RE.search(argument)
-        day_ref = DAY_REF_RE.search(argument)
-        result["vs"] = VERSUS_RE.search(argument) is not None
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
+        find = DATE_RE.search(value)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-            result["date"] = datetime.strptime(date_str, "%Y-%m-%d")
-            argument = DATE_RE.sub("", argument)
-        if day_ref:
-            today = utc_to_local(datetime.utcnow())
-            if day_ref.group(1).lower() == "yesterday":
-                result["date"] = today + timedelta(days=-1)
-            elif day_ref.group(1).lower() == "tomorrow":
-                result["date"] = today + timedelta(days=+1)
-            else:
-                result["date"] = today
-            argument = DAY_REF_RE.sub("", argument)
+            return datetime.strptime(date_str, "%Y-%m-%d").astimezone(timezone.utc)
+        else:
+            return datetime.now(timezone.utc)
+
+
+class TeamFinder(discord.app_commands.Transformer):
+    """
+    Converter for Teams
+    """
+
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> List[str]:
         potential_teams = argument.split()
+        result = set()
+        include_all = ctx.command.name in ["setup", "add"]
+        include_inactive = ctx.command.name in ["roster"]
         for team, data in TEAMS.items():
             if "Team" in team:
+                continue
+            if not include_inactive and not data["active"]:
                 continue
             nick = data["nickname"]
             short = data["tri_code"]
@@ -150,112 +144,314 @@ class TeamDateFinder(Converter):
                 if find:
                     log.debug(reg)
                     log.debug(find)
-                    result["team"].append(team)
+                    result.add(team)
+        if include_all and "all" in argument:
+            result.add("all")
+        if not result:
+            raise BadArgument()
+        return list(result)
 
-        return result
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, argument: str) -> List[str]:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, argument)
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        team_choices = []
+        include_all = interaction.command.name in ["setup", "add"]
+        include_inactive = interaction.command.name in ["roster"]
+        ret = []
+        for t, d in TEAMS.items():
+            team_choices.append(discord.app_commands.Choice(name=t, value=t))
+        if include_all:
+            team_choices.insert(0, discord.app_commands.Choice(name="All", value="all"))
+        for choice in team_choices:
+            if not include_inactive and not d["active"]:
+                continue
+            if current.lower() in choice.name.lower():
+                ret.append(choice)
+        return ret[:25]
 
 
-class SelectTeamMenu(discord.ui.Select):
-    def __init__(self, max_values=1, min_values=1, placeholder=_("Pick a team")):
-        super().__init__(max_values=max_values, min_values=min_values, placeholder=placeholder)
-
-    async def callback(self, interaction: discord.Interaction):
-        self.view.stop()
-        pass
+class BasePlayer(NamedTuple):
+    id: int
+    name: str
+    on_roster: Literal["Y", "N"]
 
 
-class SelectTeamView(discord.ui.View):
-    def __init__(self, ctx: Context, author: discord.Member):
-        super().__init__(timeout=180)
-        self.ctx = ctx
-        self.author = author
+class PlayerFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> List[BasePlayer]:
+        now = datetime.utcnow()
+        cog = ctx.cog
+        saved = datetime.fromtimestamp(await cog.config.player_db())
+        path = cog_data_path(cog) / "players.json"
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            async with cog.session.get(
+                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+            ) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await cog.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
 
-    async def interaction_check(self, interaction: discord.Interaction):
-        """Just extends the default reaction_check to use owner_ids"""
-        if interaction.user.id != self.author.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
+            players = []
+            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
+                if argument.lower() in player["fullName"].lower():
+                    if player["onRoster"] == "N":
+                        players.append(
+                            BasePlayer(
+                                id=player["id"],
+                                name=player["fullName"],
+                                on_roster=player["onRoster"],
+                            )
+                        )
+                    else:
+                        players.insert(
+                            0,
+                            BasePlayer(
+                                id=player["id"],
+                                name=player["fullName"],
+                                on_roster=player["onRoster"],
+                            ),
+                        )
+        return players
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, argument: str) -> List[BasePlayer]:
+        now = datetime.utcnow()
+        cog = interaction.client.get_cog("Hockey")
+        saved = datetime.fromtimestamp(await cog.config.player_db())
+        path = cog_data_path(cog) / "players.json"
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            async with cog.session.get(
+                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+            ) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await cog.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
+
+            players = []
+            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
+                if argument.lower() in player["fullName"].lower():
+                    if player["onRoster"] == "N":
+                        players.append(
+                            BasePlayer(
+                                id=player["id"],
+                                name=player["fullName"],
+                                on_roster=player["onRoster"],
+                            )
+                        )
+                    else:
+                        players.insert(
+                            0,
+                            BasePlayer(
+                                id=player["id"],
+                                name=player["fullName"],
+                                on_roster=player["onRoster"],
+                            ),
+                        )
+        return players
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        now = datetime.utcnow()
+        saved = datetime.fromtimestamp(await self.config.player_db())
+        path = cog_data_path(self) / "players.json"
+        ret = []
+        if (now - saved) > timedelta(days=1) or not path.exists():
+            async with self.session.get(
+                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
+            ) as resp:
+                with path.open(encoding="utf-8", mode="w") as f:
+                    json.dump(await resp.json(), f)
+            await self.config.player_db.set(int(now.timestamp()))
+        with path.open(encoding="utf-8", mode="r") as f:
+            data = json.loads(f.read())["data"]
+            for player in data:
+                if current.lower() in player["fullName"].lower():
+                    ret.append(
+                        discord.app_commands.Choice(
+                            name=player["fullName"], value=player["fullName"]
+                        )
+                    )
+        return ret[:25]
+
+
+class TimezoneFinder(Converter):
+    """
+    Converts user input into valid timezones for pytz to use
+    """
+
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> str:
+        find = TIMEZONE_RE.search(argument)
+        if find:
+            return find.group(0)
+        else:
+            raise BadArgument(
+                _(
+                    "`{argument}` is not a valid timezone. Please see "
+                    "`{prefix}hockeyset timezone list`."
+                ).format(argument=argument, prefix=ctx.clean_prefix)
             )
-            return False
-        return True
 
 
-class HockeyTeams(Converter):
-    """
-    Converter for valid Hockey Teams to choose from
-    """
-
+class LeaderboardFinder(discord.app_commands.Transformer):
+    @classmethod
     async def convert(
         self, ctx: Context, argument: str
-    ) -> Optional[Union[List[Dict[str, dict]], str]]:
-        result: Optional[Union[List[Dict[str, dict]], str]] = []
-        team_list = await check_valid_team(argument)
-        if team_list == []:
-            raise BadArgument(_('Team "{team}" not found').format(team=argument))
-        if len(team_list) == 1:
-            result = team_list[0]
-        else:
-            # This is just some extra stuff to correct the team picker
-            msg = _("There's multiple teams with that name, pick one of these:\n")
-            is_slash = False
-            if isinstance(ctx, discord.Interaction):
-                is_slash = True
-                author = ctx.user
-            else:
-                author = ctx.author
-            view = SelectTeamView(ctx, author)
-            menu = SelectTeamMenu(max_values=1, min_values=1, placeholder=_("Pick a team"))
-            for team in team_list[:25]:
-                emoji_str = TEAMS[team]["emoji"]
-                if emoji_str:
-                    emoji = discord.PartialEmoji.from_str(emoji_str)
+    ) -> Literal[
+        "season",
+        "weekly",
+        "worst",
+        "playoffs",
+        "playoffs_weekly",
+        "pre-season",
+        "pre-season_weekly",
+    ]:
+        leaderboard_type = argument.replace(" ", "_").lower()
+        if leaderboard_type in ["seasonal", "season"]:
+            return "season"
+        if leaderboard_type in ["weekly", "week"]:
+            return "weekly"
+        if leaderboard_type in ["playoffs", "playoff"]:
+            return "playoffs"
+        if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
+            return "playoffs_weekly"
+        if leaderboard_type in ["pre-season", "preseason"]:
+            return "pre-season"
+        if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
+            return "pre-season_weekly"
+        if leaderboard_type in ["worst"]:
+            return "worst"
+        return "season"
 
-                else:
-                    emoji = None
-                menu.add_option(emoji=emoji, label=team)
-            view.add_item(menu)
-            if is_slash:
-                await ctx.followup.send(msg, view=view)
-            else:
-                await ctx.send(msg, view=view)
-            await view.wait()
-            if len(menu.values) == 0:
-                return None
-            return menu.values[0]
-        return result
+    @classmethod
+    async def transform(
+        cls, interaction: discord.Interaction, argument: str
+    ) -> Literal[
+        "season",
+        "weekly",
+        "worst",
+        "playoffs",
+        "playoffs_weekly",
+        "pre-season",
+        "pre-season_weekly",
+    ]:
+        return await cls.convert(interaction, argument)
 
-
-class HockeyStandings(Converter):
-    """
-    Converter for valid Hockey Standings to choose from
-
-    Guidance code on how to do this from:
-    https://github.com/Rapptz/discord.py/blob/rewrite/discord/ext/commands/converter.py#L85
-    https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/mod.py#L24
-    """
-
-    async def convert(self, ctx: Context, argument: str) -> Optional[str]:
-        result = None
-        team_list = await check_valid_team(argument, True)
-        if team_list == []:
-            raise BadArgument(_('Standing or Team "{team}" not found').format(team=argument))
-        if len(team_list) >= 1:
-            result = team_list[0]
-        return result
+    async def autocomplete(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        choices = [
+            discord.app_commands.Choice(name="Seasonal", value="season"),
+            discord.app_commands.Choice(name="Worst", value="worst"),
+            discord.app_commands.Choice(name="Playoffs", value="playoffs"),
+            discord.app_commands.Choice(name="Playoffs Weekly", value="playoffs_weekly"),
+            discord.app_commands.Choice(name="Pre-Season", value="pre-season"),
+            discord.app_commands.Choice(name="Pre-Season Weekly", value="pre-season_weekly"),
+            discord.app_commands.Choice(name="Weekly", value="weekly"),
+        ]
+        return choices
 
 
-class HockeyStates(Converter):
-    """
-    Converter for valid Hockey states to pick from
+class HockeyStates(Enum):
+    preview = "preview"
+    live = "live"
+    goal = "goal"
+    periodrecap = "periodrecap"
+    final = "final"
 
-        This is used to determine what game states the bot should post.
-    """
 
-    async def convert(self, ctx: Context, argument: str) -> str:
+class StateFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> HockeyStates:
         state_list = ["preview", "live", "final", "goal", "periodrecap"]
         if argument.lower() not in state_list:
             raise BadArgument('"{}" is not a valid game state.'.format(argument))
-        return argument.title()
+        return HockeyStates(argument.lower())
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, argument: str) -> HockeyStates:
+        return await cls.convert(interaction, argument)  # type: ignore
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, value: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        return [
+            discord.app_commands.Choice(name=v.name.title(), value=v.name) for v in HockeyStates
+        ]
+
+
+class Divisions(Enum):
+    Metropolitan = "Metropolitan"
+    Atlantic = "Atlantic"
+    Central = "Central"
+    Pacific = "Pacific"
+
+
+class Conferences(Enum):
+    Eastern = "Eastern"
+    Western = "Western"
+
+
+class StandingsFinder(discord.app_commands.Transformer):
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str) -> str:
+        ret = ""
+        try:
+            ret = Divisions(argument.title()).name
+        except ValueError:
+            pass
+        try:
+            ret = Conferences(argument.title()).name
+        except ValueError:
+            pass
+        if argument.lower() == "all":
+            ret = "all"
+        if argument.lower() == "league":
+            ret = "league"
+        if not ret:
+            for division in Divisions:
+                if argument.lower() in division.name.lower():
+                    ret = division.name
+            for conference in Conferences:
+                if argument.lower() in conference.name.lower():
+                    ret = conference.name
+        return ret.lower()
+
+    @classmethod
+    async def transform(cls, ctx: Context, argument: str) -> str:
+        ret = ""
+        try:
+            ret = Divisions(argument.title()).name
+        except ValueError:
+            pass
+        try:
+            ret = Conferences(argument.title()).name
+        except ValueError:
+            pass
+        if argument.lower() == "all":
+            ret = "all"
+        if argument.lower() == "league":
+            ret = "league"
+        return ret.lower()
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[discord.app_commands.Choice[str]]:
+        choices = [
+            discord.app_commands.Choice(name="All", value="all"),
+            discord.app_commands.Choice(name="League", value="league"),
+        ]
+        choices += [discord.app_commands.Choice(name=d.name, value=d.name) for d in Divisions]
+        choices += [discord.app_commands.Choice(name=d.name, value=d.name) for d in Conferences]
+        return choices
 
 
 async def check_to_post(
@@ -315,74 +511,6 @@ async def get_team(bot: Red, team: str) -> TeamEntry:
     team_list.append(return_team.to_json())
     await config.teams.set(team_list)
     return return_team
-
-
-async def check_valid_team(team_name: str, standings: bool = False) -> List[str]:
-    """
-    Checks if this is a valid team name or all teams
-    useful for game day channel creation should impliment elsewhere
-
-    Parameters
-    ----------
-        team_name: str
-            The team name you're searching for
-        standings: bool
-            Whether or not to include standings types
-
-    Returns
-    -------
-        List[str]
-            A list of the teams that resemble the search. Teams
-            will be returned sorted alphabetically and in preference of
-            active teams first.
-    """
-    is_team = []
-    active_team = set()
-    inactive_team = set()
-    conference: List[str] = ["eastern", "western", "conference"]
-    division = [
-        "central",
-        "metropolitan",
-        "division",
-        "pacific",
-        "atlantic",
-    ]
-    if team_name.lower() == "all":
-        return ["all"]
-    if standings:
-        if team_name in conference:
-            return [team_name]
-        if team_name.lower() in division:
-            return [team_name]
-        for div in division:
-            if team_name.lower() in div:
-                return [div]
-    for team, data in TEAMS.items():
-        if team_name.lower() in team.lower():
-            if data["active"]:
-                active_team.add(team)
-            else:
-                inactive_team.add(team)
-    if team_name.lower() in {"montreal canadiens", "habs", "montreal"}:
-        active_team.add("Montréal Canadiens")
-    if team_name.lower() in {"avs"}:
-        active_team.add("Colorado Avalanche")
-    if team_name.lower() in {"preds"}:
-        active_team.add("Nashville Predators")
-    if team_name.lower() in {"bolts"}:
-        active_team.add("Tampa Bay Lightning")
-    if team_name.lower() in {"jackets", "bjs"}:
-        active_team.add("Columbus Blue Jackets")
-    if team_name.lower() in {"isles"}:
-        active_team.add("New York Islanders")
-    if team_name.lower() in {"sens"}:
-        active_team.add("Ottawa Senators")
-    if team_name.lower() in {"pens"}:
-        active_team.add("Pittsburgh Penguins")
-    if team_name.lower() in {"caps"}:
-        active_team.add("Washington Capitals")
-    is_team = sorted(active_team) + sorted(inactive_team)
-    return is_team
 
 
 async def get_channel_obj(

@@ -25,6 +25,8 @@ class Schedule(menus.PageSource):
         self._checks: int = 0
         self._last_page: int = 0
         self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        if self.date is None:
+            self.date = datetime.now(timezone.utc)
         self.limit: int = kwargs.get("limit", 10)
         self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""
@@ -241,8 +243,12 @@ class ScheduleList(menus.PageSource):
         self._checks: int = 0
         self._last_page: int = 0
         self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        if self.date is None:
+            self.date = datetime.now(timezone.utc)
         self.limit: int = kwargs.get("limit", 10)
         self.team: List[str] = kwargs.get("team", [])
+        if self.team is None:
+            self.team = []
         self._last_searched: str = ""
         self._session: aiohttp.ClientSession = kwargs.get("session")
         self.timezone: str = kwargs.get("timezone")

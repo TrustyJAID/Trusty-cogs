@@ -199,19 +199,19 @@ class LeaderboardPages(menus.ListPageSource):
 
 
 class PlayerPages(menus.ListPageSource):
-    def __init__(self, pages: list, season: str, players: dict):
-        super().__init__(pages, per_page=1)
-        self.pages: List[int] = pages
-        self.players = players
+    def __init__(self, pages: list, season: str):
+        super().__init__([p.id for p in pages], per_page=1)
+        self.pages: List[int] = [p.id for p in pages]
+        self.players = {p.id: p for p in pages}
         self.season: str = season
         self.select_options = []
-        for count, player_id in enumerate(self.pages):
-            player_name = self.players[player_id]["fullName"]
+        for count, player in enumerate(pages):
+            player_name = player.name
             self.select_options.append(
                 discord.SelectOption(
                     label=player_name[:50],
                     description=f"Page {count + 1}",
-                    value=player_id,
+                    value=player.id,
                 )
             )
 
