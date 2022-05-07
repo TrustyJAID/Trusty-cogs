@@ -492,8 +492,8 @@ class Goal:
                 icon_url=logo,
             )
             em.timestamp = self.time
-            if self.image is not None:
-                em.set_image(url=self.image)
+            # if self.image is not None:
+            # em.set_image(url=self.image)
         else:
             if "missed" in self.event.lower():
                 em = discord.Embed(description=self.description, colour=colour)

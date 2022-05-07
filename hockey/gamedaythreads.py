@@ -40,6 +40,7 @@ class GameDayThreads(MixinMeta):
         """
 
     @gdt.command(name="settings")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_settings(self, ctx: commands.Context) -> None:
         """
         Show the current Game Day Thread Settings
@@ -98,6 +99,7 @@ class GameDayThreads(MixinMeta):
             await ctx.send(embed=em)
 
     @gdt.command(name="delete")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_delete(self, ctx: commands.Context) -> None:
         """
         Delete all current game day threads for the server
@@ -108,6 +110,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="defaultstate")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_default_game_state(self, ctx: commands.Context, state: StateFinder) -> None:
         """
         Set the default game state updates for Game Day Channels.
@@ -135,6 +138,7 @@ class GameDayThreads(MixinMeta):
             await ctx.send(msg)
 
     @gdt.command(name="updates")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_update_start(self, ctx: commands.Context, update_start: bool) -> None:
         """
         Set whether or not the starting thread message will update as the game progresses.
@@ -149,6 +153,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="create")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_create(self, ctx: commands.Context) -> None:
         """
         Creates the next gdt for the server
@@ -169,6 +174,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="toggle")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_toggle(self, ctx: commands.Context) -> None:
         """
         Toggles the game day channel creation on this server
@@ -188,6 +194,7 @@ class GameDayThreads(MixinMeta):
         await ctx.send(msg)
 
     @gdt.command(name="channel")
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_channel(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.

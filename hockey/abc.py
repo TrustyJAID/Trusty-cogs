@@ -125,10 +125,6 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def player_id_lookup(self, name: str) -> None:
-        raise NotImplementedError()
-
-    @abstractmethod
     async def player(
         self,
         ctx: commands.Context,

@@ -104,7 +104,7 @@ class DateFinder(discord.app_commands.Transformer):
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
             return datetime.strptime(date_str, "%Y-%m-%d").astimezone(timezone.utc)
         else:
-            return datetime.now(timezone.utc)
+            raise BadArgument()
 
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
@@ -122,7 +122,7 @@ class TeamFinder(discord.app_commands.Transformer):
     """
 
     @classmethod
-    async def convert(cls, ctx: Context, argument: str) -> List[str]:
+    async def convert(cls, ctx: Context, argument: str) -> str:
         potential_teams = argument.split()
         result = set()
         include_all = ctx.command.name in ["setup", "add"]
@@ -148,11 +148,11 @@ class TeamFinder(discord.app_commands.Transformer):
         if include_all and "all" in argument:
             result.add("all")
         if not result:
-            raise BadArgument()
-        return list(result)
+            raise BadArgument(_("You must provide a valid current team."))
+        return list(result)[0]
 
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, argument: str) -> List[str]:
+    async def transform(cls, interaction: discord.Interaction, argument: str) -> str:
         ctx = await interaction.client.get_context(interaction)
         return await cls.convert(ctx, argument)
 

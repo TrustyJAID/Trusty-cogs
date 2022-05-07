@@ -79,18 +79,17 @@ class HockeyCommands(MixinMeta):
             await ctx.send(_("You must provide a valid current team."))
             return
         msg = ""
-        for teams in team:
-            role_name = f"{teams}"
-            try:
-                role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
-                if not role or role >= guild.me.top_role:
-                    msg += _("{role_name} is not an available role!").format(role_name=role_name)
-                    continue
-                await ctx.author.add_roles(role[0])
-                msg += role[0].name + _(" role applied.")
-            except Exception:
-                log.error("error adding team role", exc_info=True)
+        role_name = f"{team}"
+        try:
+            role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
+            if not role or role >= guild.me.top_role:
                 msg += _("{role_name} is not an available role!").format(role_name=role_name)
+            await ctx.author.add_roles(role[0])
+            msg += role[0].name + _(" role applied.")
+        except Exception:
+            log.error("error adding team role", exc_info=True)
+            msg += _("{role_name} is not an available role!").format(role_name=role_name)
+        await ctx.send(msg)
 
     @hockey_commands.command(name="goalsrole", hidden=True, with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
@@ -98,18 +97,17 @@ class HockeyCommands(MixinMeta):
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
         msg = ""
-        for teams in team:
-            role_name = f"{teams} GOAL"
-            try:
-                role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
-                if not role or role >= guild.me.top_role:
-                    msg += _("{role_name} is not an available role!").format(role_name=role_name)
-                    continue
-                await ctx.author.add_roles(role[0])
-                msg += role[0].name + _(" role applied.")
-            except Exception:
-                log.error("error adding team role", exc_info=True)
+        role_name = f"{team} GOAL"
+        try:
+            role = discord.utils.find(lambda r: r.name == role_name, guild.roles)
+            if not role or role >= guild.me.top_role:
                 msg += _("{role_name} is not an available role!").format(role_name=role_name)
+            await ctx.author.add_roles(role[0])
+            msg += role[0].name + _(" role applied.")
+        except Exception:
+            log.error("error adding team role", exc_info=True)
+            msg += _("{role_name} is not an available role!").format(role_name=role_name)
+        await ctx.send(msg)
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -130,9 +128,9 @@ class HockeyCommands(MixinMeta):
     async def games(
         self,
         ctx: commands.Context,
+        date: Optional[DateFinder] = None,
         *,
         team: Optional[TeamFinder],
-        date: Optional[DateFinder],
     ) -> None:
         """
         Gets all NHL games for the current season
@@ -144,9 +142,14 @@ class HockeyCommands(MixinMeta):
         Team and Date can be provided at the same time and then
         only that teams games may appear in that date range if they exist.
         """
+        log.debug(team)
+        log.debug(date)
         await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
-            source=Schedule(team=team, date=date, session=self.session),
+            source=Schedule(team=teams, date=date, session=self.session),
             cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
@@ -159,9 +162,9 @@ class HockeyCommands(MixinMeta):
         self,
         ctx: commands.Context,
         style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all",
+        date: Optional[DateFinder] = None,
         *,
         team: Optional[TeamFinder],
-        date: Optional[DateFinder],
     ) -> None:
         """
         Display game heatmaps.
@@ -182,9 +185,12 @@ class HockeyCommands(MixinMeta):
                 _("Style must be one of {styles}.").format(styles=humanize_list(styles))
             )
             return
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
             source=Schedule(
-                team=team,
+                team=teams,
                 date=date,
                 session=self.session,
                 include_goals=False,
@@ -204,9 +210,9 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         strength: Literal["all", "ev", "5v5", "sva"] = "all",
         corsi: bool = True,
+        date: Optional[DateFinder] = None,
         *,
         team: Optional[TeamFinder],
-        date: Optional[DateFinder],
     ) -> None:
         """
         Display games gameflow.
@@ -228,9 +234,12 @@ class HockeyCommands(MixinMeta):
                 _("Style must be one of {styles}.").format(styles=humanize_list(styles))
             )
             return
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
             source=Schedule(
-                team=team,
+                team=teams,
                 date=date,
                 session=self.session,
                 include_goals=False,
@@ -249,9 +258,9 @@ class HockeyCommands(MixinMeta):
     async def schedule(
         self,
         ctx: commands.Context,
+        date: Optional[DateFinder],
         *,
         team: Optional[TeamFinder],
-        date: Optional[DateFinder],
     ) -> None:
         """
         Gets upcoming NHL games for the current season as a list
@@ -264,8 +273,11 @@ class HockeyCommands(MixinMeta):
         only that teams games may appear in that date range if they exist.
         """
         await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
-            source=ScheduleList(team=team, date=date, session=self.session),
+            source=ScheduleList(team=teams, date=date, session=self.session),
             cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
@@ -277,9 +289,9 @@ class HockeyCommands(MixinMeta):
     async def recap(
         self,
         ctx: commands.Context,
+        date: Optional[DateFinder],
         *,
         team: Optional[TeamFinder],
-        date: Optional[DateFinder],
     ) -> None:
         """
         Gets NHL games and their game recap links
@@ -292,8 +304,11 @@ class HockeyCommands(MixinMeta):
         only that teams games may appear in that date range if they exist.
         """
         await ctx.defer()
+        teams = []
+        if team is not None:
+            teams = [team]
         await GamesMenu(
-            source=ScheduleList(team=team, date=date, session=self.session, get_recap=True),
+            source=ScheduleList(team=teams, date=date, session=self.session, get_recap=True),
             cog=self,
             delete_message_after=False,
             clear_reactions_after=True,
@@ -437,19 +452,18 @@ class HockeyCommands(MixinMeta):
             await ctx.send(_("You must provide a valid current team."))
             return
         players = []
-        for teams in team:
-            url = f"{BASE_URL}/api/v1/teams/{TEAMS[teams]['id']}/roster{season_url}"
-            async with self.session.get(url) as resp:
-                data = await resp.json()
-            if "roster" in data:
-                for player in data["roster"]:
-                    players.append(
-                        BasePlayer(
-                            id=player["person"]["id"],
-                            name=player["person"]["fullName"],
-                            on_roster="Y",
-                        )
+        url = f"{BASE_URL}/api/v1/teams/{TEAMS[team]['id']}/roster{season_url}"
+        async with self.session.get(url) as resp:
+            data = await resp.json()
+        if "roster" in data:
+            for player in data["roster"]:
+                players.append(
+                    BasePlayer(
+                        id=player["person"]["id"],
+                        name=player["person"]["fullName"],
+                        on_roster="Y",
                     )
+                )
 
         if players:
             await BaseMenu(

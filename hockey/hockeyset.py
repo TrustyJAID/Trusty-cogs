@@ -416,6 +416,7 @@ class HockeySetCommands(MixinMeta):
             )
 
     @hockeyset_commands.command(name="poststandings", aliases=["poststanding"])
+    @commands.mod_or_permissions(manage_channels=True)
     async def post_standings(
         self,
         ctx: commands.Context,
@@ -476,6 +477,7 @@ class HockeySetCommands(MixinMeta):
         await self.config.guild(guild).post_standings.set(True)
 
     @hockeyset_commands.command()
+    @commands.mod_or_permissions(manage_channels=True)
     async def togglestandings(self, ctx: commands.Context) -> None:
         """
         Toggles automatic standings updates
@@ -490,6 +492,7 @@ class HockeySetCommands(MixinMeta):
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="stateupdates")
+    @commands.mod_or_permissions(manage_channels=True)
     async def set_game_state_updates(
         self,
         ctx: commands.Context,
@@ -531,6 +534,7 @@ class HockeySetCommands(MixinMeta):
             )
 
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
+    @commands.mod_or_permissions(manage_channels=True)
     async def add_goals(
         self,
         ctx: commands.Context,
@@ -545,7 +549,7 @@ class HockeySetCommands(MixinMeta):
         `[channel]` The channel to post updates into. Defaults to the current channel
         if not provided.
         """
-        if team is None:
+        if not team:
             await ctx.send(_("You must provide a valid current team."))
             return
         # team_data = await self.get_team(team)
@@ -569,6 +573,7 @@ class HockeySetCommands(MixinMeta):
         await ctx.send(msg)
 
     @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
+    @commands.mod_or_permissions(manage_channels=True)
     async def remove_goals(
         self,
         ctx: commands.Context,
@@ -580,9 +585,6 @@ class HockeySetCommands(MixinMeta):
         defaults to the current channel
         """
         await ctx.defer()
-        if team is None:
-            await ctx.send(_("You must provide a valid current team."))
-            return
         if channel is None:
             channel = ctx.channel
         cur_teams = await self.config.channel(channel).team()
