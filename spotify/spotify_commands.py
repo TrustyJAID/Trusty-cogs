@@ -861,9 +861,7 @@ class SpotifyCommands(SpotifyMixin):
         )
         await x.send_initial_message(ctx)
 
-    @spotify_com.command(
-        name="recommendations", description="Get Spotify Recommendations", with_command=False
-    )
+    @spotify_com.app_command.command(name="recommendations")
     @app_commands.choices(
         key=KEY_CHOICES,
         mode=MODE_CHOICES,

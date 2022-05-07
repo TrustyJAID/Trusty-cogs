@@ -2,14 +2,15 @@ import asyncio
 import logging
 import time
 from abc import ABC
-from typing import Literal, Mapping, Optional, Tuple, Union
+from typing import Literal, Mapping, Optional, Tuple
 
 import discord
 import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 
-from .helpers import InvalidEmoji, spotify_emoji_handler
+from .helpers import SPOTIFY_RE, InvalidEmoji, spotify_emoji_handler
+from .menus import SpotifySearchMenu, SpotifyTrackPages
 from .spotify_commands import SpotifyCommands
 
 try:
