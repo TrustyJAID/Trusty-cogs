@@ -4,6 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import aiohttp
@@ -27,6 +28,21 @@ from .standings import LeagueRecord, Standings
 _ = Translator("Hockey", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Hockey")
+
+
+class GameType(Enum):
+    pre_season = "PR"
+    regular_season = "R"
+    playoffs = "P"
+    allstars = "A"
+    allstars_women = "WA"
+    olympics = "O"
+    world_cup_exhibition = "WCOH_EXH"
+    world_cup_prelim = "WCOH_PRELIM"
+    world_cup_final = "WCOH_FINAL"
+
+    def __str__(self):
+        return str(self.value)
 
 
 @dataclass

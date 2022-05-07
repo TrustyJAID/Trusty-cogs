@@ -894,6 +894,7 @@ class HockeyPickems(MixinMeta):
         await ctx.send(msg)
 
     @pickems_commands.command(name="message")
+    @commands.admin_or_permissions(manage_channels=True)
     async def set_pickems_message(
         self, ctx: commands.Context, *, message: Optional[str] = ""
     ) -> None:
@@ -1012,6 +1013,7 @@ class HockeyPickems(MixinMeta):
             await self.create_pickems_game_message(ctx.channel, game)
 
     @pickems_commands.command(name="remove")
+    @commands.admin_or_permissions(manage_channels=True)
     async def rempickem(self, ctx: commands.Context, true_or_false: bool) -> None:
         """
         Clears the servers current pickems object list

@@ -335,13 +335,17 @@ class ScheduleList(menus.PageSource):
             elif game_start < datetime.now(timezone.utc):
                 home_score = game["teams"]["home"]["score"]
                 away_score = game["teams"]["away"]["score"]
-                game_recap = None
                 if self.get_recap:
                     game_recap = await Game.get_game_recap(game["gamePk"], session=self._session)
-                msg += (
-                    f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
-                    f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n"
-                )
+                    msg += (
+                        f"[{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
+                        f"**{home_score}** {home_emoji} {home_abr}]({game_recap}) \n"
+                    )
+                else:
+                    msg += (
+                        f"{game_state} -  {away_emoji} {away_abr} **{away_score}** - "
+                        f"**{home_score}** {home_emoji} {home_abr} \n"
+                    )
             else:
                 time_str = f"<t:{int(game_start.timestamp())}:t>"
                 msg += (

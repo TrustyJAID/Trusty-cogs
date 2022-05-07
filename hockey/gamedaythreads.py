@@ -214,6 +214,7 @@ class GameDayThreads(MixinMeta):
 
     @gdt.command(name="setup")
     @commands.guild_only()
+    @commands.mod_or_permissions(manage_channels=True)
     async def gdt_setup(
         self,
         ctx: commands.Context,
