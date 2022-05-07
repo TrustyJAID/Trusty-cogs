@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 from abc import ABC
+from contextlib import asynccontextmanager
 from typing import Literal, Mapping, Optional, Tuple
 
 import discord
@@ -163,6 +164,18 @@ class Spotify(
         Method for finding users data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
+
+    @asynccontextmanager
+    async def get_user_spotify(
+        self, ctx: commands.Context, user: Optional[discord.User] = None
+    ) -> Optional[tekore.Spotify]:
+        user_token = await self.get_user_auth(ctx, user)
+        if not user_token:
+            yield None
+        client = tekore.Spotify(sender=self._sender)
+        cv_token = client._token_cv.set(user_token)
+        yield client
+        client._token_cv.reset(cv_token)
 
     async def get_user_auth(
         self,

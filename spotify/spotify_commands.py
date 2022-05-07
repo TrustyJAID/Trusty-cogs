@@ -834,12 +834,9 @@ class SpotifyCommands(SpotifyMixin):
          - `valence` + a value from 0-100
         """
         log.debug(recommendations)
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
+        # user_spotify = await self.get_user_spotify(ctx)
         await ctx.defer()
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
+        async with self.get_user_spotify(ctx) as user_spotify:
             try:
                 search = await user_spotify.recommendations(**recommendations)
             except Exception:
@@ -857,7 +854,7 @@ class SpotifyCommands(SpotifyMixin):
             clear_buttons_after=clear_after,
             timeout=timeout,
             cog=self,
-            user_token=user_token,
+            user_token=await self.get_user_auth(ctx),
         )
         await x.send_initial_message(ctx)
 

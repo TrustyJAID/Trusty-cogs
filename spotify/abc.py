@@ -49,6 +49,12 @@ class SpotifyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def get_user_spotify(
+        self, ctx: commands.Context, user: Optional[discord.User] = None
+    ) -> Optional[tekore.Spotify]:
+        raise NotImplementedError()
+
+    @abstractmethod
     async def format_help_for_context(self, ctx: commands.Context) -> str:
         raise NotImplementedError()
 
