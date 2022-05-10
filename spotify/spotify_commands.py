@@ -717,7 +717,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1085,7 +1085,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1121,7 +1121,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1149,7 +1149,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1177,7 +1177,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1364,7 +1364,7 @@ class SpotifyCommands(SpotifyMixin):
             log.debug("Error playing song", exc_info=True)
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1415,7 +1415,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1504,7 +1504,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1545,7 +1545,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1595,7 +1595,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1651,7 +1651,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1721,7 +1721,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1804,7 +1804,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -1879,7 +1879,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -2044,7 +2044,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -2110,7 +2110,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -2169,7 +2169,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -2216,7 +2216,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
@@ -2259,7 +2259,7 @@ class SpotifyCommands(SpotifyMixin):
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)

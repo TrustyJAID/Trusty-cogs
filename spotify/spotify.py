@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 from abc import ABC
 from contextlib import asynccontextmanager
@@ -9,9 +10,10 @@ import discord
 import tekore
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_list
 
-from .helpers import SPOTIFY_RE, InvalidEmoji, spotify_emoji_handler
-from .menus import SpotifySearchMenu, SpotifyTrackPages
+from .helpers import SPOTIFY_RE, InvalidEmoji, song_embed, spotify_emoji_handler
+from .menus import SpotifyPages, SpotifySearchMenu, SpotifyTrackPages, SpotifyUserMenu
 from .spotify_commands import SpotifyCommands
 
 try:
@@ -181,18 +183,13 @@ class Spotify(
         self,
         ctx: commands.Context,
         user: Optional[discord.User] = None,
-    ):
+    ) -> Optional[tekore.Token]:
         """
         Handles getting and saving user authorization information
         """
         author = user
-        is_slash = False
         if author is None:
-            if isinstance(ctx, commands.Context):
-                author = ctx.author
-            else:
-                is_slash = True
-                author = ctx.user
+            author = ctx.author
 
         if not self._credentials:
             msg = _(
@@ -201,7 +198,7 @@ class Spotify(
                 "See `{prefix}spotify set creds` for more details."
             ).format(prefix=ctx.clean_prefix)
             await ctx.send(msg, ephemeral=True)
-            return
+            return None
         user_tokens = await self.config.user(author).token()
         if user_tokens:
             user_tokens["expires_in"] = user_tokens["expires_at"] - int(time.time())
@@ -211,12 +208,9 @@ class Spotify(
                     user_token = await self._credentials.refresh(user_token)
                 except tekore.BadRequest:
                     msg = _("Your refresh token has been revoked, clearing data.")
-                    if not is_slash:
-                        await ctx.send(msg)
-                    else:
-                        await ctx.response.send_message(msg, ephemeral=True)
+                    await ctx.send(msg, ephemeral=True)
                     await self.config.user(author).token.clear()
-                    return
+                    return None
                 await self.save_token(author, user_token)
             return user_token
         if author.id in self.temp_cache:
@@ -225,7 +219,7 @@ class Spotify(
                 "please complete that first before trying a new command."
             )
             await ctx.send(msg)
-            return
+            return None
         try:
             return await self.ask_for_auth(ctx, author)
         except discord.errors.Forbidden:
@@ -233,8 +227,11 @@ class Spotify(
                 "You have blocked direct messages, please enable them to authorize spotify commands."
             )
             await ctx.send(msg, ephemeral=True)
+        return None
 
-    async def ask_for_auth(self, ctx: commands.Context, author: discord.User):
+    async def ask_for_auth(
+        self, ctx: commands.Context, author: discord.User
+    ) -> Optional[tekore.Token]:
         scope_list = await self.config.scopes()
         scope = tekore.Scope(*scope_list)
         auth = tekore.UserAuth(self._credentials, scope=scope)
@@ -259,10 +256,7 @@ class Spotify(
             )
 
         if is_slash:
-            if ctx.response.is_done():
-                await ctx.followup.send(msg, ephemeral=True)
-            else:
-                await ctx.response.send_message(msg, ephemeral=True)
+            await ctx.send(msg, ephemeral=True)
         else:
             await author.send(msg)
         try:
@@ -270,7 +264,11 @@ class Spotify(
         except asyncio.TimeoutError:
             # Let's check if they authenticated throug Dashboard
             if author.id in self.dashboard_authed:
-                await author.send(_("Detected authentication via dashboard for."))
+                msg = _("Detected authentication via dashboard for.")
+                if is_slash:
+                    await ctx.send(msg, ephemeral=True)
+                else:
+                    await author.send(msg)
                 return await self.get_user_auth(ctx, author)
             try:
                 del self.temp_cache[author.id]
@@ -280,26 +278,38 @@ class Spotify(
             return
 
         if author.id in self.dashboard_authed:
-            await author.send(
-                _("Detected authentication via dashboard for {user}.").format(user=author.name)
-            )
+            msg = _("Detected authentication via dashboard for {user}.").format(user=author.name)
+            if is_slash:
+                await ctx.send(msg, ephemeral=True)
+            else:
+                await author.send(msg)
             return await self.get_user_auth(ctx, author)
 
         redirected = check_msg.clean_content.strip()
         if self._tokens[-1] not in redirected:
             del self.temp_cache[author.id]
-            return await ctx.send(_("Credentials not valid"))
+            msg = _("Credentials not valid")
+            if is_slash:
+                await ctx.send(msg, ephemeral=True)
+            else:
+                await ctx.send(msg)
+            return
         reply_msg = _("Your authorization has been set!")
-        await author.send(reply_msg)
+        if is_slash:
+            await ctx.send(reply_msg, ephemeral=True)
+        else:
+            await author.send(reply_msg)
         try:
             user_token = await auth.request_token(url=redirected)
         except AssertionError:
-            await author.send(
-                _(
-                    "You must follow the *latest* link I sent you for authorization. "
-                    "Older links are no longer valid."
-                )
+            msg = _(
+                "You must follow the *latest* link I sent you for authorization. "
+                "Older links are no longer valid."
             )
+            if is_slash:
+                await ctx.send(msg, ephemeral=True)
+            else:
+                await author.send(msg)
             return
         await self.save_token(author, user_token)
 
@@ -522,7 +532,7 @@ class Spotify(
         except tekore.NotFound:
             await self.no_device(ctx)
         except tekore.Forbidden as e:
-            await self.forbidden_action(ctx, str(e))
+            await self.forbidden_action(ctx, e)
         except tekore.HTTPError:
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
