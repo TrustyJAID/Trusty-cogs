@@ -174,7 +174,7 @@ class HockeyCommands(MixinMeta):
         only that teams games may appear in that date range if they exist.
         """
         await ctx.defer()
-        season_str = datetime.now().year
+        season_str = None
         if season:
             if season.group(3):
                 if (int(season.group(3)) - int(season.group(1))) > 1:

@@ -285,7 +285,7 @@ class Playoffs:
 
 
 class PlayoffsView(discord.ui.View):
-    def __init__(self, start_date: int):
+    def __init__(self, start_date: Optional[int]):
         super().__init__()
         self.playoffs = None
         self.current_page = start_date
@@ -330,8 +330,11 @@ class PlayoffsView(discord.ui.View):
         """
         self.author = ctx.author
         if self.playoffs is None:
-            season = f"{self.current_page}{self.current_page+1}"
+            season = None
+            if self.current_page is not None:
+                season = f"{self.current_page}{self.current_page+1}"
             self.playoffs = await Playoffs.get_playoffs(season)
+            self.current_page = int(self.playoffs.season[:4])
         kwargs = await self._get_kwargs_from_page()
         return await ctx.send(**kwargs, view=self)
 
