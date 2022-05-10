@@ -23,7 +23,7 @@ from .helper import (
     get_team_role,
     utc_to_local,
 )
-from .standings import LeagueRecord, Standings
+from .standings import LeagueRecord, Playoffs, Standings
 
 _ = Translator("Hockey", __file__)
 
@@ -663,33 +663,54 @@ class Game:
         """
         returns team stats on the season from standings object
         """
-        msg = "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
-        home_str = "GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n"
-        away_str = "GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n"
-        try:
-            standings = await Standings.get_team_standings()
-            for name, record in standings.all_records.items():
-                if record.team.name == self.away_team:
-                    away_str = msg.format(
-                        wins=record.league_record.wins,
-                        losses=record.league_record.losses,
-                        ot=record.league_record.ot,
-                        pts=record.points,
-                        gp=record.games_played,
-                        streak=record.streak,
-                    )
-                if record.team.name == self.home_team:
-                    home_str = msg.format(
-                        wins=record.league_record.wins,
-                        losses=record.league_record.losses,
-                        ot=record.league_record.ot,
-                        pts=record.points,
-                        gp=record.games_played,
-                        streak=record.streak,
-                    )
-        except Exception:
-            log.exception("Error pulling stats")
-            pass
+        home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
+        away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
+        if self.game_type != "P":
+            msg = _(
+                "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
+            )
+            try:
+                standings = await Standings.get_team_standings()
+                for name, record in standings.all_records.items():
+                    if record.team.name == self.away_team:
+                        away_str = msg.format(
+                            wins=record.league_record.wins,
+                            losses=record.league_record.losses,
+                            ot=record.league_record.ot,
+                            pts=record.points,
+                            gp=record.games_played,
+                            streak=record.streak,
+                        )
+                    if record.team.name == self.home_team:
+                        home_str = msg.format(
+                            wins=record.league_record.wins,
+                            losses=record.league_record.losses,
+                            ot=record.league_record.ot,
+                            pts=record.points,
+                            gp=record.games_played,
+                            streak=record.streak,
+                        )
+            except Exception:
+                log.exception("Error pulling stats")
+                pass
+        else:
+            try:
+                msg = _("{round_name}:\n{series_status}")
+                playoffs = await Playoffs.get_playoffs()
+                for rounds in reversed(playoffs.rounds):
+                    for series in rounds.series:
+                        for matchup in series.matchupTeams:
+                            if (
+                                matchup.team.name == self.away_team
+                                or matchup.team.name == self.home_team
+                            ):
+                                home_str = away_str = msg.format(
+                                    round_name=rounds.names.name,
+                                    series_status=series.currentGame.seriesSummary.seriesStatus,
+                                )
+            except Exception:
+                log.exception("Error pulling playoffs stats")
+                pass
         return home_str, away_str
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:

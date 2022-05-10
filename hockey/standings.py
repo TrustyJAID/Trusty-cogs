@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, NamedTuple, Optional
 
 import aiohttp
 import discord
@@ -81,9 +81,284 @@ class Division:
 
 @dataclass
 class Conference:
+    id: Optional[int]
+    name: Optional[str]
+    link: Optional[str]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Conference:
+        return cls(
+            id=data.get("id", None),
+            name=data.get("name", None),
+            link=data.get("link", None),
+        )
+
+
+class RoundNames(NamedTuple):
+    name: str
+    shortName: str
+
+
+class SeriesNames(NamedTuple):
+    matchupName: str
+    matchupShortName: str
+    teamAbbreviationA: str
+    teamAbbreviationB: str
+    seriesSlug: Optional[str]
+
+    @classmethod
+    def from_json(cls, data: dict) -> SeriesNames:
+        return cls(
+            matchupName=data.get("matchupName", None),
+            matchupShortName=data.get("matchupShortName", None),
+            teamAbbreviationA=data.get("teamAbbreviationA", None),
+            teamAbbreviationB=data.get("teamAbbreviationB", None),
+            seriesSlug=data.get("seriesSlug", None),
+        )
+
+
+class SeriesRound(NamedTuple):
+    number: int
+
+
+@dataclass
+class Format:
+    name: str
+    description: str
+    numberOfGames: int
+    numberOfWins: int
+
+
+@dataclass
+class Summary:
+    gamePk: Optional[int]
+    gameNumber: int
+    gameLabel: Optional[str]
+    necessary: Optional[bool]
+    gameCode: Optional[int]
+    gameTime: Optional[datetime]
+    seriesStatus: Optional[str]
+    seriesStatusShort: Optional[str]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Summary:
+        return cls(
+            gamePk=data.get("gamePk", None),
+            gameNumber=data.get("gameNumber", 0),
+            gameLabel=data.get("gameLabel", None),
+            necessary=data.get("necessary", None),
+            gameCode=data.get("gameCode", None),
+            gameTime=data.get("gameTime", None),
+            seriesStatus=data.get("seriesStatus", None),
+            seriesStatusShort=data.get("seriesStatusShort", None),
+        )
+
+
+@dataclass
+class CurrentGame:
+    seriesSummary: Summary
+
+    @classmethod
+    def from_json(cls, data: dict) -> CurrentGame:
+        return cls(seriesSummary=Summary.from_json(data["seriesSummary"]))
+
+
+@dataclass
+class Seed:
+    type: str
+    rank: int
+    isTop: bool
+
+
+class SeriesRecord(NamedTuple):
+    wins: int
+    losses: int
+
+
+@dataclass
+class TeamMatchup:
+    team: Team
+    seed: Seed
+    seriesRecord: SeriesRecord
+
+    @classmethod
+    def from_json(cls, data: dict) -> TeamMatchup:
+        return cls(
+            team=Team(**data["team"]),
+            seed=Seed(**data["seed"]),
+            seriesRecord=SeriesRecord(**data["seriesRecord"]),
+        )
+
+
+@dataclass
+class Series:
+    seriesNumber: Optional[int]
+    seriesCode: str
+    names: SeriesNames
+    currentGame: CurrentGame
+    conference: Conference
+    round: SeriesRound
+    matchupTeams: List[TeamMatchup]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Series:
+        return cls(
+            seriesNumber=data.get("seriesNumber", None),
+            seriesCode=data["seriesCode"],
+            names=SeriesNames.from_json(data["names"]),
+            currentGame=CurrentGame.from_json(data["currentGame"]),
+            conference=Conference.from_json(data["conference"]),
+            round=SeriesRound(**data["round"]),
+            matchupTeams=[TeamMatchup.from_json(x) for x in data.get("matchupTeams", [])],
+        )
+
+
+@dataclass
+class Round:
+    number: int
+    code: int
+    names: RoundNames
+    format: Format
+    series: List[Series]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Round:
+        return cls(
+            number=data["number"],
+            code=data["code"],
+            names=RoundNames(**data["names"]),
+            format=Format(**data["format"]),
+            series=[Series.from_json(x) for x in data["series"]],
+        )
+
+
+@dataclass
+class Playoffs:
     id: int
     name: str
-    link: str
+    season: str
+    defaultRound: int
+    rounds: List[Round]
+
+    @classmethod
+    def from_json(cls, data: dict) -> Playoffs:
+        return cls(**data)
+
+    @classmethod
+    async def get_playoffs(
+        cls, season: Optional[str] = None, session: Optional[aiohttp.ClientSession] = None
+    ):
+        url = BASE_URL + "/api/v1/tournaments/playoffs?expand=round.series"
+        if season is not None:
+            url += f"&season={season}"
+        if session is None:
+            async with aiohttp.ClientSession() as new_session:
+                async with new_session.get(url) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url) as resp:
+                data = await resp.json()
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            season=data["season"],
+            defaultRound=data.get("defaultRound", None),
+            rounds=[Round.from_json(x) for x in data.get("rounds", [])],
+        )
+
+    def embed(self) -> discord.Embed:
+        msg = ""
+        if not self.rounds:
+            msg = "TBD"
+        season = f"{self.season[:4]}-{self.season[4:]}"
+        embed = discord.Embed(title=_("Playoffs {season}").format(season=season))
+        for rounds in self.rounds:
+            # msg += f"{rounds.names.name}:\n"
+            msg = ""
+            for series in rounds.series:
+                if not series.names.matchupShortName:
+                    msg += "TBD\n"
+                    continue
+                msg += f"{series.names.matchupShortName} - {series.currentGame.seriesSummary.seriesStatus}\n"
+            embed.add_field(name=rounds.names.name, value=msg, inline=False)
+        return embed
+
+
+class PlayoffsView(discord.ui.View):
+    def __init__(self, start_date: int):
+        super().__init__()
+        self.playoffs = None
+        self.current_page = start_date
+        self.forward_button = ForwardButton(discord.ButtonStyle.grey, 0)
+        self.back_button = BackButton(discord.ButtonStyle.grey, 0)
+        self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
+        self.add_item(self.back_button)
+        self.add_item(self.forward_button)
+
+    async def on_timeout(self):
+        await self.message.edit(view=None)
+
+    async def start(self, ctx: commands.Context):
+        self.ctx = ctx
+        self.message = await self.send_initial_message(ctx)
+
+    async def _get_kwargs_from_page(self):
+        value = self.playoffs.embed()
+        if isinstance(value, dict):
+            return value
+        elif isinstance(value, str):
+            return {"content": value, "embed": None}
+        elif isinstance(value, discord.Embed):
+            return {"embed": value, "content": None}
+
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
+        season = f"{page_number}{page_number+1}"
+        self.playoffs = await Playoffs.get_playoffs(season)
+        self.current_page = page_number
+        kwargs = await self._get_kwargs_from_page()
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
+
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
+        """|coro|
+        The default implementation of :meth:`Menu.send_initial_message`
+        for the interactive pagination session.
+        This implementation shows the first page of the source.
+        """
+        self.author = ctx.author
+        if self.playoffs is None:
+            season = f"{self.current_page}{self.current_page+1}"
+            self.playoffs = await Playoffs.get_playoffs(season)
+        kwargs = await self._get_kwargs_from_page()
+        return await ctx.send(**kwargs, view=self)
+
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
+        max_pages = None
+        try:
+            if max_pages is None:
+                # If it doesn't give maximum pages, it cannot be checked
+                await self.show_page(page_number, interaction)
+            elif page_number >= max_pages:
+                await self.show_page(0, interaction)
+            elif page_number < 0:
+                await self.show_page(max_pages - 1, interaction)
+            elif max_pages > page_number >= 0:
+                await self.show_page(page_number, interaction)
+        except IndexError:
+            # An error happened that can be handled, so ignore it.
+            pass
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        """Just extends the default reaction_check to use owner_ids"""
+        if self.author and interaction.user.id != self.author.id:
+            await interaction.response.send_message(
+                content=_("You are not authorized to interact with this."), ephemeral=True
+            )
+            return False
+        return True
 
 
 @dataclass

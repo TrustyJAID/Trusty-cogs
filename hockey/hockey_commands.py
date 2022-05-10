@@ -22,7 +22,7 @@ from .helper import (
 )
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
 from .schedule import Schedule, ScheduleList
-from .standings import Standings, StandingsMenu
+from .standings import PlayoffsView, Standings, StandingsMenu
 from .stats import LeaderCategories, LeaderView
 
 _ = Translator("Hockey", __file__)
@@ -155,6 +155,45 @@ class HockeyCommands(MixinMeta):
             clear_reactions_after=True,
             timeout=180,
         ).start(ctx=ctx)
+
+    @hockey_commands.command()
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    async def playoffs(
+        self,
+        ctx: commands.Context,
+        season: Optional[YearFinder] = None,
+    ) -> None:
+        """
+        Gets all NHL games for the current season
+
+        If team is provided it will grab that teams schedule.
+        A date may also be provided and the bot will search for games within
+        that date range.
+        Dates must be in the format of `YYYY-MM-DD` if provided.
+        Team and Date can be provided at the same time and then
+        only that teams games may appear in that date range if they exist.
+        """
+        await ctx.defer()
+        season_str = datetime.now().year
+        if season:
+            if season.group(3):
+                if (int(season.group(3)) - int(season.group(1))) > 1:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if (int(season.group(3)) - int(season.group(1))) <= 0:
+                    await ctx.send(_("Dates must be only 1 year apart."))
+                    return
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = int(season.group(1))
+            else:
+                if int(season.group(1)) > datetime.now().year:
+                    await ctx.send(_("Please select a year prior to now."))
+                    return
+                season_str = int(season.group(1))
+
+        await PlayoffsView(start_date=season_str).start(ctx=ctx)
 
     @hockey_commands.command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
