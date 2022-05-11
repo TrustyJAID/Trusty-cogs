@@ -169,6 +169,12 @@ class Seed:
     rank: int
     isTop: bool
 
+    @classmethod
+    def from_json(cls, data: dict) -> Seed:
+        return cls(
+            type=data.get("type", None), rank=data.get("rank", None), isTop=data.get("isTop", None)
+        )
+
 
 class SeriesRecord(NamedTuple):
     wins: int
@@ -185,7 +191,7 @@ class TeamMatchup:
     def from_json(cls, data: dict) -> TeamMatchup:
         return cls(
             team=Team(**data["team"]),
-            seed=Seed(**data["seed"]),
+            seed=Seed.from_json(data["seed"]),
             seriesRecord=SeriesRecord(**data["seriesRecord"]),
         )
 

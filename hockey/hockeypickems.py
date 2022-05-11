@@ -256,6 +256,7 @@ class HockeyPickems(MixinMeta):
         else:
             if old_pickem.game_start != game.game_start:
                 self.all_pickems[str(guild.id)][str(game.game_id)].game_start = game.game_start
+                self.all_pickems[str(guild.id)][str(game.game_id)].enable_buttons()
                 self.all_pickems[str(guild.id)][str(game.game_id)]._should_save = True
             return self.all_pickems[str(guild.id)][str(game.game_id)]
 

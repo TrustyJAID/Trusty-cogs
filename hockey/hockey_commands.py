@@ -191,7 +191,7 @@ class HockeyCommands(MixinMeta):
                 if int(season.group(1)) > datetime.now().year:
                     await ctx.send(_("Please select a year prior to now."))
                     return
-                season_str = int(season.group(1))
+                season_str = int(season.group(1)) - 1
 
         await PlayoffsView(start_date=season_str).start(ctx=ctx)
 

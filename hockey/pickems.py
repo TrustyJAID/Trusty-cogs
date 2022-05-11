@@ -149,6 +149,10 @@ class Pickems(discord.ui.View):
         self.home_button.disabled = True
         self.away_button.disabled = True
 
+    def enable_buttons(self):
+        self.home_button.disabled = False
+        self.away_button.disabled = False
+
     def compare_game(self, game: Game) -> bool:
         return (
             self.home_team == game.home_team
