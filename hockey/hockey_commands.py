@@ -423,6 +423,7 @@ class HockeyCommands(MixinMeta):
         `<player>` The name of the player to search for
         """
         await ctx.defer()
+        season_str = None
         if season:
             if season.group(3):
                 if (int(season.group(3)) - int(season.group(1))) > 1:

@@ -324,6 +324,8 @@ class Hockey(
                 self.games_playing = True
                 to_delete = []
                 for link, data in self.current_games.items():
+                    if data["game"] is not None:
+                        await self.fix_pickem_game_start(data["game"])
                     if data["game"] is not None and data["game"].game_start - timedelta(
                         hours=1
                     ) >= datetime.now(timezone.utc):

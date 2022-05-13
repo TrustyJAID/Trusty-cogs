@@ -480,7 +480,9 @@ class Game:
             icon_url=self.away_logo,
         )
         if self.game_state == "Preview":
-            home_str, away_str = await self.get_stats_msg()
+            home_str, away_str, desc = await self.get_stats_msg()
+            if desc is not None and em.description is None:
+                em.description = desc
             em.add_field(
                 name=f"{self.away_emoji} {self.away_team} {self.away_emoji}", value=away_str
             )
@@ -620,7 +622,9 @@ class Game:
                 away_score=self.away_score, away_shots=self.away_shots
             )
         else:
-            home_str, away_str = await self.get_stats_msg()
+            home_str, away_str, desc = await self.get_stats_msg()
+            if desc is not None:
+                em.description = desc
         em.add_field(name=home_field, value=home_str, inline=False)
         em.add_field(name=away_field, value=away_str, inline=True)
         colour = (
@@ -659,12 +663,13 @@ class Game:
             )
         return em
 
-    async def get_stats_msg(self) -> Tuple[str, str]:
+    async def get_stats_msg(self) -> Tuple[str, str, Optional[str]]:
         """
         returns team stats on the season from standings object
         """
         home_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
         away_str = _("GP:**0** W:**0** L:**0\n**OT:**0** PTS:**0** S:**0**\n")
+        desc = None
         if self.game_type != "P":
             msg = _(
                 "GP:**{gp}** W:**{wins}** L:**{losses}\n**OT:**{ot}** PTS:**{pts}** S:**{streak}**\n"
@@ -695,23 +700,36 @@ class Game:
                 pass
         else:
             try:
-                msg = _("{round_name}:\n{series_status}")
+                desc_str = _("{round_name}:\n{series_status}")
+                msg = _("GP:**{gp}** W:**{wins}** L:**{losses}**")
                 playoffs = await Playoffs.get_playoffs()
                 for rounds in reversed(playoffs.rounds):
                     for series in rounds.series:
                         for matchup in series.matchupTeams:
+                            if matchup.team.name == self.away_team:
+                                away_str = msg.format(
+                                    gp=series.currentGame.seriesSummary.gameNumber - 1,
+                                    wins=matchup.seriesRecord.wins,
+                                    losses=matchup.seriesRecord.losses,
+                                )
+                            if matchup.team.name == self.home_team:
+                                home_str = msg.format(
+                                    gp=series.currentGame.seriesSummary.gameNumber - 1,
+                                    wins=matchup.seriesRecord.wins,
+                                    losses=matchup.seriesRecord.losses,
+                                )
                             if (
                                 matchup.team.name == self.away_team
                                 or matchup.team.name == self.home_team
                             ):
-                                home_str = away_str = msg.format(
+                                desc = desc_str.format(
                                     round_name=rounds.names.name,
                                     series_status=series.currentGame.seriesSummary.seriesStatus,
                                 )
             except Exception:
                 log.exception("Error pulling playoffs stats")
                 pass
-        return home_str, away_str
+        return home_str, away_str, desc
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]

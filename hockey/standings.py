@@ -142,13 +142,17 @@ class Summary:
 
     @classmethod
     def from_json(cls, data: dict) -> Summary:
+        game_time = data.get("gameTime", None)
+        if game_time is not None:
+            game_time = datetime.strptime(game_time, "%Y-%m-%dT%H:%M:%SZ")
+            game_time = game_time.replace(tzinfo=timezone.utc)
         return cls(
             gamePk=data.get("gamePk", None),
             gameNumber=data.get("gameNumber", 0),
             gameLabel=data.get("gameLabel", None),
             necessary=data.get("necessary", None),
             gameCode=data.get("gameCode", None),
-            gameTime=data.get("gameTime", None),
+            gameTime=game_time,
             seriesStatus=data.get("seriesStatus", None),
             seriesStatusShort=data.get("seriesStatusShort", None),
         )
@@ -286,7 +290,10 @@ class Playoffs:
                     msg += "TBD\n"
                     continue
                 msg += f"{series.names.matchupShortName} - {series.currentGame.seriesSummary.seriesStatus}\n"
-            embed.add_field(name=rounds.names.name, value=msg, inline=False)
+
+            embed.add_field(
+                name=f"{rounds.names.name} - {rounds.format.description}", value=msg, inline=False
+            )
         return embed
 
 

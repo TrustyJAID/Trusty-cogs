@@ -260,6 +260,34 @@ class HockeyPickems(MixinMeta):
                 self.all_pickems[str(guild.id)][str(game.game_id)]._should_save = True
             return self.all_pickems[str(guild.id)][str(game.game_id)]
 
+    async def fix_pickem_game_start(self, game: Game):
+        async for guild_id, data in AsyncIter(self.all_pickems.items(), steps=100):
+            guild = self.bot.get_guild(int(guild_id))
+            if guild is None:
+                continue
+            if str(game.game_id) in data:
+                pickem = data[str(game.game_id)]
+                if game.game_start != pickem.game_start:
+                    # only attempt to edit if the game ID is the same
+                    # and the game start is different on the pickems from
+                    # the actual game playing today.
+                    pickem.game_start = game.game_start
+                    pickem.enable_buttons()
+                    pickem._should_save = True
+                    for message in pickem.messages:
+                        try:
+                            channel_id, message_id = message.split("-")
+                        except ValueError:
+                            log.debug("Game %r missing message %s", game, message)
+                            continue
+                        channel = guild.get_channel_or_thread(int(channel_id))
+                        if channel is None:
+                            # log.debug("Game %r missing channel", game)
+                            continue
+                        asyncio.create_task(
+                            self.edit_pickems_message(channel, int(message_id), game, pickem)
+                        )
+
     async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers
         async for guild_id, data in AsyncIter(

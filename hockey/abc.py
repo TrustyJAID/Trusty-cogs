@@ -476,6 +476,10 @@ class MixinMeta(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def fix_pickem_game_start(self, game: Game):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def reset_weekly(self) -> None:
         raise NotImplementedError()
 
