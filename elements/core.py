@@ -54,7 +54,9 @@ class ElementConverter(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
         all_choices = [
-            discord.app_commands.Choice(name=element.name, value=element.name)
+            discord.app_commands.Choice(
+                name=f"{element.atomic_number} - {element.name}", value=str(element.atomic_number)
+            )
             for element in mendeleev.get_all_elements()
         ]
         choices = [i for i in all_choices if current.lower() in i.name.lower()]
