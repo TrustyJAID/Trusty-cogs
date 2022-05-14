@@ -342,6 +342,18 @@ class EventMixin:
                 if log.target.id == message.author.id and same_chan:
                     perp = f"{log.user}({log.user.id})"
                     break
+
+        replying = ""
+        if message.reference and message.reference.resolved:
+            if isinstance(message.reference.resolved, discord.Message):
+                ref_author = message.reference.resolved.author
+                ref_jump = message.reference.resolved.jump_url
+                replying = f"[{ref_author}]({ref_jump})"
+            else:
+                ref_guild = message.reference.resolved.guild_id
+                ref_chan = message.reference.resolved.channel_id
+                ref_msg = message.reference.resolved.id
+                replying = f"https://discord.com/channels/{ref_guild}/{ref_chan}/{ref_msg}"
         message_channel = cast(discord.TextChannel, message.channel)
         author = message.author
         if perp is None:
@@ -385,6 +397,8 @@ class EventMixin:
                 if len(message.attachments) > 1:
                     files = files[:-2]
                 embed.add_field(name=_("Attachments"), value=files)
+            if replying:
+                embed.add_field(name=_("Replying to:"), value=replying)
             embed.set_author(
                 name=_("{member} ({m_id})- Deleted Message").format(member=author, m_id=author.id),
                 icon_url=str(message.author.display_avatar.url),
@@ -1259,6 +1273,17 @@ class EventMixin:
         # set guild level i18n
         time = datetime.datetime.now(datetime.timezone.utc)
         fmt = "%H:%M:%S"
+        replying = ""
+        if before.reference and before.reference.resolved:
+            if isinstance(before.reference.resolved, discord.Message):
+                ref_author = before.reference.resolved.author
+                ref_jump = before.reference.resolved.jump_url
+                replying = f"[{ref_author}]({ref_jump})"
+            else:
+                ref_guild = before.reference.resolved.guild_id
+                ref_chan = before.reference.resolved.channel_id
+                ref_msg = before.reference.resolved.id
+                replying = f"https://discord.com/channels/{ref_guild}/{ref_chan}/{ref_msg}"
         if embed_links:
             embed = discord.Embed(
                 description=f"{before.author.mention}: {before.content}",
@@ -1268,6 +1293,8 @@ class EventMixin:
             jump_url = f"[Click to see new message]({after.jump_url})"
             embed.add_field(name=_("After Message:"), value=jump_url)
             embed.add_field(name=_("Channel:"), value=before.channel.mention)
+            if replying:
+                embed.add_field(name=_("Replying to:"), value=replying)
             embed.set_author(
                 name=_("{member} ({m_id}) - Edited Message").format(
                     member=before.author, m_id=before.author.id
