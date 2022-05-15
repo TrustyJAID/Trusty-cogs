@@ -33,22 +33,10 @@ class ElementConverter(discord.app_commands.Transformer):
 
     @classmethod
     async def transform(
-        cls, interaction: discord.Interaction, value: str
+        cls, interaction: discord.Interaction, argument: str
     ) -> mendeleev.models.Element:
-        result = None
-        if value.isdigit():
-            try:
-                result = mendeleev.element(int(value))
-            except Exception:
-                raise commands.BadArgument("`{}` is not a valid element!".format(value))
-        else:
-            try:
-                result = mendeleev.element(value.title())
-            except Exception:
-                raise commands.BadArgument("`{}` is not a valid element!".format(value))
-        if not result:
-            raise commands.BadArgument("`{}` is not a valid element!".format(value))
-        return result
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -97,27 +85,11 @@ class MeasurementConverter(discord.app_commands.Transformer):
         return result
 
     @classmethod
-    async def transform(cls, ctx: commands.Context, argument: str) -> Optional[Measurements]:
-        result = None
-        if argument.lower() in UNITS:
-            value = argument.lower()
-            name = UNITS[value]["name"]
-            units = UNITS[value]["units"]
-            result = Measurements(key=value, name=name, units=units)
-        elif argument.replace(" ", "_").lower() in UNITS:
-            value = argument.replace(" ", "_").lower()
-            name = UNITS[value]["name"]
-            units = UNITS[value]["units"]
-            result = Measurements(key=value, name=name, units=units)
-        else:
-            for k, v in UNITS.items():
-                if argument.lower() in v["name"].lower():
-                    result = Measurements(key=k, name=v["name"], units=v["units"])
-                elif argument.lower() in k:
-                    result = Measurements(key=k, name=v["name"], units=v["units"])
-        if not result:
-            raise commands.BadArgument("`{}` is not a valid measurement!".format(argument))
-        return result
+    async def transform(
+        cls, interaction: discord.Interaction, argument: str
+    ) -> Optional[Measurements]:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
