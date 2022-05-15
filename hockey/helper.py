@@ -495,7 +495,7 @@ async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) ->
     return home_role, away_role
 
 
-async def get_team(bot: Red, team: str) -> TeamEntry:
+async def get_team(bot: Red, team: str) -> dict:
     config = bot.get_cog("Hockey").config
     team_list = await config.teams()
     if team_list is None:
@@ -510,7 +510,7 @@ async def get_team(bot: Red, team: str) -> TeamEntry:
     return_team = TeamEntry("Null", team, 0, [], {}, [], "")
     team_list.append(return_team.to_json())
     await config.teams.set(team_list)
-    return return_team
+    return return_team.to_json()
 
 
 async def get_channel_obj(

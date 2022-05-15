@@ -800,28 +800,31 @@ class Game:
                 await self.save_game_state(bot, "END3rd")
 
         if self.game_state == "Final":
+            if (self.home_score + self.away_score) != 0:
+                # Check if there's goals only if there are goals
+                await self.check_team_goals(bot)
             if end_third and home["game_state"] not in ["LiveEND3rd", "FinalEND3rd"]:
                 log.debug("End of the third period")
                 await self.period_recap(bot, "3rd")
                 await self.save_game_state(bot, "END3rd")
 
-        if self.game_state == "Final" and count >= 20:
-            """Final game state checks"""
+            if (
+                self.first_star is not None
+                and self.second_star is not None
+                and self.third_star is not None
+                and len(self.home_goals) == self.home_score
+                and len(self.away_goals) == self.away_score
+            ) or count >= 20:
+                """Final game state checks"""
+                if home["game_state"] != self.game_state and home["game_state"] != "Null":
 
-            if (self.home_score + self.away_score) != 0:
-                # Check for goal before posting game final, happens with OT games
-                await self.check_team_goals(bot)
-                log.debug("Checking team goals for the last time")
-
-            if home["game_state"] != self.game_state and home["game_state"] != "Null":
-
-                # Post game final data and check for next game
-                log.debug("Game Final %s @ %s", self.away_team, self.home_team)
-                await self.post_game_state(bot)
-                await self.save_game_state(bot)
-                bot.dispatch("hockey_final", self)
-                log.debug("Saving final")
-                return True
+                    # Post game final data and check for next game
+                    log.debug("Game Final %s @ %s", self.away_team, self.home_team)
+                    await self.post_game_state(bot)
+                    await self.save_game_state(bot)
+                    bot.dispatch("hockey_final", self)
+                    log.debug("Saving final")
+                    return True
         return False
 
     async def period_recap(self, bot: Red, period: Literal["1st", "2nd", "3rd"]) -> None:
