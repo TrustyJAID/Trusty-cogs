@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import discord
 from redbot.core.i18n import Translator
@@ -189,7 +189,7 @@ class Pickems(discord.ui.View):
             self.votes[str(user_id)] = team_choice
             self._should_save = True
 
-    def to_json(self) -> Dict[str, Optional[Union[str, Dict[str, str]]]]:
+    def to_json(self) -> Dict[str, Any]:
         return {
             "game_id": self.game_id,
             "game_state": self.game_state,
@@ -252,7 +252,7 @@ class Pickems(discord.ui.View):
             return True
         return False
 
-    async def get_game(self) -> Game:
+    async def get_game(self) -> Optional[Game]:
         return await Game.from_url(self.link)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:

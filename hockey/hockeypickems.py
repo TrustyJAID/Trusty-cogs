@@ -10,6 +10,8 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify
 
+from hockey.helper import utc_to_local
+
 from .abc import MixinMeta
 from .game import Game
 from .pickems import Pickems
@@ -287,6 +289,25 @@ class HockeyPickems(MixinMeta):
                         asyncio.create_task(
                             self.edit_pickems_message(channel, int(message_id), game, pickem)
                         )
+            else:
+                channel_id = await self.pickems_config.guild(guild).pickems_channel()
+                channel = guild.get_channel(channel_id)
+                if not channel:
+                    continue
+                threads = await self.pickems_config.guild(guild).pickems_channels()
+                thread = None
+                game_start = utc_to_local(game.game_start)
+                for thread_id, date in threads.items():
+                    dt = datetime.utcfromtimestamp(date).replace(tzinfo=timezone.utc)
+                    thread_date = dt
+                    if (game_start.year, game_start.month, game_start.day) == (
+                        thread_date.year,
+                        thread_date.month,
+                        thread_date.day,
+                    ):
+                        thread = guild.get_thread(int(thread_id))
+                if thread is not None:
+                    await self.create_pickems_game_message(thread, game)
 
     async def reset_weekly(self) -> None:
         # Reset the weekly leaderboard for all servers

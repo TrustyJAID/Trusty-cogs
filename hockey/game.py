@@ -247,6 +247,7 @@ class Game:
         self.link = kwargs.get("link")
         self.season = kwargs.get("season")
         self._recap_url: Optional[str] = kwargs.get("recap_url", None)
+        self.data = kwargs.get("data", {})
 
     def __repr__(self):
         return "<Hockey Game home={0.home_team} away={0.away_team} state={0.game_state}>".format(
@@ -703,7 +704,7 @@ class Game:
                 desc_str = _("{round_name}:\n{series_status}")
                 msg = _("GP:**{gp}** W:**{wins}** L:**{losses}**")
                 playoffs = await Playoffs.get_playoffs()
-                for rounds in reversed(playoffs.rounds):
+                for rounds in playoffs.rounds:
                     for series in rounds.series:
                         for matchup in series.matchupTeams:
                             if matchup.team.name == self.away_team:
@@ -1135,9 +1136,16 @@ class Game:
         except Exception:
             log.exception("Could not post goal in %s", repr(channel))
 
-    @staticmethod
+    @classmethod
+    async def from_gamepk(
+        cls, gamepk: int, session: Optional[aiohttp.ClientSession] = None
+    ) -> Optional[Game]:
+        url = f"{BASE_URL}/api/v1/game/{gamepk}/feed/live"
+        return await cls.from_url(url, session)
+
+    @classmethod
     async def from_url(
-        url: str, session: Optional[aiohttp.ClientSession] = None
+        cls, url: str, session: Optional[aiohttp.ClientSession] = None
     ) -> Optional[Game]:
         url = url.replace(BASE_URL, "")  # strip the base url incase we already have it
         try:
@@ -1151,7 +1159,7 @@ class Game:
             else:
                 async with session.get(BASE_URL + url) as resp:
                     data = await resp.json()
-            return await Game.from_json(data)
+            return await cls.from_json(data)
         except Exception:
             log.exception("Error grabbing game data: ")
             return None
@@ -1232,4 +1240,5 @@ class Game:
             game_type=game_type,
             season=season,
             recap_url=recap_url,
+            # data=data,
         )
