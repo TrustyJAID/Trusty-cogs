@@ -44,8 +44,6 @@ class RoleToolsMixin(ABC):
 
     @commands.group()
     @commands.guild_only()
-    @discord.app_commands.default_permissions(manage_roles=True)
-    @discord.app_commands.guild_only()
     async def roletools(self: commands.Cog, ctx: Context) -> None:
         """
         Commands for creating custom role settings
