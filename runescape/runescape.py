@@ -282,7 +282,11 @@ class Runescape(commands.Cog):
     @runescape.command(name="ge")
     @commands.bot_has_permissions(embed_links=True)
     async def runescape_ge(self, ctx: commands.Context, *, search: str):
-        """Look for something on the runescape Grand Exchange."""
+        """Look for something on the runescape Grand Exchange.
+
+        You can lookup multiple items at once by separating them with `|`
+        e.g. `[p]rs ge bond|fractured staff of armadyl`
+        """
         base_url = "https://runescape.wiki/w/"
         wiki_url = "https://api.weirdgloop.org/exchange/history/rs/latest"
         params = {
@@ -308,7 +312,10 @@ class Runescape(commands.Cog):
             price = humanize_number(data["price"])
             item_url = base_url + name.replace(" ", "_")
             detail_url = IMAGE_URL + name.replace(" ", "_") + "_detail.png"
-            embed.description = f"[{name}]({item_url}) - {price}\n"
+            if embed.description is not None:
+                embed.description += f"[{name}]({item_url}) - {price}\n"
+            else:
+                embed.description = f"[{name}]({item_url}) - {price}\n"
             embed.set_thumbnail(url=detail_url)
         await ctx.send(embed=embed)
 
@@ -345,7 +352,12 @@ class Runescape(commands.Cog):
     @osrs.command(name="ge")
     @commands.bot_has_permissions(embed_links=True)
     async def osrs_ge(self, ctx: commands.Context, *, search: str):
-        """Look for something on the runescape Grand Exchange."""
+        """
+        Look for something on the runescape Grand Exchange.
+
+        You can lookup multiple items at once by separating them with `|`
+        e.g. `[p]rs osrs ge bond|abyssal whip`
+        """
         base_url = "https://oldschool.runescape.wiki/w/"
         image_url = "https://oldschool.runescape.wiki/w/Special:FilePath/"
         wiki_url = "https://api.weirdgloop.org/exchange/history/osrs/latest"
@@ -372,7 +384,10 @@ class Runescape(commands.Cog):
             price = humanize_number(data["price"])
             item_url = base_url + name.replace(" ", "_")
             detail_url = image_url + name.replace(" ", "_") + "_detail.png"
-            embed.description = f"[{name}]({item_url}) - {price}\n"
+            if embed.description is not None:
+                embed.description += f"[{name}]({item_url}) - {price}\n"
+            else:
+                embed.description = f"[{name}]({item_url}) - {price}\n"
             embed.set_thumbnail(url=detail_url)
         await ctx.send(embed=embed)
 
