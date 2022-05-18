@@ -177,7 +177,8 @@ class Runescape(commands.Cog):
             params = {
                 "limit": 1,
             }
-            async with self.session.get(subreddit_url, params=params) as r:
+            headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs subreddit lookup on {self.bot.user}"}
+            async with self.session.get(subreddit_url, headers=headers, params=params) as r:
                 if r.status == 200:
                     data = await r.json()
                 else:
