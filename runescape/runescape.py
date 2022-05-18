@@ -186,17 +186,18 @@ class Runescape(commands.Cog):
                     )
                     return
 
-            reddit_icon = "https://www.redditinc.com/assets/images/site/reddit-logo.png"
+            reddit_icon_url = "https://www.redditinc.com/assets/images/site/reddit-logo.png"
             latest_post: Dict = data["data"]["children"][0]["data"]
             post_author: str = latest_post["author"]
-            post_title: str = latest_post["title"]
+            post_flair = latest_post["link_flair_text"]
+            post_title: str = latest_post["title"] if not post_flair else f"[Depleted] " + latest_post["title"]
             post_url: str = latest_post["url"]
             post_time = int(latest_post["created_utc"])
 
             embed_color = await ctx.embed_color()
             embed = discord.Embed(title=post_title, description=f"<t:{post_time}:R>", color=embed_color)
             embed.set_image(url=post_url)
-            embed.set_footer(text=f"Instance provided by {post_author} via r/NemiForest", icon_url=reddit_icon)
+            embed.set_footer(text=f"Instance provided by {post_author} via r/NemiForest", icon_url=reddit_icon_url)
             await ctx.send(embed=embed)
 
     @osrs.command(name="wiki")
