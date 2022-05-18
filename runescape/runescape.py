@@ -169,6 +169,47 @@ class Runescape(commands.Cog):
             msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
+    @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
+    async def runescape_nemiforest(self, ctx: commands.Context):
+        """Display an image of a Nemi Forest instance with all nine nodes."""
+        async with ctx.typing():
+            subreddit_url = "https://api.reddit.com/r/nemiforest/new"
+            params = {
+                "limit": 1,
+            }
+            headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs subreddit lookup on {self.bot.user}"}
+            async with self.session.get(subreddit_url, headers=headers, params=params) as r:
+                if r.status == 200:
+                    data = await r.json()
+                else:
+                    await ctx.send(
+                        "I could not find any Nemi Forest instance. Reddit is probably down."
+                    )
+                    return
+
+            reddit_icon_url = "https://www.redditinc.com/assets/images/site/reddit-logo.png"
+            latest_post: Dict = data["data"]["children"][0]["data"]
+            post_author: str = latest_post["author"]
+            post_flair = latest_post["link_flair_text"]
+            post_title: str = (
+                latest_post["title"]
+                if not post_flair
+                else f"[Depleted] " + latest_post["title"]
+            )
+            post_url: str = latest_post["url"]
+            post_time = int(latest_post["created_utc"])
+
+            embed_color = await ctx.embed_color()
+            embed = discord.Embed(
+                title=post_title, description=f"<t:{post_time}:R>", color=embed_color
+            )
+            embed.set_image(url=post_url)
+            embed.set_footer(
+                text=f"Instance provided by {post_author} via r/NemiForest",
+                icon_url=reddit_icon_url,
+            )
+        await ctx.send(embed=embed)
+
     @osrs.command(name="wiki")
     async def osrs_wiki(self, ctx: commands.Context, *, search: str):
         """Look for something on the runescape Wiki."""
