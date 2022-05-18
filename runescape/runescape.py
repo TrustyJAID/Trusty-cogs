@@ -9,7 +9,13 @@ import discord
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import box, humanize_number, pagify
+from redbot.core.utils.chat_formatting import (
+    bold,
+    box,
+    humanize_list,
+    humanize_number,
+    pagify,
+)
 from tabulate import tabulate
 
 from .profile import Activities, Activity, Profile
@@ -40,7 +46,8 @@ class Runescape(commands.Cog):
         self.config.register_global(metrics={})
         self.metrics: Dict[str, Activities] = {}
         self.check_new_metrics.start()
-        self.session = aiohttp.ClientSession()
+        headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs on {self.bot.user}"}
+        self.session = aiohttp.ClientSession(headers=headers)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -161,12 +168,11 @@ class Runescape(commands.Cog):
             "srsearch": search,
             "format": "json",
         }
-        headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
         if ctx.interaction:
             await ctx.defer()
         else:
             await ctx.typing()
-        async with self.session.get(wiki_url, headers=headers, params=params) as r:
+        async with self.session.get(wiki_url, params=params) as r:
             if r.status == 200:
                 data = await r.json()
             else:
@@ -181,45 +187,96 @@ class Runescape(commands.Cog):
             msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
 
+    @runescape.command(name="vis", aliases=["viswax"])
+    async def runescape_viswax(self, ctx: commands.Context):
+        """
+        Get the current combinations for vis wax
+
+        https://runescape.wiki/w/Rune_Goldberg_Machine
+        """
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
+        today = datetime.now(timezone.utc).replace(minute=0)
+        daily = today + timedelta(hours=((0 - today.hour) % 24))
+        wiki_url = "https://runescape.wiki/api.php"
+        params = {
+            "action": "parse",
+            "page": "Rune_Goldberg_Machine",
+            "section": "1",
+            "prop": "wikitext",
+            "format": "json",
+        }
+        async with self.session.get(wiki_url, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(
+                    "I could not find the curren vis wax combinations on the Runescape Wiki."
+                )
+                return
+        wikitext = data["parse"]["wikitext"]["*"]
+        rune_re = re.compile(r"({{[^||]+\|([a-zA-Z ]+)\|[^||]+}})")
+        # date_re = re.compile(r"date=(.+)\|")
+        # date = date_re.search(wikitext)
+        slot_1 = []
+        slot_2 = [[], [], []]
+        count = 0
+        for rune in rune_re.finditer(wikitext):
+            if len(slot_1) < 3:
+                slot_1.append(bold(rune.group(2)))
+            else:
+                if count == 3:
+                    count = 0
+                slot_2[count].append(bold(rune.group(2)))
+                count += 1
+        _from = "\n" + wikitext.split("|")[-2]
+        msg = f"Runescape Vis Wax Refreshes <t:{int(daily.timestamp())}:R>:\n"
+        for i in range(len(slot_1)):
+            msg += f"__Combination {i+1}__: {slot_1[i]} and either {humanize_list(slot_2[i], style='or')}\n"
+        msg += _from + "\nhttps://runescape.wiki/w/Rune_Goldberg_Machine"
+        await ctx.maybe_send_embed(msg)
+
     @runescape.command(name="nemiforest", aliases=["nemi", "forest"])
     async def runescape_nemiforest(self, ctx: commands.Context):
         """Display an image of a Nemi Forest instance with all nine nodes."""
-        async with ctx.typing():
-            subreddit_url = "https://api.reddit.com/r/nemiforest/new"
-            params = {
-                "limit": 1,
-            }
-            headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs subreddit lookup on {self.bot.user}"}
-            async with self.session.get(subreddit_url, headers=headers, params=params) as r:
-                if r.status == 200:
-                    data = await r.json()
-                else:
-                    await ctx.send(
-                        "I could not find any Nemi Forest instance. Reddit is probably down."
-                    )
-                    return
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
+        subreddit_url = "https://api.reddit.com/r/nemiforest/new"
+        params = {
+            "limit": 1,
+        }
+        async with self.session.get(subreddit_url, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(
+                    "I could not find any Nemi Forest instance. Reddit is probably down."
+                )
+                return
 
-            reddit_icon_url = "https://www.redditinc.com/assets/images/site/reddit-logo.png"
-            latest_post: Dict = data["data"]["children"][0]["data"]
-            post_author: str = latest_post["author"]
-            post_flair = latest_post["link_flair_text"]
-            post_title: str = (
-                latest_post["title"]
-                if not post_flair
-                else f"[Depleted] " + latest_post["title"]
-            )
-            post_url: str = latest_post["url"]
-            post_time = int(latest_post["created_utc"])
+        reddit_icon_url = "https://www.redditinc.com/assets/images/site/reddit-logo.png"
+        latest_post: Dict = data["data"]["children"][0]["data"]
+        post_author: str = latest_post["author"]
+        post_flair = latest_post["link_flair_text"]
+        post_title: str = (
+            latest_post["title"] if not post_flair else f"[Depleted] " + latest_post["title"]
+        )
+        post_url: str = latest_post["url"]
+        post_time = int(latest_post["created_utc"])
 
-            embed_color = await ctx.embed_color()
-            embed = discord.Embed(
-                title=post_title, description=f"<t:{post_time}:R>", color=embed_color
-            )
-            embed.set_image(url=post_url)
-            embed.set_footer(
-                text=f"Instance provided by {post_author} via r/NemiForest",
-                icon_url=reddit_icon_url,
-            )
+        embed_color = await ctx.embed_color()
+        embed = discord.Embed(
+            title=post_title, description=f"<t:{post_time}:R>", color=embed_color
+        )
+        embed.set_image(url=post_url)
+        embed.set_footer(
+            text=f"Instance provided by {post_author} via r/NemiForest",
+            icon_url=reddit_icon_url,
+        )
         await ctx.send(embed=embed)
 
     @osrs.command(name="wiki")
@@ -233,12 +290,11 @@ class Runescape(commands.Cog):
             "srsearch": search,
             "format": "json",
         }
-        headers = {"User-Agent": f"Red-DiscordBot Trusty-cogs wiki lookup on {self.bot.user}"}
         if ctx.interaction:
             await ctx.defer()
         else:
             await ctx.typing()
-        async with self.session.get(wiki_url, headers=headers, params=params) as r:
+        async with self.session.get(wiki_url, params=params) as r:
             if r.status == 200:
                 data = await r.json()
             else:
