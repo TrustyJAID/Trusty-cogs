@@ -208,7 +208,7 @@ class Runescape(commands.Cog):
                 text=f"Instance provided by {post_author} via r/NemiForest",
                 icon_url=reddit_icon_url,
             )
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @osrs.command(name="wiki")
     async def osrs_wiki(self, ctx: commands.Context, *, search: str):
