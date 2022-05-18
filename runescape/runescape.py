@@ -190,14 +190,23 @@ class Runescape(commands.Cog):
             latest_post: Dict = data["data"]["children"][0]["data"]
             post_author: str = latest_post["author"]
             post_flair = latest_post["link_flair_text"]
-            post_title: str = latest_post["title"] if not post_flair else f"[Depleted] " + latest_post["title"]
+            post_title: str = (
+                latest_post["title"]
+                if not post_flair
+                else f"[Depleted] " + latest_post["title"]
+            )
             post_url: str = latest_post["url"]
             post_time = int(latest_post["created_utc"])
 
             embed_color = await ctx.embed_color()
-            embed = discord.Embed(title=post_title, description=f"<t:{post_time}:R>", color=embed_color)
+            embed = discord.Embed(
+                title=post_title, description=f"<t:{post_time}:R>", color=embed_color
+            )
             embed.set_image(url=post_url)
-            embed.set_footer(text=f"Instance provided by {post_author} via r/NemiForest", icon_url=reddit_icon_url)
+            embed.set_footer(
+                text=f"Instance provided by {post_author} via r/NemiForest",
+                icon_url=reddit_icon_url,
+            )
             await ctx.send(embed=embed)
 
     @osrs.command(name="wiki")
