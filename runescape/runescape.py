@@ -279,6 +279,39 @@ class Runescape(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @runescape.command(name="ge")
+    @commands.bot_has_permissions(embed_links=True)
+    async def runescape_ge(self, ctx: commands.Context, *, search: str):
+        """Look for something on the runescape Grand Exchange."""
+        base_url = "https://runescape.wiki/w/"
+        wiki_url = "https://api.weirdgloop.org/exchange/history/rs/latest"
+        params = {
+            "name": search,
+        }
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
+        error_msg = f"I could not find `{search}` on the Runescape Grand Exchange."
+        async with self.session.get(wiki_url, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(error_msg)
+                return
+            if not data.get("success", True):
+                await ctx.send(error_msg)
+                return
+        log.debug(data)
+        embed = discord.Embed(title=f"Runescape GE Results for `{search}`")
+        for name, data in data.items():
+            price = humanize_number(data["price"])
+            item_url = base_url + name.replace(" ", "_")
+            detail_url = IMAGE_URL + name.replace(" ", "_") + "_detail.png"
+            embed.description = f"[{name}]({item_url}) - {price}\n"
+            embed.set_thumbnail(url=detail_url)
+        await ctx.send(embed=embed)
+
     @osrs.command(name="wiki")
     async def osrs_wiki(self, ctx: commands.Context, *, search: str):
         """Look for something on the runescape Wiki."""
@@ -308,6 +341,40 @@ class Runescape(commands.Cog):
             title = search["title"]
             msg += f"[{title}]({base_url}{page_id})\n"
         await ctx.maybe_send_embed(msg)
+
+    @osrs.command(name="ge")
+    @commands.bot_has_permissions(embed_links=True)
+    async def osrs_ge(self, ctx: commands.Context, *, search: str):
+        """Look for something on the runescape Grand Exchange."""
+        base_url = "https://oldschool.runescape.wiki/w/"
+        image_url = "https://oldschool.runescape.wiki/w/Special:FilePath/"
+        wiki_url = "https://api.weirdgloop.org/exchange/history/osrs/latest"
+        params = {
+            "name": search,
+        }
+        if ctx.interaction:
+            await ctx.defer()
+        else:
+            await ctx.typing()
+        error_msg = f"I could not find `{search}` on the Runescape Grand Exchange."
+        async with self.session.get(wiki_url, params=params) as r:
+            if r.status == 200:
+                data = await r.json()
+            else:
+                await ctx.send(error_msg)
+                return
+            if not data.get("success", True):
+                await ctx.send(error_msg)
+                return
+        log.debug(data)
+        embed = discord.Embed(title=f"OldSchool Runescape GE Results for `{search}`")
+        for name, data in data.items():
+            price = humanize_number(data["price"])
+            item_url = base_url + name.replace(" ", "_")
+            detail_url = image_url + name.replace(" ", "_") + "_detail.png"
+            embed.description = f"[{name}]({item_url}) - {price}\n"
+            embed.set_thumbnail(url=detail_url)
+        await ctx.send(embed=embed)
 
     @osrs.command(name="stats")
     async def osrs_stats(self, ctx: commands.Context, runescape_name: str = None) -> None:
