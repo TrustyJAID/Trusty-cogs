@@ -11,6 +11,7 @@ from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.views import SetApiView
 
 from .abc import SpotifyMixin
 from .components import SpotifySelectDevice
@@ -556,14 +557,14 @@ class SpotifyCommands(SpotifyMixin):
             "match either `https://localhost/` or the one you set with the `[p]set api` command"
         ).format(prefix=ctx.prefix)
         keys = {"client_id": "", "client_secret": "", "redirect_uri": "https://localhost/"}
-        # view = SetApiView(self.bot, "spotify", keys)
+        view = SetApiView("spotify", keys)
         if await ctx.embed_requested():
             em = discord.Embed(description=message)
-            # await ctx.send(embed=em, view=view)
-            await ctx.send(embed=em)
+            await ctx.send(embed=em, view=view)
+            # await ctx.send(embed=em)
         else:
-            # await ctx.send(message, view=view)
-            await ctx.send(message)
+            await ctx.send(message, view=view)
+            # await ctx.send(message)
 
     @spotify_set.command(name="forgetme")
     async def spotify_forgetme(self, ctx: commands.Context):
