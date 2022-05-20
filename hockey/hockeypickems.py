@@ -74,13 +74,21 @@ class HockeyPickems(MixinMeta):
             # log.debug("Saving pickems data")
             all_pickems = self.all_pickems.copy()
             async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=10):
-                data = {}
                 async with self.pickems_config.guild_from_id(int(guild_id)).pickems() as data:
+                    to_del = []
                     for name, pickem in pickems.items():
                         if pickem._should_save:
                             # log.debug("Saving pickem %r", pickem)
                             data[name] = pickem.to_json()
                         self.all_pickems[guild_id][name]._should_save = False
+                        if pickem.game_type in ["P", "PR"]:
+                            if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(
+                                days=7
+                            ):
+                                del data[name]
+                                to_del.append(name)
+                    for name in to_del:
+                        del self.all_pickems[guild_id][name]
         except Exception:
             log.exception("Error saving pickems Data")
             # catch all errors cause we don't want this loop to fail for something dumb
