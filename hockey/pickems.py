@@ -97,7 +97,6 @@ class Pickems(discord.ui.View):
     _should_save: bool
 
     def __init__(self, **kwargs):
-        super().__init__()
         self.game_id = kwargs.get("game_id")
         self.game_state = kwargs.get("game_state")
         self.messages = kwargs.get("messages", [])
