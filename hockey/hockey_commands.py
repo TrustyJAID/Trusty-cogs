@@ -110,7 +110,7 @@ class HockeyCommands(MixinMeta):
         await ctx.send(msg)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def standings(self, ctx: commands.Context, *, search: StandingsFinder = None) -> None:
         """
         Displays current standings
@@ -124,7 +124,7 @@ class HockeyCommands(MixinMeta):
         await StandingsMenu(standings=standings, start=search).start(ctx=ctx)
 
     @hockey_commands.command(aliases=["score"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def games(
         self,
         ctx: commands.Context,
@@ -157,7 +157,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def playoffs(
         self,
         ctx: commands.Context,
@@ -196,7 +196,7 @@ class HockeyCommands(MixinMeta):
         await PlayoffsView(start_date=season_str).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def heatmap(
         self,
         ctx: commands.Context,
@@ -243,7 +243,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def gameflow(
         self,
         ctx: commands.Context,
@@ -293,7 +293,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def schedule(
         self,
         ctx: commands.Context,
@@ -324,7 +324,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def recap(
         self,
         ctx: commands.Context,
@@ -355,7 +355,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command(hidden=True, with_app_command=False)
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def season(
         self,
         ctx: commands.Context,
@@ -408,7 +408,7 @@ class HockeyCommands(MixinMeta):
         # await ctx.send(x[0])
 
     @hockey_commands.command(aliases=["players"])
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def player(
         self,
         ctx: commands.Context,
@@ -451,7 +451,7 @@ class HockeyCommands(MixinMeta):
         ).start(ctx=ctx)
 
     @hockey_commands.command()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
+    @commands.bot_has_permissions(read_message_history=True, embed_links=True)
     async def roster(
         self,
         ctx: commands.Context,
@@ -739,13 +739,22 @@ class HockeyCommands(MixinMeta):
         """
         Shows the current server leaderboard
 
-        `[leaderboard_type]` can be either `seasonal` the default, `weekly`, or `worst`
+        `[leaderboard_type]` can be any of the following:
+        `season` (the default)
+        `weekly`
+        `playoffs`
+        `playoffs weekly`
+        `pre-season`
+        `pre-season weekly`
+        `worst`
 
         Leaderboards % is calculated based on cumulative votes compared to number of votes.
         This is so that one lucky user who only votes once isn't considered *better*
         than people who consistently vote. The only way to win is to keep playing
         and picking correctly.
         """
+        if leaderboard_type is None:
+            leaderboard_type = "season"
         await self.post_leaderboard(ctx, leaderboard_type, not public)
 
     @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])
