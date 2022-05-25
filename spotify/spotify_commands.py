@@ -639,25 +639,26 @@ class SpotifyCommands(SpotifyMixin):
         `[member]` Optional discord member to show their current spotify status
         if they're displaying it on Discord.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer(ephemeral=not public)
-        if member and isinstance(member, discord.Member):
-            if not [c for c in member.activities if c.type == discord.ActivityType.listening]:
-                msg = _("That user is not currently listening to Spotify on Discord.")
-                await ctx.send(msg)
-                return
+        async with ctx.typing(ephemeral=not public):
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+
+            if member and isinstance(member, discord.Member):
+                if not [c for c in member.activities if c.type == discord.ActivityType.listening]:
+                    msg = _("That user is not currently listening to Spotify on Discord.")
+                    await ctx.send(msg)
+                    return
+                else:
+                    activity = [
+                        c for c in member.activities if c.type == discord.ActivityType.listening
+                    ][0]
+                    user_spotify = tekore.Spotify(sender=self._sender)
+                    with user_spotify.token_as(user_token):
+                        track = await user_spotify.track(activity.track_id)
             else:
-                activity = [
-                    c for c in member.activities if c.type == discord.ActivityType.listening
-                ][0]
-                user_spotify = tekore.Spotify(sender=self._sender)
-                with user_spotify.token_as(user_token):
-                    track = await user_spotify.track(activity.track_id)
-        else:
-            member = None
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+                member = None
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
         try:
             if member is None:
                 x = SpotifyUserMenu(
@@ -681,7 +682,7 @@ class SpotifyCommands(SpotifyMixin):
                     user_token=user_token,
                 )
 
-            await x.send_initial_message(ctx)
+            await x.send_initial_message(ctx, ephemeral=not public)
         except NotPlaying:
             await self.not_playing(ctx)
         except tekore.Unauthorised:
@@ -754,29 +755,30 @@ class SpotifyCommands(SpotifyMixin):
             "playlist": SpotifyPlaylistPages,
             "show": SpotifyShowPages,
         }
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            search = await user_spotify.search(query, (search_type,), "from_token", limit=50)
-            items = search[0].items
-        if not search[0].items:
-            msg = _("No {search_type} could be found matching that query.").format(
-                search_type=search_type
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                search = await user_spotify.search(query, (search_type,), "from_token", limit=50)
+                items = search[0].items
+            if not search[0].items:
+                msg = _("No {search_type} could be found matching that query.").format(
+                    search_type=search_type
+                )
+                await ctx.send(msg)
+                return
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            x = SpotifySearchMenu(
+                source=search_types[search_type](items=items, detailed=detailed),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
             )
-            await ctx.send(msg)
-            return
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        x = SpotifySearchMenu(
-            source=search_types[search_type](items=items, detailed=detailed),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
         await x.send_initial_message(ctx)
 
     @spotify_com.command(name="genres", aliases=["genre"])
@@ -785,20 +787,20 @@ class SpotifyCommands(SpotifyMixin):
         """
         Display all available genres for the recommendations
         """
-        await ctx.defer()
-        try:
-            self.GENRES = await self._spotify_client.recommendation_genre_seeds()
-        except Exception:
-            log.exception("Error grabbing genres.")
+        async with ctx.typing():
+            try:
+                self.GENRES = await self._spotify_client.recommendation_genre_seeds()
+            except Exception:
+                log.exception("Error grabbing genres.")
+                msg = _(
+                    "The bot owner needs to set their Spotify credentials "
+                    "before this command can be used."
+                    " See `{prefix}spotify set creds` for more details."
+                ).format(prefix=ctx.clean_prefix)
+                await ctx.send(msg)
             msg = _(
-                "The bot owner needs to set their Spotify credentials "
-                "before this command can be used."
-                " See `{prefix}spotify set creds` for more details."
-            ).format(prefix=ctx.clean_prefix)
-            await ctx.send(msg)
-        msg = _(
-            "The following are available genres for Spotify's recommendations:\n\n {genres}"
-        ).format(genres=humanize_list(self.GENRES))
+                "The following are available genres for Spotify's recommendations:\n\n {genres}"
+            ).format(genres=humanize_list(self.GENRES))
         await ctx.maybe_send_embed(msg)
 
     @spotify_com.command(name="recommend", aliases=["recommendation"], with_app_command=False)
@@ -836,27 +838,27 @@ class SpotifyCommands(SpotifyMixin):
         """
         log.debug(recommendations)
         # user_spotify = await self.get_user_spotify(ctx)
-        await ctx.defer()
-        async with self.get_user_spotify(ctx) as user_spotify:
-            try:
-                search = await user_spotify.recommendations(**recommendations)
-            except Exception:
-                log.exception("Error getting recommendations")
-                msg = _("I could not find any recommendations with those parameters")
-                await ctx.reply(msg)
-                return
-            items = search.tracks
-        if not items:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        x = SpotifySearchMenu(
-            source=SpotifyTrackPages(items=items, detailed=detailed),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=await self.get_user_auth(ctx),
-        )
+        async with ctx.typing():
+            async with self.get_user_spotify(ctx) as user_spotify:
+                try:
+                    search = await user_spotify.recommendations(**recommendations)
+                except Exception:
+                    log.exception("Error getting recommendations")
+                    msg = _("I could not find any recommendations with those parameters")
+                    await ctx.reply(msg)
+                    return
+                items = search.tracks
+            if not items:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            x = SpotifySearchMenu(
+                source=SpotifyTrackPages(items=items, detailed=detailed),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=await self.get_user_auth(ctx),
+            )
         await x.send_initial_message(ctx)
 
     @spotify_com.app_command.command(name="recommendations")
@@ -960,26 +962,27 @@ class SpotifyCommands(SpotifyMixin):
         """
         Displays your most recently played songs on Spotify
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                search = await user_spotify.playback_recently_played(limit=50)
-                tracks = search.items
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        x = SpotifySearchMenu(
-            source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            await ctx.defer()
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    search = await user_spotify.playback_recently_played(limit=50)
+                    tracks = search.items
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            x = SpotifySearchMenu(
+                source=SpotifyRecentSongPages(tracks=tracks, detailed=detailed),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_com.command(name="toptracks")
@@ -988,26 +991,26 @@ class SpotifyCommands(SpotifyMixin):
         """
         List your top tracks on spotify
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.current_user_top_tracks(limit=50)
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        tracks = cur.items
-        x = SpotifyBaseMenu(
-            source=SpotifyTopTracksPages(tracks),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.current_user_top_tracks(limit=50)
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            tracks = cur.items
+            x = SpotifyBaseMenu(
+                source=SpotifyTopTracksPages(tracks),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_com.command(name="topartists")
@@ -1016,26 +1019,26 @@ class SpotifyCommands(SpotifyMixin):
         """
         List your top artists on spotify
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.current_user_top_artists(limit=50)
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        artists = cur.items
-        x = SpotifyBaseMenu(
-            source=SpotifyTopArtistsPages(artists),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.current_user_top_artists(limit=50)
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            artists = cur.items
+            x = SpotifyBaseMenu(
+                source=SpotifyTopArtistsPages(artists),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_com.command(name="new")
@@ -1044,23 +1047,23 @@ class SpotifyCommands(SpotifyMixin):
         """
         List new releases on Spotify
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        user_spotify = tekore.Spotify(sender=self._sender)
-        with user_spotify.token_as(user_token):
-            playlists = await user_spotify.new_releases(limit=50)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        playlist_list = playlists.items
-        x = SpotifySearchMenu(
-            source=SpotifyNewPages(playlist_list),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            user_spotify = tekore.Spotify(sender=self._sender)
+            with user_spotify.token_as(user_token):
+                playlists = await user_spotify.new_releases(limit=50)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            playlist_list = playlists.items
+            x = SpotifySearchMenu(
+                source=SpotifyNewPages(playlist_list),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_com.command(name="pause")
@@ -1821,7 +1824,8 @@ class SpotifyCommands(SpotifyMixin):
             # really don't want to force users to auth from autocomplete
             log.debug("No tokens.")
             return
-        user_token = await self.get_user_auth(interaction)
+        ctx = await interaction.client.get_context(interaction)
+        user_token = await self.get_user_auth(ctx)
         if not user_token:
             log.debug("STILL No tokens.")
             return
@@ -1923,41 +1927,44 @@ class SpotifyCommands(SpotifyMixin):
         otherwise this will not display private playlists unless showprivate
         has been toggled on.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.followed_playlists(limit=50)
-                playlists = cur.items
-                while len(playlists) < cur.total:
-                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                    for p in new.items:
-                        playlists.append(p)
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
-            ctx.channel, discord.DMChannel
-        )
-        if show_private:
-            playlist_list = playlists
-        else:
-            playlist_list = [p for p in playlists if p.public is not False]
-        if len(playlist_list) == 0:
-            msg = _("You don't have any saved playlists I can show here.")
-            await ctx.send(msg)
-            return
-        x = SpotifyBaseMenu(
-            source=SpotifyPlaylistsPages(playlist_list),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.followed_playlists(limit=50)
+                    playlists = cur.items
+                    while len(playlists) < cur.total:
+                        new = await user_spotify.followed_playlists(
+                            limit=50, offset=len(playlists)
+                        )
+                        for p in new.items:
+                            playlists.append(p)
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            show_private = await self.config.user(ctx.author).show_private() or isinstance(
+                ctx.channel, discord.DMChannel
+            )
+            if show_private:
+                playlist_list = playlists
+            else:
+                playlist_list = [p for p in playlists if p.public is not False]
+            if len(playlist_list) == 0:
+                msg = _("You don't have any saved playlists I can show here.")
+                await ctx.send(msg)
+                return
+            x = SpotifyBaseMenu(
+                source=SpotifyPlaylistsPages(playlist_list),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="view")
@@ -1970,44 +1977,46 @@ class SpotifyCommands(SpotifyMixin):
         otherwise this will not display private playlists unless showprivate
         has been toggled on.
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        await ctx.defer()
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                cur = await user_spotify.followed_playlists(limit=50)
-                playlists = cur.items
-                while len(playlists) < cur.total:
-                    new = await user_spotify.followed_playlists(limit=50, offset=len(playlists))
-                    for p in new.items:
-                        playlists.append(p)
-        except tekore.Unauthorised:
-            return await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
-            ctx.channel, discord.DMChannel
-        )
-        show_private = await self.config.user(ctx.author).show_private() or isinstance(
-            ctx.channel, discord.DMChannel
-        )
-        if show_private:
-            playlist_list = playlists
-        else:
-            playlist_list = [p for p in playlists if p.public is not False]
-        if len(playlist_list) == 0:
-            msg = _("You don't have any saved playlists I can show here.")
-            await ctx.send(msg)
-            return
-        x = SpotifySearchMenu(
-            source=SpotifyPlaylistPages(playlist_list, False),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    cur = await user_spotify.followed_playlists(limit=50)
+                    playlists = cur.items
+                    while len(playlists) < cur.total:
+                        new = await user_spotify.followed_playlists(
+                            limit=50, offset=len(playlists)
+                        )
+                        for p in new.items:
+                            playlists.append(p)
+            except tekore.Unauthorised:
+                return await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            show_private = await self.config.user(ctx.author).show_private() or isinstance(
+                ctx.channel, discord.DMChannel
+            )
+            show_private = await self.config.user(ctx.author).show_private() or isinstance(
+                ctx.channel, discord.DMChannel
+            )
+            if show_private:
+                playlist_list = playlists
+            else:
+                playlist_list = [p for p in playlists if p.public is not False]
+            if len(playlist_list) == 0:
+                msg = _("You don't have any saved playlists I can show here.")
+                await ctx.send(msg)
+                return
+            x = SpotifySearchMenu(
+                source=SpotifyPlaylistPages(playlist_list, False),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
 
     @spotify_playlist.command(name="create")
@@ -2278,41 +2287,39 @@ class SpotifyCommands(SpotifyMixin):
 
         `<to_follow>` The artis links or URI's you want to view the albums of
         """
-        user_token = await self.get_user_auth(ctx)
-        if not user_token:
-            return await self.no_user_token(ctx)
-        if ctx.interaction:
-            try:
-                to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
-            except commands.BadArgument as e:
-                await ctx.send(e, ephemeral=True)
-                return
+        async with ctx.typing():
+            user_token = await self.get_user_auth(ctx)
+            if not user_token:
+                return await self.no_user_token(ctx)
+            if ctx.interaction:
+                try:
+                    to_follow = await SpotifyURIConverter().convert(ctx, to_follow)
+                except commands.BadArgument as e:
+                    await ctx.send(e, ephemeral=True)
+                    return
 
-        tracks = []
-        for match in to_follow:
-            if match.group(2) == "artist":
-                tracks.append(match.group(3))
-        if not tracks:
-            msg = _("You did not provide an artist link or URI.")
-            if is_slash:
+            tracks = []
+            for match in to_follow:
+                if match.group(2) == "artist":
+                    tracks.append(match.group(3))
+            if not tracks:
+                msg = _("You did not provide an artist link or URI.")
                 await ctx.send(msg, ephemeral=True)
-            else:
-                await ctx.send()
-            return
-        try:
-            user_spotify = tekore.Spotify(sender=self._sender)
-            with user_spotify.token_as(user_token):
-                search = await user_spotify.artist_albums(tracks[0], limit=50)
-                tracks = search.items
-        except tekore.Unauthorised:
-            await self.not_authorized(ctx)
-        delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
-        x = SpotifySearchMenu(
-            source=SpotifyAlbumPages(tracks, False),
-            delete_message_after=delete_after,
-            clear_buttons_after=clear_after,
-            timeout=timeout,
-            cog=self,
-            user_token=user_token,
-        )
+                return
+            try:
+                user_spotify = tekore.Spotify(sender=self._sender)
+                with user_spotify.token_as(user_token):
+                    search = await user_spotify.artist_albums(tracks[0], limit=50)
+                    tracks = search.items
+            except tekore.Unauthorised:
+                await self.not_authorized(ctx)
+            delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
+            x = SpotifySearchMenu(
+                source=SpotifyAlbumPages(tracks, False),
+                delete_message_after=delete_after,
+                clear_buttons_after=clear_after,
+                timeout=timeout,
+                cog=self,
+                user_token=user_token,
+            )
         await x.send_initial_message(ctx)
