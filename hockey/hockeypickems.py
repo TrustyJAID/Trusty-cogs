@@ -48,7 +48,10 @@ class HockeyPickems(MixinMeta):
 
     @tasks.loop(seconds=300)
     async def pickems_loop(self) -> None:
-        await self.save_pickems_data()
+        try:
+            await self.save_pickems_data()
+        except Exception:
+            log.exception("Error saving pickems data")
         log.debug("Saved pickems data.")
 
     @commands.Cog.listener()
@@ -69,29 +72,30 @@ class HockeyPickems(MixinMeta):
             log.debug("Unarchiving %r", after)
 
     async def save_pickems_data(self) -> None:
-        try:
+        to_del: Dict[str, List[str]] = {}
+        # log.debug("Saving pickems data")
+        # all_pickems = self.all_pickems.copy()
+        async for guild_id, pickems in AsyncIter(self.all_pickems.items(), steps=10):
+            async with self.pickems_config.guild_from_id(int(guild_id)).pickems() as data:
+                for name, pickem in pickems.items():
+                    if pickem._should_save:
+                        # log.debug("Saving pickem %r", pickem)
+                        data[name] = pickem.to_json()
+                    self.all_pickems[guild_id][name]._should_save = False
+                    if pickem.game_type in ["P", "PR"]:
+                        if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(days=7):
+                            del data[name]
+                            if guild_id not in to_del:
+                                to_del[guild_id] = [name]
+                            else:
+                                to_del[guild_id].append(name)
 
-            # log.debug("Saving pickems data")
-            all_pickems = self.all_pickems.copy()
-            async for guild_id, pickems in AsyncIter(all_pickems.items(), steps=10):
-                async with self.pickems_config.guild_from_id(int(guild_id)).pickems() as data:
-                    to_del = []
-                    for name, pickem in pickems.items():
-                        if pickem._should_save:
-                            # log.debug("Saving pickem %r", pickem)
-                            data[name] = pickem.to_json()
-                        self.all_pickems[guild_id][name]._should_save = False
-                        if pickem.game_type in ["P", "PR"]:
-                            if (datetime.now(timezone.utc) - pickem.game_start) >= timedelta(
-                                days=7
-                            ):
-                                del data[name]
-                                to_del.append(name)
-                    for name in to_del:
-                        del self.all_pickems[guild_id][name]
-        except Exception:
-            log.exception("Error saving pickems Data")
-            # catch all errors cause we don't want this loop to fail for something dumb
+        for guild_id, names in to_del.items():
+            for name in names:
+                try:
+                    del self.all_pickems[guild_id][name]
+                except KeyError:
+                    pass
 
     @pickems_loop.after_loop
     async def after_pickems_loop(self) -> None:
