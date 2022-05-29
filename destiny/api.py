@@ -2,6 +2,7 @@ import asyncio
 import functools
 import json
 import logging
+import re
 from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
@@ -195,11 +196,8 @@ class DestinyAPI:
         """
         This sets up the OAuth flow for logging into the API
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            author = ctx.user
-        else:
-            author = ctx.author
+        is_slash = ctx.interaction is not None
+        author = ctx.author
         client_id = await self.config.api_token.client_id()
         if not client_id:
             raise Destiny2MissingAPITokens(
@@ -211,18 +209,27 @@ class DestinyAPI:
             "this application and provide "
             "everything after `?code=` shown in the URL.\n"
         )
-        try:
-            await author.send(msg + url)
-        except discord.errors.Forbidden:
-            await ctx.channel.send(msg + url)
+        if is_slash:
+            await ctx.send(msg + url, ephemeral=True)
+        else:
+            try:
+                await author.send(msg + url)
+            except discord.errors.Forbidden:
+                await ctx.channel.send(msg + url)
         try:
             msg = await self.bot.wait_for(
                 "message", check=lambda m: m.author == author, timeout=180
             )
         except asyncio.TimeoutError:
             return None
+        code_check = re.compile(r"\?code=([a-z0-9]+)", flags=re.I)
+        find = code_check.search(msg.content)
+        if find:
+            code = find.group(1)
+        else:
+            code = msg.content
         if msg.content != "exit":
-            return await self.get_access_token(msg.content)
+            return await self.get_access_token(code)
         return None
 
     async def build_headers(self, user: discord.abc.User = None) -> dict:
@@ -907,10 +914,13 @@ class DestinyAPI:
         conn.close()
 
     async def get_char_colour(self, embed: discord.Embed, character):
-        r = character["emblemColor"]["red"]
-        g = character["emblemColor"]["green"]
-        b = character["emblemColor"]["blue"]
-        embed.colour = discord.Colour.from_rgb(r, g, b)
+        try:
+            r = character["emblemColor"]["red"]
+            g = character["emblemColor"]["green"]
+            b = character["emblemColor"]["blue"]
+            embed.colour = discord.Colour.from_rgb(r, g, b)
+        except KeyError:
+            pass
         return embed
 
     async def check_gilded_title(self, chars: dict, title: dict) -> bool:

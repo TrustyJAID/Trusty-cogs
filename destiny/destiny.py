@@ -121,11 +121,8 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Remove your authorization to the destiny API on the bot
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
-        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
+        async with ctx.typing():
+            await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
         msg = _("Your authorization has been reset.")
         await ctx.send(msg)
 
@@ -149,115 +146,116 @@ class Destiny(DestinyAPI, commands.Cog):
         using `details`, `true`, or `stats` will show the weapons stat bars
         using `lore` here will instead display the weapons lore card instead if it exists.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
-        show_lore = True if details_or_lore is False else False
-        if search.startswith("lore "):
-            search = search.replace("lore ", "")
-        elif search.isdigit():
-            search = int(search)
+        async with ctx.typing():
+            show_lore = True if details_or_lore is False else False
+            if search.startswith("lore "):
+                search = search.replace("lore ", "")
+            elif search.isdigit():
+                search = int(search)
 
-        try:
-            if isinstance(search, int):
-                try:
-                    items = await self.get_definition("DestinyInventoryItemDefinition", [search])
-                except Exception:
-                    items = await self.search_definition("DestinyInventoryItemDefinition", search)
-            else:
-                items = await self.search_definition("DestinyInventoryItemDefinition", search)
-        except Destiny2MissingManifest as e:
-            await ctx.send(e)
-            return
-        if not items:
-            await ctx.send(_("`{search}` could not be found.").format(search=search))
-            return
-        embeds = []
-        # log.debug(items[0])
-        for item_hash, item in items.items():
-            if not (item["equippable"]):
-                continue
-            embed = discord.Embed()
-
-            damage_type = ""
             try:
-                damage_data = (
-                    await self.get_definition(
-                        "DestinyDamageTypeDefinition", [item["defaultDamageTypeHash"]]
-                    )
-                )[str(item["defaultDamageTypeHash"])]
-                damage_type = damage_data["displayProperties"]["name"]
-            except KeyError:
-                pass
-            description = (
-                damage_type
-                + " "
-                + item["itemTypeAndTierDisplayName"]
-                + "\n"
-                + item["flavorText"]
-                + "\n\n"
-            )
-            if item["itemType"] in [3] and not show_lore:
+                if isinstance(search, int):
+                    try:
+                        items = await self.get_definition(
+                            "DestinyInventoryItemDefinition", [search]
+                        )
+                    except Exception:
+                        items = await self.search_definition(
+                            "DestinyInventoryItemDefinition", search
+                        )
+                else:
+                    items = await self.search_definition("DestinyInventoryItemDefinition", search)
+            except Destiny2MissingManifest as e:
+                await ctx.send(e)
+                return
+            if not items:
+                await ctx.send(_("`{search}` could not be found.").format(search=search))
+                return
+            embeds = []
+            # log.debug(items[0])
+            for item_hash, item in items.items():
+                if not (item["equippable"]):
+                    continue
+                embed = discord.Embed()
 
-                stats_str = ""
-                rpm = ""
-                recoil = ""
-                magazine = ""
-                for stat_hash, value in item["stats"]["stats"].items():
-                    if stat_hash in ["1935470627", "1480404414", "1885944937"]:
-                        continue
+                damage_type = ""
+                try:
+                    damage_data = (
+                        await self.get_definition(
+                            "DestinyDamageTypeDefinition", [item["defaultDamageTypeHash"]]
+                        )
+                    )[str(item["defaultDamageTypeHash"])]
+                    damage_type = damage_data["displayProperties"]["name"]
+                except KeyError:
+                    pass
+                description = (
+                    damage_type
+                    + " "
+                    + item["itemTypeAndTierDisplayName"]
+                    + "\n"
+                    + item["flavorText"]
+                    + "\n\n"
+                )
+                if item["itemType"] in [3] and not show_lore:
 
-                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                        str(stat_hash)
-                    ]
-                    stat_name = stat_info["displayProperties"]["name"]
-                    if not stat_name:
-                        continue
-                    prog = "█" * int(value["value"] / 10)
-                    empty = "░" * int((100 - value["value"]) / 10)
-                    bar = f"{prog}{empty}"
-                    if stat_hash == "4284893193":
-                        rpm = f"{stat_name}: **{value['value']}**\n"
-                        continue
-                    if stat_hash == "3871231066":
-                        recoil = f"{stat_name}: **{value['value']}**\n"
-                        continue
-                    if stat_hash == "2715839340":
-                        magazine = f"{stat_name}: **{value['value']}**\n"
-                        continue
-                    if details_or_lore:
-                        stats_str += f"{stat_name}: **{value['value']}** \n{bar}\n"
-                stats_str += rpm + recoil + magazine
-                description += stats_str
-                embed.description = description
-                perks = await self.get_weapon_possible_perks(item)
-                for key, value in perks.items():
-                    embed.add_field(name=key, value=value[:1024])
-            if "loreHash" in item and (show_lore or item["itemType"] in [2]):
-                lore = (await self.get_definition("DestinyLoreDefinition", [item["loreHash"]]))[
-                    str(item["loreHash"])
-                ]
-                description += _("Lore: \n\n") + lore["displayProperties"]["description"]
-            if len(description) > 2048:
-                count = 0
-                for page in pagify(description, page_length=1024):
-                    if count == 0:
-                        embed.description = page
-                    else:
-                        embed.add_field(name=_("Lore Continued"), value=page)
-                    count += 1
-            else:
-                embed.description = description
+                    stats_str = ""
+                    rpm = ""
+                    recoil = ""
+                    magazine = ""
+                    for stat_hash, value in item["stats"]["stats"].items():
+                        if stat_hash in ["1935470627", "1480404414", "1885944937"]:
+                            continue
 
-            name = item["displayProperties"]["name"]
-            embed.title = name
-            icon_url = IMAGE_URL + item["displayProperties"]["icon"]
-            embed.set_author(name=name, icon_url=icon_url)
-            embed.set_thumbnail(url=icon_url)
-            if item.get("screenshot", False):
-                embed.set_image(url=IMAGE_URL + item["screenshot"])
-            embeds.append(embed)
+                        stat_info = (
+                            await self.get_definition("DestinyStatDefinition", [stat_hash])
+                        )[str(stat_hash)]
+                        stat_name = stat_info["displayProperties"]["name"]
+                        if not stat_name:
+                            continue
+                        prog = "█" * int(value["value"] / 10)
+                        empty = "░" * int((100 - value["value"]) / 10)
+                        bar = f"{prog}{empty}"
+                        if stat_hash == "4284893193":
+                            rpm = f"{stat_name}: **{value['value']}**\n"
+                            continue
+                        if stat_hash == "3871231066":
+                            recoil = f"{stat_name}: **{value['value']}**\n"
+                            continue
+                        if stat_hash == "2715839340":
+                            magazine = f"{stat_name}: **{value['value']}**\n"
+                            continue
+                        if details_or_lore:
+                            stats_str += f"{stat_name}: **{value['value']}** \n{bar}\n"
+                    stats_str += rpm + recoil + magazine
+                    description += stats_str
+                    embed.description = description
+                    perks = await self.get_weapon_possible_perks(item)
+                    for key, value in perks.items():
+                        embed.add_field(name=key, value=value[:1024])
+                if "loreHash" in item and (show_lore or item["itemType"] in [2]):
+                    lore = (
+                        await self.get_definition("DestinyLoreDefinition", [item["loreHash"]])
+                    )[str(item["loreHash"])]
+                    description += _("Lore: \n\n") + lore["displayProperties"]["description"]
+                if len(description) > 2048:
+                    count = 0
+                    for page in pagify(description, page_length=1024):
+                        if count == 0:
+                            embed.description = page
+                        else:
+                            embed.add_field(name=_("Lore Continued"), value=page)
+                        count += 1
+                else:
+                    embed.description = description
+
+                name = item["displayProperties"]["name"]
+                embed.title = name
+                icon_url = IMAGE_URL + item["displayProperties"]["icon"]
+                embed.set_author(name=name, icon_url=icon_url)
+                embed.set_thumbnail(url=icon_url)
+                if item.get("screenshot", False):
+                    embed.set_image(url=IMAGE_URL + item["screenshot"])
+                embeds.append(embed)
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -285,20 +283,17 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Get your Steam ID to give people to join your in-game fireteam
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-        bungie_id = await self.config.user(ctx.author).oauth.membership_id()
-        creds = await self.get_bnet_user(ctx.author, bungie_id)
-        bungie_name = creds.get("uniqueName", "")
-        join_code = f"\n```css\n/join {bungie_name}\n```"
-        msg = _("Use the following code in game to join {author}'s Fireteam:{join_code}").format(
-            author=ctx.author.display_name, join_code=join_code
-        )
-        join_code = f"\n```css\n/join {bungie_name}\n```"
+        async with ctx.typing():
+            bungie_id = await self.config.user(ctx.author).oauth.membership_id()
+            creds = await self.get_bnet_user(ctx.author, bungie_id)
+            bungie_name = creds.get("uniqueName", "")
+            join_code = f"\n```css\n/join {bungie_name}\n```"
+            msg = _(
+                "Use the following code in game to join {author}'s Fireteam:{join_code}"
+            ).format(author=ctx.author.display_name, join_code=join_code)
+            join_code = f"\n```css\n/join {bungie_name}\n```"
         await ctx.send(msg)
 
     @destiny.group()
@@ -314,39 +309,35 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Display basic information about the clan set in this server
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-        if clan_id:
-            clan_re = re.compile(
-                r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
-            )
-            clan_invite = clan_re.search(clan_id)
-            if clan_invite:
-                clan_id = clan_invite.group(4)
-        else:
-            clan_id = await self.config.guild(ctx.guild).clan_id()
-        if not clan_id:
-            prefix = ctx.clean_prefix
-            msg = _(
-                "No clan ID has been setup for this server. "
-                "Use `{prefix}destiny clan set` to set one."
-            ).format(prefix=prefix)
-            await ctx.send(msg)
-            return
-        try:
-            clan_info = await self.get_clan_info(ctx.author, clan_id)
-            embed = await self.make_clan_embed(clan_info)
-        except Exception:
-            log.exception("Error getting clan info")
-            msg = _("I could not find any information about this servers clan.")
-            await ctx.send(msg)
-            return
-        else:
-            await ctx.send(embed=embed)
+        async with ctx.typing():
+            if clan_id:
+                clan_re = re.compile(
+                    r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I
+                )
+                clan_invite = clan_re.search(clan_id)
+                if clan_invite:
+                    clan_id = clan_invite.group(4)
+            else:
+                clan_id = await self.config.guild(ctx.guild).clan_id()
+            if not clan_id:
+                prefix = ctx.clean_prefix
+                msg = _(
+                    "No clan ID has been setup for this server. "
+                    "Use `{prefix}destiny clan set` to set one."
+                ).format(prefix=prefix)
+                await ctx.send(msg)
+                return
+            try:
+                clan_info = await self.get_clan_info(ctx.author, clan_id)
+                embed = await self.make_clan_embed(clan_info)
+            except Exception:
+                log.exception("Error getting clan info")
+                msg = _("I could not find any information about this servers clan.")
+                await ctx.send(msg)
+                return
+        await ctx.send(embed=embed)
 
     async def make_clan_embed(self, clan_info: dict) -> discord.Embed:
         clan_id = clan_info["detail"]["groupId"]
@@ -397,10 +388,7 @@ class Destiny(DestinyAPI, commands.Cog):
         example link: `https://www.bungie.net/en/ClanV2?groupid=1234567`
         the numbers after `groupid=` is the clan ID.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         clan_re = re.compile(r"(https:\/\/)?(www\.)?bungie\.net\/.*(groupid=(\d+))", flags=re.I)
@@ -467,10 +455,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Clan admin can further approve specified clan members
         by reacting to the resulting message.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
+        await ctx.defer()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
@@ -526,10 +511,6 @@ class Destiny(DestinyAPI, commands.Cog):
         `[output_format]` if `csv` is provided this will upload a csv file of
         the clan roster instead of displaying the output.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         clan_id = await self.config.guild(ctx.guild).clan_id()
@@ -541,65 +522,69 @@ class Destiny(DestinyAPI, commands.Cog):
             ).format(prefix=prefix)
             await ctx.send(msg)
             return
-        clan = await self.get_clan_members(ctx.author, clan_id)
-        headers = [
-            "Discord Name",
-            "Discord ID",
-            "Destiny Name",
-            "Destiny ID",
-            "Bungie Name",
-            "Bungie.net ID",
-            "Last Seen Destiny",
-            "Steam ID",
-            "Join Date",
-        ]
-        clan_mems = ""
-        rows = []
-        saved_users = await self.config.all_users()
-        for member in clan["results"]:
-            last_online = datetime.datetime.utcfromtimestamp(int(member["lastOnlineStatusChange"]))
-            join_date = datetime.datetime.strptime(member["joinDate"], "%Y-%m-%dT%H:%M:%SZ")
-            destiny_name = member["destinyUserInfo"]["LastSeenDisplayName"]
-            destiny_id = member["destinyUserInfo"]["membershipId"]
-            clan_mems += destiny_name + "\n"
-            discord_id = None
-            discord_name = None
-            bungie_id = None
-            # bungie_name = None
-            steam_id = None
-            destiny = member.get("destinyUserInfo", {})
-            new_bungie_name = destiny.get("bungieGlobalDisplayName", "")
-            new_bungie_name_code = destiny.get("bungieGlobalDisplayNameCode", "")
-            new_bungie_name = f"{new_bungie_name}#{new_bungie_name_code}"
-            try:
-                bungie_id = member["bungieNetUserInfo"]["membershipId"]
-                # bungie_name = member["bungieNetUserInfo"]["displayName"]
-                creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
-                steam_id = ""
-                for cred in creds:
-                    if "credentialAsString" in cred:
-                        steam_id = cred["credentialAsString"]
-            except Exception:
-                pass
-            for user_id, data in saved_users.items():
-                if data["oauth"]["membership_id"] == bungie_id:
-                    discord_user = ctx.guild.get_member(int(user_id))
-                    if discord_user:
-                        discord_name = str(discord_user)
-                        discord_id = discord_user.id
+        async with ctx.typing():
 
-            user_info = [
-                discord_name,
-                f"'{discord_id}" if discord_id else None,
-                destiny_name,
-                f"'{destiny_id}" if destiny_id else None,
-                new_bungie_name,
-                f"'{bungie_id}" if bungie_id else None,
-                last_online,
-                f"'{steam_id}" if steam_id else None,
-                str(join_date),
+            clan = await self.get_clan_members(ctx.author, clan_id)
+            headers = [
+                "Discord Name",
+                "Discord ID",
+                "Destiny Name",
+                "Destiny ID",
+                "Bungie Name",
+                "Bungie.net ID",
+                "Last Seen Destiny",
+                "Steam ID",
+                "Join Date",
             ]
-            rows.append(user_info)
+            clan_mems = ""
+            rows = []
+            saved_users = await self.config.all_users()
+            for member in clan["results"]:
+                last_online = datetime.datetime.utcfromtimestamp(
+                    int(member["lastOnlineStatusChange"])
+                )
+                join_date = datetime.datetime.strptime(member["joinDate"], "%Y-%m-%dT%H:%M:%SZ")
+                destiny_name = member["destinyUserInfo"]["LastSeenDisplayName"]
+                destiny_id = member["destinyUserInfo"]["membershipId"]
+                clan_mems += destiny_name + "\n"
+                discord_id = None
+                discord_name = None
+                bungie_id = None
+                # bungie_name = None
+                steam_id = None
+                destiny = member.get("destinyUserInfo", {})
+                new_bungie_name = destiny.get("bungieGlobalDisplayName", "")
+                new_bungie_name_code = destiny.get("bungieGlobalDisplayNameCode", "")
+                new_bungie_name = f"{new_bungie_name}#{new_bungie_name_code}"
+                try:
+                    bungie_id = member["bungieNetUserInfo"]["membershipId"]
+                    # bungie_name = member["bungieNetUserInfo"]["displayName"]
+                    creds = await self.get_bnet_user_credentials(ctx.author, bungie_id)
+                    steam_id = ""
+                    for cred in creds:
+                        if "credentialAsString" in cred:
+                            steam_id = cred["credentialAsString"]
+                except Exception:
+                    pass
+                for user_id, data in saved_users.items():
+                    if data["oauth"]["membership_id"] == bungie_id:
+                        discord_user = ctx.guild.get_member(int(user_id))
+                        if discord_user:
+                            discord_name = str(discord_user)
+                            discord_id = discord_user.id
+
+                user_info = [
+                    discord_name,
+                    f"'{discord_id}" if discord_id else None,
+                    destiny_name,
+                    f"'{destiny_id}" if destiny_id else None,
+                    new_bungie_name,
+                    f"'{bungie_id}" if bungie_id else None,
+                    last_online,
+                    f"'{steam_id}" if steam_id else None,
+                    str(join_date),
+                ]
+                rows.append(user_info)
         if output_format == "csv":
             outfile = StringIO()
             employee_writer = csv.writer(
@@ -627,29 +612,30 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Show exactly when Weekyl and Daily reset is
         """
-        today = datetime.datetime.now(datetime.timezone.utc)
-        tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
-        weekly = datetime.datetime(
-            year=tuesday.year,
-            month=tuesday.month,
-            day=tuesday.day,
-            hour=17,
-            tzinfo=datetime.timezone.utc,
-        )
-        reset_time = today + datetime.timedelta(hours=((17 - today.hour) % 24))
-        daily = datetime.datetime(
-            year=reset_time.year,
-            month=reset_time.month,
-            day=reset_time.day,
-            hour=reset_time.hour,
-            tzinfo=datetime.timezone.utc,
-        )
-        weekly_reset_str = int(weekly.timestamp())
-        daily_reset_str = int(daily.timestamp())
-        msg = _(
-            "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
-            "Daily Reset is <t:{daily}:R> (<t:{daily}>)."
-        ).format(weekly=weekly_reset_str, daily=daily_reset_str)
+        async with ctx.typing():
+            today = datetime.datetime.now(datetime.timezone.utc)
+            tuesday = today + datetime.timedelta(days=((1 - today.weekday()) % 7))
+            weekly = datetime.datetime(
+                year=tuesday.year,
+                month=tuesday.month,
+                day=tuesday.day,
+                hour=17,
+                tzinfo=datetime.timezone.utc,
+            )
+            reset_time = today + datetime.timedelta(hours=((17 - today.hour) % 24))
+            daily = datetime.datetime(
+                year=reset_time.year,
+                month=reset_time.month,
+                day=reset_time.day,
+                hour=reset_time.hour,
+                tzinfo=datetime.timezone.utc,
+            )
+            weekly_reset_str = int(weekly.timestamp())
+            daily_reset_str = int(daily.timestamp())
+            msg = _(
+                "Weekly reset is <t:{weekly}:R> (<t:{weekly}>).\n"
+                "Daily Reset is <t:{daily}:R> (<t:{daily}>)."
+            ).format(weekly=weekly_reset_str, daily=daily_reset_str)
         await ctx.send(msg)
 
     @destiny.command()
@@ -659,106 +645,111 @@ class Destiny(DestinyAPI, commands.Cog):
         Display a menu of your basic character's info
         `[user]` A member on the server who has setup their account on this bot.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx, user):
             return
         if not user:
             user = ctx.author
-        try:
-            chars = await self.get_characters(user)
-            await self.save(chars, "character.json")
-        except Destiny2APIError as e:
-            log.error(e, exc_info=True)
-            await self.missing_profile(ctx)
-            return
-        embeds = []
-        currency_datas = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition",
-            [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
-        )
-        player_currency = ""
-        for item in chars["profileCurrencies"]["data"]["items"]:
-            quantity = item["quantity"]
-            name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
-            player_currency += f"{name}: **{quantity}**\n"
-        for char_id, char in chars["characters"]["data"].items():
-            info = ""
-            race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
-                str(char["raceHash"])
-            ]
-            gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
-                str(char["genderHash"])
-            ]
-            char_class = (
-                await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-            )[str(char["classHash"])]
-            info += "{race} {gender} {char_class} ".format(
-                race=race["displayProperties"]["name"],
-                gender=gender["displayProperties"]["name"],
-                char_class=char_class["displayProperties"]["name"],
+        async with ctx.typing():
+            try:
+                chars = await self.get_characters(user)
+                await self.save(chars, "character.json")
+            except Destiny2APIError as e:
+                log.error(e, exc_info=True)
+                await self.missing_profile(ctx)
+                return
+            embeds = []
+            currency_datas = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition",
+                [v["itemHash"] for v in chars["profileCurrencies"]["data"]["items"]],
             )
-            titles = ""
-            embed = discord.Embed(title=info)
-            if "titleRecordHash" in char:
-                # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
-                char_title = (
-                    await self.get_definition("DestinyRecordDefinition", [char["titleRecordHash"]])
-                )[str(char["titleRecordHash"])]
-                title_info = "**{title_name}**\n{title_desc}\n"
-                try:
-                    gilded = ""
-                    if await self.check_gilded_title(chars, char_title):
-                        gilded = _("Gilded ")
-                    title_name = (
-                        f"{gilded}"
-                        + char_title["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
-                    )
-                    title_desc = char_title["displayProperties"]["description"]
-                    titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                    embed.set_thumbnail(url=IMAGE_URL + char_title["displayProperties"]["icon"])
-                except KeyError:
-                    pass
-
-            embed.set_author(name=user.display_name, icon_url=user.avatar.url)
-            # if "emblemPath" in char:
-            # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-            if "emblemBackgroundPath" in char:
-                embed.set_image(url=IMAGE_URL + char["emblemBackgroundPath"])
-            if titles:
-                # embed.add_field(name=_("Titles"), value=titles)
-                embed.set_author(
-                    name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
-                )
-            # log.debug(data)
-            stats_str = ""
-            time_played = humanize_timedelta(seconds=int(char["minutesPlayedTotal"]) * 60)
-            last_played = datetime.datetime.strptime(char["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ")
-            last_played_ts = int(last_played.timestamp())
-            for stat_hash, value in char["stats"].items():
-                stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                    str(stat_hash)
+            player_currency = ""
+            for item in chars["profileCurrencies"]["data"]["items"]:
+                quantity = item["quantity"]
+                name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
+                player_currency += f"{name}: **{quantity}**\n"
+            for char_id, char in chars["characters"]["data"].items():
+                info = ""
+                race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
+                    str(char["raceHash"])
                 ]
-                stat_name = stat_info["displayProperties"]["name"]
-                prog = "█" * int(value / 10)
-                empty = "░" * int((100 - value) / 10)
-                bar = f"{prog}{empty}"
-                if stat_hash == "1935470627":
-                    artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
-                        "powerBonus"
+                gender = (
+                    await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+                )[str(char["genderHash"])]
+                char_class = (
+                    await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+                )[str(char["classHash"])]
+                info += "{race} {gender} {char_class} ".format(
+                    race=race["displayProperties"]["name"],
+                    gender=gender["displayProperties"]["name"],
+                    char_class=char_class["displayProperties"]["name"],
+                )
+                titles = ""
+                embed = discord.Embed(title=info)
+                if "titleRecordHash" in char:
+                    # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
+                    char_title = (
+                        await self.get_definition(
+                            "DestinyRecordDefinition", [char["titleRecordHash"]]
+                        )
+                    )[str(char["titleRecordHash"])]
+                    title_info = "**{title_name}**\n{title_desc}\n"
+                    try:
+                        gilded = ""
+                        if await self.check_gilded_title(chars, char_title):
+                            gilded = _("Gilded ")
+                        title_name = (
+                            f"{gilded}"
+                            + char_title["titleInfo"]["titlesByGenderHash"][
+                                str(char["genderHash"])
+                            ]
+                        )
+                        title_desc = char_title["displayProperties"]["description"]
+                        titles += title_info.format(title_name=title_name, title_desc=title_desc)
+                        embed.set_thumbnail(
+                            url=IMAGE_URL + char_title["displayProperties"]["icon"]
+                        )
+                    except KeyError:
+                        pass
+
+                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
+                # if "emblemPath" in char:
+                # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+                if "emblemBackgroundPath" in char:
+                    embed.set_image(url=IMAGE_URL + char["emblemBackgroundPath"])
+                if titles:
+                    # embed.add_field(name=_("Titles"), value=titles)
+                    embed.set_author(
+                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
+                    )
+                # log.debug(data)
+                stats_str = ""
+                time_played = humanize_timedelta(seconds=int(char["minutesPlayedTotal"]) * 60)
+                last_played = datetime.datetime.strptime(
+                    char["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ"
+                )
+                last_played_ts = int(last_played.timestamp())
+                for stat_hash, value in char["stats"].items():
+                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
+                        str(stat_hash)
                     ]
-                    bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
-                stats_str += f"{stat_name}: **{value}** \n{bar}\n"
-            stats_str += _("Time Played Total: **{time}**\n").format(time=time_played)
-            stats_str += _("Last Played: **{time}**\n").format(time=f"<t:{last_played_ts}:R>")
-            embed.description = stats_str
-            embed = await self.get_char_colour(embed, char)
-            if titles:
-                embed.add_field(name=_("Titles"), value=titles)
-            embed.add_field(name=_("Current Currencies"), value=player_currency)
-            embeds.append(embed)
+                    stat_name = stat_info["displayProperties"]["name"]
+                    prog = "█" * int(value / 10)
+                    empty = "░" * int((100 - value) / 10)
+                    bar = f"{prog}{empty}"
+                    if stat_hash == "1935470627":
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
+                        bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
+                    stats_str += f"{stat_name}: **{value}** \n{bar}\n"
+                stats_str += _("Time Played Total: **{time}**\n").format(time=time_played)
+                stats_str += _("Last Played: **{time}**\n").format(time=f"<t:{last_played_ts}:R>")
+                embed.description = stats_str
+                embed = await self.get_char_colour(embed, char)
+                if titles:
+                    embed.add_field(name=_("Titles"), value=titles)
+                embed.add_field(name=_("Current Currencies"), value=player_currency)
+                embeds.append(embed)
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -776,43 +767,40 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Find Destiny Lore
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
-        try:
-            # the below is to prevent blocking reading the large
-            # ~130mb manifest files and save on API calls
-            task = functools.partial(self.get_entities, entity="DestinyLoreDefinition")
-            loop = asyncio.get_running_loop()
-            task = loop.run_in_executor(None, task)
-            data: dict = await asyncio.wait_for(task, timeout=60)
-        except Exception:
-            msg = _("The manifest needs to be downloaded for this to work.")
-            await ctx.send(msg)
-            return
-        lore = []
-        for entry_hash, entries in data.items():
-            em = discord.Embed(title=entries["displayProperties"]["name"])
-            description = entries["displayProperties"]["description"]
-            if len(description) < 2048:
-                em.description = entries["displayProperties"]["description"]
-            elif len(description) > 2048 and len(description) < 6000:
-                em.description = description[:2048]
-                new_desc = description[:2048]
-                parts = [new_desc[i : i + 1024] for i in range(0, len(new_desc), 1024)]
-                for i in parts:
-                    em.add_field(name=_("Continued"), value=i)
+        async with ctx.typing():
+            try:
+                # the below is to prevent blocking reading the large
+                # ~130mb manifest files and save on API calls
+                task = functools.partial(self.get_entities, entity="DestinyLoreDefinition")
+                loop = asyncio.get_running_loop()
+                task = loop.run_in_executor(None, task)
+                data: dict = await asyncio.wait_for(task, timeout=60)
+            except Exception:
+                msg = _("The manifest needs to be downloaded for this to work.")
+                await ctx.send(msg)
+                return
+            lore = []
+            for entry_hash, entries in data.items():
+                em = discord.Embed(title=entries["displayProperties"]["name"])
+                description = entries["displayProperties"]["description"]
+                if len(description) < 2048:
+                    em.description = entries["displayProperties"]["description"]
+                elif len(description) > 2048 and len(description) < 6000:
+                    em.description = description[:2048]
+                    new_desc = description[:2048]
+                    parts = [new_desc[i : i + 1024] for i in range(0, len(new_desc), 1024)]
+                    for i in parts:
+                        em.add_field(name=_("Continued"), value=i)
 
-            if entries["displayProperties"]["hasIcon"]:
-                icon = entries["displayProperties"]["icon"]
-                em.set_thumbnail(url=f"{IMAGE_URL}{icon}")
-            lore.append(em)
-        if entry:
-            for t in lore:
-                if entry.lower() in str(t.title).lower():
-                    print(t.title)
-                    lore.insert(0, lore.pop(lore.index(t)))
+                if entries["displayProperties"]["hasIcon"]:
+                    icon = entries["displayProperties"]["icon"]
+                    em.set_thumbnail(url=f"{IMAGE_URL}{icon}")
+                lore.append(em)
+            if entry:
+                for t in lore:
+                    if entry.lower() in str(t.title).lower():
+                        print(t.title)
+                        lore.insert(0, lore.pop(lore.index(t)))
         await BaseMenu(
             source=BasePages(
                 pages=lore,
@@ -841,47 +829,44 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         Display Xûr's current location
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-        try:
-            chars = await self.get_characters(ctx.author)
-            # await self.save(chars, "characters.json")
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        for char_id, char in chars["characters"]["data"].items():
-            # log.debug(char)
+        async with ctx.typing():
             try:
-                xur = await self.get_vendor(ctx.author, char_id, "2190858386")
-                xur_def = (await self.get_definition("DestinyVendorDefinition", ["2190858386"]))[
-                    "2190858386"
-                ]
+                chars = await self.get_characters(ctx.author)
+                # await self.save(chars, "characters.json")
             except Destiny2APIError:
-                log.error("I can't seem to see Xûr at the moment")
-                today = datetime.datetime.now(tz=datetime.timezone.utc)
-                friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
-                    (4 - today.weekday()) % 7
-                )
-                next_xur = f"<t:{int(friday.timestamp())}:R>"
-                msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
-                await ctx.send(msg)
+                # log.debug(e)
+                await self.missing_profile(ctx)
                 return
-            break
-        try:
-            loc_index = xur["vendor"]["data"]["vendorLocationIndex"]
-            loc = xur_def["locations"][loc_index].get("destinationHash")
-            location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
-                str(loc), None
-            )
-            location_name = location_data.get("displayProperties", {}).get("name", "")
-        except Exception:
-            log.exception("Cannot get xur's location")
-            location_name = _("Unknown")
+            for char_id, char in chars["characters"]["data"].items():
+                # log.debug(char)
+                try:
+                    xur = await self.get_vendor(ctx.author, char_id, "2190858386")
+                    xur_def = (
+                        await self.get_definition("DestinyVendorDefinition", ["2190858386"])
+                    )["2190858386"]
+                except Destiny2APIError:
+                    log.error("I can't seem to see Xûr at the moment")
+                    today = datetime.datetime.now(tz=datetime.timezone.utc)
+                    friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
+                        (4 - today.weekday()) % 7
+                    )
+                    next_xur = f"<t:{int(friday.timestamp())}:R>"
+                    msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
+                    await ctx.send(msg)
+                    return
+                break
+            try:
+                loc_index = xur["vendor"]["data"]["vendorLocationIndex"]
+                loc = xur_def["locations"][loc_index].get("destinationHash")
+                location_data = (
+                    await self.get_definition("DestinyDestinationDefinition", [loc])
+                ).get(str(loc), None)
+                location_name = location_data.get("displayProperties", {}).get("name", "")
+            except Exception:
+                log.exception("Cannot get xur's location")
+                location_name = _("Unknown")
         msg = _("Xûr's current location is {location}.").format(location=location_name)
         await ctx.send(msg)
 
@@ -897,10 +882,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "2190858386")
@@ -911,187 +892,192 @@ class Destiny(DestinyAPI, commands.Cog):
         character_class: Optional[DestinyClassType],
         vendor_id: str,
     ):
-        try:
-            chars = await self.get_characters(ctx.author)
-            await self.save(chars, "characters.json")
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        char_id = None
-        if character_class is not None:
-            for character_id, data in chars["characters"]["data"].items():
-                if DestinyClassType(data["classType"]) == character_class:
-                    char_id = character_id
-        if char_id is None:
-            char_id = list(chars["characters"]["data"].keys())[0]
-        try:
-            vendor = await self.get_vendor(ctx.author, char_id, vendor_id)
-            vendor_def = (await self.get_definition("DestinyVendorDefinition", [vendor_id]))[
-                vendor_id
-            ]
-            await self.save(vendor, "vendor.json")
-            await self.save(vendor_def, "vendor_def.json")
-        except Destiny2APIError:
-            if vendor_id == "2190858386":
-                log.error("I can't seem to see Xûr at the moment")
-                today = datetime.datetime.now(tz=datetime.timezone.utc)
-                friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
-                    (4 - today.weekday()) % 7
-                )
-                next_xur = discord.utils.format_dt(friday, style="R")
-                msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
-                await ctx.send(msg)
-            else:
-                await ctx.send(_("I can't seem to find that vendors inventory."))
-            return
-        try:
-            loc_index = vendor["vendor"]["data"]["vendorLocationIndex"]
-            loc = vendor_def["locations"][loc_index].get("destinationHash")
-            location_data = (await self.get_definition("DestinyDestinationDefinition", [loc])).get(
-                str(loc), None
-            )
-            location = location_data.get("displayProperties", {}).get("name", "")
-        except Exception:
-            log.exception("Cannot get vendors location")
-            location = _("Unknown")
-        date = datetime.datetime.strptime(
-            vendor["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        date = date.replace(tzinfo=datetime.timezone.utc)
-        date_str = discord.utils.format_dt(date, style="R")
-        # items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
-        embeds: List[discord.Embed] = []
-        # data = await self.get_definition("DestinyInventoryItemDefinition", items)
-        description = vendor_def["displayProperties"]["description"]
-        name = vendor_def["displayProperties"]["name"]
-        embed = discord.Embed(
-            title=_("{name}'s current wares").format(name=name),
-            colour=discord.Colour.red(),
-            description=f"{location}\n{description}\n"
-            + _("Next Refresh {date}").format(date=date_str),
-        )
-        if "largeTransparentIcon" in vendor_def["displayProperties"]:
-            embed.set_thumbnail(
-                url=IMAGE_URL + vendor_def["displayProperties"]["largeTransparentIcon"]
-            )
-        # embed.set_author(name=_("Xûr's current wares"))
-        # location = xur_def["locations"][0]["destinationHash"]
-        # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
-        all_hashes = [i["itemHash"] for i in vendor["sales"]["data"].values()]
-        all_items = await self.get_definition("DestinyInventoryItemDefinition", all_hashes)
-        item_costs = [
-            c["itemHash"] for k, i in vendor["sales"]["data"].items() for c in i["costs"]
-        ]
-        item_cost_defs = await self.get_definition(
-            "DestinyInventoryItemLiteDefinition", item_costs
-        )
-        stat_hashes = []
-        perk_hashes = []
-        for item_index in vendor["sales"]["data"]:
-            if item_index in vendor["itemComponents"]["stats"]["data"]:
-                for stat_hash in vendor["itemComponents"]["stats"]["data"][item_index]["stats"]:
-                    stat_hashes.append(stat_hash)
-            if item_index in vendor["itemComponents"]["reusablePlugs"]["data"]:
-                for __, plugs in vendor["itemComponents"]["reusablePlugs"]["data"][item_index][
-                    "plugs"
-                ].items():
-                    for plug in plugs:
-                        perk_hashes.append(plug["plugItemHash"])
-        all_perks = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
-        all_stats = await self.get_definition("DestinyStatDefinition", stat_hashes)
-        main_page = {}
-        for index, item_base in vendor["sales"]["data"].items():
-            item = all_items[str(item_base["itemHash"])]
-            perks = ""
-            item_type = DestinyItemType(item["itemType"])
-            item_hash = item_base["itemHash"]
-            url = f"https://www.light.gg/db/items/{item_hash}"
-            item_embed = discord.Embed(title=item["displayProperties"]["name"], url=url)
-            item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
-            if "screenshot" in item:
-                item_embed.set_image(url=IMAGE_URL + item["screenshot"])
-            for perk_index in vendor["itemComponents"]["reusablePlugs"]["data"].get(
-                index, {"plugs": []}
-            )["plugs"]:
-                for perk_hash in vendor["itemComponents"]["reusablePlugs"]["data"][index]["plugs"][
-                    perk_index
-                ]:
-                    perk = all_perks.get(str(perk_hash["plugItemHash"]), None)
-                    if perk is None:
-                        continue
-                    properties = perk["displayProperties"]
-                    if (
-                        properties["name"] == "Empty Mod Socket"
-                        or properties["name"] == "Default Ornament"
-                        or properties["name"] == "Change Energy Type"
-                        or properties["name"] == "Empty Catalyst Socket"
-                        or properties["name"] == "Upgrade Armor"
-                        or properties["name"] == "Default Shader"
-                        or properties["name"] == "Tier 2 Weapon"
-                    ):
-                        continue
-                    if "name" in properties and "description" in properties:
-                        if not properties["name"]:
-                            continue
-                        # await self.save(perk, properties["name"] + ".json")
-                        perks += "- **{0}**\n".format(properties["name"])
-            stats_str = ""
-            if "equippingBlock" in item:
-                slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
-                if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
-                    total = 0
-                    for stat_hash, stat_data in vendor["itemComponents"]["stats"]["data"][index][
-                        "stats"
-                    ].items():
-                        stat_info = all_stats[str(stat_hash)]
-                        stat_name = stat_info["displayProperties"]["name"]
-                        stat_value = stat_data["value"]
-                        prog = "█" * int(stat_value / 6)
-                        empty = "░" * int((42 - stat_value) / 6)
-                        bar = f"{prog}{empty}"
-                        stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
-                        total += stat_value
-                    stats_str += _("Total: **{total}**\n").format(total=total)
-            tier_type = item["itemTypeAndTierDisplayName"]
-            tier_type_url = ""
-            if tier_type:
-                tier_type_url = f"[{tier_type}]({url})\n"
-            refresh_str = ""
-            if "overrideNextRefreshDate" in item_base:
-                date = datetime.datetime.strptime(
-                    item_base["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                date = date.replace(tzinfo=datetime.timezone.utc)
-                refresh_str = f"**Refreshes <t:{int(date.timestamp())}:R>**"
+        async with ctx.typing():
             try:
-                cost_str = ""
-                if item_base["costs"]:
-                    cost_str += _("Cost: ")
-                for cost in item_base["costs"]:
-                    cost_def = item_cost_defs[str(cost["itemHash"])]
-                    mat_name = cost_def["displayProperties"]["name"]
-                    qty = cost["quantity"]
-                    cost_str += f"{qty} {mat_name}\n"
-            except IndexError:
-                cost_str = ""
-            msg = f"{tier_type_url}{stats_str}{perks}{cost_str}{refresh_str}"
-            if not msg:
-                msg = item["displayProperties"]["description"]
-            item_embed.description = msg[:4096]
-            if item_type.value not in main_page:
-                main_page[item_type.value] = {}
-            main_page[item_type.value]["**__" + item["displayProperties"]["name"] + "__**\n"] = msg
-
-            embeds.insert(0, item_embed)
-        for _item_type in sorted(main_page):
-            for name, msg in main_page[_item_type].items():
+                chars = await self.get_characters(ctx.author)
+                await self.save(chars, "characters.json")
+            except Destiny2APIError:
+                # log.debug(e)
+                await self.missing_profile(ctx)
+                return
+            char_id = None
+            if character_class is not None:
+                for character_id, data in chars["characters"]["data"].items():
+                    if DestinyClassType(data["classType"]) == character_class:
+                        char_id = character_id
+            if char_id is None:
+                char_id = list(chars["characters"]["data"].keys())[0]
+            try:
+                vendor = await self.get_vendor(ctx.author, char_id, vendor_id)
+                vendor_def = (await self.get_definition("DestinyVendorDefinition", [vendor_id]))[
+                    vendor_id
+                ]
+                await self.save(vendor, "vendor.json")
+                await self.save(vendor_def, "vendor_def.json")
+            except Destiny2APIError:
+                if vendor_id == "2190858386":
+                    log.error("I can't seem to see Xûr at the moment")
+                    today = datetime.datetime.now(tz=datetime.timezone.utc)
+                    friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
+                        (4 - today.weekday()) % 7
+                    )
+                    next_xur = discord.utils.format_dt(friday, style="R")
+                    msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
+                    await ctx.send(msg)
+                else:
+                    await ctx.send(_("I can't seem to find that vendors inventory."))
+                return
+            try:
+                loc_index = vendor["vendor"]["data"]["vendorLocationIndex"]
+                loc = vendor_def["locations"][loc_index].get("destinationHash")
+                location_data = (
+                    await self.get_definition("DestinyDestinationDefinition", [loc])
+                ).get(str(loc), None)
+                location = location_data.get("displayProperties", {}).get("name", "")
+            except Exception:
+                log.exception("Cannot get vendors location")
+                location = _("Unknown")
+            date = datetime.datetime.strptime(
+                vendor["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            date = date.replace(tzinfo=datetime.timezone.utc)
+            date_str = discord.utils.format_dt(date, style="R")
+            # items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
+            embeds: List[discord.Embed] = []
+            # data = await self.get_definition("DestinyInventoryItemDefinition", items)
+            description = vendor_def["displayProperties"]["description"]
+            name = vendor_def["displayProperties"]["name"]
+            embed = discord.Embed(
+                title=_("{name}'s current wares").format(name=name),
+                colour=discord.Colour.red(),
+                description=f"{location}\n{description}\n"
+                + _("Next Refresh {date}").format(date=date_str),
+            )
+            if "largeTransparentIcon" in vendor_def["displayProperties"]:
+                embed.set_thumbnail(
+                    url=IMAGE_URL + vendor_def["displayProperties"]["largeTransparentIcon"]
+                )
+            # embed.set_author(name=_("Xûr's current wares"))
+            # location = xur_def["locations"][0]["destinationHash"]
+            # log.debug(await self.get_definition("DestinyDestinationDefinition", [location]))
+            all_hashes = [i["itemHash"] for i in vendor["sales"]["data"].values()]
+            all_items = await self.get_definition("DestinyInventoryItemDefinition", all_hashes)
+            item_costs = [
+                c["itemHash"] for k, i in vendor["sales"]["data"].items() for c in i["costs"]
+            ]
+            item_cost_defs = await self.get_definition(
+                "DestinyInventoryItemLiteDefinition", item_costs
+            )
+            stat_hashes = []
+            perk_hashes = []
+            for item_index in vendor["sales"]["data"]:
+                if item_index in vendor["itemComponents"]["stats"]["data"]:
+                    for stat_hash in vendor["itemComponents"]["stats"]["data"][item_index][
+                        "stats"
+                    ]:
+                        stat_hashes.append(stat_hash)
+                if item_index in vendor["itemComponents"]["reusablePlugs"]["data"]:
+                    for __, plugs in vendor["itemComponents"]["reusablePlugs"]["data"][item_index][
+                        "plugs"
+                    ].items():
+                        for plug in plugs:
+                            perk_hashes.append(plug["plugItemHash"])
+            all_perks = await self.get_definition("DestinyInventoryItemDefinition", perk_hashes)
+            all_stats = await self.get_definition("DestinyStatDefinition", stat_hashes)
+            main_page = {}
+            for index, item_base in vendor["sales"]["data"].items():
+                item = all_items[str(item_base["itemHash"])]
+                perks = ""
+                item_type = DestinyItemType(item["itemType"])
+                item_hash = item_base["itemHash"]
+                url = f"https://www.light.gg/db/items/{item_hash}"
+                item_embed = discord.Embed(title=item["displayProperties"]["name"], url=url)
+                item_embed.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
+                if "screenshot" in item:
+                    item_embed.set_image(url=IMAGE_URL + item["screenshot"])
+                for perk_index in vendor["itemComponents"]["reusablePlugs"]["data"].get(
+                    index, {"plugs": []}
+                )["plugs"]:
+                    for perk_hash in vendor["itemComponents"]["reusablePlugs"]["data"][index][
+                        "plugs"
+                    ][perk_index]:
+                        perk = all_perks.get(str(perk_hash["plugItemHash"]), None)
+                        if perk is None:
+                            continue
+                        properties = perk["displayProperties"]
+                        if (
+                            properties["name"] == "Empty Mod Socket"
+                            or properties["name"] == "Default Ornament"
+                            or properties["name"] == "Change Energy Type"
+                            or properties["name"] == "Empty Catalyst Socket"
+                            or properties["name"] == "Upgrade Armor"
+                            or properties["name"] == "Default Shader"
+                            or properties["name"] == "Tier 2 Weapon"
+                        ):
+                            continue
+                        if "name" in properties and "description" in properties:
+                            if not properties["name"]:
+                                continue
+                            # await self.save(perk, properties["name"] + ".json")
+                            perks += "- **{0}**\n".format(properties["name"])
+                stats_str = ""
+                if "equippingBlock" in item:
+                    slot_hash = item["equippingBlock"]["equipmentSlotTypeHash"]
+                    if slot_hash in [1585787867, 20886954, 14239492, 3551918588, 3448274439]:
+                        total = 0
+                        for stat_hash, stat_data in vendor["itemComponents"]["stats"]["data"][
+                            index
+                        ]["stats"].items():
+                            stat_info = all_stats[str(stat_hash)]
+                            stat_name = stat_info["displayProperties"]["name"]
+                            stat_value = stat_data["value"]
+                            prog = "█" * int(stat_value / 6)
+                            empty = "░" * int((42 - stat_value) / 6)
+                            bar = f"{prog}{empty}"
+                            stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
+                            total += stat_value
+                        stats_str += _("Total: **{total}**\n").format(total=total)
+                tier_type = item["itemTypeAndTierDisplayName"]
+                tier_type_url = ""
+                if tier_type:
+                    tier_type_url = f"[{tier_type}]({url})\n"
+                refresh_str = ""
+                if "overrideNextRefreshDate" in item_base:
+                    date = datetime.datetime.strptime(
+                        item_base["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    date = date.replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = f"**Refreshes <t:{int(date.timestamp())}:R>**"
+                try:
+                    cost_str = ""
+                    if item_base["costs"]:
+                        cost_str += _("Cost: ")
+                    for cost in item_base["costs"]:
+                        cost_def = item_cost_defs[str(cost["itemHash"])]
+                        mat_name = cost_def["displayProperties"]["name"]
+                        qty = cost["quantity"]
+                        cost_str += f"{qty} {mat_name}\n"
+                except IndexError:
+                    cost_str = ""
+                msg = f"{tier_type_url}{stats_str}{perks}{cost_str}{refresh_str}"
                 if not msg:
-                    continue
-                embed.insert_field_at(0, name=name, value=msg)
-        embeds.insert(0, embed)
-        # await ctx.send(embed=embed)
-        # await ctx.tick()
+                    msg = item["displayProperties"]["description"]
+                item_embed.description = msg[:4096]
+                if item_type.value not in main_page:
+                    main_page[item_type.value] = {}
+                main_page[item_type.value][
+                    "**__" + item["displayProperties"]["name"] + "__**\n"
+                ] = msg
+
+                embeds.insert(0, item_embed)
+            for _item_type in sorted(main_page):
+                for name, msg in main_page[_item_type].items():
+                    if not msg:
+                        continue
+                    embed.insert_field_at(0, name=name, value=msg)
+            embeds.insert(0, embed)
+            # await ctx.send(embed=embed)
+            # await ctx.tick()
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -1113,13 +1099,8 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-
         await self.vendor_menus(ctx, character_class, "3361454721")
 
     @destiny.command()
@@ -1132,10 +1113,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "2255782930")
@@ -1150,10 +1127,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "672118013")
@@ -1168,10 +1141,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "350061650")
@@ -1186,10 +1155,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `[character_class]` Which class you want to see the inventory for.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         await self.vendor_menus(ctx, character_class, "765357505")
@@ -1207,10 +1172,6 @@ class Destiny(DestinyAPI, commands.Cog):
 
         `<vendor>` - The vendor whose inventory you want to see.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
         if not vendor.isdigit():
@@ -1246,126 +1207,129 @@ class Destiny(DestinyAPI, commands.Cog):
         `[full=False]` Display full information about weapons equipped.
         `[user]` A member on the server who has setup their account on this bot.
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not user:
             user = ctx.author
         if not await self.has_oauth(ctx, user):
             return
-        try:
-            chars = await self.get_characters(user)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        embeds = []
+        async with ctx.typing():
+            try:
+                chars = await self.get_characters(user)
+            except Destiny2APIError:
+                # log.debug(e)
+                await self.missing_profile(ctx)
+                return
+            embeds = []
 
-        for char_id, char in chars["characters"]["data"].items():
-            info = ""
-            race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
-                str(char["raceHash"])
-            ]
-            gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
-                str(char["genderHash"])
-            ]
-            char_class = (
-                await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-            )[str(char["classHash"])]
-            info += "{race} {gender} {char_class} ".format(
-                race=race["displayProperties"]["name"],
-                gender=gender["displayProperties"]["name"],
-                char_class=char_class["displayProperties"]["name"],
-            )
-            titles = ""
-            if "titleRecordHash" in char:
-                # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
-                char_title = (
-                    await self.get_definition("DestinyRecordDefinition", [char["titleRecordHash"]])
-                )[str(char["titleRecordHash"])]
-                title_info = "**{title_name}**\n{title_desc}\n"
-                try:
-                    gilded = ""
-                    if await self.check_gilded_title(chars, char_title):
-                        gilded = _("Gilded ")
-                    title_name = (
-                        f"{gilded}"
-                        + char_title["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
-                    )
-                    title_desc = char_title["displayProperties"]["description"]
-                    titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                except KeyError:
-                    pass
-            embed = discord.Embed(title=info)
-            embed.set_author(name=user.display_name, icon_url=user.avatar.url)
-            if "emblemPath" in char:
-                embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-            if titles:
-                # embed.add_field(name=_("Titles"), value=titles)
-                embed.set_author(
-                    name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
-                )
-            char_items = chars["characterEquipment"]["data"][char_id]["items"]
-            item_list = [i["itemHash"] for i in char_items]
-            # log.debug(item_list)
-            items = await self.get_definition("DestinyInventoryItemDefinition", item_list)
-            # log.debug(items)
-            for item_hash, data in items.items():
-                # log.debug(data)
-                for item in char_items:
-                    # log.debug(item)
-                    if data["hash"] == item["itemHash"]:
-                        instance_id = item["itemInstanceId"]
-                item_instance = chars["itemComponents"]["instances"]["data"][instance_id]
-                if not item_instance["isEquipped"]:
-                    continue
-
-                if not (data["equippable"] and data["itemType"] == 3):
-                    continue
-                name = data["displayProperties"]["name"]
-                desc = data["displayProperties"]["description"]
-                item_type = data["itemTypeAndTierDisplayName"]
-                try:
-                    light = item_instance["primaryStat"]["value"]
-                except KeyError:
-                    light = ""
-                perk_list = chars["itemComponents"]["perks"]["data"][instance_id]["perks"]
-                perk_hashes = [p["perkHash"] for p in perk_list]
-                perk_data = await self.get_definition("DestinySandboxPerkDefinition", perk_hashes)
-                perks = ""
-                for perk_hash, perk in perk_data.items():
-                    properties = perk["displayProperties"]
-                    if "name" in properties and "description" in properties:
-                        if full:
-                            perks += "**{0}** - {1}\n".format(
-                                properties["name"], properties["description"]
-                            )
-                        else:
-                            perks += "- **{0}**\n".format(properties["name"])
-
-                value = f"**{light}** {item_type}\n{perks}"
-                embed.add_field(name=name, value=value, inline=True)
-            # log.debug(data)
-            stats_str = ""
-            for stat_hash, value in char["stats"].items():
-                stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                    str(stat_hash)
+            for char_id, char in chars["characters"]["data"].items():
+                info = ""
+                race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
+                    str(char["raceHash"])
                 ]
-                stat_name = stat_info["displayProperties"]["name"]
-                prog = "█" * int(value / 10)
-                empty = "░" * int((100 - value) / 10)
-                bar = f"{prog}{empty}"
-                if stat_hash == "1935470627":
-                    artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
-                        "powerBonus"
-                    ]
-                    bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
-                stats_str += f"{stat_name}: **{value}** \n{bar}\n"
-            embed.description = stats_str
-            embed = await self.get_char_colour(embed, char)
+                gender = (
+                    await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+                )[str(char["genderHash"])]
+                char_class = (
+                    await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+                )[str(char["classHash"])]
+                info += "{race} {gender} {char_class} ".format(
+                    race=race["displayProperties"]["name"],
+                    gender=gender["displayProperties"]["name"],
+                    char_class=char_class["displayProperties"]["name"],
+                )
+                titles = ""
+                if "titleRecordHash" in char:
+                    # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
+                    char_title = (
+                        await self.get_definition(
+                            "DestinyRecordDefinition", [char["titleRecordHash"]]
+                        )
+                    )[str(char["titleRecordHash"])]
+                    title_info = "**{title_name}**\n{title_desc}\n"
+                    try:
+                        gilded = ""
+                        if await self.check_gilded_title(chars, char_title):
+                            gilded = _("Gilded ")
+                        title_name = (
+                            f"{gilded}"
+                            + char_title["titleInfo"]["titlesByGenderHash"][
+                                str(char["genderHash"])
+                            ]
+                        )
+                        title_desc = char_title["displayProperties"]["description"]
+                        titles += title_info.format(title_name=title_name, title_desc=title_desc)
+                    except KeyError:
+                        pass
+                embed = discord.Embed(title=info)
+                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
+                if "emblemPath" in char:
+                    embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+                if titles:
+                    # embed.add_field(name=_("Titles"), value=titles)
+                    embed.set_author(
+                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
+                    )
+                char_items = chars["characterEquipment"]["data"][char_id]["items"]
+                item_list = [i["itemHash"] for i in char_items]
+                # log.debug(item_list)
+                items = await self.get_definition("DestinyInventoryItemDefinition", item_list)
+                # log.debug(items)
+                for item_hash, data in items.items():
+                    # log.debug(data)
+                    for item in char_items:
+                        # log.debug(item)
+                        if data["hash"] == item["itemHash"]:
+                            instance_id = item["itemInstanceId"]
+                    item_instance = chars["itemComponents"]["instances"]["data"][instance_id]
+                    if not item_instance["isEquipped"]:
+                        continue
 
-            embeds.append(embed)
+                    if not (data["equippable"] and data["itemType"] == 3):
+                        continue
+                    name = data["displayProperties"]["name"]
+                    desc = data["displayProperties"]["description"]
+                    item_type = data["itemTypeAndTierDisplayName"]
+                    try:
+                        light = item_instance["primaryStat"]["value"]
+                    except KeyError:
+                        light = ""
+                    perk_list = chars["itemComponents"]["perks"]["data"][instance_id]["perks"]
+                    perk_hashes = [p["perkHash"] for p in perk_list]
+                    perk_data = await self.get_definition(
+                        "DestinySandboxPerkDefinition", perk_hashes
+                    )
+                    perks = ""
+                    for perk_hash, perk in perk_data.items():
+                        properties = perk["displayProperties"]
+                        if "name" in properties and "description" in properties:
+                            if full:
+                                perks += "**{0}** - {1}\n".format(
+                                    properties["name"], properties["description"]
+                                )
+                            else:
+                                perks += "- **{0}**\n".format(properties["name"])
+
+                    value = f"**{light}** {item_type}\n{perks}"
+                    embed.add_field(name=name, value=value, inline=True)
+                # log.debug(data)
+                stats_str = ""
+                for stat_hash, value in char["stats"].items():
+                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
+                        str(stat_hash)
+                    ]
+                    stat_name = stat_info["displayProperties"]["name"]
+                    prog = "█" * int(value / 10)
+                    empty = "░" * int((100 - value) / 10)
+                    bar = f"{prog}{empty}"
+                    if stat_hash == "1935470627":
+                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                            "powerBonus"
+                        ]
+                        bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
+                    stats_str += f"{stat_name}: **{value}** \n{bar}\n"
+                embed.description = stats_str
+                embed = await self.get_char_colour(embed, char)
+
+                embeds.append(embed)
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -1440,101 +1404,100 @@ class Destiny(DestinyAPI, commands.Cog):
         reckoning, menagerie, vexoffensive, nightmarehunt, elimination, momentum,
         dungeon, sundial, trialsofosiris
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-        if not activity.isdigit():
+        async with ctx.typing():
+            if not activity.isdigit():
+                try:
+                    activity = await DestinyActivity().convert(ctx, activity)
+                except commands.BadArgument as e:
+                    await ctx.send(e)
+                    return
+            user = ctx.author
             try:
-                activity = await DestinyActivity().convert(ctx, activity)
-            except commands.BadArgument as e:
-                await ctx.send(e)
+                chars = await self.get_characters(user)
+            except Destiny2APIError:
+                # log.debug(e)
+                await self.missing_profile(ctx)
                 return
-        user = ctx.author
-        try:
-            chars = await self.get_characters(user)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        RAID = {
-            "assists": _("Assists"),
-            "kills": _("Kills"),
-            "deaths": _("Deaths"),
-            "opponentsDefeated": _("Opponents Defeated"),
-            "efficiency": _("Efficiency"),
-            "killsDeathsRatio": _("KDR"),
-            "killsDeathsAssists": _("KDA"),
-            "score": _("Score"),
-            "activityDurationSeconds": _("Duration"),
-            "playerCount": _("Player Count"),
-            "teamScore": _("Team Score"),
-            "completed": _("Completed"),
-        }
-        embeds = []
-        for char_id, char in chars["characters"]["data"].items():
-            # log.debug(char)
-            char_info = ""
-            race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
-                str(char["raceHash"])
-            ]
-            gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
-                str(char["genderHash"])
-            ]
-            log.debug(gender)
-            char_class = (
-                await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-            )[str(char["classHash"])]
-            char_info += "{user} - {race} {gender} {char_class} ".format(
-                user=user.display_name,
-                race=race["displayProperties"]["name"],
-                gender=gender["displayProperties"]["name"],
-                char_class=char_class["displayProperties"]["name"],
-            )
-            try:
-                data = await self.get_activity_history(user, char_id, activity)
-            except Exception:
-                log.error(
-                    _(
-                        "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
-                    ).format(char_id=char_id, activity=activity)
+            RAID = {
+                "assists": _("Assists"),
+                "kills": _("Kills"),
+                "deaths": _("Deaths"),
+                "opponentsDefeated": _("Opponents Defeated"),
+                "efficiency": _("Efficiency"),
+                "killsDeathsRatio": _("KDR"),
+                "killsDeathsAssists": _("KDA"),
+                "score": _("Score"),
+                "activityDurationSeconds": _("Duration"),
+                "playerCount": _("Player Count"),
+                "teamScore": _("Team Score"),
+                "completed": _("Completed"),
+            }
+            embeds = []
+            for char_id, char in chars["characters"]["data"].items():
+                # log.debug(char)
+                char_info = ""
+                race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
+                    str(char["raceHash"])
+                ]
+                gender = (
+                    await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
+                )[str(char["genderHash"])]
+                log.debug(gender)
+                char_class = (
+                    await self.get_definition("DestinyClassDefinition", [char["classHash"]])
+                )[str(char["classHash"])]
+                char_info += "{user} - {race} {gender} {char_class} ".format(
+                    user=user.display_name,
+                    race=race["displayProperties"]["name"],
+                    gender=gender["displayProperties"]["name"],
+                    char_class=char_class["displayProperties"]["name"],
                 )
-                continue
-            if not data:
-                continue
-
-            for activities in data["activities"]:
-                activity_hash = str(activities["activityDetails"]["directorActivityHash"])
-                activity_data = (
-                    await self.get_definition("DestinyActivityDefinition", [activity_hash])
-                )[str(activity_hash)]
-                embed = discord.Embed(
-                    title=activity_data["displayProperties"]["name"] + f"- {char_info}",
-                    description=activity_data["displayProperties"]["description"],
-                )
-
-                date = datetime.datetime.strptime(activities["period"], "%Y-%m-%dT%H:%M:%SZ")
-                embed.timestamp = date
-                if activity_data["displayProperties"]["hasIcon"]:
-                    embed.set_thumbnail(url=IMAGE_URL + activity_data["displayProperties"]["icon"])
-                elif (
-                    activity_data["pgcrImage"] != "/img/misc/missing_icon_d2.png"
-                    and "emblemPath" in char
-                ):
-                    embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-                embed.set_author(name=char_info, icon_url=user.avatar.url)
-                for attr, name in RAID.items():
-                    if activities["values"][attr]["basic"]["value"] < 0:
-                        continue
-                    embed.add_field(
-                        name=name,
-                        value=str(activities["values"][attr]["basic"]["displayValue"]),
+                try:
+                    data = await self.get_activity_history(user, char_id, activity)
+                except Exception:
+                    log.error(
+                        _(
+                            "Something went wrong I couldn't get info on character {char_id} for activity {activity}"
+                        ).format(char_id=char_id, activity=activity)
                     )
-                embed = await self.get_char_colour(embed, char)
+                    continue
+                if not data:
+                    continue
 
-                embeds.append(embed)
+                for activities in data["activities"]:
+                    activity_hash = str(activities["activityDetails"]["directorActivityHash"])
+                    activity_data = (
+                        await self.get_definition("DestinyActivityDefinition", [activity_hash])
+                    )[str(activity_hash)]
+                    embed = discord.Embed(
+                        title=activity_data["displayProperties"]["name"] + f"- {char_info}",
+                        description=activity_data["displayProperties"]["description"],
+                    )
+
+                    date = datetime.datetime.strptime(activities["period"], "%Y-%m-%dT%H:%M:%SZ")
+                    embed.timestamp = date
+                    if activity_data["displayProperties"]["hasIcon"]:
+                        embed.set_thumbnail(
+                            url=IMAGE_URL + activity_data["displayProperties"]["icon"]
+                        )
+                    elif (
+                        activity_data["pgcrImage"] != "/img/misc/missing_icon_d2.png"
+                        and "emblemPath" in char
+                    ):
+                        embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+                    embed.set_author(name=char_info, icon_url=user.avatar.url)
+                    for attr, name in RAID.items():
+                        if activities["values"][attr]["basic"]["value"] < 0:
+                            continue
+                        embed.add_field(
+                            name=name,
+                            value=str(activities["values"][attr]["basic"]["displayValue"]),
+                        )
+                    embed = await self.get_char_colour(embed, char)
+
+                    embeds.append(embed)
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
@@ -1779,26 +1742,23 @@ class Destiny(DestinyAPI, commands.Cog):
         `<stat_type>` The type of stats to display, available options are:
         `raid`, `pvp`, `pve`, patrol, story, gambit, and strikes
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not await self.has_oauth(ctx):
             return
-        user = ctx.author
-        try:
-            chars = await self.get_characters(user)
-        except Destiny2APIError:
-            # log.debug(e)
-            await self.missing_profile(ctx)
-            return
-        # base stats should be available for all stat types
-        embeds = await self.build_character_stats(user, chars, stat_type)
+        async with ctx.typing():
+            user = ctx.author
+            try:
+                chars = await self.get_characters(user)
+            except Destiny2APIError:
+                # log.debug(e)
+                await self.missing_profile(ctx)
+                return
+            # base stats should be available for all stat types
+            embeds = await self.build_character_stats(user, chars, stat_type)
 
-        if not embeds:
-            msg = _("No stats could be found for that activity and character.")
-            await ctx.send(msg)
-            return
+            if not embeds:
+                msg = _("No stats could be found for that activity and character.")
+                await ctx.send(msg)
+                return
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
