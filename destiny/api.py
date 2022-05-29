@@ -217,7 +217,7 @@ class DestinyAPI:
             await ctx.channel.send(msg + url)
         try:
             msg = await self.bot.wait_for(
-                "message", check=lambda m: m.author == author, timeout=60
+                "message", check=lambda m: m.author == author, timeout=180
             )
         except asyncio.TimeoutError:
             return None
