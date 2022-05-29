@@ -166,7 +166,7 @@ class DestinyAPI:
                 else:
                     raise Destiny2InvalidParameters(_("That token is invalid."))
 
-    async def get_refresh_token(self, user: discord.User) -> dict:
+    async def get_refresh_token(self, user: discord.abc.User) -> dict:
         """
         Generate a refresh token if the token is expired
         """
@@ -225,7 +225,7 @@ class DestinyAPI:
             return await self.get_access_token(msg.content)
         return None
 
-    async def build_headers(self, user: discord.User = None) -> dict:
+    async def build_headers(self, user: discord.abc.User = None) -> dict:
         """
         Build the headers for each API call from a discord User
         if present, if a function doesn't require OAuth it won't pass
@@ -250,13 +250,13 @@ class DestinyAPI:
         header["Authorization"] = "{} {}".format(token_type, access_token)
         return header
 
-    async def get_user_profile(self, user: discord.User) -> dict:
+    async def get_user_profile(self, user: discord.abc.User) -> dict:
         headers = await self.build_headers(user)
         return await self.request_url(
             BASE_URL + "/User/GetMembershipsForCurrentUser/", headers=headers
         )
 
-    async def check_expired_token(self, user: discord.User):
+    async def check_expired_token(self, user: discord.abc.User):
         """
         Sending the expired token results in an HTTP error stating invalid credentials
         We need to keep track of when the token actually expires and check when used
@@ -295,7 +295,7 @@ class DestinyAPI:
             await self.config.user(user).oauth.set(refresh)
             return
 
-    async def get_characters(self, user: discord.User) -> dict:
+    async def get_characters(self, user: discord.abc.User) -> dict:
         """
         This pulls the data for each character from the API given a user object
         """
@@ -312,7 +312,7 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_character(self, user: discord.User, character_id: int) -> dict:
+    async def get_character(self, user: discord.abc.User, character_id: int) -> dict:
         """
         This pulls the data for each character from the API given a user object
         """
@@ -329,7 +329,7 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Character/{character_id}"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_instanced_item(self, user: discord.User, instanced_item: int) -> dict:
+    async def get_instanced_item(self, user: discord.abc.User, instanced_item: int) -> dict:
         try:
             headers = await self.build_headers(user)
         except Exception as e:
@@ -429,7 +429,7 @@ class DestinyAPI:
                     items[str(data["hash"])] = data
         return items
 
-    async def get_vendor(self, user: discord.User, character: str, vendor: str) -> dict:
+    async def get_vendor(self, user: discord.abc.User, character: str, vendor: str) -> dict:
         """
         This gets the inventory of a specified Vendor
         """
@@ -443,7 +443,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_clan_members(self, user: discord.User, clan_id: str) -> dict:
+    async def get_clan_members(self, user: discord.abc.User, clan_id: str) -> dict:
         """
         Get the list of all clan members
         """
@@ -454,7 +454,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/GroupV2/{clan_id}/Members/"
         return await self.request_url(url, headers=headers)
 
-    async def get_bnet_user(self, user: discord.User, membership_id: str) -> dict:
+    async def get_bnet_user(self, user: discord.abc.User, membership_id: str) -> dict:
         """
         Get a Destiny users linked profiles
         """
@@ -465,7 +465,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/User/GetBungieNetUserById/{membership_id}/"
         return await self.request_url(url, headers=headers)
 
-    async def get_bnet_user_credentials(self, user: discord.User, membership_id: str) -> dict:
+    async def get_bnet_user_credentials(self, user: discord.abc.User, membership_id: str) -> dict:
         """
         Get a Destiny users linked profiles
         """
@@ -476,7 +476,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/User/GetCredentialTypesForTargetAccount/{membership_id}/"
         return await self.request_url(url, headers=headers)
 
-    async def get_clan_pending(self, user: discord.User, clan_id: str) -> dict:
+    async def get_clan_pending(self, user: discord.abc.User, clan_id: str) -> dict:
         """
         Get the list of pending clan members
         """
@@ -489,7 +489,7 @@ class DestinyAPI:
 
     async def approve_clan_pending(
         self,
-        user: discord.User,
+        user: discord.abc.User,
         clan_id: str,
         membership_type: int,
         membership_id: str,
@@ -505,7 +505,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/GroupV2/{clan_id}/Members/Approve/{membership_type}/{membership_id}/"
         return await self.post_url(url, headers=headers, body=member_data)
 
-    async def get_clan_info(self, user: discord.User, clan_id: str) -> dict:
+    async def get_clan_info(self, user: discord.abc.User, clan_id: str) -> dict:
         """
         Get the list of pending clan members
         """
@@ -516,7 +516,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/GroupV2/{clan_id}/"
         return await self.request_url(url, headers=headers)
 
-    async def get_milestones(self, user: discord.User) -> dict:
+    async def get_milestones(self, user: discord.abc.User) -> dict:
         """
         Gets public information about currently available Milestones.
         """
@@ -527,7 +527,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/Milestones/"
         return await self.request_url(url, headers=headers)
 
-    async def get_milestone_content(self, user: discord.User, milestone_hash: str) -> dict:
+    async def get_milestone_content(self, user: discord.abc.User, milestone_hash: str) -> dict:
         """
         Gets custom localized content for the milestone of the given hash, if it exists.
         """
@@ -538,7 +538,9 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/Milestones/{milestone_hash}/Content/"
         return await self.request_url(url, headers=headers)
 
-    async def get_activity_history(self, user: discord.User, character: str, mode: str) -> dict:
+    async def get_activity_history(
+        self, user: discord.abc.User, character: str, mode: str
+    ) -> dict:
         """
         This retrieves the activity history for a user's character
 
@@ -553,7 +555,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_aggregate_activity_history(self, user: discord.User, character: str) -> dict:
+    async def get_aggregate_activity_history(self, user: discord.abc.User, character: str) -> dict:
         """
         This retrieves the activity history for a user's character
 
@@ -567,7 +569,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/AggregateActivityStats/"
         return await self.request_url(url, headers=headers)
 
-    async def get_weapon_history(self, user: discord.User, character: str) -> dict:
+    async def get_weapon_history(self, user: discord.abc.User, character: str) -> dict:
         """
         This retrieves the activity history for a user's character
 
@@ -583,7 +585,7 @@ class DestinyAPI:
 
     async def get_historical_stats(
         self,
-        user: discord.User,
+        user: discord.abc.User,
         character: str,
         mode: str,
         period: int = 2,
@@ -612,7 +614,7 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_historical_stats_account(self, user: discord.User) -> dict:
+    async def get_historical_stats_account(self, user: discord.abc.User) -> dict:
         """
         This works the same as get_historical_stats but gets
         stats for all characters merged together
@@ -629,23 +631,22 @@ class DestinyAPI:
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Stats/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def has_oauth(
-        self, ctx: Union[commands.Context, discord.Interaction], user: discord.Member = None
-    ) -> bool:
+    async def has_oauth(self, ctx: commands.Context, user: discord.Member = None) -> bool:
         """
         Basic checks to see if the user has OAuth setup
         if not or the OAuth keys are expired this will call the refresh
         """
-        is_slash = False
-        if isinstance(ctx, discord.Interaction):
-            is_slash = True
-            author = ctx.user
-        else:
-            author = ctx.author
-
+        is_slash = ctx.interaction is not None
+        author = ctx.author
         error_msg = _(
             "You need to authenticate your Bungie.net account before this command will work."
         )
+        try:
+            await self.check_expired_token(user or author)
+        except Destiny2RefreshTokenError:
+            # this will clear the users OAuth settings if they're invalid
+            # prior to us asking for new tokens
+            pass
 
         if user:
             if not (
@@ -653,11 +654,8 @@ class DestinyAPI:
             ):
                 # bypass OAuth procedure since the user has not authorized it
                 msg = _("That user has not provided an OAuth scope to view destiny data.")
-                if is_slash:
-                    await ctx.followup.send(msg, ephemeral=True)
-                else:
-                    await ctx.send(msg)
-                return
+                await ctx.send(msg, ephemeral=True)
+                return False
             else:
                 return True
         if not await self.config.user(author).oauth():
@@ -665,10 +663,7 @@ class DestinyAPI:
             try:
                 data = await self.get_o_auth(ctx)
                 if not data:
-                    if is_slash:
-                        await ctx.followup.send(error_msg)
-                    else:
-                        await ctx.send(error_msg)
+                    await ctx.send(error_msg, ephemeral=True)
                     return False
             except Destiny2InvalidParameters as e:
                 try:
@@ -711,7 +706,7 @@ class DestinyAPI:
                 _("Account set to {name} {platform}").format(name=name, platform=platform)
             )
         if await self.config.user(author).account.membershipType() == 4:
-            data = await self.get_user_profile(ctx.author)
+            data = await self.get_user_profile(author)
             datas, platform = await self.pick_account(ctx, data)
             name = datas["displayName"]
             await self.config.user(author).account.set(datas)
