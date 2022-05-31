@@ -30,8 +30,10 @@ from .components import (
     VolumeButton,
 )
 from .helpers import (
+    PITCH,
     REPEAT_STATES,
     SPOTIFY_LOGO,
+    Mode,
     NotPlaying,
     _draw_play,
     make_details,
@@ -43,12 +45,18 @@ _ = Translator("Spotify", __file__)
 
 
 class SpotifyTrackPages(menus.ListPageSource):
-    def __init__(self, items: List[tekore.model.FullTrack], detailed: bool):
+    def __init__(
+        self,
+        items: List[tekore.model.FullTrack],
+        detailed: bool,
+        recommendations: Optional[dict] = None,
+    ):
         super().__init__(items, per_page=1)
         self.current_track = None
         self.detailed = detailed
         self.select_options = []
         self.items = items
+        self.recommendations = recommendations
         for count, item in enumerate(items):
             artists = getattr(item, "artists", [])
             artist = humanize_list([a.name for a in artists])[:50]
@@ -88,6 +96,42 @@ class SpotifyTrackPages(menus.ListPageSource):
 
             msg = await make_details(track, details)
             em.add_field(name="Details", value=box(msg[:1000], lang="css"))
+        if self.recommendations:
+            recs_msg = ""
+            for key, value in self.recommendations.items():
+                if key in ["market", "limit"] or value is None:
+                    continue
+                if key == "genres":
+                    recs_msg += _("Genres: {genres}\n").format(genres=humanize_list(value))
+                    continue
+                if key == "track_ids":
+                    recs_msg += _("Tracks: {tracks}\n").format(
+                        tracks=humanize_list(
+                            [f"https://open.spotify.com/track/{track_id}\n" for track_id in value]
+                        )
+                    )
+                    continue
+                if key == "artist_ids":
+                    recs_msg += _("Artists: \n{artists}\n").format(
+                        genres=humanize_list(
+                            [
+                                f"https://open.spotify.com/artist/{artist_id}\n"
+                                for artist_id in value
+                            ]
+                        )
+                    )
+                    continue
+                if key == "target_mode":
+                    recs_msg += _("Target Mode: {mode}\n").format(
+                        mode=Mode(int(value)).name.title()
+                    )
+                    continue
+                if key == "target_key":
+                    recs_msg += _("Target Key: {pitch_key}\n").format(pitch_key=PITCH[value])
+                    continue
+                if value is not None:
+                    recs_msg += f"{key.replace('_', ' ').title()}: {value}\n"
+            em.add_field(name="Recommendations Settings", value=recs_msg)
         try:
             em.set_footer(
                 text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",

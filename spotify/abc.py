@@ -9,7 +9,7 @@ import tekore
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
-from .helpers import RecommendationsConverter, ScopeConverter, SpotifyURIConverter
+from .helpers import RecommendationsFlags, ScopeConverter, SpotifyURIConverter
 
 if TYPE_CHECKING:
     from .spotify_commands import ActionConverter
@@ -244,7 +244,7 @@ class SpotifyMixin(ABC):
         ctx: commands.Context,
         detailed: Optional[bool] = False,
         *,
-        recommendations: RecommendationsConverter,
+        recommendations: RecommendationsFlags,
     ):
         raise NotImplementedError()
 

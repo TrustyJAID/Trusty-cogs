@@ -19,7 +19,7 @@ from .helpers import (
     SPOTIFY_RE,
     InvalidEmoji,
     NotPlaying,
-    RecommendationsConverter,
+    RecommendationsFlags,
     ScopeConverter,
     SearchTypes,
     SpotifyURIConverter,
@@ -803,45 +803,77 @@ class SpotifyCommands(SpotifyMixin):
             ).format(genres=humanize_list(self.GENRES))
         await ctx.maybe_send_embed(msg)
 
-    @spotify_com.command(name="recommend", aliases=["recommendation"], with_app_command=False)
+    @spotify_com.command(name="recommendations", aliases=["recommendation", "recommend"])
+    @app_commands.choices(
+        key=KEY_CHOICES,
+    )
     @commands.bot_has_permissions(embed_links=True)
     async def spotify_recommendations(
         self,
         ctx: commands.Context,
         detailed: Optional[bool] = False,
         *,
-        recommendations: RecommendationsConverter,
+        recommendations: RecommendationsFlags,
     ):
         """
         Get Spotify Recommendations
 
         `<recommendations>` Requires at least 1 of the following matching objects:
-         - `genre` Must be a valid genre type. Do `[p]spotify genres` to see what's available.
-         - `tracks` Any spotify URL or URI leading to tracks will be added to the seed
-         - `artists` Any spotify URL or URI leading to artists will be added to the seed
+         - `genre:` Must be a valid genre type. Do `[p]spotify genres` to see what's available.
+         - `tracks:` Any spotify URL or URI leading to tracks will be added to the seed
+         - `artists:` Any spotify URL or URI leading to artists will be added to the seed
 
          The following parameters also exist and must include some additional parameter:
-         - `acousticness` + a value from 0-100
-         - `danceability` + a value from 0-100
-         - `duration_ms` the duration target of the tracks
-         - `energy` + a value from 0-100
-         - `instrumentalness` + a value from 0-100
-         - `key` A value from 0-11 representing Pitch Class notation
-         - `liveness` + a value from 0-100
-         - `loudness` + A value from -60 to 0 represending dB
-         - `mode` + either major or minor
-         - `popularity` + a value from 0-100
-         - `speechiness` + a value from 0-100
-         - `tempo` + the tempo in BPM
-         - `time_signature` + the measure of bars e.g. `3` for `3/4` or `6/8`
-         - `valence` + a value from 0-100
+         - `acousticness:` + a value from 0-100
+         - `danceability:` + a value from 0-100
+         - `duration_ms:` the duration target of the tracks
+         - `energy:` + a value from 0-100
+         - `instrumentalness:` + a value from 0-100
+         - `key:` A value from 0-11 representing Pitch Class notation
+         - `liveness:` + a value from 0-100
+         - `loudness:` + A value from -60 to 0 represending dB
+         - `mode:` + either major or minor
+         - `popularity:` + a value from 0-100
+         - `speechiness:` + a value from 0-100
+         - `tempo:` + the tempo in BPM
+         - `time_signature:` + the measure of bars e.g. `3` for `3/4` or `6/8`
+         - `valence:` + a value from 0-100
+
+         e.g. `[p]spotify recommendations genre: edm dance electronic valence: 100 mode: major`
         """
-        log.debug(recommendations)
+        log.info(recommendations)
         # user_spotify = await self.get_user_spotify(ctx)
+        if not any([recommendations.genres, recommendations.artists, recommendations.tracks]):
+            await ctx.send(
+                _(
+                    "You must provide either genres, tracks, or artists to seed the recommendations."
+                )
+            )
+            return
+        recs = {
+            "genres": recommendations.genres,
+            "track_ids": recommendations.tracks,
+            "artist_ids": recommendations.artists,
+            "limit": 100,
+            "market": "from_token",
+            "target_acousticness": recommendations.acousticness,
+            "target_danceability": recommendations.danceability,
+            "target_energy": recommendations.energy,
+            "target_instrumentalness": recommendations.instrumentalness,
+            "target_key": recommendations.key,
+            "target_liveness": recommendations.liveness,
+            "target_loudness": recommendations.loudness,
+            "target_mode": str(recommendations.mode) if recommendations.mode else None,
+            "target_popularity": recommendations.popularity,
+            "target_speechiness": recommendations.speechiness,
+            "target_tempo": recommendations.tempo,
+            "target_time_signature": recommendations.time_signature,
+            "target_valence": recommendations.valence,
+        }
         async with ctx.typing():
             async with self.get_user_spotify(ctx) as user_spotify:
                 try:
-                    search = await user_spotify.recommendations(**recommendations)
+                    search = await user_spotify.recommendations(**recs)
                 except Exception:
                     log.exception("Error getting recommendations")
                     msg = _("I could not find any recommendations with those parameters")
@@ -852,7 +884,7 @@ class SpotifyCommands(SpotifyMixin):
                 return await self.not_authorized(ctx)
             delete_after, clear_after, timeout = await self.get_menu_settings(ctx.guild)
             x = SpotifySearchMenu(
-                source=SpotifyTrackPages(items=items, detailed=detailed),
+                source=SpotifyTrackPages(items=items, detailed=detailed, recommendations=recs),
                 delete_message_after=delete_after,
                 clear_buttons_after=clear_after,
                 timeout=timeout,
@@ -860,99 +892,6 @@ class SpotifyCommands(SpotifyMixin):
                 user_token=await self.get_user_auth(ctx),
             )
         await x.send_initial_message(ctx)
-
-    @spotify_com.app_command.command(name="recommendations")
-    @app_commands.choices(
-        key=KEY_CHOICES,
-        mode=MODE_CHOICES,
-    )
-    @app_commands.describe(
-        genres="Must be any combination of valid genres",
-        tracks="Any Spotify track URL used as the seed.",
-        artists="Any Spotify artist URL used as the seed.",
-        acousticness="A value from 0 to 100 the target acousticness of the tracks.",
-        danceability="A value from 0 to 100 describing how danceable the tracks are.",
-        energy="Energy is a measure from 0 to 100 and represents a perceptual measure of intensity and activity",
-        instrumentalness="A value from 0 to 100 representing whether or not a track contains vocals.",
-        key="The target key of the tracks.",
-        liveness="A value from 0-100 representing the presence of an audience in the recording.",
-        loudness="The overall loudness of a track in decibels (dB) between -60 and 0 db.",
-        mode="The target modality (major or minor) of the track.",
-        popularity="A value from 0-100 the target popularity of the tracks.",
-        speechiness="A value from 0-100 Speechiness is the presence of spoken words in a track.",
-        tempo="The overall estimated tempo of a track in beats per minute (BPM).",
-        time_signature="The time signature ranges from 3 to 7 indicating time signatures of '3/4', to '7/4'.",
-        valence="A measure from 0 to 100 describing the musical positiveness conveyed by a track",
-    )
-    async def spotify_recommendations_slash(
-        self,
-        interaction: discord.Interaction,
-        genres: str,
-        tracks: Optional[str],
-        artists: Optional[str],
-        acousticness: Optional[app_commands.Range[int, 0, 100]],
-        danceability: Optional[app_commands.Range[int, 0, 100]],
-        energy: Optional[app_commands.Range[int, 0, 100]],
-        instrumentalness: Optional[app_commands.Range[int, 0, 100]],
-        key: Optional[app_commands.Choice[int]],
-        liveness: Optional[app_commands.Range[int, 0, 100]],
-        loudness: Optional[app_commands.Range[int, 0, 100]],
-        mode: Optional[app_commands.Choice[int]],
-        popularity: Optional[app_commands.Range[int, 0, 100]],
-        speechiness: Optional[app_commands.Range[int, 0, 100]],
-        tempo: Optional[int],
-        time_signature: Optional[int],
-        valence: Optional[app_commands.Range[int, 0, 100]],
-        detailed: Optional[bool],
-    ):
-        """Get Spotify Recommendations"""
-        recs = {
-            "genres": [g for g in genres.split(" ")],
-            "track_ids": tracks,
-            "artist_ids": artists,
-            "limit": 100,
-            "market": "from_token",
-            "target_acousticness": acousticness,
-            "target_danceability": danceability,
-            "target_energy": energy,
-            "target_instrumentalness": instrumentalness,
-            "target_key": key.value if key else None,
-            "target_liveness": liveness,
-            "target_loudness": loudness,
-            "target_mode": mode.value if mode else None,
-            "target_popularity": popularity,
-            "target_speechiness": speechiness,
-            "target_tempo": tempo,
-            "target_time_signature": time_signature,
-            "target_valence": valence,
-        }
-        ctx = await interaction.client.get_context(interaction)
-        await self.spotify_recommendations(ctx, detailed, recommendations=recs)
-
-    @spotify_recommendations_slash.autocomplete("genres")
-    async def genres_autocomplete(
-        self,
-        interaction: discord.Interaction,
-        current: str,
-    ):
-        supplied_genres = ""
-        new_genre = ""
-        for sup in current.lower().split(" "):
-            if sup in self.GENRES:
-                supplied_genres += f"{sup} "
-            else:
-                new_genre = sup.lower()
-
-        ret = [
-            app_commands.Choice(name=f"{supplied_genres} {g}", value=f"{supplied_genres} {g}")
-            # {"name": f"{supplied_genres} {g}", "value": f"{supplied_genres} {g}"}
-            for g in self.GENRES
-            if new_genre in g
-        ]
-        if supplied_genres:
-            # ret.insert(0, {"name": supplied_genres, "value": supplied_genres})
-            ret.insert(0, app_commands.Choice(name=supplied_genres, value=supplied_genres))
-        return ret[:25]
 
     @spotify_com.command(name="recent")
     @commands.bot_has_permissions(embed_links=True)
