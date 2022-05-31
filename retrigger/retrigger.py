@@ -33,6 +33,21 @@ log = logging.getLogger("red.trusty-cogs.ReTrigger")
 _ = Translator("ReTrigger", __file__)
 
 try:
+    from PIL import Image, ImageSequence
+
+    try:
+        import pytesseract
+
+        ALLOW_OCR = True
+    except ImportError:
+        ALLOW_OCR = False
+
+    ALLOW_RESIZE = True
+except ImportError:
+    ALLOW_RESIZE = False
+    ALLOW_OCR = False
+
+try:
     import regex as re
 except ImportError:
     import re
@@ -83,6 +98,8 @@ class ReTrigger(
         self.triggers: Dict[int, Dict[str, Trigger]] = {}
         self.trigger_timeout = 1
         self.save_loop.start()
+        self.ALLOW_OCR = ALLOW_OCR
+        self.ALLOW_RESIZE = ALLOW_RESIZE
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """

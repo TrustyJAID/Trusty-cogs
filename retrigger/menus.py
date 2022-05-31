@@ -400,14 +400,28 @@ class ReTriggerEditModal(discord.ui.Modal):
         self.regex = discord.ui.TextInput(
             style=discord.TextStyle.paragraph, label="Regex", default=trigger.regex.pattern
         )
-        self.add_item(self.text)
         self.add_item(self.regex)
+        reply_options = [
+            discord.SelectOption(label=_("Reply with ping"), value="True"),
+            discord.SelectOption(label=_("Reply without ping"), value="False"),
+            discord.SelectOption(label=_("Don't reply"), value="None"),
+        ]
+        self.replies = discord.ui.Select(
+            max_values=1, min_values=0, placeholder="Replies", options=reply_options
+        )
+        for response_type in trigger.response_type:
+            if response_type.value in ["text", "dm", "dmme", "command", "mock"]:
+                self.add_item(self.text)
+                break
+        if TriggerResponse.text in trigger.response_type:
+            self.add_item(self.replies)
         self.og_button = button
         self.trigger = trigger
 
     async def on_submit(self, interaction: discord.Interaction):
         edited_text = False
         edited_regex = False
+        edited_replies = False
         msg = _("Editing Trigger {trigger}:\n").format(trigger=self.trigger.name)
         guild = interaction.guild
         if self.trigger.text != self.text.value:
@@ -424,7 +438,16 @@ class ReTriggerEditModal(discord.ui.Modal):
                 return
             edited_regex = True
             msg += _("Regex: `{regex}`\n").format(regex=self.regex.value)
-        if edited_text or edited_regex:
+        if self.replies.values:
+            if self.replies.values[0] == "True":
+                self.trigger.reply = True
+            elif self.replies.values[0] == "False":
+                self.trigger.reply = False
+            else:
+                self.trigger.reply = None
+            edited_replies = True
+            msg += _("Replies: `{replies}`\n").format(replies=self.replies.values[0])
+        if edited_text or edited_regex or edited_replies:
             await interaction.response.send_message(msg)
             async with self.og_button.view.cog.config.guild(guild).trigger_list() as trigger_list:
                 trigger_list[self.trigger.name] = await self.trigger.to_json()

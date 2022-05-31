@@ -8,14 +8,12 @@ import string
 from copy import copy
 from datetime import datetime, timezone
 from io import BytesIO
-from multiprocessing.pool import Pool
 from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, cast
 
 import aiohttp
 import discord
 from redbot import VersionInfo, version_info
-from redbot.core import Config, commands, modlog
-from redbot.core.bot import Red
+from redbot.core import commands, modlog
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import escape, humanize_list
