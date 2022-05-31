@@ -354,8 +354,7 @@ class Destiny(DestinyAPI, commands.Cog):
         max_members = clan_info["detail"]["features"]["maximumMembers"]
         clan_creation_date = datetime.datetime.strptime(
             clan_info["detail"]["creationDate"], "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
-        clan_create_str = clan_creation_date.strftime("%I:%M %p %Y-%m-%d")
+        ).replace(tzinfo=datetime.timezone.utc)
         clan_xp_str = _(
             "Level: {level}/{level_cap}\nWeekly Progress: " "{weekly_progress}/{weekly_limit}"
         ).format(
@@ -372,7 +371,7 @@ class Destiny(DestinyAPI, commands.Cog):
         embed.add_field(name=_("Motto"), value=clan_motto, inline=False)
         embed.add_field(name=_("Clan XP"), value=clan_xp_str)
         embed.add_field(name=_("Members"), value=f"{members}/{max_members}")
-        embed.add_field(name=_("Clan Founded"), value=clan_create_str)
+        embed.add_field(name=_("Clan Founded"), value=discord.utils.format_dt(clan_creation_date))
         return embed
 
     @clan.command(name="set")
@@ -543,7 +542,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 last_online = datetime.datetime.utcfromtimestamp(
                     int(member["lastOnlineStatusChange"])
                 )
-                join_date = datetime.datetime.strptime(member["joinDate"], "%Y-%m-%dT%H:%M:%SZ")
+                join_date = datetime.datetime.strptime(
+                    member["joinDate"], "%Y-%m-%dT%H:%M:%SZ"
+                ).replace(tzinfo=datetime.timezone.utc)
                 destiny_name = member["destinyUserInfo"]["LastSeenDisplayName"]
                 destiny_id = member["destinyUserInfo"]["membershipId"]
                 clan_mems += destiny_name + "\n"
@@ -726,8 +727,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 time_played = humanize_timedelta(seconds=int(char["minutesPlayedTotal"]) * 60)
                 last_played = datetime.datetime.strptime(
                     char["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-                last_played_ts = int(last_played.timestamp())
+                ).replace(tzinfo=datetime.timezone.utc)
                 for stat_hash, value in char["stats"].items():
                     stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
                         str(stat_hash)
@@ -743,7 +743,9 @@ class Destiny(DestinyAPI, commands.Cog):
                         bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
                     stats_str += f"{stat_name}: **{value}** \n{bar}\n"
                 stats_str += _("Time Played Total: **{time}**\n").format(time=time_played)
-                stats_str += _("Last Played: **{time}**\n").format(time=f"<t:{last_played_ts}:R>")
+                stats_str += _("Last Played: **{time}**\n").format(
+                    time=discord.utils.format_dt(last_played, "R")
+                )
                 embed.description = stats_str
                 embed = await self.get_char_colour(embed, char)
                 if titles:
@@ -852,8 +854,9 @@ class Destiny(DestinyAPI, commands.Cog):
                     friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
                         (4 - today.weekday()) % 7
                     )
-                    next_xur = f"<t:{int(friday.timestamp())}:R>"
-                    msg = _("Xûr's not around, come back {next_xur}.").format(next_xur=next_xur)
+                    msg = _("Xûr's not around, come back {next_xur}.").format(
+                        next_xur=discord.utils.format_dt(friday, "R")
+                    )
                     await ctx.send(msg)
                     return
                 break
@@ -939,8 +942,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 location = _("Unknown")
             date = datetime.datetime.strptime(
                 vendor["vendor"]["data"]["nextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
-            )
-            date = date.replace(tzinfo=datetime.timezone.utc)
+            ).replace(tzinfo=datetime.timezone.utc)
             date_str = discord.utils.format_dt(date, style="R")
             # items = [v["itemHash"] for k, v in xur["sales"]["data"].items()]
             embeds: List[discord.Embed] = []
@@ -1045,9 +1047,10 @@ class Destiny(DestinyAPI, commands.Cog):
                 if "overrideNextRefreshDate" in item_base:
                     date = datetime.datetime.strptime(
                         item_base["overrideNextRefreshDate"], "%Y-%m-%dT%H:%M:%SZ"
+                    ).replace(tzinfo=datetime.timezone.utc)
+                    refresh_str = _("**Refreshes {refresh_time}**").format(
+                        refresh_time=discord.utils.format_dt(date, "R")
                     )
-                    date = date.replace(tzinfo=datetime.timezone.utc)
-                    refresh_str = f"**Refreshes <t:{int(date.timestamp())}:R>**"
                 try:
                     cost_str = ""
                     if item_base["costs"]:
@@ -1476,7 +1479,9 @@ class Destiny(DestinyAPI, commands.Cog):
                         description=activity_data["displayProperties"]["description"],
                     )
 
-                    date = datetime.datetime.strptime(activities["period"], "%Y-%m-%dT%H:%M:%SZ")
+                    date = datetime.datetime.strptime(
+                        activities["period"], "%Y-%m-%dT%H:%M:%SZ"
+                    ).replace(tzinfo=datetime.timezone.utc)
                     embed.timestamp = date
                     if activity_data["displayProperties"]["hasIcon"]:
                         embed.set_thumbnail(
