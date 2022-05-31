@@ -95,7 +95,7 @@ class SpotifyTrackPages(menus.ListPageSource):
                 details = await sp.track_audio_features(track.id)
 
             msg = await make_details(track, details)
-            em.add_field(name="Details", value=box(msg[:1000], lang="css"))
+            em.add_field(name="Details", value=box(msg[:1000], lang="css"), inline=False)
         if self.recommendations:
             recs_msg = ""
             for key, value in self.recommendations.items():
@@ -131,7 +131,7 @@ class SpotifyTrackPages(menus.ListPageSource):
                     continue
                 if value is not None:
                     recs_msg += f"{key.replace('_', ' ').title()}: {value}\n"
-            em.add_field(name="Recommendations Settings", value=recs_msg)
+            em.add_field(name="Recommendations Settings", value=recs_msg, inline=False)
         try:
             em.set_footer(
                 text=_("Page") + f" {view.current_page + 1}/{self.get_max_pages()}",
