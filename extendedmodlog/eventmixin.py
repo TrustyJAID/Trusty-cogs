@@ -185,11 +185,15 @@ class EventMixin:
         parent = ""
         if ctx.interaction:
             parent = ctx.command.app_command.qualified_name
-        kwargs = " ".join(str(v) for v in ctx.kwargs.values() if v is not None)
-        args = " ".join(
-            str(v) for v in ctx.args if v and not isinstance(v, (commands.Cog, commands.Context))
-        )
-        com_str = f"{ctx.clean_prefix}{parent}{ctx.invoked_with} {args} {kwargs}"
+            kwargs = " ".join(str(v) for v in ctx.kwargs.values() if v is not None)
+            args = " ".join(
+                str(v)
+                for v in ctx.args
+                if v and not isinstance(v, (commands.Cog, commands.Context))
+            )
+            com_str = f"{ctx.clean_prefix}{parent}{ctx.invoked_with} {args} {kwargs}"
+        else:
+            com_str = ctx.message.content
         try:
             privs = ctx.command.requires.privilege_level
             user_perms = ctx.command.requires.user_perms
