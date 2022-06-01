@@ -70,10 +70,6 @@ KEY_CHOICES = [
     app_commands.Choice(name="A♯, B♭ (also Cdouble flat)", value=10),
     app_commands.Choice(name="B (also Adouble sharp, C♭)", value=11),
 ]
-MODE_CHOICES = [
-    app_commands.Choice(name="major", value=1),
-    app_commands.Choice(name="minor", value=0),
-]
 
 
 class SpotifyCommands(SpotifyMixin):
@@ -823,23 +819,18 @@ class SpotifyCommands(SpotifyMixin):
          - `tracks:` Any spotify URL or URI leading to tracks will be added to the seed
          - `artists:` Any spotify URL or URI leading to artists will be added to the seed
 
-         The following parameters also exist and must include some additional parameter:
-         - `acousticness:` + a value from 0-100
-         - `danceability:` + a value from 0-100
-         - `duration_ms:` the duration target of the tracks
-         - `energy:` + a value from 0-100
-         - `instrumentalness:` + a value from 0-100
-         - `key:` A value from 0-11 representing Pitch Class notation
-         - `liveness:` + a value from 0-100
-         - `loudness:` + A value from -60 to 0 represending dB
-         - `mode:` + either major or minor
-         - `popularity:` + a value from 0-100
-         - `speechiness:` + a value from 0-100
-         - `tempo:` + the tempo in BPM
-         - `time_signature:` + the measure of bars e.g. `3` for `3/4` or `6/8`
-         - `valence:` + a value from 0-100
+         The following target parameters also exist and must include some additional value:
+         `acousticness:`, `danceability:`, `energy:`, `instrumentalness:`,
+         `liveness:`, `popularity:`, `speechiness:`, and/or `valence:` + a value from 0-100
 
-         e.g. `[p]spotify recommendations genre: edm dance electronic valence: 100 mode: major`
+         `key:` + A value from 0-11 representing Pitch Class notation
+         `loudness:` + A value from -60 to 0 represending dB
+         `mode:` + either major or minor
+         `tempo:` + the tempo in BPM
+         `time_signature:` + the measure of bars e.g. `3` for `3/4` or `6/8`
+         `duration_ms:` the duration target of the tracks
+
+         e.g. `[p]spotify recommendations genre: edm electronic valence: 100 mode: major`
         """
         log.info(recommendations)
         # user_spotify = await self.get_user_spotify(ctx)

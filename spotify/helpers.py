@@ -198,7 +198,7 @@ class RecommendationsFlags(discord.ext.commands.FlagConverter, case_insensitive=
         aliases=["live"],
         description="A value from 0-100 representing the presence of an audience in the recording.",
     )
-    loudness: Optional[discord.ext.commands.Range[int, 0, 100]] = discord.ext.commands.flag(
+    loudness: Optional[discord.ext.commands.Range[int, -60, 0]] = discord.ext.commands.flag(
         name="loudness",
         aliases=["loud"],
         description="The overall loudness of a track in decibels (dB) between -60 and 0 db.",
