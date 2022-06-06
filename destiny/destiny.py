@@ -150,11 +150,9 @@ class Destiny(DestinyAPI, commands.Cog):
             show_lore = True if details_or_lore is False else False
             if search.startswith("lore "):
                 search = search.replace("lore ", "")
-            elif search.isdigit():
-                search = int(search)
 
             try:
-                if isinstance(search, int):
+                if search.isdigit() or isinstance(search, int):
                     try:
                         items = await self.get_definition(
                             "DestinyInventoryItemDefinition", [search]
@@ -174,8 +172,6 @@ class Destiny(DestinyAPI, commands.Cog):
             embeds = []
             # log.debug(items[0])
             for item_hash, item in items.items():
-                if not (item["equippable"]):
-                    continue
                 embed = discord.Embed()
 
                 damage_type = ""
@@ -256,13 +252,13 @@ class Destiny(DestinyAPI, commands.Cog):
                 if item.get("screenshot", False):
                     embed.set_image(url=IMAGE_URL + item["screenshot"])
                 embeds.append(embed)
+        if not embeds:
+            await ctx.send(_("That item search could not be found."))
+            return
         await BaseMenu(
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
@@ -756,9 +752,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
@@ -807,9 +800,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=lore,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
@@ -1085,8 +1075,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
             timeout=180,
             cog=self,
             page_start=0,
@@ -1337,9 +1325,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
@@ -1507,9 +1492,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
@@ -1768,9 +1750,6 @@ class Destiny(DestinyAPI, commands.Cog):
             source=BasePages(
                 pages=embeds,
             ),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=0,
         ).start(ctx=ctx)

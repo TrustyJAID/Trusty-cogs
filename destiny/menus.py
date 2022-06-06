@@ -224,6 +224,22 @@ class BaseMenu(discord.ui.View):
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx)
 
+    def check_disabled_buttons(self):
+        if len(self._source.entries) == 1:
+            self.first_item.disabled = True
+            self.last_item.disabled = True
+            self.back_button.disabled = True
+            self.forward_button.disabled = True
+            if hasattr(self.source, "select_options"):
+                self.select_view.disabled = True
+        else:
+            self.first_item.disabled = False
+            self.last_item.disabled = False
+            self.back_button.disabled = False
+            self.forward_button.disabled = False
+            if hasattr(self.source, "select_options"):
+                self.select_view.disabled = False
+
     def _get_select_menu(self) -> Optional[DestinySelect]:
         # handles modifying the select menu if more than 25 pages are provided
         # this will show the previous 12 and next 13 pages in the select menu
@@ -247,6 +263,7 @@ class BaseMenu(discord.ui.View):
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self._source.format_page, self, page)
+        self.check_disabled_buttons()
         if isinstance(value, dict):
             return value
         elif isinstance(value, str):

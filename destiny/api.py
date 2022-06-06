@@ -312,7 +312,7 @@ class DestinyAPI:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
         params = {
-            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,600,800,900,1000,1100,1300"
+            "components": "100,102,103,104,200,201,202,204,205,300,302,304,305,307,308,309,310,600,800,900,1000,1100,1200,1300"
         }
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
@@ -329,7 +329,7 @@ class DestinyAPI:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
         params = {
-            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"
+            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1200,1300"
         }
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
