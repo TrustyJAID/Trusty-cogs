@@ -33,7 +33,9 @@ class Tweets(TweetsAPI, commands.Cog):
             "schema_version": 0,
         }
         self.config.register_global(**default_global)
-        self.config.register_channel(followed_accounts={}, followed_str={}, guild_id=None)
+        self.config.register_channel(
+            followed_accounts={}, followed_str={}, followed_rules={}, guild_id=None
+        )
         self.mystream = None
         self.run_stream = True
         self.twitter_loop = None
@@ -199,6 +201,42 @@ class Tweets(TweetsAPI, commands.Cog):
         await ctx.send(
             _("Following tweets from {user} in {channel}.").format(
                 user=user.username, channel=channel.mention
+            )
+        )
+
+    @tweets_stream.command(name="followrule")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def add_rule_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel, rule_tag: str
+    ):
+        """
+        Add all tweets from a specific stream rule to a channel.
+        """
+        async with self.config.channel(channel).followed_rules() as accounts:
+            if str(rule_tag) not in accounts:
+                accounts[rule_tag] = {}
+        await self.config.channel(channel).guild_id.set(channel.guild.id)
+        await ctx.send(
+            _("Following tweets from {rule} in {channel}.").format(
+                user=rule_tag, channel=channel.mention
+            )
+        )
+
+    @tweets_stream.command(name="unfollowrule")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def remove_rule_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel, rule_tag: str
+    ):
+        """
+        Remove all tweets from a specific stream rule to a channel.
+        """
+        async with self.config.channel(channel).followed_rules() as accounts:
+            if str(rule_tag) in accounts:
+                del accounts[rule_tag]
+        await self.config.channel(channel).guild_id.set(channel.guild.id)
+        await ctx.send(
+            _("Unfollowing tweets from {rule} in {channel}.").format(
+                user=rule_tag, channel=channel.mention
             )
         )
 

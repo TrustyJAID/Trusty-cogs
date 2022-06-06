@@ -276,18 +276,35 @@ class TweetsAPI:
         all_channels = await self.config.all_channels()
         tasks = []
         for channel_id, data in all_channels.items():
+            guild = self.bot.get_guild(data.get("guild_id", ""))
+            if guild is None:
+                continue
+            channel = guild.get_channel(int(channel_id))
+            if channel is None:
+                continue
             if str(user.id) in data.get("followed_accounts", {}):
-                guild = self.bot.get_guild(data.get("guild_id", ""))
-                if guild is None:
-                    continue
-                channel = guild.get_channel(int(channel_id))
-                if channel is None:
-                    continue
                 tasks.append(
                     self.post_tweet_status(
                         channel, to_send["embeds"], to_send["content"], tweet, user
                     )
                 )
+                continue
+            for rule in response.matching_rules:
+                if rule.tag in data.get("followed_rules", {}):
+                    tasks.append(
+                        self.post_tweet_status(
+                            channel, to_send["embeds"], to_send["content"], tweet, user
+                        )
+                    )
+                    continue
+            for phrase in data.get("followed_str", {}):
+                if phrase in tweet.text:
+                    tasks.append(
+                        self.post_tweet_status(
+                            channel, to_send["embeds"], to_send["content"], tweet, user
+                        )
+                    )
+                    continue
         await bounded_gather(*tasks, return_exceptions=True)
 
     async def post_tweet_status(
