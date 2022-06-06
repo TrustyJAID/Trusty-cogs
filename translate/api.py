@@ -23,7 +23,7 @@ log = logging.getLogger("red.trusty-cogs.Translate")
 FLAG_REGEX = re.compile(r"|".join(rf"{re.escape(f)}" for f in FLAGS.keys()))
 
 
-class FlagTranslation(Converter):
+class FlagTranslation(discord.app_commands.Transformer):
     """
     This will convert flags and languages to the correct code to be used by the API
 
@@ -33,8 +33,9 @@ class FlagTranslation(Converter):
 
     """
 
-    async def convert(self, ctx: commands.Context, argument: str) -> List[str]:
-        result = []
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> str:
+        result = ""
         if argument in FLAGS:
             result = FLAGS[argument]["code"].upper()
         else:
@@ -55,6 +56,21 @@ class FlagTranslation(Converter):
 
         return result
 
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, argument: str) -> str:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, argument)
+
+    async def autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[discord.app_commands.Choice]:
+        options = [
+            discord.app_commands.Choice(name=i["name"], value=i["code"])
+            for i in FLAGS.values()
+            if current.lower() in i["name"].lower() or current.lower() in i["code"].lower()
+        ]
+        return list(set(options))[:25]
+
 
 class GoogleTranslateAPI:
     config: Config
@@ -71,6 +87,56 @@ class GoogleTranslateAPI:
         self._key: Optional[str]
         self._guild_counter: Dict[int, Dict[str, int]]
         self._global_counter: Dict[str, int]
+
+    async def translate_from_message(
+        self, interaction: discord.Interaction, message: discord.Message
+    ):
+        if not await self._get_google_api_key():
+            await interaction.response.send_message(
+                _("The bot owner needs to set an api key first!"), ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True)
+        guild = interaction.guild
+        to_translate = None
+        if message.embeds != []:
+            if message.embeds[0].description:
+                to_translate = cast(str, message.embeds[0].description)
+        else:
+            to_translate = message.clean_content
+
+        if not to_translate:
+            return
+        target = str(interaction.locale).split("-")[0]
+        log.info(to_translate)
+        try:
+            detected_lang = await self.detect_language(to_translate)
+            await self.add_detect(guild)
+        except GoogleTranslateAPIError:
+            return
+        except Exception:
+            log.exception("Error detecting language")
+            return
+        original_lang = detected_lang[0][0]["language"]
+        if target == original_lang:
+            return
+        try:
+            translated_text = await self.translate_text(original_lang, target, to_translate)
+            await self.add_requests(guild, to_translate)
+        except Exception:
+            log.exception(f"Error translating message {guild=} {interaction.channel=}")
+            return
+        if not translated_text:
+            return
+        author = message.author
+        from_lang = detected_lang[0][0]["language"].upper()
+        to_lang = target.upper()
+        if from_lang == to_lang:
+            # don't post anything if the detected language is the same
+            return
+        translation = (translated_text, from_lang, to_lang)
+        em = await self.translation_embed(author, translation, interaction.user)
+        await interaction.followup.send(embed=em, ephemeral=True)
 
     async def cleanup_cache(self) -> None:
         while True:

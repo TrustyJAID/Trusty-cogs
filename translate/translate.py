@@ -37,7 +37,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
     """
 
     __author__ = ["Aziz", "TrustyJAID"]
-    __version__ = "2.4.0"
+    __version__ = "2.5.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -69,6 +69,9 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         self._save_loop = asyncio.create_task(self.save_usage())
         self._guild_counter = {}
         self._global_counter = {}
+        self.translate_ctx = discord.app_commands.ContextMenu(
+            name="Translate Message", callback=self.translate_from_message
+        )
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -83,7 +86,8 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         """
         return
 
-    async def init(self) -> None:
+    async def cog_load(self) -> None:
+        self.bot.tree.add_command(self.translate_ctx)
         try:
             key = await self.config.api_key()
         except AttributeError:
@@ -104,21 +108,19 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         for g_id, data in all_guilds.items():
             self._guild_counter[g_id] = data["count"]
 
-    @commands.command()
+    @commands.hybrid_group(fallback="text")
     async def translate(
         self,
         ctx: commands.Context,
         to_language: FlagTranslation,
         *,
-        message: Union[discord.Message, str],
+        text: str,
     ) -> None:
         """
         Translate messages with Google Translate
 
         `<to_language>` is the language you would like to translate
-        `<message>` is the message to translate, this can be words you want
-        to translate, a channelID-messageID from SHIFT + clicking a message and copying ID,
-        a message ID from the current channel, or message link
+        `<text>` is the text you want to translate.
         """
         if not await self._get_google_api_key():
             msg = _("The bot owner needs to set an api key first!")
@@ -127,33 +129,30 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         author = ctx.message.author
         requestor = ctx.message.author
         msg = ctx.message
-        if isinstance(message, discord.Message):
-            msg = message
-            author = message.author
-            message = message.clean_content
         try:
-            detected_lang = await self.detect_language(message)
+            detected_lang = await self.detect_language(text)
             await self.add_detect(ctx.guild)
         except GoogleTranslateAPIError as e:
             await ctx.send(str(e))
             return
         from_lang = detected_lang[0][0]["language"]
-        original_lang = detected_lang[0][0]["language"]
-        if to_language == original_lang:
-            return await ctx.send(
+        if to_language == from_lang:
+            await ctx.send(
                 _("I cannot translate `{from_lang}` to `{to}`").format(
                     from_lang=from_lang, to=to_language
                 )
             )
+            return
         try:
-            translated_text = await self.translate_text(original_lang, to_language, message)
-            await self.add_requests(ctx.guild, message)
+            translated_text = await self.translate_text(from_lang, to_language, text)
+            await self.add_requests(ctx.guild, text)
         except GoogleTranslateAPIError as e:
             await ctx.send(str(e))
             return
 
         if ctx.channel.permissions_for(ctx.me).embed_links:
             translation = (translated_text, from_lang, to_language)
+            log.info(translation)
             em = await self.translation_embed(author, translation, requestor)
             if version_info >= VersionInfo.from_str("3.4.6") and msg.channel.id == ctx.channel.id:
                 await ctx.send(embed=em, reference=msg, mention_author=False)
@@ -165,14 +164,14 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             else:
                 await ctx.send(translated_text)
 
-    @commands.group()
+    @translate.group(name="set")
     async def translateset(self, ctx: commands.Context) -> None:
         """
         Toggle the bot auto translating
         """
         pass
 
-    @translateset.command(name="stats")
+    @translate.command(name="stats")
     async def translate_stats(self, ctx: commands.Context, guild_id: Optional[int]):
         """
         Shows translation usage
@@ -203,7 +202,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             msg += tr_keys[key] + f" **{value}**\n"
         await ctx.maybe_send_embed(msg)
 
-    @translateset.group(aliases=["blocklist"])
+    @translate.group(name="blocklist", aliases=["blacklist"], with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def blacklist(self, ctx: commands.Context) -> None:
@@ -214,7 +213,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         """
         pass
 
-    @translateset.group(aliases=["allowlist"])
+    @translate.group(name="allowlist", aliases=["whitelist"], with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def whitelist(self, ctx: commands.Context) -> None:
@@ -225,7 +224,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         """
         pass
 
-    @whitelist.command(name="add")
+    @whitelist.command(name="add", with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def whitelist_add(
@@ -235,9 +234,10 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         Add a channel, user, or role to translation whitelist
         """
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _("You must supply 1 or more channels users or roles to be whitelisted.")
             )
+            return
         for obj in channel_user_role:
             if obj.id not in await self.config.guild(ctx.guild).whitelist():
                 async with self.config.guild(ctx.guild).whitelist() as whitelist:
@@ -247,7 +247,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
 
-    @whitelist.command(name="remove", aliases=["rem", "del"])
+    @whitelist.command(name="remove", aliases=["rem", "del"], with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def whitelist_remove(
@@ -257,12 +257,13 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         Remove a channel, user, or role from translation whitelist
         """
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _(
                     "You must supply 1 or more channels, users, "
                     "or roles to be removed from the whitelist"
                 )
             )
+            return
         for obj in channel_user_role:
             if obj.id in await self.config.guild(ctx.guild).whitelist():
                 async with self.config.guild(ctx.guild).whitelist() as whitelist:
@@ -272,7 +273,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
 
-    @whitelist.command(name="list")
+    @whitelist.command(name="list", with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def whitelist_list(self, ctx: commands.Context) -> None:
@@ -290,7 +291,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
             _("`{whitelisted}` are currently whitelisted.").format(whitelisted=whitelist_s)
         )
 
-    @blacklist.command(name="add")
+    @blacklist.command(name="add", with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def blacklist_add(
@@ -300,9 +301,10 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         Add a channel, user, or role to translation blacklist
         """
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _("You must supply 1 or more channels users or roles to be blacklisted.")
             )
+            return
         for obj in channel_user_role:
             if obj.id not in await self.config.guild(ctx.guild).blacklist():
                 async with self.config.guild(ctx.guild).blacklist() as blacklist:
@@ -312,7 +314,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
 
-    @blacklist.command(name="remove", aliases=["rem", "del"])
+    @blacklist.command(name="remove", aliases=["rem", "del"], with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def blacklist_remove(
@@ -322,12 +324,13 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         Remove a channel, user, or role from translation blacklist
         """
         if len(channel_user_role) < 1:
-            return await ctx.send(
+            await ctx.send(
                 _(
                     "You must supply 1 or more channels, users, "
                     "or roles to be removed from the blacklist"
                 )
             )
+            return
         for obj in channel_user_role:
             if obj.id in await self.config.guild(ctx.guild).blacklist():
                 async with self.config.guild(ctx.guild).blacklist() as blacklist:
@@ -337,7 +340,7 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         list_type = humanize_list([c.name for c in channel_user_role])
         await ctx.send(msg.format(list_type=list_type))
 
-    @blacklist.command(name="list")
+    @blacklist.command(name="list", with_app_command=False)
     @checks.mod_or_permissions(manage_messages=True)
     @commands.guild_only()
     async def blacklist_list(self, ctx: commands.Context) -> None:
@@ -458,3 +461,4 @@ class Translate(GoogleTranslateAPI, commands.Cog):
         self._clear_cache.cancel()
         self._save_loop.cancel()
         await self._save_usage_stats()
+        self.bot.tree.remove_command(self.translate_ctx.name, type=self.translate_ctx.type)

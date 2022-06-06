@@ -9,5 +9,4 @@ with open(Path(__file__).parent / "info.json") as fp:
 
 async def setup(bot):
     cog = Translate(bot)
-    await cog.init()
     await bot.add_cog(cog)
