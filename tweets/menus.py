@@ -15,6 +15,8 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import escape
 from redbot.vendored.discord.ext import menus
 
+from .tweets_api import EXPANSIONS, MEDIA_FIELDS, TWEET_FIELDS, USER_FIELDS
+
 log = logging.getLogger("red.Trusty-cogs.tweets")
 _ = Translator("Tweets", __file__)
 
@@ -40,12 +42,19 @@ class TweetPages(menus.PageSource):
     def __init__(self, **kwargs):
         self._page: int = 1
         self._index: int = 0
-        self._cache: List[tweepy.Status] = []
+        self._cache: List[tweepy.Tweet] = []
         self._checks: int = 0
         self._last_page: int = 0
-        self._api = kwargs.get("api")
+        self._api: tweepy.asynchronous.AsyncClient = kwargs.get("api")
         self._username: str = kwargs.get("username")
         self._last_searched: str = ""
+        self._user = None
+        self._next_page_token: Optional[str] = None
+        self._previous_page_token: Optional[str] = None
+        self._includes = None
+        self._meta = None
+        self._errors = None
+        self._data = None
 
     @property
     def index(self) -> int:
@@ -71,7 +80,7 @@ class TweetPages(menus.PageSource):
         if skip_prev:
             page = await self.prev(True)
         if not self._cache:
-            raise NoTweets
+            raise NoTweets()
         # log.info(page)
         self._last_page = page_number
         return page
@@ -127,19 +136,42 @@ class TweetPages(menus.PageSource):
     def is_paginating(self) -> bool:
         return True
 
-    def _get_twitter_statuses(
+    async def _get_twitter_statuses(
         self,
+        pagination_token: Optional[str] = None,
     ) -> List[tweepy.Status]:
 
         msg_list = []
+        if self._user is None:
+            log.info(f"Getting user ID for {self._username}")
+            resp = await self._api.get_user(username=self._username)
+            self._user = resp.data
+            log.info(f"{self._user}")
         try:
-            statuses = self._api.user_timeline(id=self._username, page=self._page)
-            if statuses:
-                for status in statuses:
-                    msg_list.append(status)
+            log.info(f"Getting tweets for {self._user.id}")
+            kwargs = {
+                "id": self._user.id,
+                "tweet_fields": TWEET_FIELDS,
+                "user_fields": USER_FIELDS,
+                "media_fields": MEDIA_FIELDS,
+                "expansions": EXPANSIONS,
+            }
+            if pagination_token is not None:
+                kwargs["pagination_token"] = pagination_token
+            resp = await self._api.get_users_tweets(**kwargs)
+            self._next_page_token = resp.meta.get("next_token", None)
+            self._previous_page_token = resp.meta.get("previous_token", None)
+            self._includes = resp.includes
+            self._meta = resp.meta
+            self._errors = resp.errors
+            self._data = resp.data
+            msg_list = resp.data
 
         except tweepy.TweepError:
+            log.exception("Error pulling tweets")
             raise
+        except Exception:
+            log.exception("Some other error is happening")
 
         return msg_list
 
@@ -154,90 +186,80 @@ class TweetPages(menus.PageSource):
         """
         # compare_date = datetime.utcnow().strftime("%Y-%m-%d")
         log.debug("Pulling tweets into the cache")
+        token = None
         if _next:
-            self._page += 1
+            token = self._next_page_token
         elif _prev:
-            self._page -= 1
+            token = self._previous_page_token
         try:
-            fake_task = functools.partial(
-                self._get_twitter_statuses,
-            )
-            loop = asyncio.get_running_loop()
-            task = loop.run_in_executor(None, fake_task)
-            msg_list = await asyncio.wait_for(task, timeout=60)
+            msg_list = await self._get_twitter_statuses(pagination_token=token)
             # log.debug(next(self._listing))
         except asyncio.TimeoutError:
             log.error("Timeout error pulling tweet statuses")
         except tweepy.TweepError:
-            log.debug("Error pulling twitter info")
+            log.error("Error pulling twitter info")
 
         self._cache = msg_list
         # return the games as a form of metadata about how the cache is changing
         return msg_list
 
-    async def format_page(self, menu: menus.MenuPages, status: tweepy.Status):
-        if not status:
+    async def get_user(self, user_id: int) -> tweepy.User:
+        for user in self._includes.get("users", []):
+            if user.id == user_id:
+                return user
+        resp = await self._api.get_user(id=user_id, user_fields=USER_FIELDS)
+        return resp.data
+
+    async def get_tweet(self, tweet_id: int) -> tweepy.Tweet:
+        for tweet in self._includes.get("tweets", []):
+            if tweet_id == tweet.id:
+                return tweet
+        resp = await self._api.get_tweet(id=tweet_id, tweet_fields=TWEET_FIELDS)
+        return resp.data
+
+    async def get_media_url(self, media_key: str) -> Optional[tweepy.Media]:
+        for media in self._includes.get("media", []):
+            if media_key == media.media_key:
+                return media
+        return None
+
+    async def format_page(self, menu: menus.MenuPages, tweet: tweepy.Tweet):
+        if not tweet:
             return discord.Embed(title="Nothing")
-        username = status.user.screen_name
-        post_url = "https://twitter.com/{}/status/{}".format(status.user.screen_name, status.id)
+        embeds = []
+        user_id = tweet.author_id
+        author = await self.get_user(user_id)
+        username = author.username
+        post_url = "https://twitter.com/{}/status/{}".format(username, tweet.id)
         em = discord.Embed(
-            colour=discord.Colour(value=int(status.user.profile_link_color, 16)),
             url=post_url,
-            timestamp=status.created_at,
+            timestamp=tweet.created_at,
         )
         em.set_footer(text=f"@{username}")
-        if hasattr(status, "retweeted_status"):
+        if hasattr(tweet, "retweeted_status"):
             em.set_author(
-                name=f"{status.user.name} Retweeted {status.retweeted_status.user.name}",
+                name=f"{username} Retweeted",
                 url=post_url,
-                icon_url=status.user.profile_image_url,
+                icon_url=author.profile_image_url,
             )
-            status = status.retweeted_status
-            em.set_footer(text=f"@{username} RT @{status.user.screen_name}")
-            if hasattr(status, "extended_entities"):
-                em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
-            if hasattr(status, "extended_tweet"):
-                text = status.extended_tweet["full_text"]
-                if "media" in status.extended_tweet["entities"]:
-                    img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
-                    em.set_image(url=img)
-            else:
-                text = await menu.cog.replace_short_url(status)
+            em.set_footer(text=f"@{username} RT ")
+            text = await menu.cog.replace_short_url(tweet)
         else:
-            em.set_author(
-                name=status.user.name, url=post_url, icon_url=status.user.profile_image_url
-            )
-            if hasattr(status, "extended_entities"):
-                em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
-            if hasattr(status, "extended_tweet"):
-                text = status.extended_tweet["full_text"]
-                if "media" in status.extended_tweet["entities"]:
-                    img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
-                    em.set_image(url=img)
-            else:
-                text = await menu.cog.replace_short_url(status)
-        if status.in_reply_to_screen_name:
-            try:
-                loop = asyncio.get_running_loop()
-                task = loop.run_in_executor(None, self._get_reply, [status.in_reply_to_status_id])
-                msg_list = await asyncio.wait_for(task, timeout=60)
-                if msg_list:
-                    # log.debug(reply)
-                    reply = msg_list[0]
-                    in_reply_to = _("In reply to {name} (@{screen_name})").format(
-                        name=reply.user.name, screen_name=reply.user.screen_name
-                    )
-                    reply_text = unescape(await menu.cog.replace_short_url(reply))
-                    if hasattr(reply, "extended_tweet"):
-                        reply_text = unescape(reply.extended_tweet["full_text"])
-                    if hasattr(reply, "extended_entities") and not em.image:
-                        em.set_image(url=reply.extended_entities["media"][0]["media_url_https"])
-                    em.add_field(name=in_reply_to, value=reply_text)
-            except IndexError:
-                log.debug("Error grabbing in reply to tweet.", exc_info=True)
-
+            em.set_author(name=author.name, url=post_url, icon_url=author.profile_image_url)
+            text = tweet.text
         em.description = escape(unescape(text), formatting=True)
-        return {"embed": em, "content": str(post_url)}
+        if tweet.attachments:
+            for media_key in tweet.attachments.get("media_keys", []):
+                copy = em.copy()
+                media = await self.get_media_url(media_key)
+                if media is None:
+                    continue
+                copy.set_image(url=media.url)
+                embeds.append(copy)
+
+        if not embeds:
+            embeds.append(em)
+        return {"embeds": embeds, "content": str(post_url)}
 
     def _get_reply(self, ids: List[int]) -> tweepy.Status:
         return self._api.lookup_statuses(ids)
@@ -387,11 +409,11 @@ class TweetsMenu(discord.ui.View):
         self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
         self.last_item = SkipForwardkButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
 
     @property
     def source(self):
@@ -400,9 +422,14 @@ class TweetsMenu(discord.ui.View):
     async def on_timeout(self):
         await self.message.edit(view=None)
 
+    async def on_error(
+        self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
+    ):
+        log.exception(error)
+
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
-        await self._source._prepare_once()
+        await self._source.prepare()
         self.message = await self.send_initial_message(ctx, ctx.channel)
 
     async def _get_kwargs_from_page(self, page):
@@ -424,6 +451,7 @@ class TweetsMenu(discord.ui.View):
         try:
             page = await self._source.get_page(self.page_start)
         except NoTweets:
+            log.exception("No tweets found")
             await channel.send(_("No twitter account with that username could be found."))
             return
         kwargs = await self._get_kwargs_from_page(page)
@@ -516,11 +544,11 @@ class BaseMenu(discord.ui.View):
         self.first_item = FirstItemButton(discord.ButtonStyle.grey, 0)
         self.last_item = LastItemButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
-        self.add_item(self.stop_button)
 
     @property
     def source(self):

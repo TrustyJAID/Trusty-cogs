@@ -1,8 +1,7 @@
 import asyncio
-import functools
 import logging
 from html import unescape
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import discord
 import tweepy
@@ -12,13 +11,54 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import bounded_gather
 from redbot.core.utils.chat_formatting import escape
-from tweepy.asynchronous import AsyncStream
+from tweepy.asynchronous import AsyncStreamingClient
 
 from .tweet_entry import TweetEntry
 
 _ = Translator("Tweets", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Tweets")
+
+USER_FIELDS = [
+    "created_at",
+    "description",
+    "entities",
+    "public_metrics",
+    "profile_image_url",
+    "location",
+    "pinned_tweet_id",
+    "protected",
+    "url",
+    "verified",
+]
+TWEET_FIELDS = [
+    "attachments",
+    "author_id",
+    "created_at",
+    "entities",
+    "in_reply_to_user_id",
+    "lang",
+    "public_metrics",
+    "possibly_sensitive",
+    "referenced_tweets",
+]
+EXPANSIONS = [
+    "author_id",
+    "referenced_tweets.id",
+    "entities.mentions.username",
+    "referenced_tweets.id.author_id",
+    "attachments.media_keys",
+]
+MEDIA_FIELDS = [
+    "duration_ms",
+    "height",
+    "media_key",
+    "preview_image_url",
+    "type",
+    "url",
+    "width",
+    "alt_text",
+]
 
 
 class MissingTokenError(Exception):
@@ -30,28 +70,23 @@ class MissingTokenError(Exception):
         )
 
 
-class TweetListener(AsyncStream):
+class TweetListener(AsyncStreamingClient):
     def __init__(
         self,
-        consumer_key: str,
-        consumer_secret: str,
-        access_token: str,
-        access_token_secret: str,
+        bearer_token: str,
         bot: Red,
     ):
         super().__init__(
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret,
+            bearer_token=bearer_token,
+            wait_on_rate_limit=True,
         )
         self.bot = bot
 
-    async def on_status(self, status: tweepy.models.Status) -> None:
-        self.bot.dispatch("tweet_status", status)
+    async def on_response(self, response: tweepy.StreamResponse) -> None:
+        self.bot.dispatch("tweet", response)
 
-    async def on_error(self, status_code: int) -> None:
-        msg = _("A tweet stream error has occured! ") + str(status_code)
+    async def on_errors(self, errors: dict) -> None:
+        msg = _("A tweet stream error has occured! ") + str(errors)
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
 
@@ -79,61 +114,60 @@ class TweetsAPI:
 
     async def start_stream(self) -> None:
         await self.bot.wait_until_red_ready()
-        api = None
         base_sleep = 300
         count = 1
-        tokens = await self.bot.get_shared_api_tokens("twitter")
         while self.run_stream:
+            tokens = await self.bot.get_shared_api_tokens("twitter")
             if not tokens:
                 # Don't run the loop until tokens are set
                 await asyncio.sleep(base_sleep)
                 continue
-            tweet_list = list(self.accounts.keys())
-            if not tweet_list:
-                await asyncio.sleep(base_sleep)
-                continue
             # if not api:
             # api = await self.authenticate()
-            if self.mystream is None:
-                await self._start_stream(tweet_list, api)
-            elif self.mystream and (self.stream_task.cancelled() or self.stream_task.done()):
+            bearer_token = tokens.get("bearer_token", None)
+            if bearer_token is None:
+                await asyncio.sleep(base_sleep)
+                continue
+            self.mystream = TweetListener(bearer_token=bearer_token, bot=self.bot)
+            if self.stream_task is None:
+                await self._start_stream()
+            if self.stream_task and (self.stream_task.cancelled() or self.stream_task.done()):
                 count += 1
-                await self._start_stream(tweet_list, api)
+                await self._start_stream()
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
             await asyncio.sleep(base_sleep * count)
 
-    async def _start_stream(self, tweet_list: List[str], api: tweepy.API) -> None:
-        keys = await self.bot.get_shared_api_tokens("twitter")
-        consumer = keys.get("consumer_key")
-        consumer_secret = keys.get("consumer_secret")
-        access_token = keys.get("access_token")
-        access_secret = keys.get("access_secret")
+    async def _start_stream(self) -> None:
         try:
-            self.mystream = TweetListener(
-                consumer, consumer_secret, access_token, access_secret, self.bot
+            self.stream_task = self.mystream.filter(
+                expansions=EXPANSIONS,
+                media_fields=MEDIA_FIELDS,
+                tweet_fields=TWEET_FIELDS,
+                user_fields=USER_FIELDS,
             )
-            self.stream_task = self.mystream.filter(follow=tweet_list)
         except Exception:
-            log.error("Error starting stream", exc_info=True)
+            log.exception("Error starting stream")
 
     async def authenticate(self) -> tweepy.API:
         """Authenticate with Twitter's API"""
         keys = await self.bot.get_shared_api_tokens("twitter")
+        bearer_token = keys.get("bearer_token")
         consumer = keys.get("consumer_key")
         consumer_secret = keys.get("consumer_secret")
         access_token = keys.get("access_token")
         access_secret = keys.get("access_secret")
-        keys = [consumer, consumer_secret, access_token, access_secret]
+        keys = [bearer_token, consumer, consumer_secret, access_token, access_secret]
         if any([k is None for k in keys]):
             raise MissingTokenError()
-        auth = tweepy.OAuthHandler(consumer, consumer_secret)
-        auth.set_access_token(access_token, access_secret)
-        return tweepy.API(
-            auth,
+        # auth = tweepy.OAuthHandler(consumer, consumer_secret)
+        # auth.set_access_token(access_token, access_secret)
+        return tweepy.asynchronous.AsyncClient(
+            bearer_token=bearer_token,
+            consumer_key=consumer,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_secret,
             wait_on_rate_limit=True,
-            retry_count=10,
-            retry_delay=5,
-            retry_errors=[500, 502, 503, 504],
         )
 
     async def autotweet_restart(self) -> None:
@@ -174,179 +208,114 @@ class TweetsAPI:
             return
         await channel.send(str(error) + help_msg)
 
-    async def replace_short_url(self, status: tweepy.models.Status) -> str:
-        """
-        Replaces the content of a status with the full URL of the link.
-        """
-        og_text = status.text
-        if hasattr(status, "entities"):
-            entity_media = status.entities.get("media", [])
-            for media in entity_media:
-                media_url = media.get("url")
-                full_url = media.get("expanded_url")
-                if media_url and full_url:
-                    og_text = og_text.replace(media_url, full_url)
-            entity_urls = status.entities.get("urls", [])
-            for url in entity_urls:
-                media_url = url.get("url")
-                full_url = url.get("expanded_url")
-                if media_url and full_url:
-                    og_text = og_text.replace(media_url, full_url)
-        if hasattr(status, "extended_entities"):
-            extended_media = status.extended_entities.get("media", [])
-            for media in extended_media:
-                media_url = media.get("url")
-                full_url = media.get("expanded_url")
-                if media_url and full_url:
-                    og_text = og_text.replace(media_url, full_url)
-        return og_text
+    async def get_user(self, user_id: int, includes: Optional[dict]) -> tweepy.User:
+        if includes:
+            for user in includes.get("users", []):
+                if user.id == user_id:
+                    return user
+        api = await self.authenticate()
+        resp = await api.get_user(id=user_id, user_fields=USER_FIELDS)
+        return resp.data
 
-    async def build_tweet_embed(self, status: tweepy.models.Status) -> discord.Embed:
-        username = status.user.screen_name
-        post_url = "https://twitter.com/{}/status/{}".format(status.user.screen_name, status.id)
+    async def get_tweet(self, tweet_id: int, includes: Optional[dict]) -> tweepy.Tweet:
+        if includes:
+            for tweet in includes.get("tweets", []):
+                if tweet_id == tweet.id:
+                    return tweet
+        api = await self.authenticate()
+        resp = await api.get_tweet(id=tweet_id, tweet_fields=TWEET_FIELDS)
+        return resp.data
+
+    async def get_media_url(
+        self, media_key: str, includes: Optional[dict]
+    ) -> Optional[tweepy.Media]:
+        if includes:
+            for media in includes.get("media", []):
+                if media_key == media.media_key:
+                    return media
+        return None
+
+    async def build_tweet_embed(
+        self, response: tweepy.StreamResponse
+    ) -> Dict[str, Union[List[discord.Embed], str]]:
+        embeds = []
+        tweet = response.data
+        includes = response.includes
+
+        user_id = tweet.author_id
+        author = await self.get_user(user_id, includes)
+        username = author.username
+        post_url = "https://twitter.com/{}/status/{}".format(username, tweet.id)
         em = discord.Embed(
-            colour=discord.Colour(value=int(status.user.profile_link_color, 16)),
             url=post_url,
-            timestamp=status.created_at,
+            timestamp=tweet.created_at,
         )
         em.set_footer(text=f"@{username}")
-        if hasattr(status, "retweeted_status"):
-            em.set_author(
-                name=f"{status.user.name} Retweeted {status.retweeted_status.user.name}",
-                url=post_url,
-                icon_url=status.user.profile_image_url,
-            )
-            status = status.retweeted_status
-            em.set_footer(text=f"@{username} RT @{status.user.screen_name}")
-            if hasattr(status, "extended_entities"):
-                em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
-            if hasattr(status, "extended_tweet"):
-                text = status.extended_tweet["full_text"]
-                if "media" in status.extended_tweet["entities"]:
-                    img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
-                    em.set_image(url=img)
-            else:
-                text = await self.replace_short_url(status)
-        else:
-            em.set_author(
-                name=status.user.name, url=post_url, icon_url=status.user.profile_image_url
-            )
-            if hasattr(status, "extended_entities"):
-                em.set_image(url=status.extended_entities["media"][0]["media_url_https"])
-            if hasattr(status, "extended_tweet"):
-                text = status.extended_tweet["full_text"]
-                if "media" in status.extended_tweet["entities"]:
-                    img = status.extended_tweet["entities"]["media"][0]["media_url_https"]
-                    em.set_image(url=img)
-            else:
-                text = await self.replace_short_url(status)
-        if status.in_reply_to_screen_name:
-            api = await self.authenticate()
-            try:
-                fake_task = functools.partial(
-                    api.lookup_statuses, id=[status.in_reply_to_status_id]
-                )
-                loop = asyncio.get_running_loop()
-                task = loop.run_in_executor(None, fake_task)
-                reply = await asyncio.wait_for(task, timeout=10)
-                # log.debug(reply)
-                in_reply_to = _("In reply to {name} (@{screen_name})").format(
-                    name=reply[0].user.name, screen_name=reply[0].user.screen_name
-                )
-                reply_text = unescape(await self.replace_short_url(reply))
-                if hasattr(reply, "extended_tweet"):
-                    reply_text = unescape(reply.extended_tweet["full_text"])
-                if hasattr(reply, "extended_entities") and not em.image:
-                    em.set_image(url=reply.extended_entities["media"][0]["media_url_https"])
-                em.add_field(name=in_reply_to, value=reply_text)
-            except IndexError:
-                log.debug("Error grabbing in reply to tweet.", exc_info=True)
-            except asyncio.TimeoutError:
-                pass
-            except Exception:
-                log.exception("Error grabbing tweet reply.")
-
+        em.set_author(name=author.name, url=post_url, icon_url=author.profile_image_url)
+        text = tweet.text
         em.description = escape(unescape(text), formatting=True)
+        if tweet.attachments:
+            for media_key in tweet.attachments.get("media_keys", []):
+                copy = em.copy()
+                media = await self.get_media_url(media_key, includes)
+                if media is None:
+                    continue
+                copy.set_image(url=media.url)
+                embeds.append(copy)
 
-        return em
+        if not embeds:
+            embeds.append(em)
+        return {"embeds": embeds, "content": str(post_url)}
 
     @commands.Cog.listener()
-    async def on_tweet_status(self, status: tweepy.models.Status) -> None:
-        """Posts the tweets to the channel"""
-        username = status.user.screen_name
-        user_id = status.user.id
-
-        if str(user_id) not in self.accounts:
-            return
-        em = await self.build_tweet_embed(status)
-        # channel_list = account.channel
+    async def on_tweet(self, response: tweepy.StreamResponse) -> None:
+        log.info(response)
+        tweet = response.data
+        user = await self.get_user(tweet.author_id, response.includes)
+        to_send = await self.build_tweet_embed(response)
+        all_channels = await self.config.all_channels()
         tasks = []
-        channels = self.accounts[str(user_id)].channels.copy()
-        for channel_id, data in channels.items():
-            if data.guild is None:
-                channel_send = self.bot.get_channel(int(channel_id))
-                if channel_send is None:
-                    await self.del_account(channel_id, user_id, username)
+        for channel_id, data in all_channels.items():
+            if str(user.id) in data.get("followed_accounts", {}):
+                guild = self.bot.get_guild(data.get("guild_id", ""))
+                if guild is None:
                     continue
-                self.accounts[str(user_id)].channels[str(channel_id)].guild = channel_send.guild.id
-                await self.save_accounts()
-            else:
-                guild = self.bot.get_guild(data.guild)
-                if not guild:
-                    await self.del_account(channel_id, user_id, username)
+                channel = guild.get_channel(int(channel_id))
+                if channel is None:
                     continue
-                channel_send = guild.get_channel(int(channel_id))
-
-            if channel_send is None:
-                await self.del_account(channel_id, user_id, username)
-                continue
-            if channel_send.guild.me.is_timed_out():
-                continue
-            chan_perms = channel_send.permissions_for(channel_send.guild.me)
-            if not chan_perms.send_messages and not chan_perms.manage_webhooks:
-                # remove channels we don't have permission to send in
-                await self.del_account(channel_id, user_id, username)
-                continue
-            if hasattr(status, "retweeted_status") and not data.retweets:
-                continue
-            if status.in_reply_to_screen_name and not data.replies:
-                continue
-            tasks.append(self.post_tweet_status(channel_send, em, status, data.embeds))
+                tasks.append(
+                    self.post_tweet_status(
+                        channel, to_send["embeds"], to_send["content"], tweet, user
+                    )
+                )
         await bounded_gather(*tasks, return_exceptions=True)
 
     async def post_tweet_status(
         self,
-        channel_send: discord.TextChannel,
-        em: discord.Embed,
-        status: tweepy.models.Status,
-        use_custom_embed: bool = True,
+        channel: discord.TextChannel,
+        embeds: List[discord.Embed],
+        content: str,
+        tweet: tweepy.Tweet,
+        user: tweepy.User,
     ):
-        username = status.user.screen_name
-        post_url = f"https://twitter.com/{status.user.screen_name}/status/{status.id}"
         if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, channel_send.guild):
+            if await self.bot.cog_disabled_in_guild(self, channel.guild):
                 return
         try:
-            if channel_send.permissions_for(channel_send.guild.me).embed_links:
-                if use_custom_embed:
-                    await channel_send.send(post_url, embed=em)
-                else:
-                    await channel_send.send(post_url)
-            elif channel_send.permissions_for(channel_send.guild.me).manage_webhooks:
+            if channel.permissions_for(channel.guild.me).embed_links:
+                await channel.send(content, embeds=embeds)
+            elif channel.permissions_for(channel.guild.me).manage_webhooks:
                 webhook = None
-                for hook in await channel_send.webhooks():
-                    if hook.name == channel_send.guild.me.name:
+                for hook in await channel.webhooks():
+                    if hook.name == channel.guild.me.name:
                         webhook = hook
                 if webhook is None:
-                    webhook = await channel_send.create_webhook(name=channel_send.guild.me.name)
-                avatar = status.user.profile_image_url
-                if use_custom_embed:
-                    await webhook.send(post_url, username=username, avatar_url=avatar, embed=em)
-                else:
-                    await webhook.send(post_url, username=username, avatar_url=avatar)
+                    webhook = await channel.create_webhook(name=channel.guild.me.name)
+                avatar = user.profile_image_url
+                await webhook.send(
+                    content, username=user.username, avatar_url=avatar, embeds=embeds
+                )
             else:
-                await channel_send.send(post_url)
+                await channel.send(content)
         except Exception:
-            log.exception(
-                f"Could not post a tweet in {repr(channel_send)} for account {status.user.screen_name}"
-            )
+            log.exception(f"Could not post a tweet in {repr(channel)} for account {user}")
