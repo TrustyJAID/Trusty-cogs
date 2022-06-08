@@ -508,6 +508,8 @@ class TweetsMenu(discord.ui.View):
         skip_prev: bool = False,
         interaction: discord.Interaction,
     ) -> None:
+        if skip_next or skip_prev:
+            await interaction.response.defer()
         try:
             page = await self._source.get_page(
                 page_number, skip_next=skip_next, skip_prev=skip_prev
@@ -529,7 +531,10 @@ class TweetsMenu(discord.ui.View):
                     view=self,
                 )
                 return
-        await interaction.response.edit_message(**kwargs, view=self)
+        if interaction.response.is_done():
+            await interaction.followup.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         try:
