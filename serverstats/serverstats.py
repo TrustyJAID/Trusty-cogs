@@ -91,9 +91,6 @@ class ServerStats(commands.GroupCog):
 
         await BaseView(
             source=AvatarPages(members=members),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
         ).start(ctx=ctx)
 
@@ -783,11 +780,7 @@ class ServerStats(commands.GroupCog):
         if msg_list != []:
             await BaseView(
                 source=ListPages(pages=msg_list),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)
         else:
             await ctx.send(_("No one was found to be inactive in this time."))
@@ -1081,11 +1074,7 @@ class ServerStats(commands.GroupCog):
                     embed_list.append(msg)
             await BaseView(
                 source=ListPages(pages=embed_list),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)
 
     @commands.command(hidden=True)
@@ -1112,11 +1101,7 @@ class ServerStats(commands.GroupCog):
             msg_list.append(msg)
         await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     @commands.command(hidden=True)
@@ -1143,11 +1128,7 @@ class ServerStats(commands.GroupCog):
             msg_list.append(msg)
         await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     @commands.hybrid_group()
@@ -1320,11 +1301,7 @@ class ServerStats(commands.GroupCog):
             await asyncio.sleep(0.1)
         await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     @commands.command()
@@ -1445,9 +1422,6 @@ class ServerStats(commands.GroupCog):
 
         await BaseView(
             source=GuildPages(guilds=guilds),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=page,
             ctx=ctx,
@@ -1470,9 +1444,6 @@ class ServerStats(commands.GroupCog):
                 page = ctx.bot.guilds.index(ctx.guild)
         await BaseView(
             source=GuildPages(guilds=guilds),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
             page_start=page,
         ).start(ctx=ctx)
@@ -1522,11 +1493,7 @@ class ServerStats(commands.GroupCog):
                 msg_list.append(page)
         await BaseView(
             source=ListPages(pages=msg_list),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     async def check_highest(self, data):
@@ -1569,11 +1536,7 @@ class ServerStats(commands.GroupCog):
                 i += 1
         await BaseView(
             source=ListPages(pages=pages),
-            delete_message_after=False,
-            clear_reactions_after=True,
-            timeout=60,
             cog=self,
-            page_start=0,
         ).start(ctx=ctx)
 
     async def get_server_stats(
@@ -1879,9 +1842,5 @@ class ServerStats(commands.GroupCog):
         else:
             await BaseView(
                 source=ListPages(pages=emoji_embeds),
-                delete_message_after=False,
-                clear_reactions_after=True,
-                timeout=60,
                 cog=self,
-                page_start=0,
             ).start(ctx=ctx)

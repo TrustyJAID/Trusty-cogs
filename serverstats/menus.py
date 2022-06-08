@@ -196,7 +196,7 @@ class BaseView(discord.ui.View):
         cog: commands.Cog,
         clear_reactions_after: bool = True,
         delete_message_after: bool = False,
-        timeout: int = 60,
+        timeout: int = 180,
         message: discord.Message = None,
         page_start: int = 0,
         **kwargs: Any,
