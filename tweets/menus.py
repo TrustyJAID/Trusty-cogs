@@ -317,7 +317,10 @@ class StopButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.view.stop()
-        await self.view.message.delete()
+        if interaction.message.flags.ephemeral:
+            await interaction.response.edit_message(view=None)
+            return
+        await interaction.message.delete()
 
 
 class ForwardButton(discord.ui.Button):
