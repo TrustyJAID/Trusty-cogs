@@ -14,7 +14,7 @@ _ = Translator("serverstats", __file__)
 
 
 class AvatarPages(menus.ListPageSource):
-    def __init__(self, members: List[discord.Member]):
+    def __init__(self, members: List[discord.abc.User]):
         super().__init__(members, per_page=1)
         self.use_display_avatar: bool = True
 
@@ -95,7 +95,10 @@ class StopButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         self.view.stop()
-        await self.view.message.delete()
+        if interaction.message.flags.ephemeral:
+            await interaction.response.edit_message(view=None)
+            return
+        await interaction.message.delete()
 
 
 class ForwardButton(discord.ui.Button):
@@ -109,9 +112,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page + 1, interaction)
 
 
 class BackButton(discord.ui.Button):
@@ -125,9 +126,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page - 1, interaction)
 
 
 class LastItemButton(discord.ui.Button):
@@ -143,9 +142,7 @@ class LastItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction)
 
 
 class FirstItemButton(discord.ui.Button):
@@ -161,9 +158,7 @@ class FirstItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction)
 
 
 class LeaveGuildButton(discord.ui.Button):
@@ -246,19 +241,18 @@ class BaseView(discord.ui.View):
         await self.message.edit(view=None)
 
     async def start(self, ctx: commands.Context):
-        await self.send_initial_message(ctx, ctx.channel)
+        await self.send_initial_message(ctx)
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
         This implementation shows the first page of the source.
         """
-        if self.ctx is None:
-            self.ctx = ctx
+        self.ctx = ctx
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        self.message = await channel.send(**kwargs, view=self)
+        self.message = await ctx.send(**kwargs, view=self)
         return self.message
 
     async def _get_kwargs_from_page(self, page):
@@ -270,35 +264,30 @@ class BaseView(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs, view=self)
+        await interaction.response.edit_message(**kwargs, view=self)
 
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
         if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True

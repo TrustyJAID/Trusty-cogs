@@ -24,13 +24,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
-from .converters import (
-    ChannelConverter,
-    FuzzyMember,
-    GuildConverter,
-    MultiGuildConverter,
-    PermissionConverter,
-)
+from .converters import GuildConverter, MultiGuildConverter, PermissionConverter
 from .menus import AvatarPages, BaseView, GuildPages, ListPages
 
 _ = Translator("ServerStats", __file__)
@@ -38,7 +32,7 @@ log = logging.getLogger("red.trusty-cogs.ServerStats")
 
 
 @cog_i18n(_)
-class ServerStats(commands.Cog):
+class ServerStats(commands.GroupCog):
     """
     Gather useful information about servers the bot is in
     A lot of commands are bot owner only
@@ -84,14 +78,16 @@ class ServerStats(commands.Cog):
             if save:
                 await self.config.guild_from_id(guild_id).set(data)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
-    async def avatar(self, ctx: commands.Context, *, members: Optional[FuzzyMember]):
+    async def avatar(self, ctx: commands.Context, *, member: Optional[discord.Member]):
         """
         Display a users avatar in chat
         """
-        if members is None:
+        if member is None:
             members = [ctx.author]
+        else:
+            members = [member]
 
         await BaseView(
             source=AvatarPages(members=members),
@@ -346,16 +342,14 @@ class ServerStats(commands.Cog):
         except Exception:
             log.error(f"Error creating guild embed for old guild ID {guild.id}", exc_info=True)
 
-    @commands.command()
-    async def emoji(
-        self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]
-    ) -> None:
+    @commands.hybrid_command()
+    async def emoji(self, ctx: commands.Context, emoji: str) -> None:
         """
         Post a large size emojis in chat
         """
         await ctx.channel.typing()
-        if type(emoji) in [discord.PartialEmoji, discord.Emoji]:
-            d_emoji = cast(discord.Emoji, emoji)
+        d_emoji = discord.PartialEmoji.from_str(emoji)
+        if d_emoji.is_custom_emoji():
             ext = "gif" if d_emoji.animated else "png"
             url = "https://cdn.discordapp.com/emojis/{id}.{ext}?v=1".format(id=d_emoji.id, ext=ext)
             filename = "{name}.{ext}".format(name=d_emoji.name, ext=ext)
@@ -378,7 +372,7 @@ class ServerStats(commands.Cog):
         file = discord.File(image, filename=filename)
         await ctx.send(file=file)
 
-    @commands.command()
+    @commands.hybrid_command()
     async def botstats(self, ctx: commands.Context) -> None:
         """Display stats about the bot"""
         async with ctx.typing():
@@ -416,7 +410,7 @@ class ServerStats(commands.Cog):
         else:
             await ctx.send(msg)
 
-    @commands.command()
+    @commands.hybrid_command()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def topic(
@@ -442,7 +436,7 @@ class ServerStats(commands.Cog):
         )
         await ctx.tick()
 
-    @commands.group()
+    @commands.hybrid_group()
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channeledit(self, ctx: commands.Context) -> None:
@@ -453,7 +447,11 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_name(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], *, name: str
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        *,
+        name: str,
     ) -> None:
         """Edit a channels name"""
         if not channel:
@@ -467,7 +465,10 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_position(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], position: int
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        position: int,
     ) -> None:
         """Edit a channels position"""
         if not channel:
@@ -485,7 +486,10 @@ class ServerStats(commands.Cog):
     @checks.mod_or_permissions(manage_channels=True)
     @checks.bot_has_permissions(manage_channels=True)
     async def channel_sync(
-        self, ctx: commands.Context, channel: Optional[ChannelConverter], toggle: bool
+        self,
+        ctx: commands.Context,
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
+        toggle: bool,
     ) -> None:
         """Set whether or not to sync permissions with the channels Category"""
         if not channel:
@@ -565,14 +569,16 @@ class ServerStats(commands.Cog):
             return
         await ctx.tick()
 
-    @channeledit.command(name="permissions", aliases=["perms", "permission"])
+    @channeledit.command(
+        name="permissions", aliases=["perms", "permission"], with_app_command=False
+    )
     @checks.mod_or_permissions(manage_permissions=True)
     @checks.bot_has_permissions(manage_permissions=True)
     async def edit_channel_perms(
         self,
         ctx: commands.Context,
         permission: PermissionConverter,
-        channel: Optional[ChannelConverter],
+        channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel],
         true_or_false: Optional[bool],
         *roles_or_users: Union[discord.Member, discord.Role, str],
     ) -> None:
@@ -616,20 +622,22 @@ class ServerStats(commands.Cog):
             not channel.permissions_for(ctx.author).manage_permissions
             or not channel.permissions_for(ctx.author).manage_channels
         ):
-            return await ctx.send(
+            await ctx.send(
                 _("You do not have the correct permissions to edit {channel}.").format(
                     channel=channel.mention
                 )
             )
+            return
         if (
             not channel.permissions_for(ctx.me).manage_permissions
             or not channel.permissions_for(ctx.author).manage_channels
         ):
-            return await ctx.send(
+            await ctx.send(
                 _("I do not have the correct permissions to edit {channel}.").format(
                     channel=channel.mention
                 )
             )
+            return
         targets = list(roles_or_users)
         for r in roles_or_users:
             if isinstance(r, str):
@@ -639,9 +647,10 @@ class ServerStats(commands.Cog):
                 else:
                     targets.remove(r)
         if not targets:
-            return await ctx.send(
+            await ctx.send(
                 _("You need to provide a role or user you want to edit permissions for")
             )
+            return
         overs = channel.overwrites
         for target in targets:
             if target in overs:
@@ -665,7 +674,7 @@ class ServerStats(commands.Cog):
             )
         except Exception:
             log.exception(f"Error editing permissions in channel {channel.name}")
-            return await ctx.send(_("There was an issue editing permissions on that channel."))
+            await ctx.send(_("There was an issue editing permissions on that channel."))
 
     async def ask_for_invite(self, ctx: commands.Context) -> Optional[str]:
         """
@@ -734,7 +743,8 @@ class ServerStats(commands.Cog):
         List the users who have not talked in x days
         """
         if days < 1:
-            return await ctx.send(_("You must provide a value of more than 0 days."))
+            await ctx.send(_("You must provide a value of more than 0 days."))
+            return
         member_list = await self.get_members_since(ctx, days, role)
         x = [member_list[i : i + 10] for i in range(0, len(member_list), 10)]
         msg_list = []
@@ -959,11 +969,9 @@ class ServerStats(commands.Cog):
         if not is_cheater:
             await ctx.send(_("Not a cheater"))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def whois(
-        self, ctx: commands.Context, *, user_id: Union[int, discord.Member, discord.User]
-    ) -> None:
+    async def whois(self, ctx: commands.Context, *, user_id: discord.User) -> None:
         """
         Display servers a user shares with the bot
 
@@ -971,7 +979,8 @@ class ServerStats(commands.Cog):
         """
         async with ctx.typing():
             if not user_id:
-                return await ctx.send(_("You need to supply a user ID for this to work properly."))
+                await ctx.send(_("You need to supply a user ID for this to work properly."))
+                return
             if isinstance(user_id, int):
                 try:
                     member = await self.bot.fetch_user(user_id)
@@ -1141,7 +1150,7 @@ class ServerStats(commands.Cog):
             page_start=0,
         ).start(ctx=ctx)
 
-    @commands.group()
+    @commands.hybrid_group()
     @checks.admin_or_permissions(manage_guild=True)
     @commands.bot_has_permissions(manage_guild=True)
     async def guildedit(self, ctx: commands.Context) -> None:
@@ -1249,7 +1258,7 @@ class ServerStats(commands.Cog):
             return await ctx.send(_("I could not edit the servers afk timeout."))
         await ctx.send(_("Server AFK timeout set to {timeout} seconds.").format(timeout=timeout))
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
@@ -1369,7 +1378,9 @@ class ServerStats(commands.Cog):
             await ctx.send(_("Okay, not leaving {guild}.").format(guild=guild.name))
 
     @staticmethod
-    async def get_guild_invite(guild: discord.Guild, max_age: int = 86400) -> None:
+    async def get_guild_invite(
+        guild: discord.Guild, max_age: int = 86400
+    ) -> Optional[discord.Invite]:
         """Handles the reinvite logic for getting an invite
         to send the newly unbanned user
         :returns: :class:`Invite`
@@ -1411,7 +1422,7 @@ class ServerStats(commands.Cog):
             except discord.HTTPException:
                 return
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def getguild(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1442,7 +1453,7 @@ class ServerStats(commands.Cog):
             ctx=ctx,
         ).start(ctx=ctx)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
     @checks.admin()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
@@ -1466,7 +1477,7 @@ class ServerStats(commands.Cog):
             page_start=page,
         ).start(ctx=ctx)
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def nummembers(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1482,7 +1493,7 @@ class ServerStats(commands.Cog):
         )
 
     @commands.guild_only()
-    @commands.command(aliases=["rolestats"])
+    @commands.hybrid_command(aliases=["rolestats"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def getroles(self, ctx: commands.Context, *, guild: GuildConverter = None) -> None:
@@ -1527,7 +1538,7 @@ class ServerStats(commands.Cog):
                 users = user
         return highest, users
 
-    @commands.command(name="getreactions", aliases=["getreaction"])
+    @commands.hybrid_command(name="getreactions", aliases=["getreaction"])
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
     async def get_reactions(self, ctx: commands.Context, message: discord.Message) -> None:
@@ -1670,7 +1681,7 @@ class ServerStats(commands.Cog):
             _ret = copy(to_return)
         return _ret
 
-    @commands.command(name="serverstats")
+    @commands.hybrid_command(name="serverstats")
     @checks.mod_or_permissions(manage_messages=True)
     @commands.bot_has_permissions(embed_links=True, add_reactions=True)
     @commands.guild_only()
@@ -1750,7 +1761,7 @@ class ServerStats(commands.Cog):
             em.add_field(name=_("Top Members"), value="".join(i for i in member_messages))
         await ctx.send(embed=em)
 
-    @commands.command(name="channelstats")
+    @commands.hybrid_command(name="channelstats")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
     async def channel_stats(
@@ -1815,7 +1826,7 @@ class ServerStats(commands.Cog):
         await ctx.send(embed=em)
 
     @commands.guild_only()
-    @commands.command(aliases=["serveremojis"])
+    @commands.hybrid_command(aliases=["serveremojis"])
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def guildemojis(
         self,
