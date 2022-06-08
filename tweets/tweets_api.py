@@ -3,11 +3,10 @@ import functools
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import discord
 import tweepy
-from redbot import VersionInfo, version_info
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -72,8 +71,6 @@ SCOPES = [
     "like.write",
 ]
 
-MENTION_RE = re.compile(r"@(\w{1,15})")
-
 
 class MissingTokenError(Exception):
     async def send_error(self, ctx: commands.Context):
@@ -84,29 +81,20 @@ class MissingTokenError(Exception):
         )
 
 
-async def replace_mentions(text: str) -> str:
-    for mention in MENTION_RE.finditer(text):
-        user_url = f"[{mention.group(0)}](https://twitter.com/{mention.group(1)})"
-        text = text.replace(mention.group(0), user_url)
-    return text
-
-
-async def replace_urls(tweet: tweepy.Tweet) -> str:
+async def get_tweet_text(tweet: tweepy.Tweet) -> str:
     if not tweet.entities:
         return tweet.text
     text = tweet.text
     for url in tweet.entities.get("urls", []):
-        if url["url"] in text:
-            display_url = url["display_url"]
-            expanded_url = url["expanded_url"]
-            full_url = f"[{display_url}]({expanded_url})"
-            text = text.replace(url["url"], full_url)
-    return text
-
-
-async def get_tweet_text(tweet: tweepy.Tweet) -> str:
-    text = await replace_urls(tweet)
-    text = await replace_mentions(text)
+        display_url = url["display_url"]
+        expanded_url = url["expanded_url"]
+        full_url = f"[{display_url}]({expanded_url})"
+        text = text.replace(url["url"], full_url)
+    for mention in tweet.entities.get("mentions", []):
+        username = mention.get("username", None)
+        user_mention = f"@{username}"
+        url = f"[{user_mention}](https://twitter.com/{username})"
+        text = re.sub(rf"@{username}\b", url, text)
     return text
 
 
@@ -415,9 +403,13 @@ class TweetsAPI:
                 if replied_to.attachments:
                     for media_key in replied_to.attachments.get("media_keys", []):
                         attachment_keys.append(media_key)
+                name = _("Replying to {user}").format(user=replied_user.username)
+                if tweet.text.startswith("RT"):
+                    name = _("Retweeted {user}").format(user=replied_user.username)
                 em.add_field(
-                    name=_("Replying to {user}").format(user=replied_user.username),
+                    name=name,
                     value=await get_tweet_text(replied_to),
+                    inline=False,
                 )
                 nsfw |= replied_to.possibly_sensitive
         if attachment_keys:
@@ -493,6 +485,9 @@ class TweetsAPI:
     ):
         if await self.bot.cog_disabled_in_guild(self, channel.guild):
             return
+        view = None
+        if await self.config.channel(channel).add_buttons():
+            view = self.tweet_stream_view
         try:
             if channel.permissions_for(channel.guild.me).manage_webhooks:
                 webhook = None
@@ -506,11 +501,11 @@ class TweetsAPI:
                     username=user.username,
                     avatar_url=user.profile_image_url,
                     embeds=embeds,
-                    view=self.tweet_stream_view,
+                    view=view,
                 )
             elif channel.permissions_for(channel.guild.me).embed_links:
-                await channel.send(content, embeds=embeds, view=self.tweet_stream_view)
+                await channel.send(content, embeds=embeds, view=view)
             else:
-                await channel.send(content, view=self.tweet_stream_view)
+                await channel.send(content, view=view)
         except Exception:
             log.exception(f"Could not post a tweet in {repr(channel)} for account {user}")

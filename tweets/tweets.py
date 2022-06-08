@@ -36,7 +36,11 @@ class Tweets(TweetsAPI, commands.Cog):
         }
         self.config.register_global(**default_global)
         self.config.register_channel(
-            followed_accounts={}, followed_str={}, followed_rules={}, guild_id=None
+            followed_accounts={},
+            followed_str={},
+            followed_rules={},
+            guild_id=None,
+            add_buttons=True,
         )
         self.config.register_user(tokens={})
         self.mystream = None
@@ -45,8 +49,7 @@ class Tweets(TweetsAPI, commands.Cog):
         self.stream_task = None
         self.accounts = {}
         self.dashboard_authed = []
-        self.tweet_stream_view = TweetStreamView(cog=self)
-        self.bot.add_view(self.tweet_stream_view)
+        self.tweet_stream_view: Optional[TweetStreamView] = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -60,7 +63,8 @@ class Tweets(TweetsAPI, commands.Cog):
             self.bot.remove_dev_env_value("tweets")
         except Exception:
             pass
-        self.tweet_stream_view.stop()
+        if self.tweet_stream_view:
+            self.tweet_stream_view.stop()
         log.debug("Unloading tweets...")
         if self.twitter_loop:
             self.twitter_loop.cancel()
@@ -91,6 +95,12 @@ class Tweets(TweetsAPI, commands.Cog):
             except Exception:
                 pass
         self.twitter_loop = asyncio.create_task(self.start_stream())
+        keys = await self.bot.get_shared_api_tokens("twitter")
+        client_id = keys.get("client_id", None)
+        client_secret = keys.get("client_secret", None)
+        if client_id and client_secret:
+            self.tweet_stream_view = TweetStreamView(cog=self)
+            self.bot.add_view(self.tweet_stream_view)
 
     @commands.hybrid_group(name="twitter", aliases=["tweets", "tw"])
     async def _tweets(self, ctx: commands.Context):
@@ -259,6 +269,30 @@ class Tweets(TweetsAPI, commands.Cog):
                 rule=rule_tag, channel=channel.mention
             )
         )
+
+    @tweets_stream.command(name="buttons")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def toggle_stream_buttons(self, ctx: commands.Context, channel: discord.TextChannel):
+        """
+        Toggle whether or not to apply like, retweet, and reply buttons to the channels
+        twitter stream
+
+        `<channel>` The channel you want to toggle buttons for.
+        """
+        current = await self.config.channel(channel).add_buttons()
+        await self.config.channel(channel).add_buttons.set(not current)
+        if current:
+            await ctx.send(
+                _("Like, retweet, and reply buttons disabled in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
+        else:
+            await ctx.send(
+                _("Like, retweet, and reply buttons enabled in {channel}.").format(
+                    channel=channel.mention
+                )
+            )
 
     @tweets_stream.command(name="unfollow")
     @commands.mod_or_permissions(manage_channels=True)

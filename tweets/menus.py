@@ -522,19 +522,18 @@ class TweetsMenu(discord.ui.View):
             return
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
+        kwargs["view"] = self
         nsfw = kwargs.pop("nsfw", False)
         if self.ctx.guild is not None:
             if nsfw and not self.ctx.channel.is_nsfw():
-                await interaction.response.edit_message.edit(
-                    content=_("This tweet is labeled as NSFW and this is not a NSFW channel."),
-                    embeds=[],
-                    view=self,
+                kwargs["content"] = _(
+                    "This tweet is labeled as NSFW and this is not a NSFW channel."
                 )
-                return
+                kwargs["embeds"] = []
         if interaction.response.is_done():
-            await interaction.followup.edit(**kwargs, view=self)
+            await interaction.followup.edit(**kwargs)
         else:
-            await interaction.response.edit_message(**kwargs, view=self)
+            await interaction.response.edit_message(**kwargs)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         try:
