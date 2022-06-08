@@ -6,9 +6,10 @@ import tweepy
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.views import SetApiView
 
-from .menus import BaseMenu, TweetListPages, TweetPages, TweetsMenu
-from .tweets_api import USER_FIELDS, MissingTokenError, TweetsAPI
+from .menus import BaseMenu, TweetListPages, TweetPages, TweetsMenu, TweetStreamView
+from .tweets_api import USER_FIELDS, TweetsAPI
 
 _ = Translator("Tweets", __file__)
 
@@ -36,11 +37,15 @@ class Tweets(TweetsAPI, commands.Cog):
         self.config.register_channel(
             followed_accounts={}, followed_str={}, followed_rules={}, guild_id=None
         )
+        self.config.register_user(tokens={})
         self.mystream = None
         self.run_stream = True
         self.twitter_loop = None
         self.stream_task = None
         self.accounts = {}
+        self.dashboard_authed = []
+        self.tweet_stream_view = TweetStreamView(cog=self)
+        self.bot.add_view(self.tweet_stream_view)
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -54,6 +59,7 @@ class Tweets(TweetsAPI, commands.Cog):
             self.bot.remove_dev_env_value("tweets")
         except Exception:
             pass
+        self.tweet_stream_view.stop()
         log.debug("Unloading tweets...")
         if self.twitter_loop:
             self.twitter_loop.cancel()
@@ -91,21 +97,18 @@ class Tweets(TweetsAPI, commands.Cog):
         pass
 
     @_tweets.command(name="send")
-    @checks.is_owner()
     async def send_tweet(self, ctx: commands.Context, *, message: str) -> None:
         """
         Allows the owner to send tweets through discord
         """
-        try:
-            api = await self.authenticate()
-        except MissingTokenError as e:
-            await e.send_error(ctx)
+        if not await self.authorize_user(ctx):
             return
+        api = await self.authenticate(ctx.author)
         try:
-            api.create_tweet(text=message)
+            await api.create_tweet(text=message[:280], user_auth=False)
         except Exception:
             log.error("Error sending tweet", exc_info=True)
-            await ctx.send(_("An error has occured, check the console for more details."))
+            await ctx.send(_("An error has occured trying to send that tweet."))
             return
         await ctx.send(_("Tweet sent!"))
 
@@ -123,10 +126,16 @@ class Tweets(TweetsAPI, commands.Cog):
         return user
 
     @_tweets.command(name="getuser")
-    async def get_user(self, ctx: commands.context, username: str) -> None:
+    async def get_user_com(self, ctx: commands.Context, username: str) -> None:
         """Get info about the specified user"""
+        if not await self.authorize_user(ctx):
+            return
+        api = await self.authenticate(ctx.author)
         try:
-            resp = await self.get_twitter_user(username)
+            resp = await api.get_user(
+                username=username,
+                user_fields=USER_FIELDS,
+            )
             user = resp.data
         except asyncio.TimeoutError:
             await ctx.send(_("Looking up the user timed out."))
@@ -164,16 +173,14 @@ class Tweets(TweetsAPI, commands.Cog):
 
     @_tweets.command(name="gettweets", aliases=["tweets", "status"])
     @checks.bot_has_permissions(add_reactions=True)
-    async def get_tweets(self, ctx: commands.context, username: str) -> None:
+    async def get_tweets(self, ctx: commands.Context, username: str) -> None:
         """
         Display a users tweets as a scrollable message
         """
         async with ctx.typing():
-            try:
-                api = await self.authenticate()
-            except MissingTokenError as e:
-                await e.send_error(ctx)
+            if not await self.authorize_user(ctx):
                 return
+            api = await self.authenticate(ctx.author)
         await TweetsMenu(source=TweetPages(api=api, username=username), cog=self).start(ctx=ctx)
 
     @tweets_stream.command(name="follow")
@@ -218,7 +225,7 @@ class Tweets(TweetsAPI, commands.Cog):
         await self.config.channel(channel).guild_id.set(channel.guild.id)
         await ctx.send(
             _("Following tweets from {rule} in {channel}.").format(
-                user=rule_tag, channel=channel.mention
+                rule=rule_tag, channel=channel.mention
             )
         )
 
@@ -236,7 +243,7 @@ class Tweets(TweetsAPI, commands.Cog):
         await self.config.channel(channel).guild_id.set(channel.guild.id)
         await ctx.send(
             _("Unfollowing tweets from {rule} in {channel}.").format(
-                user=rule_tag, channel=channel.mention
+                rule=rule_tag, channel=channel.mention
             )
         )
 
@@ -334,44 +341,37 @@ class Tweets(TweetsAPI, commands.Cog):
                     response += error_msg
         await ctx.send(response)
 
-    @_tweets.group(name="set")
-    @checks.admin_or_permissions(manage_guild=True)
-    async def _tweetset(self, ctx: commands.Context) -> None:
-        """Command for setting required access information for the API.
-
-        1. Visit https://apps.twitter.com and apply for a developer account.
-        2. Once your account is approved Create a standalone app and copy the
-        **API Key and API Secret**.
-        3. On the standalone apps page select regenerate **Access Token and Secret**
-        and copy those somewhere safe.
-        4. Do `[p]set api twitter
-        consumer_key YOUR_CONSUMER_KEY
-        consumer_secret YOUR_CONSUMER_SECRET
-        access_token YOUR_ACCESS_TOKEN
-        access_secret YOUR_ACCESS_SECRET`
-        """
-        pass
-
-    @_tweetset.command(name="creds")
+    @_tweets.command(name="creds")
     @checks.is_owner()
     async def set_creds(
         self,
         ctx: commands.Context,
     ) -> None:
         """How to get and set your twitter API tokens."""
-        elevated = "[elevated access](https://developer.twitter.com/en/docs/twitter-api/getting-started/about-twitter-api#Access)"
         msg = _(
             "1. Visit https://apps.twitter.com and apply for a developer account.\n"
             "2. Once your account is approved Create a standalone app and copy the "
             "**API Key and API Secret**\n"
-            "3. On the standalone apps page select regenerate **Access Token and Secret** "
+            "3. On the Projects & Apps page select regenerate **Access Token and Secret** "
             "and copy those somewhere safe.\n\n"
-            "4. Do `[p]set api twitter "
+            "4. Under User authentication settings enable OAuth 2.0, customize the settings "
+            "however you want the bot to work, and remember or set the redirect uri.\n\n"
+            "5. Do `[p]set api twitter "
             "bearer_token YOUR_BEARER_TOKEN "
-            "consumer_key YOUR_CONSUMER_KEY "
-            "consumer_secret YOUR_CONSUMER_SECRET "
-            "access_token YOUR_ACCESS_TOKEN "
-            "access_secret YOUR_ACCESS_SECRET`\n\n"
-            "**Note:** You will require {elevated} to use everything in this cog."
-        ).format(elevated=elevated)
-        await ctx.maybe_send_embed(msg)
+            "client_id YOUR_CLIENT_ID "
+            "client_secret YOUR_CLIENT_SECRET "
+            "redirect_uri YOUR_REDIRECT_URI_TOKEN`\n\n"
+        )
+        keys = {
+            "bearer_token": "",
+            "client_id": "",
+            "client_secret": "",
+            "redirect_uri": "https://127.0.0.1/",
+        }
+        view = SetApiView("spotify", keys)
+        if await ctx.embed_requested():
+            em = discord.Embed(description=msg)
+            await ctx.send(embed=em, view=view)
+            # await ctx.send(embed=em)
+        else:
+            await ctx.send(msg, view=view)

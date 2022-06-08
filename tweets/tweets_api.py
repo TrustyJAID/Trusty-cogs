@@ -1,6 +1,8 @@
 import asyncio
+import functools
 import logging
-from html import unescape
+import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import discord
@@ -10,7 +12,6 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils import bounded_gather
-from redbot.core.utils.chat_formatting import escape
 from tweepy.asynchronous import AsyncStreamingClient
 
 from .tweet_entry import TweetEntry
@@ -60,6 +61,19 @@ MEDIA_FIELDS = [
     "alt_text",
 ]
 
+SCOPES = [
+    "tweet.read",
+    "tweet.write",
+    "users.read",
+    "follows.read",
+    "follows.write",
+    "offline.access",
+    "like.read",
+    "like.write",
+]
+
+MENTION_RE = re.compile(r"@(\w{1,15})")
+
 
 class MissingTokenError(Exception):
     async def send_error(self, ctx: commands.Context):
@@ -68,6 +82,32 @@ class MissingTokenError(Exception):
                 "You need to set your API tokens. See `{prefix}tweetset creds` for information on how."
             ).format(prefix=ctx.clean_prefix)
         )
+
+
+async def replace_mentions(text: str) -> str:
+    for mention in MENTION_RE.finditer(text):
+        user_url = f"[{mention.group(0)}](https://twitter.com/{mention.group(1)})"
+        text = text.replace(mention.group(0), user_url)
+    return text
+
+
+async def replace_urls(tweet: tweepy.Tweet) -> str:
+    if not tweet.entities:
+        return tweet.text
+    text = tweet.text
+    for url in tweet.entities.get("urls", []):
+        if url["url"] in text:
+            display_url = url["display_url"]
+            expanded_url = url["expanded_url"]
+            full_url = f"[{display_url}]({expanded_url})"
+            text = text.replace(url["url"], full_url)
+    return text
+
+
+async def get_tweet_text(tweet: tweepy.Tweet) -> str:
+    text = await replace_urls(tweet)
+    text = await replace_mentions(text)
+    return text
 
 
 class TweetListener(AsyncStreamingClient):
@@ -81,6 +121,7 @@ class TweetListener(AsyncStreamingClient):
             wait_on_rate_limit=True,
         )
         self.bot = bot
+        self.is_rate_limited = False
 
     async def on_response(self, response: tweepy.StreamResponse) -> None:
         self.bot.dispatch("tweet", response)
@@ -90,15 +131,22 @@ class TweetListener(AsyncStreamingClient):
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    async def on_disconnect_message(self, message: Any) -> None:
-        msg = _("Twitter has sent a disconnect message {message}").format(message=message)
-        log.info(msg)
+    async def on_exception(self, exception: Exception):
+        msg = _("A tweet stream error has occured! ") + str(exception)
+        log.exception(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    async def on_warning(self, notice: Any) -> None:
-        msg = _("Twitter has sent a disconnection warning")
-        log.warn(msg)
-        self.bot.dispatch("tweet_error", msg)
+    async def on_request_error(self, status_code):
+        msg = _("The twitter stream encounterd an error code {code}").format(code=status_code)
+        log.debug(msg)
+        if status_code == 429:
+            self.is_rate_limited = True
+            self.disconnect()
+            await asyncio.sleep(60 * 16)
+            self.is_rate_limited = False
+
+    async def on_disconnect(self) -> None:
+        log.info(_("The stream has disconnected."))
 
 
 class TweetsAPI:
@@ -111,6 +159,7 @@ class TweetsAPI:
     accounts: Dict[str, TweetEntry]
     run_stream: bool
     twitter_loop: Optional[tweepy.Stream]
+    tweet_stream_view: discord.ui.View
 
     async def start_stream(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -129,17 +178,20 @@ class TweetsAPI:
                 await asyncio.sleep(base_sleep)
                 continue
             self.mystream = TweetListener(bearer_token=bearer_token, bot=self.bot)
-            if self.stream_task is None:
+            if self.mystream.task is None:
                 await self._start_stream()
-            if self.stream_task and (self.stream_task.cancelled() or self.stream_task.done()):
-                count += 1
-                await self._start_stream()
+            if self.mystream.task:
+                if (
+                    self.mystream.task.cancelled() or self.mystream.task.done()
+                ) and not self.mystream.is_rate_limited:
+                    count += 1
+                    await self._start_stream()
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
             await asyncio.sleep(base_sleep * count)
 
     async def _start_stream(self) -> None:
         try:
-            self.stream_task = self.mystream.filter(
+            self.mystream.filter(
                 expansions=EXPANSIONS,
                 media_fields=MEDIA_FIELDS,
                 tweet_fields=TWEET_FIELDS,
@@ -148,25 +200,121 @@ class TweetsAPI:
         except Exception:
             log.exception("Error starting stream")
 
-    async def authenticate(self) -> tweepy.API:
+    async def refresh_token(self, user: discord.abc.User) -> dict:
+        tokens = await self.bot.get_shared_api_tokens("twitter")
+        client_id = tokens.get("client_id")
+        redirect_uri = tokens.get("redirect_uri")
+        client_secret = tokens.get("client_secret")
+        oauth = tweepy.OAuth2UserHandler(
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            scope=SCOPES,
+            client_secret=client_secret,
+        )
+        user_tokens = await self.config.user(user).tokens()
+        refresh_token = user_tokens.get("refresh_token")
+        loop = asyncio.get_running_loop()
+        task = functools.partial(
+            oauth.refresh_token,
+            token_url="https://api.twitter.com/2/oauth2/token",
+            refresh_token=refresh_token,
+        )
+        result = await loop.run_in_executor(None, task)
+        await self.config.user(user).tokens.set(result)
+        return result
+
+    async def authorize_user(
+        self,
+        ctx: Optional[commands.Context] = None,
+        interaction: Optional[discord.Interaction] = None,
+    ) -> bool:
+        if ctx is None and interaction is None:
+            return False
+        if ctx is None:
+            user = interaction.user
+        if interaction is None:
+            user = ctx.author
+        tokens = await self.bot.get_shared_api_tokens("twitter")
+        client_id = tokens.get("client_id")
+        redirect_uri = tokens.get("redirect_uri")
+        client_secret = tokens.get("client_secret")
+        oauth = tweepy.OAuth2UserHandler(
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            scope=SCOPES,
+            client_secret=client_secret,
+        )
+        user_tokens = await self.config.user(user).tokens()
+        if user_tokens:
+            if user_tokens.get("expires_at", 0) <= datetime.now().timestamp():
+                return True
+            else:
+                await self.refresh_token(user)
+                return True
+        oauth_url = oauth.get_authorization_url()
+        if interaction is not None or ctx and ctx.interaction:
+            msg = _(
+                "Please accept the authorization [here]({auth}) and **DM "
+                "me** with the final full url."
+            ).format(auth=oauth_url)
+
+        else:
+            msg = _(
+                "Please accept the authorization in the following link and reply "
+                "to me with the full url\n\n {auth}"
+            ).format(auth=oauth_url)
+
+        def check(message):
+            return (user.id in self.dashboard_authed) or (
+                message.author.id == user.id and redirect_uri in message.content
+            )
+
+        if ctx and ctx.interaction:
+            await ctx.send(msg, ephemeral=True)
+        elif interaction is not None:
+            await interaction.response.send_message(msg, ephemeral=True)
+        else:
+            try:
+                await user.send(msg)
+            except discord.errors.Forbidden:
+                await ctx.send(msg)
+        try:
+            check_msg = await self.bot.wait_for("message", check=check, timeout=180)
+        except asyncio.TimeoutError:
+            await ctx.send(_("Alright I won't interact with twitter for you."))
+            return False
+        final_url = check_msg.clean_content.strip()
+        loop = asyncio.get_running_loop()
+        try:
+            task = functools.partial(oauth.fetch_token, authorization_response=final_url)
+            result = await loop.run_in_executor(None, task)
+        except Exception:
+            log.exception("Error authorizing user via OAuth.")
+            return False
+        await self.config.user(user).tokens.set(result)
+        return True
+
+    async def authenticate(self, user: Optional[discord.abc.User] = None) -> tweepy.API:
         """Authenticate with Twitter's API"""
-        keys = await self.bot.get_shared_api_tokens("twitter")
-        bearer_token = keys.get("bearer_token")
-        consumer = keys.get("consumer_key")
-        consumer_secret = keys.get("consumer_secret")
-        access_token = keys.get("access_token")
-        access_secret = keys.get("access_secret")
-        keys = [bearer_token, consumer, consumer_secret, access_token, access_secret]
-        if any([k is None for k in keys]):
-            raise MissingTokenError()
+        token_kwargs = {}
+        if user is None:
+            keys = await self.bot.get_shared_api_tokens("twitter")
+            token_kwargs["bearer_token"] = keys.get("bearer_token")
+            if any([k is None for k in token_kwargs.values()]):
+                raise MissingTokenError(
+                    "One or more of the required API tokens is missing for the cog to work."
+                )
+        else:
+            user_tokens = await self.config.user(user).tokens()
+            if not user_tokens:
+                raise MissingTokenError()
+            if datetime.now().timestamp() >= user_tokens.get("expires_at", 0):
+                user_tokens = await self.refresh_token(user)
+            token_kwargs["bearer_token"] = user_tokens.get("access_token")
         # auth = tweepy.OAuthHandler(consumer, consumer_secret)
         # auth.set_access_token(access_token, access_secret)
         return tweepy.asynchronous.AsyncClient(
-            bearer_token=bearer_token,
-            consumer_key=consumer,
-            consumer_secret=consumer_secret,
-            access_token=access_token,
-            access_token_secret=access_secret,
+            **token_kwargs,
             wait_on_rate_limit=True,
         )
 
@@ -208,7 +356,7 @@ class TweetsAPI:
             return
         await channel.send(str(error) + help_msg)
 
-    async def get_user(self, user_id: int, includes: Optional[dict]) -> tweepy.User:
+    async def get_user(self, user_id: int, includes: Optional[dict] = None) -> tweepy.User:
         if includes:
             for user in includes.get("users", []):
                 if user.id == user_id:
@@ -217,7 +365,7 @@ class TweetsAPI:
         resp = await api.get_user(id=user_id, user_fields=USER_FIELDS)
         return resp.data
 
-    async def get_tweet(self, tweet_id: int, includes: Optional[dict]) -> tweepy.Tweet:
+    async def get_tweet(self, tweet_id: int, includes: Optional[dict] = None) -> tweepy.Tweet:
         if includes:
             for tweet in includes.get("tweets", []):
                 if tweet_id == tweet.id:
@@ -226,9 +374,7 @@ class TweetsAPI:
         resp = await api.get_tweet(id=tweet_id, tweet_fields=TWEET_FIELDS)
         return resp.data
 
-    async def get_media_url(
-        self, media_key: str, includes: Optional[dict]
-    ) -> Optional[tweepy.Media]:
+    async def get_media_url(self, media_key: str, includes: dict) -> Optional[tweepy.Media]:
         if includes:
             for media in includes.get("media", []):
                 if media_key == media.media_key:
@@ -252,60 +398,90 @@ class TweetsAPI:
         )
         em.set_footer(text=f"@{username}")
         em.set_author(name=author.name, url=post_url, icon_url=author.profile_image_url)
-        text = tweet.text
-        em.description = escape(unescape(text), formatting=True)
+        em.description = await get_tweet_text(tweet)
+        attachment_keys = []
+        nsfw = tweet.possibly_sensitive
         if tweet.attachments:
             for media_key in tweet.attachments.get("media_keys", []):
+                attachment_keys.append(media_key)
+        if tweet.referenced_tweets:
+            for replied_tweet in tweet.referenced_tweets:
+                replied_to = await self.get_tweet(replied_tweet["id"], includes)
+                if replied_to is None:
+                    continue
+                replied_user = await self.get_user(replied_to.author_id, includes)
+                if replied_user is None:
+                    continue
+                if replied_to.attachments:
+                    for media_key in replied_to.attachments.get("media_keys", []):
+                        attachment_keys.append(media_key)
+                em.add_field(
+                    name=_("Replying to {user}").format(user=replied_user.username),
+                    value=await get_tweet_text(replied_to),
+                )
+                nsfw |= replied_to.possibly_sensitive
+        if attachment_keys:
+            for media_key in attachment_keys:
                 copy = em.copy()
                 media = await self.get_media_url(media_key, includes)
                 if media is None:
                     continue
-                copy.set_image(url=media.url)
+                url = media.url
+                if url is None:
+                    url = media.preview_image_url
+                copy.set_image(url=url)
                 embeds.append(copy)
 
         if not embeds:
             embeds.append(em)
-        return {"embeds": embeds, "content": str(post_url)}
+        return {"embeds": embeds[:10], "content": str(post_url), "nsfw": nsfw}
 
     @commands.Cog.listener()
     async def on_tweet(self, response: tweepy.StreamResponse) -> None:
         log.info(response)
-        tweet = response.data
-        user = await self.get_user(tweet.author_id, response.includes)
-        to_send = await self.build_tweet_embed(response)
-        all_channels = await self.config.all_channels()
-        tasks = []
-        for channel_id, data in all_channels.items():
-            guild = self.bot.get_guild(data.get("guild_id", ""))
-            if guild is None:
-                continue
-            channel = guild.get_channel(int(channel_id))
-            if channel is None:
-                continue
-            if str(user.id) in data.get("followed_accounts", {}):
-                tasks.append(
-                    self.post_tweet_status(
-                        channel, to_send["embeds"], to_send["content"], tweet, user
-                    )
-                )
-                continue
-            for rule in response.matching_rules:
-                if rule.tag in data.get("followed_rules", {}):
+        try:
+            tweet = response.data
+            user = await self.get_user(tweet.author_id, response.includes)
+            to_send = await self.build_tweet_embed(response)
+            all_channels = await self.config.all_channels()
+            tasks = []
+            nsfw = to_send.pop("nsfw", False)
+            for channel_id, data in all_channels.items():
+                guild = self.bot.get_guild(data.get("guild_id", ""))
+                if guild is None:
+                    continue
+                channel = guild.get_channel(int(channel_id))
+                if channel is None:
+                    continue
+                if nsfw and not channel.is_nsfw():
+                    log.info(f"Ignoring tweet from {user} because it is labeled as NSFW.")
+                    continue
+                if str(user.id) in data.get("followed_accounts", {}):
                     tasks.append(
                         self.post_tweet_status(
                             channel, to_send["embeds"], to_send["content"], tweet, user
                         )
                     )
                     continue
-            for phrase in data.get("followed_str", {}):
-                if phrase in tweet.text:
-                    tasks.append(
-                        self.post_tweet_status(
-                            channel, to_send["embeds"], to_send["content"], tweet, user
+                for rule in response.matching_rules:
+                    if rule.tag in data.get("followed_rules", {}):
+                        tasks.append(
+                            self.post_tweet_status(
+                                channel, to_send["embeds"], to_send["content"], tweet, user
+                            )
                         )
-                    )
-                    continue
-        await bounded_gather(*tasks, return_exceptions=True)
+                        continue
+                for phrase in data.get("followed_str", {}):
+                    if phrase in tweet.text:
+                        tasks.append(
+                            self.post_tweet_status(
+                                channel, to_send["embeds"], to_send["content"], tweet, user
+                            )
+                        )
+                        continue
+            await bounded_gather(*tasks, return_exceptions=True)
+        except Exception:
+            log.exception("Error on tweet status")
 
     async def post_tweet_status(
         self,
@@ -315,24 +491,26 @@ class TweetsAPI:
         tweet: tweepy.Tweet,
         user: tweepy.User,
     ):
-        if version_info >= VersionInfo.from_str("3.4.0"):
-            if await self.bot.cog_disabled_in_guild(self, channel.guild):
-                return
+        if await self.bot.cog_disabled_in_guild(self, channel.guild):
+            return
         try:
-            if channel.permissions_for(channel.guild.me).embed_links:
-                await channel.send(content, embeds=embeds)
-            elif channel.permissions_for(channel.guild.me).manage_webhooks:
+            if channel.permissions_for(channel.guild.me).manage_webhooks:
                 webhook = None
                 for hook in await channel.webhooks():
                     if hook.name == channel.guild.me.name:
                         webhook = hook
                 if webhook is None:
                     webhook = await channel.create_webhook(name=channel.guild.me.name)
-                avatar = user.profile_image_url
                 await webhook.send(
-                    content, username=user.username, avatar_url=avatar, embeds=embeds
+                    content,
+                    username=user.username,
+                    avatar_url=user.profile_image_url,
+                    embeds=embeds,
+                    view=self.tweet_stream_view,
                 )
+            elif channel.permissions_for(channel.guild.me).embed_links:
+                await channel.send(content, embeds=embeds, view=self.tweet_stream_view)
             else:
-                await channel.send(content)
+                await channel.send(content, view=self.tweet_stream_view)
         except Exception:
             log.exception(f"Could not post a tweet in {repr(channel)} for account {user}")

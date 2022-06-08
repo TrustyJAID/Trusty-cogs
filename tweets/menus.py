@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import logging
-from html import unescape
 from typing import Any, List, Optional
 
 import discord
@@ -12,7 +10,6 @@ import tweepy
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import escape
 from redbot.vendored.discord.ext import menus
 
 from .tweets_api import EXPANSIONS, MEDIA_FIELDS, TWEET_FIELDS, USER_FIELDS
@@ -203,66 +200,109 @@ class TweetPages(menus.PageSource):
         # return the games as a form of metadata about how the cache is changing
         return msg_list
 
-    async def get_user(self, user_id: int) -> tweepy.User:
-        for user in self._includes.get("users", []):
-            if user.id == user_id:
-                return user
-        resp = await self._api.get_user(id=user_id, user_fields=USER_FIELDS)
-        return resp.data
-
-    async def get_tweet(self, tweet_id: int) -> tweepy.Tweet:
-        for tweet in self._includes.get("tweets", []):
-            if tweet_id == tweet.id:
-                return tweet
-        resp = await self._api.get_tweet(id=tweet_id, tweet_fields=TWEET_FIELDS)
-        return resp.data
-
-    async def get_media_url(self, media_key: str) -> Optional[tweepy.Media]:
-        for media in self._includes.get("media", []):
-            if media_key == media.media_key:
-                return media
-        return None
-
     async def format_page(self, menu: menus.MenuPages, tweet: tweepy.Tweet):
-        if not tweet:
-            return discord.Embed(title="Nothing")
-        embeds = []
-        user_id = tweet.author_id
-        author = await self.get_user(user_id)
-        username = author.username
-        post_url = "https://twitter.com/{}/status/{}".format(username, tweet.id)
-        em = discord.Embed(
-            url=post_url,
-            timestamp=tweet.created_at,
+        resp = tweepy.Response(
+            data=tweet, includes=self._includes, errors=self._errors, meta=self._meta
         )
-        em.set_footer(text=f"@{username}")
-        if hasattr(tweet, "retweeted_status"):
-            em.set_author(
-                name=f"{username} Retweeted",
-                url=post_url,
-                icon_url=author.profile_image_url,
-            )
-            em.set_footer(text=f"@{username} RT ")
-            text = await menu.cog.replace_short_url(tweet)
-        else:
-            em.set_author(name=author.name, url=post_url, icon_url=author.profile_image_url)
-            text = tweet.text
-        em.description = escape(unescape(text), formatting=True)
-        if tweet.attachments:
-            for media_key in tweet.attachments.get("media_keys", []):
-                copy = em.copy()
-                media = await self.get_media_url(media_key)
-                if media is None:
-                    continue
-                copy.set_image(url=media.url)
-                embeds.append(copy)
-
-        if not embeds:
-            embeds.append(em)
-        return {"embeds": embeds, "content": str(post_url)}
+        return await menu.cog.build_tweet_embed(resp)
 
     def _get_reply(self, ids: List[int]) -> tweepy.Status:
         return self._api.lookup_statuses(ids)
+
+
+class TweetStreamView(discord.ui.View):
+    def __init__(self, cog: commands.Cog):
+        self.cog = cog
+        super().__init__(timeout=None)
+        self.add_item(LikeButton())
+        self.add_item(ReTweetButton())
+        self.add_item(ReplyButton())
+
+
+class LikeButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(
+            custom_id="Trusty-cogs-tweets-likebutton",
+            style=discord.ButtonStyle.grey,
+            emoji="\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if not await self.view.cog.authorize_user(interaction=interaction):
+            return
+        api = await self.view.cog.authenticate(interaction.user)
+        tweet_id = interaction.message.content.split("/")[-1]
+        await api.like(tweet_id, user_auth=False)
+        await interaction.response.send_message(_("You liked the tweet!"), ephemeral=True)
+
+
+class ReTweetButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(
+            custom_id="Trusty-cogs-tweets-retweetbutton",
+            style=discord.ButtonStyle.grey,
+            emoji="\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if not await self.view.cog.authorize_user(interaction=interaction):
+            return
+        api = await self.view.cog.authenticate(interaction.user)
+        tweet_id = interaction.message.content.split("/")[-1]
+        await api.retweet(tweet_id, user_auth=False)
+        await interaction.response.send_message(_("You retweeted the tweet!"), ephemeral=True)
+
+
+class ReplyButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(
+            custom_id="Trusty-cogs-tweets-replybutton",
+            style=discord.ButtonStyle.grey,
+            emoji="\N{SPEECH BALLOON}",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        tweet_id = interaction.message.content.split("/")[-1]
+        modal = ReplyModal(view=self.view, tweet_id=tweet_id)
+        await interaction.response.send_modal(modal)
+
+
+class ReplyModal(discord.ui.Modal):
+    def __init__(self, view: discord.ui.View, tweet_id: int):
+        super().__init__(title=_("Reply to tweet"))
+        self.view = view
+        self.tweet_id = tweet_id
+        self.reply = discord.ui.TextInput(
+            style=discord.TextStyle.paragraph,
+            label=_("Reply"),
+            placeholder=_("Add another Tweet"),
+            max_length=280,
+            min_length=1,
+        )
+        self.add_item(self.reply)
+        reply_options = [
+            discord.SelectOption(label=_("Following"), value="following"),
+            discord.SelectOption(label=_("Everyone"), value="None"),
+        ]
+        self.reply_settings = discord.ui.Select(
+            max_values=1, min_values=0, placeholder=_("Reply settings"), options=reply_options
+        )
+        self.add_item(self.reply_settings)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if not await self.view.cog.authorize_user(interaction=interaction):
+            return
+        api = await self.view.cog.authenticate(interaction.user)
+        reply_setting = None
+        if self.reply_settings.values[0] != "None":
+            reply_setting = self.reply_settings.values[0]
+        await api.create_tweet(
+            text=self.reply.value,
+            in_reply_to_tweet_id=self.tweet_id,
+            reply_settings=reply_setting,
+            user_auth=False,
+        )
+        await interaction.response.send_message(_("Tweet sent!"))
 
 
 class StopButton(discord.ui.Button):
@@ -409,11 +449,17 @@ class TweetsMenu(discord.ui.View):
         self.first_item = SkipBackButton(discord.ButtonStyle.grey, 0)
         self.last_item = SkipForwardkButton(discord.ButtonStyle.grey, 0)
         self.stop_button = StopButton(discord.ButtonStyle.red, 0)
+        self.like_button = LikeButton()
+        self.retweet_button = ReTweetButton()
+        self.reply_button = ReplyButton()
         self.add_item(self.stop_button)
         self.add_item(self.first_item)
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
+        self.add_item(self.like_button)
+        self.add_item(self.retweet_button)
+        self.add_item(self.reply_button)
 
     @property
     def source(self):
@@ -455,6 +501,11 @@ class TweetsMenu(discord.ui.View):
             await channel.send(_("No twitter account with that username could be found."))
             return
         kwargs = await self._get_kwargs_from_page(page)
+        nsfw = kwargs.pop("nsfw", False)
+        if nsfw and not channel.is_nsfw():
+            return await channel.send(
+                _("This tweet is labeled as NSFW and this is not a NSFW channel."), view=self
+            )
         return await channel.send(**kwargs, view=self)
 
     async def show_page(
@@ -472,6 +523,14 @@ class TweetsMenu(discord.ui.View):
             return
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
+        nsfw = kwargs.pop("nsfw", False)
+        if nsfw and not self.ctx.channel.is_nsfw():
+            await self.message.edit(
+                content=_("This tweet is labeled as NSFW and this is not a NSFW channel."),
+                embeds=[],
+                view=self,
+            )
+            return
         await self.message.edit(**kwargs, view=self)
 
     async def update(self, payload):
