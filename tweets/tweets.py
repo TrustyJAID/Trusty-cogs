@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Literal, Optional
 
 import discord
 import tweepy
@@ -72,11 +73,16 @@ class Tweets(TweetsAPI, commands.Cog):
             log.debug("Twitter stream disconnected.")
         log.debug("Tweets unloaded.")
 
-    async def red_delete_data_for_user(self, **kwargs) -> None:
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
         """
-        Nothing to delete
+        Method for finding users data inside the cog and deleting it.
         """
-        return
+        await self.config.user_from_id(user_id).clear()
 
     async def cog_load(self) -> None:
         if self.bot.owner_ids and 218773382617890828 in self.bot.owner_ids:
@@ -86,7 +92,7 @@ class Tweets(TweetsAPI, commands.Cog):
                 pass
         self.twitter_loop = asyncio.create_task(self.start_stream())
 
-    @commands.group(name="tweets", aliases=["twitter"])
+    @commands.hybrid_group(name="twitter", aliases=["tweets", "tw"])
     async def _tweets(self, ctx: commands.Context):
         """Gets various information from Twitter's API"""
         pass
@@ -95,6 +101,12 @@ class Tweets(TweetsAPI, commands.Cog):
     async def tweets_stream(self, ctx: commands.Context):
         """Controls for the twitter stream"""
         pass
+
+    @_tweets.command(name="forgetme")
+    async def delete_user_auth(self, ctx: commands.Context):
+        """Delete your saved authentication data from the bot"""
+        await self.red_delete_data_for_user(requester="user", user_id=ctx.author.id)
+        await ctx.send(_("Your saved twitter authenication has been deleted."))
 
     @_tweets.command(name="send")
     async def send_tweet(self, ctx: commands.Context, *, message: str) -> None:
@@ -125,26 +137,25 @@ class Tweets(TweetsAPI, commands.Cog):
             raise
         return user
 
-    @_tweets.command(name="getuser")
-    async def get_user_com(self, ctx: commands.Context, username: str) -> None:
+    @_tweets.command(name="user", aliases=["getuser"])
+    async def get_user_com(self, ctx: commands.Context, username: Optional[str] = None) -> None:
         """Get info about the specified user"""
         if not await self.authorize_user(ctx):
             return
         api = await self.authenticate(ctx.author)
         try:
-            resp = await api.get_user(
-                username=username,
-                user_fields=USER_FIELDS,
-            )
+            if username is None:
+                resp = await api.get_me(user_fields=USER_FIELDS, user_auth=False)
+            else:
+                resp = await api.get_user(
+                    username=username,
+                    user_fields=USER_FIELDS,
+                )
             user = resp.data
-        except asyncio.TimeoutError:
-            await ctx.send(_("Looking up the user timed out."))
-            return
         except tweepy.errors.TweepyException:
             await ctx.send(_("{username} could not be found.").format(username=username))
             return
-        log.info(dir(user))
-        profile_url = "https://twitter.com/" + user.username
+        profile_url = f"https://twitter.com/{user.username}"
         description = str(user.description)
         for url in user.entities["description"]["urls"]:
             if str(url["url"]) in description:
@@ -171,9 +182,8 @@ class Tweets(TweetsAPI, commands.Cog):
         else:
             await ctx.send(profile_url)
 
-    @_tweets.command(name="gettweets", aliases=["tweets", "status"])
-    @checks.bot_has_permissions(add_reactions=True)
-    async def get_tweets(self, ctx: commands.Context, username: str) -> None:
+    @_tweets.command(name="tweets", aliases=["gettweets", "status"])
+    async def get_tweets(self, ctx: commands.Context, username: Optional[str] = None) -> None:
         """
         Display a users tweets as a scrollable message
         """
@@ -181,6 +191,9 @@ class Tweets(TweetsAPI, commands.Cog):
             if not await self.authorize_user(ctx):
                 return
             api = await self.authenticate(ctx.author)
+            if username is None:
+                resp = await api.get_me(user_auth=False)
+                username = resp.data.username
         await TweetsMenu(source=TweetPages(api=api, username=username), cog=self).start(ctx=ctx)
 
     @tweets_stream.command(name="follow")
@@ -285,7 +298,15 @@ class Tweets(TweetsAPI, commands.Cog):
     @tweets_stream.command(name="rules")
     async def stream_rules(self, ctx: commands.Context):
         """List the current stream rules"""
-        response = await self.mystream.get_rules()
+        try:
+            response = await self.mystream.get_rules()
+        except AttributeError:
+            await ctx.send(
+                _(
+                    "The stream has not been setup yet, make sure the bot owner has setup their API tokens properly."
+                )
+            )
+            return
         if not response.data:
             await ctx.send(_("No rules have been created yet."))
             return
@@ -298,7 +319,13 @@ class Tweets(TweetsAPI, commands.Cog):
     @tweets_stream.command(name="addrule")
     @commands.is_owner()
     async def add_stream_rule(self, ctx: commands.Context, tag: str, *, rule: str):
-        """Create a stream rule"""
+        """
+        Create a stream rule
+
+        `<tag>` The name of the rule for finding the rule later.
+        `<rule>` The Filtered stream rule. Information about rules can be found here
+        https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule
+        """
         rule = tweepy.StreamRule(tag=tag, value=rule)
         resp = await self.mystream.add_rules(rule)
         if not resp.errors:
@@ -313,7 +340,11 @@ class Tweets(TweetsAPI, commands.Cog):
     @tweets_stream.command(name="delrule", aliases=["deleterule", "remrule"])
     @commands.is_owner()
     async def delete_stream_rule(self, ctx: commands.Context, tag_or_id: str):
-        """Delete a stream rule"""
+        """
+        Delete a stream rule
+
+        `<tag_or_id>` The rule tag or rule ID you want to delete.
+        """
         rules = await self.mystream.get_rules()
         response = ""
         for rule in rules.data:

@@ -331,9 +331,7 @@ class ForwardButton(discord.ui.Button):
         self.emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page + 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page + 1, interaction=interaction)
 
 
 class BackButton(discord.ui.Button):
@@ -347,9 +345,7 @@ class BackButton(discord.ui.Button):
         self.emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}"
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_checked_page(self.view.current_page - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_checked_page(self.view.current_page - 1, interaction=interaction)
 
 
 class LastItemButton(discord.ui.Button):
@@ -365,9 +361,7 @@ class LastItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(self.view._source.get_max_pages() - 1)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(self.view._source.get_max_pages() - 1, interaction=interaction)
 
 
 class FirstItemButton(discord.ui.Button):
@@ -383,9 +377,7 @@ class FirstItemButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, interaction=interaction)
 
 
 class SkipForwardkButton(discord.ui.Button):
@@ -401,9 +393,7 @@ class SkipForwardkButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_next=True)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, skip_next=True, interaction=interaction)
 
 
 class SkipBackButton(discord.ui.Button):
@@ -419,9 +409,7 @@ class SkipBackButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await self.view.show_page(0, skip_prev=True)
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        await self.view.show_page(0, skip_prev=True, interaction=interaction)
 
 
 class TweetsMenu(discord.ui.View):
@@ -476,7 +464,7 @@ class TweetsMenu(discord.ui.View):
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         await self._source.prepare()
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
@@ -487,7 +475,7 @@ class TweetsMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def send_initial_message(self, ctx, channel):
+    async def send_initial_message(self, ctx: commands.Context):
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -498,18 +486,24 @@ class TweetsMenu(discord.ui.View):
             page = await self._source.get_page(self.page_start)
         except NoTweets:
             log.exception("No tweets found")
-            await channel.send(_("No twitter account with that username could be found."))
+            await ctx.send(_("No twitter account with that username could be found."))
             return
         kwargs = await self._get_kwargs_from_page(page)
         nsfw = kwargs.pop("nsfw", False)
-        if nsfw and not channel.is_nsfw():
-            return await channel.send(
-                _("This tweet is labeled as NSFW and this is not a NSFW channel."), view=self
-            )
-        return await channel.send(**kwargs, view=self)
+        if ctx.guild is not None:
+            if nsfw and not ctx.channel.is_nsfw():
+                return await ctx.send(
+                    _("This tweet is labeled as NSFW and this is not a NSFW channel."), view=self
+                )
+        return await ctx.send(**kwargs, view=self)
 
     async def show_page(
-        self, page_number: int, *, skip_next: bool = False, skip_prev: bool = False
+        self,
+        page_number: int,
+        *,
+        skip_next: bool = False,
+        skip_prev: bool = False,
+        interaction: discord.Interaction,
     ) -> None:
         try:
             page = await self._source.get_page(
@@ -524,53 +518,25 @@ class TweetsMenu(discord.ui.View):
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         nsfw = kwargs.pop("nsfw", False)
-        if nsfw and not self.ctx.channel.is_nsfw():
-            await self.message.edit(
-                content=_("This tweet is labeled as NSFW and this is not a NSFW channel."),
-                embeds=[],
-                view=self,
-            )
-            return
-        await self.message.edit(**kwargs, view=self)
+        if self.ctx.guild is not None:
+            if nsfw and not self.ctx.channel.is_nsfw():
+                await interaction.response.edit_message.edit(
+                    content=_("This tweet is labeled as NSFW and this is not a NSFW channel."),
+                    embeds=[],
+                    view=self,
+                )
+                return
+        await interaction.response.edit_message(**kwargs, view=self)
 
-    async def update(self, payload):
-        """|coro|
-
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
-
-    async def show_checked_page(self, page_number: int) -> None:
-        try:
-            await self.show_page(page_number)
+            await self.show_page(page_number, interaction=interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
         if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
@@ -616,7 +582,7 @@ class BaseMenu(discord.ui.View):
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
         self.ctx = ctx
-        self.message = await self.send_initial_message(ctx, ctx.channel)
+        self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self, page):
         value = await discord.utils.maybe_coroutine(self.source.format_page, self, page)
@@ -627,15 +593,13 @@ class BaseMenu(discord.ui.View):
         elif isinstance(value, discord.Embed):
             return {"embed": value, "content": None}
 
-    async def show_page(self, page_number):
+    async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
-        await self.message.edit(**kwargs, view=self)
+        await interaction.response.edit_message(**kwargs, view=self)
 
-    async def send_initial_message(
-        self, ctx: commands.Context, channel: discord.TextChannel
-    ) -> discord.Message:
+    async def send_initial_message(self, ctx: commands.Context) -> discord.Message:
         """|coro|
         The default implementation of :meth:`Menu.send_initial_message`
         for the interactive pagination session.
@@ -643,55 +607,26 @@ class BaseMenu(discord.ui.View):
         """
         page = await self._source.get_page(self.page_start)
         kwargs = await self._get_kwargs_from_page(page)
-        return await channel.send(**kwargs, view=self)
+        return await ctx.send(**kwargs, view=self)
 
-    async def update(self, payload: discord.RawReactionActionEvent) -> None:
-        """|coro|
-
-        Updates the menu after an event has been received.
-
-        Parameters
-        -----------
-        payload: :class:`discord.RawReactionActionEvent`
-            The reaction event that triggered this update.
-        """
-        button = self.buttons[payload.emoji]
-        if not self._running:
-            return
-
-        try:
-            if button.lock:
-                async with self._lock:
-                    if self._running:
-                        await button(self, payload)
-            else:
-                await button(self, payload)
-        except Exception as exc:
-            log.debug("Ignored exception on reaction event", exc_info=exc)
-
-    async def show_checked_page(self, page_number: int) -> None:
+    async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
         try:
             if max_pages is None:
                 # If it doesn't give maximum pages, it cannot be checked
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
             elif page_number >= max_pages:
-                await self.show_page(0)
+                await self.show_page(0, interaction)
             elif page_number < 0:
-                await self.show_page(max_pages - 1)
+                await self.show_page(max_pages - 1, interaction)
             elif max_pages > page_number >= 0:
-                await self.show_page(page_number)
+                await self.show_page(page_number, interaction)
         except IndexError:
             # An error happened that can be handled, so ignore it.
             pass
 
     async def interaction_check(self, interaction: discord.Interaction):
         """Just extends the default reaction_check to use owner_ids"""
-        if interaction.message.id != self.message.id:
-            await interaction.response.send_message(
-                content=_("You are not authorized to interact with this."), ephemeral=True
-            )
-            return False
         if interaction.user.id not in (*self.ctx.bot.owner_ids, self.ctx.author.id):
             await interaction.response.send_message(
                 content=_("You are not authorized to interact with this."), ephemeral=True
