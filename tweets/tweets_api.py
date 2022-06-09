@@ -95,6 +95,19 @@ async def get_tweet_text(tweet: tweepy.Tweet) -> str:
         user_mention = f"@{username}"
         url = f"[{user_mention}](https://twitter.com/{username})"
         text = re.sub(rf"@{username}\b", url, text)
+    for hashtag in tweet.entities.get("hashtags", []):
+        tag = hashtag.get("tag", None)
+        tag_mention = f"#{tag}"
+        url = f"[{tag_mention}](https://twitter.com/hashtag/{tag})"
+        text = re.sub(rf"#{tag}\b", url, text)
+    for cashtag in tweet.entities.get("cashtags", []):
+        tag = cashtag.get("tag", None)
+        tag_mention = f"${tag}"
+        url = f"[{tag_mention}](https://twitter.com/search?q=%24{tag}&src=cashtag_click)"
+        text = re.sub(rf"\${tag}\b", url, text)
+    text = re.sub(r"&amp;", "&", text)
+    text = re.sub(r"&lt;", "<", text)
+    text = re.sub(r"&gt;", ">", text)
     return text
 
 
