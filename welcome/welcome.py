@@ -65,15 +65,16 @@ class Welcome(Events, commands.Cog):
     https://github.com/irdumbs/Dumb-Cogs/blob/master/welcome/welcome.py"""
 
     __author__ = ["irdumb", "TrustyJAID"]
-    __version__ = "2.4.4"
+    __version__ = "2.4.5"
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 144465786453, force_registration=True)
         self.config.register_guild(**default_settings)
-        self.group_check = asyncio.create_task(self.group_welcome())
+        # self.group_check = asyncio.create_task(self.group_welcome())
         self.joined = {}
         self.today_count = {"now": datetime.now(timezone.utc)}
+        self.group_welcome.start()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -88,18 +89,23 @@ class Welcome(Events, commands.Cog):
         """
         return
 
+    @discord.ext.tasks.loop(seconds=300)
     async def group_welcome(self) -> None:
+        # log.debug("Checking for new welcomes")
+        for guild_id, members in self.joined.items():
+            if members:
+                try:
+                    await self.send_member_join(members, self.bot.get_guild(guild_id))
+                except Exception:
+                    log.exception("Error in group welcome:")
+        self.joined = {}
+
+    @group_welcome.before_loop
+    async def before_group_welcome(self):
         if version_info >= VersionInfo.from_str("3.2.0"):
             await self.bot.wait_until_red_ready()
         else:
             await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            # log.debug("Checking for new welcomes")
-            for guild_id, members in self.joined.items():
-                if members:
-                    await self.send_member_join(members, self.bot.get_guild(guild_id))
-            self.joined = {}
-            await asyncio.sleep(300)
 
     @commands.group()
     @checks.admin_or_permissions(manage_channels=True)
@@ -940,4 +946,5 @@ class Welcome(Events, commands.Cog):
         await ctx.send(_("Mentioning the user turned {verb}").format(verb=verb))
 
     async def cog_unload(self):
-        self.group_check.cancel()
+        # self.group_check.cancel()
+        self.group_welcome.cancel()
