@@ -47,6 +47,10 @@ class APIError(Exception):
 
 @cog_i18n(_)
 class NASACog(commands.Cog):
+
+    __author__ = ["TrustyJAID"]
+    __version__ = "1.0.0"
+
     def __init__(self, bot: Red):
         self.bot = bot
         self.session = aiohttp.ClientSession(
@@ -58,6 +62,25 @@ class NASACog(commands.Cog):
         self.config.register_channel(guild_id=None, apod=False)
         self.config.register_global(last_apod=None)
         self.apod_loop.start()
+
+    def format_help_for_context(self, ctx: commands.Context) -> str:
+        """
+        Thanks Sinbad!
+        """
+        pre_processed = super().format_help_for_context(ctx)
+        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+
+    async def red_delete_data_for_user(
+        self,
+        *,
+        requester: Literal["discord_deleted_user", "owner", "user", "user_strict"],
+        user_id: int,
+    ):
+        """
+        Method for finding users data inside the cog and deleting it.
+        """
+        # Nothing to delete
+        return
 
     async def cog_unload(self):
         await self.session.close()
