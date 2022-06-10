@@ -21,7 +21,7 @@ from .models import (
     RoverPhoto,
 )
 
-log = logging.getLogger("red.Trusty-cogs.nasa")
+log = logging.getLogger("red.Trusty-cogs.NASACog")
 _ = Translator("NASA", __file__)
 
 

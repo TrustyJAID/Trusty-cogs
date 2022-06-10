@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 
 _ = Translator("NASA", __file__)
 
-log = logging.getLogger("red.trusty-cogs.Tweets")
+log = logging.getLogger("red.trusty-cogs.NASACog")
 
 
 class NASAapodAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
