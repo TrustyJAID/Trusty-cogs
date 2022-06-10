@@ -29,6 +29,10 @@ class NASAImagesCollection(menus.ListPageSource):
     def __init__(self, collection: Collection):
         self.collection = collection
         super().__init__(collection.items, per_page=1)
+        self.select_options = [
+            discord.SelectOption(label=page.data[0].title[:100], value=i)
+            for i, page in enumerate(collection.items)
+        ]
 
     async def format_page(self, view: BaseMenu, page):
         url = None
@@ -59,6 +63,13 @@ class MarsRoverManifest(menus.ListPageSource):
     def __init__(self, manifest: PhotoManifest):
         self.manifest = manifest
         super().__init__(manifest.photos, per_page=10)
+        self.select_options = [
+            discord.SelectOption(
+                label=f"Page {i+1}",
+                value=i,
+            )
+            for i in range(0, self._max_pages)
+        ]
 
     async def format_page(self, view: BaseMenu, photos: List[ManifestPhoto]):
         description = ""
@@ -75,6 +86,14 @@ class MarsRoverManifest(menus.ListPageSource):
 class MarsRoverPhotos(menus.ListPageSource):
     def __init__(self, photos: List[RoverPhoto]):
         super().__init__(photos, per_page=1)
+        self.select_options = [
+            discord.SelectOption(
+                label=f"Page {i+1}",
+                description=f"{page.rover.name} - {page.camera.full_name}",
+                value=i,
+            )
+            for i, page in enumerate(photos)
+        ]
 
     async def format_page(self, view: BaseMenu, photo: RoverPhoto):
         title = f"{photo.camera.full_name} on {photo.rover.name}"
@@ -88,6 +107,9 @@ class MarsRoverPhotos(menus.ListPageSource):
 class NASAEventPages(menus.ListPageSource):
     def __init__(self, events: List[Event]):
         super().__init__(events, per_page=1)
+        self.select_options = [
+            discord.SelectOption(label=page.title[:100], value=i) for i, page in enumerate(events)
+        ]
 
     async def format_page(self, view: BaseMenu, event: Event):
         em = discord.Embed(title=event.title, description=event.description)
@@ -119,6 +141,9 @@ class NASAEventPages(menus.ListPageSource):
 class NASAapod(menus.ListPageSource):
     def __init__(self, pages: List[NASAAstronomyPictureOfTheDay]):
         super().__init__(pages, per_page=1)
+        self.select_options = [
+            discord.SelectOption(label=page.title[:100], value=i) for i, page in enumerate(pages)
+        ]
 
     async def format_page(self, view: Optional[BaseMenu], page: NASAAstronomyPictureOfTheDay):
         em = discord.Embed(
@@ -138,6 +163,9 @@ class EPICPages(menus.ListPageSource):
     def __init__(self, pages: List[EPICData], enhanced: bool = False):
         super().__init__(pages, per_page=1)
         self.enhanced = enhanced
+        self.select_options = [
+            discord.SelectOption(label=page.identifier, value=i) for i, page in enumerate(pages)
+        ]
 
     def get_distance(self, distance: float) -> str:
         return f"{humanize_number(int(distance))} km ({humanize_number(int(distance*0.621371))} Miles)"
@@ -266,6 +294,18 @@ class SkipBackButton(discord.ui.Button):
         await self.view.show_page(0, skip_prev=True, interaction=interaction)
 
 
+class SelectMenu(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(
+            placeholder=_("Select a Page"), min_values=1, max_values=1, options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        self.view.current_page = index
+        await self.view.show_page(self.view.current_page, interaction)
+
+
 class BaseMenu(discord.ui.View):
     def __init__(
         self,
@@ -292,6 +332,10 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
+        self.select_options = getattr(self.source, "select_options", [])
+        self.select_menu: Optional[SelectMenu] = self.get_select_menu()
+        if self.select_menu:
+            self.add_item(self.select_menu)
 
     async def on_timeout(self):
         await self.message.edit(view=None)
@@ -312,6 +356,27 @@ class BaseMenu(discord.ui.View):
             self.first_item.disabled = False
             self.last_item.disabled = False
 
+    def get_select_menu(self):
+        # handles modifying the select menu if more than 25 pages are provided
+        # this will show the previous 12 and next 13 pages in the select menu
+        # based on the currently displayed page. Once you reach close to the max
+        # pages it will display the last 25 pages.
+        if not self.select_options:
+            return None
+        if len(self.select_options) > 25:
+            minus_diff = None
+            plus_diff = 25
+            if 12 < self.current_page < len(self.select_options) - 25:
+                minus_diff = self.current_page - 12
+                plus_diff = self.current_page + 13
+            elif self.current_page >= len(self.select_options) - 25:
+                minus_diff = len(self.select_options) - 25
+                plus_diff = None
+            options = self.select_options[minus_diff:plus_diff]
+        else:
+            options = self.select_options[:25]
+        return SelectMenu(options)
+
     async def start(self, ctx: commands.Context):
         await self.source._prepare_once()
         self.ctx = ctx
@@ -331,6 +396,11 @@ class BaseMenu(discord.ui.View):
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         self.disable_pagination()
+        if self.select_menu and len(self.select_options) > 25 and self.source.is_paginating():
+            self.remove_item(self.select_menu)
+            self.select_menu = self.get_select_menu()
+            if self.select_menu:
+                self.add_item(self.select_menu)
         await interaction.response.edit_message(**kwargs, view=self)
 
     async def send_initial_message(self, ctx: commands.Context) -> discord.Message:

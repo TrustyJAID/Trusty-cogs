@@ -328,6 +328,9 @@ class NASACog(commands.Cog):
                 return
             collection = Collection.from_json(data)
             # log.info(collection)
+        if not collection.items:
+            await ctx.send(_("Nothing could be found matching those parameters."))
+            return
         await BaseMenu(source=NASAImagesCollection(collection), cog=self).start(ctx=ctx)
 
     @nasa.command(name="earth")
