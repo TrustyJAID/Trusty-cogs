@@ -19,9 +19,11 @@ from .menus import (
     NASAEventPages,
     NASAImagesCollection,
     NEOFeedPages,
+    TLEPages,
 )
 from .models import (
     HEADERS,
+    APIError,
     Asset,
     Collection,
     EPICData,
@@ -32,6 +34,7 @@ from .models import (
     NASAEarthAsset,
     NASAImagesAPI,
     NASANearEarthObjectAPI,
+    NASATLEFeed,
     NEOFeed,
     PhotoManifest,
     RoverPhoto,
@@ -43,10 +46,6 @@ if TYPE_CHECKING:
 _ = Translator("NASA", __file__)
 
 log = logging.getLogger("red.trusty-cogs.NASACog")
-
-
-class APIError(Exception):
-    pass
 
 
 @cog_i18n(_)
@@ -125,6 +124,9 @@ class NASACog(commands.Cog):
             if not channel:
                 await self.config.channel_from_id(channel_id).clear()
                 continue
+            if not channel.permissions_for(guild.me).embed_links:
+                await self.config.channel(channel).clear()
+                continue
             tasks.append(channel.send(embed=embed))
         await bounded_gather(*tasks, return_exceptions=True)
 
@@ -147,6 +149,13 @@ class NASACog(commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
+        if not channel.permissions_for(ctx.me).embed_links:
+            await ctx.send(
+                _(
+                    "I require embed links permission in {channel} to post the photo of the day."
+                ).format(channel=channel.mention)
+            )
+            return
         if await self.config.channel(channel).apod():
             await self.config.channel.clear()
             await ctx.send(
@@ -162,10 +171,25 @@ class NASACog(commands.Cog):
                     channel=channel.mention
                 )
             )
+            tokens = await self.bot.get_shared_api_tokens("nasa")
+            api_key = tokens.get("api_key", "DEMO_KEY")
+            apod = await NASAAstronomyPictureOfTheDay.today(api_key, session=self.session)
+            await channel.send(embed=apod.embed())
 
     @nasa.command(name="apod")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_apod(self, ctx: commands.Context, *, query: NASAapodAPI):
-        """NASA's Astronomy Picture of the day"""
+        """
+        NASA's Astronomy Picture of the day
+
+        `count:` Pull a random number of Photo's of the day in a menu
+        `date:` Pick a specific date's photo `YYYY-MM-DD`
+        `start_date:` The start date to pull Photos of the day from `YYYY-MM-DD`
+        `end_date:` The end date to pull photos of the day from `YYYY-MM-DD`
+
+        e.g. `[p]nasa apod date: 2022-06-11` to get the Astronomy Photo of the Day
+        for June 11th, 2022.
+        """
         async with ctx.typing():
             params = query.parameters
             if params.get("count", None) and any(
@@ -201,6 +225,7 @@ class NASACog(commands.Cog):
         await BaseMenu(source=NASAapod(pods)).start(ctx=ctx)
 
     @nasa.command(name="eonet")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_eonet(self, ctx: commands.Context):
         """
         Natural events from EONET.
@@ -216,10 +241,11 @@ class NASACog(commands.Cog):
 
     @nasa.group(name="mars")
     async def mars(self, ctx: commands.Context):
-        """Pull images from Mars Rovers Curiosity, Opportunity, and Spirit"""
+        """Pull images from Mars Rovers Curiosity, Opportunity, Perseverance, and Spirit"""
         pass
 
     @nasa.command(name="neo")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_neo(self, ctx: commands.Context, *, query: NASANearEarthObjectAPI):
         """
         Get Near Earth Object information from NASA
@@ -235,8 +261,11 @@ class NASACog(commands.Cog):
         await BaseMenu(source=NEOFeedPages(feed)).start(ctx=ctx)
 
     @mars.command(name="rovermanifest")
+    @commands.bot_has_permissions(embed_links=True)
     async def mars_rover_manifest(
-        self, ctx: commands.Context, rover_name: Literal["curiosity", "spirit", "opportunity"]
+        self,
+        ctx: commands.Context,
+        rover_name: Literal["curiosity", "spirit", "opportunity", "perseverance"],
     ):
         """Get mission manifest information for a specified Mars Rover"""
         async with ctx.typing():
@@ -249,17 +278,46 @@ class NASACog(commands.Cog):
             manifest = PhotoManifest.from_json(data["photo_manifest"])
         await BaseMenu(source=MarsRoverManifest(manifest)).start(ctx=ctx)
 
+    @mars.command(name="perseverance")
+    @commands.bot_has_permissions(embed_links=True)
+    async def mars_perseverance(self, ctx: commands.Context, *, query: MarsRovers):
+        """
+        Images from Mars Rover Perseverance
+
+        `sol:` The sol date of when the images were taken
+        `camera:` The camera used to take the photos.
+        `page:` The page number of the images to lookup. Each page holds up to
+        25 images.
+        `earth_date:` The equivalent earth date for the sol to lookup.
+
+        see `[p]nasa mars rovermanifest perseverence`
+        """
+        async with ctx.typing():
+            url = "https://api.nasa.gov/mars-photos/api/v1/rovers/perseverance/photos"
+            try:
+                data = await self.request(url, parameters=query.parameters)
+            except APIError as e:
+                await ctx.send(e)
+                return
+            photos = [RoverPhoto.from_json(p) for p in data["photos"]]
+            if not photos:
+                await ctx.send(_("No images could be found for the provided parameters."))
+                return
+        await BaseMenu(source=MarsRoverPhotos(photos)).start(ctx=ctx)
+
     @mars.command(name="curiosity")
+    @commands.bot_has_permissions(embed_links=True)
     async def mars_curiosity(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Curiosity
 
         `sol:` The sol date of when the images were taken
-        `camera:` The camera used to take the photos. Must be one of
-        FHAZ, RHAZ, MAST, CHEMCAM, MAHLI, MARDI, or NAVCAM
+        `camera:` The camera used to take the photos.
         `page:` The page number of the images to lookup. Each page holds up to
         25 images.
         `earth_date:` The equivalent earth date for the sol to lookup.
+
+        see `[p]nasa mars rovermanifest curiosity`
         """
         async with ctx.typing():
             url = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos"
@@ -275,16 +333,18 @@ class NASACog(commands.Cog):
         await BaseMenu(source=MarsRoverPhotos(photos)).start(ctx=ctx)
 
     @mars.command(name="opportunity")
+    @commands.bot_has_permissions(embed_links=True)
     async def mars_opportunity(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Opportunity
 
         `sol:` The sol date of when the images were taken
-        `camera:` The camera used to take the photos. Must be one of
-        FHAZ, RHAZ, NAVCAM, PANCAM, or MINITES
+        `camera:` The camera used to take the photos.
         `page:` The page number of the images to lookup. Each page holds up to
         25 images.
         `earth_date:` The equivalent earth date for the sol to lookup.
+
+        see `[p]nasa mars rovermanifest opportunity`
         """
         async with ctx.typing():
             url = "https://api.nasa.gov/mars-photos/api/v1/rovers/opportunity/photos"
@@ -300,16 +360,18 @@ class NASACog(commands.Cog):
         await BaseMenu(source=MarsRoverPhotos(photos)).start(ctx=ctx)
 
     @mars.command(name="spirit")
+    @commands.bot_has_permissions(embed_links=True)
     async def mars_spirit(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Spirit
 
         `sol:` The sol date of when the images were taken
-        `camera:` The camera used to take the photos. Must be one of
-        FHAZ, RHAZ, NAVCAM, PANCAM, or MINITES
+        `camera:` The camera used to take the photos.
         `page:` The page number of the images to lookup. Each page holds up to
         25 images.
         `earth_date:` The equivalent earth date for the sol to lookup.
+
+        see `[p]nasa mars rovermanifest spirit`
         """
         async with ctx.typing():
             url = "https://api.nasa.gov/mars-photos/api/v1/rovers/spirit/photos"
@@ -330,6 +392,7 @@ class NASACog(commands.Cog):
         pass
 
     @nasa_epic.command(name="natural")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_epic_natural(self, ctx: commands.Context):
         """Natural photos from DSCOVR's Earth Polychromatic Imaging Camera"""
         async with ctx.typing():
@@ -342,6 +405,7 @@ class NASACog(commands.Cog):
         await BaseMenu(source=EPICPages(pages)).start(ctx=ctx)
 
     @nasa_epic.command(name="enhanced")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_epic_enhanced(self, ctx: commands.Context):
         """Enhanced photos from DSCOVR's Earth Polychromatic Imaging Camera"""
         async with ctx.typing():
@@ -354,6 +418,7 @@ class NASACog(commands.Cog):
         await BaseMenu(source=EPICPages(pages, enhanced=True)).start(ctx=ctx)
 
     @nasa.command(name="images")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_images_and_videos(self, ctx: commands.Context, *, query: NASAImagesAPI):
         """
         Search through NASA's images and videos
@@ -366,13 +431,10 @@ class NASACog(commands.Cog):
         """
         async with ctx.typing():
             try:
-                data = await self.request(
-                    "https://images-api.nasa.gov/search", query.parameters, include_api_key=False
-                )
+                collection = await Collection.from_params(query.parameters, session=self.session)
             except APIError as e:
                 await ctx.send(e)
                 return
-            collection = Collection.from_json(data)
             # log.info(collection)
         if not collection.items:
             await ctx.send(_("Nothing could be found matching those parameters."))
@@ -380,6 +442,7 @@ class NASACog(commands.Cog):
         await BaseMenu(source=NASAImagesCollection(collection), cog=self).start(ctx=ctx)
 
     @nasa.command(name="earth")
+    @commands.bot_has_permissions(embed_links=True)
     async def nasa_earth_image(self, ctx: commands.Context, *, query: NASAEarthAsset):
         """
         Images of Earth from satelite
@@ -405,6 +468,21 @@ class NASACog(commands.Cog):
             em = discord.Embed(title=f"{earth.resource.dataset} {earth.resource.planet}")
             em.set_image(url=earth.url)
         await ctx.send(embed=em)
+
+    @nasa.command(name="tle")
+    @commands.bot_has_permissions(embed_links=True)
+    async def nasa_tle(self, ctx: commands.Context, *, search: Optional[str] = None):
+        """Search through TLE data for various satelites"""
+        async with ctx.typing():
+            try:
+                feed = await NASATLEFeed.search(search, session=self.session)
+            except APIError as e:
+                await ctx.send(e)
+                return
+        if not feed.member:
+            await ctx.send(_("No satellites could be found with that search term."))
+            return
+        await BaseMenu(source=TLEPages(feed)).start(ctx=ctx)
 
     async def request(self, url: str, parameters: dict = {}, include_api_key: bool = True) -> dict:
 

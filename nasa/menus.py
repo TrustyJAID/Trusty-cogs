@@ -8,7 +8,7 @@ import discord
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, humanize_number
+from redbot.core.utils.chat_formatting import humanize_list
 from redbot.vendored.discord.ext import menus
 
 from .models import (
@@ -17,10 +17,12 @@ from .models import (
     Event,
     ManifestPhoto,
     NASAAstronomyPictureOfTheDay,
+    NASATLEFeed,
     NearEarthObject,
     NEOFeed,
     PhotoManifest,
     RoverPhoto,
+    TLEMember,
 )
 
 log = logging.getLogger("red.Trusty-cogs.NASACog")
@@ -37,6 +39,21 @@ class NEOFeedPages(menus.ListPageSource):
         ]
 
     async def format_page(self, view: BaseMenu, page: NearEarthObject):
+        em = page.embed()
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
+        return em
+
+
+class TLEPages(menus.ListPageSource):
+    def __init__(self, feed: NASATLEFeed):
+        self.feed = feed
+        super().__init__(self.feed.member, per_page=1)
+        self.select_options = [
+            discord.SelectOption(label=page.name[:100], value=i)
+            for i, page in enumerate(self.feed.member)
+        ]
+
+    async def format_page(self, view: BaseMenu, page: TLEMember):
         em = page.embed()
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em

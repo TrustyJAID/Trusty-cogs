@@ -19,7 +19,9 @@
         "embed_links"
     ],
     "required_cogs": {},
-    "requirements": [],
+    "requirements": [
+        "skyfield"
+    ],
     "short": "Cog for getting info from NASA's API",
     "tags": [
         "NASA",

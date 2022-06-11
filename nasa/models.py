@@ -4,20 +4,27 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from math import sqrt
+from math import hypot, sqrt
 from typing import Dict, List, NamedTuple, Optional, Union
 
 import aiohttp
 import discord
+import skyfield
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
+from skyfield.api import load
+from skyfield.toposlib import wgs84
 
 _ = Translator("NASA", __file__)
 
 log = logging.getLogger("red.trusty-cogs.NASACog")
 
 HEADERS = {"User-Agent": "Trusty-cogs NASA cog for Red-DiscordBot"}
+
+
+class APIError(Exception):
+    pass
 
 
 class QueryConverter(discord.ext.commands.FlagConverter, case_insensitive=True):
@@ -79,7 +86,7 @@ class NASAapodAPI(QueryConverter):
 
 class MarsRovers(QueryConverter):
     sol: Optional[int] = discord.ext.commands.flag(
-        name="sol", default=None, description="sol (ranges from 0 to max found in endpoint)"
+        name="sol", default=0, description="sol (ranges from 0 to max found in endpoint)"
     )
     camera: Optional[str] = discord.ext.commands.flag(
         name="camera",
@@ -210,6 +217,148 @@ class NASAImagesAPI(QueryConverter):
     )
 
 
+@dataclass
+class TLEMember:
+    id: str
+    type: str
+    satelliteId: int
+    name: str
+    date: str
+    line1: str
+    line2: str
+
+    @property
+    def datetime(self):
+        return datetime.strptime(self.date, "%Y-%m-%dT%H:%M:%S%z")
+
+    @classmethod
+    def from_json(cls, data: dict) -> TLEMember:
+        return cls(id=data.pop("@id"), type=data.pop("@type"), **data)
+
+    def embed(self) -> discord.Embed:
+        lat = self.latitude()
+        lon = self.longitude()
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lon}"
+        coords = f"[Latitude: {lat:.2f} Longitude: {lon:.2f}]({maps_url})"
+        description = (
+            f"Satellite ID: {self.satelliteId}\n"
+            f"Position: {coords}\nElevation: {self.elevation():.2f} km\n"
+            f"Velocity: {self.velocity():.2f} km/s"
+        )
+        em = discord.Embed(title=self.name, description=description, timestamp=self.datetime)
+        em.add_field(name="Line 1", value=self.line1, inline=False)
+        em.add_field(name="Line 2", value=self.line2, inline=False)
+        return em
+
+    def velocity(self):
+        return hypot(*list(self.satellite.at(load.timescale().now()).velocity.km_per_s))
+
+    def distance(self):
+        return self.satellite.at(load.timescale().now()).distance
+
+    def location(self):
+        return wgs84.geographic_position_of(self.satellite.at(load.timescale().now()))
+
+    def latitude(self):
+        return self.location().latitude.degrees
+
+    def longitude(self):
+        return self.location().longitude.degrees
+
+    def elevation(self):
+        return self.location().elevation.km
+
+    @property
+    def satellite(self) -> skyfield.EarthSatellite:
+        ts = load.timescale()
+        return skyfield.api.EarthSatellite(self.line1, self.line2, self.name, ts)
+
+
+@dataclass
+class TLEParameters:
+    search: str
+    sort: str
+    sort_dir: str
+    page: int
+    page_size: int
+
+    @classmethod
+    def from_json(cls, data: dict) -> TLEParameters:
+        return cls(sort_dir=data.pop("sort-dir"), page_size=data.pop("page-size"), **data)
+
+
+@dataclass
+class TLEView:
+    id: str
+    type: str
+    first: str
+    last: str
+    next: Optional[str] = None
+
+    @classmethod
+    def from_json(cls, data: dict) -> TLEView:
+        return cls(id=data.pop("@id"), type=data.pop("@type"), **data)
+
+
+@dataclass
+class NASATLEFeed:
+    context: str
+    id: str
+    type: str
+    totalItems: int
+    member: List[TLEMember]
+    parameters: TLEParameters
+    view: TLEView
+
+    @classmethod
+    def from_json(cls, data: dict) -> NASATLEFeed:
+        return cls(
+            context=data.pop("@context"),
+            id=data.pop("@id"),
+            type=data.pop("@type"),
+            totalItems=data["totalItems"],
+            member=[TLEMember.from_json(i) for i in data["member"]],
+            parameters=TLEParameters.from_json(data["parameters"]),
+            view=TLEView.from_json(data["view"]),
+        )
+
+    @classmethod
+    async def get(
+        cls, params: Dict[str, str] = {}, session: Optional[aiohttp.ClientSession] = None
+    ) -> NASATLEFeed:
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(
+                    "http://tle.ivanstanojevic.me/api/tle", params=params
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                    else:
+                        raise APIError()
+        else:
+            async with session.get("http://tle.ivanstanojevic.me/api/tle", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                else:
+                    raise APIError()
+        return cls.from_json(data)
+
+    async def next(self, session: Optional[aiohttp.ClientSession] = None) -> NASATLEFeed:
+        if self.view.next:
+            return await self.get(session=session)
+        else:
+            raise APIError()
+
+    @classmethod
+    async def search(
+        cls, query: Optional[str] = None, session: Optional[aiohttp.ClientSession] = None
+    ) -> NASATLEFeed:
+        params = {}
+        if query:
+            params["search"] = query
+        return await cls.get(params, session=session)
+
+
 class InsightData(NamedTuple):
     av: float
     ct: int
@@ -254,11 +403,11 @@ class SolData:
     Season: str
 
     @property
-    def first_utc(self):
+    def first_utc(self) -> datetime:
         return datetime.strptime(self.First_UTC, "%Y-%m-%dT%H:%M:%SZ")
 
     @property
-    def last_utc(self):
+    def last_utc(self) -> datetime:
         return datetime.strptime(self.Last_UTC, "%Y-%m-%dT%H:%M:%SZ")
 
     @classmethod
@@ -926,4 +1075,64 @@ class Collection:
             items=[Items.from_json(i) for i in data.pop("items", [])],
             links=[Links.from_json(i) for i in data.pop("links", [])],
             **data,
+        )
+
+    @classmethod
+    async def from_params(
+        cls, params: Dict[str, str] = {}, session: Optional[aiohttp.ClientSession] = None
+    ) -> Collection:
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(
+                    "https://images-api.nasa.gov/search", params=params
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                    else:
+                        raise APIError()
+        else:
+            async with session.get("https://images-api.nasa.gov/search", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                else:
+                    raise APIError()
+        return cls.from_json(data)
+
+    @classmethod
+    async def get(
+        cls,
+        q: Optional[str] = None,
+        center: Optional[str] = None,
+        description: Optional[str] = None,
+        description_508: Optional[str] = None,
+        keywords: Optional[str] = None,
+        location: Optional[str] = None,
+        media_type: Optional[str] = None,
+        nasa_id: Optional[str] = None,
+        page: Optional[str] = None,
+        photographer: Optional[str] = None,
+        secondary_creator: Optional[str] = None,
+        title: Optional[str] = None,
+        year_start: Optional[str] = None,
+        year_end: Optional[str] = None,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> Collection:
+        params = {
+            "q": q,
+            "center": center,
+            "description": description,
+            "description_508": description_508,
+            "keywords": keywords,
+            "location": location,
+            "media_type": media_type,
+            "nasa_id": nasa_id,
+            "page": page,
+            "photographer": photographer,
+            "secondary_creator": secondary_creator,
+            "title": title,
+            "year_start": year_start,
+            "year_end": year_end,
+        }
+        return await cls.from_params(
+            params={k: v for k, v in params.items() if v is not None}, session=session
         )
