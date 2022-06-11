@@ -11,12 +11,23 @@ import aiohttp
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_number
 
 _ = Translator("NASA", __file__)
 
 log = logging.getLogger("red.trusty-cogs.NASACog")
 
 HEADERS = {"User-Agent": "Trusty-cogs NASA cog for Red-DiscordBot"}
+
+
+class QueryConverter(discord.ext.commands.FlagConverter, case_insensitive=True):
+    @property
+    def parameters(self) -> Dict[str, str]:
+        return {k: v for k, v in self if v is not None}
+
+    @property
+    def params(self) -> Dict[str, str]:
+        return self.parameters
 
 
 class DateFinder(discord.app_commands.Transformer):
@@ -43,7 +54,7 @@ class DateFinder(discord.app_commands.Transformer):
         return await cls.convert(ctx, value)
 
 
-class NASAapodAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
+class NASAapodAPI(QueryConverter):
     date: Optional[str] = discord.ext.commands.flag(
         name="date", default=None, description="YYYY-MM-DD The date of the APOD image to retrieve"
     )
@@ -65,12 +76,8 @@ class NASAapodAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
         description="If this is specified then count randomly chosen images will be returned.",
     )
 
-    @property
-    def parameters(self):
-        return {k: v for k, v in self if v is not None}
 
-
-class MarsRovers(discord.ext.commands.FlagConverter, case_insensitive=True):
+class MarsRovers(QueryConverter):
     sol: Optional[int] = discord.ext.commands.flag(
         name="sol", default=None, description="sol (ranges from 0 to max found in endpoint)"
     )
@@ -89,12 +96,8 @@ class MarsRovers(discord.ext.commands.FlagConverter, case_insensitive=True):
         converter=DateFinder,
     )
 
-    @property
-    def parameters(self):
-        return {k: v for k, v in self if v is not None}
 
-
-class NASAEarthAsset(discord.ext.commands.FlagConverter, case_insensitive=True):
+class NASAEarthAsset(QueryConverter):
     lat: float = discord.ext.commands.flag(name="lat", description="Latitude")
     lon: float = discord.ext.commands.flag(
         name="lon",
@@ -111,12 +114,8 @@ class NASAEarthAsset(discord.ext.commands.FlagConverter, case_insensitive=True):
         description="width and height of image in degrees",
     )
 
-    @property
-    def parameters(self):
-        return {k: v for k, v in self if v is not None}
 
-
-class NASANearEarthObjectAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
+class NASANearEarthObjectAPI(QueryConverter):
     start_date: Optional[str] = discord.ext.commands.flag(
         name="start_date",
         default=None,
@@ -130,12 +129,8 @@ class NASANearEarthObjectAPI(discord.ext.commands.FlagConverter, case_insensitiv
         converter=DateFinder,
     )
 
-    @property
-    def parameters(self):
-        return {k: v for k, v in self if v is not None}
 
-
-class NASAImagesAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
+class NASAImagesAPI(QueryConverter):
     q: Optional[str] = discord.ext.commands.flag(
         name="q",
         aliases=["query"],
@@ -213,10 +208,6 @@ class NASAImagesAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
         default=None,
         description="The end year for results. Format: YYYY.",
     )
-
-    @property
-    def parameters(self):
-        return {k: v for k, v in self if v is not None}
 
 
 class InsightData(NamedTuple):
@@ -576,6 +567,13 @@ class RoverPhoto:
     def from_json(cls, data: dict) -> RoverPhoto:
         return cls(camera=Camera(**data.pop("camera")), rover=Rover(**data.pop("rover")), **data)
 
+    def embed(self):
+        title = f"{self.camera.full_name} on {self.rover.name}"
+        description = f"Sol: {self.sol}\nEarth Date: {self.earth_date}"
+        em = discord.Embed(title=title, description=description)
+        em.set_image(url=self.img_src)
+        return em
+
 
 class Category(NamedTuple):
     id: str
@@ -639,6 +637,32 @@ class Event:
         col = int((180 + lon) * (2 ** 3) / 288)
         date_str = date.strftime("%Y-%m-%d")
         return f"https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{date_str}/250m/3/{row}/{col}.jpg"
+
+    def embed(self):
+        em = discord.Embed(title=self.title, description=self.description)
+        em.set_image(url=self.image_url)
+        coordinates = self.geometry[-1].coordinates
+        lat = coordinates[1]
+        lon = coordinates[0]
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lon}"
+        coords = f"[Latitude: {lat}\nLongitude: {lon}]({maps_url})"
+        em.add_field(name="Coordinates", value=coords)
+        value = ""
+        for geometry in reversed(self.geometry):
+            if len(value) >= 512:
+                break
+            if geometry.magnitudeValue is None:
+                continue
+            timestamp = discord.utils.format_dt(geometry.date)
+            value += f"{geometry.magnitudeValue} {geometry.magnitudeUnit} - {timestamp}\n"
+        if value:
+            em.add_field(name="Data", value=value)
+        sources = ""
+        for source in self.sources:
+            sources += f"[{source.id}]({source.url})\n"
+        if sources:
+            em.add_field(name="Sources", value=sources)
+        return em
 
 
 class CentroidCoords(NamedTuple):
@@ -722,6 +746,22 @@ class EPICData:
     def enhanced_url(self):
         url_date = self.date.strftime("%Y/%m/%d")
         return f"https://epic.gsfc.nasa.gov/archive/enhanced/{url_date}/png/{self.image}.png"
+
+    def get_distance(self, distance: float) -> str:
+        return f"{humanize_number(int(distance))} km ({humanize_number(int(distance*0.621371))} Miles)"
+
+    def embed(self, enhanced: bool = False) -> discord.Embed:
+        url = self.natural_url if not enhanced else self.enhanced_url
+        description = (
+            f"{self.caption}\n\n"
+            f"Distance from Earth: {self.get_distance(self.coords.dscovr_j2000_position.distance)}\n"
+            f"Distance from Sun: {self.get_distance(self.coords.sun_j2000_position.distance)}\n"
+            f"Distance from Moon: {self.get_distance(self.coords.lunar_j2000_position.distance)}\n"
+        )
+
+        em = discord.Embed(title=self.identifier, description=description, url=url)
+        em.set_image(url=url)
+        return em
 
 
 @dataclass
@@ -814,6 +854,19 @@ class NASAAstronomyPictureOfTheDay:
         session: Optional[aiohttp.ClientSession] = None,
     ) -> NASAAstronomyPictureOfTheDay:
         return await cls.get(api_key, session=session)  # type: ignore
+
+    def embed(self) -> discord.Embed:
+        em = discord.Embed(
+            title=self.title, description=self.explanation, timestamp=self.date, url=self.url
+        )
+        em.set_image(url=self.url)
+        if self.thumbnail_url:
+            em.set_thumbnail(url=self.thumbnail_url)
+        if self.copyright:
+            em.add_field(name="Copyright (c)", value=self.copyright)
+        if self.hdurl:
+            em.add_field(name="HD URL", value=f"[Click here]({self.hdurl})")
+        return em
 
 
 @dataclass

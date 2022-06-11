@@ -118,10 +118,7 @@ class MarsRoverPhotos(menus.ListPageSource):
         ]
 
     async def format_page(self, view: BaseMenu, photo: RoverPhoto):
-        title = f"{photo.camera.full_name} on {photo.rover.name}"
-        description = f"Sol: {photo.sol}\nEarth Date: {photo.earth_date}"
-        em = discord.Embed(title=title, description=description)
-        em.set_image(url=photo.img_src)
+        em = photo.embed()
         em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
@@ -134,29 +131,8 @@ class NASAEventPages(menus.ListPageSource):
         ]
 
     async def format_page(self, view: BaseMenu, event: Event):
-        em = discord.Embed(title=event.title, description=event.description)
-        em.set_image(url=event.image_url)
-        coordinates = event.geometry[-1].coordinates
-        lat = coordinates[1]
-        lon = coordinates[0]
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lon}"
-        coords = f"[Latitude: {lat}\nLongitude: {lon}]({maps_url})"
-        em.add_field(name="Coordinates", value=coords)
-        value = ""
-        for geometry in reversed(event.geometry):
-            if len(value) >= 512:
-                break
-            if geometry.magnitudeValue is None:
-                continue
-            timestamp = discord.utils.format_dt(geometry.date)
-            value += f"{geometry.magnitudeValue} {geometry.magnitudeUnit} - {timestamp}\n"
-        if value:
-            em.add_field(name="Data", value=value)
-        sources = ""
-        for source in event.sources:
-            sources += f"[{source.id}]({source.url})\n"
-        if sources:
-            em.add_field(name="Sources", value=sources)
+        em = event.embed()
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -167,19 +143,9 @@ class NASAapod(menus.ListPageSource):
             discord.SelectOption(label=page.title[:100], value=i) for i, page in enumerate(pages)
         ]
 
-    async def format_page(self, view: Optional[BaseMenu], page: NASAAstronomyPictureOfTheDay):
-        em = discord.Embed(
-            title=page.title, description=page.explanation, timestamp=page.date, url=page.url
-        )
-        em.set_image(url=page.url)
-        if page.thumbnail_url:
-            em.set_thumbnail(url=page.thumbnail_url)
-        if page.copyright:
-            em.add_field(name="Copyright (c)", value=page.copyright)
-        if view is not None:
-            em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
-        if page.hdurl:
-            em.add_field(name="HD URL", value=f"[Click here]({page.hdurl})")
+    async def format_page(self, view: BaseMenu, page: NASAAstronomyPictureOfTheDay):
+        em = page.embed()
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
         return em
 
 
@@ -191,21 +157,8 @@ class EPICPages(menus.ListPageSource):
             discord.SelectOption(label=page.identifier, value=i) for i, page in enumerate(pages)
         ]
 
-    def get_distance(self, distance: float) -> str:
-        return f"{humanize_number(int(distance))} km ({humanize_number(int(distance*0.621371))} Miles)"
-
     async def format_page(self, view: BaseMenu, page: EPICData):
-        url = page.natural_url if not self.enhanced else page.enhanced_url
-        description = (
-            f"{page.caption}\n\n"
-            f"Distance from Earth: {self.get_distance(page.coords.dscovr_j2000_position.distance)}\n"
-            f"Distance from Sun: {self.get_distance(page.coords.sun_j2000_position.distance)}\n"
-            f"Distance from Moon: {self.get_distance(page.coords.lunar_j2000_position.distance)}\n"
-        )
-
-        em = discord.Embed(title=page.identifier, description=description, url=url)
-        em.set_image(url=url)
-        return em
+        return page.embed(self.enhanced)
 
 
 class StopButton(discord.ui.Button):
@@ -374,11 +327,15 @@ class BaseMenu(discord.ui.View):
             self.back_button.disabled = True
             self.first_item.disabled = True
             self.last_item.disabled = True
+            if self.select_menu:
+                self.select_menu.disabled = True
         else:
             self.forward_button.disabled = False
             self.back_button.disabled = False
             self.first_item.disabled = False
             self.last_item.disabled = False
+            if self.select_menu:
+                self.select_menu.disabled = False
 
     def get_select_menu(self):
         # handles modifying the select menu if more than 25 pages are provided

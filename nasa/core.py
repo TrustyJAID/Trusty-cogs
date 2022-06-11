@@ -104,7 +104,7 @@ class NASACog(commands.Cog):
                 log.exception("Error in Astronomy Photo of the Day loop")
             return
         try:
-            embed = await NASAapod([]).format_page(None, apod)
+            embed = apod.embed()
         except Exception:
             log.exception("error building embed")
             return
@@ -147,7 +147,6 @@ class NASACog(commands.Cog):
         """
         if channel is None:
             channel = ctx.channel
-        await self.config.channel(channel).guild_id.set(channel.guild.id)
         if await self.config.channel(channel).apod():
             await self.config.channel.clear()
             await ctx.send(
@@ -156,6 +155,7 @@ class NASACog(commands.Cog):
                 )
             )
         else:
+            await self.config.channel(channel).guild_id.set(channel.guild.id)
             await self.config.channel(channel).apod.set(True)
             await ctx.send(
                 _("Posting NASA's Astronomy Photo of the Day in {channel}.").format(
@@ -167,12 +167,18 @@ class NASACog(commands.Cog):
     async def nasa_apod(self, ctx: commands.Context, *, query: NASAapodAPI):
         """NASA's Astronomy Picture of the day"""
         async with ctx.typing():
-            parameters = query.parameters
-            parameters["thumbs"] = "True"
+            params = query.parameters
+            if params.get("count", None) and any(
+                params.get(k) for k in ["start_date", "end_date", "date"]
+            ):
+                await ctx.send(_("You cannot include count and any date parameters."))
+                return
+            if params.get("start_date", None) and params.get("date", None):
+                await ctx.send(_("You cannot include date and start_date parameters."))
+                return
+            params["thumbs"] = "True"
             try:
-                data = await self.request(
-                    "https://api.nasa.gov/planetary/apod", parameters=parameters
-                )
+                data = await self.request("https://api.nasa.gov/planetary/apod", parameters=params)
             except APIError as e:
                 await ctx.send(e)
                 return
@@ -221,7 +227,7 @@ class NASACog(commands.Cog):
         async with ctx.typing():
             url = "https://api.nasa.gov/neo/rest/v1/feed"
             try:
-                data = await self.request(url, parameters={})
+                data = await self.request(url, parameters=query.parameters)
             except APIError as e:
                 await ctx.send(e)
                 return
