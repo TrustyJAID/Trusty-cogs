@@ -18,8 +18,10 @@ from .menus import (
     NASAapod,
     NASAEventPages,
     NASAImagesCollection,
+    NEOFeedPages,
 )
 from .models import (
+    HEADERS,
     Asset,
     Collection,
     EPICData,
@@ -29,6 +31,8 @@ from .models import (
     NASAAstronomyPictureOfTheDay,
     NASAEarthAsset,
     NASAImagesAPI,
+    NASANearEarthObjectAPI,
+    NEOFeed,
     PhotoManifest,
     RoverPhoto,
 )
@@ -53,9 +57,7 @@ class NASACog(commands.Cog):
 
     def __init__(self, bot: Red):
         self.bot = bot
-        self.session = aiohttp.ClientSession(
-            headers={"User-Agent": "Trusty-cogs NASA cog for Red-DiscordBot"}
-        )
+        self.session = aiohttp.ClientSession(headers=HEADERS)
         self._last_rate_limit_remaining = 1000
         self._last_rate_limit_limit = None
         self.config = Config.get_conf(self, 218773382617890828, force_registration=True)
@@ -206,12 +208,27 @@ class NASACog(commands.Cog):
             events = [Event.from_json(e) for e in data["events"]]
         await BaseMenu(source=NASAEventPages(events)).start(ctx=ctx)
 
-    @nasa.group(name="marsrover", aliases=["rover"])
-    async def mars_rovers(self, ctx: commands.Context):
+    @nasa.group(name="mars")
+    async def mars(self, ctx: commands.Context):
         """Pull images from Mars Rovers Curiosity, Opportunity, and Spirit"""
         pass
 
-    @mars_rovers.command(name="manifest")
+    @nasa.command(name="neo")
+    async def nasa_neo(self, ctx: commands.Context, *, query: NASANearEarthObjectAPI):
+        """
+        Get Near Earth Object information from NASA
+        """
+        async with ctx.typing():
+            url = "https://api.nasa.gov/neo/rest/v1/feed"
+            try:
+                data = await self.request(url, parameters={})
+            except APIError as e:
+                await ctx.send(e)
+                return
+            feed = NEOFeed.from_json(data)
+        await BaseMenu(source=NEOFeedPages(feed)).start(ctx=ctx)
+
+    @mars.command(name="rovermanifest")
     async def mars_rover_manifest(
         self, ctx: commands.Context, rover_name: Literal["curiosity", "spirit", "opportunity"]
     ):
@@ -226,7 +243,7 @@ class NASACog(commands.Cog):
             manifest = PhotoManifest.from_json(data["photo_manifest"])
         await BaseMenu(source=MarsRoverManifest(manifest)).start(ctx=ctx)
 
-    @mars_rovers.command(name="curiosity")
+    @mars.command(name="curiosity")
     async def mars_curiosity(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Curiosity
@@ -251,7 +268,7 @@ class NASACog(commands.Cog):
                 return
         await BaseMenu(source=MarsRoverPhotos(photos)).start(ctx=ctx)
 
-    @mars_rovers.command(name="opportunity")
+    @mars.command(name="opportunity")
     async def mars_opportunity(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Opportunity
@@ -276,7 +293,7 @@ class NASACog(commands.Cog):
                 return
         await BaseMenu(source=MarsRoverPhotos(photos)).start(ctx=ctx)
 
-    @mars_rovers.command(name="spirit")
+    @mars.command(name="spirit")
     async def mars_spirit(self, ctx: commands.Context, *, query: MarsRovers):
         """
         Images from Mars Rover Spirit

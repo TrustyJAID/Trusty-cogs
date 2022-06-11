@@ -1,17 +1,46 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from math import sqrt
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Union
 
+import aiohttp
 import discord
+from redbot.core import commands
 from redbot.core.i18n import Translator
 
 _ = Translator("NASA", __file__)
 
 log = logging.getLogger("red.trusty-cogs.NASACog")
+
+HEADERS = {"User-Agent": "Trusty-cogs NASA cog for Red-DiscordBot"}
+
+
+class DateFinder(discord.app_commands.Transformer):
+    """
+    Converter for `YYYY-MM-DD` date formats
+    """
+
+    DATE_RE = re.compile(
+        r"((19|20)\d\d)[- \/.](0[1-9]|1[012]|[1-9])[- \/.](0[1-9]|[12][0-9]|3[01]|[1-9])"
+    )
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> str:
+        find = cls.DATE_RE.search(argument)
+        if find:
+            date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
+            return date_str
+        else:
+            raise commands.BadArgument("The value provided is not `YYYY-MM-DD` formatted.")
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> str:
+        ctx = await interaction.client.get_context(interaction)
+        return await cls.convert(ctx, value)
 
 
 class NASAapodAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
@@ -22,11 +51,13 @@ class NASAapodAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
         name="start_date",
         default=None,
         description="YYYY-MM-DD The start of a date range. Cannot be used with date.",
+        converter=DateFinder,
     )
     end_date: Optional[str] = discord.ext.commands.flag(
         name="end_date",
         default=None,
         description="YYYY-MM-DD The end of the date range, when used with start_date.",
+        converter=DateFinder,
     )
     count: Optional[int] = discord.ext.commands.flag(
         name="count",
@@ -54,7 +85,8 @@ class MarsRovers(discord.ext.commands.FlagConverter, case_insensitive=True):
     earth_date: Optional[str] = discord.ext.commands.flag(
         name="earth_date",
         default=None,
-        description="corresponding date on earth for the given sol",
+        description="YYYY-MM-DD corresponding date on earth for the given sol",
+        converter=DateFinder,
     )
 
     @property
@@ -71,11 +103,31 @@ class NASAEarthAsset(discord.ext.commands.FlagConverter, case_insensitive=True):
     date: str = discord.ext.commands.flag(
         name="date",
         description="YYYY-MM-DD beginning of 30 day date range that will be used to look for closest image to that date",
+        converter=DateFinder,
     )
     dim: Optional[float] = discord.ext.commands.flag(
         name="dim",
         default=None,
         description="width and height of image in degrees",
+    )
+
+    @property
+    def parameters(self):
+        return {k: v for k, v in self if v is not None}
+
+
+class NASANearEarthObjectAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
+    start_date: Optional[str] = discord.ext.commands.flag(
+        name="start_date",
+        default=None,
+        description="YYYY-MM-DD Starting date for asteroid search",
+        converter=DateFinder,
+    )
+    end_date: Optional[str] = discord.ext.commands.flag(
+        name="end_date",
+        default=None,
+        description="YYYY-MM-DD Ending date for asteroid search",
+        converter=DateFinder,
     )
 
     @property
@@ -165,6 +217,309 @@ class NASAImagesAPI(discord.ext.commands.FlagConverter, case_insensitive=True):
     @property
     def parameters(self):
         return {k: v for k, v in self if v is not None}
+
+
+class InsightData(NamedTuple):
+    av: float
+    ct: int
+    mn: float
+    mx: float
+
+
+class WindDirection(NamedTuple):
+    compass_degrees: float
+    compass_point: str
+    compass_right: float
+    compass_up: float
+    ct: int
+
+
+@dataclass
+class Validity:
+    sol_hours_with_data: List[int]
+    valid: bool
+
+
+@dataclass
+class InsightWD:
+    compass_pts: Dict[str, WindDirection]
+    most_common: Optional[WindDirection] = None
+
+    @classmethod
+    def from_json(cls, data: dict) -> InsightWD:
+        wd = WindDirection(**data.pop("most_common")) if data["most_common"] else None
+        compass_pts = {key: WindDirection(**data[key]) for key in data}
+        return cls(most_common=wd, compass_pts=compass_pts)
+
+
+@dataclass
+class SolData:
+    atmospheric_temp: Optional[InsightData]
+    horizontal_windspeed: Optional[InsightData]
+    pressure: Optional[InsightData]
+    wind_direction: Optional[InsightWD]
+    First_UTC: str
+    Last_UTC: str
+    Season: str
+
+    @property
+    def first_utc(self):
+        return datetime.strptime(self.First_UTC, "%Y-%m-%dT%H:%M:%SZ")
+
+    @property
+    def last_utc(self):
+        return datetime.strptime(self.Last_UTC, "%Y-%m-%dT%H:%M:%SZ")
+
+    @classmethod
+    def from_json(cls, data: dict) -> SolData:
+        at = InsightData(**data["AT"]) if data.get("AT") else None
+        hws = InsightData(**data["HWS"]) if data.get("HWS") else None
+        pre = InsightData(**data["PRE"]) if data.get("PRE") else None
+        wd = InsightWD.from_json(data["WD"]) if data.get("WD") else None
+        return cls(
+            atmospheric_temp=at,
+            horizontal_windspeed=hws,
+            pressure=pre,
+            wind_direction=wd,
+            First_UTC=data["First_UTC"],
+            Last_UTC=data["Last_UTC"],
+            Season=data["Season"],
+        )
+
+
+@dataclass
+class SolValidity:
+    atmospheric_temp: Validity
+    horizontal_windspeed: Validity
+    pressure: Validity
+    wind_direction: Validity
+
+    @classmethod
+    def from_json(cls, data: dict) -> SolValidity:
+        return cls(
+            atmospheric_temp=Validity(**data["AT"]),
+            horizontal_windspeed=Validity(**data["HWS"]),
+            pressure=Validity(**data["PRE"]),
+            wind_direction=Validity(**data["WD"]),
+        )
+
+
+@dataclass
+class MarsInsightValidity:
+    sol_hours_required: int
+    sols_checked: List[str]
+    sols: Dict[str, SolValidity]
+
+    @classmethod
+    def from_json(cls, data: dict) -> MarsInsightValidity:
+        return cls(
+            sol_hours_required=data["sol_hours_required"],
+            sols_checked=data["sols_checked"],
+            sols={key: SolValidity.from_json(data[key]) for key in data["sols_checked"]},
+        )
+
+
+@dataclass
+class MarsInsightFeed:
+    sol_keys: List[str]
+    validity_checks: MarsInsightValidity
+    sols: Dict[str, SolData]
+
+    @classmethod
+    def from_json(cls, data: dict) -> MarsInsightFeed:
+        return cls(
+            sol_keys=data["sol_keys"],
+            validity_checks=MarsInsightValidity.from_json(data["validity_checks"]),
+            sols={key: SolData.from_json(data[key]) for key in data["sol_keys"]},
+        )
+
+    @classmethod
+    async def get(
+        cls, api_key: str = "DEMO_KEY", session: Optional[aiohttp.ClientSession] = None
+    ) -> MarsInsightFeed:
+        url = f"https://api.nasa.gov/insight_weather/?api_key={api_key}&feedtype=json&ver=1.0"
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url) as resp:
+                data = await resp.json()
+        return cls.from_json(data)
+
+
+class EstimatedDiameter(NamedTuple):
+    estimated_diameter_min: float
+    estimated_diameter_max: float
+
+    def __str__(self):
+        return f"min: {self.estimated_diameter_min:.2f} max: {self.estimated_diameter_max:.2f}"
+
+
+@dataclass
+class EstimatedDiameterData:
+    kilometers: EstimatedDiameter
+    meters: EstimatedDiameter
+    miles: EstimatedDiameter
+    feet: EstimatedDiameter
+
+    @classmethod
+    def from_json(cls, data: dict) -> EstimatedDiameterData:
+        return cls(
+            kilometers=EstimatedDiameter(**data["kilometers"]),
+            meters=EstimatedDiameter(**data["meters"]),
+            miles=EstimatedDiameter(**data["miles"]),
+            feet=EstimatedDiameter(**data["feet"]),
+        )
+
+
+class RelativeVelocity(NamedTuple):
+    kilometers_per_second: float
+    kilometers_per_hour: float
+    miles_per_hour: float
+
+    @classmethod
+    def from_json(cls, data: dict) -> RelativeVelocity:
+        return cls(
+            kilometers_per_second=float(data["kilometers_per_second"]),
+            kilometers_per_hour=float(data["kilometers_per_hour"]),
+            miles_per_hour=float(data["miles_per_hour"]),
+        )
+
+
+class MissDistance(NamedTuple):
+    astronomical: float
+    lunar: float
+    kilometers: float
+    miles: float
+
+    @classmethod
+    def from_json(cls, data: dict) -> MissDistance:
+        return cls(
+            astronomical=float(data["astronomical"]),
+            lunar=float(data["lunar"]),
+            kilometers=float(data["kilometers"]),
+            miles=float(data["miles"]),
+        )
+
+
+@dataclass
+class CloseApproachData:
+    close_approach_date: str
+    close_approach_date_full: str
+    epoch_date_close_approach: int
+    relative_velocity: RelativeVelocity
+    miss_distance: MissDistance
+    orbiting_body: str
+
+    @classmethod
+    def from_json(cls, data: dict) -> CloseApproachData:
+        return cls(
+            relative_velocity=RelativeVelocity.from_json(data.pop("relative_velocity")),
+            miss_distance=MissDistance.from_json(data.pop("miss_distance")),
+            **data,
+        )
+
+    def __str__(self):
+        ts = discord.utils.format_dt(self.datetime)
+        return (
+            f"Time: {ts}\nOrbiting: {self.orbiting_body}\n"
+            "__Relative Velocity__\n"
+            f"{self.relative_velocity.kilometers_per_second:.2f} Km/s\n"
+            f"{self.relative_velocity.kilometers_per_hour:.2f} Km/h\n"
+            f"{self.relative_velocity.miles_per_hour:.2f} Mph\n"
+            "__Miss Distance__\n"
+            f"{self.miss_distance.astronomical:.2f} AU\n"
+            f"{self.miss_distance.lunar:.2f} LD\n"
+            f"{self.miss_distance.kilometers:.2f} km\n"
+            f"{self.miss_distance.miles:.2f} miles\n"
+        )
+
+    @property
+    def timestamp(self):
+        return self.epoch_date_close_approach / 1000
+
+    @property
+    def datetime(self):
+        return datetime.fromtimestamp(self.timestamp)
+
+
+@dataclass
+class NearEarthObject:
+    links: Dict[str, str]
+    id: str
+    neo_reference_id: str
+    name: str
+    nasa_jpl_url: str
+    absolute_magnitude_h: float
+    estimated_diameter: EstimatedDiameterData
+    is_potentially_hazardous_asteroid: bool
+    close_approach_data: List[CloseApproachData]
+    is_sentry_object: bool
+
+    @classmethod
+    def from_json(cls, data: dict) -> NearEarthObject:
+        return cls(
+            estimated_diameter=EstimatedDiameterData.from_json(data.pop("estimated_diameter")),
+            close_approach_data=[
+                CloseApproachData.from_json(i) for i in data.pop("close_approach_data", [])
+            ],
+            **data,
+        )
+
+    def embed(self):
+        em = discord.Embed(title=self.name)
+        diameter = (
+            f"Km: {self.estimated_diameter.kilometers}\n m: {self.estimated_diameter.meters}\n"
+            f"mi: {self.estimated_diameter.miles}\n feet: {self.estimated_diameter.feet}\n"
+        )
+        em.add_field(name="Estimated Diameter", value=diameter)
+        for approach in self.close_approach_data:
+            em.add_field(name="Close Approach data", value=str(approach))
+        return em
+
+
+@dataclass
+class NEOFeed:
+    links: Dict[str, str]
+    element_count: int
+    near_earth_objects: List[NearEarthObject]
+
+    @classmethod
+    def from_json(cls, data: dict) -> NEOFeed:
+        neos = data.pop("near_earth_objects", {})
+        near_earth_objects = [
+            NearEarthObject.from_json(neo) for day in neos.values() for neo in day
+        ]
+        return cls(
+            near_earth_objects=sorted(
+                near_earth_objects, key=lambda x: x.close_approach_data[0].timestamp
+            ),
+            **data,
+        )
+
+    @classmethod
+    async def get(
+        cls,
+        api_key: str = "DEMO_KEY",
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> NEOFeed:
+        params = {"api_key": api_key}
+        if start_date:
+            params["start_date"] = start_date.strftime("%Y-%m-%d")
+        if end_date:
+            params["end_date"] = end_date.strftime("%Y-%m-%d")
+        url = "https://api.nasa.gov/neo/rest/v1/feed"
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(url, params=params) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url, params=params) as resp:
+                data = await resp.json()
+        return cls.from_json(data)
 
 
 @dataclass
@@ -408,6 +763,57 @@ class NASAAstronomyPictureOfTheDay:
     def from_json(cls, data: dict) -> NASAAstronomyPictureOfTheDay:
         date = datetime.fromisoformat(data.pop("date"))
         return cls(date=date, **data)
+
+    @classmethod
+    async def from_url(
+        cls,
+        url: str,
+        api_key: str = "DEMO_KEY",
+        params: dict = {},
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> Union[NASAAstronomyPictureOfTheDay, List[NASAAstronomyPictureOfTheDay]]:
+        params.update({"api_key": api_key, "thumbs": "True"})
+        if session is None:
+            async with aiohttp.ClientSession(headers=HEADERS) as session:
+                async with session.get(url, params=params) as resp:
+                    data = await resp.json()
+        else:
+            async with session.get(url, params=params) as resp:
+                data = await resp.json()
+        if isinstance(data, list):
+            return [cls.from_json(i) for i in data]
+        return cls.from_json(data)
+
+    @classmethod
+    async def get(
+        cls,
+        api_key: str = "DEMO_KEY",
+        date: Optional[datetime] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        count: Optional[int] = None,
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> Union[NASAAstronomyPictureOfTheDay, List[NASAAstronomyPictureOfTheDay]]:
+        params = {}
+        if date:
+            params["date"] = date.strftime("%Y-%m-%d")
+        if start_date:
+            params["start_date"] = start_date.strftime("%Y-%m-%d")
+        if end_date:
+            params["end_date"] = end_date.strftime("%Y-%m-%d")
+        if count:
+            params["count"] = count
+        return await cls.from_url(
+            "https://api.nasa.gov/planetary/apod", api_key, params=params, session=session
+        )
+
+    @classmethod
+    async def today(
+        cls,
+        api_key: str = "DEMO_KEY",
+        session: Optional[aiohttp.ClientSession] = None,
+    ) -> NASAAstronomyPictureOfTheDay:
+        return await cls.get(api_key, session=session)  # type: ignore
 
 
 @dataclass

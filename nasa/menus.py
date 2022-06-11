@@ -17,12 +17,29 @@ from .models import (
     Event,
     ManifestPhoto,
     NASAAstronomyPictureOfTheDay,
+    NearEarthObject,
+    NEOFeed,
     PhotoManifest,
     RoverPhoto,
 )
 
 log = logging.getLogger("red.Trusty-cogs.NASACog")
 _ = Translator("NASA", __file__)
+
+
+class NEOFeedPages(menus.ListPageSource):
+    def __init__(self, feed: NEOFeed):
+        self.feed = feed
+        super().__init__(self.feed.near_earth_objects, per_page=1)
+        self.select_options = [
+            discord.SelectOption(label=page.name[:100], value=i)
+            for i, page in enumerate(self.feed.near_earth_objects)
+        ]
+
+    async def format_page(self, view: BaseMenu, page: NearEarthObject):
+        em = page.embed()
+        em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
+        return em
 
 
 class NASAImagesCollection(menus.ListPageSource):
@@ -37,7 +54,12 @@ class NASAImagesCollection(menus.ListPageSource):
     async def format_page(self, view: BaseMenu, page):
         url = None
         if page.data[0].media_type == "video":
-            media_links = await view.cog.request(page.href, include_api_key=False)
+            media_links = []
+            try:
+                media_links = await view.cog.request(page.href, include_api_key=False)
+            except Exception:
+                log.exception("Error getting video response data")
+                pass
             for link in media_links:
                 if link.endswith("orig.mp4"):
                     url = link.replace(" ", "%20")
@@ -149,13 +171,15 @@ class NASAapod(menus.ListPageSource):
         em = discord.Embed(
             title=page.title, description=page.explanation, timestamp=page.date, url=page.url
         )
-        em.set_image(url=page.hdurl if page.hdurl else page.url)
+        em.set_image(url=page.url)
         if page.thumbnail_url:
             em.set_thumbnail(url=page.thumbnail_url)
         if page.copyright:
             em.add_field(name="Copyright (c)", value=page.copyright)
         if view is not None:
             em.set_footer(text=f"Page {view.current_page + 1}/{self.get_max_pages()}")
+        if page.hdurl:
+            em.add_field(name="HD URL", value=f"[Click here]({page.hdurl})")
         return em
 
 
