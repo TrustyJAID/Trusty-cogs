@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 import discord
+from discord.ext import tasks
 from redbot.core import Config, VersionInfo, checks, commands, version_info
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, pagify
@@ -89,7 +90,7 @@ class Welcome(Events, commands.Cog):
         """
         return
 
-    @discord.ext.tasks.loop(seconds=300)
+    @tasks.loop(seconds=300)
     async def group_welcome(self) -> None:
         # log.debug("Checking for new welcomes")
         for guild_id, members in self.joined.items():
