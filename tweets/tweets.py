@@ -56,7 +56,7 @@ class Tweets(TweetsAPI, commands.Cog):
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        return f"{pre_processed}\n\nCog Version: {self.__version__}\ntweepy Version: {tweepy.__version__}"
 
     async def cog_unload(self) -> None:
         try:
