@@ -349,7 +349,7 @@ class GoogleTranslateAPI:
             return
         if not await self._get_google_api_key():
             return
-        channel = self.bot.get_channel(id=payload.channel_id)
+        channel = self.bot.get_channel(payload.channel_id)
         if not channel:
             return
         try:
@@ -375,7 +375,7 @@ class GoogleTranslateAPI:
             else:
                 self.cache["guild_reactions"].append(guild.id)
         try:
-            message = await channel.fetch_message(id=payload.message_id)
+            message = await channel.fetch_message(payload.message_id)
         except (discord.errors.NotFound, discord.Forbidden):
             return
 
