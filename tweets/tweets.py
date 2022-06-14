@@ -58,7 +58,7 @@ class Tweets(TweetsAPI, commands.Cog):
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        return f"{pre_processed}\n\nCog Version: {self.__version__}\ntweepy Version: {tweepy.__version__}"
 
     def cog_unload(self) -> None:
         try:
@@ -184,7 +184,8 @@ class Tweets(TweetsAPI, commands.Cog):
             await ctx.send(_("Timed out getting twitter trends."))
             return
         em = discord.Embed(
-            colour=await self.bot.get_embed_colour(ctx.channel), title=country_id["name"]
+            colour=await self.bot.get_embed_colour(ctx.channel),
+            title=country_id["name"],
         )
         msg = ""
         trends = trends[0]["trends"]
@@ -192,7 +193,10 @@ class Tweets(TweetsAPI, commands.Cog):
             # trend = trends[0]["trends"][i]
             if trend["tweet_volume"] is not None:
                 msg += "{}. [{}]({}) Volume: {}\n".format(
-                    trends.index(trend) + 1, trend["name"], trend["url"], trend["tweet_volume"]
+                    trends.index(trend) + 1,
+                    trend["name"],
+                    trend["url"],
+                    trend["tweet_volume"],
                 )
             else:
                 msg += "{}. [{}]({})\n".format(
@@ -604,7 +608,10 @@ class Tweets(TweetsAPI, commands.Cog):
         else:
             channels = {str(channel.id): ChannelData(guild=channel.guild.id)}
             twitter_account = TweetEntry(
-                twitter_id=user_id, twitter_name=screen_name, channels=channels, last_tweet=0
+                twitter_id=user_id,
+                twitter_name=screen_name,
+                channels=channels,
+                last_tweet=0,
             )
             self.accounts[str(user_id)] = twitter_account
             await self.save_accounts()
@@ -803,7 +810,10 @@ class Tweets(TweetsAPI, commands.Cog):
 
     @_autotweet.command(name="del", aliases=["delete", "rem", "remove"])
     async def _del(
-        self, ctx: commands.Context, channel: discord.TextChannel, username: Optional[str]
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel,
+        username: Optional[str],
     ) -> None:
         """
         Removes a twitter username to the specified channel
