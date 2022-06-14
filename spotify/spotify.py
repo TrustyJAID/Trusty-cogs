@@ -143,7 +143,7 @@ class Spotify(
         Thanks Sinbad!
         """
         pre_processed = super().format_help_for_context(ctx)
-        return f"{pre_processed}\n\nCog Version: {self.__version__}"
+        return f"{pre_processed}\n\nCog Version: {self.__version__}\ntekore Version: {tekore.__version__}"
 
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         await self._ready.wait()
