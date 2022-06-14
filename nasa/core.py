@@ -9,6 +9,7 @@ from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import bounded_gather
+from redbot.core.utils.views import SetApiView
 
 from .menus import (
     BaseMenu,
@@ -138,6 +139,26 @@ class NASACog(commands.Cog):
     async def nasa(self, ctx: commands.Context):
         """Commands for interacting with NASA's API"""
         pass
+
+    @nasa.command(name="creds", with_app_command=False)
+    @commands.is_owner()
+    async def set_nasa_api(self, ctx: commands.Context):
+        """Instructions to set the your NASA API Key"""
+        message = _(
+            "1. Go to https://api.nasa.gov.\n"
+            '2. Fill out the form to Generate and API Key".\n'
+            "3. Copy your API key into:\n"
+            "`{prefix}set api nasa api_key YOUR_API_KEY_HERE`"
+        ).format(prefix=ctx.prefix)
+        keys = {"api_key": ""}
+        view = SetApiView("nasa", keys)
+        if await ctx.embed_requested():
+            em = discord.Embed(description=message)
+            await ctx.send(embed=em, view=view)
+            # await ctx.send(embed=em)
+        else:
+            await ctx.send(message, view=view)
+            # await ctx.send(message)
 
     @nasa.command(name="apodchannel", with_app_command=False)
     @commands.mod_or_permissions(manage_channels=True)
