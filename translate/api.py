@@ -195,7 +195,6 @@ class GoogleTranslator:
         url = BASE_URL + "/language/translate/v2/detect"
         async with self.session.get(url, params=params) as resp:
             data = await resp.json()
-        log.info(data)
         if "error" in data:
             log.error(data["error"]["message"])
             raise GoogleTranslateAPIError(data["error"]["message"])
@@ -225,7 +224,6 @@ class GoogleTranslator:
                 data = await resp.json()
         except Exception:
             return None
-        log.info(data)
         if "error" in data:
             log.error(data["error"]["message"])
             raise GoogleTranslateAPIError(data["error"]["message"])
@@ -326,7 +324,6 @@ class GoogleTranslateAPI:
         if not to_translate:
             return
         target = str(interaction.locale).split("-")[0]
-        log.info(to_translate)
         try:
             detected_lang = await self._tr.detect_language(to_translate)
             await self.stats_counter.add_detect(guild)
@@ -425,7 +422,6 @@ class GoogleTranslateAPI:
             return
         flag_search = FLAG_REGEX.search(message.clean_content)
         if not flag_search:
-            log.info("Flag not found")
             return
         flag = flag_search.group(0)
         if not await self.config.guild(guild).text():
