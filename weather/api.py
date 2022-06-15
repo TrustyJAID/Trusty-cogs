@@ -129,10 +129,10 @@ class Units(Enum):
 
     def get(self) -> Unit:
         if self.name == "metric":
-            return Unit(code=["m", "c"], speed="km/h", temp=" °C")
+            return Unit(code=["m", "c"], speed="m/s", temp=" °C")
         if self.name == "imperial":
             return Unit(code=["i", "f"], speed="mph", temp=" °F")
-        return Unit(code=["k", "s"], speed="km/h", temp=" K")
+        return Unit(code=["k", "s"], speed="m/s", temp=" K")
 
 
 class Coords(NamedTuple):
