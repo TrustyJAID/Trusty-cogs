@@ -20,21 +20,21 @@ HEADERS = {"User-Agent": "Trusty-cogs Weather cog for Red-DiscordBot"}
 
 WIND_DIRECTION = {
     0: "N",
-    1: "NNE",
+    1: "N/NE",
     2: "NE",
-    3: "ENE",
+    3: "E/NE",
     4: "E",
-    5: "ESE",
+    5: "E/SE",
     6: "SE",
-    7: "SSE",
+    7: "S/SE",
     8: "S",
-    9: "SSW",
+    9: "S/SW",
     10: "SW",
-    11: "WSW",
+    11: "W/SW",
     12: "W",
-    13: "WNW",
+    13: "W/NW",
     14: "NW",
-    15: "NNW",
+    15: "N/NW",
     16: "N",
 }
 
@@ -659,7 +659,7 @@ class OneCall:
             url=self.coords.url,
             icon_url=icon_url,
         )
-        embed.add_field(name="Current", value=str(self.current), inline=False)
+        embed.add_field(name=_("Current Weather"), value=str(self.current), inline=False)
         if include_forecast:
             for day in self.daily[1:5]:
                 embed.add_field(name=f"<t:{day.dt}:D>", value=str(day), inline=False)
