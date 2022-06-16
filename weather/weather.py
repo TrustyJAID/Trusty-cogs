@@ -8,7 +8,7 @@ import discord
 from redbot.core import Config, checks, commands, i18n
 from redbot.core.utils.views import SetApiView
 
-from .api import HEADERS, APIError, Geocoding, OneCall, Units
+from .api import HEADERS, APIError, Geocoding, Units, Zipcode
 from .menus import BaseMenu, WeatherPages
 
 _ = i18n.Translator("Weather", __file__)
@@ -155,14 +155,13 @@ class Weather(commands.Cog):
                 units = await self.get_units(ctx)
             lang = self.get_lang(ctx)
             try:
-                resp = await OneCall.zipcode(
-                    appid=appid, zipcode=zipcode, units=units, lang=lang, session=self.session
-                )
+                resp = await Zipcode.get(appid=appid, zipcode=zipcode, session=self.session)
             except APIError as e:
                 await ctx.send(e)
                 return
-            em = resp.embed(forecast)
-        await ctx.send(embed=em)
+        await BaseMenu(
+            appid=appid, source=WeatherPages([resp], units, lang, forecast), session=self.session
+        ).start(ctx=ctx)
 
     @weather.command(name="coords", aliases=["co", "coordinates"])
     @commands.bot_has_permissions(embed_links=True)
@@ -196,14 +195,20 @@ class Weather(commands.Cog):
                 units = await self.get_units(ctx)
             lang = self.get_lang(ctx)
             try:
-                resp = await OneCall.lat_lon(
-                    appid, lat, lon, units, lang=lang, session=self.session
+                resp = await Geocoding.reverse(
+                    appid, lat=lat, lon=lon, limit=5, session=self.session
                 )
             except APIError as e:
                 await ctx.send(e)
                 return
-            em = resp.embed(forecast)
-        await ctx.send(embed=em)
+            if not resp:
+                await ctx.send(
+                    _("No locations found matching `{lat}, {lon}`.").format(lat=lat, lon=lon)
+                )
+                return
+        await BaseMenu(
+            appid=appid, source=WeatherPages(resp, units, lang, forecast), session=self.session
+        ).start(ctx=ctx)
 
     @weather.group(name="set")
     async def weather_set(self, ctx: commands.Context) -> None:

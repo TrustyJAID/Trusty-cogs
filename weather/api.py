@@ -102,10 +102,25 @@ WEATHER_EMOJIS = {
     781: "\N{CLOUD WITH TORNADO}\N{VARIATION SELECTOR-16}",  # Tornado tornado
     800: "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16}",
     801: "\N{WHITE SUN WITH SMALL CLOUD}\N{VARIATION SELECTOR-16}",  # Clouds  few clouds: 11-25%
-    802: "\N{SUN BEHIND CLOUD}\N{VARIATION SELECTOR-16}",  # Clouds  scattered clouds: 25-50%
+    802: "\N{SUN BEHIND CLOUD}",  # Clouds  scattered clouds: 25-50%
     803: "\N{WHITE SUN BEHIND CLOUD}\N{VARIATION SELECTOR-16}",  # Clouds  broken clouds: 51-84%
     804: "\N{CLOUD}\N{VARIATION SELECTOR-16}",  # Clouds  overcast clouds: 85-100%
 }
+
+CLOUD_RANGES = {
+    0: range(0, 11),
+    1: range(11, 26),
+    2: range(26, 51),
+    3: range(51, 85),
+    4: range(85, 101),
+}
+
+
+def get_cloud_num(cloudiness: int) -> int:
+    for key, value in CLOUD_RANGES.items():
+        if cloudiness in value:
+            return 800 + key
+    return 800
 
 
 class APIError(Exception):
@@ -168,6 +183,14 @@ class WeatherType:
 class Precipitation:
     h1: Optional[int]
     h3: Optional[int]
+
+    def __str__(self):
+        strings = []
+        if self.h1:
+            strings.append(f"1h {self.h1} mm")
+        if self.h3:
+            strings.append(f"3h {self.h3} mm")
+        return "-".join(strings)
 
 
 @dataclass
@@ -247,16 +270,17 @@ class Zipcode:
     lat: float
     lon: float
     country: str
+    state: Optional[str] = None
+
+    @property
+    def location(self):
+        if self.state:
+            return f"{self.name}, {self.state}, {self.country}"
+        return f"{self.zipcode}, {self.name}, {self.country}"
 
     @classmethod
     def from_json(cls, data: dict) -> Zipcode:
-        return cls(
-            name=data["name"],
-            zipcode=data["zip"],
-            lat=data["lat"],
-            lon=data["lon"],
-            country=data["country"],
-        )
+        return cls(zipcode=data.pop("zip"), **data)
 
     @classmethod
     async def get(
@@ -288,8 +312,6 @@ class Zipcode:
 @dataclass
 class CurrentWeather:
     dt: int
-    sunrise: int
-    sunset: int
     temp: float
     feels_like: float
     pressure: int
@@ -302,22 +324,29 @@ class CurrentWeather:
     wind_deg: int
     weather: List[WeatherType]
     units: Units
+    sunrise: Optional[int] = None
+    sunset: Optional[int] = None
     wind_gust: Optional[float] = None
     rain: Optional[Precipitation] = None
     snow: Optional[Precipitation] = None
 
     def __str__(self):
         temp_units = self.units.get().temp
-        sunrise_ts = f"<t:{self.sunrise}:t>"
-        sunset_ts = f"<t:{self.sunset}:t>"
+        sunrise_ts = f"<t:{self.sunrise}:t>" if self.sunrise else _("No Data")
+        sunset_ts = f"<t:{self.sunset}:t>" if self.sunset else _("No Data")
         windspeed = str(self.wind_speed) + " " + self.units.get().speed
+        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
         ret = _(
             "{weather_emoji} **Weather**: {weather}\n"
-            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}\n"
+            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
             "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
             "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
+            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+            "\N{EYEGLASSES} **Visibility**: {visibility} m\n"
             "\N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
             "\N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
+            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
+            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
         ).format(
             weather_emoji="".join(i.emoji for i in self.weather),
             weather=humanize_list([i.description for i in self.weather]),
@@ -325,18 +354,23 @@ class CurrentWeather:
             wind_speed=windspeed,
             direction=self.wind_dir,
             temp=self.temp,
+            cloudiness_emoji=cloudiness_emoji,
+            clouds=self.clouds,
+            visibility=self.visibility,
             temp_units=temp_units,
             sunrise_ts=sunrise_ts,
             sunset_ts=sunset_ts,
+            uvi=self.uvi,
+            pressure=self.pressure,
         )
         if self.rain:
-            ret += _(
-                "\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain_chance}%\n"
-            ).format(rain_chance=self.rain.h1)
+            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
+                rain=str(self.rain)
+            )
         if self.snow:
-            ret += _(
-                "\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {rain_chance}%\n"
-            ).format(rain_chance=self.snow.h1)
+            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow}\n").format(
+                snow=str(self.snow)
+            )
         return ret
 
     @property
@@ -354,8 +388,8 @@ class CurrentWeather:
         snow = data.pop("snow", None)
         return cls(
             weather=[WeatherType(**i) for i in data.pop("weather", [])],
-            rain=Precipitation(h1=rain.get("1h"), h3=rain.get("3h")) if rain else None,
-            snow=Precipitation(h1=snow["1h"], h3=snow.get("3h")) if snow else None,
+            rain=Precipitation(h1=rain.pop("1h", None), h3=rain.pop("3h", None)) if rain else None,
+            snow=Precipitation(h1=snow.pop("1h", None), h3=snow.pop("3h", None)) if snow else None,
             units=units,
             **data,
         )
@@ -388,13 +422,65 @@ class HourlyWeather:
     pop: int
     units: Units
     wind_gust: Optional[float] = None
-    rain: Optional[dict] = None
-    snow: Optional[dict] = None
+    rain: Optional[Precipitation] = None
+    snow: Optional[Precipitation] = None
+
+    @property
+    def datetime(self):
+        return datetime.fromtimestamp(self.dt)
+
+    @property
+    def wind_dir(self):
+        index = int(self.wind_speed // 22.5)
+        return WIND_DIRECTION[index]
+
+    def __str__(self):
+        temp_units = self.units.get().temp
+        windspeed = str(self.wind_speed) + " " + self.units.get().speed
+        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
+        ret = _(
+            "{weather_emoji} **Weather**: {weather}\n"
+            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
+            "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
+            "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
+            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
+            "\N{EYEGLASSES} **Visibility**: {visibility} m\n"
+            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
+            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
+        ).format(
+            weather_emoji="".join(i.emoji for i in self.weather),
+            weather=humanize_list([i.description for i in self.weather]),
+            humidity=self.humidity,
+            wind_speed=windspeed,
+            direction=self.wind_dir,
+            temp=self.temp,
+            temp_units=temp_units,
+            cloudiness_emoji=cloudiness_emoji,
+            clouds=self.clouds,
+            uvi=self.uvi,
+            pressure=self.pressure,
+            visibility=self.visibility,
+        )
+        if self.rain:
+            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain}\n").format(
+                rain=str(self.rain)
+            )
+        if self.snow:
+            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow}\n").format(
+                snow=str(self.snow)
+            )
+        return ret
 
     @classmethod
     def from_json(cls, data: dict, units: Units) -> HourlyWeather:
+        rain = data.pop("rain", None)
+        snow = data.pop("snow", None)
         return cls(
-            weather=[WeatherType(**i) for i in data.pop("weather", [])], units=units, **data
+            weather=[WeatherType(**i) for i in data.pop("weather", [])],
+            units=units,
+            rain=Precipitation(h1=rain.pop("1h"), h3=None) if rain else None,
+            snow=Precipitation(h1=snow.pop("1h"), h3=None) if snow else None,
+            **data,
         )
 
 
@@ -447,13 +533,17 @@ class DailyWeather:
         sunset_ts = f"<t:{self.sunset}:t>"
         windspeed = str(self.wind_speed) + " " + self.units.get().speed
         moon = MOONS[int(self.moon_phase // 0.1)]
+        cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
         ret = _(
             "{weather_emoji} **Weather**: {weather}\n"
-            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}\n"
+            "\N{FACE WITH COLD SWEAT} **Humidity**: {humidity}%\n"
             "\N{DASH SYMBOL} **Wind Speed**: {wind_speed} {direction}\n"
             "\N{THERMOMETER} **Temperature**: {temp} {temp_units}\n"
+            "{cloudiness_emoji} **Cloudiness**: {clouds}%\n"
             "\N{SUNRISE OVER MOUNTAINS} **Sunrise**: {sunrise_ts}\n"
             "\N{SUNSET OVER BUILDINGS} **Sunset**: {sunset_ts}\n"
+            "\N{BLACK SUN WITH RAYS}\N{VARIATION SELECTOR-16} **UV Index**: {uvi}\n"
+            "\N{BALLOON} **Atmospheric Pressure**: {pressure} hPa\n"
         ).format(
             weather_emoji="".join(i.emoji for i in self.weather),
             weather=humanize_list([i.description for i in self.weather]),
@@ -462,17 +552,21 @@ class DailyWeather:
             direction=self.wind_dir,
             temp=f"{self.temp.min}-{self.temp.max}",
             temp_units=temp_units,
+            cloudiness_emoji=cloudiness_emoji,
+            clouds=self.clouds,
             sunrise_ts=sunrise_ts,
             sunset_ts=sunset_ts,
+            uvi=self.uvi,
+            pressure=self.pressure,
         )
         if self.rain:
-            ret += _(
-                "\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain_chance}%\n"
-            ).format(rain_chance=self.rain)
+            ret += _("\N{CLOUD WITH RAIN}\N{VARIATION SELECTOR-16} **Rain**: {rain} mm\n").format(
+                rain=self.rain
+            )
         if self.snow:
-            ret += _(
-                "\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {rain_chance}%\n"
-            ).format(rain_chance=self.snow)
+            ret += _("\N{CLOUD WITH SNOW}\N{VARIATION SELECTOR-16} **Snow**: {snow} mm\n").format(
+                snow=self.snow
+            )
         ret += _("Moon Phase: {moon}").format(moon=moon)
         return ret
 
@@ -495,6 +589,11 @@ class Alert:
     end: int
     description: str
     tags: List[str]
+
+    def __str__(self):
+        return "\N{WARNING SIGN}\N{VARIATION SELECTOR-16} {0.event}: <t:{0.start}> - <t:{0.end}>".format(
+            self
+        )
 
     @classmethod
     def from_json(cls, data: dict) -> Alert:
@@ -615,7 +714,7 @@ class OneCall:
         session: Optional[aiohttp.ClientSession] = None,
     ) -> OneCall:
         url = "https://api.openweathermap.org/data/2.5/onecall"
-        params = {"appid": appid, "exclude": "hourly,minutely"}
+        params = {"appid": appid, "exclude": "minutely"}
         if lang:
             params["lang"] = lang
         if lat and lon:
@@ -644,31 +743,41 @@ class OneCall:
         log.debug(data)
         return cls.from_json(data, units, name, state, country)
 
-    def embed(self, include_forecast: Optional[bool] = None) -> discord.Embed:
-        current = self.current
-        icon_url = current.weather[0].icon_url
+    def embed(
+        self, include_forecast: Optional[bool] = None, include_hourly: Optional[bool] = None
+    ) -> discord.Embed:
+        icon_url = self.current.weather[0].icon_url
         if self.state:
             location = f"{self.name}, {self.state}, {self.country}"
         else:
             location = f"{self.name}, {self.country}"
 
-        embed = discord.Embed(colour=discord.Colour.blue(), timestamp=current.datetime)
+        hue = 0.4 - (self.current.uvi / 10.0) * 0.4
+        # https://stackoverflow.com/questions/340209/generate-colors-between-red-and-green-for-a-power-meter
+        colour = discord.Colour.from_hsv(hue, 0.9, 0.9)
+        embed = discord.Embed(colour=colour, timestamp=self.current.datetime)
         embed.set_thumbnail(url=icon_url)
         embed.set_author(
             name=_("Weather for {location}").format(location=location),
             url=self.coords.url,
             icon_url=icon_url,
         )
-        embed.add_field(name=_("Current Weather"), value=str(self.current), inline=False)
+        embed.add_field(
+            name=_("Current Weather") + f" (<t:{self.current.dt}:R>)",
+            value=str(self.current),
+            inline=False,
+        )
         if include_forecast:
             for day in self.daily[1:5]:
                 embed.add_field(name=f"<t:{day.dt}:D>", value=str(day), inline=False)
+        if include_hourly:
+            for hour in self.hourly[:5]:
+                embed.add_field(
+                    name=f"<t:{hour.dt}:t> (<t:{hour.dt}:R>)", value=str(hour), inline=False
+                )
 
         embed.set_footer(text=_("Powered by https://openweathermap.org"))
-        alerts = "\n".join(
-            "\N{WARNING SIGN}\N{VARIATION SELECTOR-16}" + f"{a.event}: <t:{a.start}> - <t:{a.end}>"
-            for a in self.alerts
-        )
+        alerts = "\n".join(str(a) for a in self.alerts)
         if alerts:
             embed.description = alerts
         return embed

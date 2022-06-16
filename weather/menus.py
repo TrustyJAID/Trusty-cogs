@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 import aiohttp
 import discord
@@ -11,39 +11,54 @@ from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
 
-from .api import APIError, Geocoding, OneCall, Units
+from .api import APIError, Geocoding, OneCall, Units, Zipcode
 
 log = logging.getLogger("red.Trusty-cogs.weather")
 _ = Translator("Weather", __file__)
 
 
 class WeatherPages(menus.ListPageSource):
-    def __init__(self, pages: List[Geocoding], units: Units, lang: str, forecast: bool = False):
+    def __init__(
+        self,
+        pages: List[Union[Geocoding, Zipcode]],
+        units: Units,
+        lang: Optional[str],
+        forecast: Optional[bool] = False,
+    ):
         super().__init__(pages, per_page=1)
         self.units = units
         self.lang = lang
-        self.forecast = forecast
+        self.forecast = forecast if forecast is not None else False
+        self.hourly = False
         self.select_options = [
             discord.SelectOption(label=page.location, value=i) for i, page in enumerate(pages)
         ]
+        self._last_we = None
+        self._last_coords = None
 
-    async def format_page(self, view: BaseMenu, page: Geocoding):
+    async def format_page(self, view: BaseMenu, page: Union[Geocoding, Zipcode]):
         log.debug(page)
-        try:
-            we = await OneCall.get(
-                appid=view.appid,
-                lat=page.lat,
-                lon=page.lon,
-                units=self.units,
-                lang=self.lang,
-                name=page.name,
-                state=page.state,
-                country=page.country,
-                session=view.session,
-            )
-        except APIError as e:
-            return e
-        em = we.embed(self.forecast)
+        if self._last_coords != page:
+            try:
+                we = await OneCall.get(
+                    appid=view.appid,
+                    lat=page.lat,
+                    lon=page.lon,
+                    units=self.units,
+                    lang=self.lang,
+                    name=page.name,
+                    state=page.state,
+                    country=page.country,
+                    session=view.session,
+                )
+            except APIError as e:
+                return e
+        else:
+            we = self._last_we
+        if self._last_coords is None:
+            self._last_coords = page
+            self._last_we = we
+        em = we.embed(include_forecast=self.forecast, include_hourly=self.hourly)
         return em
 
 
@@ -157,6 +172,46 @@ class SkipBackButton(discord.ui.Button):
         await self.view.show_page(0, skip_prev=True, interaction=interaction)
 
 
+class ForecastButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label=_("Forecast"), emoji="\N{CALENDAR}")
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.forecast = not self.view.source.forecast
+        if self.view.source.hourly and self.view.source.forecast:
+            self.view.source.hourly = False
+            self.view.hourly_button.disabled = False
+        if self.view.source.forecast:
+            self.disabled = True
+        await self.view.show_page(self.view.current_page, interaction=interaction)
+
+
+class HourlyButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label=_("Hourly"), emoji="\N{CLOCK FACE ONE OCLOCK}")
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.hourly = not self.view.source.hourly
+        if self.view.source.forecast and self.view.source.hourly:
+            self.view.source.forecast = False
+            self.view.forecast_button.disabled = False
+        if self.view.source.hourly:
+            self.disabled = True
+        await self.view.show_page(self.view.current_page, interaction=interaction)
+
+
+class CurrentButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label=_("Current"))
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.source.hourly = False
+        self.view.source.forecast = False
+        self.view.forecast_button.disabled = False
+        self.view.hourly_button.disabled = False
+        await self.view.show_page(self.view.current_page, interaction=interaction)
+
+
 class SelectMenu(discord.ui.Select):
     def __init__(self, options: List[discord.SelectOption]):
         super().__init__(
@@ -203,9 +258,23 @@ class BaseMenu(discord.ui.View):
         self.select_menu: Optional[SelectMenu] = self.get_select_menu()
         if self.select_menu:
             self.add_item(self.select_menu)
+        self.forecast_button = ForecastButton()
+        self.hourly_button = HourlyButton()
+        self.current_button = CurrentButton()
+        if self.source.forecast:
+            self.forecast_button.disabled = True
+
+        if self.source.hourly:
+            self.hourly_button.disabled = True
+        self.add_item(self.forecast_button)
+        self.add_item(self.hourly_button)
+        self.add_item(self.current_button)
 
     async def on_timeout(self):
         await self.message.edit(view=None)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception, item: Any):
+        log.exception(error)
 
     @property
     def source(self):
