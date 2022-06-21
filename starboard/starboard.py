@@ -230,8 +230,15 @@ class Starboard(StarboardEvents, commands.Cog):
                 )
                 return
             starboard = list(self.starboards[guild.id].values())[0]
-        del self.starboards[ctx.guild.id][starboard.name]
-        await self._save_starboards(ctx.guild)
+
+        async with self.config.guild(guild).starboards() as starboards:
+            try:
+                del self.starboards[ctx.guild.id][starboard.name]
+                del starboards[starboard.name]
+            except Exception:
+                log.exception("Error removing starboard")
+                await ctx.send("Deleting the starboard failed.")
+                return
         await ctx.send(_("Deleted starboard {name}").format(name=starboard.name))
 
     @commands.command()
