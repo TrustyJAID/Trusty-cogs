@@ -278,8 +278,8 @@ class Profile:
             archaeology=get_skill(27),
         )
 
-    @classmethod
-    async def from_text(cls, data: str):
+    @staticmethod
+    async def from_text(data: str):
         order = [
             "Overall",
             "Attack",
@@ -321,9 +321,9 @@ class Profile:
                 xp = line[1].split(",")[2]
                 rank = line[1].split(",")[0]
                 level = line[1].split(",")[1]
-                skills_list.append([order[line[0]], level, xp, rank])
+                skills_list.append(
+                    [order[line[0]], level, humanize_number(xp), humanize_number(rank)]
+                )
             except Exception:
                 pass
-        return tabulate(
-            skills_list, headers=["Skill", "Level", "Experience", "Rank"], tablefmt="orgtbl"
-        )
+        return tabulate(skills_list, headers=["Skill", "Level", "Experience", "Rank"])
