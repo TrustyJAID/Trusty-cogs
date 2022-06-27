@@ -815,11 +815,11 @@ class HockeyPickems(MixinMeta):
             "__Channel:__ **{channel}**\n"
             "__Base {currency}:__ {base_credits}\n"
             "__Weekly {currency}:__ Top {top_members} members will earn {top_credits} {currency}\n"
-            "__Channels:__\n {channels}\n"
+            "__Threads:__\n {channels}\n"
         ).format(
             guild=ctx.guild.name,
             channel=channel,
-            channels="\n".join([f"<#{chan}>" for chan in data.get("pickems_channels")]),
+            channels="\n".join([f"<#{chan}>" for chan in data.get("pickems_channels", [])]),
             currency=currency_name,
             top_members=top_members,
             top_credits=top_credits,
@@ -1045,7 +1045,7 @@ class HockeyPickems(MixinMeta):
         if existing_channels:
             await self.pickems_config.guild(ctx.guild).pickems_channels.clear()
         await self.pickems_config.guild(ctx.guild).pickems_channel.clear()
-        await ctx.send(_("I have deleted existing pickems channels."))
+        await ctx.send(_("I have cleared existing pickems threads."))
 
     @pickems_commands.command(name="page")
     @commands.admin_or_permissions(manage_channels=True)

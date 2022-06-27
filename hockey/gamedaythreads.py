@@ -106,7 +106,7 @@ class GameDayThreads(MixinMeta):
         """
         await ctx.defer()
         await self.delete_gdt(ctx.guild)
-        msg = _("Game day channels deleted.")
+        msg = _("Game day Threads cleared.")
         await ctx.send(msg)
 
     @gdt.command(name="defaultstate")
@@ -147,7 +147,7 @@ class GameDayThreads(MixinMeta):
         """
         await self.config.guild(ctx.guild).update_gdt.set(update_start)
         if update_start:
-            msg = _("Game day channels will update as the game progresses.")
+            msg = _("Game day threads will update as the game progresses.")
         else:
             msg = _("Game day threads will not update as the game progresses.")
         await ctx.send(msg)
@@ -160,12 +160,12 @@ class GameDayThreads(MixinMeta):
         """
         await ctx.defer()
         if not await self.config.guild(ctx.guild).gdt_team():
-            msg = _("No team was setup for game day channels in this server.")
+            msg = _("No team was setup for game day threads in this server.")
             await ctx.send(msg)
         if await self.config.guild(ctx.guild).create_threads():
             await self.create_gdt(ctx.guild)
         else:
-            msg = _("You need to first toggle channel creation with `{prefix}gdt toggle`.").format(
+            msg = _("You need to first toggle thread creation with `{prefix}gdt toggle`.").format(
                 prefix=ctx.clean_prefix
             )
             await ctx.send(msg)
@@ -189,7 +189,7 @@ class GameDayThreads(MixinMeta):
             return
         cur_setting = not await self.config.guild(guild).create_threads()
         verb = _("will") if cur_setting else _("won't")
-        msg = _("Game day channels ") + verb + _(" be created on this server.")
+        msg = _("Game day threads ") + verb + _(" be created on this server.")
         await self.config.guild(guild).create_threads.set(cur_setting)
         await ctx.send(msg)
 
