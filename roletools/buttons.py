@@ -254,7 +254,7 @@ class RoleToolsButtons(RoleToolsMixin):
         async with self.config.guild(ctx.guild).buttons() as buttons:
             buttons[name.lower()]["messages"].append(f"{msg.channel.id}-{msg.id}")
 
-    # @buttons.command(name="delete", aliases=["del", "remove"])
+    @buttons.command(name="delete", aliases=["del", "remove"])
     async def delete_button(self, ctx: Context, *, name: str) -> None:
         """
         Delete a saved button.
