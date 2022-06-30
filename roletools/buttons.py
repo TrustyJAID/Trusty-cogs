@@ -28,7 +28,9 @@ class ButtonRole(discord.ui.Button):
         role_id: int,
         name: str,
     ):
-        super().__init__(style=style, label=label, emoji=emoji, custom_id=custom_id)
+        super().__init__(
+            style=discord.ButtonStyle(style), label=label, emoji=emoji, custom_id=custom_id
+        )
         self.role_id = role_id
         self.name = name
 
@@ -238,7 +240,7 @@ class RoleToolsButtons(RoleToolsMixin):
             if name.lower() not in buttons:
                 buttons.append(name.lower())
         button = ButtonRole(
-            style=style,
+            style=style.value,
             label=label,
             emoji=emoji_id,
             custom_id=f"{name.lower()}-{role.id}",
