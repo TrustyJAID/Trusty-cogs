@@ -127,7 +127,7 @@ class TranslateTextResponse(GoogleTranslateResponse):
         requestor: Optional[Union[discord.Member, discord.User]] = None,
     ) -> discord.Embed:
         em = discord.Embed(colour=author.colour, description=str(self.translations[0]))
-        em.set_author(name=author.display_name, icon_url=author.avatar.url)
+        em.set_author(name=author.display_name, icon_url=author.display_avatar)
         detail_string = _("{_from} to {_to} | Requested by ").format(
             _from=from_language.upper(), _to=to_language.upper()
         )
