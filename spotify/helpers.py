@@ -68,10 +68,9 @@ class GenresConverter(discord.app_commands.Transformer):
             raise commands.BadArgument
         return ret
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, argument: str) -> List[str]:
+    async def transform(self, interaction: discord.Interaction, argument: str) -> List[str]:
         ctx = await interaction.client.get_context(interaction)
-        return await cls.convert(ctx, argument)
+        return await self.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -216,7 +215,7 @@ class RecommendationsFlags(discord.ext.commands.FlagConverter, case_insensitive=
         aliases=["speech"],
         description="A value from 0-100 Speechiness is the presence of spoken words in a track.",
     )
-    tempo: Optional[discord.ext.commands.Range[int, 0, 100]] = discord.ext.commands.flag(
+    tempo: Optional[discord.ext.commands.Range[int, 0, 500]] = discord.ext.commands.flag(
         name="tempo",
         description="The overall estimated tempo of a track in beats per minute (BPM).",
     )
