@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from urllib.parse import quote
 
 import discord
@@ -72,7 +72,9 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(name="role", hidden=True, with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
-    async def team_role(self, ctx: commands.Context, *, team: TeamFinder) -> None:
+    async def team_role(
+        self, ctx: commands.Context, *, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """Set your role to a team role"""
         guild = ctx.message.guild
         if not team:
@@ -93,7 +95,9 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(name="goalsrole", hidden=True, with_app_command=False)
     @commands.bot_has_permissions(manage_roles=True)
-    async def team_goals(self, ctx: commands.Context, *, team: TeamFinder) -> None:
+    async def team_goals(
+        self, ctx: commands.Context, *, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """Subscribe to goal notifications"""
         guild = ctx.message.guild
         msg = ""
@@ -128,9 +132,9 @@ class HockeyCommands(MixinMeta):
     async def games(
         self,
         ctx: commands.Context,
-        date: Optional[DateFinder] = None,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
         *,
-        team: Optional[TeamFinder],
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Gets all NHL games for the current season
@@ -201,9 +205,9 @@ class HockeyCommands(MixinMeta):
         self,
         ctx: commands.Context,
         style: Literal["all", "ev", "5v5", "sva", "home5v4", "away5v4"] = "all",
-        date: Optional[DateFinder] = None,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
         *,
-        team: Optional[TeamFinder],
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Display game heatmaps.
@@ -249,9 +253,9 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         strength: Literal["all", "ev", "5v5", "sva"] = "all",
         corsi: bool = True,
-        date: Optional[DateFinder] = None,
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]] = None,
         *,
-        team: Optional[TeamFinder],
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Display games gameflow.
@@ -297,9 +301,9 @@ class HockeyCommands(MixinMeta):
     async def schedule(
         self,
         ctx: commands.Context,
-        date: Optional[DateFinder],
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]],
         *,
-        team: Optional[TeamFinder],
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Gets upcoming NHL games for the current season as a list
@@ -328,9 +332,9 @@ class HockeyCommands(MixinMeta):
     async def recap(
         self,
         ctx: commands.Context,
-        date: Optional[DateFinder],
+        date: Optional[discord.app_commands.Transform[datetime, DateFinder]],
         *,
-        team: Optional[TeamFinder],
+        team: Optional[discord.app_commands.Transform[str, TeamFinder]],
     ) -> None:
         """
         Gets NHL games and their game recap links
@@ -359,7 +363,7 @@ class HockeyCommands(MixinMeta):
     async def season(
         self,
         ctx: commands.Context,
-        team: TeamFinder,
+        team: discord.app_commands.Transform[str, TeamFinder],
         season: str = None,
     ) -> None:
         """
@@ -414,7 +418,7 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         season: Optional[YearFinder],
         *,
-        player: PlayerFinder,
+        player: discord.app_commands.Transform[List[BasePlayer], PlayerFinder],
     ) -> None:
         """
         Lookup information about a specific player
@@ -457,7 +461,7 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         season: Optional[YearFinder],
         *,
-        team: TeamFinder,
+        team: discord.app_commands.Transform[str, TeamFinder],
     ) -> None:
         """
         Get a teams roster
@@ -734,7 +738,7 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         public: Optional[bool] = True,
         *,
-        leaderboard_type: Optional[LeaderboardFinder],
+        leaderboard_type: Optional[discord.app_commands.Transform[str, LeaderboardFinder]],
     ) -> None:
         """
         Shows the current server leaderboard
@@ -790,7 +794,13 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)
-    async def setrules(self, ctx: commands.Context, team: TeamFinder, *, rules) -> None:
+    async def setrules(
+        self,
+        ctx: commands.Context,
+        team: discord.app_commands.Transform[str, TeamFinder],
+        *,
+        rules,
+    ) -> None:
         """Set the main rules page for the nhl rules command"""
         if not team:
             await ctx.send(_("You must provide a valid current team."))
@@ -805,7 +815,9 @@ class HockeyCommands(MixinMeta):
         await ctx.send(_("Done, here's how it will look."), embed=em)
 
     @hockey_commands.command(aliases=["link", "invite"])
-    async def otherdiscords(self, ctx: commands.Context, team: TeamFinder) -> None:
+    async def otherdiscords(
+        self, ctx: commands.Context, team: discord.app_commands.Transform[str, TeamFinder]
+    ) -> None:
         """
         Get team specific discord links
 

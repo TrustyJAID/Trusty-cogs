@@ -285,12 +285,12 @@ class HeatmapButton(discord.ui.Button):
         if not self.view.source.include_heatmap:
             self.view.source.include_heatmap = True
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0, interaction=interaction)
+            await self.view.show_page(self.view.current_page, interaction=interaction)
             return
         else:
             self.view.source.style = mapping[self.view.source.style]
             self.label = _("Heatmap {style}").format(style=self.view.source.style)
-            await self.view.show_page(0, interaction=interaction)
+            await self.view.show_page(self.view.current_page, interaction=interaction)
             return
 
 
@@ -318,7 +318,7 @@ class GameflowButton(discord.ui.Button):
             corsi = "Corsi" if self.view.source.corsi else "Expected Goals"
             strength = self.view.source.strength
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0, interaction=interaction)
+            await self.view.show_page(self.view.current_page, interaction=interaction)
             return
         else:
             lookup = (self.view.source.corsi, self.view.source.strength)
@@ -327,7 +327,7 @@ class GameflowButton(discord.ui.Button):
             self.view.source.strength = strength
             corsi = "Corsi" if corsi_bool else "Expected Goals"
             self.label = _("Gameflow {corsi} {strength}").format(corsi=corsi, strength=strength)
-            await self.view.show_page(0, interaction=interaction)
+            await self.view.show_page(self.view.current_page, interaction=interaction)
             return
 
 

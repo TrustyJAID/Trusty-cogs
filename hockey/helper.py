@@ -151,10 +151,9 @@ class TeamFinder(discord.app_commands.Transformer):
             raise BadArgument(_("You must provide a valid current team."))
         return list(result)[0]
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, argument: str) -> str:
+    async def transform(self, interaction: discord.Interaction, argument: str) -> str:
         ctx = await interaction.client.get_context(interaction)
-        return await cls.convert(ctx, argument)
+        return await self.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -219,8 +218,7 @@ class PlayerFinder(discord.app_commands.Transformer):
                         )
         return players
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, argument: str) -> List[BasePlayer]:
+    async def transform(self, interaction: discord.Interaction, argument: str) -> List[BasePlayer]:
         now = datetime.utcnow()
         cog = interaction.client.get_cog("Hockey")
         saved = datetime.fromtimestamp(await cog.config.player_db())
@@ -260,16 +258,17 @@ class PlayerFinder(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
         now = datetime.utcnow()
-        saved = datetime.fromtimestamp(await self.config.player_db())
-        path = cog_data_path(self) / "players.json"
+        cog = interaction.client.get_cog("Hockey")
+        saved = datetime.fromtimestamp(await cog.config.player_db())
+        path = cog_data_path(cog) / "players.json"
         ret = []
         if (now - saved) > timedelta(days=1) or not path.exists():
-            async with self.session.get(
+            async with cog.session.get(
                 "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
             ) as resp:
                 with path.open(encoding="utf-8", mode="w") as f:
                     json.dump(await resp.json(), f)
-            await self.config.player_db.set(int(now.timestamp()))
+            await cog.config.player_db.set(int(now.timestamp()))
         with path.open(encoding="utf-8", mode="r") as f:
             data = json.loads(f.read())["data"]
             for player in data:
@@ -331,9 +330,8 @@ class LeaderboardFinder(discord.app_commands.Transformer):
             return "worst"
         return "season"
 
-    @classmethod
     async def transform(
-        cls, interaction: discord.Interaction, argument: str
+        self, interaction: discord.Interaction, argument: str
     ) -> Literal[
         "season",
         "weekly",
@@ -343,7 +341,7 @@ class LeaderboardFinder(discord.app_commands.Transformer):
         "pre-season",
         "pre-season_weekly",
     ]:
-        return await cls.convert(interaction, argument)
+        return await self.convert(interaction, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, argument: str
@@ -377,8 +375,8 @@ class StateFinder(discord.app_commands.Transformer):
         return HockeyStates(argument.lower())
 
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, argument: str) -> HockeyStates:
-        return await cls.convert(interaction, argument)  # type: ignore
+    async def transform(self, interaction: discord.Interaction, argument: str) -> HockeyStates:
+        return await self.convert(interaction, argument)  # type: ignore
 
     async def autocomplete(
         self, interaction: discord.Interaction, value: str
