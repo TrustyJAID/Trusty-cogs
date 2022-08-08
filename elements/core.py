@@ -31,12 +31,11 @@ class ElementConverter(discord.app_commands.Transformer):
             raise commands.BadArgument("`{}` is not a valid element!".format(argument))
         return result
 
-    @classmethod
     async def transform(
-        cls, interaction: discord.Interaction, argument: str
+        self, interaction: discord.Interaction, argument: str
     ) -> mendeleev.models.Element:
         ctx = await interaction.client.get_context(interaction)
-        return await cls.convert(ctx, argument)
+        return await self.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -84,12 +83,11 @@ class MeasurementConverter(discord.app_commands.Transformer):
             raise commands.BadArgument("`{}` is not a valid measurement!".format(argument))
         return result
 
-    @classmethod
     async def transform(
-        cls, interaction: discord.Interaction, argument: str
+        self, interaction: discord.Interaction, argument: str
     ) -> Optional[Measurements]:
         ctx = await interaction.client.get_context(interaction)
-        return await cls.convert(ctx, argument)
+        return await self.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
@@ -403,8 +401,12 @@ class Elements(commands.Cog):
     async def element(
         self,
         ctx: commands.Context,
-        element: Optional[ElementConverter] = None,
-        measurement: Optional[MeasurementConverter] = None,
+        element: Optional[
+            discord.app_commands.Transform[mendeleev.models.Element, ElementConverter]
+        ] = None,
+        measurement: Optional[
+            discord.app_commands.Transform[Measurements, MeasurementConverter]
+        ] = None,
     ) -> None:
         """
         Display information about an element
