@@ -237,7 +237,7 @@ class ReTrigger(
             await interaction.response.send_message(
                 "Some emojis were not found, attempting to find unicode emojis."
             )
-            msg = await interaction.original_message()
+            msg = await interaction.original_response()
             for emoji in list_emojis:
                 if emoji.is_unicode_emoji():
                     try:
