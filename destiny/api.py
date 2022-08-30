@@ -41,6 +41,7 @@ BUNGIE_MEMBERSHIP_TYPES = {
     3: "Steam",
     4: "Blizzard",
     5: "Stadia",
+    6: "Epic Games",
     10: "Demon",
     254: "BungieNext",
 }
