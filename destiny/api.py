@@ -199,7 +199,7 @@ class DestinyAPI:
             await ctx.send(msg + url)
         try:
             msg = await ctx.bot.wait_for(
-                "message", check=lambda m: m.author == ctx.message.author, timeout=60
+                "message", check=lambda m: m.author == ctx.message.author, timeout=180
             )
         except asyncio.TimeoutError:
             return None
