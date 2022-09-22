@@ -129,12 +129,13 @@ class HockeyDev(MixinMeta):
         """
         Toggle the ability for users to setup pickems on their servers
         """
-        current = await self.pickems_config.only_allowed()
-        await self.pickems_config.only_allowed.set(not current)
-        if current:
+        allowed_only = not await self.pickems_config.only_allowed()
+        await self.pickems_config.only_allowed.set(allowed_only)
+        if allowed_only:
             msg = _("Pickems will only be enabled for allowed guilds.")
         else:
             msg = _("Pickems will be enabled for everyone.")
+
         await ctx.send(msg)
 
     @pickems_dev_commands.command(name="addguild")
@@ -540,5 +541,5 @@ class HockeyDev(MixinMeta):
         Clears the bots seasonal pickems leaderboard
         """
         for guild_id in await self.pickems_config.all_guilds():
-            await self.config.guild_from_id(int(guild_id)).leaderboard.clear()
+            await self.pickems_config.guild_from_id(int(guild_id)).leaderboard.clear()
         await ctx.send(_("Seasonal pickems leaderboards cleared."))

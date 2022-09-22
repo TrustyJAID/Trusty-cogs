@@ -555,10 +555,12 @@ class Standings:
                     continue
 
                 if search in [i.name.lower() for i in Divisions]:
-                    em = await standings.make_division_standings_embed(search)
+                    div = Divisions(search)
+                    em = await standings.make_division_standings_embed(div)
 
                 elif search in [i.name.lower() for i in Conferences]:
-                    em = await standings.make_conference_standings_embed(search)
+                    conf = Conferences(search)
+                    em = await standings.make_conference_standings_embed(conf)
                 else:
                     em = await standings.all_standing_embed()
                 if message is not None:

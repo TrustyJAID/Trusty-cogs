@@ -131,10 +131,14 @@ class Hockey(
             base_credits=0,
             top_credits=0,
             top_amount=0,
+        )
+        self.pickems_config.register_global(
+            base_credits=0,
+            top_credits=0,
+            top_amount=0,
             allowed_guilds=[],
             only_allowed=False,
         )
-        self.pickems_config.register_global(base_credits=0, top_credits=0, top_amount=0)
         self.loop: Optional[asyncio.Task] = None
         self.TEST_LOOP = False
         # used to test a continuous loop of a single game data

@@ -209,15 +209,21 @@ class Schedule(menus.PageSource):
         for count, game in enumerate(games):
 
             home_team = game["teams"]["home"]["team"]["name"]
-            home_abr = TEAMS[home_team]["tri_code"]
+            home_abr = home_team
+            if home_team in TEAMS:
+                home_abr = TEAMS[home_team]["tri_code"]
             away_team = game["teams"]["away"]["team"]["name"]
-            away_abr = TEAMS[away_team]["tri_code"]
+            away_abr = away_team
+            if away_team in TEAMS:
+                away_abr = TEAMS[away_team]["tri_code"]
             if self.vs and (home_team not in self.team or away_team not in self.team):
                 continue
             date = utc_to_local(datetime.strptime(game["gameDate"], "%Y-%m-%dT%H:%M:%SZ"))
             label = f"{away_abr}@{home_abr}-{date.year}-{date.month}-{date.day}"
             description = f"{away_team} @ {home_team}"
-            emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
+            emoji = None
+            if home_team in TEAMS:
+                emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
             self.select_options.append(
                 discord.SelectOption(
                     label=label, value=str(game["gamePk"]), description=description, emoji=emoji
