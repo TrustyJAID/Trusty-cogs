@@ -3,6 +3,7 @@ import csv
 import datetime
 import functools
 import logging
+import random
 import re
 from io import BytesIO, StringIO
 from typing import List, Literal, Optional
@@ -21,6 +22,7 @@ from .converter import (
     DestinyActivity,
     DestinyClassType,
     DestinyItemType,
+    DestinyRandomConverter,
     SearchInfo,
     StatsPage,
 )
@@ -635,6 +637,121 @@ class Destiny(DestinyAPI, commands.Cog):
             ).format(weekly=weekly_reset_str, daily=daily_reset_str)
         await ctx.send(msg)
 
+    async def get_seal_icon(self, record: dict) -> str:
+        if record["parentNodeHashes"]:
+            node_defs = await self.get_definition(
+                "DestinyPresentationNodeDefinition", record["parentNodeHashes"]
+            )
+            for key, data in node_defs.items():
+                dp = data["displayProperties"]
+                if not dp["hasIcon"]:
+                    continue
+                if dp["iconSequences"]:
+                    if len(dp["iconSequences"][0]["frames"]) == 3:
+                        return dp["iconSequences"][0]["frames"][1]
+                return dp["displayProperties"]["icon"]
+        else:
+            pres_node = await self.get_entities("DestinyPresentationNodeDefinition")
+            node = None
+            for key, data in pres_node.items():
+                if "completionRecordHash" not in data:
+                    continue
+                if record["hash"] == data["completionRecordHash"]:
+                    node = data["displayProperties"]
+                    break
+            if node and not node["hasIcon"]:
+                return record["icon"]
+            elif not node:
+                return record["icon"]
+            else:
+                if node["iconSequences"]:
+                    if len(node["iconSequences"][0]["frames"]) == 3:
+                        return node["iconSequences"][0]["frames"][1]
+                return node["icon"]
+
+    async def make_character_embed(
+        self, user: discord.abc.User, char_id: str, chars: dict, player_currency: str
+    ) -> discord.Embed:
+        char = chars["characters"]["data"][char_id]
+        info = ""
+        race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
+            str(char["raceHash"])
+        ]
+        gender = (await self.get_definition("DestinyGenderDefinition", [char["genderHash"]]))[
+            str(char["genderHash"])
+        ]
+        char_class = (await self.get_definition("DestinyClassDefinition", [char["classHash"]]))[
+            str(char["classHash"])
+        ]
+        info += "{race} {gender} {char_class} ".format(
+            race=race["displayProperties"]["name"],
+            gender=gender["displayProperties"]["name"],
+            char_class=char_class["displayProperties"]["name"],
+        )
+        titles = ""
+        embed = discord.Embed(title=info)
+        if "titleRecordHash" in char:
+            # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
+            char_title = (
+                await self.get_definition("DestinyRecordDefinition", [char["titleRecordHash"]])
+            )[str(char["titleRecordHash"])]
+            icon_url = await self.get_seal_icon(char_title)
+            title_info = "**{title_name}**\n{title_desc}\n"
+            try:
+                gilded = ""
+                if await self.check_gilded_title(chars, char_title):
+                    gilded = _("Gilded ")
+                title_name = (
+                    f"{gilded}"
+                    + char_title["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
+                )
+                title_desc = char_title["displayProperties"]["description"]
+                titles += title_info.format(title_name=title_name, title_desc=title_desc)
+                embed.set_thumbnail(url=IMAGE_URL + icon_url)
+            except KeyError:
+                pass
+        bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
+        bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
+        bnet_name = f"{bnet_display_name}#{bnet_code}"
+        embed.set_author(name=bnet_name, icon_url=user.avatar.url)
+        # if "emblemPath" in char:
+        # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
+        if "emblemBackgroundPath" in char:
+            embed.set_image(url=IMAGE_URL + char["emblemBackgroundPath"])
+        if titles:
+            # embed.add_field(name=_("Titles"), value=titles)
+            embed.set_author(name=f"{bnet_name} ({title_name})", icon_url=user.avatar.url)
+        # log.debug(data)
+        stats_str = ""
+        time_played = humanize_timedelta(seconds=int(char["minutesPlayedTotal"]) * 60)
+        last_played = datetime.datetime.strptime(
+            char["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=datetime.timezone.utc)
+        for stat_hash, value in char["stats"].items():
+            stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
+                str(stat_hash)
+            ]
+            stat_name = stat_info["displayProperties"]["name"]
+            prog = "█" * int(value / 10)
+            empty = "░" * int((100 - value) / 10)
+            bar = f"{prog}{empty}"
+            if stat_hash == "1935470627":
+                artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
+                    "powerBonus"
+                ]
+                bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
+            stats_str += f"{stat_name}: **{value}** \n{bar}\n"
+        stats_str += _("Time Played Total: **{time}**\n").format(time=time_played)
+        stats_str += _("Last Played: **{time}**\n").format(
+            time=discord.utils.format_dt(last_played, "R")
+        )
+        embed.description = stats_str
+        embed = await self.get_char_colour(embed, char)
+        if titles:
+            embed.add_field(name=_("Titles"), value=titles)
+        embed.add_field(name=_("Current Currencies"), value=player_currency)
+        return embed
+
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
     async def user(self, ctx: commands.Context, user: discord.Member = None) -> None:
@@ -665,88 +782,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 name = currency_datas[str(item["itemHash"])]["displayProperties"]["name"]
                 player_currency += f"{name}: **{quantity}**\n"
             for char_id, char in chars["characters"]["data"].items():
-                info = ""
-                race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
-                    str(char["raceHash"])
-                ]
-                gender = (
-                    await self.get_definition("DestinyGenderDefinition", [char["genderHash"]])
-                )[str(char["genderHash"])]
-                char_class = (
-                    await self.get_definition("DestinyClassDefinition", [char["classHash"]])
-                )[str(char["classHash"])]
-                info += "{race} {gender} {char_class} ".format(
-                    race=race["displayProperties"]["name"],
-                    gender=gender["displayProperties"]["name"],
-                    char_class=char_class["displayProperties"]["name"],
-                )
-                titles = ""
-                embed = discord.Embed(title=info)
-                if "titleRecordHash" in char:
-                    # TODO: Add fetch for Destiny.Definitions.Records.DestinyRecordDefinition
-                    char_title = (
-                        await self.get_definition(
-                            "DestinyRecordDefinition", [char["titleRecordHash"]]
-                        )
-                    )[str(char["titleRecordHash"])]
-                    title_info = "**{title_name}**\n{title_desc}\n"
-                    try:
-                        gilded = ""
-                        if await self.check_gilded_title(chars, char_title):
-                            gilded = _("Gilded ")
-                        title_name = (
-                            f"{gilded}"
-                            + char_title["titleInfo"]["titlesByGenderHash"][
-                                str(char["genderHash"])
-                            ]
-                        )
-                        title_desc = char_title["displayProperties"]["description"]
-                        titles += title_info.format(title_name=title_name, title_desc=title_desc)
-                        embed.set_thumbnail(
-                            url=IMAGE_URL + char_title["displayProperties"]["icon"]
-                        )
-                    except KeyError:
-                        pass
-
-                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
-                # if "emblemPath" in char:
-                # embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
-                if "emblemBackgroundPath" in char:
-                    embed.set_image(url=IMAGE_URL + char["emblemBackgroundPath"])
-                if titles:
-                    # embed.add_field(name=_("Titles"), value=titles)
-                    embed.set_author(
-                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
-                    )
-                # log.debug(data)
-                stats_str = ""
-                time_played = humanize_timedelta(seconds=int(char["minutesPlayedTotal"]) * 60)
-                last_played = datetime.datetime.strptime(
-                    char["dateLastPlayed"], "%Y-%m-%dT%H:%M:%SZ"
-                ).replace(tzinfo=datetime.timezone.utc)
-                for stat_hash, value in char["stats"].items():
-                    stat_info = (await self.get_definition("DestinyStatDefinition", [stat_hash]))[
-                        str(stat_hash)
-                    ]
-                    stat_name = stat_info["displayProperties"]["name"]
-                    prog = "█" * int(value / 10)
-                    empty = "░" * int((100 - value) / 10)
-                    bar = f"{prog}{empty}"
-                    if stat_hash == "1935470627":
-                        artifact_bonus = chars["profileProgression"]["data"]["seasonalArtifact"][
-                            "powerBonus"
-                        ]
-                        bar = _("Artifact Bonus: {bonus}").format(bonus=artifact_bonus)
-                    stats_str += f"{stat_name}: **{value}** \n{bar}\n"
-                stats_str += _("Time Played Total: **{time}**\n").format(time=time_played)
-                stats_str += _("Last Played: **{time}**\n").format(
-                    time=discord.utils.format_dt(last_played, "R")
-                )
-                embed.description = stats_str
-                embed = await self.get_char_colour(embed, char)
-                if titles:
-                    embed.add_field(name=_("Titles"), value=titles)
-                embed.add_field(name=_("Current Currencies"), value=player_currency)
+                embed = await self.make_character_embed(user, char_id, chars, player_currency)
                 embeds.append(embed)
         await BaseMenu(
             source=BasePages(
@@ -1023,10 +1059,11 @@ class Destiny(DestinyAPI, commands.Cog):
                             stat_info = all_stats[str(stat_hash)]
                             stat_name = stat_info["displayProperties"]["name"]
                             stat_value = stat_data["value"]
-                            prog = "█" * int(stat_value / 6)
-                            empty = "░" * int((42 - stat_value) / 6)
-                            bar = f"{prog}{empty}"
-                            stats_str += f"{stat_name}: \n{bar} **{stat_value}**\n"
+                            # prog = "█" * int(stat_value / 6)
+                            # empty = "░" * int((42 - stat_value) / 6)
+                            # bar = f"\n{prog}{empty} "
+                            bar = " "
+                            stats_str += f"{stat_name}:{bar}**{stat_value}**\n"
                             total += stat_value
                         stats_str += _("Total: **{total}**\n").format(total=total)
                 tier_type = item["itemTypeAndTierDisplayName"]
@@ -1184,6 +1221,95 @@ class Destiny(DestinyAPI, commands.Cog):
             if current.lower() in name.lower():
                 choices.append(app_commands.Choice(name=name, value=key))
         return choices[:25]
+
+    @destiny.group(name="random")
+    async def destiny_random(self, ctx: commands.Context):
+        """Get Random Items"""
+        pass
+
+    async def get_random_item(self, weapons_or_class: DestinyRandomConverter, tier_type: int):
+        data = await self.get_entities("DestinyInventoryItemDefinition")
+        pool = []
+        for key, value in data.items():
+            if value["inventory"]["tierType"] != tier_type:
+                continue
+            if weapons_or_class.value == 3 and value["itemType"] != 3:
+                continue
+            if weapons_or_class.value in (0, 1, 2):
+                if value["itemType"] != 2:
+                    continue
+                if value["classType"] != weapons_or_class.value:
+                    continue
+            pool.append(key)
+        return data[random.choice(pool)]
+
+    @destiny_random.command(name="exotic")
+    async def random_exotic(
+        self,
+        ctx: commands.Context,
+        weapons_or_class: DestinyRandomConverter,
+    ):
+        """
+        Get a random Exotic Weapon or choose a specific Class
+        to get a random armour piece
+        """
+        item = await self.get_random_item(weapons_or_class, 6)
+        em = discord.Embed(title=item["displayProperties"]["name"], colour=0xF1C40F)
+        if "flavorText" in item:
+            em.description = item["flavorText"]
+        if item["displayProperties"]["hasIcon"]:
+            em.set_thumbnail(url=IMAGE_URL + item["displayProperties"]["icon"])
+        if "screenshot" in item:
+            em.set_image(url=IMAGE_URL + item["screenshot"])
+        await ctx.send(embed=em)
+
+    @destiny.command(name="nightfall", aliases=["nf"])
+    async def d2_nightfall(self, ctx: commands.Context):
+        """
+        Get information about this weeks Nightfall activity
+        """
+        user = ctx.author
+        if not await self.has_oauth(ctx, user):
+            return
+        async with ctx.typing():
+            milestones = await self.get_milestones(user)
+            nightfalls = milestones["1942283261"]
+            activities = {nf["activityHash"]: nf for nf in milestones["1942283261"]["activities"]}
+            nf_hashes = [i["activityHash"] for i in nightfalls["activities"]]
+            modifier_hashes = []
+            for act in activities.values():
+                modifier_hashes += act["modifierHashes"]
+            modifiers = await self.get_definition(
+                "DestinyActivityModifierDefinition", modifier_hashes
+            )
+            nfs = await self.get_definition("DestinyActivityDefinition", nf_hashes)
+            embed = discord.Embed()
+            pgcr_img = None
+            for nf_id, nf in nfs.items():
+                name = nf["displayProperties"]["name"]
+                nf_desc = nf["displayProperties"]["description"]
+                mods = activities[int(nf_id)]
+                mod_string = nf["selectionScreenDisplayProperties"]["description"] + "\n"
+                for mod in mods["modifierHashes"]:
+                    nf_mod = modifiers[str(mod)]
+                    mod_name = nf_mod["displayProperties"]["name"]
+                    if not mod_name:
+                        continue
+                    if nf_mod["displayInActivitySelection"] and not nf_mod["displayInNavMode"]:
+                        continue
+                    mod_desc = re.sub(
+                        r"\W?\[[^\[\]]+\]", "", nf_mod["displayProperties"]["description"]
+                    )
+                    mod_icon = IMAGE_URL
+                    # if "icon" in nf_mod["displayProperties"]:
+                    # mod_icon += nf_mod["displayProperties"]["icon"]
+                    mod_string += f"- [{mod_name}]({mod_icon} '{mod_desc}')\n"
+                if pgcr_img is None and nf["pgcrImage"]:
+                    pgcr_img = IMAGE_URL + nf["pgcrImage"]
+                embed.add_field(name=name, value=mod_string)
+            embed.title = nf_desc
+            embed.set_image(url=pgcr_img)
+        await ctx.send(embed=embed)
 
     @destiny.command()
     @commands.bot_has_permissions(

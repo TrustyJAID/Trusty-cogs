@@ -43,6 +43,7 @@ BUNGIE_MEMBERSHIP_TYPES = {
     3: "Steam",
     4: "Blizzard",
     5: "Stadia",
+    6: "Epic Games",
     10: "Demon",
     254: "BungieNext",
 }
@@ -350,7 +351,7 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Item/{instanced_item}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    def get_entities(self, entity: str, d1: bool = False) -> dict:
+    def _get_entities(self, entity: str, d1: bool = False) -> dict:
         """
         This loads the entity from the saved manifest
         """
@@ -362,6 +363,16 @@ class DestinyAPI:
             data = json.load(f)
         return data
 
+    async def get_entities(self, entity: str, d1: bool = False) -> dict:
+        """This returns the full entity data asynchronously
+
+        it is done this way to prevent blocking trying to load ~130mb json file at once
+        """
+        task = functools.partial(self._get_entities, entity=entity, d1=d1)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, task)
+        return await asyncio.wait_for(task, timeout=60)
+
     async def get_definition(self, entity: str, entity_hash: list, d1: bool = False) -> dict:
         """
         This will attempt to get a definition from the manifest
@@ -370,12 +381,7 @@ class DestinyAPI:
         """
         items = {}
         try:
-            # the below is to prevent blocking reading the large
-            # ~130mb manifest files and save on API calls
-            task = functools.partial(self.get_entities, entity=entity, d1=d1)
-            loop = asyncio.get_running_loop()
-            task = loop.run_in_executor(None, task)
-            data = await asyncio.wait_for(task, timeout=60)
+            data = await self.get_entities(entity, d1)
         except Exception:
             log.info(_("No manifest found, getting response from API."))
             return await self.get_definition_from_api(entity.replace("Lite", ""), entity_hash)
@@ -411,12 +417,7 @@ class DestinyAPI:
         This is a helper to search clean names for a given definition of data
         """
         try:
-            # the below is to prevent blocking reading the large
-            # ~130mb manifest files and save on API calls
-            task = functools.partial(self.get_entities, entity=entity)
-            loop = asyncio.get_running_loop()
-            task = loop.run_in_executor(None, task)
-            data: dict = await asyncio.wait_for(task, timeout=60)
+            data = await self.get_entities(entity, d1)
         except Exception:
             err_msg = _("This command requires the Manifest to be downloaded to work.")
             raise Destiny2MissingManifest(err_msg)
@@ -511,6 +512,16 @@ class DestinyAPI:
             raise Destiny2RefreshTokenError
         url = f"{BASE_URL}/GroupV2/{clan_id}/Members/Approve/{membership_type}/{membership_id}/"
         return await self.post_url(url, headers=headers, body=member_data)
+
+    async def kick_clan_member(
+        self, user: discord.abc.User, clan_id: str, user_id: str, membership_type: str
+    ) -> dict:
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/GroupV2/GroupV2/{clan_id}/Members/{membership_type}/{user_id}/Kick/"
+        return await self.post_url(url, headers=headers)
 
     async def get_clan_info(self, user: discord.abc.User, clan_id: str) -> dict:
         """
@@ -703,15 +714,12 @@ class DestinyAPI:
                     else:
                         await ctx.send(error_msg)
                     return False
-                name = datas["displayName"]
                 await self.config.user(author).account.set(datas)
             else:
-                name = data["destinyMemberships"][0]["displayName"]
                 platform = BUNGIE_MEMBERSHIP_TYPES[data["destinyMemberships"][0]["membershipType"]]
                 await self.config.user(author).account.set(data["destinyMemberships"][0])
-            await ctx.channel.send(
-                _("Account set to {name} {platform}").format(name=name, platform=platform)
-            )
+            name = data["bungieNetUser"]["uniqueName"]
+            await ctx.channel.send(_("Account set to {name}").format(name=name))
         if await self.config.user(author).account.membershipType() == 4:
             data = await self.get_user_profile(author)
             datas, platform = await self.pick_account(ctx, data)

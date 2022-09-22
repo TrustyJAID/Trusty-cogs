@@ -21,6 +21,25 @@ class DestinyClassType(Enum):
     unknown = 3
 
 
+class DestinyRandomConverter(Enum):
+    titan = 0
+    hunter = 1
+    warlock = 2
+    weapon = 3
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str):
+        if argument.lower() == "titan":
+            return cls(0)
+        if argument.lower() == "hunter":
+            return cls(1)
+        if argument.lower() == "warlock":
+            return cls(2)
+        if argument.lower() == "weapon":
+            return cls(3)
+        return cls(0)
+
+
 class DestinyItemType(Enum):
     none = 0
     currency = 1
