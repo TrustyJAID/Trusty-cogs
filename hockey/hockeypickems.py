@@ -1000,6 +1000,14 @@ class HockeyPickems(MixinMeta):
         for page in pagify(msg):
             await ctx.channel.send(page)
 
+    async def check_pickems_req(self, ctx: commands.Context) -> bool:
+        msg = _("Pickems is not available at this time. Speak to the bot owner about enabling it.")
+        if await self.pickems_config.only_allowed():
+            if ctx.guild.id not in await self.pickems_config.allowed_guilds():
+                await ctx.send(msg)
+                return False
+        return True
+
     @pickems_commands.command(name="setup", aliases=["auto", "set"])
     @commands.admin_or_permissions(manage_channels=True)
     async def setup_auto_pickems(
@@ -1016,7 +1024,8 @@ class HockeyPickems(MixinMeta):
         await ctx.defer()
         if channel is None:
             channel = ctx.channel
-        await ctx.defer()
+        if not await self.check_pickems_req(ctx):
+            return
         if isinstance(channel, discord.Thread):
             msg = _("You cannot create threads within threads.")
             await ctx.send(msg)
@@ -1057,6 +1066,8 @@ class HockeyPickems(MixinMeta):
         if `date` is not provided the current day is used instead.
         """
         await ctx.defer()
+        if not await self.check_pickems_req(ctx):
+            return
         if date is None:
             new_date = datetime.now()
         else:

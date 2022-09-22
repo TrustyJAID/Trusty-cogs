@@ -124,6 +124,43 @@ class HockeyDev(MixinMeta):
         """
         pass
 
+    @pickems_dev_commands.command(name="toggle")
+    async def pickems_dev_toggle(self, ctx: commands.Context):
+        """
+        Toggle the ability for users to setup pickems on their servers
+        """
+        current = await self.pickems_config.only_allowed()
+        await self.pickems_config.only_allowed.set(not current)
+        if current:
+            msg = _("Pickems will only be enabled for allowed guilds.")
+        else:
+            msg = _("Pickems will be enabled for everyone.")
+        await ctx.send(msg)
+
+    @pickems_dev_commands.command(name="addguild")
+    async def pickems_add_guild(self, ctx: commands.Context, guild_id: int):
+        """
+        Add a guild to the pickems allowed guilds
+        """
+        async with self.pickems_config.allowed_guilds() as allowed:
+            if guild_id not in allowed:
+                allowed.append(guild_id)
+        await ctx.send(
+            _("Guild {guild_id} added to pickems allowed guilds.").format(guild_id=guild_id)
+        )
+
+    @pickems_dev_commands.command(name="remguild")
+    async def pickems_remove_guild(self, ctx: commands.Context, guild_id: int):
+        """
+        Remove a guild from the pickems allowed guilds
+        """
+        async with self.pickems_config.allowed_guilds() as allowed:
+            if guild_id in allowed:
+                allowed.remove(guild_id)
+        await ctx.send(
+            _("Guild {guild_id} added to pickems allowed guilds.").format(guild_id=guild_id)
+        )
+
     @pickems_dev_commands.command(name="make", with_app_command=False)
     async def make_fake_pickems(self, ctx: commands.Context) -> None:
         """

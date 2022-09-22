@@ -131,6 +131,8 @@ class Hockey(
             base_credits=0,
             top_credits=0,
             top_amount=0,
+            allowed_guilds=[],
+            only_allowed=False,
         )
         self.pickems_config.register_global(base_credits=0, top_credits=0, top_amount=0)
         self.loop: Optional[asyncio.Task] = None
