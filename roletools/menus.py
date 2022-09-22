@@ -364,6 +364,7 @@ class BaseMenu(discord.ui.View):
     async def start(self, ctx: commands.Context):
         self.ctx = ctx
         self.bot = self.cog.bot
+        self.author = ctx.author
         # await self.source._prepare_once()
         self.message = await self.send_initial_message(ctx)
 
