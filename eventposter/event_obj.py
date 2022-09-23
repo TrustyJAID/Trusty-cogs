@@ -46,6 +46,11 @@ class ApproveButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.view.approved = True
         self.view.stop()
+        await self.view.ctx.message.edit(view=None)
+        await interaction.response.send_message(
+            _("{user} has approved this event.").format(user=interaction.user.mention),
+            allowed_mentions=discord.AllowedMentions(users=False),
+        )
 
 
 class DenyButton(discord.ui.Button):
@@ -55,6 +60,11 @@ class DenyButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         self.view.approved = False
         self.view.stop()
+        await self.view.ctx.message.edit(view=None)
+        await interaction.response.send_message(
+            _("{user} has denied this event.").format(user=interaction.user.mention),
+            allowed_mentions=discord.AllowedMentions(users=False),
+        )
 
 
 class ApproveView(discord.ui.View):
@@ -505,8 +515,7 @@ class Event(discord.ui.View):
 
         em.description = _(
             "**{description}**\n\nTo join this event type "
-            "`{prefix}join {hoster}` or react to this message with "
-            "\N{WHITE HEAVY CHECK MARK}\n\n{max_slots_msg} "
+            "`{prefix}join {hoster}` or press the Join Event button below."
         ).format(
             description=self.event[:1024],
             prefix=prefix,
