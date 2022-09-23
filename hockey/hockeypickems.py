@@ -413,7 +413,7 @@ class HockeyPickems(MixinMeta):
             for page in pagify(msg):
                 await new_chn.send(page)
         except discord.Forbidden:
-            await self.pickems_config.guild(guild).pickems_channel.clear()
+            # await self.pickems_config.guild(guild).pickems_channel.clear()
             return None
         except discord.HTTPException:
             return None

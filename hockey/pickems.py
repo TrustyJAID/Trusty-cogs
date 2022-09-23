@@ -108,12 +108,12 @@ class Pickems(discord.ui.View):
         self.home_emoji = (
             discord.PartialEmoji.from_str(TEAMS[self.home_team]["emoji"])
             if self.home_team in TEAMS
-            else "\N{HOUSE BUILDING}\N{VARIATION SELECTOR-16}"
+            else discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
         )
         self.away_emoji = (
             discord.PartialEmoji.from_str(TEAMS[self.away_team]["emoji"])
             if self.away_team in TEAMS
-            else "\N{AIRPLANE}\N{VARIATION SELECTOR-16}"
+            else discord.PartialEmoji.from_str("\N{AIRPLANE}")
         )
         self.winner = kwargs.get("winner")
         self.name = kwargs.get("name")
