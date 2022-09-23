@@ -33,7 +33,7 @@ class StarboardEvents:
         if message.embeds:
             em = message.embeds[0]
             if message.system_content:
-                if em.description != discord.Embed.Empty:
+                if em.description is not None:
                     em.description = "{}\n\n{}".format(message.system_content, em.description)[
                         :2048
                     ]
