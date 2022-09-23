@@ -147,7 +147,7 @@ class TweetListener(AsyncStreamingClient):
             self.is_rate_limited = False
 
     async def on_disconnect(self) -> None:
-        log.info(_("The stream has disconnected."))
+        log.debug(_("The stream has disconnected."))
 
 
 class TweetsAPI:
