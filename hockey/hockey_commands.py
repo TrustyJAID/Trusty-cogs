@@ -829,11 +829,12 @@ class HockeyCommands(MixinMeta):
             await ctx.send(msg)
         if "all" not in team:
             invites = ""
-            for teams in team:
-                invites += TEAMS[teams]["invite"] + "\n"
-            await ctx.send(
-                _("Here is the {team} server invite link:").format(team=humanize_list(team))
-            )
+            if team in TEAMS:
+                invites += TEAMS[team]["invite"] + "\n"
+            else:
+                await ctx.send(_("You must provide a valid current team."))
+                return
+            await ctx.send(_("Here is the {team} server invite link:").format(team=team))
             await ctx.channel.send(invites)
         else:
             if not ctx.channel.permissions_for(ctx.author).manage_messages:

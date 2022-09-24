@@ -159,16 +159,16 @@ class TeamFinder(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice[str]]:
         team_choices = []
-        include_all = interaction.command.name in ["setup", "add"]
+        include_all = interaction.command.name in ["setup", "add", "otherdiscords"]
         include_inactive = interaction.command.name in ["roster", "games"]
         ret = []
         for t, d in TEAMS.items():
+            if not include_inactive and not d["active"]:
+                continue
             team_choices.append(discord.app_commands.Choice(name=t, value=t))
         if include_all:
             team_choices.insert(0, discord.app_commands.Choice(name="All", value="all"))
         for choice in team_choices:
-            if not include_inactive and not d["active"]:
-                continue
             if current.lower() in choice.name.lower():
                 ret.append(choice)
         return ret[:25]
