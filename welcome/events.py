@@ -122,7 +122,7 @@ class Events:
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar.url)
+                url = str(member.display_avatar)
             em.set_thumbnail(url=url)
         if EMBED_DATA["image"] or EMBED_DATA["image_goodbye"]:
             url = ""
@@ -135,7 +135,7 @@ class Events:
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar.url)
+                url = str(member.display_avatar)
             em.set_image(url=url)
         if EMBED_DATA["icon_url"]:
             url = EMBED_DATA["icon_url"]
@@ -144,12 +144,12 @@ class Events:
             elif url == "splash":
                 url = str(guild.splash_url)
             elif url == "avatar" and isinstance(member, discord.Member):
-                url = str(member.avatar.url)
+                url = str(member.display_avatar)
             em.set_author(name=username, icon_url=url)
         if EMBED_DATA["timestamp"]:
             em.timestamp = datetime.now(timezone.utc)
         if EMBED_DATA["author"] and isinstance(member, discord.Member):
-            em.set_author(name=username, icon_url=str(member.avatar.url))
+            em.set_author(name=username, icon_url=str(member.display_avatar))
         return em
 
     @commands.Cog.listener()
