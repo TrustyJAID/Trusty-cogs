@@ -1034,10 +1034,10 @@ class ServerStats(commands.GroupCog):
                             public_flags=public_flags,
                         )
                         embed.description = created_on
-                        embed.set_thumbnail(url=member.avatar.url)
+                        embed.set_thumbnail(url=member.display_avatar)
                         embed.colour = await ctx.embed_colour()
                         embed.set_author(
-                            name=f"{member} ({member.id}) {robot}", icon_url=member.avatar.url
+                            name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
                         )
                         for page in pagify(em, ["\n"], page_length=1024):
                             embed.add_field(name=_("Shared Servers"), value=page)
@@ -1063,10 +1063,10 @@ class ServerStats(commands.GroupCog):
                         public_flags=public_flags,
                     )
                     embed.description = created_on
-                    embed.set_thumbnail(url=member.avatar.url)
+                    embed.set_thumbnail(url=member.display_avatar)
                     embed.colour = await ctx.embed_colour()
                     embed.set_author(
-                        name=f"{member} ({member.id}) {robot}", icon_url=member.avatar.url
+                        name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
                     )
                     embed_list.append(embed)
                 else:
