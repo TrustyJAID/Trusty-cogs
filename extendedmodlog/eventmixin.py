@@ -225,6 +225,7 @@ class EventMixin:
             role = f"everyone\n{privs.name}\n"
         if user_perms:
             role += format_perms_list(user_perms)
+        i_require = None
         if my_perms:
             i_require = format_perms_list(my_perms)
 
