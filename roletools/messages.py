@@ -23,6 +23,19 @@ class RoleToolsMessages(RoleToolsMixin):
         """Commands for sending/editing messages for roletools"""
         pass
 
+    async def check_totals(self, ctx: commands.Context, buttons: int, menus: int) -> bool:
+        menus_total = menus * 5
+        total = buttons + menus_total
+        if total > 25:
+            await ctx.send(
+                _(
+                    "You have a maximum of 25 slots per message for buttons and menus. "
+                    "Buttons count as 1 slot each and menus count as 5 slots each."
+                )
+            )
+            return False
+        return True
+
     @roletools_message.command(name="send", with_app_command=False)
     async def send_message(
         self,
@@ -45,10 +58,13 @@ class RoleToolsMessages(RoleToolsMixin):
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
+        if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
+            return
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
         # log.debug(options)
+
         if not menus:
             msg = _("You need to specify at least one menu setup previously.")
             await ctx.send(msg)
@@ -92,6 +108,8 @@ class RoleToolsMessages(RoleToolsMixin):
         Note: There is a maximum of 25 slots available on one message. Each menu
         uses up 5 slots while each button uses up 1 slot.
         """
+        if not await self.check_totals(ctx, buttons=len(buttons), menus=len(menus)):
+            return
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
@@ -140,6 +158,8 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 5.
         `<message>` - The message to be included with the select menu.
         """
+        if not await self.check_totals(ctx, buttons=0, menus=len(menus)):
+            return
         new_view = SelectRoleView(self)
         # for button in s:
         # new_view.add_item(button)
@@ -174,6 +194,8 @@ class RoleToolsMessages(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[menus]...` - The names of the select menus you want to include up to a maximum of 5.
         """
+        if not await self.check_totals(ctx, buttons=0, menus=len(menus)):
+            return
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
@@ -214,6 +236,8 @@ class RoleToolsMessages(RoleToolsMixin):
         message up to a maximum of 25.
         `<message>` - The message to be included with the buttons.
         """
+        if not await self.check_totals(ctx, buttons=len(buttons), menus=0):
+            return
         new_view = ButtonRoleView(self)
         log.info(buttons)
         for button in buttons:
@@ -242,6 +266,8 @@ class RoleToolsMessages(RoleToolsMixin):
         `<message>` - The existing message to add role buttons to. Must be a bots message.
         `[buttons]...` - The names of the buttons you want to include up to a maximum of 25.
         """
+        if not await self.check_totals(ctx, buttons=len(buttons), menus=0):
+            return
         if message.author.id != ctx.guild.me.id:
             msg = _("I cannot edit someone elses message to include buttons.")
             await ctx.send(msg)
