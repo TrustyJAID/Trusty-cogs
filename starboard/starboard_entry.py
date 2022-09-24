@@ -119,7 +119,12 @@ class StarboardEntry:
             return False
         if not guild.get_channel(self.channel):
             return False
-        if channel.is_nsfw() and not guild.get_channel(self.channel).is_nsfw():
+        if channel is None:
+            return False
+        sb_channel = guild.get_channel(self.channel)
+        if sb_channel is None:
+            return False
+        if channel.is_nsfw() and not sb_channel.is_nsfw():
             return False
         whitelisted_channels = [
             guild.get_channel(cid).id

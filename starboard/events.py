@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Literal, Optional, Tuple, Union, cast
 
 import discord
@@ -291,7 +291,7 @@ class StarboardEvents:
         while True:
             total_pruned = 0
             guilds_ignored = 0
-            to_purge = datetime.utcnow() - purge
+            to_purge = datetime.now(timezone.utc) - purge
             # Prune only the last 30 days worth of data
             for guild_id, starboards in self.starboards.items():
                 guild = self.bot.get_guild(guild_id)
