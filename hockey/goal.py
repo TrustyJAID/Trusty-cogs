@@ -301,7 +301,7 @@ class Goal:
         """
         config = bot.get_cog("Hockey").config
         team_list = await config.teams()
-        team_data = await get_team(bot, team)
+        team_data = await get_team(bot, team, data.game_start_str)
         if goal not in [goal.goal_id for goal in data.goals]:
             try:
                 old_msgs = team_data["goal_id"][goal]["messages"]

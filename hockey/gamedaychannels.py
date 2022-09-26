@@ -349,7 +349,7 @@ class GameDayChannels(MixinMeta):
             team = game_data.home_team
             next_game = game_data
 
-        chn_name = await self.get_chn_name(next_game)
+        chn_name = get_chn_name(next_game)
         try:
             new_chn = await guild.create_text_channel(chn_name, category=category)
         except discord.Forbidden:

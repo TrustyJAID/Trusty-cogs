@@ -940,6 +940,7 @@ class StandingsMenu(discord.ui.View):
         await self.prepare()
         await self.source._prepare_once()
         self.ctx = ctx
+        self.author = ctx.message.author
         self.message = await self.send_initial_message(ctx)
 
     async def _get_kwargs_from_page(self, page):

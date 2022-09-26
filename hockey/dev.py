@@ -143,12 +143,14 @@ class HockeyDev(MixinMeta):
         """
         Add a guild to the pickems allowed guilds
         """
+        guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            await ctx.send(_("I am not currently in {guild_id}.").format(guild_id=guild_id))
+            return
         async with self.pickems_config.allowed_guilds() as allowed:
             if guild_id not in allowed:
                 allowed.append(guild_id)
-        await ctx.send(
-            _("Guild {guild_id} added to pickems allowed guilds.").format(guild_id=guild_id)
-        )
+        await ctx.send(_("{guild} added to pickems allowed guilds.").format(guild=guild.name))
 
     @pickems_dev_commands.command(name="remguild")
     async def pickems_remove_guild(self, ctx: commands.Context, guild_id: int):

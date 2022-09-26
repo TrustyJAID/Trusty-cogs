@@ -213,8 +213,8 @@ class Game:
         self.period_time_left = kwargs.get("period_time_left")
         self.period_starts = kwargs.get("period_starts", {})
         self.plays = kwargs.get("plays")
-        game_start_str = kwargs.get("game_start", "")
-        game_start = datetime.strptime(game_start_str, "%Y-%m-%dT%H:%M:%SZ")
+        self.game_start_str = kwargs.get("game_start", "")
+        game_start = datetime.strptime(self.game_start_str, "%Y-%m-%dT%H:%M:%SZ")
         self.game_start = game_start.replace(tzinfo=timezone.utc)
         home_team = kwargs.get("home_team")
         away_team = kwargs.get("away_team")
@@ -734,7 +734,7 @@ class Game:
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
-        home = await get_team(bot, self.home_team)
+        home = await get_team(bot, self.home_team, self.game_start_str)
         # away = await get_team(self.away_team)
         # team_list = await self.config.teams()
         # Home team checking
@@ -1003,8 +1003,8 @@ class Game:
         Checks to see if a goal needs to be posted
         """
         team_data = {
-            self.home_team: await get_team(bot, self.home_team),
-            self.away_team: await get_team(bot, self.away_team),
+            self.home_team: await get_team(bot, self.home_team, self.game_start_str),
+            self.away_team: await get_team(bot, self.away_team, self.game_start_str),
         }
         # home_team_data = await get_team(bot, self.home_team)
         # away_team_data = await get_team(bot, self.away_team)
@@ -1065,8 +1065,8 @@ class Game:
         """
         Saves the data do the config to compare against new data
         """
-        home = await get_team(bot, self.home_team)
-        away = await get_team(bot, self.away_team)
+        home = await get_team(bot, self.home_team, self.game_start_str)
+        away = await get_team(bot, self.away_team, self.game_start_str)
         team_list = await bot.get_cog("Hockey").config.teams()
         team_list.remove(home)
         team_list.remove(away)

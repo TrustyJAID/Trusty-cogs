@@ -718,9 +718,9 @@ class HockeyCommands(MixinMeta):
             em.set_author(
                 name=ctx.guild.name
                 + _(" Pickems {style} Leaderboard").format(style=leaderboard_type_str),
-                icon_url=ctx.guild.icon_url,
+                icon_url=ctx.guild.icon.url,
             )
-            em.set_thumbnail(url=ctx.guild.icon_url)
+            em.set_thumbnail(url=ctx.guild.icon.url)
             await ctx.send(embed=em)
             return
         await BaseMenu(

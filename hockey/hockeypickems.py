@@ -401,7 +401,11 @@ class HockeyPickems(MixinMeta):
             return None
         if not channel.permissions_for(guild.me).create_public_threads:
             return None
-        timestamp = int(day.replace(tzinfo=None).timestamp())
+        timestamp = int(day.replace(tzinfo=None, hour=12).timestamp())
+        # replace hour to 12 because on UTC machines this doesn't work as expected
+        # 12 should cover most of the US and most times are in relation to the US
+        # In practice we don't care since the exact dates are under the game themselves
+        # but this is used to display a mostly accurate day.
         message = await channel.send(_("Pickems <t:{date}:D>").format(date=timestamp))
         name = _("Pickems-{month}-{day}").format(month=day.month, day=day.day)
         auto_archive_duration = 10080

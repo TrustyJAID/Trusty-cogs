@@ -493,7 +493,7 @@ async def get_team_role(guild: discord.Guild, home_team: str, away_team: str) ->
     return home_role, away_role
 
 
-async def get_team(bot: Red, team: str) -> dict:
+async def get_team(bot: Red, team: str, game_start: str) -> dict:
     config = bot.get_cog("Hockey").config
     team_list = await config.teams()
     if team_list is None:
@@ -502,7 +502,7 @@ async def get_team(bot: Red, team: str) -> dict:
         team_list.append(team_entry.to_json())
         await config.teams.set(team_list)
     for teams in team_list:
-        if team == teams["team_name"]:
+        if team == teams["team_name"] and game_start == teams["game_start"]:
             return teams
     # Add unknown teams to the config to track stats
     return_team = TeamEntry("Null", team, 0, [], {}, [], "")

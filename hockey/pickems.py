@@ -144,6 +144,11 @@ class Pickems(discord.ui.View):
             "game_type={0.game_type} name={0.name} guild={0.guild} winner={0.winner}>"
         ).format(self)
 
+    async def on_error(
+        self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item
+    ):
+        log.error(f"{error} - {item}")
+
     def disable_buttons(self):
         self.home_button.disabled = True
         self.away_button.disabled = True
