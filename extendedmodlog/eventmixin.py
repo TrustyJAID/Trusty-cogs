@@ -267,6 +267,8 @@ class EventMixin:
         if guild_id is None:
             return
         guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            return
         if guild.id not in self.settings:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -282,7 +284,10 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
             return
-        if await self.is_ignored_channel(guild, guild.get_channel(channel_id)):
+        message_channel = guild.get_channel(channel_id)
+        if message_channel is None:
+            return
+        if await self.is_ignored_channel(guild, message_channel):
             return
         embed_links = (
             channel.permissions_for(guild.me).embed_links
