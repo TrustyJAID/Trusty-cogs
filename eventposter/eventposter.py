@@ -359,6 +359,11 @@ class EventPoster(commands.Cog):
         ctx = self.waiting_approval[interaction.message.id]["ctx"]
         event.approver = interaction.user.id
         await self.post_event(ctx, event)
+        await interaction.response.send_message(
+            _("{user} has approved this event.").format(user=interaction.user.mention),
+            allowed_mentions=discord.AllowedMentions(users=False),
+        )
+        await interaction.message.edit(view=None)
 
     async def deny_event(self, interaction: discord.Interaction):
         if interaction.message.id not in self.waiting_approval:
@@ -368,6 +373,11 @@ class EventPoster(commands.Cog):
             author=ctx.author.mention
         )
         await ctx.reply(msg)
+        await interaction.response.send_message(
+            _("{user} has denied this event.").format(user=interaction.user.mention),
+            allowed_mentions=discord.AllowedMentions(users=False),
+        )
+        await interaction.message.edit(view=None)
 
     async def post_event(self, ctx: commands.Context, event: Event):
         em = await event.make_event_embed(ctx)
