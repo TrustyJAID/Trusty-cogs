@@ -145,7 +145,6 @@ class TweetListener(AsyncStreamingClient):
         if status_code == 429:
             self.is_rate_limited = True
             self.disconnect()
-            self.session = None
             await asyncio.sleep(60 * 16)
             self.is_rate_limited = False
 
