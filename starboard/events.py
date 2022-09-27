@@ -155,7 +155,7 @@ class StarboardEvents:
             return
         if guild.me.is_timed_out():
             return
-        channel = guild.get_channel(payload.channel_id)
+        channel = guild.get_channel_or_thread(payload.channel_id)
 
         if guild.id not in self.starboards:
             return
