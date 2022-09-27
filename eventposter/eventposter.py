@@ -250,8 +250,6 @@ class EventPoster(commands.Cog):
         event_data = await self.config.guild(ctx.guild).events()
         event = Event.from_json(self.bot, event_data[str(ctx.author.id)])
         msg = event.mention(include_maybe) + ":\n" + message
-        if ctx.interaction:
-            await ctx.followup.send_message(_("Pinging users of your event."), ephemeral=True)
         for page in pagify(msg):
             await ctx.send(page, allowed_mentions=discord.AllowedMentions(users=True))
             # include AllowedMentions here just incase someone has user mentions disabled
@@ -977,18 +975,16 @@ class EventPoster(commands.Cog):
             msg = _("That user is not currently hosting any events.")
             await ctx.send(msg)
             return
-        to_del = []
-        for message_id, event in self.event_cache[ctx.guild.id].items():
+        event = None
+        for message_id, events in self.event_cache[ctx.guild.id].items():
             if event.hoster == hoster.id:
-                await event.edit(content=_("This event has ended."))
-                to_del.append(event.message)
-            async with self.config.guild(ctx.guild).events() as cur_events:
-                del cur_events[str(event.hoster)]
-        for e in to_del:
-            try:
-                del self.event_cache[ctx.guild.id][e]
-            except KeyError:
-                pass
+                event = events
+        if event is not None:
+            await event.end_event()
+        await ctx.send(
+            _("Ending {hoster}'s event.").format(hoster=hoster.mention),
+            allowed_mentions=discord.AllowedMentions(users=False),
+        )
 
     @event_settings.command(name="class")
     @commands.guild_only()
