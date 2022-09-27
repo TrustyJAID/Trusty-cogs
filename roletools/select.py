@@ -575,9 +575,9 @@ class RoleToolsSelect(RoleToolsMixin):
         """
         View current select menus setup for role assign in this server.
         """
+        no_options = _("There are no select menu options in this server.")
         if ctx.guild.id not in self.settings:
-            msg = _("There are no select menu options in this server.")
-            await ctx.send(msg)
+            await ctx.send(no_options)
             return
         pages = []
         for name, select_data in self.settings[ctx.guild.id]["select_options"].items():
@@ -600,6 +600,9 @@ class RoleToolsSelect(RoleToolsMixin):
                 description=description,
             )
             pages.append(msg)
+        if not pages:
+            await ctx.send(no_options)
+            return
         await BaseMenu(
             source=SelectOptionPages(
                 pages=pages,

@@ -281,9 +281,9 @@ class RoleToolsButtons(RoleToolsMixin):
         """
         View current buttons setup for role assign in this server.
         """
+        no_buttons = _("There are no button roles on this server.")
         if ctx.guild.id not in self.settings:
-            msg = _("There are no button roles in this server.")
-            await ctx.send(msg)
+            await ctx.send(no_buttons)
             return
         pages = []
         colour_index = {
@@ -325,6 +325,9 @@ class RoleToolsButtons(RoleToolsMixin):
                     message=message,
                 )
             pages.append(msg)
+        if not pages:
+            await ctx.send(no_buttons)
+            return
         await BaseMenu(
             source=ButtonRolePages(
                 pages=pages,
