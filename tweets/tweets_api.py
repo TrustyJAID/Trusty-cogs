@@ -128,6 +128,8 @@ class TweetListener(AsyncStreamingClient):
         self.bot.dispatch("tweet", response)
 
     async def on_errors(self, errors: dict) -> None:
+        if errors.get("title", {}) == "operational-disconnect":
+            log.info("A tweet stream error has occured - " + errors.get("detail", "Unknown error"))
         msg = _("A tweet stream error has occured! ") + str(errors)
         log.error(msg)
         self.bot.dispatch("tweet_error", msg)
@@ -143,6 +145,7 @@ class TweetListener(AsyncStreamingClient):
         if status_code == 429:
             self.is_rate_limited = True
             self.disconnect()
+            self.session = None
             await asyncio.sleep(60 * 16)
             self.is_rate_limited = False
 
