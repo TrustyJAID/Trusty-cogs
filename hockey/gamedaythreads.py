@@ -123,10 +123,10 @@ class GameDayThreads(MixinMeta):
         `goal` is all the goal updates.
         """
         cur_state = await self.config.guild(ctx.guild).gdt_state_updates()
-        if state in cur_state:
-            cur_state.remove(state)
+        if state.value in cur_state:
+            cur_state.remove(state.value)
         else:
-            cur_state.append(state)
+            cur_state.append(state.value)
         await self.config.guild(ctx.guild).gdt_state_updates.set(cur_state)
         if cur_state:
             msg = _("GDT game updates set to {states}").format(

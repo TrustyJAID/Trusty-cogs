@@ -161,8 +161,39 @@ class HockeyDev(MixinMeta):
             if guild_id in allowed:
                 allowed.remove(guild_id)
         await ctx.send(
-            _("Guild {guild_id} added to pickems allowed guilds.").format(guild_id=guild_id)
+            _("Guild {guild_id} removed from the pickems allowed guilds.").format(
+                guild_id=guild_id
+            )
         )
+
+    @pickems_dev_commands.command(name="fix")
+    async def fix_pickems_views(self, ctx: commands.Context):
+        """
+        For some reason reloading doesn't re-add the views to the bots persistent
+        views list. This command does that if for whatever reason after reloading
+        the cog the views are not registering votes.
+        """
+        for guild_id, pickems in self.all_pickems.items():
+            for name, pickem in pickems.items():
+                self.bot.add_view(pickem)
+        await ctx.send(_("Added all pickems views to the bot."))
+
+    @pickems_dev_commands.command(name="list")
+    async def list_pickems_guilds(self, ctx: commands.Context):
+        """
+        List all guilds allowed to have pickems
+        """
+        guild_ids = await self.pickems_config.allowed_guilds()
+        guilds = []
+        for guild_id in guild_ids:
+            g = self.bot.get_guild(guild_id)
+            if g is not None:
+                guilds.append(f"{g.id} - {g.name}")
+            else:
+                guilds.append(f"{guild_id}")
+        msg = "\n".join(g for g in guilds)
+        for page in pagify(msg):
+            await ctx.send(page)
 
     @pickems_dev_commands.command(name="make", with_app_command=False)
     async def make_fake_pickems(self, ctx: commands.Context) -> None:

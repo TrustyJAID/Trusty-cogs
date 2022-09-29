@@ -125,7 +125,7 @@ class TeamFinder(discord.app_commands.Transformer):
     async def convert(cls, ctx: Context, argument: str) -> str:
         potential_teams = argument.split()
         result = set()
-        include_all = ctx.command.name in ["setup", "add"]
+        include_all = ctx.command.name in ["setup", "add", "otherdiscords"]
         include_inactive = ctx.command.name in ["roster"]
         for team, data in TEAMS.items():
             if "Team" in team:
@@ -359,20 +359,20 @@ class LeaderboardFinder(discord.app_commands.Transformer):
 
 
 class HockeyStates(Enum):
-    preview = "preview"
-    live = "live"
-    goal = "goal"
-    periodrecap = "periodrecap"
-    final = "final"
+    preview = "Preview"
+    live = "Live"
+    goal = "Goal"
+    periodrecap = "Periodrecap"
+    final = "Final"
 
 
 class StateFinder(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: Context, argument: str) -> HockeyStates:
-        state_list = ["preview", "live", "final", "goal", "periodrecap"]
-        if argument.lower() not in state_list:
+        state_list = [i.value for i in HockeyStates]
+        if argument.title() not in state_list:
             raise BadArgument('"{}" is not a valid game state.'.format(argument))
-        return HockeyStates(argument.lower())
+        return HockeyStates(argument.title())
 
     @classmethod
     async def transform(self, interaction: discord.Interaction, argument: str) -> HockeyStates:
@@ -382,7 +382,7 @@ class StateFinder(discord.app_commands.Transformer):
         self, interaction: discord.Interaction, value: str
     ) -> List[discord.app_commands.Choice[str]]:
         return [
-            discord.app_commands.Choice(name=v.name.title(), value=v.name) for v in HockeyStates
+            discord.app_commands.Choice(name=v.name.title(), value=v.value) for v in HockeyStates
         ]
 
 

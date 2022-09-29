@@ -827,7 +827,7 @@ class HockeyCommands(MixinMeta):
         if team is None:
             msg = _("You must provide a valid current team.")
             await ctx.send(msg)
-        if "all" not in team:
+        if "all" not in team.lower():
             invites = ""
             if team in TEAMS:
                 invites += TEAMS[team]["invite"] + "\n"
