@@ -128,11 +128,38 @@ class TweetListener(AsyncStreamingClient):
         self.bot.dispatch("tweet", response)
 
     async def on_errors(self, errors: dict) -> None:
-        if errors.get("title", {}) == "operational-disconnect":
-            log.info("A tweet stream error has occured - " + errors.get("detail", "Unknown error"))
-        msg = _("A tweet stream error has occured! ") + str(errors)
-        log.error(msg)
-        self.bot.dispatch("tweet_error", msg)
+        msg = _(
+            "A tweet stream error has occured! - {error_title} - {error_details} - {link_info}"
+        )
+        if isinstance(errors, list):
+            full_msg = ""
+            for error in errors:
+                error_title = error.get("title", "Unknown error")
+                error_details = error.get("detail", "Unknown details")
+                error_type = error.get("type", "Unknown type")
+                error_msg = msg.format(
+                    error_title=error_title, error_details=error_details, link_info=error_type
+                )
+                if error_title == "operational-disconnect":
+                    log.info(error_msg)
+                else:
+                    log.error(error_msg)
+                    full_msg += error_msg
+                if full_msg:
+                    self.bot.dispatch("tweet_error", full_msg)
+            return
+        else:
+            error_title = errors.get("title", "Unknown Error")
+            error_details = errors.get("detail", "Unknown details")
+            error_type = errors.get("type", "Unknown type")
+            error_msg = msg.format(
+                error_title=error_title, error_details=error_details, link_info=error_type
+            )
+            if error_title == "operational-disconnect":
+                log.info(error_msg)
+            else:
+                log.error(error_msg)
+                self.bot.dispatch("tweet_error", error_msg)
 
     async def on_exception(self, exception: Exception):
         msg = _("A tweet stream error has occured! ") + str(exception)
