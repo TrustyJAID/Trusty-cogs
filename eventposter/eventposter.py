@@ -297,22 +297,12 @@ class EventPoster(commands.Cog):
             if not await self.check_clear_event(ctx):
                 return
             else:
-                to_del = []
-                for message_id, event in self.event_cache[ctx.guild.id].items():
-                    if event.hoster == ctx.author.id:
-                        await event.edit(content=_("This event has ended."))
-                        to_del.append(event.message)
-                    async with self.config.guild(ctx.guild).events() as cur_events:
-
-                        try:
-                            del cur_events[str(event.hoster)]
-                        except KeyError:
-                            pass
-                for e in to_del:
-                    try:
-                        del self.event_cache[ctx.guild.id][e]
-                    except KeyError:
-                        pass
+                event = None
+                for message_id, events in self.event_cache[ctx.guild.id].items():
+                    if events.hoster == ctx.author.id:
+                        event = events
+                if event is not None:
+                    await event.end_event()
         if ctx.author not in members:
             members.insert(0, ctx.author)
         member_list = [m.id for m in members if m is not None]

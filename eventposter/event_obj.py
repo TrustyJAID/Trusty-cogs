@@ -215,7 +215,7 @@ class PlayerClassSelect(discord.ui.Select):
             placeholder=placeholder,
         )
         for option, emoji in options.items():
-            self.add_option(label=option, emoji=emoji)
+            self.add_option(label=option, emoji=discord.PartialEmoji.from_str(emoji))
 
     async def callback(self, interaction: discord.Interaction):
         await self.view.cog.config.member(interaction.user).player_class.set(self.values[0])
