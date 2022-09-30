@@ -235,56 +235,64 @@ class HockeyDev(MixinMeta):
         game = await Game.from_json(data)
         await self.set_guild_pickem_winner(game)
 
-    @hockeydev.command(name="pickemstally", with_app_command=False)
+    @pickems_dev_commands.command(name="tally", with_app_command=False)
     async def pickems_tally(self, ctx: commands.Context) -> None:
         """
         Manually tally the leaderboard for all servers
         """
-        try:
-            await self.tally_leaderboard()
-        except Exception:
-            log.exception("Error manually tallying pickems Leaderboard.")
-            return await ctx.send(
-                _("There was an error tallying pickems leaerboard. Check the console fore errors.")
-            )
+        async with ctx.typing():
+            try:
+                await self.tally_leaderboard()
+            except Exception:
+                log.exception("Error manually tallying pickems Leaderboard.")
+                await ctx.send(
+                    _(
+                        "There was an error tallying pickems leaerboard. Check the console fore errors."
+                    )
+                )
+                return
         await ctx.send(_("Leaderboard tallying complete."))
 
-    @hockeydev.command(name="removeoldpickems", with_app_command=False)
+    @pickems_dev_commands.command(name="removeold", with_app_command=False)
     async def remove_old_pickems(
         self, ctx: commands.Context, year: int, month: int, day: int
     ) -> None:
         """
         Remove pickems objects created before a specified date.
         """
-        start = date(year, month, day)
-        good_list = {}
-        for guild_id in await self.pickems_config.all_guilds():
-            g = self.bot.get_guild(guild_id)
-            pickems = [Pickems.from_json(p) for p in await self.pickems_config.guild(g).pickems()]
-            for p in pickems:
-                if p.game_start > start:
-                    good_list[p.name] = p.to_json()
-            await self.pickems_config.guild(g).pickems.set(good_list)
+        async with ctx.typing():
+            start = date(year, month, day)
+            good_list = {}
+            for guild_id in await self.pickems_config.all_guilds():
+                g = self.bot.get_guild(guild_id)
+                pickems = [
+                    Pickems.from_json(p) for p in await self.pickems_config.guild(g).pickems()
+                ]
+                for p in pickems:
+                    if p.game_start > start:
+                        good_list[p.name] = p.to_json()
+                await self.pickems_config.guild(g).pickems.set(good_list)
         await ctx.send(_("All old pickems objects deleted."))
 
-    @hockeydev.command(name="checkpickemswinner", with_app_command=False)
+    @pickems_dev_commands.command(name="checkwinner", with_app_command=False)
     async def check_pickem_winner(self, ctx: commands.Context, days: int = 1) -> None:
         """
         Manually check all pickems objects for winners
 
         `days` number of days to look back
         """
-        days = days + 1
-        now = datetime.now()
-        for i in range(1, days):
-            delta = timedelta(days=-i)
-            check_day = now + delta
-            games = await Game.get_games(None, check_day, check_day)
-            for game in games:
-                await self.set_guild_pickem_winner(game)
+        async with ctx.typing():
+            days = days + 1
+            now = datetime.now()
+            for i in range(1, days):
+                delta = timedelta(days=-i)
+                check_day = now + delta
+                games = await Game.get_games(None, check_day, check_day)
+                for game in games:
+                    await self.set_guild_pickem_winner(game)
         await ctx.send(_("Pickems winners set."))
 
-    @hockeydev.command(name="fixallpickems", with_app_command=False)
+    @pickems_dev_commands.command(name="fixall", with_app_command=False)
     async def fix_all_pickems(self, ctx: commands.Context) -> None:
         """
         Fixes winner on all current pickems objects if possible

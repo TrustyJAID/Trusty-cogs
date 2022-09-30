@@ -257,7 +257,10 @@ class Pickems(discord.ui.View):
         return False
 
     async def get_game(self) -> Optional[Game]:
-        return await Game.from_url(self.link)
+        if self.link is not None:
+            return await Game.from_url(self.link)
+        url = f"https://statsapi.web.nhl.com/api/v1/game/{self.game_id}/feed/live"
+        return await Game.from_url(url)
 
     async def check_winner(self, game: Optional[Game] = None) -> bool:
         """

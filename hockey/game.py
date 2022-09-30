@@ -369,6 +369,8 @@ class Game:
         for _item in (
             content.get("editorial", {"recap": {}}).get("recap", {"items": []}).get("items", [])
         ):
+            if "playbacks" not in _item["media"]:
+                continue
             for _playback in _item["media"]["playbacks"]:
                 if _playback["name"] == "FLASH_1800K_896x504":
                     recap_url = _playback["url"]
@@ -1184,7 +1186,11 @@ class Game:
                 period_starts[play["about"]["ordinalNum"]] = dt
 
         content = await Game.get_game_content(game_id)
-        recap_url = await Game.get_game_recap_from_content(content)
+        try:
+            recap_url = await Game.get_game_recap_from_content(content)
+        except Exception:
+            log.error("Cannot get game recap url.")
+            recap_url = None
         goals = [
             await Goal.from_json(goal, players, content)
             for goal in event
