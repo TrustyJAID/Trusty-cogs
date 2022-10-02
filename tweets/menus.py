@@ -287,15 +287,15 @@ class ReplyModal(discord.ui.Modal):
         self.reply_settings = discord.ui.Select(
             max_values=1, min_values=0, placeholder=_("Reply settings"), options=reply_options
         )
-        self.add_item(self.reply_settings)
+        # self.add_item(self.reply_settings)
 
     async def on_submit(self, interaction: discord.Interaction):
         if not await self.view.cog.authorize_user(interaction=interaction):
             return
         api = await self.view.cog.authenticate(interaction.user)
         reply_setting = None
-        if self.reply_settings.values[0] != "None":
-            reply_setting = self.reply_settings.values[0]
+        # if self.reply_settings.values[0] != "None":
+        # reply_setting = self.reply_settings.values[0]
         await api.create_tweet(
             text=self.reply.value,
             in_reply_to_tweet_id=self.tweet_id,
