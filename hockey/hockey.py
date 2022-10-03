@@ -69,10 +69,6 @@ class Hockey(
             "last_day": 0,
             "enable_slash": False,
         }
-        for team in TEAMS:
-            team_entry = TeamEntry("Null", team, 0, [], {}, [], "")
-            default_global["teams"].append(team_entry.to_json())
-        default_global["teams"].append(team_entry.to_json())
         default_global["player_db"] = 0
         default_guild = {
             "standings_channel": None,
@@ -202,7 +198,14 @@ class Hockey(
             await self._schema_1_to_2()
             schema_version += 1
             await self.config.schema_version.set(schema_version)
+        if schema_version == 2:
+            await self._schema_2_to_3()
+            schema_version += 1
+            await self.config.schema_version.set(schema_version)
         self._ready.set()
+
+    async def _schema_2_to_3(self) -> None:
+        await self.config.teams.clear()
 
     async def _schema_1_to_2(self) -> None:
         log.info("Adding new leaderboard keys for pickems")
@@ -411,12 +414,7 @@ class Hockey(
 
             # Final cleanup of config incase something went wrong
             # Should be mostly unnecessary at this point
-            async with self.config.teams() as all_teams:
-                for team in all_teams:
-                    team["goal_id"] = {}
-                    team["game_state"] = "Null"
-                    team["game_start"] = ""
-                    team["period"] = 0
+            await self.config.teams.clear()
 
             await asyncio.sleep(300)
 

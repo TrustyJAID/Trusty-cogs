@@ -446,6 +446,9 @@ class HockeyCommands(MixinMeta):
                     return
                 year = int(season.group(1)) + 1
                 season_str = f"{season.group(1)}{year}"
+        if not player:
+            await ctx.send(_("No player could be found by that name."))
+            return
         await BaseMenu(
             source=PlayerPages(pages=player, season=season_str),
             cog=self,

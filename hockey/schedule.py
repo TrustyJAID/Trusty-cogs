@@ -223,7 +223,10 @@ class Schedule(menus.PageSource):
             description = f"{away_team} @ {home_team}"
             emoji = None
             if home_team in TEAMS:
-                emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
+                if home_team in TEAMS:
+                    emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
+                else:
+                    emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
             self.select_options.append(
                 discord.SelectOption(
                     label=label, value=str(game["gamePk"]), description=description, emoji=emoji
@@ -310,10 +313,17 @@ class ScheduleList(menus.PageSource):
             game_start = game_start.replace(tzinfo=timezone.utc)
             home_team = game["teams"]["home"]["team"]["name"]
             away_team = game["teams"]["away"]["team"]["name"]
-            home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
-            away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
-            home_abr = TEAMS[home_team]["tri_code"]
-            away_abr = TEAMS[away_team]["tri_code"]
+            home_emoji = discord.PartialEmoji.from_str("\N{HOUSE BUILDING}")
+            away_emoji = discord.PartialEmoji.from_str("\N{AIRPLANE}")
+            home_abr = home_team
+            away_abr = away_team
+            if home_team in TEAMS:
+                home_emoji = discord.PartialEmoji.from_str(TEAMS[home_team]["emoji"])
+                home_abr = TEAMS[home_team]["tri_code"]
+            if away_team in TEAMS:
+                away_emoji = discord.PartialEmoji.from_str(TEAMS[away_team]["emoji"])
+                away_abr = TEAMS[away_team]["tri_code"]
+
             postponed = game["status"]["detailedState"] == "Postponed"
             try:
                 game_state = states[game["status"]["abstractGameState"]]

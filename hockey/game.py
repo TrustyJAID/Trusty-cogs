@@ -736,7 +736,7 @@ class Game:
 
     async def check_game_state(self, bot: Red, count: int = 0) -> bool:
         # post_state = ["all", self.home_team, self.away_team]
-        home = await get_team(bot, self.home_team, self.game_start_str)
+        home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
         # away = await get_team(self.away_team)
         # team_list = await self.config.teams()
         # Home team checking
@@ -1005,8 +1005,8 @@ class Game:
         Checks to see if a goal needs to be posted
         """
         team_data = {
-            self.home_team: await get_team(bot, self.home_team, self.game_start_str),
-            self.away_team: await get_team(bot, self.away_team, self.game_start_str),
+            self.home_team: await get_team(bot, self.home_team, self.game_start_str, self.game_id),
+            self.away_team: await get_team(bot, self.away_team, self.game_start_str, self.game_id),
         }
         # home_team_data = await get_team(bot, self.home_team)
         # away_team_data = await get_team(bot, self.away_team)
@@ -1067,8 +1067,8 @@ class Game:
         """
         Saves the data do the config to compare against new data
         """
-        home = await get_team(bot, self.home_team, self.game_start_str)
-        away = await get_team(bot, self.away_team, self.game_start_str)
+        home = await get_team(bot, self.home_team, self.game_start_str, self.game_id)
+        away = await get_team(bot, self.away_team, self.game_start_str, self.game_id)
         team_list = await bot.get_cog("Hockey").config.teams()
         team_list.remove(home)
         team_list.remove(away)
