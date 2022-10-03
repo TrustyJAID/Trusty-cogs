@@ -168,12 +168,8 @@ class TweetListener(AsyncStreamingClient):
 
     async def on_request_error(self, status_code):
         msg = _("The twitter stream encounterd an error code {code}").format(code=status_code)
-        log.debug(msg)
-        if status_code == 429:
-            self.is_rate_limited = True
-            self.disconnect()
-            await asyncio.sleep(60 * 16)
-            self.is_rate_limited = False
+        log.error(msg)
+        # self.bot.dispatch("tweet_error", msg)
 
     async def on_disconnect(self) -> None:
         log.debug(_("The stream has disconnected."))
@@ -207,7 +203,8 @@ class TweetsAPI:
             if bearer_token is None:
                 await asyncio.sleep(base_sleep)
                 continue
-            self.mystream = TweetListener(bearer_token=bearer_token, bot=self.bot)
+            if self.mystream is None:
+                self.mystream = TweetListener(bearer_token=bearer_token, bot=self.bot)
             if self.mystream.task is None:
                 await self._start_stream()
             if self.mystream.task:
