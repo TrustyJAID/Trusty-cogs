@@ -143,14 +143,18 @@ class Schedule(menus.PageSource):
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (date + timedelta(days=30)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
-                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
+                utc_to_local(
+                    (date + timedelta(days=self.search_range)), "UTC"
+                ).timestamp()
             )
         else:
             date_str = self.date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
             end_date_str = (self.date + timedelta(days=30)).strftime("%Y-%m-%d")
             end_date_timestamp = int(
-                utc_to_local((date + timedelta(days=self.search_range)), "UTC").timestamp()
+                utc_to_local(
+                    (date + timedelta(days=self.search_range)), "UTC"
+                ).timestamp()
             )
 
         url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
@@ -217,7 +221,9 @@ class ScheduleList(menus.PageSource):
         self._last_page = page_number
         return page
 
-    async def format_page(self, menu: menus.MenuPages, games: List[dict]) -> discord.Embed:
+    async def format_page(
+        self, menu: menus.MenuPages, games: List[dict]
+    ) -> discord.Embed:
         states = {
             "Preview": "\N{LARGE RED CIRCLE}",
             "Live": "\N{LARGE GREEN CIRCLE}",
@@ -233,10 +239,17 @@ class ScheduleList(menus.PageSource):
             game_start = game_start.replace(tzinfo=timezone.utc)
             home_team = game["teams"]["home"]["team"]["name"]
             away_team = game["teams"]["away"]["team"]["name"]
-            home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
-            away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
-            home_abr = TEAMS[home_team]["tri_code"]
-            away_abr = TEAMS[away_team]["tri_code"]
+            home_emoji = "\N{HOUSE BUILDING}"
+            away_emoji = "\N{AIRPLANE}"
+            home_abr = home_team
+            away_abr = away_team
+            if home_team in TEAMS:
+                home_emoji = "<:" + TEAMS[home_team]["emoji"] + ">"
+                home_abr = TEAMS[home_team]["tri_code"]
+            if away_team in TEAMS:
+                away_emoji = "<:" + TEAMS[away_team]["emoji"] + ">"
+                away_abr = TEAMS[away_team]["tri_code"]
+
             postponed = game["status"]["detailedState"] == "Postponed"
             try:
                 game_state = states[game["status"]["abstractGameState"]]
@@ -289,7 +302,9 @@ class ScheduleList(menus.PageSource):
                 if self.team[0] in TEAMS:
                     em.set_thumbnail(url=TEAMS[self.team[0]]["logo"])
             if len(msg) > 2048:
-                for page in pagify(msg, ["Games", "\n"], page_length=1024, priority=True):
+                for page in pagify(
+                    msg, ["Games", "\n"], page_length=1024, priority=True
+                ):
                     if count == 0:
                         em.description = page
                         count += 1
@@ -388,9 +403,13 @@ class ScheduleList(menus.PageSource):
         else:
             date_str = self.date.strftime("%Y-%m-%d")
             date_timestamp = int(utc_to_local(date, "UTC").timestamp())
-            end_date_str = (self.date + timedelta(days=days_to_check)).strftime("%Y-%m-%d")
+            end_date_str = (self.date + timedelta(days=days_to_check)).strftime(
+                "%Y-%m-%d"
+            )
             end_date_timestamp = int(
-                utc_to_local((self.date + timedelta(days=days_to_check)), "UTC").timestamp()
+                utc_to_local(
+                    (self.date + timedelta(days=days_to_check)), "UTC"
+                ).timestamp()
             )
 
         url = f"{BASE_URL}/api/v1/schedule?startDate={date_str}&endDate={end_date_str}"
