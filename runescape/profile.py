@@ -207,10 +207,10 @@ class Skill:
 @dataclass
 class PlayerDetails:
     isSuffix: bool
-    recruiting: bool
     name: str
-    clan: str
     title: str
+    recruiting: Optional[bool] = None
+    clan: Optional[str] = None
     online: Optional[bool] = False
     world: Optional[str] = None
 
