@@ -79,7 +79,7 @@ class Backup(commands.Cog):
     @commands.guild_only()
     async def channellogs(self, ctx, *, channel: discord.TextChannel = None):
         """
-        Creat a backup of all channel data as json files This might take a long time
+        Create a backup of all channel data as json files This might take a long time
 
         `channel` is partial name or ID of the server you want to backup
         defaults to the server the command was run in
@@ -154,7 +154,7 @@ class Backup(commands.Cog):
     @commands.guild_only()
     async def serverlogs(self, ctx, *, guild_name: Union[int, str] = None):
         """
-        Creat a backup of all server data as json files This might take a long time
+        Create a backup of all server data as json files This might take a long time
 
         `guild_name` is partial name or ID of the server you want to backup
         defaults to the server the command was run in
