@@ -73,7 +73,6 @@ class Tweets(TweetsAPI, commands.Cog):
         if self.mystream is not None:
             log.debug("Twitter stream is running, trying to stop.")
             self.mystream.disconnect()
-            self.mystream = None
             log.debug("Twitter stream disconnected.")
         log.debug("Tweets unloaded.")
 

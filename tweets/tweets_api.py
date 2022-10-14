@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
+import aiohttp
 import discord
 import tweepy
 from redbot.core import Config, commands
@@ -123,9 +124,118 @@ class TweetListener(AsyncStreamingClient):
         )
         self.bot = bot
         self.is_rate_limited = False
+        self.error_counts = {}
+        self.last_disconnect = None
+        self.started = False
+
+    async def _connect(self, method, url, params=None, headers=None, body=None, oauth_client=None):
+        url = f"https://api.twitter.com/2/tweets/{url}/stream"
+        headers = {"Authorization": f"Bearer {self.bearer_token}"}
+        error_count = 0
+        # https://developer.twitter.com/en/docs/twitter-api/v1/tweets/filter-realtime/guides/connecting
+        # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/handling-disconnections
+        # https://developer.twitter.com/en/docs/twitter-api/tweets/volume-streams/integrate/handling-disconnections
+        stall_timeout = 90
+        network_error_wait = network_error_wait_step = 0.25
+        network_error_wait_max = 16
+        http_error_wait = http_error_wait_start = 5
+        http_error_wait_max = 320
+        http_420_error_wait_start = 60
+
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(sock_read=stall_timeout)
+            )
+        self.session.headers["User-Agent"] = self.user_agent
+
+        try:
+            while error_count <= self.max_retries:
+                try:
+                    if oauth_client is not None:
+                        url, headers, body = oauth_client.sign(
+                            url, http_method=method, headers=headers, body=body
+                        )
+                    async with self.session.request(
+                        method, url, params=params, headers=headers, data=body, proxy=self.proxy
+                    ) as resp:
+                        if resp.status == 200:
+                            error_count = 0
+                            http_error_wait = http_error_wait_start
+                            network_error_wait = network_error_wait_step
+
+                            await self.on_connect()
+
+                            async for line in resp.content:
+                                line = line.strip()
+                                if line:
+                                    await self.on_data(line)
+                                else:
+                                    await self.on_keep_alive()
+
+                            await self.on_closed(resp)
+                        else:
+                            await self.on_request_error(resp.status)
+                            # The error text is logged here instead of in
+                            # on_request_error to keep on_request_error
+                            # backwards-compatible. In a future version, the
+                            # ClientResponse should be passed to
+                            # on_request_error.
+                            response_text = await resp.text()
+                            log.error("HTTP error response text: %s", response_text)
+
+                            error_count += 1
+
+                            if resp.status == 429:
+                                if http_error_wait < http_420_error_wait_start:
+                                    http_error_wait = http_420_error_wait_start
+
+                            await asyncio.sleep(http_error_wait)
+
+                            http_error_wait *= 2
+                            if resp.status != 429:
+                                if http_error_wait > http_error_wait_max:
+                                    http_error_wait = http_error_wait_max
+                except (aiohttp.ClientConnectionError, aiohttp.ClientPayloadError) as e:
+                    await self.on_connection_error(e)
+
+                    await asyncio.sleep(network_error_wait)
+
+                    network_error_wait += network_error_wait_step
+                    if network_error_wait > network_error_wait_max:
+                        network_error_wait = network_error_wait_max
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            await self.on_exception(e)
+        finally:
+            await self.session.close()
+            await self.on_disconnect()
+
+    async def on_connection_error(self, error: Exception):
+        log.exception(error)
 
     async def on_response(self, response: tweepy.StreamResponse) -> None:
+        if not response.data:
+            return
         self.bot.dispatch("tweet", response)
+
+    def start(self):
+        backfill = None
+        if self.last_disconnect is not None:
+            since = int(datetime.now().timestamp() - self.last_disconnect) // 60
+            backfill = max(min(5, since), 1)
+        # This won't work unless you have the academic tier
+        try:
+            self.filter(
+                backfill_minutes=backfill,
+                expansions=EXPANSIONS,
+                media_fields=MEDIA_FIELDS,
+                tweet_fields=TWEET_FIELDS,
+                user_fields=USER_FIELDS,
+            )
+            self.started = True
+        except Exception:
+            log.exception("Error starting stream")
 
     async def on_errors(self, errors: dict) -> None:
         msg = _(
@@ -166,12 +276,14 @@ class TweetListener(AsyncStreamingClient):
         log.exception(msg)
         self.bot.dispatch("tweet_error", msg)
 
-    async def on_request_error(self, status_code):
-        msg = _("The twitter stream encounterd an error code {code}").format(code=status_code)
-        log.error(msg)
-        # self.bot.dispatch("tweet_error", msg)
+    async def on_request_error(self, status_code: int):
+        if status_code not in self.error_counts:
+            self.error_counts[status_code] = 1
+        else:
+            self.error_counts[status_code] += 1
 
     async def on_disconnect(self) -> None:
+        self.last_disconnect = datetime.now().timestamp()
         log.debug(_("The stream has disconnected."))
 
 
@@ -205,27 +317,15 @@ class TweetsAPI:
                 continue
             if self.mystream is None:
                 self.mystream = TweetListener(bearer_token=bearer_token, bot=self.bot)
-            if self.mystream.task is None:
-                await self._start_stream()
-            if self.mystream.task:
-                if (
-                    self.mystream.task.cancelled() or self.mystream.task.done()
-                ) and not self.mystream.is_rate_limited:
-                    count += 1
-                    await self._start_stream()
+            if not self.mystream.started:
+                self.mystream.start()
+            else:
+                if self.mystream.task.done() or self.mystream.task.cancelled():
+                    log.info("Tweets stream done or cancelled, restarting")
+                    self.mystream.disconnect()
+                    self.mystream.start()
             log.debug(f"tweets waiting {base_sleep * count} seconds.")
             await asyncio.sleep(base_sleep * count)
-
-    async def _start_stream(self) -> None:
-        try:
-            self.mystream.filter(
-                expansions=EXPANSIONS,
-                media_fields=MEDIA_FIELDS,
-                tweet_fields=TWEET_FIELDS,
-                user_fields=USER_FIELDS,
-            )
-        except Exception:
-            log.exception("Error starting stream")
 
     async def refresh_token(self, user: discord.abc.User) -> dict:
         tokens = await self.bot.get_shared_api_tokens("twitter")
