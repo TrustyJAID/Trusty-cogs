@@ -1000,20 +1000,28 @@ class ServerStats(commands.GroupCog):
             embed_list = []
             robot = "\N{ROBOT FACE}" if member.bot else ""
             if guild_list != []:
+                url = "https://discord.com/channels/{guild_id}"
                 msg = f"**{member}** ({member.id}) {robot}" + _("is on:\n\n")
                 embed_msg = ""
                 for m in guild_list:
                     # m = guild.get_member(member.id)
+                    guild_join = ""
+                    guild_url = url.format(guild_id=m.guild.id)
+                    if m.joined_at:
+                        ts = int(m.joined_at.timestamp())
+                        guild_join = f"Joined the server <t:{ts}:R>"
                     is_owner = ""
                     nick = ""
                     if m.id == m.guild.owner_id:
                         is_owner = "\N{CROWN}"
                     if m.nick:
                         nick = f"`{m.nick}` in"
-                    msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
-                    embed_msg += f"{is_owner}{nick} __{m.guild.name}__ ({m.guild.id})\n\n"
+                    msg += f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
+                    embed_msg += (
+                        f"{is_owner}{nick} __[{m.guild.name}]({guild_url})__ {guild_join}\n\n"
+                    )
                 if ctx.channel.permissions_for(ctx.me).embed_links:
-                    for em in pagify(embed_msg, ["\n"], page_length=6000):
+                    for em in pagify(embed_msg, ["\n"], page_length=1024):
                         embed = discord.Embed()
                         since_created = f"<t:{int(member.created_at.timestamp())}:R>"
                         user_created = f"<t:{int(member.created_at.timestamp())}:D>"
@@ -1039,8 +1047,7 @@ class ServerStats(commands.GroupCog):
                         embed.set_author(
                             name=f"{member} ({member.id}) {robot}", icon_url=member.display_avatar
                         )
-                        for page in pagify(em, ["\n"], page_length=1024):
-                            embed.add_field(name=_("Shared Servers"), value=page)
+                        embed.add_field(name=_("Shared Servers"), value=em)
                         embed_list.append(embed)
                 else:
                     for page in pagify(msg, ["\n"]):
@@ -1086,19 +1093,19 @@ class ServerStats(commands.GroupCog):
         """
         guilds = sorted(list(self.bot.guilds), key=lambda s: s.member_count, reverse=True)
         msg = ""
-        msg_list = []
-        count = 0
-        for _, server in enumerate(guilds):
-            if count == 10:
-                msg_list.append(msg)
-                msg = ""
-                count = 0
+        for server in guilds:
+            ts = int(server.me.joined_at.timestamp())
             msg += (
                 f"{escape(server.name, mass_mentions=True, formatting=True)}: "
-                f"`{humanize_number(server.member_count)}`\n"
+                f"`{humanize_number(server.member_count)}` Joined <t:{ts}:R>\n"
             )
-            count += 1
-            msg_list.append(msg)
+        msg_list = []
+        for page in pagify(msg, delims=["\n"], page_length=1000):
+            msg_list.append(
+                discord.Embed(
+                    colour=await self.bot.get_embed_colour(ctx.channel), description=page
+                )
+            )
         await BaseView(
             source=ListPages(pages=msg_list),
             cog=self,
@@ -1106,26 +1113,26 @@ class ServerStats(commands.GroupCog):
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
+    @commands.bot_has_permissions(read_message_history=True, add_reactions=True, embed_links=True)
     async def newservers(self, ctx: commands.Context) -> None:
         """
         Lists servers by when the bot was added to the server
         """
-        guilds = sorted(list(self.bot.guilds), key=lambda s: s.me.joined_at)
+        guilds = sorted(list(self.bot.guilds), key=lambda s: s.me.joined_at, reverse=True)
         msg = ""
         msg_list = []
-        count = 0
-        for _, server in enumerate(guilds):
-            if count == 10:
-                msg_list.append(msg)
-                msg = ""
-                count = 0
+        for server in guilds:
+            ts = int(server.me.joined_at.timestamp())
             msg += (
                 f"{escape(server.name, mass_mentions=True, formatting=True)}: "
-                f"`{humanize_number(server.member_count)}`\n"
+                f"`{humanize_number(server.member_count)}` Joined <t:{ts}:R>\n"
             )
-            count += 1
-            msg_list.append(msg)
+        for page in pagify(msg, delims=["\n"], page_length=1000):
+            msg_list.append(
+                discord.Embed(
+                    colour=await self.bot.get_embed_colour(ctx.channel), description=page
+                )
+            )
         await BaseView(
             source=ListPages(pages=msg_list),
             cog=self,
