@@ -819,7 +819,7 @@ class EventPoster(commands.Cog):
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
         if not current:
-            self.bot.tree.add_command(self.event_commands, override=True)
+            self.bot.tree.add_command(self.event_commands.app_command, override=True)
         else:
             self.bot.tree.remove_command("event")
 
