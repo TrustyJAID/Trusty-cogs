@@ -518,19 +518,36 @@ class Event(discord.ui.View):
         )
         player_list = ""
         config = Config.get_conf(None, identifier=144014746356678656, cog_name="EventPoster")
+        to_rem = []
         for i, member in enumerate(self.members):
             player_class = ""
             has_player_class = await config.member_from_ids(ctx.guild.id, member).player_class()
             mem = ctx.guild.get_member(member)
+            if mem is None:
+                to_rem.append(member)
+                continue
             if has_player_class:
                 player_class = f" - {has_player_class}"
             player_list += _("**Slot {slot_num}**\n{member}{player_class}\n").format(
                 slot_num=i + 1, member=mem.mention, player_class=player_class
             )
+        for removed_member in to_rem:
+            if removed_member in self.members:
+                self.members.remove(removed_member)
         for page in pagify(player_list, page_length=1024):
             em.add_field(name=_("Attendees"), value=page)
         if self.maybe and len(em.fields) < 25:
-            maybe = [f"<@!{m}>" for m in self.maybe]
+            maybe = []
+            to_rem = []
+            for m in self.maybe:
+                mem = ctx.guild.get_member(m)
+                if mem is None:
+                    to_rem.append(m)
+                    continue
+                maybe.append(mem.mention)
+            for m_id in to_rem:
+                if m_id in self.maybe:
+                    self.maybe.remove(m_id)
             em.add_field(name=_("Maybe"), value=humanize_list(maybe))
         if self.approver:
             approver = ctx.guild.get_member(self.approver)
