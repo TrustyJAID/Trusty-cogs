@@ -113,7 +113,7 @@ class SpotifyTrackPages(menus.ListPageSource):
                     continue
                 if key == "artist_ids":
                     recs_msg += _("Artists: \n{artists}\n").format(
-                        genres=humanize_list(
+                        artists=humanize_list(
                             [
                                 f"https://open.spotify.com/artist/{artist_id}\n"
                                 for artist_id in value
