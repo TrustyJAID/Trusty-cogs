@@ -533,6 +533,46 @@ class HockeySetCommands(MixinMeta):
                 ).format(channel=channel.mention, prefix=ctx.prefix)
             )
 
+    @hockeyset_commands.command(name="goalimage")
+    @commands.mod_or_permissions(manage_channels=True)
+    async def include_goal_image_toggle(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
+        """
+        Toggle including goal images when a goal is posted
+
+        `[channel]` The channel you specifically want goal images enabled for.
+        If channel is not provided the server-wide setting will be toggled instead.
+        """
+        if channel is None:
+            current = not await self.config.guild(ctx.guild).include_goal_image()
+            await self.config.guild(ctx.guild).include_goal_image.set(current)
+            if current:
+                await ctx.send(
+                    _("I will include goal images whenever I post a goal embed in this server.")
+                )
+            else:
+                await ctx.send(
+                    _(
+                        "I will not include goal images whenever I post a goal embed in this server."
+                    )
+                )
+        else:
+            current = not await self.config.channel(channel).include_goal_image()
+            await self.config.channel(channel).include_goal_image.set(current)
+            if current:
+                await ctx.send(
+                    _(
+                        "I will include goal images whenever I post a goal embed in {channel}."
+                    ).format(channel=channel.mention)
+                )
+            else:
+                await ctx.send(
+                    _(
+                        "I will not include goal images whenever I post a goal embed in {channel}."
+                    ).format(channel=channel.mention)
+                )
+
     @hockeyset_commands.command(name="add", aliases=["addgoals"])
     @commands.mod_or_permissions(manage_channels=True)
     async def add_goals(
@@ -572,7 +612,7 @@ class HockeySetCommands(MixinMeta):
         )
         await ctx.send(msg)
 
-    @hockeyset_commands.command(name="del", aliases=["remove", "rem"])
+    @hockeyset_commands.command(name="remove", aliases=["del", "rem", "delete"])
     @commands.mod_or_permissions(manage_channels=True)
     async def remove_goals(
         self,

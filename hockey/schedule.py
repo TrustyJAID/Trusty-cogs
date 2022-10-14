@@ -30,7 +30,7 @@ class Schedule(menus.PageSource):
         self.limit: int = kwargs.get("limit", 10)
         self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""
-        self._session: aiohttp.CLientSession = kwargs.get("session")
+        self._session: aiohttp.ClientSession = kwargs.get("session")
         self.select_options = []
         self.search_range = 30
         self.include_heatmap = kwargs.get("include_heatmap", False)

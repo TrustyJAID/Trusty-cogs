@@ -95,6 +95,7 @@ class Hockey(
             "ot_notifications": True,
             "so_notifications": True,
             "timezone": None,
+            "include_goal_image": False,
         }
         default_channel = {
             "team": [],
@@ -107,6 +108,7 @@ class Hockey(
             "start_notifications": False,
             "guild_id": None,
             "parent": None,
+            "include_goal_image": False,
         }
 
         self.config = Config.get_conf(self, CONFIG_ID, force_registration=True)

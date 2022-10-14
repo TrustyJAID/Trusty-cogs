@@ -97,6 +97,46 @@ class Goal:
             "away_shots": self.away_shots,
         }
 
+    @staticmethod
+    def get_image_and_highlight_url(
+        event_id: int, media_content: dict
+    ) -> Tuple[Optional[str], ...]:
+        image, link = None, None
+        try:
+            if media_content["media"]["milestones"]:
+                for highlight in media_content["media"]["milestones"]["items"]:
+                    if highlight["statsEventId"] == str(event_id):
+                        for playback in highlight["highlight"]["playbacks"]:
+                            if playback["name"] == "FLASH_1800K_896x504":
+                                link = playback["url"]
+                        image = (
+                            highlight["highlight"]
+                            .get("image", {})
+                            .get("cuts", {})
+                            .get("1136x640", {})
+                            .get("src", None)
+                        )
+            else:
+                for highlight in media_content["highlights"]["gameCenter"]["items"]:
+                    if "keywords" not in highlight:
+                        continue
+                    for keyword in highlight["keywords"]:
+                        if keyword["type"] != "statsEventId":
+                            continue
+                        if keyword["value"] == str(event_id):
+                            for playback in highlight["playbacks"]:
+                                if playback["name"] == "FLASH_1800K_896x504":
+                                    link = playback["url"]
+                            image = (
+                                highlight["image"]
+                                .get("cuts", {})
+                                .get("1136x640", {})
+                                .get("src", None)
+                            )
+        except KeyError:
+            pass
+        return link, image
+
     @classmethod
     async def from_json(
         cls, data: dict, players: dict, media_content: Optional[dict] = None
@@ -128,21 +168,7 @@ class Goal:
         image = None
         if media_content:
             event_id = data["about"]["eventId"]
-            try:
-                for highlight in media_content["media"]["milestones"]["items"]:
-                    if highlight["statsEventId"] == str(event_id):
-                        for playback in highlight["highlight"]["playbacks"]:
-                            if playback["name"] == "FLASH_1800K_896x504":
-                                link = playback["url"]
-                        image = (
-                            highlight["highlight"]
-                            .get("image", {})
-                            .get("cuts", {})
-                            .get("1136x640", {})
-                            .get("src", None)
-                        )
-            except KeyError:
-                pass
+            link, image = cls.get_image_and_highlight_url(event_id, media_content)
 
         # scorer = scorer_id[0]
         return cls(
@@ -232,6 +258,11 @@ class Goal:
             guild_notifications = await config.guild(guild).goal_notifications()
             channel_notifications = await config.channel(channel).goal_notifications()
             goal_notifications = guild_notifications or channel_notifications
+            guild_image_setting = await config.guild(guild).include_goal_image()
+            channel_image_setting = await config.channel(channel).include_goal_image()
+            include_goal_image = guild_image_setting or channel_image_setting
+            if include_goal_image and self.image:
+                goal_embed.set_image(url=self.image)
             # publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
             montreal = ["Montréal Canadiens", "Montreal Canadiens"]
@@ -357,7 +388,7 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
-        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=100):
+        async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=10):
             guild = bot.get_guild(int(guild_id))
             if not guild:
                 continue
@@ -449,7 +480,7 @@ class Goal:
 
         return home_msg, away_msg
 
-    async def goal_post_embed(self, game: Game) -> discord.Embed:
+    async def goal_post_embed(self, game: Game, *, include_image: bool = False) -> discord.Embed:
         """
         Gets the embed for goal posts
         """

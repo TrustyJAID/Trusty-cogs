@@ -455,7 +455,9 @@ class TeamRecord:
             wildcard_rank=int(data["wildCardRank"]),
             row=int(data["row"]),
             games_played=int(data["gamesPlayed"]),
-            streak=Streak(**data["streak"]),
+            streak=Streak(
+                **data.get("streak", {"streakType": "wins", "streakNumber": 0, "streakCode": ""})
+            ),
             points_percentage=float(data["pointsPercentage"]),
             pp_division_rank=int(data["ppDivisionRank"]),
             pp_conference_rank=int(data["ppConferenceRank"]),

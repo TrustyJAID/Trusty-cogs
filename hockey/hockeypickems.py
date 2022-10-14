@@ -70,6 +70,15 @@ class HockeyPickems(MixinMeta):
         if before.id in await self.config.guild(guild).gdt():
             await after.edit(archived=False)
             log.debug("Unarchiving %r", after)
+        if (
+            before.parent
+            and before.parent.id == await self.pickems_config.guild(guild).pickems_channel()
+        ):
+            if not before.created_at:
+                return
+            if before.created_at < (datetime.now(timezone.utc) - timedelta(days=9)):
+                await after.edit(archived=False)
+                log.debug("Unarchiving %r", after)
 
     async def save_pickems_data(self) -> None:
         to_del: Dict[str, List[str]] = {}
