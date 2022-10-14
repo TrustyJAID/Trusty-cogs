@@ -278,7 +278,7 @@ class ReTrigger(
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
         if not current:
-            self.bot.tree.add_command(self, override=True)
+            self.bot.tree.add_command(self.retrigger.app_command, override=True)
         else:
             self.bot.tree.remove_command("re-trigger")
 
