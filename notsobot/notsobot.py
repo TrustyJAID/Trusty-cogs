@@ -267,7 +267,7 @@ class NotSoBot(commands.Cog):
             i.transform_colorspace("cmyk")
             i.format = "png"
             if i.size >= (3000, 3000):
-                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", None, 0
+                return ":warning: `Image exceeds maximum resolution >= (3000, 3000).`", 0
             count += 1
             i.transform(resize="800x800")
             i.liquid_rescale(
@@ -576,7 +576,7 @@ class NotSoBot(commands.Cog):
     async def triggered(self, ctx, urls: ImageFinder = None):
         """Generate a Triggered GIF for a user or image"""
         if urls is None:
-            urls = [ctx.author.avatar_url_as(format="png")]
+            urls = [ctx.author.display_avatar.replace(format="png").url]
         avatar = urls[0]
         async with ctx.typing():
             img, mime = await self.bytes_download(str(avatar))
