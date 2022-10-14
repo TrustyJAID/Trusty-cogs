@@ -120,7 +120,7 @@ class HockeySetCommands(MixinMeta):
         verb = _("enabled") if not current else _("disabled")
         await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
         if not current:
-            self.bot.tree.add_command(self)
+            self.bot.tree.add_command(self.hockey_commands.app_command)
         else:
             self.bot.tree.remove_command("hockey")
 
