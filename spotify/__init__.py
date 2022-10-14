@@ -18,7 +18,7 @@ async def setup(bot):
 
     for g_id, data in all_guilds.items():
         if data["enable_slash"] and not global_slash:
-            bot.tree.add_command(cog.spotify_com.app_command, guild=Object(id=g_id))
+            bot.tree.add_command(cog.app_command, guild=Object(id=g_id))
         if data["enable_context"] and not global_context:
             bot.tree.add_command(cog.play_from_message_ctx, guild=Object(id=g_id))
             bot.tree.add_command(cog.queue_from_message_ctx, guild=Object(id=g_id))
