@@ -416,8 +416,9 @@ class GoogleTranslateAPI:
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        if not await self.bot.message_eligible_as_command(message):
-            return
+        if guild.get_member(message.author.id):
+            if not await self.bot.message_eligible_as_command(message):
+                return
         if not await self.check_bw_list(guild, channel, author):
             return
         flag_search = FLAG_REGEX.search(message.clean_content)
