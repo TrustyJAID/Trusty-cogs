@@ -767,11 +767,11 @@ class HockeyCommands(MixinMeta):
     @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])
     @commands.guild_only()
     @commands.bot_has_permissions(read_message_history=True, add_reactions=True)
-    async def pickemsvotes(self, ctx: commands.Context):
+    async def pickemsvotes(self, ctx: commands.Context, public: Optional[bool] = False):
         """
         View your current pickems votes for the server.
         """
-        await ctx.defer()
+        await ctx.defer(ephemeral=not public)
         if str(ctx.guild.id) not in self.all_pickems:
             msg = _("This server does not have any pickems setup.")
             await ctx.send(msg)
@@ -793,7 +793,7 @@ class HockeyCommands(MixinMeta):
                 msgs.append(em)
             else:
                 msgs.append(page)
-        await BaseMenu(source=SimplePages(msgs)).start(ctx=ctx)
+        await BaseMenu(source=SimplePages(msgs)).start(ctx=ctx, ephemeral=not public)
 
     @hockey_commands.command(hidden=True, with_app_command=False)
     @commands.mod_or_permissions(manage_messages=True)
