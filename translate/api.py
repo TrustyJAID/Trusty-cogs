@@ -494,8 +494,9 @@ class GoogleTranslateAPI:
         except (discord.errors.NotFound, discord.Forbidden):
             return
 
-        if not await self.bot.message_eligible_as_command(message):
-            return
+        if guild.get_member(message.author.id):
+            if not await self.bot.message_eligible_as_command(message):
+                return
 
         if message.id not in self.cache["cooldown_translations"]:
             if not self.cache["cooldown"]:
