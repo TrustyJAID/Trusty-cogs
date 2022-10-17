@@ -129,6 +129,7 @@ class HockeyCommands(MixinMeta):
 
     @hockey_commands.command(aliases=["score"])
     @commands.bot_has_permissions(read_message_history=True, embed_links=True)
+    @discord.app_commands.describe(date="YYYY-MM-DD")
     async def games(
         self,
         ctx: commands.Context,

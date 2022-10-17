@@ -24,9 +24,9 @@ class Schedule(menus.PageSource):
         self._cache: List[dict] = []
         self._checks: int = 0
         self._last_page: int = 0
-        self.date: datetime = kwargs.get("date", utc_to_local(datetime.utcnow()))
+        self.date: datetime = kwargs.get("date", utc_to_local(datetime.now(timezone.utc)))
         if self.date is None:
-            self.date = datetime.now(timezone.utc)
+            self.date = utc_to_local(datetime.now(timezone.utc))
         self.limit: int = kwargs.get("limit", 10)
         self.team: List[str] = kwargs.get("team", [])
         self._last_searched: str = ""

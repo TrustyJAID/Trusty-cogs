@@ -1052,7 +1052,8 @@ class Game:
                     team_data[goal.team_name]["goal_id"][goal.goal_id]["goal"] = goal.to_json()
                     team_list.append(team_data[goal.team_name])
                     await bot.get_cog("Hockey").config.teams.set(team_list)
-                    await goal.edit_team_goal(bot, self, old_msgs)
+                    if old_msgs:
+                        asyncio.create_task(goal.edit_team_goal(bot, self, old_msgs))
         # attempts to delete the goal if it was called back
         home_diff = abs(len(home_goal_list) - len(self.home_goals))
         away_diff = abs(len(away_goal_list) - len(self.away_goals))

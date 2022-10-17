@@ -225,7 +225,7 @@ class Goal:
             if not channel:
                 continue
             if channel.guild.me.is_timed_out():
-                return
+                continue
             should_post = await check_to_post(bot, channel, data, post_state, "Goal")
             if should_post:
                 post_data.append(
@@ -380,7 +380,7 @@ class Goal:
         return
 
     async def edit_team_goal(
-        self, bot: Red, game_data: Game, og_msg: List[Tuple[int, int, int]]
+        self, bot: Red, game_data: Game, og_msg: List[Tuple[int, ...]]
     ) -> None:
         """
         When a goal scorer has changed we want to edit the original post
@@ -388,6 +388,8 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         # post_state = ["all", game_data.home_team, game_data.away_team]
         em = await self.goal_post_embed(game_data)
+        if og_msg is None:
+            return
         async for guild_id, channel_id, message_id in AsyncIter(og_msg, steps=10):
             guild = bot.get_guild(int(guild_id))
             if not guild:
@@ -395,7 +397,10 @@ class Goal:
             channel = await get_channel_obj(bot, int(channel_id), {"guild_id": int(guild_id)})
             if channel is None:
                 continue
-            asyncio.create_task(self.edit_goal(bot, channel, message_id, em))
+            if channel.is_news():
+                asyncio.create_task(self.edit_goal(bot, channel, message_id, em))
+            else:
+                await self.edit_goal(bot, channel, message_id, em)
             # This is to prevent endlessly waiting incase someone
             # decided to publish one of our messages we want to edit
             # if we did bounded_gather here the gather would wait until
