@@ -1,7 +1,7 @@
 import logging
 from copy import copy
 from io import BytesIO
-from typing import Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -1116,6 +1116,155 @@ class SpotifyCommands(SpotifyMixin):
             log.exception("Error grabing user info from spotify")
             await self.unknown_error(ctx)
 
+    async def spotify_play_tracks(
+        self,
+        ctx: commands.Context,
+        client: tekore.Spotify,
+        tracks: List[str],
+        device_id: Optional[str],
+    ):
+        await client.playback_start_tracks(tracks, device_id=device_id)
+        if ctx.interaction:
+            all_tracks = await client.tracks(tracks)
+            track = all_tracks[0]
+            track_name = track.name
+            artists = getattr(track, "artists", [])
+            artist = humanize_list([a.name for a in artists])
+            em = await song_embed(track, False)
+            await ctx.send(
+                _("Now playing {track} by {artist}").format(track=track_name, artist=artist),
+                embed=em,
+                ephemeral=True,
+            )
+        else:
+            await ctx.react_quietly(
+                spotify_emoji_handler.get_emoji(
+                    "next",
+                    True,
+                )
+            )
+
+    async def spotify_play_context(
+        self,
+        ctx: commands.Context,
+        client: tekore.Spotify,
+        new_uri: str,
+        uri_type: str,
+        device_id: Optional[str],
+    ):
+        await client.playback_start_context(new_uri, device_id=device_id)
+        if ctx.interaction:
+            if uri_type == "playlist":
+                cur_tracks = await client.playlist(new_uri)
+                track_name = cur_tracks.name
+                await ctx.send(
+                    _("Now playing {track}").format(track=track_name),
+                    ephemeral=True,
+                )
+            if uri_type == "artist":
+                artist_id = new_uri.split(":")[-1]
+                cur_tracks = await client.artist(artist_id)
+                track_name = cur_tracks.name
+                await ctx.send(
+                    _("Now playing top tracks by {track}").format(track=track_name),
+                    ephemeral=True,
+                )
+            if uri_type == "album":
+                album_id = new_uri.split(":")[-1]
+                cur_tracks = await client.album(album_id)
+                track_name = cur_tracks.name
+                artists = getattr(cur_tracks, "artists", [])
+                track_artist = humanize_list([a.name for a in artists])
+                await ctx.send(
+                    _("Now playing {track} by {artist}.").format(
+                        track=track_name, artist=track_artist
+                    ),
+                    ephemeral=True,
+                )
+        else:
+            await ctx.react_quietly(
+                spotify_emoji_handler.get_emoji(
+                    "next",
+                    True,
+                )
+            )
+        return
+
+    async def spotify_play_search(
+        self,
+        ctx: commands.Context,
+        client: tekore.Spotify,
+        url_or_playlist_name: str,
+        device_id: Optional[str],
+    ) -> bool:
+        cur = await client.followed_playlists(limit=50)
+        playlists = cur.items
+        while len(playlists) < cur.total:
+            new = await client.followed_playlists(limit=50, offset=len(playlists))
+            for p in new.items:
+                playlists.append(p)
+        for playlist in playlists:
+            if url_or_playlist_name.lower() in playlist.name.lower():
+                await client.playback_start_context(playlist.uri, device_id=device_id)
+                if ctx.interaction:
+                    await ctx.send(
+                        _("Now playing {playlist}").format(playlist=playlist.name),
+                        ephemeral=True,
+                    )
+                else:
+                    await ctx.react_quietly(
+                        spotify_emoji_handler.get_emoji(
+                            "next",
+                            ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        )
+                    )
+                return True
+        saved_tracks = await client.saved_tracks(limit=50)
+        for track in saved_tracks.items:
+            if (
+                url_or_playlist_name.lower() in track.track.name.lower()
+                or url_or_playlist_name.lower() in ", ".join(a.name for a in track.track.artists)
+            ):
+                await client.playback_start_tracks([track.track.id], device_id=device_id)
+                if ctx.interaction:
+                    track_name = track.track.name
+                    artists = getattr(track.track, "artists", [])
+                    artist = humanize_list([a.name for a in artists])
+                    em = await song_embed(track.track, False)
+                    await ctx.send(
+                        _("Now playing {track} by {artist}").format(
+                            track=track_name, artist=artist
+                        ),
+                        embed=em,
+                        ephemeral=True,
+                    )
+                else:
+                    await ctx.react_quietly(
+                        spotify_emoji_handler.get_emoji(
+                            "next",
+                            ctx.channel.permissions_for(ctx.guild.me).use_external_emojis,
+                        )
+                    )
+                return True
+        return False
+
+    async def spotify_play_liked_songs(
+        self, ctx: commands.Context, client: tekore.Spotify, device_id: Optional[str]
+    ):
+        cur = await client.saved_tracks(limit=50)
+        await client.playback_start_tracks([t.track.id for t in cur.items], device_id=device_id)
+        user_token = await self.get_user_auth(ctx)
+        user_menu = SpotifyUserMenu(
+            source=SpotifyPages(user_token=user_token, sender=self._sender, detailed=False),
+            cog=self,
+            user_token=user_token,
+            ctx=ctx,
+        )
+        await user_menu.send_initial_message(
+            ctx, content=_("Now playing your last 50 liked songs."), ephemeral=True
+        )
+        return
+
     @spotify_com.command(name="play")
     @commands.bot_has_permissions(embed_links=True)
     async def spotify_play(
@@ -1138,7 +1287,6 @@ class SpotifyCommands(SpotifyMixin):
         if not user_token:
             return await self.no_user_token(ctx)
         await ctx.defer()
-        user = ctx.author
         url_or_playlist_name = url_or_playlist_name.replace("🧑‍🎨", ":artist:")
         # because discord will replace this in URI's automatically 🙄
         song_data = SPOTIFY_RE.finditer(url_or_playlist_name)
@@ -1155,143 +1303,27 @@ class SpotifyCommands(SpotifyMixin):
         try:
             user_spotify = tekore.Spotify(sender=self._sender)
             with user_spotify.token_as(user_token):
-                cur = await user_spotify.playback()
                 device = await self.get_device(ctx, user_spotify)
                 device_id = device.id if device is not None else None
                 if tracks:
-                    await user_spotify.playback_start_tracks(tracks, device_id=device_id)
-                    if ctx.interaction:
-                        all_tracks = await user_spotify.tracks(tracks)
-                        track = all_tracks[0]
-                        track_name = track.name
-                        artists = getattr(track, "artists", [])
-                        artist = humanize_list([a.name for a in artists])
-                        em = await song_embed(track, False)
-                        await ctx.send(
-                            _("Now playing {track} by {artist}").format(
-                                track=track_name, artist=artist
-                            ),
-                            embed=em,
-                            ephemeral=True,
-                        )
-                    else:
-                        await ctx.react_quietly(
-                            spotify_emoji_handler.get_emoji(
-                                "next",
-                                True,
-                            )
-                        )
+                    await self.spotify_play_tracks(ctx, user_spotify, tracks, device_id)
                     return
                 if new_uri:
-                    await user_spotify.playback_start_context(new_uri, device_id=device_id)
-                    if ctx.interaction:
-                        if uri_type == "playlist":
-                            cur_tracks = await user_spotify.playlist(new_uri)
-                            track_name = cur_tracks.name
-                            await ctx.send(
-                                _("Now playing {track}").format(track=track_name),
-                                ephemeral=True,
-                            )
-                        if uri_type == "artist":
-                            artist_id = new_uri.split(":")[-1]
-                            cur_tracks = await user_spotify.artist(artist_id)
-                            track_name = cur_tracks.name
-                            await ctx.send(
-                                _("Now playing top tracks by {track}").format(track=track_name),
-                                ephemeral=True,
-                            )
-                        if uri_type == "album":
-                            album_id = new_uri.split(":")[-1]
-                            cur_tracks = await user_spotify.album(album_id)
-                            track_name = cur_tracks.name
-                            artists = getattr(cur_tracks, "artists", [])
-                            artist = humanize_list([a.name for a in artists])
-                            track_artist = humanize_list([a.name for a in artists])
-                            await ctx.send(
-                                _("Now playing {track} by {artist}.").format(
-                                    track=track_name, artist=track_artist
-                                ),
-                                ephemeral=True,
-                            )
-                    else:
-                        await ctx.react_quietly(
-                            spotify_emoji_handler.get_emoji(
-                                "next",
-                                True,
-                            )
-                        )
+                    await self.spotify_play_context(
+                        ctx, user_spotify, new_uri, uri_type, device_id
+                    )
                     return
                 if url_or_playlist_name:
-                    cur = await user_spotify.followed_playlists(limit=50)
-                    playlists = cur.items
-                    while len(playlists) < cur.total:
-                        new = await user_spotify.followed_playlists(
-                            limit=50, offset=len(playlists)
-                        )
-                        for p in new.items:
-                            playlists.append(p)
-                    for playlist in playlists:
-                        if url_or_playlist_name.lower() in playlist.name.lower():
-                            await user_spotify.playback_start_context(
-                                playlist.uri, device_id=device_id
-                            )
-                            if ctx.interaction:
-                                await ctx.send(
-                                    _("Now playing {playlist}").format(playlist=playlist.name),
-                                    ephemeral=True,
-                                )
-                            else:
-                                await ctx.react_quietly(
-                                    spotify_emoji_handler.get_emoji(
-                                        "next",
-                                        ctx.channel.permissions_for(
-                                            ctx.guild.me
-                                        ).use_external_emojis,
-                                    )
-                                )
-                            return
-                    saved_tracks = await user_spotify.saved_tracks(limit=50)
-                    for track in saved_tracks.items:
-                        if (
-                            url_or_playlist_name.lower() in track.track.name.lower()
-                            or url_or_playlist_name.lower()
-                            in ", ".join(a.name for a in track.track.artists)
-                        ):
-                            await user_spotify.playback_start_tracks(
-                                [track.track.id], device_id=device_id
-                            )
-                            if ctx.interaction:
-                                track_name = track.track.name
-                                artists = getattr(track.track, "artists", [])
-                                artist = humanize_list([a.name for a in artists])
-                                track_artist = humanize_list([a.name for a in artists])
-                                em = await song_embed(track.track, False)
-                                await ctx.send(
-                                    _("Now playing {track} by {artist}").format(
-                                        track=track_name, artist=artist
-                                    ),
-                                    embed=em,
-                                    ephemeral=True,
-                                )
-                            else:
-                                await ctx.react_quietly(
-                                    spotify_emoji_handler.get_emoji(
-                                        "next",
-                                        ctx.channel.permissions_for(
-                                            ctx.guild.me
-                                        ).use_external_emojis,
-                                    )
-                                )
-                            return
-                else:
-                    cur = await user_spotify.saved_tracks(limit=50)
-                    await user_spotify.playback_start_tracks(
-                        [t.track.id for t in cur.items], device_id=device_id
-                    )
-                    await ctx.react_quietly(spotify_emoji_handler.get_emoji("next", True))
+                    if not await self.spotify_play_search(
+                        ctx, user_spotify, url_or_playlist_name, device_id
+                    ):
+                        msg = _("I could not find any URL's or matching playlist names.")
+                        await ctx.send(msg)
                     return
-                msg = _("I could not find any URL's or matching playlist names.")
-                await ctx.send(msg)
+                else:
+                    await self.spotify_play_liked_songs(ctx, user_spotify, device_id)
+                    return
+
         except tekore.Unauthorised:
             await self.not_authorized(ctx)
         except tekore.NotFound:
