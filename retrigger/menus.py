@@ -413,8 +413,8 @@ class ReTriggerEditModal(discord.ui.Modal):
             if response_type.value in ["text", "dm", "dmme", "command", "mock"]:
                 self.add_item(self.text)
                 break
-        if TriggerResponse.text in trigger.response_type:
-            self.add_item(self.replies)
+        # if TriggerResponse.text in trigger.response_type:
+        # self.add_item(self.replies)
         self.og_button = button
         self.trigger = trigger
 
