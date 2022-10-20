@@ -6,7 +6,7 @@ import logging
 import random
 import re
 from io import BytesIO, StringIO
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import discord
 from discord import app_commands
@@ -64,6 +64,7 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config.register_user(**default_user)
         self.config.register_guild(clan_id=None, commands={})
         self.throttle: float = 0
+        self.dashboard_authed: Dict[int, dict] = {}
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -82,6 +83,15 @@ class Destiny(DestinyAPI, commands.Cog):
         Method for finding a user's data inside the cog and deleting it.
         """
         await self.config.user_from_id(user_id).clear()
+
+    @commands.Cog.listener()
+    async def on_oauth_receive(self, user_id: int, payload: dict):
+        if payload["provider"] != "destiny":
+            return
+        if int(user_id) not in self.dashboard_authed:
+            self.dashboard_authed[int(user_id)] = {"code": payload["code"]}
+        else:
+            self.dashboard_authed[int(user_id)]["code"] = payload["code"]
 
     @commands.hybrid_group(name="destiny")
     async def destiny(self, ctx: commands.Context) -> None:

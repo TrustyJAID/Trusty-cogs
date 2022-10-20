@@ -6,7 +6,7 @@ import re
 from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import aiohttp
 import discord
@@ -58,6 +58,7 @@ class DestinyAPI:
     config: Config
     bot: Red
     throttle: float
+    dashboard_authed: Dict[int, dict]
 
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
@@ -193,6 +194,32 @@ class DestinyAPI:
                     await self.config.user(user).oauth.clear()
                     raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
 
+    async def wait_for_oauth_code(self, ctx: commands.Context) -> Optional[str]:
+        wait_msg = None
+        author = ctx.author
+        code = None
+
+        def check(message):
+            return (author.id in self.dashboard_authed) or message.author.id == author.id
+
+        try:
+            wait_msg = await self.bot.wait_for("message", check=check, timeout=180)
+        except asyncio.TimeoutError:
+            pass
+        if author.id in self.dashboard_authed:
+            code = self.dashboard_authed[author.id]["code"]
+        elif wait_msg is not None:
+            code_check = re.compile(r"\?code=([a-z0-9]+)", flags=re.I)
+            find = code_check.search(wait_msg.content)
+            if find:
+                code = find.group(1)
+            else:
+                code = wait_msg.content
+
+        if code != "exit":
+            return code
+        return None
+
     async def get_o_auth(self, ctx: commands.Context) -> Optional[dict]:
         """
         This sets up the OAuth flow for logging into the API
@@ -217,21 +244,10 @@ class DestinyAPI:
                 await author.send(msg + url)
             except discord.errors.Forbidden:
                 await ctx.channel.send(msg + url)
-        try:
-            msg = await self.bot.wait_for(
-                "message", check=lambda m: m.author == author, timeout=180
-            )
-        except asyncio.TimeoutError:
+        code = await self.wait_for_oauth_code(ctx)
+        if code is None:
             return None
-        code_check = re.compile(r"\?code=([a-z0-9]+)", flags=re.I)
-        find = code_check.search(msg.content)
-        if find:
-            code = find.group(1)
-        else:
-            code = msg.content
-        if msg.content != "exit":
-            return await self.get_access_token(code)
-        return None
+        return await self.get_access_token(code)
 
     async def build_headers(self, user: discord.abc.User = None) -> dict:
         """
