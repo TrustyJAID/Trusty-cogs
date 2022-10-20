@@ -48,7 +48,7 @@ class Tweets(TweetsAPI, commands.Cog):
         self.twitter_loop = None
         self.stream_task = None
         self.accounts = {}
-        self.dashboard_authed = []
+        self.dashboard_authed = {}
         self.tweet_stream_view: Optional[TweetStreamView] = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:

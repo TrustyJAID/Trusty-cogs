@@ -135,7 +135,7 @@ class TweetListener(AsyncStreamingClient):
         # https://developer.twitter.com/en/docs/twitter-api/v1/tweets/filter-realtime/guides/connecting
         # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/handling-disconnections
         # https://developer.twitter.com/en/docs/twitter-api/tweets/volume-streams/integrate/handling-disconnections
-        stall_timeout = 90
+        stall_timeout = 20
         network_error_wait = network_error_wait_step = 0.25
         network_error_wait_max = 16
         http_error_wait = http_error_wait_start = 5
@@ -144,7 +144,8 @@ class TweetListener(AsyncStreamingClient):
 
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(sock_read=stall_timeout)
+                timeout=aiohttp.ClientTimeout(sock_read=stall_timeout),
+                connector=aiohttp.TCPConnector(force_close=True),
             )
         self.session.headers["User-Agent"] = self.user_agent
 
@@ -175,6 +176,7 @@ class TweetListener(AsyncStreamingClient):
                             await self.on_closed(resp)
                         else:
                             await self.on_request_error(resp.status)
+                            log.info(resp.headers)
                             # The error text is logged here instead of in
                             # on_request_error to keep on_request_error
                             # backwards-compatible. In a future version, the
@@ -298,6 +300,7 @@ class TweetsAPI:
     run_stream: bool
     twitter_loop: Optional[tweepy.Stream]
     tweet_stream_view: discord.ui.View
+    dashboard_authed: Dict[int, dict]
 
     async def start_stream(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -349,6 +352,12 @@ class TweetsAPI:
         result = await loop.run_in_executor(None, task)
         await self.config.user(user).tokens.set(result)
         return result
+
+    @commands.Cog.listener()
+    async def on_oauth_receive(self, user_id: int, payload: dict):
+        if payload["provider"] != "twitter":
+            return
+        self.dashboard_authed[int(user_id)] = payload
 
     async def authorize_user(
         self,
@@ -405,12 +414,26 @@ class TweetsAPI:
                 await user.send(msg)
             except discord.errors.Forbidden:
                 await ctx.send(msg)
+        final_url = None
+        check_msg = None
         try:
             check_msg = await self.bot.wait_for("message", check=check, timeout=180)
         except asyncio.TimeoutError:
+            if user.id in self.dashboard_authed:
+                final_url = (
+                    self.dashboard_authed[user.id].get("url").replace("http://", "https://")
+                )
+            else:
+                await ctx.send(_("Alright I won't interact with twitter for you."))
+                return False
+
+        if check_msg:
+            final_url = check_msg.clean_content.strip()
+        if user.id in self.dashboard_authed:
+            final_url = self.dashboard_authed[user.id].get("url").replace("http://", "https://")
+        if final_url is None:
             await ctx.send(_("Alright I won't interact with twitter for you."))
             return False
-        final_url = check_msg.clean_content.strip()
         loop = asyncio.get_running_loop()
         try:
             task = functools.partial(oauth.fetch_token, authorization_response=final_url)
