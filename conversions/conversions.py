@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, Optional, Union, List
+from typing import Dict, List, Optional, Union
 
 import aiohttp
 import discord
@@ -20,7 +20,7 @@ class Conversions(commands.Cog):
     """
 
     __author__ = ["TrustyJAID"]
-    __version__ = "1.3.1"
+    __version__ = "1.3.2"
 
     def __init__(self, bot: Red) -> None:
         self.bot = bot
@@ -172,7 +172,7 @@ class Conversions(commands.Cog):
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
         async with self.session.get(url, headers=await self.get_header(), params=params) as resp:
             data = await resp.json()
-            coins_data = data.get("data",  {})
+            coins_data = data.get("data", {})
             for coin_id, coin_data in coins_data.items():
                 to_ret.append(Coin.from_json(coin_data))
         return to_ret
@@ -206,7 +206,7 @@ class Conversions(commands.Cog):
             async with self.session.get(url, headers=await self.get_header()) as resp:
                 data = await resp.json()
             if resp.status == 200:
-                self.coin_index = {c["id"]: CoinBase(**c) for c in data.get("data", [])}
+                self.coin_index = {c["id"]: CoinBase.from_json(c) for c in data.get("data", [])}
             elif resp.status == 401:
                 raise CoinMarketCapError(
                     "The bot owner has not set an API key. "
@@ -352,7 +352,8 @@ class Conversions(commands.Cog):
 
         msg = f"{amount} {coin.symbol} is **{price:,.2f} {currency}**\n"
         embed = discord.Embed(
-            description=msg, colour=coin_colour.get(coin.name, discord.Colour.dark_grey())
+            description=msg,
+            colour=coin_colour.get(coin.name, discord.Colour.dark_grey()),
         )
         embed.set_footer(text="As of")
         embed.set_author(name=coin.name, url=coin_url, icon_url=coin_image)
@@ -424,7 +425,9 @@ class Conversions(commands.Cog):
         last_updated = datetime.datetime.utcfromtimestamp(ticker_data["regularMarketTime"])
         msg = "{0} is {1:,.2f} {2}".format(ticker.upper(), price, currency.upper())
         embed = discord.Embed(
-            description="Stock Price", colour=discord.Colour.lighter_grey(), timestamp=last_updated
+            description="Stock Price",
+            colour=discord.Colour.lighter_grey(),
+            timestamp=last_updated,
         )
         embed.set_footer(text="Last Updated")
         embed.add_field(name=ticker.upper(), value=msg)

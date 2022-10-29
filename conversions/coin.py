@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, List, Dict, Optional
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -46,6 +46,20 @@ class CoinBase:
     last_historical_data: datetime
     platform: Optional[Dict[Any, Any]]
 
+    @classmethod
+    def from_json(cls, data: Dict[Any, Any]) -> CoinBase:
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            symbol=data["symbol"],
+            slug=data["slug"],
+            rank=data["rank"],
+            is_active=data["is_active"],
+            first_historical_data=data["first_historical_data"],
+            last_historical_data=data["last_historical_data"],
+            platform=data.get("platform"),
+        )
+
 
 @dataclass
 class Coin:
@@ -80,5 +94,5 @@ class Coin:
             platform=data["platform"],
             cmc_rank=data["cmc_rank"],
             last_updated=datetime.strptime(data["last_updated"], "%Y-%m-%dT%H:%M:%S.000Z"),
-            quote={k: Quote.from_json(v) for k, v in data["quote"].items()}
+            quote={k: Quote.from_json(v) for k, v in data["quote"].items()},
         )
