@@ -8,13 +8,12 @@ import re
 from io import BytesIO, StringIO
 from typing import Dict, List, Literal, Optional
 
+import aiohttp
 import discord
 from discord import app_commands
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 from tabulate import tabulate
 
 from .api import DestinyAPI
@@ -27,7 +26,7 @@ from .converter import (
     StatsPage,
 )
 from .errors import Destiny2APIError, Destiny2MissingManifest
-from .menus import BaseMenu, BasePages
+from .menus import BaseMenu, BasePages, ClanPendingView, PostmasterPages, YesNoView
 
 DEV_BOTS = (552261846951002112,)
 # If you want parsing the manifest data to be easier add your
@@ -65,6 +64,11 @@ class Destiny(DestinyAPI, commands.Cog):
         self.config.register_guild(clan_id=None, commands={})
         self.throttle: float = 0
         self.dashboard_authed: Dict[int, dict] = {}
+        self.session = aiohttp.ClientSession(headers={"User-Agent": "Red-TrustyCogs-DestinyCog"})
+
+    async def cog_unload(self):
+        if not self.session.closed:
+            await self.session.close()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -88,10 +92,10 @@ class Destiny(DestinyAPI, commands.Cog):
     async def on_oauth_receive(self, user_id: int, payload: dict):
         if payload["provider"] != "destiny":
             return
-        if int(user_id) not in self.dashboard_authed:
-            self.dashboard_authed[int(user_id)] = {"code": payload["code"]}
-        else:
-            self.dashboard_authed[int(user_id)]["code"] = payload["code"]
+        if "code" not in payload:
+            log.error(f"Received Destiny OAuth without a code parameter {user_id} - {payload}")
+            return
+        self.dashboard_authed[int(user_id)] = payload
 
     @commands.hybrid_group(name="destiny")
     async def destiny(self, ctx: commands.Context) -> None:
@@ -414,47 +418,8 @@ class Destiny(DestinyAPI, commands.Cog):
             msg = {"content": _("Server's clan set to"), "embed": embed}
             await ctx.send(**msg)
 
-    async def destiny_pick_profile(
-        self, ctx: commands.Context, pending_users: dict
-    ) -> Optional[dict]:
-        """
-        Allows a clan admin to pick the user they want to approve in the clan
-        """
-        users = pending_users["results"][:9]
-        embed = discord.Embed(
-            title=_("Pending Clan Members"),
-            description=_("React with the user you would like to approve into the clan."),
-        )
-        for index, user in enumerate(pending_users["results"]):
-            destiny_name = ""
-            destiny_info = user.get("destinyUserInfo", "")
-            if destiny_info:
-                destiny_name = destiny_info.get("LastSeenDisplayName", "")
-            bungie_name = ""
-            bungie_info = user.get("bungieNetUserInfo", "")
-            if bungie_info:
-                bungie_name = bungie_info.get("displayName", "")
-            msg = _("Destiny/Steam Name: {destiny_name}\nBungie.net Name: {bungie_name}").format(
-                destiny_name=destiny_name if destiny_name else _("Not Set"),
-                bungie_name=bungie_name if bungie_name else _("Not Set"),
-            )
-            embed.add_field(name=_("User {count}").format(count=index + 1), value=msg)
-        msg = await ctx.send(embed=embed)
-        emojis = ReactionPredicate.NUMBER_EMOJIS[1 : len(users) + 1]
-        start_adding_reactions(msg, emojis)
-        pred = ReactionPredicate.with_emojis(emojis, msg)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred)
-        except asyncio.TimeoutError:
-            if ctx.channel.permissions_for(ctx.me).manage_messages:
-                await msg.clear_reactions()
-            return None
-        else:
-            return users[pred.result]
-
     @clan.command(name="pending")
     @commands.bot_has_permissions(embed_links=True)
-    @commands.admin_or_permissions(manage_guild=True)
     async def clan_pending(self, ctx: commands.Context) -> None:
         """
         Display pending clan members.
@@ -478,33 +443,8 @@ class Destiny(DestinyAPI, commands.Cog):
             msg = _("There is no one pending clan approval.")
             await ctx.send(msg)
             return
-        approved = await self.destiny_pick_profile(ctx, clan_pending)
-        if not approved:
-            await ctx.send(_("No one will be approved into the clan."))
-            return
-        try:
-            destiny_name = ""
-            destiny_info = approved.get("destinyUserInfo", "")
-            if destiny_info:
-                destiny_name = destiny_info.get("LastSeenDisplayName", "")
-            bungie_name = ""
-            bungie_info = approved.get("bungieNetUserInfo", "")
-            if bungie_info:
-                bungie_name = bungie_info.get("displayName", "")
-            membership_id = approved["destinyUserInfo"]["membershipId"]
-            membership_type = approved["destinyUserInfo"]["membershipType"]
-            await self.approve_clan_pending(
-                ctx.author, clan_id, membership_type, membership_id, approved
-            )
-        except Destiny2APIError as e:
-            log.exception("error approving clan member.")
-            await ctx.send(str(e))
-        else:
-            await ctx.send(
-                _("{destiny_name} AKA {bungie_name} has been approved into the clan.").format(
-                    destiny_name=destiny_name, bungie_name=bungie_name
-                )
-            )
+        view = ClanPendingView(self, ctx, clan_id, clan_pending["results"])
+        await view.start()
 
     @clan.command(name="roster")
     @commands.bot_has_permissions(embed_links=True)
@@ -679,10 +619,7 @@ class Destiny(DestinyAPI, commands.Cog):
                         return node["iconSequences"][0]["frames"][1]
                 return node["icon"]
 
-    async def make_character_embed(
-        self, user: discord.abc.User, char_id: str, chars: dict, player_currency: str
-    ) -> discord.Embed:
-        char = chars["characters"]["data"][char_id]
+    async def get_character_description(self, char: dict) -> str:
         info = ""
         race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
             str(char["raceHash"])
@@ -698,6 +635,13 @@ class Destiny(DestinyAPI, commands.Cog):
             gender=gender["displayProperties"]["name"],
             char_class=char_class["displayProperties"]["name"],
         )
+        return info
+
+    async def make_character_embed(
+        self, user: discord.abc.User, char_id: str, chars: dict, player_currency: str
+    ) -> discord.Embed:
+        char = chars["characters"]["data"][char_id]
+        info = await self.get_character_description(char)
         titles = ""
         embed = discord.Embed(title=info)
         if "titleRecordHash" in char:
@@ -761,6 +705,42 @@ class Destiny(DestinyAPI, commands.Cog):
             embed.add_field(name=_("Titles"), value=titles)
         embed.add_field(name=_("Current Currencies"), value=player_currency)
         return embed
+
+    @destiny.command()
+    async def postmaster(self, ctx: commands.Context):
+        """
+        View and pull from the postmaster
+        """
+        if not await self.has_oauth(ctx):
+            return
+        async with ctx.typing():
+            try:
+                chars = await self.get_characters(ctx.author)
+                await self.save(chars)
+            except Destiny2APIError as e:
+                log.exception(e)
+                await self.missing_profile(ctx)
+                return
+            # Postmaster bucket 215593132
+            postmasters = chars["characters"]["data"]
+            for char_id, items in chars["characterInventories"]["data"].items():
+                char = chars["characters"]["data"][char_id]
+                info = await self.get_character_description(char)
+                embed = discord.Embed(title=_("Postmaster"))
+                embed.set_author(name=info)
+                msg = ""
+                postmaster_items = [
+                    i for i in items["items"] if "bucketHash" in i and i["bucketHash"] == 215593132
+                ]
+                pm = await self.get_definition(
+                    "DestinyInventoryItemDefinition",
+                    list(set(i["itemHash"] for i in postmaster_items)),
+                )
+                postmasters[char_id].update(
+                    {"items": postmaster_items, "data": pm, "embed": embed}
+                )
+            source = PostmasterPages(postmasters)
+            await BaseMenu(source, self).start(ctx)
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
@@ -1896,55 +1876,48 @@ class Destiny(DestinyAPI, commands.Cog):
         """
         See the current manifest version and optionally re-download it
         """
-        if ctx.interaction:
-            await ctx.defer()
-        else:
-            await ctx.typing()
         if not d1:
-            try:
-                headers = await self.build_headers()
-            except Exception:
-                await ctx.send(
-                    _(
-                        "You need to set your API authentication tokens with `[p]destiny token` first."
-                    )
-                )
-                return
-            manifest_data = await self.request_url(
-                f"{BASE_URL}/Destiny2/Manifest/", headers=headers
-            )
-            version = await self.config.manifest_version()
-            if not version:
-                version = _("Not Downloaded")
-            msg = _("Current manifest version is {version}.").format(version=version)
-            redownload = _("re-download")
-            if manifest_data["version"] != version:
-                msg += _("\n\nThere is an update available to version {version}").format(
-                    version=manifest_data["version"]
-                )
-                redownload = _("download")
-            await ctx.send(msg)
-            await ctx.typing()
-            msg = await ctx.send(
-                _("Would you like to {redownload} the manifest?").format(redownload=redownload)
-            )
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-            try:
-                react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=30)
-            except asyncio.TimeoutError:
-                await ctx.send(_("I will not download the manifest."))
-            if pred.result:
+            async with ctx.typing():
                 try:
-                    version = await self.get_manifest()
+                    headers = await self.build_headers()
                 except Exception:
-                    log.exception("Error getting destiny manifest")
-                    await ctx.send(_("There was an issue downloading the manifest."))
+                    await ctx.send(
+                        _(
+                            "You need to set your API authentication tokens with `[p]destiny token` first."
+                        )
+                    )
                     return
-                await msg.delete()
-                await ctx.send(f"Manifest {version} was downloaded.")
+                manifest_data = await self.request_url(
+                    f"{BASE_URL}/Destiny2/Manifest/", headers=headers
+                )
+                version = await self.config.manifest_version()
+                if not version:
+                    version = _("Not Downloaded")
+                msg = _("Current manifest version is {version}.").format(version=version)
+                redownload = _("re-download")
+                if manifest_data["version"] != version:
+                    msg += _("\n\nThere is an update available to version {version}").format(
+                        version=manifest_data["version"]
+                    )
+                    redownload = _("download")
+            await ctx.send(msg)
+            pred = await YesNoView().start(
+                ctx,
+                _("Would you like to {redownload} the manifest?").format(redownload=redownload),
+            )
+            if pred:
+                async with ctx.typing():
+                    try:
+                        version = await self.get_manifest()
+                        response = _("Manifest Version {version} was downloaded.").format(
+                            version=version
+                        )
+                    except Exception:
+                        log.exception("Error getting destiny manifest")
+                        response = _("There was an issue downloading the manifest.")
+                await ctx.send(response)
             else:
-                await msg.delete()
+                await ctx.send(_("I will not download the manifest."))
         else:
             try:
                 version = await self.get_manifest(d1)

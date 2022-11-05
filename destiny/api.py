@@ -59,6 +59,7 @@ class DestinyAPI:
     bot: Red
     throttle: float
     dashboard_authed: Dict[int, dict]
+    session: aiohttp.ClientSession
 
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
@@ -70,27 +71,26 @@ class DestinyAPI:
         time_now = datetime.now().timestamp()
         if self.throttle > time_now:
             raise Destiny2APICooldown(str(self.throttle - time_now))
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, headers=headers) as resp:
-                # log.info(resp.url)
-                # log.info(headers)
-                if resp.status == 200:
-                    data = await resp.json()
-                    self.throttle = data["ThrottleSeconds"] + time_now
-                    if data["ErrorCode"] == 1 and "Response" in data:
-                        # fp = cog_data_path(self) / "data.json"
-                        # await JsonIO(fp)._threadsafe_save_json(data["Response"])
-                        return data["Response"]
-                    else:
-                        if "message" in data:
-                            log.error(data["message"])
-                        else:
-                            log.error("Incorrect response data")
-                        log.debug(url)
-                        raise Destiny2InvalidParameters(data)
+        async with self.session.get(url, params=params, headers=headers) as resp:
+            # log.info(resp.url)
+            # log.info(headers)
+            if resp.status == 200:
+                data = await resp.json()
+                self.throttle = data["ThrottleSeconds"] + time_now
+                if data["ErrorCode"] == 1 and "Response" in data:
+                    # fp = cog_data_path(self) / "data.json"
+                    # await JsonIO(fp)._threadsafe_save_json(data["Response"])
+                    return data["Response"]
                 else:
-                    log.error("Could not connect to the API: %s", resp.status)
-                    raise Destiny2APIError
+                    if "message" in data:
+                        log.error(data["message"])
+                    else:
+                        log.error("Incorrect response data")
+                    log.debug(url)
+                    raise Destiny2InvalidParameters(data)
+            else:
+                log.error("Could not connect to the API: %s", resp.status)
+                raise Destiny2APIError
 
     async def post_url(
         self,
@@ -106,45 +106,72 @@ class DestinyAPI:
         time_now = datetime.now().timestamp()
         if self.throttle > time_now:
             raise Destiny2APICooldown(str(self.throttle - time_now))
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, params=params, headers=headers, json=body) as resp:
-                # log.info(resp.url)
-                # log.info(headers)
-                if resp.status == 200:
-                    data = await resp.json()
-                    self.throttle = data["ThrottleSeconds"] + time_now
-                    if data["ErrorCode"] == 1 and "Response" in data:
-                        # fp = cog_data_path(self) / "data.json"
-                        # await JsonIO(fp)._threadsafe_save_json(data["Response"])
-                        return data["Response"]
-                    else:
-                        if "message" in data:
-                            log.error(data["message"])
-                        else:
-                            log.error("Incorrect response data")
-                        raise Destiny2InvalidParameters(data["Message"])
+        async with self.session.post(url, params=params, headers=headers, json=body) as resp:
+            # log.info(resp.url)
+            # log.info(headers)
+            if resp.status == 200:
+                data = await resp.json()
+                self.throttle = data["ThrottleSeconds"] + time_now
+                if data["ErrorCode"] == 1 and "Response" in data:
+                    # fp = cog_data_path(self) / "data.json"
+                    # await JsonIO(fp)._threadsafe_save_json(data["Response"])
+                    return data["Response"]
                 else:
-                    data = await resp.json()
-                    log.error("Could not connect to the API %s" % data)
-                    raise Destiny2APIError(data.get("Message", "Unknown error."))
+                    if "message" in data:
+                        log.error(data["message"])
+                    else:
+                        log.error("Incorrect response data")
+                    raise Destiny2InvalidParameters(data["Message"])
+            else:
+                data = await resp.json()
+                log.error("Could not connect to the API %s" % data)
+                raise Destiny2APIError(data.get("Message", "Unknown error."))
+
+    async def pull_from_postmaster(
+        self,
+        user: discord.User,
+        item_hash: int,
+        character_id: int,
+        membership_type: int,
+        stack_size: int,
+        item_instance: Optional[int] = None,
+    ):
+        headers = await self.build_headers(user)
+        data = {
+            "itemReferenceHash": item_hash,
+            "stackSize": stack_size,
+            "characterId": character_id,
+            "membershipType": membership_type,
+        }
+        if item_instance:
+            data["itemId"] = item_instance
+        return await self.post_url(
+            f"{BASE_URL}/Destiny2/Actions/Items/PullFromPostmaster/", headers=headers, body=data
+        )
 
     async def transfer_item(
         self,
+        user: discord.User,
         item_hash: int,
-        item_instance: int,
         character_id: int,
-        to_vault: bool,
         membership_type: int,
         stack_size: int,
+        to_vault: bool,
+        item_instance: Optional[int] = None,
     ):
+        headers = await self.build_headers(user)
         data = {
             "itemReferenceHash": item_hash,
             "stackSize": stack_size,
             "transferToVault": to_vault,
-            "itemId": item_instance,
             "characterId": character_id,
             "membershipType": membership_type,
         }
+        if item_instance:
+            data["itemId"] = item_instance
+        return await self.post_url(
+            f"{BASE_URL}/Destiny2/Actions/Items/TransferItem/", headers=headers, body=data
+        )
 
     async def get_access_token(self, code: str) -> dict:
         """
@@ -158,16 +185,15 @@ class DestinyAPI:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data = f"grant_type=authorization_code&code={code}"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(TOKEN_URL, data=data, headers=header) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if "error" in data:
-                        raise Destiny2InvalidParameters(data["error_description"])
-                    else:
-                        return data
+        async with self.session.post(TOKEN_URL, data=data, headers=header) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                if "error" in data:
+                    raise Destiny2InvalidParameters(data["error_description"])
                 else:
-                    raise Destiny2InvalidParameters(_("That token is invalid."))
+                    return data
+            else:
+                raise Destiny2InvalidParameters(_("That token is invalid."))
 
     async def get_refresh_token(self, user: discord.abc.User) -> dict:
         """
@@ -182,17 +208,16 @@ class DestinyAPI:
         }
         refresh_token = await self.config.user(user).oauth.refresh_token()
         data = f"grant_type=refresh_token&refresh_token={refresh_token}"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(TOKEN_URL, data=data, headers=header) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if "error" in data:
-                        raise Destiny2InvalidParameters(data["error_description"])
-                    else:
-                        return data
+        async with self.session.post(TOKEN_URL, data=data, headers=header) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                if "error" in data:
+                    raise Destiny2InvalidParameters(data["error_description"])
                 else:
-                    await self.config.user(user).oauth.clear()
-                    raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
+                    return data
+            else:
+                await self.config.user(user).oauth.clear()
+                raise Destiny2RefreshTokenError(_("The refresh token is invalid."))
 
     async def wait_for_oauth_code(self, ctx: commands.Context) -> Optional[str]:
         wait_msg = None
@@ -245,6 +270,8 @@ class DestinyAPI:
             except discord.errors.Forbidden:
                 await ctx.channel.send(msg + url)
         code = await self.wait_for_oauth_code(ctx)
+        if author.id in self.dashboard_authed:
+            del self.dashboard_authed[author.id]
         if code is None:
             return None
         return await self.get_access_token(code)
@@ -799,6 +826,42 @@ class DestinyAPI:
         with path.open(encoding="utf-8", mode="w") as f:
             json.dump(data, f, indent=4, sort_keys=False, separators=(",", " : "))
 
+    def save_manifest(self, data: dict, d1: bool = False):
+        simple_items = {}
+        for key, value in data.items():
+            path = cog_data_path(self) / f"{key}.json"
+            with path.open(encoding="utf-8", mode="w") as f:
+                if self.bot.user.id in DEV_BOTS:
+                    json.dump(
+                        value,
+                        f,
+                        indent=4,
+                        sort_keys=False,
+                        separators=(",", " : "),
+                    )
+                else:
+                    json.dump(value, f)
+            if key == "DestinyInventoryItemDefinition":
+                for item_hash, item_data in value.items():
+                    simple_items[item_hash] = {
+                        "displayProperties": item_data["displayProperties"],
+                        "itemType": item_data.get("itemType", 0),
+                        "hash": int(item_hash),
+                        "loreHash": item_data.get("loreHash", None),
+                    }
+                path = cog_data_path(self) / "simpleitems.json"
+                with path.open(encoding="utf-8", mode="w") as f:
+                    if self.bot.user.id in DEV_BOTS:
+                        json.dump(
+                            simple_items,
+                            f,
+                            indent=4,
+                            sort_keys=False,
+                            separators=(",", " : "),
+                        )
+                    else:
+                        json.dump(simple_items, f)
+
     async def get_manifest(self, d1: bool = False) -> None:
         """
         Checks if the manifest is up to date and downloads if it's not
@@ -829,55 +892,25 @@ class DestinyAPI:
                 manifest = manifest_data["jsonWorldContentPaths"][locale[:-3]]
             else:
                 manifest = manifest_data["jsonWorldContentPaths"]["en"]
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"https://bungie.net/{manifest}", headers=headers, timeout=None
-            ) as resp:
-                if d1:
-                    await self.download_d1_manifest(resp)
-                else:
-                    # response_data = await resp.text()
-                    # data = json.loads(response_data)
-                    data = await resp.json()
-                    simple_items = {}
-                    for key, value in data.items():
-                        path = cog_data_path(self) / f"{key}.json"
-                        with path.open(encoding="utf-8", mode="w") as f:
-                            if self.bot.user.id in DEV_BOTS:
-                                json.dump(
-                                    value,
-                                    f,
-                                    indent=4,
-                                    sort_keys=False,
-                                    separators=(",", " : "),
-                                )
-                            else:
-                                json.dump(value, f)
-                        if key == "DestinyInventoryItemDefinition":
-                            for item_hash, item_data in value.items():
-                                simple_items[item_hash] = {
-                                    "displayProperties": item_data["displayProperties"],
-                                    "itemType": item_data.get("itemType", 0),
-                                    "hash": int(item_hash),
-                                    "loreHash": item_data.get("loreHash", None),
-                                }
-                            path = cog_data_path(self) / "simpleitems.json"
-                            with path.open(encoding="utf-8", mode="w") as f:
-                                if self.bot.user.id in DEV_BOTS:
-                                    json.dump(
-                                        simple_items,
-                                        f,
-                                        indent=4,
-                                        sort_keys=False,
-                                        separators=(",", " : "),
-                                    )
-                                else:
-                                    json.dump(simple_items, f)
-                    await self.config.manifest_version.set(manifest_data["version"])
+        async with self.session.get(
+            f"https://bungie.net/{manifest}", headers=headers, timeout=None
+        ) as resp:
+            if d1:
+                data = await resp.read()
+                task = functools.partial(self.download_d1_manifest, data)
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(None, task)
+            else:
+                # response_data = await resp.text()
+                # data = json.loads(response_data)
+                data = await resp.json()
+                loop = asyncio.get_running_loop()
+                task = functools.partial(self.save_manifest, data)
+                await loop.run_in_executor(None, task)
+                await self.config.manifest_version.set(manifest_data["version"])
         return manifest_data["version"]
 
-    async def download_d1_manifest(self, resp):
-        data = await resp.read()
+    def download_d1_manifest(self, data):
         directory = cog_data_path(self) / "d1/"
         if not directory.is_dir():
             log.debug("Creating guild folder")
@@ -934,7 +967,7 @@ class DestinyAPI:
                         separators=(",", " : "),
                     )
                 else:
-                    json.dump(value, f)
+                    json.dump(json_data, f)
         conn.close()
 
     async def get_char_colour(self, embed: discord.Embed, character):

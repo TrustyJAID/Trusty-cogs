@@ -8,14 +8,110 @@ import discord
 # from discord.ext.commands.errors import BadArgument
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify
+from redbot.core.utils.chat_formatting import bold, humanize_list
 from redbot.vendored.discord.ext import menus
+
+from .errors import Destiny2APIError
 
 BASE_URL = "https://bungie.net"
 
 
 log = logging.getLogger("red.Trusty-cogs.destiny")
 _ = Translator("Destiny", __file__)
+
+
+class YesNoView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.result: Optional[bool] = None
+        self.message: discord.Message
+
+    async def on_timeout(self):
+        if self.message is not None:
+            await self.message.edit(view=None)
+
+    async def start(self, ctx: commands.Context, content: str):
+        self.message = await ctx.send(content, view=self)
+        await self.wait()
+        return self.result
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
+    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(view=None)
+        self.result = True
+        self.stop()
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.red)
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(view=None)
+        self.result = False
+        self.stop()
+
+
+class ClanPendingButton(discord.ui.Button):
+    def __init__(
+        self,
+        clan_id: int,
+        bnet_member: dict,
+    ):
+        self.member_id = bnet_member["destinyUserInfo"]["membershipId"]
+        self.membership_type = bnet_member["destinyUserInfo"]["membershipType"]
+        self.clan_id = clan_id
+        self.bnet_member = bnet_member
+        bungie_name = bnet_member["bungieNetUserInfo"].get("bungieGlobalDisplayName", "")
+        bungie_name_code = bnet_member["bungieNetUserInfo"].get("bungieGlobalDisplayNameCode", "")
+        self.bnet_name = f"{bungie_name}#{bungie_name_code}"
+        super().__init__(style=discord.ButtonStyle.primary, label=self.bnet_name)
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            await self.view.cog.approve_clan_pending(
+                interaction.user,
+                self.clan_id,
+                self.membership_type,
+                self.member_id,
+                self.bnet_member,
+            )
+        except Destiny2APIError as e:
+            log.exception("error approving clan member.")
+            await interaction.response.send_message(str(e), ephemeral=True)
+        else:
+            user = f"[{self.bnet_name}](https://www.bungie.net/7/en/User/Profile/{self.membership_type}/{self.member_id})"
+            await interaction.response.send_message(
+                _("{user} has been approved into the clan.").format(user=user)
+            )
+            self.disabled = True
+            await self.view.message.edit(view=self.view)
+
+
+class ClanPendingView(discord.ui.View):
+    def __init__(
+        self, cog: commands.Cog, ctx: commands.Context, clan_id: int, pending_users: list
+    ):
+        super().__init__()
+        self.pending_users = pending_users
+        self.cog = cog
+        self.ctx = ctx
+        self.clan_id = clan_id
+        self.message = None
+        for m in self.pending_users[:25]:
+            self.add_item(ClanPendingButton(clan_id, m))
+
+    async def start(self):
+        embed = discord.Embed(
+            title=_("Pending Clan Members"),
+            description=_("React with the user you would like to approve into the clan."),
+        )
+        for index, user in enumerate(self.pending_users[:25]):
+            bungie_info = user.get("bungieNetUserInfo", "")
+            bungie_name = bungie_info.get("bungieGlobalDisplayName", "")
+            bungie_name_code = bungie_info.get("bungieGlobalDisplayNameCode", "")
+            bungie_name_and_code = f"{bungie_name}#{bungie_name_code}"
+            bungie_id = bungie_info.get("membershipId")
+            platform = bungie_info.get("membershipType")
+            msg = f"[{bungie_name_and_code}](https://www.bungie.net/7/en/User/Profile/{platform}/{bungie_id})"
+            embed.add_field(name=_("User {count}").format(count=index + 1), value=msg)
+        self.message = await self.ctx.send(embed=embed, view=self)
 
 
 class BasePages(menus.ListPageSource):
@@ -177,6 +273,126 @@ class DestinySelect(discord.ui.Select):
         await self.view.show_checked_page(index, interaction)
 
 
+class PostmasterSelect(discord.ui.Select):
+    def __init__(self, items: dict):
+        self.items = items
+        super().__init__(max_values=len(items["items"]), placeholder=_("Pull from Postmaster"))
+        for item in items["items"]:
+            item_hash = item["itemHash"]
+            item_name = items["data"][str(item_hash)]["displayProperties"]["name"]
+            description = None
+            if item["quantity"] > 1:
+                description = str(item["quantity"]) + "x"
+            instance = item.get("itemInstanceId", "")
+            value = f"{instance}-{item_hash}"
+            self.add_option(label=item_name, description=description, value=value)
+
+    def get_quantity(self, instance: str, item_hash: str) -> int:
+        possible_item = None
+        for item in self.items["items"]:
+            if str(item["itemHash"]) == item_hash:
+                possible_item = item
+            if "itemInstanceId" in item and str(item["itemInstanceId"]) == instance:
+                possible_item = item
+        if possible_item and "quantity" in possible_item:
+            return possible_item["quantity"]
+        return 1
+
+    async def callback(self, interaction: discord.Interaction):
+        items = []
+        errors = []
+        for v in self.values:
+            instance, item_hash = v.split("-")
+            item = self.items["data"].get(item_hash)
+            char_id = self.items["characterId"]
+            membership_type = self.items["membershipType"]
+            quantity = self.get_quantity(instance, item_hash)
+            item_name = item["displayProperties"]["name"]
+            url = f"https://www.light.gg/db/items/{item_hash}"
+            try:
+                await self.view.cog.pull_from_postmaster(
+                    interaction.user, item_hash, char_id, membership_type, quantity, instance
+                )
+                self.view.source.remove_item(char_id, item_hash, instance)
+                items.append(f"{quantity}x [{item_name}](<{url}>)")
+            except Destiny2APIError as e:
+                log.exception(e)
+                errors.append(f"{quantity}x [{item_name}](<{url}>) - {e}")
+                continue
+        if items:
+            msg = _("Transferring {items} from the postmaster.").format(items=humanize_list(items))
+            if interaction.response.is_done():
+                await interaction.followup.send(msg)
+            else:
+                await interaction.response.send_message(msg)
+        if errors:
+            msg = _(
+                "Some of the items selected could not be pulled from the postmaster.\n{errors}"
+            ).format(errors="\n".join(e for e in errors))
+            if interaction.response.is_done():
+                await interaction.followup.send(msg)
+            else:
+                await interaction.response.send_message(msg)
+        await self.view.show_page(self.view.current_page, interaction)
+
+
+class PostmasterPages(menus.ListPageSource):
+    def __init__(self, postmasters: dict):
+        self.select_options = []
+        for count, page in enumerate(postmasters.values()):
+            if page["embed"].author:
+                description = page["embed"].author.name[:50]
+            else:
+                description = page["embed"].title[:50]
+            self.select_options.append(
+                discord.SelectOption(
+                    label=_("Page {number}").format(number=count + 1),
+                    value=count,
+                    description=description,
+                )
+            )
+        super().__init__(list(postmasters.keys()), per_page=1)
+        self.postmasters = postmasters
+        self.current_select = None
+        self.current_char = None
+        self.pages = list(postmasters.keys())
+
+    def remove_item(self, char_id: int, item_hash: str, instance: Optional[str]):
+        to_rem = []
+        for item in self.postmasters[char_id]["items"]:
+            possible_item = None
+            if str(item["itemHash"]) == item_hash:
+                possible_item = item
+            if "itemInstanceId" in item and str(item["itemInstanceId"]) == instance:
+                possible_item = item
+            if possible_item:
+                to_rem.append(possible_item)
+        for rem in to_rem:
+            try:
+                self.postmasters[char_id]["items"].remove(rem)
+            except Exception:
+                pass
+
+    async def format_page(self, menu: menus.MenuPages, page: int):
+        log.info(page)
+        self.current_char = page
+        self.current_select = PostmasterSelect(self.postmasters[page])
+        msg = ""
+        for item in self.postmasters[page]["items"]:
+            item_data = self.postmasters[page]["data"].get(str(item["itemHash"]))
+            item_hash = str(item["itemHash"])
+            url = f"https://www.light.gg/db/items/{item_hash}"
+            item_name = item_data["displayProperties"]["name"]
+            quantity = ""
+            if item["quantity"] > 1:
+                quantity = bold(str(item["quantity"]) + "x ")
+            msg += f"{quantity}[{item_name}]({url})\n"
+        embed = self.postmasters[page]["embed"]
+        embed.description = msg[:4096]
+        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
+        return embed
+
+
 class BaseMenu(discord.ui.View):
     def __init__(
         self,
@@ -206,6 +422,7 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.back_button)
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
+        self.postmaster = None
 
         if hasattr(self.source, "select_options"):
             self.select_view = self._get_select_menu()
@@ -280,11 +497,16 @@ class BaseMenu(discord.ui.View):
 
         page = await self._source.get_page(self.current_page)
         kwargs = await self._get_kwargs_from_page(page)
+        if isinstance(self.source, PostmasterPages) and self.source.current_select:
+            self.postmaster = self.source.current_select
+            self.add_item(self.source.current_select)
         self.message = await ctx.send(**kwargs, view=self)
         self.author = ctx.author
         return self.message
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
+        if isinstance(self.source, PostmasterPages):
+            self.remove_item(self.postmaster)
         page = await self._source.get_page(page_number)
         if hasattr(self.source, "select_options") and page_number >= 12:
             self.remove_item(self.select_view)
@@ -292,7 +514,14 @@ class BaseMenu(discord.ui.View):
             self.add_item(self.select_view)
         self.current_page = self.source.pages.index(page)
         kwargs = await self._get_kwargs_from_page(page)
-        await interaction.response.edit_message(**kwargs, view=self)
+        if isinstance(self.source, PostmasterPages):
+            self.postmaster = self.source.current_select
+            self.add_item(self.source.current_select)
+
+        if interaction.response.is_done():
+            await self.message.edit(**kwargs, view=self)
+        else:
+            await interaction.response.edit_message(**kwargs, view=self)
 
     async def show_checked_page(self, page_number: int, interaction: discord.Interaction) -> None:
         max_pages = self._source.get_max_pages()
