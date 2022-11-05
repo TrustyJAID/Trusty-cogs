@@ -4,13 +4,14 @@ from typing import Dict, Literal, Optional, Tuple, Union
 
 import discord
 from discord.ext import tasks
+from pytz import NonExistentTimeError
 from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
-from .event_obj import ApproveView, Event, ValidImage
+from .event_obj import ApproveView, ConfirmView, Event, ValidImage
 
 log = logging.getLogger("red.trusty-cogs.EventPoster")
 
@@ -107,7 +108,7 @@ class EventPoster(commands.Cog):
             for msg_id in to_remove:
                 ctx = await events[msg_id].get_ctx(self.bot)
                 if ctx:
-                    await events[msg_id].edit(ctx, content=_("This event has ended."), view=None)
+                    await events[msg_id].end_event()
 
                 async with self.config.guild_from_id(int(guild_id)).events() as guild_events:
                     del guild_events[str(events[msg_id].hoster)]
@@ -157,6 +158,17 @@ class EventPoster(commands.Cog):
             event.maybe.remove(user.id)
         event.check_join_enabled()
         await event.update_event()
+        if event.thread:
+            guild = self.bot.get_guild(event.guild)
+            if not guild:
+                return
+            thread = guild.get_thread(event.thread)
+            if not thread:
+                return
+            try:
+                await thread.add_user(user)
+            except Exception:
+                pass
         return
 
     async def add_user_to_maybe(self, user: discord.Member, event: Event) -> None:
@@ -167,6 +179,17 @@ class EventPoster(commands.Cog):
             event.members.remove(user.id)
         event.check_join_enabled()
         await event.update_event()
+        if event.thread:
+            guild = self.bot.get_guild(event.guild)
+            if not guild:
+                return
+            thread = guild.get_thread(event.thread)
+            if not thread:
+                return
+            try:
+                await thread.add_user(user)
+            except Exception:
+                pass
         return
 
     async def remove_user_from_event(self, user: discord.Member, event: Event) -> None:
@@ -180,6 +203,17 @@ class EventPoster(commands.Cog):
             event.maybe.remove(user.id)
         event.check_join_enabled()
         await event.update_event()
+        if event.thread:
+            guild = self.bot.get_guild(event.guild)
+            if not guild:
+                return
+            thread = guild.get_thread(event.thread)
+            if not thread:
+                return
+            try:
+                await thread.remove_user(user)
+            except Exception:
+                pass
 
     async def check_requirements(self, ctx: commands.Context) -> bool:
         is_slash = False
@@ -328,46 +362,13 @@ class EventPoster(commands.Cog):
             await ctx.send(msg)
             return await self.post_event(ctx, event)
 
-        new_view = discord.ui.View()
-        approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Approve"))
-        approve_button.callback = self.approve_event
-        deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label=_("Deny"))
-        deny_button.callback = self.deny_event
-        new_view.add_item(approve_button)
-        new_view.add_item(deny_button)
+        view = ApproveView(self, ctx)
 
         em = await event.make_event_embed(ctx)
         msg = _("Please wait for someone to approve your event request.")
         await ctx.send(msg)
-        admin_msg = await approval_channel.send(embed=em, view=new_view)
+        admin_msg = await approval_channel.send(embed=em, view=view)
         self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
-
-    async def approve_event(self, interaction: discord.Interaction):
-        if interaction.message.id not in self.waiting_approval:
-            return
-        event = self.waiting_approval[interaction.message.id]["event"]
-        ctx = self.waiting_approval[interaction.message.id]["ctx"]
-        event.approver = interaction.user.id
-        await self.post_event(ctx, event)
-        await interaction.response.send_message(
-            _("{user} has approved this event.").format(user=interaction.user.mention),
-            allowed_mentions=discord.AllowedMentions(users=False),
-        )
-        await interaction.message.edit(view=None)
-
-    async def deny_event(self, interaction: discord.Interaction):
-        if interaction.message.id not in self.waiting_approval:
-            return
-        ctx = self.waiting_approval[interaction.message.id]["ctx"]
-        msg = _("{author}, your event request was denied by an admin.").format(
-            author=ctx.author.mention
-        )
-        await ctx.reply(msg)
-        await interaction.response.send_message(
-            _("{user} has denied this event.").format(user=interaction.user.mention),
-            allowed_mentions=discord.AllowedMentions(users=False),
-        )
-        await interaction.message.edit(view=None)
 
     async def post_event(self, ctx: commands.Context, event: Event):
         em = await event.make_event_embed(ctx)
@@ -439,9 +440,7 @@ class EventPoster(commands.Cog):
         else:
             async with self.config.guild(ctx.guild).events() as events:
                 event = Event.from_json(self.bot, events[str(ctx.author.id)])
-                await event.edit(content=_("This event has ended."))
-                del events[str(ctx.author.id)]
-                del self.event_cache[ctx.guild.id][event.message]
+                await event.end_event()
             msg = _("Your event has been cleared.")
             await ctx.send(msg)
 
@@ -791,7 +790,7 @@ class EventPoster(commands.Cog):
 
     async def check_clear_event(self, ctx: commands.Context) -> bool:
 
-        new_view = ApproveView(ctx)
+        new_view = ConfirmView(ctx)
         msg = _("You already have an event running, would you like to cancel it?")
         await ctx.send(msg, view=new_view)
         await new_view.wait()

@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 import discord
 import pytz
@@ -61,14 +61,74 @@ class DenyButton(discord.ui.Button):
 
 
 class ApproveView(discord.ui.View):
-    def __init__(self, ctx: commands.Context):
+    def __init__(self, cog: commands.Cog, ctx: commands.Context):
+        super().__init__(timeout=None)
+        self.approved = False
+        self.ctx = ctx
+        self.cog = cog
+
+    @discord.ui.button(label=_("Approve"), style=discord.ButtonStyle.green)
+    async def approve_event(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.message.id not in self.cog.waiting_approval:
+            await interaction.response.defer()
+            return
+        await interaction.response.defer()
+        event = self.cog.waiting_approval[interaction.message.id]["event"]
+        ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
+        event.approver = interaction.user.id
+        try:
+            await self.cog.post_event(ctx, event)
+        except Exception:
+            log.exception("Error posting event")
+        args = {
+            "content": _("{user} has approved this event.").format(user=interaction.user.mention),
+            "allowed_mentions": discord.AllowedMentions(users=False),
+        }
+        await interaction.followup.send(**args)
+        await interaction.message.edit(view=None)
+        self.stop()
+
+    @discord.ui.button(label=_("Deny"), style=discord.ButtonStyle.red)
+    async def deny_event(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.message.id not in self.cog.waiting_approval:
+            await interaction.response.defer()
+            return
+        await interaction.response.defer()
+        ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
+        ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
+        msg = _("{author}, your event request was denied by an admin.").format(
+            author=ctx.author.mention
+        )
+        await ctx.reply(msg)
+        args = {
+            "content": _("{user} has denied this event.").format(user=interaction.user.mention),
+            "allowed_mentions": discord.AllowedMentions(users=False),
+        }
+        if interaction.response.is_done():
+            await interaction.followup.send(**args)
+        else:
+            await interaction.response.send_message(**args)
+        await interaction.message.edit(view=None)
+        self.stop()
+
+
+class ConfirmView(discord.ui.View):
+    def __init__(self, ctx: Union[commands.Context, discord.Interaction]):
         super().__init__()
         self.approved = False
         self.ctx = ctx
-        self.approve_button = ApproveButton(label=_("Yes"))
-        self.deny_button = DenyButton(label=_("No"))
-        self.add_item(self.approve_button)
-        self.add_item(self.deny_button)
+
+    @discord.ui.button(label=_("Yes"), style=discord.ButtonStyle.green)
+    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.approved = True
+        self.stop()
+        await interaction.response.edit_message(view=None)
+
+    @discord.ui.button(label=_("No"), style=discord.ButtonStyle.red)
+    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.approved = False
+        self.stop()
+        await interaction.response.edit_message(view=None)
 
     async def interaction_check(self, interaction: discord.Interaction):
         if isinstance(self.ctx, discord.Interaction):
@@ -156,32 +216,21 @@ class LeaveEventButton(discord.ui.Button):
             style=discord.ButtonStyle.red, label=_("Leave Event"), custom_id=custom_id
         )
 
-    async def end_event(self, interaction: discord.Interaction):
-        try:
-            await self.view.end_event()
-        except Exception:
-            log.exception("Error ending event")
-            pass
-        await interaction.response.edit_message(content=_("Your event has now ended."), view=None)
-
-    async def keep_event(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(content=_("I will not end this event."), view=None)
-
     async def callback(self, interaction: discord.Interaction):
         """Leave this event"""
         if interaction.user.id == self.view.hoster:
-            new_view = discord.ui.View()
-            approve_button = discord.ui.Button(style=discord.ButtonStyle.green, label=_("Yes"))
-            approve_button.callback = self.end_event
-            deny_button = discord.ui.Button(style=discord.ButtonStyle.red, label=_("No"))
-            deny_button.callback = self.keep_event
-            new_view.add_item(approve_button)
-            new_view.add_item(deny_button)
+            new_view = ConfirmView(interaction)
             await interaction.response.send_message(
                 content=_("Are you sure you want to end your event?"),
                 ephemeral=True,
                 view=new_view,
             )
+            await new_view.wait()
+            if new_view.approved:
+                await self.view.end_event()
+                await interaction.followup.send(_("Your event has now ended."), ephemeral=True)
+            else:
+                await interaction.followup.send(_("I will not end this event."), ephemeral=True)
             return
         if interaction.user.id not in self.view.members + self.view.maybe:
             await interaction.response.send_message(
@@ -452,6 +501,17 @@ class Event(discord.ui.View):
                 await self.edit(content=_("This event has ended."), view=None)
             del events[str(self.hoster)]
             del self.bot.get_cog("EventPoster").event_cache[self.guild][self.message]
+        if self.thread:
+            guild = self.bot.get_guild(int(self.guild))
+            if not guild:
+                return
+            thread = guild.get_thread(self.thread)
+            if not thread:
+                return
+            try:
+                await thread.edit(archived=True)
+            except Exception:
+                pass
 
     async def get_ctx(self, bot: Red) -> Optional[commands.Context]:
         """
