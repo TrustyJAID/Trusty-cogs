@@ -395,6 +395,7 @@ class GameDayThreads(MixinMeta):
             new_chn = await channel.create_thread(name=chn_name, message=preview_msg)
         except discord.Forbidden:
             log.error(f"Error creating channel in {repr(guild)}")
+            return
         except Exception:
             log.exception(f"Error creating channels in {repr(guild)}")
             return

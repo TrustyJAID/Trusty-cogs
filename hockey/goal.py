@@ -261,8 +261,9 @@ class Goal:
             guild_image_setting = await config.guild(guild).include_goal_image()
             channel_image_setting = await config.channel(channel).include_goal_image()
             include_goal_image = guild_image_setting or channel_image_setting
+            send_em = goal_embed.copy()
             if include_goal_image and self.image:
-                goal_embed.set_image(url=self.image)
+                send_em.set_image(url=self.image)
             # publish_goals = "Goal" in await config.channel(channel).publish_states()
             allowed_mentions = {}
             montreal = ["Montréal Canadiens", "Montreal Canadiens"]
@@ -314,11 +315,11 @@ class Goal:
                 # msg_list[str(channel.id)] = msg.id
 
             if role is None or "missed" in self.event.lower():
-                msg = await channel.send(embed=goal_embed)
+                msg = await channel.send(embed=send_em)
                 # msg_list[str(channel.id)] = msg.id
 
             else:
-                msg = await channel.send(role.mention, embed=goal_embed, **allowed_mentions)
+                msg = await channel.send(role.mention, embed=send_em, **allowed_mentions)
                 # msg_list[str(channel.id)] = msg.id
             return channel.guild.id, channel.id, msg.id
         except Exception:
@@ -427,8 +428,15 @@ class Goal:
             except (discord.errors.NotFound, discord.errors.Forbidden):
                 return
             guild = channel.guild
-            game_day_channels = await bot.get_cog("Hockey").config.guild(guild).gdc()
-            game_day_threads = await bot.get_cog("Hockey").config.guild(guild).gdt()
+            config = bot.get_cog("Hockey").config
+            game_day_channels = await config.guild(guild).gdc()
+            game_day_threads = await config.guild(guild).gdt()
+            guild_image_setting = await config.guild(guild).include_goal_image()
+            channel_image_setting = await config.channel(channel).include_goal_image()
+            include_goal_image = guild_image_setting or channel_image_setting
+            send_em = em.copy()
+            if include_goal_image and self.image:
+                send_em.set_image(url=self.image)
             role = discord.utils.get(guild.roles, name=self.team_name + " GOAL")
             if game_day_channels is not None:
                 # We don't want to ping people in the game day channels twice
@@ -438,9 +446,9 @@ class Goal:
                 if channel.id in game_day_threads:
                     role = None
             if role is None or "missed" in self.event.lower():
-                await message.edit(embed=em)
+                await message.edit(embed=send_em)
             else:
-                await message.edit(content=role.mention, embed=em)
+                await message.edit(content=role.mention, embed=send_em)
         except (discord.errors.NotFound, discord.errors.Forbidden):
             log.exception("Apparently could not edit a message")
             return

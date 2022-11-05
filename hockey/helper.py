@@ -99,6 +99,12 @@ class DateFinder(discord.app_commands.Transformer):
 
     @classmethod
     async def convert(cls, ctx: Context, argument: str) -> datetime:
+        if argument.lower() == "yesterday":
+            return datetime.now(timezone.utc) - timedelta(days=1)
+        if argument.lower() == "today":
+            return datetime.now(timezone.utc)
+        if argument.lower() == "tomorrow":
+            return datetime.now(timezone.utc) + timedelta(days=1)
         find = DATE_RE.search(argument)
         if find:
             date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
@@ -108,12 +114,8 @@ class DateFinder(discord.app_commands.Transformer):
 
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
-        find = DATE_RE.search(value)
-        if find:
-            date_str = f"{find.group(1)}-{find.group(3)}-{find.group(4)}"
-            return datetime.strptime(date_str, "%Y-%m-%d").astimezone(timezone.utc)
-        else:
-            return datetime.now(timezone.utc)
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, value)
 
 
 class TeamFinder(discord.app_commands.Transformer):

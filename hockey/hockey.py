@@ -460,9 +460,10 @@ class Hockey(
                 log.error("Error updating standings", exc_info=True)
 
             log.debug("Checking GDC")
+            loop = asyncio.get_running_loop()
 
-            await self.check_new_gdc()
-            await self.check_new_gdt()
+            loop.create_task(self.check_new_gdc())
+            loop.create_task(self.check_new_gdt())
             # await self.config.created_gdc.set(True)
             await self.config.last_day.set(now.day)
 
