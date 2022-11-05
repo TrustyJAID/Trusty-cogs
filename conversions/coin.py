@@ -46,6 +46,20 @@ class CoinBase:
     last_historical_data: datetime
     platform: Optional[Dict[Any, Any]]
 
+    @classmethod
+    def from_json(cls, data: Dict[Any, Any]) -> CoinBase:
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            symbol=data["symbol"],
+            slug=data["slug"],
+            rank=data["rank"],
+            is_active=data["is_active"],
+            first_historical_data=data["first_historical_data"],
+            last_historical_data=data["last_historical_data"],
+            platform=data.get("platform"),
+        )
+
 
 @dataclass
 class Coin:

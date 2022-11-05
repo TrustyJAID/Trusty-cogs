@@ -206,7 +206,7 @@ class Conversions(commands.Cog):
             async with self.session.get(url, headers=await self.get_header()) as resp:
                 data = await resp.json()
             if resp.status == 200:
-                self.coin_index = {c["id"]: CoinBase(**c) for c in data.get("data", [])}
+                self.coin_index = {c["id"]: CoinBase.from_json(c) for c in data.get("data", [])}
             elif resp.status == 401:
                 raise CoinMarketCapError(
                     "The bot owner has not set an API key. "
