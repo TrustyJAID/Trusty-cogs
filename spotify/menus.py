@@ -640,6 +640,8 @@ class SpotifyPages(menus.PageSource):
                 cur_state = await user_spotify.playback()
                 if not cur_state:
                     raise NotPlaying
+                if not cur_state.item:
+                    raise NotPlaying
                 self.cur_volume = cur_state.device.volume_percent
                 is_liked = False
                 if not getattr(cur_state.item, "is_local", False):
@@ -783,7 +785,11 @@ class SpotifyUserMenu(discord.ui.View):
         self.author = ctx.author
         if self.ctx is None:
             self.ctx = ctx
-        page = await self._source.get_page(0)
+        try:
+            page = await self._source.get_page(0)
+        except NotPlaying:
+            await ctx.send(_("You're not currently listenint to Spotify."))
+            return
         kwargs = await self._get_kwargs_from_page(page)
         if isinstance(self.source, SpotifyPages):
             if self.source.repeat_state == "track":
