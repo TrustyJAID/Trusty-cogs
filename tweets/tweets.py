@@ -166,7 +166,7 @@ class Tweets(TweetsAPI, commands.Cog):
             return
         profile_url = f"https://twitter.com/{user.username}"
         description = str(user.description)
-        for url in user.entities["description"]["urls"]:
+        for url in user.entities["description"].get("urls", []):
             if str(url["url"]) in description:
                 description = description.replace(url["url"], str(url["expanded_url"]))
         emb = discord.Embed(
