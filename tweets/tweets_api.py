@@ -305,7 +305,7 @@ class TweetsAPI:
             user = ctx.author
         tokens = await self.bot.get_shared_api_tokens("twitter")
         client_id = tokens.get("client_id")
-        redirect_uri = tokens.get("redirect_uri", "")
+        redirect_uri = tokens.get("redirect_uri", "https://localhost/")
         client_secret = tokens.get("client_secret")
         oauth = tweepy.OAuth2UserHandler(
             client_id=client_id,
