@@ -136,7 +136,7 @@ class TweetListener(AsyncStreamingClient):
         if "Keep-Alive" not in self.error_counts:
             self.error_counts["Keep-Alive"] = 0
         self.error_counts["Keep-Alive"] += 1
-        log.info("Keepalive received")
+        # log.info("Keepalive received")
 
     async def on_response(self, response: tweepy.StreamResponse) -> None:
         if "data" not in self.error_counts:

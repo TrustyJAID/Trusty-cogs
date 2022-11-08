@@ -531,7 +531,10 @@ class TweetsMenu(discord.ui.View):
                 )
                 kwargs["embeds"] = []
         if interaction.response.is_done():
-            await interaction.followup.edit(**kwargs)
+            if self.message is not None:
+                await self.message.edit(**kwargs)
+            else:
+                await interaction.edit_original_response(**kwargs)
         else:
             await interaction.response.edit_message(**kwargs)
 

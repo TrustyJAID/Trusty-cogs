@@ -414,10 +414,9 @@ class Tweets(TweetsAPI, commands.Cog):
         """How to get and set your twitter API tokens."""
         msg = _(
             "1. Visit https://apps.twitter.com and apply for a developer account.\n"
-            "2. Once your account is approved Create a standalone app and copy the "
-            "**API Key and API Secret**\n"
-            "3. On the Projects & Apps page select regenerate **Access Token and Secret** "
-            "and copy those somewhere safe.\n\n"
+            "2. Once your account is approved Create a Project\n"
+            "3. Add an app to the project and copy the **Bearer Token** "
+            "(Optionally) Copy the **Client ID** and **Client Secret**"
             "4. Under User authentication settings enable OAuth 2.0, customize the settings "
             "however you want the bot to work, and remember or set the redirect uri.\n\n"
             "5. Do `[p]set api twitter "
