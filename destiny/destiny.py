@@ -11,6 +11,7 @@ from typing import Dict, List, Literal, Optional
 import aiohttp
 import discord
 from discord import app_commands
+from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
@@ -56,19 +57,23 @@ class Destiny(DestinyAPI, commands.Cog):
             "api_token": {"api_key": "", "client_id": "", "client_secret": ""},
             "manifest_version": "",
             "enable_slash": False,
+            "manifest_channel": None,
+            "manifest_guild": None,
+            "manifest_notified_version": None,
         }
-        default_user = {"oauth": {}, "account": {}}
         self.config = Config.get_conf(self, 35689771456)
         self.config.register_global(**default_global)
-        self.config.register_user(**default_user)
+        self.config.register_user(oauth={}, account={})
         self.config.register_guild(clan_id=None, commands={})
         self.throttle: float = 0
         self.dashboard_authed: Dict[int, dict] = {}
         self.session = aiohttp.ClientSession(headers={"User-Agent": "Red-TrustyCogs-DestinyCog"})
+        self.manifest_check_loop.start()
 
     async def cog_unload(self):
         if not self.session.closed:
             await self.session.close()
+        self.manifest_check_loop.cancel()
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         """
@@ -96,6 +101,31 @@ class Destiny(DestinyAPI, commands.Cog):
             log.error(f"Received Destiny OAuth without a code parameter {user_id} - {payload}")
             return
         self.dashboard_authed[int(user_id)] = payload
+
+    @tasks.loop(seconds=3600)
+    async def manifest_check_loop(self):
+        guild = self.bot.get_guild(await self.config.manifest_guild())
+        if not guild:
+            return
+        channel = guild.get_channel(await self.config.manifest_channel())
+        if not channel:
+            return
+        manifest_version = await self.config.manifest_version()
+        if manifest_version is None:
+            # ignore if the manifest has never been downloaded
+            return
+        try:
+            headers = await self.build_headers()
+        except Exception:
+            return
+        manifest_data = await self.request_url(f"{BASE_URL}/Destiny2/Manifest/", headers=headers)
+        notify_version = await self.config.manifest_notified_version()
+        if manifest_data["version"] != notify_version:
+            msg = _(
+                "There is a Destiny Manifest update available from {old_ver} to version {version}"
+            ).format(old_ver=manifest_version, version=manifest_data["version"])
+            await channel.send(msg)
+            await self.config.manifest_notified_version.set(manifest_data["version"])
 
     @commands.hybrid_group(name="destiny")
     async def destiny(self, ctx: commands.Context) -> None:
@@ -1870,11 +1900,44 @@ class Destiny(DestinyAPI, commands.Cog):
             page_start=0,
         ).start(ctx=ctx)
 
-    @destiny.command(with_app_command=False)
+    @destiny.group(with_app_command=False)
     @commands.is_owner()
-    async def manifest(self, ctx: commands.Context, d1: bool = False) -> None:
+    async def manifest(self, ctx: commands.Context) -> None:
         """
-        See the current manifest version and optionally re-download it
+        Destiny manifest commands
+
+        The manifest is useful at improving lookup speed of items and other
+        various functions of the cog.
+        """
+        pass
+
+    @manifest.command(name="channel", with_app_command=False)
+    @commands.is_owner()
+    async def manifest_channel(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
+        """
+        Set a channel that will post when the manifest needs to be updated.
+        """
+        if channel is None:
+            await self.config.manifest_channel.clear()
+            await self.config.manifest_guild.clear()
+            await ctx.send(_("I will not notify any channels about updated manifest versions."))
+        else:
+            await self.config.manifest_guild.set(channel.guild.id)
+            await self.config.manifest_channel.set(channel.id)
+            await ctx.send(
+                _("I will notify {channel} when there is a manifest update.").format(
+                    channel=channel.mention
+                )
+            )
+
+    @manifest.command(name="check", with_app_command=False)
+    @commands.is_owner()
+    async def manifest_download(self, ctx: commands.Context, d1: bool = False) -> None:
+        """
+        Check if the current manifest is up-to-date and optionally download
+        the newest one.
         """
         if not d1:
             async with ctx.typing():
