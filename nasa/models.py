@@ -334,20 +334,28 @@ class NASATLEFeed:
                     if resp.status == 200:
                         data = await resp.json()
                     else:
-                        raise APIError()
+                        raise APIError(
+                            "There was an error in that request. Response code {code}".format(
+                                code=resp.status
+                            )
+                        )
         else:
             async with session.get("http://tle.ivanstanojevic.me/api/tle", params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                 else:
-                    raise APIError()
+                    raise APIError(
+                        "There was an error in that request. Response code {code}".format(
+                            code=resp.status
+                        )
+                    )
         return cls.from_json(data)
 
     async def next(self, session: Optional[aiohttp.ClientSession] = None) -> NASATLEFeed:
         if self.view.next:
             return await self.get(session=session)
         else:
-            raise APIError()
+            raise APIError("There was an error in that request.")
 
     @classmethod
     async def search(
@@ -1089,13 +1097,21 @@ class Collection:
                     if resp.status == 200:
                         data = await resp.json()
                     else:
-                        raise APIError()
+                        raise APIError(
+                            "There was an error in that request. Response code {code}".format(
+                                code=resp.status
+                            )
+                        )
         else:
             async with session.get("https://images-api.nasa.gov/search", params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                 else:
-                    raise APIError()
+                    raise APIError(
+                        "There was an error in that request. Response code {code}".format(
+                            code=resp.status
+                        )
+                    )
         return cls.from_json(data)
 
     @classmethod
