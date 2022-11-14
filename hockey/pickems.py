@@ -26,54 +26,68 @@ class PickemsButton(discord.ui.Button):
         )
         self.disabled = disabled
 
+    async def respond(self, interaction: discord.Interaction, msg: str):
+        locked = False
+        guild = interaction.guild
+        channel = interaction.channel
+        if isinstance(channel, discord.PartialMessageable):
+            channel = await guild.fetch_channel(channel.id)
+
+        if isinstance(channel, discord.Thread):
+            archived = channel.archived and not channel.locked
+            locked = channel.locked
+            if archived and channel.permissions_for(guild.me).manage_threads:
+                await channel.edit(archived=False)
+        if not locked:
+            await interaction.response.send_message(msg, ephemeral=True)
+
     async def callback(self, interaction: discord.Interaction):
         time_now = datetime.now(tz=timezone.utc)
         log.debug(time_now)
         log.debug(self.view.game_start)
-
         if str(interaction.user.id) in self.view.votes:
             vote = self.view.votes[str(interaction.user.id)]
             emoji = discord.PartialEmoji.from_str(TEAMS[vote]["emoji"])
             if time_now > self.view.game_start:
 
-                await interaction.response.send_message(
+                await self.respond(
+                    interaction,
                     _("Voting has ended! You have voted for {emoji} {team}").format(
                         emoji=emoji, team=vote
                     ),
-                    ephemeral=True,
                 )
                 self.view.disable_buttons()
                 await interaction.message.edit(view=self.view)
                 return
             if self.view.votes[str(interaction.user.id)] != self.label:
                 self.view.votes[str(interaction.user.id)] = self.label
-                await interaction.response.send_message(
+                await self.respond(
+                    interaction,
                     _("You have already voted! Changing vote to: {emoji} {team}").format(
                         emoji=self.emoji, team=self.label
                     ),
-                    ephemeral=True,
                 )
                 self.view._should_save = True
             else:
-                await interaction.response.send_message(
+                await self.respond(
+                    interaction,
                     _("You have already voted for {emoji} {team}!").format(
                         emoji=self.emoji, team=self.label
                     ),
-                    ephemeral=True,
                 )
         else:
             if time_now > self.view.game_start:
-                await interaction.response.send_message(
+                await self.respond(
+                    interaction,
                     _("Voting has ended, You did not vote on this game!"),
-                    ephemeral=True,
                 )
                 return
             self.view.votes[str(interaction.user.id)] = self.label
-            await interaction.response.send_message(
+            await self.respond(
+                interaction,
                 _("Setting your vote to: {emoji} {team}").format(
                     emoji=self.emoji, team=self.label
                 ),
-                ephemeral=True,
             )
             self.view._should_save = True
 

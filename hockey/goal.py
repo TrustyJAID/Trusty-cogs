@@ -16,11 +16,6 @@ from .helper import check_to_post, get_channel_obj, get_team
 if TYPE_CHECKING:
     from .game import Game
 
-try:
-    from .oilers import Oilers
-except ImportError:
-    pass
-
 
 _ = Translator("Hockey", __file__)
 
@@ -209,12 +204,6 @@ class Goal:
         # scorer = self.headshots.format(goal["players"][0]["player"]["id"])
         post_state = ["all", game_data.home_team, game_data.away_team]
         msg_list = []
-        if "Edmonton Oilers" in self.team_name and "missed" not in self.event.lower():
-            try:
-                hue = Oilers(bot)
-                self.tasks.append(hue.goal_lights())
-            except Exception:
-                pass
         goal_embed = await self.goal_post_embed(game_data)
         goal_text = await self.goal_post_text(game_data)
         tasks = []

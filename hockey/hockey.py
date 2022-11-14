@@ -164,8 +164,15 @@ class Hockey(
 
         if self.loop is not None:
             self.loop.cancel()
-        self.pickems_loop.cancel()
         await self.session.close()
+        self.pickems_loop.cancel()
+        count = 0
+        while self.pickems_loop.is_being_cancelled():
+            if count > 10:
+                log.error("Pickems took more than 10 seconds to finish closing its loop.")
+                break
+            await asyncio.sleep(1)
+            count += 1
 
     async def red_delete_data_for_user(
         self,

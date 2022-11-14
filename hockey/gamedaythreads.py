@@ -193,8 +193,8 @@ class GameDayThreads(MixinMeta):
         await self.config.guild(guild).create_threads.set(cur_setting)
         await ctx.send(msg)
 
-    @gdt.command(name="channel")
-    @commands.mod_or_permissions(manage_channels=True)
+    # @gdt.command(name="channel")
+    # @commands.mod_or_permissions(manage_channels=True)
     async def gdt_channel(self, ctx: commands.Context, channel: discord.TextChannel) -> None:
         """
         Change the category for channel creation. Channel is case sensitive.

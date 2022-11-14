@@ -76,7 +76,7 @@ class HockeyPickems(MixinMeta):
         ):
             if not before.created_at:
                 return
-            if before.created_at < (datetime.now(timezone.utc) - timedelta(days=9)):
+            if (datetime.now(timezone.utc) - before.created_at) < timedelta(days=9):
                 await after.edit(archived=False)
                 log.debug("Unarchiving %r", after)
 
@@ -137,7 +137,10 @@ class HockeyPickems(MixinMeta):
             pickems = {name: Pickems.from_json(p) for name, p in pickems_list.items()}
             self.all_pickems[str(guild_id)] = pickems
             for name, pickem in pickems.items():
-                self.bot.add_view(pickem)
+                try:
+                    self.bot.add_view(pickem)
+                except Exception:
+                    log.exception("Error adding pickems to the bot %r", pickem)
 
     def pickems_name(self, game: Game) -> str:
         return f"{game.away_abr}@{game.home_abr}-{game.game_start.month}-{game.game_start.day}"
@@ -1089,7 +1092,7 @@ class HockeyPickems(MixinMeta):
             except ValueError:
                 msg = _("`date` must be in the format `YYYY-MM-DD`.")
                 await ctx.send(msg)
-        await ctx.defer()
+                return
         guild_message = await self.pickems_config.guild(ctx.guild).pickems_message()
         msg = _(PICKEMS_MESSAGE).format(guild_message=guild_message)
         games_list = await Game.get_games(None, new_date, new_date, session=self.session)
