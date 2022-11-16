@@ -389,15 +389,22 @@ class Light:
         self, xy_1: Tuple[float, ...], xy_2: Tuple[float, ...], number: int, freq: float
     ):
         old_colour = self.colour.to_json()
+        on = self.on
+        if not self.on:
+            await self.switch()
+        old_brightness = self.dimming.to_json()
         for i in range(number):
             async with self:
                 self.set_xy(xy_1[0], xy_1[1])
+                self.set_brightness(100.0)
             await asyncio.sleep(freq)
             async with self:
                 self.set_xy(xy_2[0], xy_2[1])
             await asyncio.sleep(freq)
         async with self:
             self.set_xy(old_colour["xy"]["x"], old_colour["xy"]["y"])
+            self._on.on = on
+            self.set_brightness(old_brightness["brightness"])
 
     async def switch(self):
         """Switch the light state from on to off"""
@@ -481,7 +488,7 @@ class Client:
             log.info(data)
             if "errors" in data:
                 for error in data["errors"]:
-                    log.info(error["description"])
+                    log.debug(error["description"])
         return data
 
     async def auth(self):
