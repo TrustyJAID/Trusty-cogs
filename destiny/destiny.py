@@ -1303,7 +1303,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 "DestinyActivityModifierDefinition", modifier_hashes
             )
             nfs = await self.get_definition("DestinyActivityDefinition", nf_hashes)
-            embed = discord.Embed()
+            embed = discord.Embed(colour=await self.bot.get_embed_colour(ctx))
             pgcr_img = None
             for nf_id, nf in nfs.items():
                 name = nf["displayProperties"]["name"]
@@ -1329,6 +1329,49 @@ class Destiny(DestinyAPI, commands.Cog):
                 embed.add_field(name=name, value=mod_string)
             embed.title = nf_desc
             embed.set_image(url=pgcr_img)
+        await ctx.send(embed=embed)
+
+    @destiny.command(name="dares")
+    async def d2_dares(self, ctx: commands.Context):
+        """
+        Get information about this weeks Nightfall activity
+        """
+        user = ctx.author
+        if not await self.has_oauth(ctx, user):
+            return
+        async with ctx.typing():
+            characters = await self.get_characters(user)
+            acts = None
+            activity = await self.get_definition("DestinyActivityDefinition", [1699058902])
+            activity = activity[str(1699058902)]
+            for char_id, av in characters["characterActivities"]["data"].items():
+                for act in av["availableActivities"]:
+                    if act["activityHash"] == 1699058902:
+                        acts = act
+            if acts is None:
+                await ctx.send(_("I could not find any Dares of Eternity information."))
+                return
+            mod_hashes = acts["modifierHashes"]
+            mods = await self.get_definition("DestinyActivityModifierDefinition", mod_hashes)
+            mod_string = activity["selectionScreenDisplayProperties"]["description"] + "\n"
+            embed = discord.Embed(
+                title=activity["displayProperties"]["name"],
+                colour=await self.bot.get_embed_colour(ctx),
+            )
+            if "pgcrImage" in activity:
+                embed.set_image(url=IMAGE_URL + activity["pgcrImage"])
+            for mod in mods.values():
+                mod_name = mod["displayProperties"]["name"]
+                if not mod_name:
+                    continue
+                if not mod["displayInActivitySelection"] and mod["displayInNavMode"]:
+                    continue
+                mod_desc = re.sub(r"\W?\[[^\[\]]+\]", "", mod["displayProperties"]["description"])
+                mod_icon = IMAGE_URL
+
+                mod_string += f"- [{mod_name}]({mod_icon} '{mod_desc}')\n"
+                # mod_string += f"> {mod_name}\n {mod_desc}\n\n"
+            embed.description = mod_string
         await ctx.send(embed=embed)
 
     @destiny.command()
