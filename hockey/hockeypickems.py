@@ -174,7 +174,9 @@ class HockeyPickems(MixinMeta):
                 # log.debug("Game %r not in pickems", game)
                 continue
             pickem = self.all_pickems[str(guild_id)][str(game.game_id)]
-            pickem.disable_buttons()
+            should_edit = pickem.disable_buttons()
+            if not should_edit:
+                continue
             for message in pickem.messages:
                 try:
                     channel_id, message_id = message.split("-")
@@ -189,7 +191,7 @@ class HockeyPickems(MixinMeta):
                     self.edit_pickems_message(channel, int(message_id), game, pickem)
                 )
 
-    async def set_guild_pickem_winner(self, game: Game) -> None:
+    async def set_guild_pickem_winner(self, game: Game, edit_message: bool = False) -> None:
         all_pickems = self.all_pickems.copy()
         # log.debug("Setting winner for game %r", game)
         for guild_id, pickems in all_pickems.items():
@@ -209,12 +211,15 @@ class HockeyPickems(MixinMeta):
                 continue
             pickem.game_state = game.game_state
             pickem._should_save = True
+            if not edit_message:
+                continue
             if pickem.winner == pickem.home_team:
                 pickem.home_button.style = discord.ButtonStyle.green
                 pickem.away_button.style = discord.ButtonStyle.red
             if pickem.winner == pickem.away_team:
                 pickem.home_button.style = discord.ButtonStyle.red
                 pickem.away_button.style = discord.ButtonStyle.green
+
             for message in pickem.messages:
                 try:
                     channel_id, message_id = message.split("-")

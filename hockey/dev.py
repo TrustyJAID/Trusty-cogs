@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import discord
 from redbot.core import commands
@@ -283,7 +283,7 @@ class HockeyDev(MixinMeta):
         """
         async with ctx.typing():
             days = days + 1
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             for i in range(1, days):
                 delta = timedelta(days=-i)
                 check_day = now + delta
@@ -297,12 +297,12 @@ class HockeyDev(MixinMeta):
         """
         Fixes winner on all current pickems objects if possible
         """
-        oldest = datetime.now()
+        oldest = datetime.now(timezone.utc)
         for guild_id, pickems in self.all_pickems.items():
             for name, p in pickems.items():
                 if p.game_start < oldest:
                     oldest = p.game_start
-        games = await Game.get_games(None, oldest, datetime.now())
+        games = await Game.get_games(None, oldest, datetime.now(timezone.utc))
         for game in games:
             await self.set_guild_pickem_winner(game)
         await ctx.send(_("All pickems winners set."))

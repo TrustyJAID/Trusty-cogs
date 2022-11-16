@@ -369,6 +369,7 @@ class Hockey(
                         )
                     except Exception:
                         log.exception("Error checking game state: ")
+                        posted_final = False
                     if (
                         game.game_state in ["Live"]
                         and not self.current_games[link]["disabled_buttons"]
@@ -390,7 +391,7 @@ class Hockey(
                         self.current_games[link]["count"] += 1
                         if posted_final:
                             try:
-                                await self.set_guild_pickem_winner(game)
+                                await self.set_guild_pickem_winner(game, edit_message=True)
                             except Exception:
                                 log.exception("Pickems Set Winner error: ")
                             self.current_games[link]["count"] = 21

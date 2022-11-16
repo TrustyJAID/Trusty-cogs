@@ -163,13 +163,19 @@ class Pickems(discord.ui.View):
     ):
         log.error(f"{error} - {item}")
 
-    def disable_buttons(self):
+    def disable_buttons(self) -> bool:
+        if self.home_button.disabled and self.away_button.disabled:
+            return False
         self.home_button.disabled = True
         self.away_button.disabled = True
+        return True
 
-    def enable_buttons(self):
+    def enable_buttons(self) -> bool:
+        if not self.home_button.disabled and not self.away_button.disabled:
+            return False
         self.home_button.disabled = False
         self.away_button.disabled = False
+        return True
 
     def compare_game(self, game: Game) -> bool:
         return (
