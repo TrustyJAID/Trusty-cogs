@@ -515,7 +515,7 @@ class NASACog(commands.Cog):
             self._last_rate_limit_limit = resp.headers.get("X-RateLimit-Limit", None)
             if resp.status == 200:
                 data = await resp.json()
-                log.info(resp.url)
+                log.debug(resp.url)
             else:
                 raise APIError(
                     f"There was an error with the API: Error Code {resp.status}\n"
