@@ -60,6 +60,7 @@ class DestinyAPI:
     throttle: float
     dashboard_authed: Dict[int, dict]
     session: aiohttp.ClientSession
+    _manifest: dict
 
     async def request_url(
         self, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
@@ -394,24 +395,50 @@ class DestinyAPI:
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Item/{instanced_item}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    def _get_entities(self, entity: str, d1: bool = False) -> dict:
+    def _get_entities(self, entity: str, d1: bool = False, *, cache: bool = False) -> dict:
         """
         This loads the entity from the saved manifest
         """
+        if entity in self._manifest:
+            return self._manifest[entity]
         if d1:
             path = cog_data_path(self) / f"d1/{entity}.json"
         else:
             path = cog_data_path(self) / f"{entity}.json"
-        with path.open(encoding="utf-8", mode="r") as f:
+        data = self.load_file(path)
+        if cache:
+            self._manifest[path.name.replace(".json", "")] = data
+        return data
+
+    def load_file(self, file: Path) -> dict:
+        with file.open(encoding="utf-8", mode="r") as f:
             data = json.load(f)
         return data
+
+    async def cog_load(self):
+        if await self.config.cache_manifest() < 2:
+            return
+        loop = asyncio.get_running_loop()
+        for file in cog_data_path(self).iterdir():
+            if not file.is_file():
+                continue
+            task = functools.partial(self.load_file, file=file)
+            name = file.name.replace(".json", "")
+            try:
+                self._manifest[name] = await asyncio.wait_for(
+                    loop.run_in_executor(None, task), timeout=60
+                )
+            except asyncio.TimeoutError:
+                log.info("Error loading manifest data")
+                continue
 
     async def get_entities(self, entity: str, d1: bool = False) -> dict:
         """This returns the full entity data asynchronously
 
         it is done this way to prevent blocking trying to load ~130mb json file at once
         """
-        task = functools.partial(self._get_entities, entity=entity, d1=d1)
+        cache = await self.config.manifest_cache() >= 1
+        task = functools.partial(self._get_entities, entity=entity, d1=d1, cache=cache)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
         return await asyncio.wait_for(task, timeout=60)
@@ -830,6 +857,8 @@ class DestinyAPI:
         simple_items = {}
         for key, value in data.items():
             path = cog_data_path(self) / f"{key}.json"
+            if key in self._manifest:
+                self._manifest[key] = value
             with path.open(encoding="utf-8", mode="w") as f:
                 if self.bot.user.id in DEV_BOTS:
                     json.dump(

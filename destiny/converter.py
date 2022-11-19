@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 from enum import Enum
@@ -12,6 +14,20 @@ from redbot.core.utils.chat_formatting import humanize_list
 _ = Translator("Destiny", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Destiny")
+
+
+class DestinyManifestCacheStyle(Enum):
+    disable = 0
+    lazy = 1
+    enable = 2
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str) -> DestinyManifestCacheStyle:
+        if argument.lower() == "lazy":
+            return cls(1)
+        elif argument.lower() == "enable":
+            return cls(2)
+        return cls(0)
 
 
 class DestinyClassType(Enum):

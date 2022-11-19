@@ -22,6 +22,7 @@ from .converter import (
     DestinyActivity,
     DestinyClassType,
     DestinyItemType,
+    DestinyManifestCacheStyle,
     DestinyRandomConverter,
     SearchInfo,
     StatsPage,
@@ -60,6 +61,7 @@ class Destiny(DestinyAPI, commands.Cog):
             "manifest_channel": None,
             "manifest_guild": None,
             "manifest_notified_version": None,
+            "cache_manifest": 0,
         }
         self.config = Config.get_conf(self, 35689771456)
         self.config.register_global(**default_global)
@@ -69,6 +71,7 @@ class Destiny(DestinyAPI, commands.Cog):
         self.dashboard_authed: Dict[int, dict] = {}
         self.session = aiohttp.ClientSession(headers={"User-Agent": "Red-TrustyCogs-DestinyCog"})
         self.manifest_check_loop.start()
+        self._manifest: dict = {}
 
     async def cog_unload(self):
         if not self.session.closed:
@@ -1974,6 +1977,31 @@ class Destiny(DestinyAPI, commands.Cog):
                     channel=channel.mention
                 )
             )
+
+    @manifest.command(name="cache", with_app_command=False)
+    @commands.is_owner()
+    async def manifest_cache_setup(self, ctx: commands.Context, enable: DestinyManifestCacheStyle):
+        """
+        Enable caching of the Destiny Manifest to improve response times
+
+        `<enable>` Must be either `disable`, `lazy`, or `enable`.
+            - `disable` disables caching of the Manifest meaning every command will load the
+            manifest from disk.
+            - `lazy` will cache the data after it has been looked at once, this is recommended.
+            - `enable` will pre-emptively cache the data on cog load forcing all data
+            to be in the cache. This can lead to excess unnecessary data being used.
+
+        ⚠️Warning⚠️ - Enabling this can lead to higher than expected memory usage
+        """
+        await self.config.manifest_cache.set(enable.value)
+        if enable.value == 1:
+            msg = _("The manifest will cache itself after being used once.")
+        elif enable.value == 2:
+            msg = _("The manifest will cache itself whenever the cog is loaded.")
+        else:
+            msg = _("The manifest will not be cached.")
+            self._manifest = {}
+        await ctx.send(msg)
 
     @manifest.command(name="check", with_app_command=False)
     @commands.is_owner()
