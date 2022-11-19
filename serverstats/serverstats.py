@@ -202,6 +202,7 @@ class ServerStats(commands.GroupCog):
             "medium": _("2 - Medium"),
             "high": _("3 - High"),
             "extreme": _("4 - Extreme"),
+            "highest": _("4 - Highest"),
         }
 
         features = {
