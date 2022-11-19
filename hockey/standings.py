@@ -642,9 +642,10 @@ class Standings:
             if record.division.name != division.name:
                 continue
             tri_code = TEAMS[name]["tri_code"]
+            wc = "*" if record.wildcard_rank in range(1, 3) else ""
             post_data.append(
                 [
-                    record.division_rank,
+                    f"{record.division_rank}{wc}",
                     tri_code,
                     record.games_played,
                     record.league_record.wins,
@@ -653,7 +654,9 @@ class Standings:
                     record.points,
                 ]
             )
-        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+        return tabulate(
+            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
+        )
 
     def get_conference_table(self, conference: Conferences) -> str:
         headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
@@ -663,9 +666,10 @@ class Standings:
             if record.conference.name != conference.name:
                 continue
             tri_code = TEAMS[name]["tri_code"]
+            wc = "*" if record.wildcard_rank in range(1, 3) else ""
             post_data.append(
                 [
-                    record.conference_rank,
+                    f"{record.conference_rank}{wc}",
                     tri_code,
                     record.games_played,
                     record.league_record.wins,
@@ -674,17 +678,20 @@ class Standings:
                     record.points,
                 ]
             )
-        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+        return tabulate(
+            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
+        )
 
     def get_all_table(self):
-        headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
+        headers = ("Rank", "WC", "Team", "GP", "W", "L", "OT", "P")
         # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
         post_data = []
         for name, record in self.all_records.items():
             tri_code = TEAMS[name]["tri_code"]
+            wc = "*" if record.wildcard_rank in range(1, 3) else ""
             post_data.append(
                 [
-                    record.league_rank,
+                    f"{record.league_rank}{wc}",
                     tri_code,
                     record.games_played,
                     record.league_record.wins,
@@ -693,7 +700,9 @@ class Standings:
                     record.points,
                 ]
             )
-        return tabulate(sorted(post_data, key=lambda x: x[0]), headers=headers)
+        return tabulate(
+            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
+        )
 
     def get_division_str(self, division: Divisions) -> str:
         msg = ""
