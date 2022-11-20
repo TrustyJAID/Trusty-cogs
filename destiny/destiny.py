@@ -1993,7 +1993,7 @@ class Destiny(DestinyAPI, commands.Cog):
 
         ⚠️Warning⚠️ - Enabling this can lead to higher than expected memory usage
         """
-        await self.config.manifest_cache.set(enable.value)
+        await self.config.cache_manifest.set(enable.value)
         if enable.value == 1:
             msg = _("The manifest will cache itself after being used once.")
         elif enable.value == 2:

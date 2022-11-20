@@ -416,7 +416,7 @@ class DestinyAPI:
         return data
 
     async def cog_load(self):
-        if await self.config.cache_manifest() < 2:
+        if await self.config.cache_manifest() <= 1:
             return
         loop = asyncio.get_running_loop()
         for file in cog_data_path(self).iterdir():
@@ -437,7 +437,7 @@ class DestinyAPI:
 
         it is done this way to prevent blocking trying to load ~130mb json file at once
         """
-        cache = await self.config.manifest_cache() >= 1
+        cache = await self.config.cache_manifest() >= 1
         task = functools.partial(self._get_entities, entity=entity, d1=d1, cache=cache)
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, task)
