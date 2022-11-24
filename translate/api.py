@@ -521,7 +521,7 @@ class GoogleTranslateAPI:
             translated_msg = await channel.send(embed=em, reference=message, mention_author=False)
         else:
             msg = _("{author}:\n{translated_text}").format(
-                author=author, translate_text=translated_text
+                author=author, translated_text=translated_text
             )
             translated_msg = await channel.send(msg, reference=message, mention_author=False)
         if not cooldown["multiple"]:
