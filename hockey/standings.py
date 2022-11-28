@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, List, Literal, NamedTuple, Optional
+from typing import TYPE_CHECKING, Dict, List, Literal, NamedTuple, Optional, Union
 
 import aiohttp
 import discord
@@ -634,75 +634,56 @@ class Standings:
             ret.append(await self.make_division_standings_embed(division))
         return ret
 
-    def get_division_table(self, division: Divisions) -> str:
+    def make_table(
+        self,
+        records: Dict[str, TeamRecord],
+        rank_type: Literal["division", "conference", "league"],
+    ) -> str:
         headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
         # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
         post_data = []
+        for name, record in records.items():
+            tri_code = TEAMS[name]["tri_code"]
+            wc = "*" if record.wildcard_rank in range(1, 3) else ""
+            rank = getattr(record, f"{rank_type}_rank")
+            post_data.append(
+                [
+                    f"{rank}{wc}",
+                    tri_code,
+                    record.games_played,
+                    record.league_record.wins,
+                    record.league_record.losses,
+                    record.league_record.ot,
+                    record.points,
+                ]
+            )
+        return tabulate(
+            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))),
+            headers=headers,
+            numalign="left",
+        )
+
+    def get_division_table(self, division: Divisions) -> str:
+        records = {}
         for name, record in self.all_records.items():
             if record.division.name != division.name:
                 continue
-            tri_code = TEAMS[name]["tri_code"]
-            wc = "*" if record.wildcard_rank in range(1, 3) else ""
-            post_data.append(
-                [
-                    f"{record.division_rank}{wc}",
-                    tri_code,
-                    record.games_played,
-                    record.league_record.wins,
-                    record.league_record.losses,
-                    record.league_record.ot,
-                    record.points,
-                ]
-            )
-        return tabulate(
-            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
-        )
+            records[name] = record
+        return self.make_table(records, "division")
 
     def get_conference_table(self, conference: Conferences) -> str:
-        headers = ("Rank", "Team", "GP", "W", "L", "OT", "P")
-        # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
-        post_data = []
+        records = {}
         for name, record in self.all_records.items():
             if record.conference.name != conference.name:
                 continue
-            tri_code = TEAMS[name]["tri_code"]
-            wc = "*" if record.wildcard_rank in range(1, 3) else ""
-            post_data.append(
-                [
-                    f"{record.conference_rank}{wc}",
-                    tri_code,
-                    record.games_played,
-                    record.league_record.wins,
-                    record.league_record.losses,
-                    record.league_record.ot,
-                    record.points,
-                ]
-            )
-        return tabulate(
-            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
-        )
+            records[name] = record
+        return self.make_table(records, "division")
 
     def get_all_table(self):
-        headers = ("Rank", "WC", "Team", "GP", "W", "L", "OT", "P")
-        # "P%", "RW", "G/G", "GA/G", "PP%", "S/G", "SA/G", "FO%")
-        post_data = []
+        records = {}
         for name, record in self.all_records.items():
-            tri_code = TEAMS[name]["tri_code"]
-            wc = "*" if record.wildcard_rank in range(1, 3) else ""
-            post_data.append(
-                [
-                    f"{record.league_rank}{wc}",
-                    tri_code,
-                    record.games_played,
-                    record.league_record.wins,
-                    record.league_record.losses,
-                    record.league_record.ot,
-                    record.points,
-                ]
-            )
-        return tabulate(
-            sorted(post_data, key=lambda x: int(x[0].replace("*", ""))), headers=headers
-        )
+            records[name] = record
+        return self.make_table(records, "division")
 
     def get_division_str(self, division: Divisions) -> str:
         msg = ""
