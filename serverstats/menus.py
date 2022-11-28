@@ -21,7 +21,9 @@ class AvatarPages(menus.ListPageSource):
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: discord.ui.View, member: discord.Member) -> discord.Embed:
+    async def format_page(
+        self, menu: BaseView, member: Union[discord.Member, discord.User]
+    ) -> discord.Embed:
         em = discord.Embed(title=_("**Avatar**"), colour=member.colour)
         if self.use_display_avatar:
             url = str(member.display_avatar)
@@ -29,19 +31,16 @@ class AvatarPages(menus.ListPageSource):
         else:
             url = str(member.avatar)
             menu.avatar_swap.label = _("Show server avatar")
-        if not member.guild_avatar:
+        if not getattr(member, "guild_avatar", None):
             menu.avatar_swap.disabled = True
         else:
             menu.avatar_swap.disabled = False
+        if isinstance(member, discord.Member):
+            name = f"{member} {f'~ {member.nick}' if member.nick else ''}"
+        else:
+            name = str(member)
         em.set_image(url=url)
-        try:
-            em.set_author(
-                name=f"{member} {f'~ {member.nick}' if member.nick else ''}",
-                icon_url=url,
-                url=url,
-            )
-        except AttributeError:
-            em.set_author(name=f"{member}", icon_url=url, url=url)
+        em.set_author(name=name, icon_url=url, url=url)
         em.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
         return em
 
@@ -49,10 +48,12 @@ class AvatarPages(menus.ListPageSource):
 class SwapAvatarButton(discord.ui.Button):
     def __init__(self):
         super().__init__(style=discord.ButtonStyle.grey, label=_("Show global avatar"))
+        self.view: BaseView
 
     async def callback(self, interaction: discord.Interaction):
-        self.view.source.use_display_avatar = not self.view.source.use_display_avatar
-        await self.view.show_checked_page(self.view.current_page)
+        source: AvatarPages = self.view.source
+        source.use_display_avatar = not source.use_display_avatar
+        await self.view.show_checked_page(self.view.current_page, interaction)
         if not interaction.response.is_done():
             await interaction.response.defer()
 
