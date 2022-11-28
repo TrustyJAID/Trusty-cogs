@@ -21,6 +21,8 @@ from .api import DestinyAPI
 from .converter import (
     DestinyActivity,
     DestinyClassType,
+    DestinyComponents,
+    DestinyComponentType,
     DestinyItemType,
     DestinyManifestCacheStyle,
     DestinyRandomConverter,
@@ -748,7 +750,12 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         async with ctx.typing():
             try:
-                chars = await self.get_characters(ctx.author)
+                chars = await self.get_characters(
+                    ctx.author,
+                    components=DestinyComponents(
+                        DestinyComponentType.characters, DestinyComponentType.character_inventories
+                    ),
+                )
                 await self.save(chars)
             except Destiny2APIError as e:
                 log.exception(e)
@@ -1525,46 +1532,6 @@ class Destiny(DestinyAPI, commands.Cog):
     @commands.bot_has_permissions(
         embed_links=True,
     )
-    async def gambit(self, ctx: commands.Context) -> None:
-        """
-        Display a menu of each characters gambit stats
-        """
-        await self.stats(ctx, "allPvECompetitive")
-
-    @destiny.command()
-    @commands.bot_has_permissions(
-        embed_links=True,
-    )
-    async def pvp(self, ctx: commands.Context) -> None:
-        """
-        Display a menu of each character's pvp stats
-        """
-        await self.stats(ctx, "allPvP")
-
-    @destiny.command(aliases=["raids"])
-    @commands.bot_has_permissions(
-        embed_links=True,
-    )
-    async def raid(self, ctx: commands.Context) -> None:
-        """
-        Display a menu for each character's RAID stats
-        """
-        await self.stats(ctx, "raid")
-
-    @destiny.command(aliases=["qp"])
-    @commands.bot_has_permissions(
-        embed_links=True,
-    )
-    async def quickplay(self, ctx: commands.Context) -> None:
-        """
-        Display a menu of past quickplay matches
-        """
-        await self.history(ctx, 70)
-
-    @destiny.command()
-    @commands.bot_has_permissions(
-        embed_links=True,
-    )
     async def history(self, ctx: commands.Context, activity: str) -> None:
         """
         Display a menu of each character's last 5 activities
@@ -1733,9 +1700,14 @@ class Destiny(DestinyAPI, commands.Cog):
         embeds: List[discord.Embed] = []
         for char_id, char in chars["characters"]["data"].items():
             # log.debug(char)
-
+            aggregate = {}
+            acts = {}
             try:
                 data = await self.get_historical_stats(user, char_id, 0)
+                if stat_type == "raid":
+                    aggregate = await self.get_aggregate_activity_history(user, char_id)
+                    agg_hashes = [a["activityHash"] for a in aggregate["activities"]]
+                    acts = await self.get_definition("DestinyActivityDefinition", agg_hashes)
             except Exception:
                 log.error(
                     _("Something went wrong I couldn't get info on character {char_id}").format(
@@ -1747,7 +1719,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 continue
             try:
                 if stat_type != "allPvECompetitive":
-                    embed = await self.build_stat_embed_char_basic(user, char, data, stat_type)
+                    embed = await self.build_stat_embed_char_basic(
+                        user, char, data, stat_type, aggregate, acts
+                    )
                     embeds.append(embed)
                 else:
                     data = data[stat_type]["allTime"]
@@ -1762,7 +1736,13 @@ class Destiny(DestinyAPI, commands.Cog):
         return embeds
 
     async def build_stat_embed_char_basic(
-        self, user: discord.Member, char: dict, data: dict, stat_type: str
+        self,
+        user: discord.Member,
+        char: dict,
+        data: dict,
+        stat_type: str,
+        aggregate: dict,
+        acts: dict,
     ) -> discord.Embed:
         char_info = ""
         race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
@@ -1792,6 +1772,19 @@ class Destiny(DestinyAPI, commands.Cog):
             "weaponBestType": _("Best Weapon Type"),
         }
         embed = discord.Embed(title=stat_type.title() + f" - {char_info}")
+        raid_names = set()
+        if stat_type == "raid":
+            for agg in aggregate["activities"]:
+                if agg["values"]["activityCompletions"]["basic"]["value"] > 0:
+                    raid = acts.get(str(agg["activityHash"]), {})
+                    if not raid:
+                        continue
+                    if raid["activityTypeHash"] != 2043403989:
+                        continue
+                    raid_names.add(raid["displayProperties"]["name"])
+        if raid_names:
+            description = "\n".join(n for n in raid_names)
+            embed.description = _("__**Raids Completed:**__\n") + description
         embed.set_author(name=f"{user.display_name} - {char_info}", icon_url=user.avatar.url)
         kills = data[stat_type]["allTime"]["kills"]["basic"]["displayValue"]
         deaths = data[stat_type]["allTime"]["deaths"]["basic"]["displayValue"]
@@ -1915,6 +1908,17 @@ class Destiny(DestinyAPI, commands.Cog):
 
     @destiny.command()
     @commands.bot_has_permissions(embed_links=True)
+    @discord.app_commands.choices(
+        stat_type=[
+            discord.app_commands.Choice(name="allPvP", value="allPvP"),
+            discord.app_commands.Choice(name="patrol", value="patrol"),
+            discord.app_commands.Choice(name="raid", value="raid"),
+            discord.app_commands.Choice(name="story", value="story"),
+            discord.app_commands.Choice(name="allStrikes", value="allStrikes"),
+            discord.app_commands.Choice(name="allPvE", value="allPvE"),
+            discord.app_commands.Choice(name="allPvECompetitive", value="allPvECompetitive"),
+        ]
+    )
     async def stats(self, ctx: commands.Context, stat_type: StatsPage) -> None:
         """
         Display each character's stats for a specific activity
@@ -1945,6 +1949,32 @@ class Destiny(DestinyAPI, commands.Cog):
             cog=self,
             page_start=0,
         ).start(ctx=ctx)
+
+    # @destiny.command()
+    # @commands.bot_has_permissions(embed_links=True)
+    async def weapons_test(self, ctx: commands.Context) -> None:
+        """
+        Get statistics about your top used weapons
+        """
+        if not await self.has_oauth(ctx):
+            return
+        async with ctx.typing():
+            user = ctx.author
+            try:
+                chars = await self.get_characters(
+                    user, components=DestinyComponents(DestinyComponentType.characters)
+                )
+                char_id = list(chars["characters"]["data"].keys())[0]
+                weapons = await self.get_weapon_history(user, char_id)
+            except Destiny2APIError:
+                await self.missing_profile(ctx)
+                return
+            weapon_hashes = [w["referenceId"] for w in weapons["weapons"]]
+            weapon_def = await self.get_definition("DestinyInventoryItemDefinition", weapon_hashes)
+            msg = ""
+            for we in weapon_def.values():
+                msg += we["displayProperties"]["name"] + "\n"
+        await ctx.send_interactive(list(pagify(msg)))
 
     @destiny.group(with_app_command=False)
     @commands.is_owner()

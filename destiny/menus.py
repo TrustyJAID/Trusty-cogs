@@ -76,7 +76,7 @@ class ClanPendingButton(discord.ui.Button):
             log.exception("error approving clan member.")
             await interaction.response.send_message(str(e), ephemeral=True)
         else:
-            user = f"[{self.bnet_name}](https://www.bungie.net/7/en/User/Profile/{self.membership_type}/{self.member_id})"
+            user = f"[{self.bnet_name}](<https://www.bungie.net/7/en/User/Profile/{self.membership_type}/{self.member_id}>)"
             await interaction.response.send_message(
                 _("{user} has been approved into the clan.").format(user=user)
             )
@@ -100,8 +100,8 @@ class ClanPendingView(discord.ui.View):
     async def start(self):
         embed = discord.Embed(
             title=_("Pending Clan Members"),
-            description=_("React with the user you would like to approve into the clan."),
         )
+        description = ""
         for index, user in enumerate(self.pending_users[:25]):
             bungie_info = user.get("bungieNetUserInfo", "")
             bungie_name = bungie_info.get("bungieGlobalDisplayName", "")
@@ -110,7 +110,7 @@ class ClanPendingView(discord.ui.View):
             bungie_id = bungie_info.get("membershipId")
             platform = bungie_info.get("membershipType")
             msg = f"[{bungie_name_and_code}](https://www.bungie.net/7/en/User/Profile/{platform}/{bungie_id})"
-            embed.add_field(name=_("User {count}").format(count=index + 1), value=msg)
+            description += msg + "\n"
         self.message = await self.ctx.send(embed=embed, view=self)
 
 

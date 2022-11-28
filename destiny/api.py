@@ -17,6 +17,15 @@ from redbot.core.i18n import Translator, cog_i18n, get_locale
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
+from .converter import (
+    DestinyActivityModeGroup,
+    DestinyActivityModeType,
+    DestinyComponents,
+    DestinyComponentType,
+    DestinyStatsGroup,
+    DestinyStatsGroupType,
+    PeriodType,
+)
 from .errors import (
     Destiny2APICooldown,
     Destiny2APIError,
@@ -48,6 +57,33 @@ BUNGIE_MEMBERSHIP_TYPES = {
     254: "BungieNext",
 }
 
+COMPONENTS = DestinyComponents(
+    DestinyComponentType.profiles,
+    DestinyComponentType.profile_inventories,
+    DestinyComponentType.profile_currencies,
+    DestinyComponentType.profile_progression,
+    DestinyComponentType.platform_silver,
+    DestinyComponentType.characters,
+    DestinyComponentType.character_inventories,
+    DestinyComponentType.character_activities,
+    DestinyComponentType.character_equipment,
+    DestinyComponentType.item_instances,
+    DestinyComponentType.item_perks,
+    DestinyComponentType.item_stats,
+    DestinyComponentType.item_sockets,
+    DestinyComponentType.item_talentgrids,
+    DestinyComponentType.item_plug_states,
+    DestinyComponentType.item_plug_objectives,
+    DestinyComponentType.item_reusable_plugs,
+    DestinyComponentType.currency_lookups,
+    DestinyComponentType.collectibles,
+    DestinyComponentType.records,
+    DestinyComponentType.transitory,
+    DestinyComponentType.metrics,
+    DestinyComponentType.string_variables,
+    DestinyComponentType.craftables,
+)
+
 
 _ = Translator("Destiny", __file__)
 log = logging.getLogger("red.trusty-cogs.Destiny")
@@ -69,15 +105,14 @@ class DestinyAPI:
         Helper to make requests from formed headers and params elsewhere
         and apply rate limiting to prevent issues
         """
-        time_now = datetime.now().timestamp()
-        if self.throttle > time_now:
-            raise Destiny2APICooldown(str(self.throttle - time_now))
+        if self.throttle > datetime.now().timestamp():
+            raise Destiny2APICooldown(str(self.throttle - datetime.now().timestamp()))
         async with self.session.get(url, params=params, headers=headers) as resp:
             # log.info(resp.url)
             # log.info(headers)
             if resp.status == 200:
                 data = await resp.json()
-                self.throttle = data["ThrottleSeconds"] + time_now
+                self.throttle = data["ThrottleSeconds"] + datetime.now().timestamp()
                 if data["ErrorCode"] == 1 and "Response" in data:
                     # fp = cog_data_path(self) / "data.json"
                     # await JsonIO(fp)._threadsafe_save_json(data["Response"])
@@ -347,7 +382,9 @@ class DestinyAPI:
             await self.config.user(user).oauth.set(refresh)
             return
 
-    async def get_characters(self, user: discord.abc.User) -> dict:
+    async def get_characters(
+        self, user: discord.abc.User, components: Optional[DestinyComponents] = None
+    ) -> dict:
         """
         This pulls the data for each character from the API given a user object
         """
@@ -356,15 +393,21 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {
-            "components": "100,102,103,104,200,201,202,204,205,300,302,304,305,307,308,309,310,600,800,900,1000,1100,1200,1300"
-        }
+        if components is None:
+            components = COMPONENTS
+
+        params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_character(self, user: discord.abc.User, character_id: int) -> dict:
+    async def get_character(
+        self,
+        user: discord.abc.User,
+        character_id: int,
+        components: Optional[DestinyComponents] = None,
+    ) -> dict:
         """
         This pulls the data for each character from the API given a user object
         """
@@ -373,23 +416,30 @@ class DestinyAPI:
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {
-            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1200,1300"
-        }
+        if components is None:
+            components = COMPONENTS
+
+        params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Character/{character_id}"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_instanced_item(self, user: discord.abc.User, instanced_item: int) -> dict:
+    async def get_instanced_item(
+        self,
+        user: discord.abc.User,
+        instanced_item: int,
+        components: Optional[DestinyComponents] = None,
+    ) -> dict:
         try:
             headers = await self.build_headers(user)
         except Exception as e:
             log.error(e, exc_info=True)
             raise Destiny2RefreshTokenError
-        params = {
-            "components": "100,102,103,104,200,201,202,204,205,300,302,304,307,800,900,1000,1100,1300"
-        }
+        if components is None:
+            components = COMPONENTS
+
+        params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/Item/{instanced_item}/"
@@ -399,8 +449,6 @@ class DestinyAPI:
         """
         This loads the entity from the saved manifest
         """
-        if entity in self._manifest:
-            return self._manifest[entity]
         if d1:
             path = cog_data_path(self) / f"d1/{entity}.json"
         else:
@@ -437,6 +485,8 @@ class DestinyAPI:
 
         it is done this way to prevent blocking trying to load ~130mb json file at once
         """
+        if entity in self._manifest:
+            return self._manifest[entity]
         cache = await self.config.cache_manifest() >= 1
         task = functools.partial(self._get_entities, entity=entity, d1=d1, cache=cache)
         loop = asyncio.get_running_loop()
@@ -515,7 +565,16 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"components": "304,305,308,310,400,401,402"}
+        components = DestinyComponents(
+            DestinyComponentType.item_stats,
+            DestinyComponentType.item_sockets,
+            DestinyComponentType.item_plug_states,
+            DestinyComponentType.item_reusable_plugs,
+            DestinyComponentType.vendors,
+            DestinyComponentType.vendor_categories,
+            DestinyComponentType.vendor_sales,
+        )
+        params = components.to_dict()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Profile/{user_id}/Character/{character}/Vendors/{vendor}/"
@@ -627,7 +686,11 @@ class DestinyAPI:
         return await self.request_url(url, headers=headers)
 
     async def get_activity_history(
-        self, user: discord.abc.User, character: str, mode: str
+        self,
+        user: discord.abc.User,
+        character: str,
+        mode: Union[DestinyActivityModeType, int],
+        groups: Optional[DestinyStatsGroup] = None,
     ) -> dict:
         """
         This retrieves the activity history for a user's character
@@ -637,13 +700,22 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"count": 5, "mode": mode}
+        if groups is None:
+            groups = DestinyStatsGroup.all()
+        if isinstance(mode, int):
+            mode = DestinyActivityModeType(mode)
+        params = {"count": 5, "mode": mode.value, "groups": groups.to_str()}
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/Activities/"
         return await self.request_url(url, params=params, headers=headers)
 
-    async def get_aggregate_activity_history(self, user: discord.abc.User, character: str) -> dict:
+    async def get_aggregate_activity_history(
+        self,
+        user: discord.abc.User,
+        character: str,
+        groups: Optional[DestinyStatsGroup] = None,
+    ) -> dict:
         """
         This retrieves the activity history for a user's character
 
@@ -652,12 +724,20 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
+        if groups is None:
+            groups = DestinyStatsGroup.all()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
+        params = groups.to_dict()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/AggregateActivityStats/"
-        return await self.request_url(url, headers=headers)
+        return await self.request_url(url, params=params, headers=headers)
 
-    async def get_weapon_history(self, user: discord.abc.User, character: str) -> dict:
+    async def get_weapon_history(
+        self,
+        user: discord.abc.User,
+        character: str,
+        groups: Optional[DestinyStatsGroup] = None,
+    ) -> dict:
         """
         This retrieves the activity history for a user's character
 
@@ -666,17 +746,21 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
+        if groups is None:
+            groups = DestinyStatsGroup.all()
         platform = await self.config.user(user).account.membershipType()
         user_id = await self.config.user(user).account.membershipId()
+        params = groups.to_dict()
         url = f"{BASE_URL}/Destiny2/{platform}/Account/{user_id}/Character/{character}/Stats/UniqueWeapons/"
-        return await self.request_url(url, headers=headers)
+        return await self.request_url(url, params=params, headers=headers)
 
     async def get_historical_stats(
         self,
         user: discord.abc.User,
         character: str,
-        mode: str,
-        period: int = 2,
+        modes: Union[DestinyActivityModeGroup, int],
+        groups: Optional[DestinyStatsGroup] = None,
+        period: PeriodType = PeriodType.alltime,
         dayend: Optional[str] = None,
         daystart: Optional[str] = None,
     ) -> dict:
@@ -691,7 +775,12 @@ class DestinyAPI:
             headers = await self.build_headers(user)
         except Exception:
             raise Destiny2RefreshTokenError
-        params = {"mode": mode, "periodType": period, "groups": "1,2,3,101,102,103"}
+        if isinstance(modes, int):
+            modes = DestinyActivityModeGroup(modes)
+        params = {"modes": modes.to_str(), "periodType": period.value}
+        if groups is None:
+            groups = DestinyStatsGroup.all()
+        params.update(groups.to_dict())
         # Set these up incase we want to use them later
         if dayend:
             params["dayend"] = dayend

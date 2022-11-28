@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import re
-from enum import Enum
-from typing import List, Optional
+from enum import Enum, EnumMeta
+from typing import List, Optional, Union
 
+import discord
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import commands
@@ -14,6 +15,207 @@ from redbot.core.utils.chat_formatting import humanize_list
 _ = Translator("Destiny", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Destiny")
+
+
+class DestinyComponentType(Enum):
+    none = 0
+    profiles = 100
+    vendor_receipts = 101
+    profile_inventories = 102
+    profile_currencies = 103
+    profile_progression = 104
+    platform_silver = 105
+    characters = 200
+    character_inventories = 201
+    character_progression = 202
+    character_renderdata = 203
+    character_activities = 204
+    character_equipment = 205
+    item_instances = 300
+    item_objectives = 301
+    item_perks = 302
+    item_renderdata = 303
+    item_stats = 304
+    item_sockets = 305
+    item_talentgrids = 306
+    item_common_data = 307
+    item_plug_states = 308
+    item_plug_objectives = 309
+    item_reusable_plugs = 310
+    vendors = 400
+    vendor_categories = 401
+    vendor_sales = 402
+    kiosks = 500
+    currency_lookups = 600
+    presentation_nodes = 700
+    collectibles = 800
+    records = 900
+    transitory = 1000
+    metrics = 1100
+    string_variables = 1200
+    craftables = 1300
+
+
+class DestinyActivityModeType(Enum):
+    none = 0
+    story = 2
+    strike = 3
+    raid = 4
+    allpvp = 5
+    patrol = 6
+    allpve = 7
+    reserved9 = 9
+    control = 10
+    reserved11 = 11
+    clash = 12
+    reserved13 = 13
+    crimsondoubles = 15
+    nightfall = 16
+    heroicnightfall = 17
+    allstrikes = 18
+    ironbanner = 10
+    reserved20 = 20
+    reserved21 = 21
+    reserved22 = 22
+    reserved24 = 24
+    allmayhem = 25
+    reserved26 = 26
+    reserved27 = 27
+    reserved28 = 28
+    reserved29 = 29
+    reserved30 = 30
+    supremacy = 31
+    privatematchesall = 32
+    survival = 37
+    countdown = 38
+    trialsofthenine = 39
+    social = 40
+    trialscountdown = 31
+    trialssurvival = 42
+    ironbannercontrol = 43
+    ironbannerclash = 44
+    ironbannersupremacy = 45
+    scorednightfall = 46
+    scoredheroicnightfall = 47
+    rumble = 48
+    alldoubles = 49
+    doubles = 50
+    privatematchesclash = 51
+    privatematchescontrol = 52
+    privatematchessupremacy = 53
+    privatematchescountdown = 54
+    privatematchesruvival = 55
+    privatematchesmayhem = 56
+    privatematchesrumble = 57
+    heroicadventure = 58
+    showdown = 59
+    lockdown = 60
+    scorched = 61
+    scorchedteam = 62
+    gambit = 63
+    allpvecompetitive = 64
+    breakthrough = 65
+    blackarmoryrun = 66
+    salvage = 67
+    ironbannersalvage = 68
+    pvpcompetitive = 69
+    pvpquickplay = 70
+    clashquickplay = 71
+    clashcompetitive = 72
+    controlquickplay = 73
+    controlcompetitive = 74
+    gambitprime = 75
+    reckoning = 76
+    menagerie = 77
+    vexoffensive = 78
+    nightmarehunt = 79
+    elimination = 80
+    momentum = 81
+    dungeon = 82
+    sundial = 83
+    trialsofosiris = 84
+    dares = 85
+    offensive = 86
+    lostsector = 87
+    rift = 88
+    zonecontrol = 89
+    ironbannerrift = 90
+
+
+class DestinyEnumGroup:
+    def __init__(self, enum: EnumMeta, name: str, *args: Union[Enum, int]):
+        self._list: List[Enum] = []
+        self._enum: EnumMeta = enum
+        self._name: str = name
+        for arg in args:
+            if isinstance(arg, int):
+                self._list.append(self._enum(arg))
+            elif isinstance(arg, Enum):
+                self._list.append(arg)
+            else:
+                continue
+
+    def __iter__(self):
+        return self._list
+
+    def to_str(self):
+        return ",".join(str(i.value) for i in self._list)
+
+    def to_dict(self):
+        return {self._name: self.to_str()}
+
+
+class DestinyComponents(DestinyEnumGroup):
+    # "100,102,103,104,200,201,202,204,205,300,302,304,305,307,308,309,310,600,800,900,1000,1100,1200,1300"
+    def __init__(self, *args: Union[DestinyComponentType, int]):
+        super().__init__(DestinyComponentType, "components", *args)
+
+    @classmethod
+    def all(cls):
+        return cls(*DestinyComponentType)
+
+
+class DestinyActivityModeGroup(DestinyEnumGroup):
+    def __init__(self, *args: Union[DestinyActivityModeType, int]):
+        super().__init__(DestinyActivityModeType, "modes", *args)
+
+
+class DestinyStatsGroupType(Enum):
+    # If the enum value is > 100, it is a "special" group that cannot be
+    # queried for directly (special cases apply to when they are returned,
+    # and are not relevant in general cases)
+    none = 0
+    general = 1
+    weapons = 2
+    medals = 3
+    reservedgroups = 100
+    # This is purely to serve as the dividing line between
+    # filterable and un-filterable groups. Below this
+    # number is a group you can pass as a filter.
+    # Above it are groups used in very specific circumstances and not relevant for filtering.
+    leaderboard = 101
+    # Only applicable while generating leaderboards.
+    activity = 102
+    # These will *only* be consumed by GetAggregateStatsByActivity
+    unique_weapon = 103
+    # These are only consumed and returned by GetUniqueWeaponHistory
+    internal = 104
+
+
+class DestinyStatsGroup(DestinyEnumGroup):
+    def __init__(self, *args: Union[DestinyStatsGroupType, int]):
+        super().__init__(DestinyStatsGroupType, "groups", *args)
+
+    @classmethod
+    def all(cls):
+        return cls(*DestinyStatsGroupType)
+
+
+class PeriodType(Enum):
+    none = 0
+    daily = 1
+    alltime = 2
+    activity = 3
 
 
 class DestinyManifestCacheStyle(Enum):
@@ -246,7 +448,7 @@ class DestinyActivity(Converter):
         return result
 
 
-class StatsPage(Converter):
+class StatsPage(discord.app_commands.Transformer):
     """Returns a tuple of strings of the correct stats page type to use"""
 
     async def convert(self, ctx: commands.Context, argument: str) -> str:
@@ -274,6 +476,10 @@ class StatsPage(Converter):
                 )
             )
         return result
+
+    async def transform(self, interaction: discord.Interaction, argument: str) -> str:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
 
 
 class SearchInfo(Converter):
