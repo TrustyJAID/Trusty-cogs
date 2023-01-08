@@ -125,7 +125,7 @@ class EventMixin:
         return colour
 
     async def is_ignored_channel(
-        self, guild: discord.Guild, channel: discord.abc.GuildChannel
+        self, guild: discord.Guild, channel: Union[discord.abc.GuildChannel, discord.Thread]
     ) -> bool:
         ignored_channels = self.settings[guild.id]["ignored_channels"]
         if channel.id in ignored_channels:
@@ -284,7 +284,7 @@ class EventMixin:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
             return
-        message_channel = guild.get_channel(channel_id)
+        message_channel = guild.get_channel_or_thread(channel_id)
         if message_channel is None:
             return
         if await self.is_ignored_channel(guild, message_channel):
@@ -299,7 +299,7 @@ class EventMixin:
         if message is None:
             if settings["cached_only"]:
                 return
-            message_channel = guild.get_channel(channel_id)
+            message_channel = guild.get_channel_or_thread(channel_id)
             if embed_links:
                 embed = discord.Embed(
                     description=_("*Message's content unknown.*"),
@@ -436,7 +436,7 @@ class EventMixin:
         if not settings["enabled"] or not settings["bulk_enabled"]:
             return
         channel_id = payload.channel_id
-        message_channel = guild.get_channel(channel_id)
+        message_channel = guild.get_channel_or_thread(channel_id)
         try:
             channel = await self.modlog_channel(guild, "message_delete")
         except RuntimeError:
