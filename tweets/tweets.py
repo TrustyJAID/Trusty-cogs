@@ -431,7 +431,7 @@ class Tweets(TweetsAPI, commands.Cog):
             "client_secret": "",
             "redirect_uri": "https://127.0.0.1/",
         }
-        view = SetApiView("spotify", keys)
+        view = SetApiView("twitter", keys)
         if await ctx.embed_requested():
             em = discord.Embed(description=msg)
             await ctx.send(embed=em, view=view)
