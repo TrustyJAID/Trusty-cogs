@@ -249,7 +249,7 @@ class Fenrir(commands.Cog):
                 return
             if member.bot:
                 return
-            channel = guild.get_channel(payload.channel_id)
+            channel = guild.get_channel_or_thread(payload.channel_id)
             try:
                 msg = await channel.fetch_message(payload.message_id)
             except Exception:
