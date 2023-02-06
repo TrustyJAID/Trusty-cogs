@@ -120,6 +120,7 @@ class Hockey(
         )
         self.pickems_config.register_guild(
             leaderboard={},
+            last_week_leaderboard={},
             pickems={},
             pickems_channels={},
             pickems_channel=None,

@@ -15,6 +15,7 @@ from .helper import (
     BasePlayer,
     DateFinder,
     LeaderboardFinder,
+    LeaderboardType,
     PlayerFinder,
     StandingsFinder,
     TeamFinder,
@@ -427,6 +428,7 @@ class HockeyCommands(MixinMeta):
         `[season]` The season to get stats data on format can be `YYYY` or `YYYYYYYY`
         `<player>` The name of the player to search for
         """
+        log.info(player)
         await ctx.defer()
         season_str = None
         if season:
@@ -620,28 +622,25 @@ class HockeyCommands(MixinMeta):
     async def post_leaderboard(
         self,
         ctx: commands.Context,
-        leaderboard_type: Literal[
-            "season",
-            "weekly",
-            "worst",
-            "playoffs",
-            "playoffs_weekly",
-            "pre-season",
-            "pre-season_weekly",
-        ],
+        leaderboard_type: LeaderboardType,
         ephemeral: bool = False,
     ) -> None:
         """
         Posts the leaderboard based on specific style
         """
-        leaderboard_type_str = leaderboard_type.replace("_", " ").title()
-        leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
+
+        leaderboard_type_str = leaderboard_type.as_str()
+        leaderboard_key = leaderboard_type.key()
+        if leaderboard_type.value > 6:
+            leaderboard = await self.pickems_config.guild(ctx.guild).last_week_leaderboard()
+        else:
+            leaderboard = await self.pickems_config.guild(ctx.guild).leaderboard()
         if leaderboard == {} or leaderboard is None:
             await ctx.send(_("There is no current leaderboard for this server!"))
             return
         if leaderboard_type != "worst":
             leaderboard = sorted(
-                leaderboard.items(), key=lambda i: i[1][leaderboard_type], reverse=True
+                leaderboard.items(), key=lambda i: i[1][leaderboard_key], reverse=True
             )
         else:
             leaderboard = sorted(
@@ -665,12 +664,12 @@ class HockeyCommands(MixinMeta):
                 member_mention = _("User has left the server ") + member_id[0]
             else:
                 member_mention = member.mention
-            if leaderboard_type in ["weekly", "playoffs_weekly", "pre-season_weekly"]:
-                points = member_id[1].get(leaderboard_type, 0)
+            if leaderboard_type.value in [2, 4, 6, 7, 8, 9]:
+                points = member_id[1].get(leaderboard_key, 0)
                 msg_list.append("#{}. {}: {}\n".format(count, member_mention, points))
-            elif leaderboard_type in ["season", "playoffs", "pre-season"]:
+            elif leaderboard_type.value in [1, 3, 5]:
                 total = member_id[1].get(total_str, 0)
-                wins = member_id[1].get(leaderboard_type, 0)
+                wins = member_id[1].get(leaderboard_key, 0)
                 try:
                     percent = (wins / total) * 100
                 except ZeroDivisionError:
@@ -680,7 +679,7 @@ class HockeyCommands(MixinMeta):
                 )
             else:
                 total = member_id[1].get(total_str, 0)
-                losses = member_id[1].get(total_str, 0) - member_id[1].get(leaderboard_type)
+                losses = member_id[1].get(total_str, 0) - member_id[1].get(leaderboard_key)
                 try:
                     percent = (losses / total) * 100
                 except ZeroDivisionError:
@@ -702,12 +701,12 @@ class HockeyCommands(MixinMeta):
                 number=user_position + 1,
                 leaderboard_type=leaderboard_type_str,
             )
-            if leaderboard_type == "season":
+            if leaderboard_type == LeaderboardType.season:
                 percent = (wins / total) * 100
                 position += _("You have {wins}/{total} correct ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
                 )
-            elif leaderboard_type == "worst":
+            elif leaderboard_type == LeaderboardType.worst:
                 percent = (losses / total) * 100
                 position += _("You have {wins}/{total} incorrect ({percent:.4}%).").format(
                     wins=wins, total=total, percent=percent
@@ -742,7 +741,9 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         public: Optional[bool] = True,
         *,
-        leaderboard_type: Optional[discord.app_commands.Transform[str, LeaderboardFinder]],
+        leaderboard_type: Optional[
+            discord.app_commands.Transform[LeaderboardType, LeaderboardFinder]
+        ],
     ) -> None:
         """
         Shows the current server leaderboard
@@ -762,7 +763,7 @@ class HockeyCommands(MixinMeta):
         and picking correctly.
         """
         if leaderboard_type is None:
-            leaderboard_type = "season"
+            leaderboard_type = LeaderboardType(3)
         await self.post_leaderboard(ctx, leaderboard_type, not public)
 
     @hockey_commands.command(aliases=["pickemvotes", "pickemvote"])

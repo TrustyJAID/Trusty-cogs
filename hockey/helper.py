@@ -115,7 +115,7 @@ class DateFinder(discord.app_commands.Transformer):
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> datetime:
         ctx = await interaction.client.get_context(interaction)
-        return await self.convert(ctx, value)
+        return await cls.convert(ctx, value)
 
 
 class TeamFinder(discord.app_commands.Transformer):
@@ -129,6 +129,8 @@ class TeamFinder(discord.app_commands.Transformer):
         result = set()
         include_all = ctx.command.name in ["setup", "add", "otherdiscords"]
         include_inactive = ctx.command.name in ["roster"]
+        if argument in TEAMS.keys():
+            return argument
         for team, data in TEAMS.items():
             if "Team" in team:
                 continue
@@ -302,48 +304,63 @@ class TimezoneFinder(Converter):
             )
 
 
+class LeaderboardType(Enum):
+    worst = 0
+    preseason = 1
+    preseason_weekly = 2
+    season = 3
+    weekly = 4
+    playoffs = 5
+    playoffs_weekly = 6
+    preseason_last_week = 7
+    last_week = 8
+    playoffs_last_week = 9
+
+    def as_str(self) -> str:
+        return self.name.replace("_", " ").replace("preseason", "pre-season")
+
+    def key(self):
+        if self.value < 7:
+            return self.name.replace("preseason", "pre-season")
+        elif self.value == 7:
+            return "pre-season_weekly"
+        elif self.value == 8:
+            return "weekly"
+        else:
+            return "playoffs_weekly"
+
+
 class LeaderboardFinder(discord.app_commands.Transformer):
     @classmethod
-    async def convert(
-        self, ctx: Context, argument: str
-    ) -> Literal[
-        "season",
-        "weekly",
-        "worst",
-        "playoffs",
-        "playoffs_weekly",
-        "pre-season",
-        "pre-season_weekly",
-    ]:
+    async def convert(self, ctx: Context, argument: str) -> LeaderboardType:
+        if argument.isdigit():
+            return LeaderboardType(int(argument))
         leaderboard_type = argument.replace(" ", "_").lower()
         if leaderboard_type in ["seasonal", "season"]:
-            return "season"
+            return LeaderboardType(3)
         if leaderboard_type in ["weekly", "week"]:
-            return "weekly"
+            return LeaderboardType(4)
         if leaderboard_type in ["playoffs", "playoff"]:
-            return "playoffs"
+            return LeaderboardType(5)
         if leaderboard_type in ["playoffs_weekly", "playoff_weekly"]:
-            return "playoffs_weekly"
+            return LeaderboardType(6)
         if leaderboard_type in ["pre-season", "preseason"]:
-            return "pre-season"
+            return LeaderboardType(1)
         if leaderboard_type in ["pre-season_weekly", "preseason_weekly"]:
-            return "pre-season_weekly"
+            return LeaderboardType(2)
         if leaderboard_type in ["worst"]:
-            return "worst"
-        return "season"
+            return LeaderboardType(0)
+        if leaderboard_type in ["last_week"]:
+            return LeaderboardType(8)
+        if leaderboard_type in ["playoffs_last_week"]:
+            return LeaderboardType(9)
+        if leaderboard_type in ["pre-season_last_week", "preseason_last_week"]:
+            return LeaderboardType(7)
+        return LeaderboardType(4)
 
-    async def transform(
-        self, interaction: discord.Interaction, argument: str
-    ) -> Literal[
-        "season",
-        "weekly",
-        "worst",
-        "playoffs",
-        "playoffs_weekly",
-        "pre-season",
-        "pre-season_weekly",
-    ]:
-        return await self.convert(interaction, argument)
+    async def transform(self, interaction: discord.Interaction, argument: str) -> LeaderboardType:
+        ctx = interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
 
     async def autocomplete(
         self, interaction: discord.Interaction, argument: str
@@ -356,6 +373,9 @@ class LeaderboardFinder(discord.app_commands.Transformer):
             discord.app_commands.Choice(name="Pre-Season", value="pre-season"),
             discord.app_commands.Choice(name="Pre-Season Weekly", value="pre-season_weekly"),
             discord.app_commands.Choice(name="Weekly", value="weekly"),
+            discord.app_commands.Choice(name="Last Week", value="last_week"),
+            discord.app_commands.Choice(name="Playoffs Last Week", value="playoffs_last_week"),
+            discord.app_commands.Choice(name="Pre-season Last Week", value="pre-season_last_week"),
         ]
         return choices
 
@@ -530,21 +550,24 @@ async def get_channel_obj(
     if not data["guild_id"]:
         channel = bot.get_channel(channel_id)
         if not channel:
-            await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-            log.info(f"{channel_id} channel was removed because it no longer exists")
+            # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+            # log.info(f"{channel_id} channel was removed because it no longer exists")
+            log.info(f"{channel_id} Could not be found")
             return None
         guild = channel.guild
         await bot.get_cog("Hockey").config.channel(channel).guild_id.set(guild.id)
         return channel
     guild = bot.get_guild(data["guild_id"])
     if not guild:
-        await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-        log.info(f"{channel_id} channel was removed because it no longer exists")
+        # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+        # log.info(f"{channel_id} channel was removed because it no longer exists")
+        log.info(f"{channel_id} Could not be found")
         return None
     channel = guild.get_channel(channel_id)
     thread = guild.get_thread(channel_id)
     if channel is None and thread is None:
-        await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
-        log.info(f"{channel_id} channel was removed because it no longer exists")
+        # await bot.get_cog("Hockey").config.channel_from_id(channel_id).clear()
+        # log.info(f"{channel_id} channel was removed because it no longer exists")
+        log.info(f"{channel_id} Could not be found")
         return None
     return channel or thread
