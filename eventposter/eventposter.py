@@ -696,12 +696,12 @@ class EventPoster(commands.Cog):
         announcement_channel, approval_channel = await self.get_channels(ctx)
         if not announcement_channel:
             return
-        if str(author.id) not in await self.config.guild(ctx.guild).events():
+        if str(ctx.author.id) not in await self.config.guild(ctx.guild).events():
             msg = _("You don't have an event to edit right now.")
             await ctx.send(msg)
             return
         for message_id, event in self.event_cache[ctx.guild.id].items():
-            if event.hoster == author.id:
+            if event.hoster == ctx.author.id:
                 for m in members:
                     if m.id in event.members or m.id in event.maybe:
                         await self.remove_user_from_event(m, event)
@@ -709,7 +709,7 @@ class EventPoster(commands.Cog):
                 async with self.config.guild(ctx.guild).events() as cur_events:
                     cur_events[str(event.hoster)] = event.to_json()
                 self.event_cache[ctx.guild.id][event.message] = event
-        msg = _("Removed {members} from your event.").format(members=humanize_list(new_members))
+        msg = _("Removed {members} from your event.").format(members=humanize_list(members))
         await ctx.send(msg)
 
     @event_edit.command(name="maybeadd")

@@ -72,6 +72,7 @@ class ApproveView(discord.ui.View):
         if interaction.message.id not in self.cog.waiting_approval:
             await interaction.response.defer()
             return
+        self.stop()
         await interaction.response.defer()
         event = self.cog.waiting_approval[interaction.message.id]["event"]
         ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
@@ -86,13 +87,13 @@ class ApproveView(discord.ui.View):
         }
         await interaction.followup.send(**args)
         await interaction.message.edit(view=None)
-        self.stop()
 
     @discord.ui.button(label=_("Deny"), style=discord.ButtonStyle.red)
     async def deny_event(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.message.id not in self.cog.waiting_approval:
             await interaction.response.defer()
             return
+        self.stop()
         await interaction.response.defer()
         ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
         ctx = self.cog.waiting_approval[interaction.message.id]["ctx"]
@@ -109,7 +110,6 @@ class ApproveView(discord.ui.View):
         else:
             await interaction.response.send_message(**args)
         await interaction.message.edit(view=None)
-        self.stop()
 
 
 class ConfirmView(discord.ui.View):
