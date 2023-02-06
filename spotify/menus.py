@@ -788,7 +788,7 @@ class SpotifyUserMenu(discord.ui.View):
         try:
             page = await self._source.get_page(0)
         except NotPlaying:
-            await ctx.send(_("You're not currently listenint to Spotify."))
+            await ctx.send(_("You're not currently listening to Spotify."))
             return
         kwargs = await self._get_kwargs_from_page(page)
         if isinstance(self.source, SpotifyPages):
