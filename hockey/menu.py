@@ -23,7 +23,7 @@ from .components import (
     StopButton,
 )
 from .errors import NoSchedule
-from .player import Player
+from .player import Player, SimplePlayer
 from .schedule import Schedule
 
 _ = Translator("Hockey", __file__)
@@ -200,13 +200,13 @@ class LeaderboardPages(menus.ListPageSource):
 
 class PlayerPages(menus.ListPageSource):
     def __init__(self, pages: list, season: str):
-        super().__init__([p.id for p in pages], per_page=1)
-        self.pages: List[int] = [p.id for p in pages]
+        super().__init__(pages, per_page=1)
+        self.pages: List[int] = pages
         self.players = {p.id: p for p in pages}
         self.season: str = season
         self.select_options = []
         for count, player in enumerate(pages):
-            player_name = player.name
+            player_name = player.full_name
             self.select_options.append(
                 discord.SelectOption(
                     label=player_name[:50],
@@ -218,8 +218,8 @@ class PlayerPages(menus.ListPageSource):
     def is_paginating(self) -> bool:
         return True
 
-    async def format_page(self, view: discord.ui.View, page: int) -> discord.Embed:
-        player = await Player.from_id(page, session=view.cog.session)
+    async def format_page(self, view: discord.ui.View, player: SimplePlayer) -> discord.Embed:
+        # player = await Player.from_id(page, session=view.cog.session)
         log.debug(player)
         player = await player.get_full_stats(self.season, session=view.cog.session)
         em = player.get_embed()

@@ -12,7 +12,6 @@ from redbot.core.utils.chat_formatting import humanize_list, pagify
 from .abc import MixinMeta
 from .constants import BASE_URL, TEAMS
 from .helper import (
-    BasePlayer,
     DateFinder,
     LeaderboardFinder,
     LeaderboardType,
@@ -22,6 +21,7 @@ from .helper import (
     YearFinder,
 )
 from .menu import BaseMenu, GamesMenu, LeaderboardPages, PlayerPages, SimplePages
+from .player import SimplePlayer
 from .schedule import Schedule, ScheduleList
 from .standings import PlayoffsView, Standings, StandingsMenu
 from .stats import LeaderCategories, LeaderView
@@ -420,7 +420,7 @@ class HockeyCommands(MixinMeta):
         ctx: commands.Context,
         season: Optional[YearFinder],
         *,
-        player: discord.app_commands.Transform[List[BasePlayer], PlayerFinder],
+        player: discord.app_commands.Transform[List[SimplePlayer], PlayerFinder],
     ) -> None:
         """
         Lookup information about a specific player

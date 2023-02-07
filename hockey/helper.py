@@ -28,10 +28,12 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 
 from .constants import TEAMS
+from .player import SimplePlayer
 from .teamentry import TeamEntry
 
 if TYPE_CHECKING:
     from .game import Game
+    from .hockey import Hockey
 
 
 _ = Translator("Hockey", __file__)
@@ -178,101 +180,102 @@ class TeamFinder(discord.app_commands.Transformer):
         return ret[:25]
 
 
-class BasePlayer(NamedTuple):
-    id: int
-    name: str
-    on_roster: Literal["Y", "N"]
-
-
 class PlayerFinder(discord.app_commands.Transformer):
     @classmethod
-    async def convert(cls, ctx: Context, argument: str) -> List[BasePlayer]:
-        now = datetime.utcnow()
+    async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
         cog = ctx.cog
-        saved = datetime.fromtimestamp(await cog.config.player_db())
         path = cog_data_path(cog) / "players.json"
-        if (now - saved) > timedelta(days=1) or not path.exists():
-            async with cog.session.get(
-                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
-            ) as resp:
-                with path.open(encoding="utf-8", mode="w") as f:
-                    json.dump(await resp.json(), f)
-            await cog.config.player_db.set(int(now.timestamp()))
+        await cls().check_and_download(cog)
         with path.open(encoding="utf-8", mode="r") as f:
 
             players = []
             async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
                 if argument.lower() in player["fullName"].lower():
-                    if player["onRoster"] == "N":
-                        players.append(
-                            BasePlayer(
-                                id=player["id"],
-                                name=player["fullName"],
-                                on_roster=player["onRoster"],
-                            )
-                        )
+                    player = SimplePlayer(
+                        birth_city=player.pop("birthCity"),
+                        birth_country=player.pop("birthCountry"),
+                        birth_state_province=player.pop("birthStateProvince"),
+                        birth_date=player.pop("birthDate"),
+                        current_team_id=player.pop("currentTeamId"),
+                        full_name=player.pop("fullName"),
+                        home_town=player.pop("homeTown"),
+                        last_nhl_team_id=player.pop("lastNHLTeamId"),
+                        on_roster=player.pop("onRoster"),
+                        sweater_number=player.pop("sweaterNumber"),
+                        id=player.pop("id"),
+                        position=player.pop("position"),
+                        height=player.pop("height"),
+                        weight=player.pop("weight"),
+                        is_rookie=player.pop("isRookie"),
+                        is_retired=player.pop("isRetired"),
+                        is_junior=player.pop("isJunior"),
+                        is_suspended=player.pop("isSuspended"),
+                        deceased=player.pop("deceased"),
+                        date_of_death=player.pop("dateOfDeath"),
+                        nationality=player.pop("nationality"),
+                        long_term_injury=player.pop("longTermInjury"),
+                        shoots_catches=player.pop("shootsCatches"),
+                        ep_player_id=player.pop("epPlayerId"),
+                        dda_id=player.pop("ddaId", None),
+                    )
+                    if player.on_roster == "N":
+                        players.append(player)
                     else:
                         players.insert(
                             0,
-                            BasePlayer(
-                                id=player["id"],
-                                name=player["fullName"],
-                                on_roster=player["onRoster"],
-                            ),
+                            player,
                         )
         return players
 
-    async def transform(self, interaction: discord.Interaction, argument: str) -> List[BasePlayer]:
+    async def transform(
+        self, interaction: discord.Interaction, argument: str
+    ) -> List[SimplePlayer]:
+        ctx = await interaction.client.get_context(interaction)
+        return await self.convert(ctx, argument)
+
+    async def check_and_download(self, cog: Hockey):
         now = datetime.utcnow()
-        cog = interaction.client.get_cog("Hockey")
         saved = datetime.fromtimestamp(await cog.config.player_db())
         path = cog_data_path(cog) / "players.json"
         if (now - saved) > timedelta(days=1) or not path.exists():
-            async with cog.session.get(
-                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
-            ) as resp:
+            url = (
+                "https://records.nhl.com/site/api/player?include=id"
+                "&include=fullName"
+                "&include=onRoster"
+                "&include=birthDate"
+                "&include=homeTown"
+                "&include=position"
+                "&include=height"
+                "&include=weight"
+                "&include=birthCity"
+                "&include=birthCountry"
+                "&include=birthStateProvince"
+                "&include=sweaterNumber"
+                "&include=lastNHLTeamId"
+                "&include=currentTeamId"
+                "&include=isRookie"
+                "&include=isRetired"
+                "&include=isJunior"
+                "&include=isSuspended"
+                "&include=deceased"
+                "&include=dateOfDeath"
+                "&include=nationality"
+                "&include=longTermInjury"
+                "&include=shootsCatches"
+                "&include=epPlayerId"
+            )
+            async with cog.session.get(url) as resp:
                 with path.open(encoding="utf-8", mode="w") as f:
                     json.dump(await resp.json(), f)
             await cog.config.player_db.set(int(now.timestamp()))
-        with path.open(encoding="utf-8", mode="r") as f:
-
-            players = []
-            async for player in AsyncIter(json.loads(f.read())["data"], steps=100):
-                if argument.lower() in player["fullName"].lower():
-                    if player["onRoster"] == "N":
-                        players.append(
-                            BasePlayer(
-                                id=player["id"],
-                                name=player["fullName"],
-                                on_roster=player["onRoster"],
-                            )
-                        )
-                    else:
-                        players.insert(
-                            0,
-                            BasePlayer(
-                                id=player["id"],
-                                name=player["fullName"],
-                                on_roster=player["onRoster"],
-                            ),
-                        )
-        return players
 
     async def autocomplete(
         self, interaction: discord.Interaction, current: str
     ) -> List[discord.app_commands.Choice]:
-        now = datetime.utcnow()
         cog = interaction.client.get_cog("Hockey")
-        saved = datetime.fromtimestamp(await cog.config.player_db())
         path = cog_data_path(cog) / "players.json"
         ret = []
-        if (now - saved) > timedelta(days=1) or not path.exists():
-            async with cog.session.get(
-                "https://records.nhl.com/site/api/player?include=id&include=fullName&include=onRoster"
-            ) as resp:
-                with path.open(encoding="utf-8", mode="w") as f:
-                    json.dump(await resp.json(), f)
-            await cog.config.player_db.set(int(now.timestamp()))
+        await self.check_and_download(cog)
         with path.open(encoding="utf-8", mode="r") as f:
             data = json.loads(f.read())["data"]
             for player in data:
