@@ -24,7 +24,7 @@ IMAGE_LINKS: Pattern = re.compile(
 
 class Bingo(commands.Cog):
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -38,6 +38,7 @@ class Bingo(commands.Cog):
             box_colour="#000000",
             watermark=None,
             icon=None,
+            background_tile=None,
             name="",
         )
         self.config.register_member(stamps=[])
@@ -105,6 +106,8 @@ class Bingo(commands.Cog):
     async def bingoset_watermark(self, ctx: commands.Context, image_url: Optional[str] = None):
         """
         Add a watermark image to the bingo card
+
+        `[image_url]` - Must be an image url with `.jpg` or `.png` extension.
         """
         if image_url is None and not ctx.message.attachments:
             await ctx.send("I have cleared the bingo watermark.")
@@ -134,6 +137,8 @@ class Bingo(commands.Cog):
     async def bingoset_icon(self, ctx: commands.Context, image_url: Optional[str] = None):
         """
         Add an icon image to the bingo card
+
+        `[image_url]` - Must be an image url with `.jpg` or `.png` extension.
         """
         if image_url is None and not ctx.message.attachments:
             await ctx.send("I have cleared the bingo icon.")
@@ -158,6 +163,40 @@ class Bingo(commands.Cog):
                 outfile.write(data)
             await self.config.guild(ctx.guild).icon.set(filename)
             await ctx.send("Saved the image as an icon.")
+
+    @bingoset.command(name="bgtile")
+    async def bingoset_bgtile(self, ctx: commands.Context, image_url: Optional[str] = None):
+        """
+        Set the background image (tiled).
+
+        This will override the background colour if set as it will attempt
+        to tile the image over the entire background.
+
+        `[image_url]` - Must be an image url with `.jpg` or `.png` extension.
+        """
+        if image_url is None and not ctx.message.attachments:
+            await ctx.send("I have cleared the bingo background image.")
+            await self.config.guild(ctx.guild).background_tile.clear()
+            return
+        elif image_url is None and ctx.message.attachments:
+            image = ctx.message.attachments[0]
+            filename = image.filename
+            await image.save(cog_data_path(self) / filename)
+            await self.config.guild(ctx.guild).background_tile.set(filename)
+            await ctx.send("Saved the image as an icon.")
+        else:
+            if not IMAGE_LINKS.search(image_url):
+                await ctx.send("That is not a valid image URL. It must be either jpg or png.")
+                return
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as resp:
+                    data = await resp.read()
+            ext = image_url.split(".")[-1]
+            filename = f"{ctx.message.id}.{ext[:3] if 'jpeg' not in ext.lower() else ext[:4]}"
+            with open(cog_data_path(self) / filename, "wb") as outfile:
+                outfile.write(data)
+            await self.config.guild(ctx.guild).background_tile.set(filename)
+            await ctx.send("Saved the image as the background tile.")
 
     @bingoset.command(name="reset")
     async def bingoset_reset(self, ctx: commands.Context, member: Optional[discord.Member] = None):
@@ -290,6 +329,8 @@ class Bingo(commands.Cog):
             ret["watermark"] = Image.open(cog_data_path(self) / watermark)
         if icon := await self.config.guild(ctx.guild).icon():
             ret["icon"] = Image.open(cog_data_path(self) / icon)
+        if background_tile := await self.config.guild(ctx.guild).background_tile():
+            ret["background_tile"] = Image.open(cog_data_path(self) / background_tile)
         return ret
 
     async def create_bingo_card(
@@ -303,6 +344,7 @@ class Bingo(commands.Cog):
         box_colour: str = "#000000",
         watermark: Optional[Image.Image] = None,
         icon: Optional[Image.Image] = None,
+        background_tile: Optional[Image.Image] = None,
         stamps: List[Tuple[int, int]] = [],
     ) -> Optional[discord.File]:
         task = functools.partial(
@@ -316,6 +358,7 @@ class Bingo(commands.Cog):
             box_colour=box_colour,
             watermark=watermark,
             icon=icon,
+            background_tile=background_tile,
             stamps=stamps,
         )
         loop = asyncio.get_running_loop()
@@ -337,11 +380,18 @@ class Bingo(commands.Cog):
         box_colour: str = "#000000",
         watermark: Optional[Image.Image] = None,
         icon: Optional[Image.Image] = None,
+        background_tile: Optional[Image.Image] = None,
         stamps: List[Tuple[int, int]] = [],
     ):
         base_height, base_width = 1000, 700
         base = Image.new("RGBA", (base_width, base_height), color=background_colour)
         draw = ImageDraw.Draw(base)
+        if background_tile:
+            # https://stackoverflow.com/a/69807463
+            bg_x, bg_y = background_tile.size
+            for i in range(0, base_width, bg_x):
+                for j in range(0, base_height, bg_y):
+                    base.paste(background_tile, (i, j))
         font_path = str(bundled_data_path(self) / "SourceSansPro-SemiBold.ttf")
         font = ImageFont.truetype(font=font_path, size=180)
         font2 = ImageFont.truetype(font=font_path, size=20)
