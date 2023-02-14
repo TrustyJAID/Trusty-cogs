@@ -483,7 +483,10 @@ class Bingo(commands.Cog):
                 lines = textwrap.wrap(text, width=13)
                 font_height = font2.getsize(text)[1]
                 text_x = x0 + int(scale / 2)
-                text_y = y0 + (int(scale / 2) - ((len(lines) / 3) * font_height))
+                if len(lines) > 1:
+                    text_y = y0 + (int(scale / 2) - ((len(lines) / 3) * font_height))
+                else:
+                    text_y = y0 + (int(scale / 2))
 
                 for line in lines:
                     draw.text(
