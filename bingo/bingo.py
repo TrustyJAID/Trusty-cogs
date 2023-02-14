@@ -349,7 +349,7 @@ class Bingo(commands.Cog):
         credit_font = ImageFont.truetype(font=font_path, size=10)
         draw.text(
             (690, 975),
-            f"Bingo Cog written by TrustyJAID#0001\nBingo Card Colours and images provided by {guild_name} moderators",
+            f"Bingo Cog written by TrustyJAID#0001\nBingo card colours and images provided by {guild_name} moderators",
             fill=text_colour,
             stroke_width=1,
             align="right",
