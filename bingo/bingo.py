@@ -24,7 +24,7 @@ IMAGE_LINKS: Pattern = re.compile(
 
 class Bingo(commands.Cog):
 
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
     __author__ = ["TrustyJAID"]
 
     def __init__(self, bot):
@@ -40,6 +40,7 @@ class Bingo(commands.Cog):
             icon=None,
             background_tile=None,
             name="",
+            bingo="BINGO",
         )
         self.config.register_member(stamps=[])
 
@@ -101,6 +102,19 @@ class Bingo(commands.Cog):
         """
         await self.config.guild(ctx.guild).box_colour.set(str(colour))
         await ctx.send(f"The Bingo card box colour has been set to {colour}")
+
+    @bingoset.command(name="bingo")
+    async def bingoset_bingo(self, ctx: commands.Context, bingo: str):
+        """
+        Set the "BINGO" of the board.
+
+        `bingo` - The word to use for bingo. Must be exactly 5 characters.
+        """
+        if len(bingo) != 5:
+            await ctx.send("The 'BINGO' must be exactly 5 characters.")
+            return
+        await self.config.guild(ctx.guild).bingo.set(bingo.upper())
+        await ctx.send(f"The 'BINGO' has been set to `{bingo.upper()}`")
 
     @bingoset.command(name="watermark")
     async def bingoset_watermark(self, ctx: commands.Context, image_url: Optional[str] = None):
@@ -324,6 +338,7 @@ class Bingo(commands.Cog):
             "stamp_colour": await self.config.guild(ctx.guild).stamp_colour(),
             "box_colour": await self.config.guild(ctx.guild).box_colour(),
             "name": await self.config.guild(ctx.guild).name(),
+            "bingo": await self.config.guild(ctx.guild).bingo(),
         }
         if watermark := await self.config.guild(ctx.guild).watermark():
             ret["watermark"] = Image.open(cog_data_path(self) / watermark)
@@ -338,6 +353,7 @@ class Bingo(commands.Cog):
         tiles: List[str],
         name: str = "",
         guild_name: str = "",
+        bingo: str = "BINGO",
         background_colour: str = "#FFFFFF",
         text_colour: str = "#FFFFFF",
         stamp_colour: str = "#E9072B",
@@ -352,6 +368,7 @@ class Bingo(commands.Cog):
             options=tiles,
             name=name,
             guild_name=guild_name,
+            bingo=bingo,
             background_colour=background_colour,
             text_colour=text_colour,
             stamp_colour=stamp_colour,
@@ -374,6 +391,7 @@ class Bingo(commands.Cog):
         options: List[str],
         name: str = "",
         guild_name: str = "",
+        bingo: str = "BINGO",
         background_colour: str = "#FFFFFF",
         text_colour: str = "#FFFFFF",
         stamp_colour: str = "#FF0000",
@@ -427,7 +445,7 @@ class Bingo(commands.Cog):
             base.paste(icon, (305, 905), icon)
 
         letter_count = 0
-        for letter in "BINGO":
+        for letter in bingo:
             scale = 130
             letter_x = 85 + (scale * letter_count)
             letter_y = 150
