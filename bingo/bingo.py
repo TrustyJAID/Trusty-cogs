@@ -110,8 +110,10 @@ class Bingo(commands.Cog):
 
         `bingo` - The word to use for bingo. Must be exactly 5 characters.
         """
-        if len(bingo) != 5:
-            await ctx.send("The 'BINGO' must be exactly 5 characters.")
+        if len(set(list(bingo))) != 5:
+            await ctx.send(
+                "The 'BINGO' must be exactly 5 characters and contain no identical characters."
+            )
             return
         await self.config.guild(ctx.guild).bingo.set(bingo.upper())
         await ctx.send(f"The 'BINGO' has been set to `{bingo.upper()}`")
