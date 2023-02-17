@@ -3,6 +3,7 @@ import functools
 import logging
 import random
 import re
+import sys
 import textwrap
 from io import BytesIO
 from typing import List, Optional, Pattern, Tuple
@@ -41,6 +42,7 @@ class Bingo(commands.Cog):
             background_tile=None,
             name="",
             bingo="BINGO",
+            seed=0,
         )
         self.config.register_member(stamps=[])
 
@@ -237,6 +239,23 @@ class Bingo(commands.Cog):
         await self.config.guild(ctx.guild).tiles.clear()
         await ctx.send("I have reset the servers bingo card tiles.")
 
+    @bingoset.command(name="seed")
+    async def bingoset_seed(self, ctx: commands.Context, seed: int):
+        """
+        Set an additional seed to the randomness of players cards.
+
+        `seed` - A number that is added to the player ID used to
+        seed their card.
+
+        Use this to shuffle everyone's card while keeping the exact
+        same tiles for a game of bingo. Default is 0.
+        """
+        if seed >= sys.maxsize >> 1 or seed <= (-1 * sys.maxsize >> 1):
+            await ctx.send("That seed is too large, choose a smaller number.")
+            return
+        await self.config.guild(ctx.guild).seed.set(seed)
+        await ctx.send("I have saved the additional seed to the players cards.")
+
     @bingoset.command(name="settings")
     async def bingoset_settings(self, ctx: commands.Context):
         """
@@ -321,7 +340,8 @@ class Bingo(commands.Cog):
             msg = f"{ctx.author.mention} has a bingo!"
 
         # perm = self.nth_permutation(ctx.author.id, 24, tiles)
-        random.seed(ctx.author.id)
+        seed = int(await self.config.guild(ctx.guild).seed()) + ctx.author.id
+        random.seed(seed)
         random.shuffle(tiles)
         card_settings = await self.get_card_options(ctx)
         temp = await self.create_bingo_card(
