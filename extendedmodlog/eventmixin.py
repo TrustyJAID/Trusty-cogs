@@ -756,7 +756,10 @@ class EventMixin:
             entity_obj = before.guild.get_role(int(entity))
             if not entity_obj:
                 entity_obj = before.guild.get_member(int(entity))
-            name = entity_obj.mention if embed_links else entity_obj.name
+            if entity_obj is not None:
+                name = entity_obj.mention if embed_links else entity_obj.name
+            else:
+                name = entity
             if entity not in after_perms:
                 perp, reason = await self.get_audit_log_reason(
                     guild, before, discord.AuditLogAction.overwrite_delete
@@ -792,7 +795,10 @@ class EventMixin:
             entity_obj = after.guild.get_role(int(entity))
             if not entity_obj:
                 entity_obj = after.guild.get_member(int(entity))
-            name = entity_obj.mention if embed_links else entity_obj.name
+            if entity_obj is not None:
+                name = entity_obj.mention if embed_links else entity_obj.name
+            else:
+                name = entity
             if entity not in before_perms:
                 perp, reason = await self.get_audit_log_reason(
                     guild, before, discord.AuditLogAction.overwrite_update
