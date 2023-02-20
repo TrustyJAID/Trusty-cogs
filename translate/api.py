@@ -534,7 +534,7 @@ class GoogleTranslateAPI:
             message_id = message.id
 
         if message_id in self.cache["cooldown_translations"]:
-            if str(lang) in self.cache["cooldown_translations"][message.id]["past_flags"]:
+            if str(lang) in self.cache["cooldown_translations"][message_id]["past_flags"]:
                 return False
             if not self.cache["cooldown_translations"][message_id]["multiple"]:
                 return False
