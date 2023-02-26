@@ -366,7 +366,7 @@ class HockeyPickems(MixinMeta):
                     top_members = [int(user_id) for user_id, data in top_members]
                 except Exception:
                     log.exception("Error getting top users for pickems weekly.")
-                await self.pickems_config.last_week_leaderboard.set(leaderboard)
+                await self.pickems_config.guild(guild).last_week_leaderboard.set(leaderboard)
 
                 for user, data in leaderboard.items():
                     data["weekly"] = 0
