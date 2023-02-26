@@ -6,7 +6,7 @@ import re
 from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import aiohttp
 import discord
@@ -825,7 +825,7 @@ class DestinyAPI:
             # prior to us asking for new tokens
             pass
 
-        if user:
+        if user and user.id != author.id:
             if not (
                 await self.config.user(user).oauth() or await self.config.user(user).account()
             ):
@@ -1098,17 +1098,41 @@ class DestinyAPI:
             pass
         return embed
 
-    async def check_gilded_title(self, chars: dict, title: dict) -> bool:
+    async def check_gilded_title(self, chars: dict, title: dict) -> Tuple[bool, str]:
         """
         Checks a players records for a completed gilded title
         """
         gilding_hash = title["titleInfo"].get("gildingTrackingRecordHash", None)
         records = chars["profileRecords"]["data"]["records"]
+        superscript = {
+            0: "⁰",
+            1: "¹",
+            2: "²",
+            3: "³",
+            4: "⁴",
+            5: "⁵",
+            6: "⁶",
+            7: "⁷",
+            8: "⁸",
+            9: "⁹",
+        }
+
+        def get_sup(num: int) -> str:
+            ret = ""
+            if num < 2:
+                return ""
+            for i in str(num):
+                ret += superscript[int(i)]
+            return ret
+
         if str(gilding_hash) in records:
             for objective in records[str(gilding_hash)]["objectives"]:
+                count = get_sup(records[str(gilding_hash)]["completedCount"])
                 if objective["complete"]:
-                    return True
-        return False
+                    return (True, count)
+                else:
+                    return (False, count)
+        return (False, "")
 
     async def get_weapon_possible_perks(self, weapon: dict) -> dict:
         perks = {}

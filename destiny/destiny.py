@@ -14,7 +14,12 @@ from discord import app_commands
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_number,
+    humanize_timedelta,
+    pagify,
+)
 from tabulate import tabulate
 
 from .api import DestinyAPI
@@ -688,11 +693,13 @@ class Destiny(DestinyAPI, commands.Cog):
             title_info = "**{title_name}**\n{title_desc}\n"
             try:
                 gilded = ""
-                if await self.check_gilded_title(chars, char_title):
+                is_gilded, count = await self.check_gilded_title(chars, char_title)
+                if is_gilded:
                     gilded = _("Gilded ")
                 title_name = (
                     f"{gilded}"
                     + char_title["titleInfo"]["titlesByGenderHash"][str(char["genderHash"])]
+                    + f"{count}"
                 )
                 title_desc = char_title["displayProperties"]["description"]
                 titles += title_info.format(title_name=title_name, title_desc=title_desc)
@@ -734,11 +741,20 @@ class Destiny(DestinyAPI, commands.Cog):
         stats_str += _("Last Played: **{time}**\n").format(
             time=discord.utils.format_dt(last_played, "R")
         )
+        active_score = humanize_number(chars["profileRecords"]["data"]["activeScore"])
+        legacy_score = humanize_number(chars["profileRecords"]["data"]["legacyScore"])
+        lifetime_score = humanize_number(chars["profileRecords"]["data"]["lifetimeScore"])
+        triumph_str = _(
+            "Active Score: **{active}**\n"
+            "Legacy Score: **{legacy}**\n"
+            "Lifetime Score: **{lifetime}**\n"
+        ).format(active=active_score, legacy=legacy_score, lifetime=lifetime_score)
+        embed.add_field(name=_("Triumphs"), value=triumph_str)
         embed.description = stats_str
         embed = await self.get_char_colour(embed, char)
         if titles:
             embed.add_field(name=_("Titles"), value=titles)
-        embed.add_field(name=_("Current Currencies"), value=player_currency)
+        embed.add_field(name=_("Current Currencies"), value=player_currency, inline=False)
         return embed
 
     @destiny.command()
@@ -1299,7 +1315,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information about this weeks Nightfall activity
         """
         user = ctx.author
-        if not await self.has_oauth(ctx, user):
+        if not await self.has_oauth(ctx):
             return
         async with ctx.typing():
             milestones = await self.get_milestones(user)
@@ -1347,7 +1363,7 @@ class Destiny(DestinyAPI, commands.Cog):
         Get information about this weeks Nightfall activity
         """
         user = ctx.author
-        if not await self.has_oauth(ctx, user):
+        if not await self.has_oauth(ctx):
             return
         async with ctx.typing():
             characters = await self.get_characters(user)
@@ -1384,6 +1400,77 @@ class Destiny(DestinyAPI, commands.Cog):
             embed.description = mod_string
         await ctx.send(embed=embed)
 
+    @destiny.command(name="craftable")
+    async def d2_craftables(self, ctx: commands.Context):
+        """
+        Show which weapons you're missing deepsight resonance for crafting
+        """
+        user = ctx.author
+        if not await self.has_oauth(ctx):
+            return
+        embeds = []
+        async with ctx.typing():
+            chars = await self.get_characters(user)
+            bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
+            bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
+            bnet_name = f"{bnet_display_name}#{bnet_code}"
+            await self.save(chars, "characters.json")
+            craftables = chars["profileRecords"]["data"]
+            hashes = []
+            for record_hash, data in craftables["records"].items():
+                if data["state"] != 4:
+                    continue
+                if not data.get("objectives", []):
+                    continue
+                objective = data["objectives"][0]
+                if not objective["complete"]:
+                    hashes.append(record_hash)
+            weapon_info = await self.get_definition("DestinyRecordDefinition", hashes)
+            entity = await self.get_entities("DestinyPresentationNodeDefinition")
+            presentation_node_hashes = set()
+            weapon_slots = {
+                127506319,  # Primary Weapon Patterns
+                3289524180,  # Special Weapon Patterns
+                1464475380,  # Heavy Weapon Patterns
+            }
+            for k, v in entity.items():
+                if not any(i in v["parentNodeHashes"] for i in weapon_slots):
+                    continue
+                presentation_node_hashes.add(int(k))
+            log.debug(f"Presentation Node {presentation_node_hashes}")
+            msg = ""
+            for r_hash, i in weapon_info.items():
+                if not any(h in i["parentNodeHashes"] for h in presentation_node_hashes):
+                    continue
+                state = craftables["records"][str(r_hash)]
+                objective = state.get("objectives", [])
+                if not objective:
+                    continue
+                progress = objective[0]["progress"]
+                completion = objective[0]["completionValue"]
+                state_str = f"{progress}/{completion}"
+                msg += f"{state_str} - {i['displayProperties']['name']}\n"
+
+            for page in pagify(msg):
+                em = discord.Embed(
+                    title=_("Missing Craftable Weapons"),
+                    description=page,
+                    colour=await self.bot.get_embed_colour(ctx),
+                )
+                em.set_author(name=bnet_name, icon_url=ctx.author.display_avatar)
+                embeds.append(em)
+        if not embeds:
+            await ctx.send("You have all craftable weapons available! :)")
+            return
+
+        await BaseMenu(
+            source=BasePages(
+                pages=embeds,
+            ),
+            cog=self,
+            page_start=0,
+        ).start(ctx=ctx)
+
     @destiny.command()
     @commands.bot_has_permissions(
         embed_links=True,
@@ -1409,7 +1496,9 @@ class Destiny(DestinyAPI, commands.Cog):
                 await self.missing_profile(ctx)
                 return
             embeds = []
-
+            bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
+            bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
+            bnet_name = f"{bnet_display_name}#{bnet_code}"
             for char_id, char in chars["characters"]["data"].items():
                 info = ""
                 race = (await self.get_definition("DestinyRaceDefinition", [char["raceHash"]]))[
@@ -1437,27 +1526,27 @@ class Destiny(DestinyAPI, commands.Cog):
                     title_info = "**{title_name}**\n{title_desc}\n"
                     try:
                         gilded = ""
-                        if await self.check_gilded_title(chars, char_title):
+                        is_gilded, count = await self.check_gilded_title(chars, char_title)
+                        if is_gilded:
                             gilded = _("Gilded ")
                         title_name = (
                             f"{gilded}"
                             + char_title["titleInfo"]["titlesByGenderHash"][
                                 str(char["genderHash"])
                             ]
+                            + f"{count}"
                         )
                         title_desc = char_title["displayProperties"]["description"]
                         titles += title_info.format(title_name=title_name, title_desc=title_desc)
                     except KeyError:
                         pass
                 embed = discord.Embed(title=info)
-                embed.set_author(name=user.display_name, icon_url=user.avatar.url)
+                embed.set_author(name=bnet_name, icon_url=user.avatar.url)
                 if "emblemPath" in char:
                     embed.set_thumbnail(url=IMAGE_URL + char["emblemPath"])
                 if titles:
                     # embed.add_field(name=_("Titles"), value=titles)
-                    embed.set_author(
-                        name=f"{user.display_name} ({title_name})", icon_url=user.avatar.url
-                    )
+                    embed.set_author(name=f"{bnet_name} ({title_name})", icon_url=user.avatar.url)
                 char_items = chars["characterEquipment"]["data"][char_id]["items"]
                 item_list = [i["itemHash"] for i in char_items]
                 # log.debug(item_list)
