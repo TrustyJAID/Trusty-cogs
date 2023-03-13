@@ -266,13 +266,15 @@ class Weather(commands.Cog):
         3. go to https://home.openweathermap.org/api_keys
         4. Enter an API key name and click Generate
         5. Copy the key and run `[p]set api openweathermap api_key YOUR_API_KEY_HERE`
+        6. go to https://home.openweathermap.org/subscriptions and Subscribe to One Call by Call
         """
         msg = _(
             "1. go to https://openweathermap.org\n"
             "2. Create an account.\n"
             "3. go to https://home.openweathermap.org/api_keys\n"
             "4. Enter an API key name and click Generate\n"
-            "5. Copy the key and run `{prefix}set api openweathermap api_key YOUR_API_KEY_HERE`"
+            "5. Copy the key and run `{prefix}set api openweathermap api_key YOUR_API_KEY_HERE`\n"
+            "6. go to https://home.openweathermap.org/subscriptions and Subscribe to One Call by Call\n"
         ).format(prefix=ctx.clean_prefix)
         keys = {"api_key": ""}
         view = SetApiView("openweathermap", keys)
