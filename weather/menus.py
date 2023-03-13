@@ -52,7 +52,7 @@ class WeatherPages(menus.ListPageSource):
                     session=view.session,
                 )
             except APIError as e:
-                return e
+                return str(e)
         else:
             we = self._last_we
         if self._last_coords is None:

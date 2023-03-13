@@ -234,6 +234,8 @@ class Geocoding:
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
+        if "cod" in data and data["cod"] != "200":
+            raise APIError(data["message"])
         return [cls.from_json(i) for i in data]
 
     @classmethod
@@ -260,6 +262,8 @@ class Geocoding:
         else:
             async with session.get(url, params=params) as resp:
                 data = await resp.json()
+        if "cod" in data and data["cod"] != "200":
+            raise APIError(data["message"])
         return [cls.from_json(i) for i in data]
 
 
@@ -737,10 +741,10 @@ class OneCall:
                     data = await resp.json()
         else:
             async with session.get(url, params=params) as resp:
-                if resp.status != 200:
-                    raise APIError()
                 data = await resp.json()
         log.debug(data)
+        if "cod" in data and data["cod"] != "200":
+            raise APIError(data["message"])
         return cls.from_json(data, units, name, state, country)
 
     def embed(
