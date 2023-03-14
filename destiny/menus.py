@@ -115,7 +115,7 @@ class ClanPendingView(discord.ui.View):
 
 
 class BasePages(menus.ListPageSource):
-    def __init__(self, pages: list):
+    def __init__(self, pages: list, use_author: bool = False):
         super().__init__(pages, per_page=1)
         self.pages = pages
         self.select_options = []
@@ -124,7 +124,7 @@ class BasePages(menus.ListPageSource):
                 discord.SelectOption(
                     label=_("Page {number}").format(number=count + 1),
                     value=count,
-                    description=page.title[:50],
+                    description=page.title[:50] if not use_author else page.author.name[:50],
                 )
             )
 
@@ -273,6 +273,48 @@ class DestinySelect(discord.ui.Select):
         await self.view.show_checked_page(index, interaction)
 
 
+class DestinyEquipLoadout(discord.ui.Button):
+    def __init__(self):
+        super().__init__(style=discord.ButtonStyle.green, label=_("Equip"))
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            membership_type = self.view.source.membership_type
+            character_id = self.view.source.character
+            index = self.view.source.current_index
+            await self.view.cog.equip_loadout(
+                interaction.user,
+                index,
+                character_id,
+                membership_type,
+            )
+            loadout_name = self.view.source.pages[index].title
+            await interaction.response.send_message(
+                _("Equipping {name} loadout.").format(name=loadout_name)
+            )
+        except Exception:
+            await interaction.response.send_message(
+                _("There was an error equipping that loadout.")
+            )
+            return
+
+
+class DestinyCharacterSelect(discord.ui.Select):
+    def __init__(self, options: List[discord.SelectOption]):
+        super().__init__(
+            min_values=1, max_values=1, options=options, placeholder=_("Select a Character")
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        index = self.values[0]
+        new_source = LoadoutPages(self.view.source.loadout_info, index)
+        self.view._source = new_source
+        self.view.remove_item(self.view.select_view)
+        self.view.select_view = self.view._get_select_menu()
+        self.view.add_item(self.view.select_view)
+        await self.view.show_checked_page(0, interaction)
+
+
 class PostmasterSelect(discord.ui.Select):
     def __init__(self, items: dict):
         self.items = items
@@ -393,6 +435,33 @@ class PostmasterPages(menus.ListPageSource):
         return embed
 
 
+class LoadoutPages(menus.ListPageSource):
+    def __init__(self, loadout_info: dict, char_id: Optional[int] = None):
+        self.loadout_info = loadout_info
+        self.character = str(char_id)
+        self.membership_type = loadout_info.get("membership_type")
+        if char_id is None or str(char_id) not in self.loadout_info:
+            for key in loadout_info.keys():
+                if not key.isdigit():
+                    continue
+                self.character = str(key)
+                break
+        super().__init__(loadout_info[self.character]["embeds"], per_page=1)
+        self.pages = list(loadout_info[self.character]["embeds"])
+        self.select_options = []
+        for index, page in enumerate(self.pages):
+            self.select_options.append(
+                discord.SelectOption(
+                    label=f"{index+1}. {page.title}", value=index, description=page.description
+                )
+            )
+        self.current_index = 0
+
+    async def format_page(self, menu: menus.MenuPages, page: discord.Embed):
+        self.current_index = self.pages.index(page)
+        return page
+
+
 class BaseMenu(discord.ui.View):
     def __init__(
         self,
@@ -423,7 +492,16 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.postmaster = None
-
+        if isinstance(self._source, LoadoutPages):
+            self.equip_button = DestinyEquipLoadout()
+            self.add_item(self.equip_button)
+            options = []
+            for char_id, info in self._source.loadout_info.items():
+                if not char_id.isdigit():
+                    continue
+                options.append(discord.SelectOption(label=info["char_info"], value=char_id))
+            self.char_select = DestinyCharacterSelect(options)
+            self.add_item(self.char_select)
         if hasattr(self.source, "select_options"):
             self.select_view = self._get_select_menu()
             self.add_item(self.select_view)

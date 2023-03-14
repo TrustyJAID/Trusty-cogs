@@ -18,6 +18,7 @@ from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
 from .converter import (
+    STRING_VAR_RE,
     DestinyActivityModeGroup,
     DestinyActivityModeType,
     DestinyComponents,
@@ -67,6 +68,7 @@ COMPONENTS = DestinyComponents(
     DestinyComponentType.character_inventories,
     DestinyComponentType.character_activities,
     DestinyComponentType.character_equipment,
+    DestinyComponentType.character_loadouts,
     DestinyComponentType.item_instances,
     DestinyComponentType.item_perks,
     DestinyComponentType.item_stats,
@@ -82,6 +84,7 @@ COMPONENTS = DestinyComponents(
     DestinyComponentType.metrics,
     DestinyComponentType.string_variables,
     DestinyComponentType.craftables,
+    DestinyComponentType.social_commendations,
 )
 
 
@@ -382,6 +385,46 @@ class DestinyAPI:
             await self.config.user(user).oauth.set(refresh)
             return
 
+    async def get_variables(self, user: discord.abc.User) -> dict:
+        """
+        This pulls just the variable definitions used in strings
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception as e:
+            log.error(e, exc_info=True)
+            raise Destiny2RefreshTokenError
+        components = DestinyComponents(DestinyComponentType.string_variables)
+
+        params = components.to_dict()
+        platform = await self.config.user(user).account.membershipType()
+        user_id = await self.config.user(user).account.membershipId()
+        url = BASE_URL + f"/Destiny2/{platform}/Profile/{user_id}/"
+        return await self.request_url(url, params=params, headers=headers)
+
+    async def replace_string(
+        self, user: discord.abc.User, text: str, character: Optional[int] = None
+    ) -> str:
+        """
+        This replaces string variables in a givent text if it exists
+        """
+        if not STRING_VAR_RE.search(text):
+            return text
+        all_variables = await self.get_variables(user)
+        if character is not None:
+            variables = all_variables["characterStringVariables"]["data"][str(character)][
+                "integerValuesByHash"
+            ]
+        else:
+            variables = all_variables["profileStringVariables"]["data"]["integerValuesByHash"]
+        for var in STRING_VAR_RE.finditer(text):
+            try:
+                text = STRING_VAR_RE.sub(str(variables[str(var.group("hash"))]), text)
+            except KeyError:
+                log.error("Could not find variable %s", var.group("hash"))
+
+        return text
+
     async def get_characters(
         self, user: discord.abc.User, components: Optional[DestinyComponents] = None
     ) -> dict:
@@ -464,6 +507,11 @@ class DestinyAPI:
         return data
 
     async def cog_load(self):
+        if self.bot.user.id in DEV_BOTS:
+            try:
+                self.bot.add_dev_env_value("destiny", lambda x: self)
+            except Exception:
+                pass
         if await self.config.cache_manifest() <= 1:
             return
         loop = asyncio.get_running_loop()
@@ -652,6 +700,27 @@ class DestinyAPI:
         url = f"{BASE_URL}/GroupV2/GroupV2/{clan_id}/Members/{membership_type}/{user_id}/Kick/"
         return await self.post_url(url, headers=headers)
 
+    async def equip_loadout(
+        self, user: discord.abc.User, loadout_index: int, character_id: int, membership_type: int
+    ) -> dict:
+        """
+        Equip a Destiny 2 loadout
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Destiny2/Actions/Loadouts/EquipLoadout/"
+        return await self.post_url(
+            url,
+            headers=headers,
+            body={
+                "loadoutIndex": loadout_index,
+                "characterId": character_id,
+                "membershipType": membership_type,
+            },
+        )
+
     async def get_clan_info(self, user: discord.abc.User, clan_id: str) -> dict:
         """
         Get the list of pending clan members
@@ -661,6 +730,17 @@ class DestinyAPI:
         except Exception:
             raise Destiny2RefreshTokenError
         url = f"{BASE_URL}/GroupV2/{clan_id}/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_clan_weekly_reward_state(self, user: discord.abc.User, clan_id: str) -> dict:
+        """
+        Get the list of pending clan members
+        """
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Destiny2/Clan/{clan_id}/WeeklyRewardState"
         return await self.request_url(url, headers=headers)
 
     async def get_milestones(self, user: discord.abc.User) -> dict:

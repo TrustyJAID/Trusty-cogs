@@ -16,6 +16,8 @@ _ = Translator("Destiny", __file__)
 
 log = logging.getLogger("red.trusty-cogs.Destiny")
 
+STRING_VAR_RE = re.compile(r"{var:(?P<hash>\d+)}")
+
 
 class DestinyComponentType(Enum):
     none = 0
@@ -31,6 +33,7 @@ class DestinyComponentType(Enum):
     character_renderdata = 203
     character_activities = 204
     character_equipment = 205
+    character_loadouts = 206
     item_instances = 300
     item_objectives = 301
     item_perks = 302
@@ -54,6 +57,7 @@ class DestinyComponentType(Enum):
     metrics = 1100
     string_variables = 1200
     craftables = 1300
+    social_commendations = 1400
 
 
 class DestinyActivityModeType(Enum):
@@ -237,6 +241,16 @@ class DestinyClassType(Enum):
     hunter = 1
     warlock = 2
     unknown = 3
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument: str):
+        if argument.lower() == "titan":
+            return cls(0)
+        if argument.lower() == "hunter":
+            return cls(1)
+        if argument.lower() == "warlock":
+            return cls(2)
+        return cls(0)
 
 
 class DestinyRandomConverter(Enum):
