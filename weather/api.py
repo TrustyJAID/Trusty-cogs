@@ -536,7 +536,7 @@ class DailyWeather:
         sunrise_ts = f"<t:{self.sunrise}:t>"
         sunset_ts = f"<t:{self.sunset}:t>"
         windspeed = str(self.wind_speed) + " " + self.units.get().speed
-        moon = MOONS[int(self.moon_phase // 0.1)]
+        moon = MOONS[int(self.moon_phase // 0.125)]
         cloudiness_emoji = WEATHER_EMOJIS[get_cloud_num(self.clouds)]
         ret = _(
             "{weather_emoji} **Weather**: {weather}\n"
