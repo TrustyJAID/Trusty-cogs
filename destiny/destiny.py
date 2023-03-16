@@ -34,10 +34,11 @@ from .converter import (
     SearchInfo,
     StatsPage,
 )
-from .errors import Destiny2APIError, Destiny2MissingManifest
+from .errors import Destiny2APIError, Destiny2MissingManifest, ServersUnavailable
 from .menus import (
     BaseMenu,
     BasePages,
+    BungieNewsSource,
     ClanPendingView,
     LoadoutPages,
     PostmasterPages,
@@ -159,8 +160,11 @@ class Destiny(DestinyAPI, commands.Cog):
     async def destiny(self, ctx: commands.Context) -> None:
         """Get information from the Destiny 2 API"""
 
-    async def missing_profile(self, ctx: commands.Context):
-        msg = _("I can't seem to find your Destiny profile.")
+    async def send_error_msg(self, ctx: commands.Context, error: Exception):
+        if isinstance(error, ServersUnavailable):
+            msg = _("The Destiny API servers appear to be offline. Try again later.")
+        else:
+            msg = _("I can't seem to find your Destiny profile.")
         if isinstance(ctx, discord.Interaction):
             if ctx.response.is_done():
                 await ctx.followup.send(msg, ephemeral=True)
@@ -663,6 +667,20 @@ class Destiny(DestinyAPI, commands.Cog):
             ).format(weekly=weekly_reset_str, daily=daily_reset_str)
         await ctx.send(msg)
 
+    @destiny.command(name="news")
+    @commands.bot_has_permissions(embed_links=True)
+    async def destiny_news(self, ctx: commands.Context) -> None:
+        """
+        Get the latest news articles from Bungie.net
+        """
+        async with ctx.typing():
+            try:
+                news = await self.get_news()
+            except Destiny2APIError as e:
+                return await self.send_error_msg(ctx, e)
+            source = BungieNewsSource(news)
+        await BaseMenu(source=source, cog=self).start(ctx=ctx)
+
     async def get_seal_icon(self, record: dict) -> str:
         if record["parentNodeHashes"]:
             node_defs = await self.get_definition(
@@ -819,7 +837,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await self.save(chars)
             except Destiny2APIError as e:
                 log.exception(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             # Postmaster bucket 215593132
             postmasters = chars["characters"]["data"]
@@ -855,7 +873,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await self.save(chars, "character.json")
             except Destiny2APIError as e:
                 log.error(e, exc_info=True)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             com = await self.get_commendation_scores(chars["profileCommendations"]["data"])
         await ctx.send(com)
@@ -894,7 +912,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 await self.save(chars, "character.json")
             except Destiny2APIError as e:
                 log.error(e, exc_info=True)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             embeds = []
             currency_datas = await self.get_definition(
@@ -988,9 +1006,9 @@ class Destiny(DestinyAPI, commands.Cog):
             try:
                 chars = await self.get_characters(ctx.author)
                 # await self.save(chars, "characters.json")
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             for char_id, char in chars["characters"]["data"].items():
                 # log.debug(char)
@@ -999,7 +1017,7 @@ class Destiny(DestinyAPI, commands.Cog):
                     xur_def = (
                         await self.get_definition("DestinyVendorDefinition", ["2190858386"])
                     )["2190858386"]
-                except Destiny2APIError:
+                except Destiny2APIError as e:
                     log.error("I can't seem to see Xûr at the moment")
                     today = datetime.datetime.now(tz=datetime.timezone.utc)
                     friday = today.replace(hour=17, minute=0, second=0) + datetime.timedelta(
@@ -1050,9 +1068,9 @@ class Destiny(DestinyAPI, commands.Cog):
             try:
                 chars = await self.get_characters(ctx.author)
                 await self.save(chars, "characters.json")
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             char_id = None
             if character_class is not None:
@@ -1068,7 +1086,7 @@ class Destiny(DestinyAPI, commands.Cog):
                 ]
                 await self.save(vendor, "vendor.json")
                 await self.save(vendor_def, "vendor_def.json")
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 if vendor_id == "2190858386":
                     log.error("I can't seem to see Xûr at the moment")
                     today = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -1405,9 +1423,13 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         async with ctx.typing():
             embeds = []
-            milestones = await self.get_milestones(user)
-            chars = await self.get_characters(user)
-            await self.save(milestones, "milestones.json")
+            try:
+                milestones = await self.get_milestones(user)
+                chars = await self.get_characters(user)
+                await self.save(milestones, "milestones.json")
+            except Destiny2APIError as e:
+                await self.send_error_msg(ctx, e)
+                return
             # nightfalls = milestones["1942283261"]
 
             activities = {nf["activityHash"]: nf for nf in milestones["1942283261"]["activities"]}
@@ -1497,7 +1519,11 @@ class Destiny(DestinyAPI, commands.Cog):
         if not await self.has_oauth(ctx):
             return
         async with ctx.typing():
-            characters = await self.get_characters(user)
+            try:
+                characters = await self.get_characters(user)
+            except Destiny2APIError as e:
+                await self.send_error_msg(ctx, e)
+                return
             acts = None
             dares_hash = 1030714181
             activity = await self.get_definition("DestinyActivityDefinition", [dares_hash])
@@ -1522,7 +1548,13 @@ class Destiny(DestinyAPI, commands.Cog):
             return
         embeds = []
         async with ctx.typing():
-            chars = await self.get_characters(user)
+            try:
+                chars = await self.get_characters(user)
+                await self.save(chars, "character.json")
+            except Destiny2APIError as e:
+                log.error(e, exc_info=True)
+                await self.send_error_msg(ctx, e)
+                return
             bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
             bnet_code = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayNameCode"]
             bnet_name = f"{bnet_display_name}#{bnet_code}"
@@ -1693,10 +1725,25 @@ class Destiny(DestinyAPI, commands.Cog):
                 components = DestinyComponents(
                     DestinyComponentType.characters, DestinyComponentType.character_loadouts
                 )
+                chars = None
                 if ctx.author.id in self._loadout_temp:
                     chars = self._loadout_temp[ctx.author.id]
-                else:
-                    chars = await self.get_characters(ctx.author, components)
+                    if datetime.datetime.now(
+                        datetime.timezone.utc
+                    ) - datetime.datetime.fromisoformat(
+                        chars["responseMintedTimestamp"]
+                    ) > datetime.timedelta(
+                        minutes=5
+                    ):
+                        chars = None
+                if chars is None:
+                    try:
+                        chars = await self.get_characters(ctx.author, components)
+                        await self.save(chars, "character.json")
+                    except Destiny2APIError as e:
+                        log.error(e, exc_info=True)
+                        await self.send_error_msg(ctx, e)
+                        return
                     self._loadout_temp[ctx.author.id] = chars
                 for char, data in chars["characters"]["data"].items():
                     if character and data["classType"] == character.value:
@@ -1706,12 +1753,14 @@ class Destiny(DestinyAPI, commands.Cog):
                         character_id = char
                         break
                 membership_type = chars["characters"]["data"][character_id]["membershipType"]
-            except Destiny2APIError:
-                await self.missing_profile(ctx)
+            except Destiny2APIError as e:
+                await self.send_error_msg(ctx, e)
                 return
             try:
                 await self.equip_loadout(ctx.author, loadout, character_id, membership_type)
             except Destiny2APIError as e:
+                if ctx.author.id in self._loadout_temp:
+                    del self._loadout_temp[ctx.author.id]
                 await ctx.send(f"There was an error equipping that loadout: {e}")
                 return
             loadout_names = await self.get_entities("DestinyLoadoutNameDefinition")
@@ -1721,6 +1770,8 @@ class Destiny(DestinyAPI, commands.Cog):
             loadout_name = loadout_names.get(str(loadout_name_hash), {"name": _("Empty Loadout")})[
                 "name"
             ]
+        if ctx.author.id in self._loadout_temp:
+            del self._loadout_temp[ctx.author.id]
         await ctx.send(f"Equipped loadout {loadout+1}. {loadout_name}")
 
     @loadout_equip.autocomplete("loadout")
@@ -1729,11 +1780,23 @@ class Destiny(DestinyAPI, commands.Cog):
         components = DestinyComponents(
             DestinyComponentType.characters, DestinyComponentType.character_loadouts
         )
+        chars = None
         if interaction.user.id in self._loadout_temp:
             chars = self._loadout_temp[interaction.user.id]
-        else:
-            chars = await self.get_characters(interaction.user, components)
-            await self.save(chars, "loadout_chars.json")
+            if datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(
+                chars["responseMintedTimestamp"]
+            ) > datetime.timedelta(minutes=5):
+                chars = None
+        if chars is None:
+            try:
+                chars = await self.get_characters(interaction.user, components)
+                await self.save(chars, "character.json")
+            except Destiny2APIError:
+                return [
+                    app_commands.Choice(
+                        name=_("I could not find any loadout information"), value=-1
+                    )
+                ]
             self._loadout_temp[interaction.user.id] = chars
         character_type = interaction.namespace.character
 
@@ -1771,9 +1834,9 @@ class Destiny(DestinyAPI, commands.Cog):
         async with ctx.typing():
             try:
                 chars = await self.get_characters(user)
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             embeds = await self.make_loadout_embeds(chars)
         await BaseMenu(
@@ -1798,9 +1861,9 @@ class Destiny(DestinyAPI, commands.Cog):
         async with ctx.typing():
             try:
                 chars = await self.get_characters(user)
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             embeds = []
             bnet_display_name = chars["profile"]["data"]["userInfo"]["bungieGlobalDisplayName"]
@@ -1977,9 +2040,9 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
             try:
                 chars = await self.get_characters(user)
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             RAID = {
                 "assists": _("Assists"),
@@ -2345,9 +2408,9 @@ class Destiny(DestinyAPI, commands.Cog):
             user = ctx.author
             try:
                 chars = await self.get_characters(user)
-            except Destiny2APIError:
+            except Destiny2APIError as e:
                 # log.debug(e)
-                await self.missing_profile(ctx)
+                await self.send_error_msg(ctx, e)
                 return
             # base stats should be available for all stat types
             embeds = await self.build_character_stats(user, chars, stat_type)
@@ -2380,8 +2443,8 @@ class Destiny(DestinyAPI, commands.Cog):
                 )
                 char_id = list(chars["characters"]["data"].keys())[0]
                 weapons = await self.get_weapon_history(user, char_id)
-            except Destiny2APIError:
-                await self.missing_profile(ctx)
+            except Destiny2APIError as e:
+                await self.send_error_msg(ctx, e)
                 return
             weapon_hashes = [w["referenceId"] for w in weapons["weapons"]]
             weapon_def = await self.get_definition("DestinyInventoryItemDefinition", weapon_hashes)
@@ -2472,16 +2535,16 @@ class Destiny(DestinyAPI, commands.Cog):
                 if not version:
                     version = _("Not Downloaded")
                 msg = _("Current manifest version is {version}.").format(version=version)
-                redownload = _("re-download")
+                redownload = _("re-download the")
                 if manifest_data["version"] != version:
                     msg += _("\n\nThere is an update available to version {version}").format(
                         version=manifest_data["version"]
                     )
-                    redownload = _("download")
+                    redownload = _("download the **new**")
             await ctx.send(msg)
             pred = await YesNoView().start(
                 ctx,
-                _("Would you like to {redownload} the manifest?").format(redownload=redownload),
+                _("Would you like to {redownload} manifest?").format(redownload=redownload),
             )
             if pred:
                 async with ctx.typing():

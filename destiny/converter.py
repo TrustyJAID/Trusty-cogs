@@ -144,6 +144,7 @@ class DestinyActivityModeType(Enum):
     rift = 88
     zonecontrol = 89
     ironbannerrift = 90
+    ironbannerzonecontrol = 91
 
 
 class DestinyEnumGroup:

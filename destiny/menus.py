@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import discord
@@ -460,6 +461,37 @@ class LoadoutPages(menus.ListPageSource):
     async def format_page(self, menu: menus.MenuPages, page: discord.Embed):
         self.current_index = self.pages.index(page)
         return page
+
+
+class BungieNewsSource(menus.ListPageSource):
+    def __init__(self, news_pages: dict):
+        self.pages = news_pages["NewsArticles"]
+        super().__init__(self.pages, per_page=1)
+        self.select_options = []
+        for index, page in enumerate(self.pages):
+            self.select_options.append(
+                discord.SelectOption(
+                    label=page["Title"][:100], description=page["Description"][:100], value=index
+                )
+            )
+
+    async def format_page(self, menu: menus.MenuPages, page: dict):
+        link = page["Link"]
+        time = datetime.strptime(page["PubDate"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+        url = f"{BASE_URL}{link}"
+        embed = discord.Embed(
+            title=page["Title"],
+            url=url,
+            description=page["Description"],
+            timestamp=time,
+        )
+        embed.set_image(url=page["ImagePath"])
+        # time = datetime.fromisoformat(page["PubDate"])
+        # embed.add_field(name=_("Published"), value=discord.utils.format_dt(time, style="R"))
+
+        return {"content": url, "embed": embed}
 
 
 class BaseMenu(discord.ui.View):

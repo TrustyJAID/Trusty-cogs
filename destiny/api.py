@@ -34,6 +34,7 @@ from .errors import (
     Destiny2MissingAPITokens,
     Destiny2MissingManifest,
     Destiny2RefreshTokenError,
+    ServersUnavailable,
 )
 
 DEV_BOTS = [552261846951002112]
@@ -127,6 +128,8 @@ class DestinyAPI:
                         log.error("Incorrect response data")
                     log.debug(url)
                     raise Destiny2InvalidParameters(data)
+            elif resp.status >= 500:
+                raise ServersUnavailable
             else:
                 log.error("Could not connect to the API: %s", resp.status)
                 raise Destiny2APIError
@@ -763,6 +766,22 @@ class DestinyAPI:
         except Exception:
             raise Destiny2RefreshTokenError
         url = f"{BASE_URL}/Destiny2/Milestones/{milestone_hash}/Content/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_post_game_carnage_report(self, user: discord.abc.User, activity_id: int) -> dict:
+        try:
+            headers = await self.build_headers(user)
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Destiny2/Stats/PostGameCarnageReport/{activity_id}/"
+        return await self.request_url(url, headers=headers)
+
+    async def get_news(self, page_number: int = 0) -> dict:
+        try:
+            headers = await self.build_headers()
+        except Exception:
+            raise Destiny2RefreshTokenError
+        url = f"{BASE_URL}/Content/Rss/NewsArticles/{page_number}"
         return await self.request_url(url, headers=headers)
 
     async def get_activity_history(
