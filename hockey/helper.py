@@ -183,7 +183,7 @@ class TeamFinder(discord.app_commands.Transformer):
 class PlayerFinder(discord.app_commands.Transformer):
     @classmethod
     async def convert(cls, ctx: Context, argument: str) -> List[SimplePlayer]:
-        cog = ctx.cog
+        cog = ctx.bot.get_cog("Hockey")
         path = cog_data_path(cog) / "players.json"
         await cls().check_and_download(cog)
         with path.open(encoding="utf-8", mode="r") as f:
