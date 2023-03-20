@@ -10,6 +10,4 @@ with open(Path(__file__).parent / "info.json") as fp:
 async def setup(bot):
     cog = Hockey(bot)
     await bot.add_cog(cog)
-    if not await cog.config.enable_slash():
-        bot.tree.remove_command("hockey")
     # await cog.initialize()

@@ -801,27 +801,6 @@ class EventPoster(commands.Cog):
     async def event_settings(self, ctx: commands.Context) -> None:
         """Manage server specific settings for events"""
 
-    @commands.group(name="eventslash")
-    @commands.admin_or_permissions(manage_guild=True)
-    async def event_slash(self, ctx: commands.Context):
-        """
-        Slash command toggling for event
-        """
-        pass
-
-    @event_slash.command(name="global")
-    @commands.is_owner()
-    async def event_global_slash(self, ctx: commands.Context):
-        """Toggle this cog to register slash commands"""
-        current = await self.config.enable_slash()
-        await self.config.enable_slash.set(not current)
-        verb = _("enabled") if not current else _("disabled")
-        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
-        if not current:
-            self.bot.tree.add_command(self.event_commands.app_command, override=True)
-        else:
-            self.bot.tree.remove_command("event")
-
     @event_settings.command(name="settings")
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)

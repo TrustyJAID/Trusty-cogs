@@ -173,27 +173,6 @@ class Destiny(DestinyAPI, commands.Cog):
         else:
             await ctx.send(msg)
 
-    @destiny.group(name="slash", with_app_command=False)
-    @commands.admin_or_permissions(manage_guild=True)
-    async def destiny_slash(self, ctx: commands.Context):
-        """
-        Slash command toggling for destiny
-        """
-        pass
-
-    @destiny_slash.command(name="global")
-    @commands.is_owner()
-    async def destiny_global_slash(self, ctx: commands.Context):
-        """Toggle this cog to register slash commands"""
-        current = await self.config.enable_slash()
-        await self.config.enable_slash.set(not current)
-        verb = _("enabled") if not current else _("disabled")
-        await ctx.send(_("Slash commands are {verb}.").format(verb=verb))
-        if not current:
-            self.bot.tree.add_command(self, override=True)
-        else:
-            self.bot.tree.remove_command("destiny")
-
     @destiny.command()
     async def forgetme(self, ctx: commands.Context) -> None:
         """
