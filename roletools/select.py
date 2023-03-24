@@ -416,11 +416,11 @@ class RoleToolsSelect(RoleToolsMixin):
         """
         Create a select menu option
 
-        `<name>` - The name of the button for use later in setup.
-        `<role>` - The role this button will assign or remove.
+        `<name>` - The name of the select option for use later in setup.
+        `<role>` - The role this select option will assign or remove.
         `[label]` - The optional label for the option, max of 25 characters.
         `[description]` - The description for the option, max of 50 characters.
-        `[emoji]` - The optional emoji used in the button.
+        `[emoji]` - The optional emoji used in the select option.
 
         Note: If no label and no emoji are provided the roles name will be used instead.
         This name will not update if the role name is changed.
@@ -494,7 +494,7 @@ class RoleToolsSelect(RoleToolsMixin):
         """
         Delete a saved option.
 
-        `<name>` - the name of the button you want to delete.
+        `<name>` - the name of the select option you want to delete.
         """
         async with self.config.guild(ctx.guild).select_options() as select_options:
             if name in select_options:
