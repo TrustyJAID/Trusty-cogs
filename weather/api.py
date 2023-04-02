@@ -766,13 +766,14 @@ class OneCall:
             url=self.coords.url,
             icon_url=icon_url,
         )
-        embed.add_field(
-            name=_("Current Weather") + f" (<t:{self.current.dt}:R>)",
-            value=str(self.current),
-            inline=False,
-        )
-        if include_forecast:
-            for day in self.daily[1:5]:
+        if not include_forecast and not include_hourly:
+            embed.add_field(
+                name=_("Current Weather") + f" (<t:{self.current.dt}:R>)",
+                value=str(self.current),
+                inline=False,
+            )
+        elif include_forecast:
+            for day in self.daily[:5]:
                 embed.add_field(name=f"<t:{day.dt}:D>", value=str(day), inline=False)
         if include_hourly:
             for hour in self.hourly[:5]:
