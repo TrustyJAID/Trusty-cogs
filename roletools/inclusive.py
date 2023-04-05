@@ -39,7 +39,7 @@ class RoleToolsInclusive(RoleToolsMixin):
         `<role>` This is the role a user may acquire you want to set exclusions for.
         `<include>` The role(s) you wish to have added when a user gains the `<role>`
 
-        Note: This will only work for reaction roles and automatic roles from this cog.
+        Note: This will only work for roles assigned by this cog.
         """
         await ctx.typing()
         cur_setting = await self.config.role(role).inclusive_with()

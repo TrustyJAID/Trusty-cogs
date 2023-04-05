@@ -38,13 +38,24 @@ class ButtonRole(discord.ui.Button):
         log.debug("Receiving button press")
         guild = interaction.message.guild
         role = guild.get_role(self.role_id)
+        if not role:
+            await interaction.response.send_message(
+                _("The role assigned for this button does not appear to exist anymore."),
+                ephemeral=True,
+            )
+            return
+        if interaction.user.bot:
+            await interaction.response.send_message(
+                "Bots are not allowed to assign their own roles."
+            )
+            return
         config = self.view.cog.config
         if role not in interaction.user.roles:
             if not await config.role(role).selfassignable():
-                return
-            if not role:
-                return
-            if interaction.user.bot:
+                await interaction.response.send_message(
+                    _("{role} is not currently self assignable.").format(role=role.mention),
+                    ephemeral=True,
+                )
                 return
             if await self.view.cog.check_guild_verification(interaction.user, guild):
                 log.debug("Ignoring user due to verification check.")
@@ -52,17 +63,24 @@ class ButtonRole(discord.ui.Button):
             if getattr(interaction.user, "pending", False):
                 return
             log.debug(f"Adding role to {interaction.user.name} in {guild}")
-            await self.view.cog.give_roles(interaction.user, [role], _("Button Role"))
+            response = await self.view.cog.give_roles(interaction.user, [role], _("Button Role"))
+            if response:
+                await interaction.response.send_message(
+                    _("I could not assign {role} for the following reasons: {reasons}").format(
+                        role=role.mention, reasons="\n".join(r.reason for r in response)
+                    ),
+                    ephemeral=True,
+                )
+                return
             await interaction.response.send_message(
                 _("I have given you the {role} role.").format(role=role.mention), ephemeral=True
             )
         elif role in interaction.user.roles:
             if not await config.role(role).selfremovable():
-                return
-
-            if not role:
-                return
-            if interaction.user.bot:
+                await interaction.response.send_message(
+                    _("{role} is not currently self removable.").format(role=role.mention),
+                    ephemeral=True,
+                )
                 return
             log.debug(f"Removing role from {interaction.user.name} in {guild}")
             await self.view.cog.remove_roles(interaction.user, [role], _("Button Role"))

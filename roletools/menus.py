@@ -194,24 +194,18 @@ class SelectMenuPages(menus.ListPageSource):
             return page
 
 
-class RoleToolsSelectOption(discord.ui.Select):
-    def __init__(self, options: List[discord.SelectOption], placeholder: str = _("Select a role")):
-        super().__init__(min_values=1, max_values=1, options=options, placeholder=placeholder)
+class RoleToolsSelectOption(discord.ui.RoleSelect):
+    def __init__(self, placeholder: str = _("Select a role")):
+        super().__init__(min_values=1, max_values=1, placeholder=placeholder)
 
     async def callback(self, interaction: discord.Interaction):
-        index = int(self.values[0])
+        index = interaction.guild.roles.index(self.values[0])
         await self.view.show_checked_page(index, interaction)
 
 
 class RolePages(menus.ListPageSource):
     def __init__(self, roles: List[discord.Role]):
         super().__init__(roles, per_page=1)
-        self.select_options = []
-        for count, role in enumerate(roles):
-            name = f"@{role.name}"
-            if len(name) > 24:
-                name = f"@{role.name[:23]}\N{HORIZONTAL ELLIPSIS}"
-            self.select_options.append(discord.SelectOption(label=name, value=count))
 
     def is_paginating(self):
         return True
@@ -230,6 +224,7 @@ class RolePages(menus.ListPageSource):
             [perm.replace("_", " ").title() for perm, value in role.permissions if value]
         )
         buttons = humanize_list(role_settings["buttons"])
+        require_any = role_settings["require_any"]
         settings = _(
             "{role}\n```md\n"
             "# ID:           {role_id}\n"
@@ -260,7 +255,7 @@ class RolePages(menus.ListPageSource):
                 cost=cost, currency_name=currency_name
             )
         if buttons:
-            settings += _("**Buttons:** {button_names}").format(button_names=buttons)
+            settings += _("**Buttons:** {button_names}\n").format(button_names=buttons)
         if permissions:
             settings += _("**Permissions:** {permissions}\n").format(permissions=permissions)
         if role.managed:
@@ -280,8 +275,9 @@ class RolePages(menus.ListPageSource):
                 inclusive=humanize_list([r.mention for r in exclusive_roles if r])
             )
         if required_roles:
-            settings += _("**Requires:** {inclusive}\n").format(
-                inclusive=humanize_list([r.mention for r in required_roles if r])
+            settings += _("**Requires{any_of}:** {inclusive}\n").format(
+                inclusive=humanize_list([r.mention for r in required_roles if r]),
+                any_of="" if not require_any else _(" any of"),
             )
         if role_settings["reactions"]:
             settings += _("**Reaction Roles**\n")
@@ -345,13 +341,8 @@ class BaseMenu(discord.ui.View):
         self.add_item(self.forward_button)
         self.add_item(self.last_item)
         self.add_item(self.stop_button)
-        if hasattr(self.source, "select_options"):
-            options = self.source.select_options
-            if len(options) > 25 and self.current_page != 0:
-                options = options[self.current_page - 12 : self.current_page + 13]
-            else:
-                options = options[:25]
-            self.select_view = RoleToolsSelectOption(options=options)
+        if isinstance(source, RolePages):
+            self.select_view = RoleToolsSelectOption()
             self.add_item(self.select_view)
 
     @property
@@ -391,15 +382,6 @@ class BaseMenu(discord.ui.View):
 
     async def show_page(self, page_number: int, interaction: discord.Interaction):
         page = await self._source.get_page(page_number)
-        if hasattr(self.source, "select_options") and len(self.source.select_options) > 25:
-            self.remove_item(self.select_view)
-            options = self.source.select_options
-            if page_number >= 12:
-                options = options[page_number - 12 : page_number + 13]
-            else:
-                options = options[:25]
-            self.select_view = RoleToolsSelectOption(options=options)
-            self.add_item(self.select_view)
         self.current_page = page_number
         kwargs = await self._get_kwargs_from_page(page)
         await interaction.response.edit_message(**kwargs, view=self)

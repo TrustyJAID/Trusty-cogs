@@ -85,7 +85,11 @@ class SelectRole(discord.ui.Select):
                 if getattr(interaction.user, "pending", False):
                     continue
                 log.debug(f"Adding role to {interaction.user.name} in {guild}")
-                await self.view.cog.give_roles(interaction.user, [role], _("Role Selection"))
+                response = await self.view.cog.give_roles(
+                    interaction.user, [role], _("Role Selection")
+                )
+                if response:
+                    continue
                 added_roles.append(role)
             elif role in interaction.user.roles:
                 if not await config.role(role).selfremovable():
@@ -290,7 +294,7 @@ class RoleToolsSelect(RoleToolsMixin):
                 self.bot.add_view(view)
                 self.views.append(view)
 
-    @roletools.group(name="select", with_app_command=False)
+    @roletools.group(name="select", aliases=["selects"], with_app_command=False)
     @commands.admin_or_permissions(manage_roles=True)
     async def select(self, ctx: Context) -> None:
         """
@@ -326,10 +330,9 @@ class RoleToolsSelect(RoleToolsMixin):
             await ctx.send(msg)
             return
         if len(await self.config.guild(ctx.guild).select_options()) < 1:
-            msg = _(
-                "You must setup some options first with "
-                "`{prefix}roletools select options create`."
-            ).format(prefix=ctx.clean_prefix)
+            msg = _("You must setup some options first with " "`{prefix}{command}`.").format(
+                prefix=ctx.clean_prefix, command=self.create_select_option.qualified_name
+            )
             await ctx.send(msg)
             return
         if len(options) < 1:

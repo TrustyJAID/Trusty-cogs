@@ -87,6 +87,7 @@ class RoleTools(
             exclusive_to=[],
             inclusive_with=[],
             required=[],
+            require_any=False,
             cost=0,
         )
         self.config.register_member(sticky_roles=[])

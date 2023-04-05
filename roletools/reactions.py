@@ -23,7 +23,7 @@ _ = Translator("RoleTools", __file__)
 class RoleToolsReactions(RoleToolsMixin):
     """This class contains commands related to reaction roles."""
 
-    @roletools.group(name="react")
+    @roletools.group(name="reaction", aliases=["react", "reactions"])
     async def react_coms(self, ctx: Context) -> None:
         """Reaction role settings"""
         pass
