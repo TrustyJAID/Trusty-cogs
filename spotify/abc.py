@@ -122,22 +122,6 @@ class SpotifyMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def set_guild_slash_toggle(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def spotify_guild_context(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def set_global_slash_toggle(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def spotify_global_context(self, ctx: commands.Context):
-        raise NotImplementedError()
-
-    @abstractmethod
     async def not_authorized(self, ctx: commands.Context) -> None:
         raise NotImplementedError()
 
