@@ -1293,7 +1293,7 @@ class ServerStats(commands.GroupCog):
                 if is_embed:
                     embed = discord.Embed(description=msg)
                     embed.set_author(
-                        name=guild.name + _(" first members"), icon_url=guild.icon_url
+                        name=guild.name + _(" first members"), icon_url=guild.icon.url
                     )
                     msg_list.append(embed)
 
@@ -1495,7 +1495,7 @@ class ServerStats(commands.GroupCog):
             if ctx.channel.permissions_for(ctx.me).embed_links:
                 embed = discord.Embed()
                 embed.description = page
-                embed.set_author(name=f"{guild.name} " + _("Roles"), icon_url=guild.icon_url)
+                embed.set_author(name=f"{guild.name} " + _("Roles"), icon_url=guild.icon.url)
                 msg_list.append(embed)
             else:
                 msg_list.append(page)
