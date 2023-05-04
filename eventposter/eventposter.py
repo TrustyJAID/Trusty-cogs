@@ -9,7 +9,7 @@ from redbot import VersionInfo, version_info
 from redbot.core import Config, checks, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta, pagify
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.views import SimpleMenu
 
 from .event_obj import ApproveView, ConfirmView, Event, ValidImage
 
@@ -53,7 +53,6 @@ class EventPoster(commands.Cog):
         default_user = {"player_class": ""}
         self.config.register_guild(**default_guild)
         self.config.register_member(**default_user)
-        self.config.register_global(enable_slash=False)
         self.event_cache: Dict[int, Dict[int, Event]] = {}
         self._ready: asyncio.Event = asyncio.Event()
         self.cleanup_old_events.start()
@@ -365,8 +364,12 @@ class EventPoster(commands.Cog):
         view = ApproveView(self, ctx)
 
         em = await event.make_event_embed(ctx)
-        msg = _("Please wait for someone to approve your event request.")
-        await ctx.send(msg)
+        msg = _(
+            "Please wait for someone to approve your event request. "
+            "In the mean time here's how your event will look. "
+            "If this doesn't look right make a new event."
+        )
+        await ctx.send(msg, embed=em)
         admin_msg = await approval_channel.send(embed=em, view=view)
         self.waiting_approval[admin_msg.id] = {"event": event, "ctx": ctx}
 
@@ -1225,30 +1228,35 @@ class EventPoster(commands.Cog):
 
     @event_settings.command(name="viewlinks", aliases=["showlinks"])
     @checks.mod_or_permissions(manage_messages=True)
-    @checks.bot_has_permissions(add_reactions=True)
+    @checks.bot_has_permissions(embed_links=True)
     @commands.guild_only()
     async def view_links(self, ctx: commands.Context):
         """
         Show custom thumbnails available for events in this server
         """
         custom_links = await self.config.guild(ctx.guild).custom_links()
-        embed_links = ctx.channel.permissions_for(ctx.me).embed_links
         msgs = []
-        msg = ""
         for keyword, link in custom_links.items():
-            if embed_links:
-                msg += f"[{keyword}]({link})\n"
-            else:
-                msg += f"`{keyword}` - {link}"
-        if embed_links:
-            for page in pagify(msg):
-                embed = discord.Embed(description=page)
-                embed.title = _("{guild} Thumbnail Links").format(guild=ctx.guild.name)
-                msgs.append(embed)
-        else:
-            for page in pagify(msg):
-                msgs.append(page)
-        await menu(ctx, msgs, DEFAULT_CONTROLS)
+            em = discord.Embed(title=keyword)
+            em.set_image(url=link)
+            msgs.append(em)
+        await SimpleMenu(msgs, use_select_menu=True).start(ctx)
+
+    @event_settings.command(name="viewlargelinks", aliases=["showlargelinks"])
+    @checks.mod_or_permissions(manage_messages=True)
+    @checks.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
+    async def view_large_links(self, ctx: commands.Context):
+        """
+        Show custom images available for events in this server
+        """
+        custom_links = await self.config.guild(ctx.guild).large_links()
+        msgs = []
+        for keyword, link in custom_links.items():
+            em = discord.Embed(title=keyword)
+            em.set_image(url=link)
+            msgs.append(em)
+        await SimpleMenu(msgs, use_select_menu=True).start(ctx)
 
     @event_settings.command(name="ping", aliases=["mention"])
     @checks.mod_or_permissions(manage_messages=True)

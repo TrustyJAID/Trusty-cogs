@@ -565,13 +565,15 @@ class Event(discord.ui.View):
             if slots < 0:
                 slots = 0
             max_slots_msg = _("**{slots} slots available.**").format(slots=slots)
-
+        cog = ctx.bot.get_cog("EventPoster")
+        command_name = cog.join_event.qualified_name
         em.description = _(
             "**{description}**\n\nTo join this event type "
-            "`{prefix}join {hoster}` or press the Join Event button below.\n\n"
+            "`{prefix}{command_name} {hoster}` or press the Join Event button below.\n\n"
             "**{max_slots_msg}**"
         ).format(
             description=self.event[:1024],
+            command_name=command_name,
             prefix=prefix,
             hoster=hoster,
             max_slots_msg=max_slots_msg,
@@ -619,15 +621,36 @@ class Event(discord.ui.View):
         if start is not None:
             em.timestamp = start
 
+        thumbnail = await self.get_thumbnail(ctx)
+        if thumbnail:
+            em.set_thumbnail(url=thumbnail)
+        image = await self.get_image(ctx)
+        if image:
+            em.set_image(url=image)
+        return em
+
+    def get_config(self):
+        return Config.get_conf(None, identifier=144014746356678656, cog_name="EventPoster")
+
+    async def get_thumbnail(self, ctx: Optional[commands.Context]) -> Optional[str]:
+        if ctx is None:
+            ctx = await self.get_ctx(self.bot)
+        config = self.get_config()
         thumbnails = await config.guild(ctx.guild).custom_links()
         for name, link in thumbnails.items():
-            if name.lower() in self.event.lower():
-                em.set_thumbnail(url=link)
-        images = await config.guild(ctx.guild).large_links()
-        for name, link in images.items():
-            if name.lower() in self.event.lower():
-                em.set_image(url=link)
-        return em
+            if re.search(fr"(?i)\b{name}\b", self.event):
+                return link
+        return None
+
+    async def get_image(self, ctx: Optional[commands.Context]) -> Optional[str]:
+        if ctx is None:
+            ctx = await self.get_ctx(self.bot)
+        config = self.get_config()
+        large_links = await config.guild(ctx.guild).large_links()
+        for name, link in large_links.items():
+            if re.search(fr"(?i)\b{name}\b", self.event):
+                return link
+        return None
 
     @classmethod
     def from_json(cls, bot: Red, data: dict):
@@ -645,7 +668,8 @@ class Event(discord.ui.View):
         guild = data.get("guild")
         if not guild:
             chan = bot.get_channel(data.get("channel"))
-            guild = chan.guild.id
+            if chan:
+                guild = chan.guild.id
         return cls(
             bot=bot,
             hoster=data.get("hoster"),
